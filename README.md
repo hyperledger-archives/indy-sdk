@@ -319,6 +319,7 @@ The documents that provide necessary information for Libindy migrations.
 * [v1.7.0 → v1.8.x](docs/migration-guides/migration-guide-1.7.0-1.8.0.md)
 * [v1.8.0 → v1.9.x](docs/migration-guides/migration-guide-1.8.0-1.9.0.md)
 * [v1.9.0 → v1.10.x](docs/migration-guides/migration-guide-1.9.0-1.10.0.md)
+* [v1.10.0 → v1.11.x](docs/migration-guides/migration-guide-1.10.0-1.11.0.md)
 
 ## How to Contribute
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).

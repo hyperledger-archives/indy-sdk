@@ -457,7 +457,7 @@ impl CommandExecutor {
 
     fn get_active_param<'a>(line: &str, cursor: usize, params: &'a [ParamMetadata]) -> Option<&'a ParamMetadata> {
         let line = &line[..cursor];
-        let last_space_index = line.rfind(" ").unwrap_or(0);
+        let last_space_index = line.rfind(' ').unwrap_or(0);
         let line = &line[last_space_index..];
 
         params
@@ -472,10 +472,10 @@ impl CommandExecutor {
             }).1
     }
 
-    fn command_params(&self, command: &Command, params: &Vec<&str>, line: &str, word: &str, cursor: usize) -> Vec<(String, char)> {
+    fn command_params(&self, command: &Command, params: &[&str], line: &str, word: &str, cursor: usize) -> Vec<(String, char)> {
         let mut completes: Vec<(String, char)> = Vec::new();
 
-        if command.metadata().main_param.is_some() && (params.len() == 0 && word.is_empty() || params.len() == 1 && !word.is_empty()) {
+        if command.metadata().main_param.is_some() && (params.is_empty() && word.is_empty() || params.len() == 1 && !word.is_empty()) {
             return self._get_main_param_dynamic_completions(command, word);
         }
 
@@ -541,7 +541,7 @@ impl CommandExecutor {
             (Some(command), None, None) => {
                 if self.commands.contains_key(command) {
                     let command = &self.commands[command];
-                    completes.extend(self.command_params(command, &vec![], line, word, cursor));
+                    completes.extend(self.command_params(command, &[], line, word, cursor));
                     return completes;
                 }
 
@@ -571,7 +571,7 @@ impl CommandExecutor {
                 }
 
                 if self.commands.contains_key(command) {
-                    completes.extend(self.command_params(&self.commands[command], &vec![sub_command], line, word, cursor));
+                    completes.extend(self.command_params(&self.commands[command], &[sub_command], line, word, cursor));
                     return completes;
                 }
 
@@ -583,7 +583,7 @@ impl CommandExecutor {
                         completes.push((word.to_owned(), ' '));
                     }
 
-                    completes.extend(self.command_params(sub_command, &vec![], line, word, cursor));
+                    completes.extend(self.command_params(sub_command, &[], line, word, cursor));
                     return completes;
                 }
 
@@ -696,14 +696,14 @@ impl CommandExecutor {
         println!();
         println_acc!("Command groups are:");
 
-        for (_, &(ref group, _)) in &self.grouped_commands {
+        for &(ref group, _) in self.grouped_commands.values() {
             println!("\t{} - {}", group.metadata().name(), group.metadata().help())
         }
 
         println!();
         println_acc!("Top level commands are:");
 
-        for (_, ref command) in &self.commands {
+        for command in self.commands.values() {
             println!("\t{} - {}", command.metadata().name(), command.metadata().help())
         }
 
@@ -722,7 +722,7 @@ impl CommandExecutor {
         println!();
         println_acc!("Group commands are:");
 
-        for (_, ref command) in commands {
+        for command in commands.values() {
             println!("\t{} - {}", command.metadata().name(), command.metadata().help())
         }
 
@@ -762,7 +762,7 @@ impl CommandExecutor {
 
         println!();
 
-        if command.metadata().main_param().is_some() || command.metadata().params().len() > 0 {
+        if command.metadata().main_param().is_some() || !command.metadata().params().is_empty() {
             println!();
             println_acc!("Parameters are:");
 
@@ -785,7 +785,7 @@ impl CommandExecutor {
             }
         }
 
-        if command.metadata().examples().len() > 0 {
+        if !command.metadata().examples().is_empty() {
             println!();
             println_acc!("Examples:");
 
@@ -905,12 +905,12 @@ impl CommandExecutor {
         let first_word = parts.next();
         let mut second_word = parts.next();
         let mut params = parts
-            .map(|s| s.split("=").collect::<Vec<&str>>()[0])
+            .map(|s| s.split('=').collect::<Vec<&str>>()[0])
             .collect::<Vec<&str>>();
 
         if let Some(s_word) = second_word {
-            if s_word.contains("=") {
-                params.insert(0, s_word.split("=").collect::<Vec<&str>>()[0]);
+            if s_word.contains('=') {
+                params.insert(0, s_word.split('=').collect::<Vec<&str>>()[0]);
                 second_word = None;
             }
         }
@@ -919,7 +919,7 @@ impl CommandExecutor {
     }
 
     fn _trim_quotes(s: &str) -> &str {
-        if s.len() > 1 && s.starts_with("\"") && s.ends_with("\"") {
+        if s.len() > 1 && s.starts_with('\"') && s.ends_with('\"') {
             &s[1..s.len() - 1]
         } else {
             s
@@ -929,12 +929,12 @@ impl CommandExecutor {
 
 impl Drop for CommandExecutor {
     fn drop(&mut self) {
-        for (_, command) in &self.commands {
+        for command in self.commands.values() {
             command.cleanup(&self.ctx);
         }
 
-        for (_, commands) in &self.grouped_commands {
-            for (_, command) in &commands.1 {
+        for commands in self.grouped_commands.values() {
+            for command in commands.1.values() {
                 command.cleanup(&self.ctx);
             }
         }
@@ -1016,7 +1016,7 @@ pub fn wait_for_user_reply(ctx: &CommandContext) -> bool {
             continue
         }
     }
-    return false;
+    false
 }
 
 #[cfg(test)]

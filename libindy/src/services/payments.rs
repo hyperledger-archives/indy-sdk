@@ -145,7 +145,7 @@ impl PaymentsService {
         res
     }
 
-    pub fn build_get_payment_sources_request(&self, cmd_handle: i32, type_: &str, wallet_handle: WalletHandle, submitter_did: Option<&str>, address: &str, next: Option<u64>) -> IndyResult<()> {
+    pub fn build_get_payment_sources_request(&self, cmd_handle: i32, type_: &str, wallet_handle: WalletHandle, submitter_did: Option<&str>, address: &str, next: Option<i64>) -> IndyResult<()> {
         trace!("build_get_payment_sources_request >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, address: {:?}", type_, wallet_handle, submitter_did, address);
         let build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB = self.methods.borrow().get(type_)
             .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", type_)))?.build_get_payment_sources_request;
@@ -158,7 +158,7 @@ impl PaymentsService {
                                                               wallet_handle,
                                                               submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                                               address.as_ptr(),
-                                                              next.map(|a| a as i64).unwrap_or(-1),
+                                                              next.unwrap_or(-1),
                                                               cb);
 
         let res = err.into();

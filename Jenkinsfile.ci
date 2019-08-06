@@ -484,7 +484,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
             sh '''
                 cd libindy
                 RUST_BACKTRACE=1 cargo test -j 1 --no-run --features sodium_static
-                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features sodium_static
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test -j 1 --features sodium_static
             '''
         }
 
@@ -544,7 +544,7 @@ def linuxVcxBuild(file, env_name, network_name) {
             echo "${env_name} Libvcx Test: Run tests"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency"
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test -j 1 --features "pool_tests agency"
             '''
         }
 
@@ -558,7 +558,7 @@ def linuxVcxBuild(file, env_name, network_name) {
             echo "${env_name} Libvcx Test: Run tests"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test -j 1 --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
             '''
         }
     }
