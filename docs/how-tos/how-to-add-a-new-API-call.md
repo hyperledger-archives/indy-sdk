@@ -4,8 +4,9 @@ In this guide you will see how to add a new call to Libindy. As an example we wi
 
 ### API Layer
 
-These changes should be made in directory [`libindy/src/api`](libindy/src/api) in file `did.rs`. For your function you should choose which file it fill logically fit or create a new one (first option is preferred)
+These changes should be made in directory [`libindy/src/api`](libindy/src/api) in file `did.rs`. For your function you should choose which file it will logically fit or create a new one (first option is preferred)
 
+#### Call definition:
 #### Call definition:
 ```rust
 #[no_mangle]
@@ -21,7 +22,7 @@ pub extern fn indy_create_and_store_my_did(command_handle: CommandHandle,
 ```
 What you can modify here is function name and params. 
 
-For the function name there is only one strict rule -- it should have prefix `indy_` to avoid collisions with other libraries in system.
+There is only one strict rule for the function name -- it should have prefix `indy_` to avoid collisions with other libraries in system.
 
 Rules for params:
 1) First parameter is almost always `command_handle` -- you will need this param if your call will work asynchronously -- you will need it most of the times.
@@ -48,7 +49,7 @@ For most C-types that need to be converted to Rust types Libindy has a set of ma
 
 For that you should go to [`libindy/src/commands`](libindy/src/commands) directory and choose a module that fits your call. In most of the times it matches by the name to the module from the previous section. In our case it is `did.rs`.
 
-Here you will find a enum named like `SomeCommand`, `DidCommand` in our case. Here you have to add a new variant. In our case it will look like this:
+Here you will find an enum named like `SomeCommand`, `DidCommand` in our case. Here you have to add a new variant. In our case it will look like this:
 
 ```rust
 CreateAndStoreMyDid(
@@ -113,3 +114,5 @@ Here you should add a new function for your business logic and a new match claus
 ```
 In the function you should put business logic of your call.
 Notice, that if you have some functionality that can be reused later by other commands, you should put it into the service and execute service call in the function.
+
+Services should stay independent from each other and so should CommandExecutors. You can include Services into CommandExecutors.  
