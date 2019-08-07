@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::string::String;
 use std::vec::Vec;
 
-use ursa::encoding::hex;
+use hex;
 
 use serde_json;
 
@@ -688,7 +688,7 @@ impl PaymentsCommandExecutor {
     }
 
     fn sign_with_address(&self, wallet_handle: WalletHandle, address: &str, message: &[u8], cb: Box<Fn(IndyResult<Vec<u8>>) + Send>) {
-        trace!("sign_with_address >>> address: {:?}, message: {:?}", address, hex::bin2hex(message));
+        trace!("sign_with_address >>> address: {:?}, message: {:?}", address, hex::encode(message));
         let method = match self.payments_service.parse_method_from_payment_address(address) {
             Ok(method) => method,
             Err(err) => {
@@ -715,7 +715,7 @@ impl PaymentsCommandExecutor {
     }
 
     fn verify_with_address(&self, address: &str, message: &[u8], signature: &[u8], cb: Box<Fn(IndyResult<bool>) + Send>) {
-        trace!("sign_with_address >>> address: {:?}, message: {:?}, signature: {:?}", address, hex::bin2hex(message), hex::bin2hex(signature));
+        trace!("sign_with_address >>> address: {:?}, message: {:?}, signature: {:?}", address, hex::encode(message), hex::encode(signature));
 
         let method = match self.payments_service.parse_method_from_payment_address(address) {
             Ok(method) => method,
