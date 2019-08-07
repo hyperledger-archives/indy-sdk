@@ -103,7 +103,7 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
 pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
     trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
 
-    if settings::test_indy_node_enabled() {return Ok(Vec::from(msg).to_owned()); }
+    if settings::test_indy_mode_enabled() {return Ok(Vec::from(message).to_owned()); }
 
     payments::sign_with_address(get_wallet_handle() as i32, address, message).wait().map_err(map_rust_indy_sdk_error)
 }
