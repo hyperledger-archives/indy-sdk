@@ -428,6 +428,12 @@ pub fn libindy_get_cred_def(cred_def_id: &str) -> VcxResult<String> {
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn append_endorser(request: &str, endorser: &str) -> VcxResult<String>{
+    ledger::append_request_endorser(request, endorser)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
+
 pub fn endorse_transaction(transaction_json: &str) -> VcxResult<()> {
     if settings::test_indy_mode_enabled() { return Ok(()); }
 
@@ -466,6 +472,7 @@ fn _verify_transaction_can_be_endorsed(transaction_json: &str, _did: &str) -> Vc
     Ok(())
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

@@ -88,6 +88,18 @@ enum_number!(ProofStateType
     ProofInvalid = 2,
 });
 
+enum_number!(PublicEntytiStateType
+{
+    Built = 0,
+    Published = 1,
+});
+
+impl Default for PublicEntytiStateType{
+    fn default() -> Self {
+        PublicEntytiStateType::Published
+    }
+}
+
 #[repr(C)]
 pub struct VcxStatus {
     pub handle: libc::c_int,

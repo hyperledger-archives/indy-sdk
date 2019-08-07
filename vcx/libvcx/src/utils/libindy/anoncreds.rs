@@ -9,7 +9,7 @@ use utils::constants::{LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, PROOF_REQUESTED
 use utils::libindy::{error_codes::map_rust_indy_sdk_error, mock_libindy_rc, wallet::get_wallet_handle};
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
 use utils::libindy::ledger::*;
-use utils::constants::{SCHEMA_ID, SCHEMA_JSON, CREATE_SCHEMA_ACTION, CRED_DEF_ID, CRED_DEF_JSON, CREATE_CRED_DEF_ACTION, CREATE_REV_REG_DEF_ACTION, CREATE_REV_REG_DELTA_ACTION, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
+use utils::constants::{SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN, CREATE_SCHEMA_ACTION, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_REQ, CREATE_CRED_DEF_ACTION, CREATE_REV_REG_DEF_ACTION, CREATE_REV_REG_DELTA_ACTION, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
 use error::prelude::*;
 
 const BLOB_STORAGE_TYPE: &str = "default";
@@ -336,26 +336,46 @@ pub fn libindy_parse_get_revoc_reg_delta_response(get_rev_reg_delta_response: &s
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn create_schema(name: &str, version: &str, data: &str) -> VcxResult<(String, Option<PaymentTxn>)> {
+pub fn create_schema(name: &str, version: &str, data: &str) -> VcxResult<(String, String)> {
     if settings::test_indy_mode_enabled() {
-        let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
-        let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
-        return Ok((SCHEMA_ID.to_string(), Some(PaymentTxn::from_parts(inputs, outputs, 1, false))));
+        return Ok((SCHEMA_ID.to_string(), SCHEMA_JSON.to_string()));
     }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let (id, create_schema) = libindy_issuer_create_schema(&submitter_did, name, version, data)?;
 
-    let mut request = libindy_build_schema_request(&submitter_did, &create_schema)?;
+    Ok((id, create_schema))
+}
 
-    request = append_txn_author_agreement_to_request(&request)?;
+pub fn build_schema_request(id: &str, schema: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() {
+        return Ok(SCHEMA_TXN.to_string());
+    }
+
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    let request = libindy_build_schema_request(&submitter_did, schema)?;
+
+    let request = append_txn_author_agreement_to_request(&request)?;
+
+    Ok(request)
+}
+
+pub fn publish_schema(id: &str, schema: &str) -> VcxResult<Option<PaymentTxn>> {
+    if settings::test_indy_mode_enabled() {
+        let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
+        let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
+        return Ok(Some(PaymentTxn::from_parts(inputs, outputs, 1, false)));
+    }
+
+    let request = build_schema_request(id, schema)?;
 
     let (payment, response) = pay_for_txn(&request, CREATE_SCHEMA_ACTION)?;
 
     _check_schema_response(&response)?;
 
-    Ok((id, payment))
+    Ok(payment)
 }
 
 pub fn get_schema_json(schema_id: &str) -> VcxResult<(String, String)> {

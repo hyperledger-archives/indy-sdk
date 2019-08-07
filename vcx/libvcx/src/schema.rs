@@ -2,8 +2,10 @@ use serde_json;
 
 use std::string::ToString;
 
+use api::PublicEntytiStateType;
 use settings;
 use utils::libindy::anoncreds;
+use utils::libindy::ledger;
 use utils::libindy::payments::PaymentTxn;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use object_cache::ObjectCache;
@@ -30,6 +32,8 @@ pub struct CreateSchema {
     name: String,
     source_id: String,
     payment_txn: Option<PaymentTxn>,
+    #[serde(default)]
+    state: PublicEntytiStateType
 }
 
 impl CreateSchema {
@@ -54,20 +58,68 @@ impl CreateSchema {
             .map(|obj: ObjectWithVersion<CreateSchema>| obj.data)
             .map_err(|err| err.extend("Cannot deserialize Schema"))
     }
+
+    fn update_state(&mut self) -> VcxResult<u32> {
+        trace!("Schema::update_state >>>");
+        if let Ok(_) = anoncreds::get_schema_json(&self.schema_id) {
+            self.state = PublicEntytiStateType::Published
+        }
+        Ok(self.state as u32)
+    }
+
+    fn get_state(&self) -> u32 {
+        trace!("Schema::get_state >>>");
+        self.state as u32
+    }
 }
 
-pub fn create_new_schema(source_id: &str,
-                         issuer_did: String,
-                         name: String,
-                         version: String,
-                         data: String) -> VcxResult<u32> {
+pub fn create_and_publish_schema(source_id: &str,
+                                 issuer_did: String,
+                                 name: String,
+                                 version: String,
+                                 data: String) -> VcxResult<u32> {
     trace!("create_new_schema >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}", source_id, issuer_did, name, version, data);
     debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
 
-    let (schema_id, payment_txn) = anoncreds::create_schema(&name, &version, &data)?;
+    let (schema_id, schema_req) = anoncreds::create_schema(&name, &version, &data)?;
+    let payment_txn = anoncreds::publish_schema(&name, &schema_req)?;
 
     debug!("created schema on ledger with id: {}", schema_id);
 
+    let schema_handle = _store_schema(source_id, issuer_did, name, version, schema_id, data, payment_txn, PublicEntytiStateType::Published)?;
+
+    Ok(schema_handle)
+}
+
+pub fn create_schema(source_id: &str,
+                     issuer_did: String,
+                     name: String,
+                     version: String,
+                     data: String,
+                     endorser: String) -> VcxResult<(u32, String)> {
+    trace!("prepare_for_endorser >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}, endorser: {}", source_id, issuer_did, name, version, data, endorser);
+    debug!("preparing schema for endorser with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
+
+    let (schema_id, schema_req) = anoncreds::create_schema(&name, &version, &data)?;
+    let schema_request = anoncreds::build_schema_request(&name, &schema_req)?;
+
+    let schema_request = ledger::append_endorser(&schema_request, &endorser)?;
+
+    debug!("prepared schema for endorser with id: {}", schema_id);
+
+    let schema_handle = _store_schema(source_id, issuer_did, name, version, schema_id, data, None, PublicEntytiStateType::Built)?;
+
+    Ok((schema_handle, schema_request))
+}
+
+fn _store_schema(source_id: &str,
+                 issuer_did: String,
+                 name: String,
+                 version: String,
+                 schema_id: String,
+                 data: String,
+                 payment_txn: Option<PaymentTxn>,
+                 state: PublicEntytiStateType) -> VcxResult<u32> {
     let schema = CreateSchema {
         source_id: source_id.to_string(),
         name,
@@ -75,12 +127,12 @@ pub fn create_new_schema(source_id: &str,
         version,
         schema_id,
         payment_txn,
+        state,
     };
 
     SCHEMA_MAP.add(schema)
         .or(Err(VcxError::from(VcxErrorKind::CreateSchema)))
 }
-
 
 pub fn get_schema_attrs(source_id: String, schema_id: String) -> VcxResult<(u32, String)> {
     trace!("get_schema_attrs >>> source_id: {}, schema_id: {}", source_id, schema_id);
@@ -100,6 +152,7 @@ pub fn get_schema_attrs(source_id: String, schema_id: String) -> VcxResult<(u32,
         version: schema_data.version,
         data: schema_data.attr_names,
         payment_txn: None,
+        state: PublicEntytiStateType::Published,
     };
 
     let schema_json = schema.to_string()?;
@@ -152,6 +205,18 @@ pub fn release_all() {
     SCHEMA_MAP.drain().ok();
 }
 
+pub fn update_state(handle: u32) -> VcxResult<u32> {
+    SCHEMA_MAP.get_mut(handle, |s| {
+        s.update_state()
+    })
+}
+
+pub fn get_state(handle: u32) -> VcxResult<u32> {
+    SCHEMA_MAP.get_mut(handle, |s| {
+        Ok(s.get_state())
+    })
+}
+
 #[cfg(test)]
 pub mod tests {
     extern crate rand;
@@ -168,7 +233,7 @@ pub mod tests {
                                              rand::thread_rng().gen::<u32>().to_string());
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-        create_new_schema("id", did, schema_name, schema_version, data).unwrap()
+        create_and_publish_schema("id", did, schema_name, schema_version, data).unwrap()
     }
 
     #[test]
@@ -181,6 +246,7 @@ pub mod tests {
             source_id: "testId".to_string(),
             name: "schema_name".to_string(),
             payment_txn: None,
+            state: PublicEntytiStateType::Published,
         };
         let value: serde_json::Value = serde_json::from_str(&create_schema.to_string().unwrap()).unwrap();
         assert_eq!(value["version"], "1.0");
@@ -199,11 +265,11 @@ pub mod tests {
     fn test_create_schema_success() {
         init!("true");
         let data = r#"["name","male"]"#;
-        assert!(create_new_schema("1",
-                                  "VsKV7grR1BUE29mG2Fm2kX".to_string(),
-                                  "name".to_string(),
-                                  "1.0".to_string(),
-                                  data.to_string()).is_ok());
+        assert!(create_and_publish_schema("1",
+                                          "VsKV7grR1BUE29mG2Fm2kX".to_string(),
+                                          "name".to_string(),
+                                          "1.0".to_string(),
+                                          data.to_string()).is_ok());
     }
 
     #[test]
@@ -218,10 +284,10 @@ pub mod tests {
     #[test]
     fn test_create_schema_fails() {
         init!("false");
-        let schema = create_new_schema("1", "VsKV7grR1BUE29mG2Fm2kX".to_string(),
-                                       "name".to_string(),
-                                       "1.0".to_string(),
-                                       "".to_string());
+        let schema = create_and_publish_schema("1", "VsKV7grR1BUE29mG2Fm2kX".to_string(),
+                                               "name".to_string(),
+                                               "1.0".to_string(),
+                                               "".to_string());
         assert_eq!(schema.unwrap_err().kind(), VcxErrorKind::InvalidLibindyParam)
     }
 
@@ -271,9 +337,9 @@ pub mod tests {
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
         let schema_version: String = format!("{}.{}", rand::thread_rng().gen::<u32>().to_string(),
                                              rand::thread_rng().gen::<u32>().to_string());
-        let rc = create_new_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
+        let rc = create_and_publish_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
         assert!(rc.is_ok());
-        let rc = create_new_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
+        let rc = create_and_publish_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
 
         assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::DuplicationSchema)
     }
@@ -284,11 +350,11 @@ pub mod tests {
         let data = r#"["address1","address2","zip","city","state"]"#;
         let version = r#"0.0.0"#;
         let did = r#"2hoqvcwupRTUNkXn6ArYzs"#;
-        let h1 = create_new_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
-        let h2 = create_new_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
-        let h3 = create_new_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
-        let h4 = create_new_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
-        let h5 = create_new_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
+        let h1 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
+        let h2 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
+        let h3 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
+        let h4 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
+        let h5 = create_and_publish_schema("1", did.to_string(), "name".to_string(), version.to_string(), data.to_string()).unwrap();
         release_all();
         assert_eq!(release(h1).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
         assert_eq!(release(h2).unwrap_err().kind(), VcxErrorKind::InvalidSchemaHandle);
