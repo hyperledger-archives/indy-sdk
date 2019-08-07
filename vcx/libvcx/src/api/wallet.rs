@@ -941,10 +941,10 @@ pub mod tests {
         let cb = return_types_u32::Return_U32_BIN::new().unwrap();
         let msg = "message";
         let msg_len = msg.len();
-        let msg_raw = CString::new(msg).unwrap().as_ptr() as *const u8;
+        let msg_raw = CString::new(msg).unwrap();
         assert_eq!(vcx_wallet_sign_with_payment_address(cb.command_handle,
                                                         CString::new("address").unwrap().into_raw(),
-                                                        msg_raw,
+                                                        msg_raw.as_ptr() as *const u8,
                                                         msg_len as u32,
                                                         Some(cb.get_callback())),
                    error::SUCCESS.code_num);
@@ -958,15 +958,15 @@ pub mod tests {
         let cb = return_types_u32::Return_U32_BOOL::new().unwrap();
         let msg = "message";
         let msg_len = msg.len();
-        let msg_raw = CString::new(msg).unwrap().as_ptr() as *const u8;
+        let msg_raw = CString::new(msg).unwrap();
         let sig = "signature";
         let sig_len = sig.len();
-        let sig_raw = CString::new(sig).unwrap().as_ptr() as *const u8;
+        let sig_raw = CString::new(sig).unwrap();
         assert_eq!(vcx_wallet_verify_with_payment_address(cb.command_handle,
                                                           CString::new("address").unwrap().into_raw(),
-                                                          msg_raw,
+                                                          msg_raw.as_ptr() as *const u8,
                                                           msg_len as u32,
-                                                          sig_raw,
+                                                          sig_raw.as_ptr() as *const u8,
                                                           sig_len as u32,
                                                           Some(cb.get_callback())),
                    error::SUCCESS.code_num);
