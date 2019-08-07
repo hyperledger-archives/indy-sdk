@@ -428,6 +428,18 @@ Lists all payment addresses. Requires opened wallet.
 payment-address list
 ```
 
+#### Sign
+Create a proof of payment address control by signing an input and producing a signature.
+```
+payment-address sign address=<payment_address> input=<string to sign>
+```
+
+#### Verify
+Verify a proof of payment address control by verifying a signature.
+```
+payment-address verify address=<payment_address> input=<signed string> signature=<signature>
+```
+
 ## Examples
 
 #### Create pool configuration and connect to pool

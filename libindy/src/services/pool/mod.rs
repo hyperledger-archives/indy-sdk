@@ -30,6 +30,7 @@ use errors::*;
 use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
 use utils::sequence;
+use services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
 
 mod catchup;
 mod commander;
@@ -161,7 +162,7 @@ impl PoolService {
         send_cmd_sock.connect(inproc_sock_name.as_str())?;
 
         new_pool.work(recv_cmd_sock);
-        self._send_msg(pool_handle, "connect", &send_cmd_sock, None, None)?;
+        self._send_msg(pool_handle, COMMAND_CONNECT, &send_cmd_sock, None, None)?;
 
         self.pending_pools.try_borrow_mut()?
             .insert(new_pool.get_id(), ZMQPool::new(new_pool, send_cmd_sock));
@@ -222,7 +223,7 @@ impl PoolService {
         let mut pools = self.open_pools.try_borrow_mut()?;
 
         match pools.remove(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, "exit", &pool.cmd_socket, None, None)?,
+            Some(ref pool) => self._send_msg(cmd_id, COMMAND_EXIT, &pool.cmd_socket, None, None)?,
             None => return Err(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {}", handle)))
         }
 
@@ -230,7 +231,7 @@ impl PoolService {
     }
 
     pub fn refresh(&self, handle: i32) -> IndyResult<i32> {
-        self.send_action(handle, "refresh", None, None)
+        self.send_action(handle, COMMAND_REFRESH, None, None)
     }
 
     fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket, nodes: Option<&str>, timeout: Option<i32>) -> IndyResult<()> {
@@ -383,7 +384,7 @@ mod tests {
             let cmd_id = ps.close(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
             assert_eq!(recv.len(), 3);
-            assert_eq!("exit", String::from_utf8(recv[0].clone()).unwrap());
+            assert_eq!(COMMAND_EXIT, String::from_utf8(recv[0].clone()).unwrap());
             assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
         }
 
@@ -402,7 +403,7 @@ mod tests {
             let cmd_id = ps.refresh(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
             assert_eq!(recv.len(), 3);
-            assert_eq!("refresh", String::from_utf8(recv[0].clone()).unwrap());
+            assert_eq!(COMMAND_REFRESH, String::from_utf8(recv[0].clone()).unwrap());
             assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
         }
 

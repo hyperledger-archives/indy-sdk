@@ -23,6 +23,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate sha2;
 
 #[macro_use]
 mod utils;
@@ -84,6 +85,8 @@ mod high_cases {
                                                          Some(payments::mock_method::parse_get_txn_fees_response::handle),
                                                          Some(payments::mock_method::build_verify_payment_req::handle),
                                                          Some(payments::mock_method::parse_verify_payment_response::handle),
+                                                         Some(payments::mock_method::sign_with_address::handle),
+                                                         Some(payments::mock_method::verify_with_address::handle)
             ).unwrap();
 
             utils::tear_down("register_payment_method_works");
@@ -261,6 +264,53 @@ mod high_cases {
         }
     }
 
+    mod build_get_payment_sources_with_from_request {
+        use super::*;
+
+        #[test]
+        fn build_get_payment_sources_with_from_request_works() {
+            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_with_from_request_works");
+
+            payments::mock_method::build_get_payment_sources_request::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+
+            let (req, payment_method) = payments::build_get_payment_sources_with_from_request(wallet_handle, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS, Some(1)).unwrap();
+
+            assert_eq!(req, TEST_RES_STRING.to_string());
+            assert_eq!(PAYMENT_METHOD_NAME, payment_method);
+
+            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_with_from_request_works", &wallet_config);
+        }
+
+        #[test]
+        fn build_get_payment_sources_with_from_request_works_for_no_from() {
+            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_with_from_request_works");
+
+            payments::mock_method::build_get_payment_sources_request::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+
+            let (req, payment_method) = payments::build_get_payment_sources_with_from_request(wallet_handle, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS, None).unwrap();
+
+            assert_eq!(req, TEST_RES_STRING.to_string());
+            assert_eq!(PAYMENT_METHOD_NAME, payment_method);
+
+            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_with_from_request_works", &wallet_config);
+        }
+
+
+        #[test]
+        fn build_get_payment_sources_request_works_with_from_for_empty_submitter_did() {
+            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_request_with_from_works_for_empty_submitter_did");
+
+            payments::mock_method::build_get_payment_sources_request::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+
+            let (req, payment_method) = payments::build_get_payment_sources_with_from_request(wallet_handle, None, CORRECT_PAYMENT_ADDRESS, Some(1)).unwrap();
+
+            assert_eq!(req, TEST_RES_STRING.to_string());
+            assert_eq!(PAYMENT_METHOD_NAME, payment_method);
+
+            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_request_with_from_works_for_empty_submitter_did", &wallet_config);
+        }
+    }
+
     mod parse_get_payment_sources_response {
         use super::*;
 
@@ -268,11 +318,44 @@ mod high_cases {
         fn parse_get_payment_sources_response_works() {
             let (wallet_handle, wallet_config) = setup("parse_get_payment_sources_response_works");
 
-            payments::mock_method::parse_get_payment_sources_response::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+            payments::mock_method::parse_get_payment_sources_response::inject_mock(ErrorCode::Success, TEST_RES_STRING, -1);
 
             let res_plugin = payments::parse_get_payment_sources_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
 
             assert_eq!(res_plugin, TEST_RES_STRING);
+
+            utils::tear_down_with_wallet(wallet_handle, "parse_get_payment_sources_response_works", &wallet_config);
+        }
+    }
+
+    mod parse_get_payment_sources_with_from_response {
+        use super::*;
+
+        #[test]
+        fn parse_get_payment_sources_with_from_response_works() {
+            let (wallet_handle, wallet_config) = setup("parse_get_payment_sources_with_from_response_works");
+
+            payments::mock_method::parse_get_payment_sources_response::inject_mock(ErrorCode::Success, TEST_RES_STRING, -1);
+
+            let (res_plugin, num) = payments::parse_get_payment_sources_with_from_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
+
+            assert_eq!(res_plugin, TEST_RES_STRING);
+            assert_eq!(num, None);
+
+            utils::tear_down_with_wallet(wallet_handle, "parse_get_payment_sources_response_works", &wallet_config);
+        }
+
+
+        #[test]
+        fn parse_get_payment_sources_with_from_response_works_has_next() {
+            let (wallet_handle, wallet_config) = setup("parse_get_payment_sources_with_from_response_works");
+
+            payments::mock_method::parse_get_payment_sources_response::inject_mock(ErrorCode::Success, TEST_RES_STRING, 1);
+
+            let (res_plugin, num) = payments::parse_get_payment_sources_with_from_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
+
+            assert_eq!(res_plugin, TEST_RES_STRING);
+            assert_eq!(num, Some(1));
 
             utils::tear_down_with_wallet(wallet_handle, "parse_get_payment_sources_response_works", &wallet_config);
         }
@@ -602,7 +685,6 @@ mod high_cases {
         }
     }
 
-
     mod build_verify_payment_req {
         use super::*;
 
@@ -691,7 +773,7 @@ mod high_cases {
             }).to_string()
         }
 
-        fn _requester_info() -> String{
+        fn _requester_info() -> String {
             json!({
                 "role": "0",
                 "need_to_be_owner":false,
@@ -757,6 +839,30 @@ mod high_cases {
             utils::tear_down("indy_get_request_info_for_no_fee");
         }
     }
+    
+    mod sign_with_address {
+        use super::*;
+        use sha2::Digest;
+
+        #[test]
+        fn sign_with_address_works() {
+            let (wallet_handle, wallet_config) = setup("sign_with_address_works");
+
+            let test_vec = vec![0u8; 32];
+
+            let test_sig = sha2::Sha256::digest(test_vec.as_slice()).as_slice().to_vec();
+
+            payments::mock_method::create_payment_address::inject_mock(ErrorCode::Success, PAYMENT_METHOD_NAME);
+            payments::create_payment_address(wallet_handle, EMPTY_OBJECT, PAYMENT_METHOD_NAME).unwrap();
+            payments::mock_method::sign_with_address::inject_mock(ErrorCode::Success, test_sig);
+
+            let res = payments::sign_with_address(wallet_handle, CORRECT_PAYMENT_ADDRESS, test_vec.as_slice()).unwrap();
+
+            assert_eq!(res, vec![ 102, 104, 122, 173, 248, 98, 189, 119, 108, 143, 193, 139, 142, 159, 142, 32, 8, 151, 20, 133, 110, 226, 51, 179, 144, 42, 89, 29, 13, 95, 41, 37 ]);
+
+            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_works", &wallet_config);
+        }
+    }
 }
 
 mod medium_cases {
@@ -783,6 +889,8 @@ mod medium_cases {
                                                         None,
                                                         None,
                                                         None,
+                                                        None,
+                                                        None
             ).unwrap_err();
 
             assert_eq!(ErrorCode::CommonInvalidParam3, err);
@@ -1120,6 +1228,72 @@ mod medium_cases {
         }
     }
 
+    mod build_get_payment_sources_with_from_request {
+        use super::*;
+
+        #[test]
+        pub fn build_get_payment_sources_with_from_request_works_for_nonexistent_plugin() {
+            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_with_from_request_works_for_nonexistent_plugin");
+
+            let err = payments::build_get_payment_sources_with_from_request(wallet_handle, Some(IDENTIFIER), "pay:null1:test", Some(1));
+
+            assert_code!(ErrorCode::UnknownPaymentMethod, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_with_from_request_works_for_nonexistent_plugin", &wallet_config);
+        }
+
+        #[test]
+        pub fn build_get_payment_sources_with_from_request_works_for_malformed_payment_address() {
+            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_with_from_request_works_for_malformed_payment_address");
+
+            let err = payments::build_get_payment_sources_with_from_request(wallet_handle, Some(IDENTIFIER), "pay:null1", Some(1));
+
+            assert_code!(ErrorCode::IncompatiblePaymentError, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_with_from_request_works_for_malformed_payment_address", &wallet_config);
+        }
+
+        #[test]
+        pub fn build_get_payment_sources_with_from_request_works_for_invalid_wallet_handle() {
+            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_with_from_request_works_for_invalid_wallet_handle");
+
+            payments::mock_method::build_get_payment_sources_request::inject_mock(ErrorCode::WalletInvalidHandle, "");
+
+            let err = payments::build_get_payment_sources_with_from_request(INVALID_WALLET_HANDLE, Some(IDENTIFIER), CORRECT_PAYMENT_ADDRESS, Some(1));
+            assert_code!(ErrorCode::WalletInvalidHandle, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_with_from_request_works_for_invalid_wallet_handle", &wallet_config);
+        }
+
+        #[test]
+        pub fn build_get_payment_sources_with_from_request_works_for_invalid_submitter_did() {
+            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_with_from_request_works_for_invalid_submitter_did");
+
+            let err = payments::build_get_payment_sources_with_from_request(wallet_handle, Some(INVALID_IDENTIFIER), CORRECT_PAYMENT_ADDRESS, Some(1));
+
+            assert_code!(ErrorCode::CommonInvalidStructure, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_with_from_request_works_for_invalid_submitter_did", &wallet_config);
+        }
+
+        #[test]
+        fn build_get_payment_sources_with_from_request_works_for_generic_error() {
+            let (wallet_handle, wallet_config) = setup("build_get_payment_sources_with_from_request_works_for_generic_error");
+
+            payments::mock_method::build_get_payment_sources_request::inject_mock(ErrorCode::WalletAccessFailed, "");
+
+            let err = payments::build_get_payment_sources_with_from_request(wallet_handle,
+                                                                            Some(IDENTIFIER),
+                                                                            CORRECT_PAYMENT_ADDRESS,
+                                                                            Some(1),
+            );
+
+            assert_code!(ErrorCode::WalletAccessFailed, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "build_get_payment_sources_with_from_request_works_for_generic_error", &wallet_config);
+        }
+    }
+
     mod parse_get_payment_sources_request {
         use super::*;
 
@@ -1139,13 +1313,42 @@ mod medium_cases {
         fn parse_get_payment_sources_response_works_for_generic_error() {
             let (wallet_handle, wallet_config) = setup("parse_get_payment_sources_response_works_for_generic_error");
 
-            payments::mock_method::parse_get_payment_sources_response::inject_mock(ErrorCode::WalletAccessFailed, "");
+            payments::mock_method::parse_get_payment_sources_response::inject_mock(ErrorCode::WalletAccessFailed, "", -1);
 
             let err = payments::parse_get_payment_sources_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT);
 
             assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle, "parse_get_payment_sources_response_works_for_generic_error", &wallet_config);
+        }
+    }
+
+    mod parse_get_payment_sources_with_from_response {
+        use super::*;
+
+        #[test]
+        pub fn parse_get_payment_sources_with_from_response_works_for_nonexistent_plugin() {
+            utils::setup("parse_get_payment_sources_with_from_response_works_for_nonexistent_plugin");
+            payments::mock_method::init();
+
+            let err = payments::parse_get_payment_sources_with_from_response(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS);
+
+            assert_code!(ErrorCode::UnknownPaymentMethod, err);
+
+            utils::tear_down("parse_get_payment_sources_with_from_response_works_for_nonexistent_plugin");
+        }
+
+        #[test]
+        fn parse_get_payment_sources_with_from_response_works_for_generic_error() {
+            let (wallet_handle, wallet_config) = setup("parse_get_payment_sources_with_from_response_works_for_generic_error");
+
+            payments::mock_method::parse_get_payment_sources_response::inject_mock(ErrorCode::WalletAccessFailed, "", -1);
+
+            let err = payments::parse_get_payment_sources_with_from_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT);
+
+            assert_code!(ErrorCode::WalletAccessFailed, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "parse_get_payment_sources_with_from_response_works_for_generic_error", &wallet_config);
         }
     }
 
@@ -1724,6 +1927,125 @@ mod medium_cases {
             assert_code!(ErrorCode::WalletAccessFailed, err);
 
             utils::tear_down_with_wallet(wallet_handle, "parse_verify_payment_response_works_for_generic_error", &wallet_config);
+        }
+    }
+
+    mod sign_with_address {
+        use super::*;
+
+        #[test]
+        pub fn sign_with_address_fails_for_nonexistent_plugin() {
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_fails_for_nonexistent_plugin");
+            payments::mock_method::init();
+
+            let err = payments::sign_with_address(wallet_handle, "pay:123:kill", vec![33].as_slice());
+
+            assert_code!(ErrorCode::UnknownPaymentMethod, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_fails_for_nonexistent_plugin", &wallet_config);
+        }
+
+        #[test]
+        pub fn sign_with_address_fails_for_no_payment_address() {
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_fails_for_no_payment_address");
+            payments::mock_method::init();
+
+            let err = payments::sign_with_address(wallet_handle, "", vec![33].as_slice());
+
+            assert_code!(ErrorCode::CommonInvalidParam3, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_fails_for_no_payment_address", &wallet_config);
+        }
+
+        #[test]
+        pub fn sign_with_address_fails_for_no_message() {
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("sign_with_address_fails_for_no_addressn");
+            payments::mock_method::init();
+
+            let err = payments::sign_with_address(wallet_handle, CORRECT_PAYMENT_ADDRESS, vec![].as_slice());
+
+            assert_code!(ErrorCode::CommonInvalidParam5, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_fails_for_no_addressn", &wallet_config);
+        }
+        
+        #[test]
+        pub fn sign_with_address_for_incorrect_payment_address() {
+            let (wallet_handle, wallet_config) = setup("sign_with_address_for_incorrect_payment_address");
+
+            let ec = payments::sign_with_address(wallet_handle, "pay:null1", vec![33].as_slice());
+
+            assert_code!(ErrorCode::IncompatiblePaymentError, ec);
+
+            utils::tear_down_with_wallet(wallet_handle, "sign_with_address_for_incorrect_payment_address", &wallet_config);
+        }
+    }
+
+    mod verify_with_address {
+        use super::*;
+
+        #[test]
+        pub fn verify_with_address_fails_for_nonexistent_plugin() {
+            let (wallet_handle, wallet_config) = utils::setup_with_wallet("verify_with_address_fails_for_nonexistent_plugin");
+            payments::mock_method::init();
+
+            let err = payments::verify_with_address("pay:123:kill", vec![33].as_slice(), vec![33].as_slice());
+
+            assert_code!(ErrorCode::UnknownPaymentMethod, err);
+
+            utils::tear_down_with_wallet(wallet_handle, "verify_with_address_fails_for_nonexistent_plugin", &wallet_config);
+        }
+
+        #[test]
+        pub fn verify_with_address_for_incorrect_payment_address() {
+            let (wallet_handle, wallet_config) = setup("verify_with_address_for_incorrect_payment_address");
+
+            payments::mock_method::verify_with_address::inject_mock(ErrorCode::Success, true);
+
+            let ec = payments::verify_with_address("pay:null1", vec![33].as_slice(), vec![33].as_slice());
+
+            assert_code!(ErrorCode::IncompatiblePaymentError, ec);
+
+            utils::tear_down_with_wallet(wallet_handle, "verify_with_address_for_incorrect_payment_address", &wallet_config);
+        }
+
+        #[test]
+        pub fn verify_with_address_for_no_payment_address() {
+            let (wallet_handle, wallet_config) = setup("verify_with_address_for_no_payment_address");
+
+            payments::mock_method::verify_with_address::inject_mock(ErrorCode::Success, true);
+
+            let ec = payments::verify_with_address("", vec![33].as_slice(), vec![33].as_slice());
+
+            assert_code!(ErrorCode::CommonInvalidParam2, ec);
+
+            utils::tear_down_with_wallet(wallet_handle, "verify_with_address_for_no_payment_address", &wallet_config);
+        }
+
+        #[test]
+        pub fn verify_with_address_for_no_message() {
+            let (wallet_handle, wallet_config) = setup("verify_with_address_for_no_message");
+
+            payments::mock_method::verify_with_address::inject_mock(ErrorCode::Success, true);
+
+            let ec = payments::verify_with_address(CORRECT_PAYMENT_ADDRESS, vec![].as_slice(), vec![33].as_slice());
+
+            assert_code!(ErrorCode::CommonInvalidParam4, ec);
+
+            utils::tear_down_with_wallet(wallet_handle, "verify_with_address_for_no_message", &wallet_config);
+        }
+
+        #[test]
+        pub fn verify_with_address_for_no_signature() {
+            let (wallet_handle, wallet_config) = setup("verify_with_address_for_no_signature");
+
+            payments::mock_method::verify_with_address::inject_mock(ErrorCode::Success, true);
+
+            let ec = payments::verify_with_address(CORRECT_PAYMENT_ADDRESS, vec![33].as_slice(), vec![].as_slice());
+
+            assert_code!(ErrorCode::CommonInvalidParam6, ec);
+
+            utils::tear_down_with_wallet(wallet_handle, "verify_with_address_for_no_signature", &wallet_config);
         }
     }
 }

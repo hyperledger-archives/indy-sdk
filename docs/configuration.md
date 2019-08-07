@@ -13,6 +13,7 @@ This document contains information on how Indy-SDK components can be configured.
     * [Logging](#logging)
     * [Error Handling](#error-handling)
     * [Runtime](#runtime)
+    * [Endorser](#endorser)
 * [Indy-CLI](#indy-cLI)
     * [Options](#options)
     * [Config](#config)
@@ -50,6 +51,11 @@ This function accepts a config that defines the behavior of the client-side conn
 1 - for Indy Node 1.3
 2 - for Indy Node 1.4 and greater
 ```
+
+* Refresh
+`indy_refresh_pool_ledger` function updates a list of active nodes in the pool.
+This function can be useful for applications working with an Indy network that is run continuously for a long time.
+Note that active requests will be dropped.
 
 * State Proof
 There are some types of requests to Nodes in the Pool which support State Proof optimization in
@@ -138,6 +144,18 @@ This function should be called in two places to handle both cases of error occur
 }
 ```
 
+#### Endorser
+As a transaction author, I need my transactions to be written to the ledger preserving me as the author without my needing to accept the responsibilities of an endorser.
+Instead, I will have a relationship with an endorser who will endorse my transactions.
+
+#### Workflow
+1. Transaction Author builds a new request (indy_build_xxx_reqeust).
+1. If no endorser is needed for a transaction (for example, the transaction author is an endorser, or auth rules are configured in a way that transaction author can send requests in permissionless mode), then the author signs and submits the transaction.
+1. Otherwise the author chooses an Endorser and adds Endorser's DID into the request calling `indy_append_request_endorser`.
+1. Transaction author signs the request (`indy_multi_sign_request` or `indy_sign_request`) with the added endorser field (output of `indy_append_request_endorser`).
+1. Transaction author sends the request to the Endorser (out of scope).
+1. Transaction Endorser signs the request (as of now `indy_multi_sign_request` must be called, not `indy_sign_request`) and submits it to the ledger.
+
 ## Indy-CLI
 There is a Command Line Interface (CLI) built over Libindy which provides a set of commands to:
 * Manage wallets
@@ -189,3 +207,24 @@ An example of a batch script:
     wallet close
     exit
     ```
+
+#### Transaction Author Agreement
+CLI uses session-based approach to work with Transaction Author Agreement.
+
+#### Workflow
+1. On CLI start: Pass a config JSON file containing a label of mechanism how a user is going to accept a transaction author agreement.
+`indy-cli --config <path-to-config-json-file>` where config looks like:
+```
+{
+  "taaAcceptanceMechanism": "Click Agreement",
+  .....
+}
+```
+The list of available acceptance mechanisms can be received by sending `get_acceptance_mechanisms` request to ledger.
+1. On `pool connect` command execution: User will be asked if he would like to accept TAA.
+User either can accept it or skip and accept it later by `pool show-taa` command.
+    
+    Note that accepting TAA one time on `pool connect` or `pool show-taa` is a CLI-specific behavior that actually caches value for future uses.
+    Actual TAA check will be performed on write requests sending only.
+
+1. On write request sending to Ledger: TAA will be appended to requests.

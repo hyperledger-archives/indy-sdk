@@ -103,5 +103,15 @@
                                feesJson:(NSString *)feesJson
                         requestInfoJson:(NSString **)requestInfoJson;
 
+- (NSError *)signWithAddress:(NSString *)address
+                     message:(NSData *)message
+                walletHandle:(IndyHandle)walletHandle
+                outSignature:(NSData **)outSignature;
+
+- (NSError *)verifyWithAddress:(NSString *)address
+                       message:(NSData *)message
+                     signature:(NSData *)signature
+                    outIsValid:(BOOL *)outIsValid;
+
 @end
 

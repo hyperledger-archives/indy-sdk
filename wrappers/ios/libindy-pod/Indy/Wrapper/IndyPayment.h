@@ -91,9 +91,11 @@
                 paymentMethod:(NSString *)paymentMethod
                    completion:(void (^)(NSError *error, NSString *receiptsJson))completion;
 
+
 /**
  Builds Indy request for getting sources list for payment address
  according to this payment method.
+ This method is deprecated. It will be removed in Indy SDK 2.0.0. Use buildGetPaymentSourcesWithFromRequest
 
  @param requestJson Request data json.
  @param submitterDid (Optional) DID of request sender
@@ -111,7 +113,29 @@
 
 
 /**
+ Builds Indy request for getting sources list for payment address
+ according to this payment method.
+
+ @param requestJson Request data json.
+ @param submitterDid (Optional) DID of request sender
+ @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
+ @param paymentAddress Target payment address
+ @param from pointer to the next slice of UTXOs. -1 by default
+ @param completion Callback that takes command result as parameter.
+ Returns
+    getSourcesTxnJson - Indy request for getting sources list for payment address
+    paymentMethod - used payment method
+ */
++ (void)buildGetPaymentSourcesWithFromRequest:(IndyHandle)walletHandle
+                                 submitterDid:(NSString *)submitterDid
+                               paymentAddress:(NSString *)paymentAddress
+                                         from:(NSNumber *)from
+                                   completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion;
+
+
+/**
  Parses response for Indy request for getting sources list.
+ This method is deprecated. It will be removed in Indy SDK 2.0.0. Use parseGetPaymentSourcesWithFromResponse
 
  @param responseJson response for Indy request for getting sources list
  @param paymentMethod
@@ -127,6 +151,26 @@
 + (void)parseGetPaymentSourcesResponse:(NSString *)responseJson
                          paymentMethod:(NSString *)paymentMethod
                             completion:(void (^)(NSError *error, NSString *sourcesJson))completion;
+
+
+/**
+ Parses response for Indy request for getting sources list.
+
+ @param responseJson response for Indy request for getting sources list
+ @param paymentMethod
+ @param completion Callback that takes command result as parameter.
+ Returns sourcesJson - parsed (payment method and node version agnostic) sources info as json:
+   [{
+      source: <str>, // source input
+      paymentAddress: <str>, //payment address for this source
+      amount: <int>, // amount
+      extra: <str>, // optional data from payment transaction
+   }]
+   next - pointer to the next slice of UTXOs. Will be -1 if no UTXO's left.
+ */
++ (void)parseGetPaymentSourcesWithFromResponse:(NSString *)responseJson
+                                 paymentMethod:(NSString *)paymentMethod
+                                    completion:(void (^)(NSError *error, NSString *sourcesJson, NSNumber *next))completion;
 
 
 /**
@@ -354,5 +398,33 @@
            getAuthRuleResponseJson:(NSString *)getAuthRuleResponseJson
                           feesJson:(NSString *)feesJson
                         completion:(void (^)(NSError *error, NSString *requestInfoJson))completion;
+
+/**
+ Signs a message with a payment address.
+
+ @param  message: The message to be signed
+ @param  address: Payment address of message signer. The key must be created by calling createPaymentAddressForMethod
+ @param  walletHandle: Wallet handle (created by open_wallet).
+ @param completion Callback that takes command result as parameter.
+ Returns a signature string.
+ */
++ (void)signWithAddress:(NSString *)address
+                message:(NSData *)message
+           walletHandle:(IndyHandle)walletHandle
+             completion:(void (^)(NSError *error, NSData *signature))completion;
+
+/**
+ Verify a signature with a payment address.
+
+ @param  signature: A signature to be verified
+ @param  message: Message that has been signed
+ @param  address: Payment address of the message signer
+ @param completion Callback that takes command result as parameter.
+ Returns valid: true - if signature is valid, false - otherwise
+ */
++ (void)verifyWithAddress:(NSString *)address
+                  message:(NSData *)message
+                signature:(NSData *)signature
+               completion:(void (^)(NSError *error, BOOL valid))completion;
 
 @end
