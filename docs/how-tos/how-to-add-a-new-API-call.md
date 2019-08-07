@@ -2,6 +2,23 @@
 
 In this guide you will see how to add a new call to Libindy. As an example we will take `indy_create_and_store_my_did` call.
 
+Code will be splitted to the following layers:
+* API layer. Library interface layer: 
+    * Basic validation
+    * Conversion of C types to Rust types
+    * Propagation of execution to commands layer
+* Commands layer:
+    * Working threads management
+    * JSONs conversion to internal types and corresponded validation
+    * Splitting complex commands to atomic operations
+    * Propagation of atomic operations execution to service layer
+    * Joining atomic operations results to complex result
+    * Execution of user defined callbacks
+* Service layer:
+    * Implements operations business logic and complex validation
+    * Management of sockets polling threads
+
+
 ### API Layer
 
 These changes should be made in directory [`libindy/src/api`](libindy/src/api) in file `did.rs`. For your function you should choose which file it will logically fit or create a new one (first option is preferred)
