@@ -143,6 +143,8 @@ fn _issuer_create_and_store_credential_def(command_handle: CommandHandle, wallet
 ///
 /// Use `issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
 ///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+///
 /// # Arguments
 /// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `cred_def_id`: an identifier of created credential definition stored in the wallet
@@ -176,6 +178,8 @@ fn _issuer_rotate_credential_def_start(command_handle: CommandHandle, wallet_han
 }
 
 /// Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
 ///
 /// # Arguments
 /// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).

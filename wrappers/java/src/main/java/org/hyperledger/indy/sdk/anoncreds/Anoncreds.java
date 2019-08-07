@@ -303,6 +303,8 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * Use `issuerRotateCredentialDefApply` function to set temporary keys as the main.
 	 *
+	 * WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+	 *
 	 * @param wallet     The wallet.
 	 * @param credDefId  An identifier of created credential definition stored in the wallet
 	 * @param configJson (optional) Type-specific configuration of credential definition as json:
@@ -341,6 +343,8 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+	 *
+	 * WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
 	 *
 	 * @param wallet     The wallet.
 	 * @param credDefId  An identifier of created credential definition stored in the wallet

@@ -936,13 +936,15 @@
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&localWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
-    ret = [[AnoncredsUtils sharedInstance] issuerRotateCredentialDefStartForId:getIssuer1GvtCredDefId
+    NSString * credDefId = [[AnoncredsUtils sharedInstance] getIssuer1GvtCredDefId];
+    
+    ret = [[AnoncredsUtils sharedInstance] issuerRotateCredentialDefStartForId:credDefId
                                                                     configJSON:nil
                                                                   walletHandle:localWalletHandle
                                                                    credDefJson:nil];
     XCTAssertEqual(ret.code, WalletItemNotFound, @"AnoncredsUtils::issuerRotateCredentialDefStartForId() returned wrong code!");
 
-    ret = [[AnoncredsUtils sharedInstance] issuerRotateCredentialDefApplyForId:getIssuer1GvtCredDefId
+    ret = [[AnoncredsUtils sharedInstance] issuerRotateCredentialDefApplyForId:credDefId
                                                                   walletHandle:localWalletHandle];
     XCTAssertEqual(ret.code, WalletItemNotFound, @"AnoncredsUtils::issuerRotateCredentialDefApplyForId() returned wrong code!");
 

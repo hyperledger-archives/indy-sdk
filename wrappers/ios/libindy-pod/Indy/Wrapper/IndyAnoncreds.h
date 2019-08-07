@@ -103,6 +103,8 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 
  Use `issuerRotateCredentialDefApplyForId` function to set temporary keys as the main.
 
+ WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
  @param credDefId an identifier of created credential definition stored in the wallet
  @param configJSON: type-specific configuration of credential definition as json:
  - 'CL':
@@ -119,6 +121,8 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 
 /**
  Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+
+ WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
 
  @param credDefId an identifier of created credential definition stored in the wallet
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).

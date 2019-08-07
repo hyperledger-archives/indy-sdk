@@ -158,6 +158,8 @@ async def issuer_rotate_credential_def_start(wallet_handle: int,
    
     Use `issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
 
+    WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
     :param wallet_handle: wallet handle (created by open_wallet).
     :param cred_def_id: an identifier of created credential definition stored in the wallet
     :param  config_json: (optional) type-specific configuration of credential definition as json:
@@ -196,6 +198,8 @@ async def issuer_rotate_credential_def_apply(wallet_handle: int,
                                              cred_def_id: str):
     """
     Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+
+    WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
 
     :param wallet_handle: wallet handle (created by open_wallet).
     :param cred_def_id: an identifier of created credential definition stored in the wallet

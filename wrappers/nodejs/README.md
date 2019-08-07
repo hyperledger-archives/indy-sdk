@@ -164,6 +164,8 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
  
  Use `issuerRotateCredentialDefApply` function to set temporary keys as the main.
  
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+ 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credDefId`: String - an identifier of created credential definition stored in the wallet
 * `config`: Json - \(optional\) type-specific configuration of credential definition as json:
@@ -176,6 +178,8 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 #### issuerRotateCredentialDefApply \( wh, credDefId \) -&gt; void
 
  Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+ 
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
  
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credDefId`: String - an identifier of created credential definition stored in the wallet
