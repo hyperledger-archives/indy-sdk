@@ -133,4 +133,9 @@ impl Ledger {
                                                                   acc_mech_type,
                                                                   time_of_acceptance).wait()
     }
+
+    pub fn append_request_endorser(request_json: &str,
+                                   endorser_did: &str) -> Result<String, IndyError> {
+        ledger::append_request_endorser(request_json, endorser_did).wait()
+    }
 }
