@@ -5,8 +5,6 @@ use domain::ledger::constants;
 use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::{PoolService, types:: *};
-use services::ledger::merkletree::tree::Tree;
-use utils::crypto::hash::EMPTY_HASH_BYTES;
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&str; 10] = [
     constants::GET_NYM,
@@ -206,12 +204,7 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                     match parsed {
                         //TODO change mapping for CatchupReq. May be return None
                         Message::CatchupReq(_) => RequestEvent::CatchupReq(
-                            MerkleTree {
-                                root: Tree::empty(EMPTY_HASH_BYTES.to_vec()),
-                                height: 0,
-                                count: 0,
-                                nodes_count: 0
-                            }, 0, vec![]),
+                            MerkleTree::default(), 0, vec![]),
                         Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep, node_alias),
                         Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias), None),
                         Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),
