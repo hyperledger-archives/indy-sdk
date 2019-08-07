@@ -209,6 +209,8 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
 ///
 /// Use `indy_issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
 ///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handle (created by open_wallet).
@@ -268,6 +270,8 @@ pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHan
 }
 
 ///  Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
 ///
 /// #Params
 /// wallet_handle: wallet handle (created by open_wallet).
