@@ -96,3 +96,11 @@ async def test_vcx_get_request_price():
     }
     price = await vcx_get_request_price(json.dumps(action), json.dumps(requester_info))
     assert 2 == price
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_endorse_transaction(cleanup):
+    transaction = '{"req_id":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "signature": "gkVDhwe2", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}'
+    await vcx_endorse_transaction(transaction)
+    cleanup(True)

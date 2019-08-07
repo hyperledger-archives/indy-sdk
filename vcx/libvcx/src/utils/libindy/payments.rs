@@ -466,9 +466,9 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         None
     };
 
-    let (did_2, _) = add_new_trustee_did();
-    let (did_3, _) = add_new_trustee_did();
-    let (did_4, _) = add_new_trustee_did();
+    let (did_2, _) = add_new_did(Some("TRUSTEE"));
+    let (did_3, _) = add_new_did(Some("TRUSTEE"));
+    let (did_4, _) = add_new_did(Some("TRUSTEE"));
 
     let number_of_addresses = number_of_addresses.unwrap_or(1);
 
@@ -521,7 +521,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
     Ok(())
 }
 
-fn add_new_trustee_did() -> (String, String) {
+pub fn add_new_did(role: Option<&str>) -> (String, String) {
     use indy::ledger;
 
     let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
