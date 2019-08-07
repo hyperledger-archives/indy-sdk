@@ -100,8 +100,20 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn sign_with_address() -> VcxResult<String> {
-    payments::sign_with_payment_address
+pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+
+    if settings::test_indy_node_enabled() {return Ok(Vec::from(msg).to_owned()); }
+
+    payments::sign_with_address(get_wallet_handle() as i32, address, message).wait().map_err(map_rust_indy_sdk_error)
+}
+
+pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> VcxResult<bool> {
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+
+    if settings::test_indy_mode_enabled() { return Ok(true); }
+
+    payments::verify_with_address(address, message, signature).wait().map_err(map_rust_indy_sdk_error)
 }
 
 pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
@@ -556,6 +568,21 @@ pub mod tests {
     fn test_create_address() {
         init!("true");
         create_address(None).unwrap();
+    }
+
+
+    #[test]
+    fn test_sign_with_address() {
+        init!("true");
+        let res = sign_with_address("test", &[1, 2, 3]).unwrap();
+        assert_eq!(res, vec![1, 2, 3])
+    }
+
+    #[test]
+    fn test_verify_with_address() {
+        init!("true");
+        let res = verify_with_address("test", &[1, 2, 3], &[1, 2, 3]).unwrap();
+        assert_eq!(res, true)
     }
 
     #[test]
