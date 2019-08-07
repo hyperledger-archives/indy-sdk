@@ -203,8 +203,8 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                 _parse_msg(&msg).map(|parsed|
                     match parsed {
                         //TODO change mapping for CatchupReq. May be return None
-                        //TODO: REMOVE UNWRAP!!!!!
-                        Message::CatchupReq(_) => RequestEvent::CatchupReq(MerkleTree::from_vec(Vec::new()).unwrap(), 0, vec![]),
+                        Message::CatchupReq(_) => RequestEvent::CatchupReq(
+                            MerkleTree::default(), 0, vec![]),
                         Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep, node_alias),
                         Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias), None),
                         Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),

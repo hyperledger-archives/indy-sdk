@@ -254,6 +254,8 @@ impl IssuerCommandExecutor {
         let tag = tag.to_string();
         let schema = schema.clone();
 
+        // FIXME: Check and fix this level of command -- CreateCredentialDefinition looks excessive.
+        // NB: CreateAndStoreCredentialDefinitionContinue is needed!
         CommandExecutor::instance().send(Command::Anoncreds(
             AnoncredsCommand::Issuer(
                 IssuerCommand::CreateCredentialDefinition(
