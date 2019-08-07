@@ -291,7 +291,7 @@ async def parse_get_payment_sources_with_from_response(payment_method: str,
          amount: <int>, // amount
          extra: <str>, // optional data from payment transaction
       }],
-      next: pointer to the next slice of payment address
+      next: pointer to the next slice of payment sources
     """
 
     logger = logging.getLogger(__name__)

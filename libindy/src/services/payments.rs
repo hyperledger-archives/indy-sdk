@@ -7,7 +7,7 @@ use std::ops::Not;
 
 use serde_json;
 
-use ursa::encoding::hex;
+use hex;
 use api::{ErrorCode, WalletHandle};
 use api::payments::*;
 use errors::prelude::*;
@@ -145,7 +145,7 @@ impl PaymentsService {
         res
     }
 
-    pub fn build_get_payment_sources_request(&self, cmd_handle: i32, type_: &str, wallet_handle: WalletHandle, submitter_did: Option<&str>, address: &str, next: Option<u64>) -> IndyResult<()> {
+    pub fn build_get_payment_sources_request(&self, cmd_handle: i32, type_: &str, wallet_handle: WalletHandle, submitter_did: Option<&str>, address: &str, next: Option<i64>) -> IndyResult<()> {
         trace!("build_get_payment_sources_request >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, address: {:?}", type_, wallet_handle, submitter_did, address);
         let build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB = self.methods.borrow().get(type_)
             .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", type_)))?.build_get_payment_sources_request;
@@ -158,7 +158,7 @@ impl PaymentsService {
                                                               wallet_handle,
                                                               submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                                               address.as_ptr(),
-                                                              next.map(|a| a as i64).unwrap_or(-1),
+                                                              next.unwrap_or(-1),
                                                               cb);
 
         let res = err.into();
@@ -574,7 +574,7 @@ impl PaymentsService {
     }
 
     pub fn sign_with_address(&self, cmd_handle: i32, method: &str, wallet_handle: WalletHandle, address: &str, message: &[u8]) -> IndyResult<()> {
-        trace!("sign_with_address >>> wallet_handle: {:?}, address: {:?}, message: {:?}", wallet_handle, address, hex::bin2hex(message));
+        trace!("sign_with_address >>> wallet_handle: {:?}, address: {:?}, message: {:?}", wallet_handle, address, hex::encode(message));
         let sign_with_address: SignWithAddressCB = self.methods.borrow().get(method)
                     .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", method)))?.sign_with_address;
 
@@ -588,7 +588,7 @@ impl PaymentsService {
     }
 
     pub fn verify_with_address(&self, cmd_handle: i32, method: &str, address: &str, message: &[u8], signature: &[u8]) -> IndyResult<()> {
-        trace!("verify_with_address >>> address: {:?}, message: {:?}, signature: {:?}", address, hex::bin2hex(message), hex::bin2hex(signature));
+        trace!("verify_with_address >>> address: {:?}, message: {:?}, signature: {:?}", address, hex::encode(message), hex::encode(signature));
         let verify_with_address: VerifyWithAddressCB = self.methods.borrow().get(method)
                     .ok_or(err_msg(IndyErrorKind::UnknownPaymentMethodType, format!("Unknown payment method {}", method)))?.verify_with_address;
 

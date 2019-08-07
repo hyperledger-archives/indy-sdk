@@ -813,17 +813,22 @@ mod tests {
             "path": _custom_path("sqlite_storage_type_create_works_for_custom_path")
         }).to_string();
 
-        let my_path = _custom_path("sqlite_storage_type_create_works_for_custom_path");
-        let path = Path::new(&my_path);
-        if path.exists() {
-            fs::remove_dir_all(path).unwrap();
-        }
+        _cleanup_custom_path("sqlite_storage_type_create_works_for_custom_path");
         let storage_type = SQLiteStorageType::new();
         storage_type.create_storage("sqlite_storage_type_create_works_for_custom_path", Some(&config), None, &_metadata()).unwrap();
 
         storage_type.delete_storage("sqlite_storage_type_create_works_for_custom_path", Some(&config), None).unwrap();
 
+        _cleanup_custom_path("sqlite_storage_type_create_works_for_custom_path");
         _cleanup("sqlite_storage_type_create_works_for_custom_path");
+    }
+
+    fn _cleanup_custom_path(custom_path: &str) {
+        let my_path = _custom_path(custom_path);
+        let path = Path::new(&my_path);
+        if path.exists() {
+            fs::remove_dir_all(path).unwrap();
+        }
     }
 
     #[test]
@@ -1445,7 +1450,6 @@ mod tests {
 
     fn _custom_path(name: &str) -> String {
         let mut path = environment::tmp_path();
-        path.push("custom_wallet_path");
         path.push(name);
         path.to_str().unwrap().to_owned()
     }
