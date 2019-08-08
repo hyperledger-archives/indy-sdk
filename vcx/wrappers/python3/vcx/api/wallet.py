@@ -527,7 +527,7 @@ class Wallet:
         do_call_sync('vcx_wallet_set_handle', c_handle)
 
     @staticmethod
-    async def sign_with_address(self, address: str, msg: bytes) -> bytes:
+    async def sign_with_address(address: str, msg: bytes) -> bytes:
         """
         Sign data using payment address
         :param payment_address
@@ -557,7 +557,7 @@ class Wallet:
         return result
 
     @staticmethod
-    async def verify_with_address(self, address: str, msg: bytes, signature: bytes) -> bool:
+    async def verify_with_address(address: str, msg: bytes, signature: bytes) -> bool:
         """
         Verify the signature using payment address
         :param payment_address
