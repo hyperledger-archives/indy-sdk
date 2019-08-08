@@ -4,6 +4,7 @@ import com.evernym.sdk.vcx.LibVcx;
 import com.evernym.sdk.vcx.ParamGuard;
 import com.evernym.sdk.vcx.VcxException;
 import com.evernym.sdk.vcx.VcxJava;
+import com.sun.jna.Pointer;
 import com.sun.jna.Callback;
 
 import org.slf4j.Logger;
@@ -78,7 +79,7 @@ public class WalletApi extends VcxJava.API {
         public void callback(int xcommand_handle, int err, Pointer arr_raw, int arr_len) {
 
             CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
-            if (! checkResult(future, err)) return;
+            if (! checkCallback(future, err)) return;
 
             byte[] result = new byte[arr_len];
             arr_raw.read(0, result, 0, arr_len);
@@ -93,19 +94,17 @@ public class WalletApi extends VcxJava.API {
      * @param message   The message to be signed
      *
      * @return A future that resolves to a signature string.
-     * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
      */
     public static CompletableFuture<byte[]> signWithAddress(
             String address,
-            byte[] message) throws IndyException {
+            byte[] message) throws VcxException {
 
         ParamGuard.notNullOrWhiteSpace(address, "address");
         ParamGuard.notNull(message, "message");
 
         CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
         int commandHandle = addFuture(future);
-
-        int walletHandle = wallet.getWalletHandle();
 
         int result = LibVcx.api.vcx_sign_with_address(
                 commandHandle,
@@ -114,7 +113,7 @@ public class WalletApi extends VcxJava.API {
                 message.length,
                 signWithPaymentAddressCb);
 
-        checkResult(future, result);
+        checkResult(result);
 
         return future;
     }
@@ -128,7 +127,7 @@ public class WalletApi extends VcxJava.API {
         public void callback(int xcommand_handle, int err, boolean valid) {
 
             CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
-            if (! checkResult(future, err)) return;
+            if (! checkCallback(future, err)) return;
 
             Boolean result = valid;
             future.complete(result);
@@ -142,12 +141,12 @@ public class WalletApi extends VcxJava.API {
      * @param message   Message that has been signed
      * @param signature A signature to be verified
      * @return A future that resolves to true if signature is valid, otherwise false.
-     * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+     * @throws VcxException Thrown if an error occurs when calling the underlying SDK.
      */
     public static CompletableFuture<Boolean> verifyWithAddress(
             String address,
             byte[] message,
-            byte[] signature) throws IndyException {
+            byte[] signature) throws VcxException {
 
         ParamGuard.notNullOrWhiteSpace(address, "address");
         ParamGuard.notNull(message, "message");
@@ -165,7 +164,7 @@ public class WalletApi extends VcxJava.API {
                 signature.length,
                 verifyWithAddressCb);
 
-        checkResult(future, result);
+        checkResult(result);
 
         return future;
     }

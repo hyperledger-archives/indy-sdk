@@ -1,4 +1,5 @@
 import { Callback } from 'ffi'
+import * as ref from 'ref'
 
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
@@ -74,6 +75,17 @@ export interface IWalletTokenInfo {
 
 export interface IPaymentAddressSeed {
   seed?: string
+}
+
+function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
+  /**
+   * Read the contents of the pointer and copy it into a new Buffer
+   */
+  const ptrType = ref.refType('uint8 *')
+  const pointerBuf = ref.alloc(ptrType, origPtr)
+  const newPtr = ref.readPointer(pointerBuf, 0, length)
+  const newBuffer = Buffer.from(newPtr)
+  return newBuffer
 }
 
 /**
@@ -212,7 +224,7 @@ export class Wallet {
               return
             }
             if (!details) {
-              reject(`Connection ${this.sourceId}  returned empty buffer`)
+              reject(`Empty buffer returned`)
               return
             }
             const newBuffer = voidPtrToUint8Array(details, length)
