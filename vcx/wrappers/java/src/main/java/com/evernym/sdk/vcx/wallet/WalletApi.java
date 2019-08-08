@@ -106,7 +106,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_sign_with_address(
+        int result = LibVcx.api.vcx_wallet_sign_with_address(
                 commandHandle,
                 address,
                 message,
@@ -155,7 +155,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_verify_with_address(
+        int result = LibVcx.api.vcx_wallet_verify_with_address(
                 commandHandle,
                 address,
                 message,
