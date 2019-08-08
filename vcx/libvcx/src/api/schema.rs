@@ -124,12 +124,12 @@ pub extern fn vcx_schema_prepare_for_endorser(command_handle: u32,
            command_handle, source_id, schema_name, schema_data, endorser);
 
     spawn(move || {
-        match schema::create_schema(&source_id,
-                                    issuer_did,
-                                    schema_name,
-                                    version,
-                                    schema_data,
-                                    endorser) {
+        match schema::prepare_schema_for_endorser(&source_id,
+                                                  issuer_did,
+                                                  schema_name,
+                                                  version,
+                                                  schema_data,
+                                                  endorser) {
             Ok((handle, transaction)) => {
                 trace!(target: "vcx", "vcx_schema_prepare_for_endorser(command_handle: {}, rc: {}, handle: {}, transaction: {}) source_id: {}",
                        command_handle, error::SUCCESS.message, handle, transaction, source_id);
@@ -423,7 +423,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
 ///
 /// schema_handle: Schema handle that was provided during creation. Used to access schema object
 ///
-/// cb: Callback that provides json string of the schema's attributes and provides error status
+/// cb: Callback that provides most current state of the schema and error status of request
 ///
 /// #Returns
 /// Error code as a u32
@@ -470,7 +470,7 @@ pub extern fn vcx_schema_update_state(command_handle: u32,
 ///
 /// schema_handle: Schema handle that was provided during creation. Used to access schema object
 ///
-/// cb: Callback that provides json string of the schema's attributes and provides error status
+/// cb: Callback that provides most current state of the schema and error status of request
 ///
 /// #Returns
 /// Error code as a u32
@@ -706,7 +706,7 @@ mod tests {
         let (handle, schema_transaction) = cb.receive(Some(Duration::from_secs(2))).unwrap();
         let schema_transaction = schema_transaction.unwrap();
         let schema_transaction: serde_json::Value = serde_json::from_str(&schema_transaction).unwrap();
-        let expected_schema_transaction: serde_json::Value = serde_json::from_str(::utils::constants::SCHEMA_TXN).unwrap();
+        let expected_schema_transaction: serde_json::Value = serde_json::from_str(::utils::constants::REQUEST_WITH_ENDORSER).unwrap();
         assert_eq!(expected_schema_transaction, schema_transaction);
     }
 
@@ -714,7 +714,7 @@ mod tests {
     fn test_vcx_schema_get_state() {
         init!("true");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (handle, _) = schema::create_schema("testid", did, "name".to_string(), "1.0".to_string(), "[\"name\":\"male\"]".to_string(), "V4SGRU86Z58d6TV7PBUe6f".to_string()).unwrap();
+        let (handle, _) = schema::prepare_schema_for_endorser("testid", did, "name".to_string(), "1.0".to_string(), "[\"name\":\"male\"]".to_string(), "V4SGRU86Z58d6TV7PBUe6f".to_string()).unwrap();
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
             let rc = vcx_schema_get_state(cb.command_handle, handle, Some(cb.get_callback()));
@@ -725,18 +725,6 @@ mod tests {
             let rc = vcx_schema_update_state(cb.command_handle, handle, Some(cb.get_callback()));
             assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntytiStateType::Published as u32);
         }
-        {
-            let cb = return_types_u32::Return_U32_U32::new().unwrap();
-            let rc = vcx_schema_get_state(cb.command_handle, handle, Some(cb.get_callback()));
-            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntytiStateType::Published as u32)
-        }
-    }
-
-    #[test]
-    fn test_vcx_schema_get_state_with_ledger() {
-        init!("ledger");
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let handle = schema::create_and_publish_schema("testid", did, "name".to_string(), "1.0".to_string(), "[\"male\"]".to_string()).unwrap();
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
             let rc = vcx_schema_get_state(cb.command_handle, handle, Some(cb.get_callback()));

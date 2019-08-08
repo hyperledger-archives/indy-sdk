@@ -428,10 +428,16 @@ pub fn libindy_get_cred_def(cred_def_id: &str) -> VcxResult<String> {
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn append_endorser(request: &str, endorser: &str) -> VcxResult<String>{
-    ledger::append_request_endorser(request, endorser)
+pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() { return Ok(::utils::constants::REQUEST_WITH_ENDORSER.to_string()); }
+
+    let _did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    let request = ledger::append_request_endorser(request, endorser)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(map_rust_indy_sdk_error)?;
+
+    multisign_request(&_did, &request)
 }
 
 pub fn endorse_transaction(transaction_json: &str) -> VcxResult<()> {
@@ -466,7 +472,6 @@ fn _verify_transaction_can_be_endorsed(transaction_json: &str, _did: &str) -> Vc
     if transaction.signature.is_none() && !transaction.signatures.as_ref().map(|signatures| signatures.contains_key(identifier)).unwrap_or(false) {
         return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
                                       format!("Transaction cannot be endorsed: the author must sign the transaction.")));
-
     }
 
     Ok(())
@@ -479,15 +484,15 @@ mod test {
     #[test]
     fn test_verify_transaction_can_be_endorsed() {
         // success
-        let transaction=  r#"{"req_id":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "signature": "gkVDhwe2", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
+        let transaction = r#"{"req_id":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "signature": "gkVDhwe2", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
         assert!(_verify_transaction_can_be_endorsed(transaction, "NcYxiDXkpYi6ov5FcYDi1e").is_ok());
 
         // no author signature
-        let transaction=  r#"{"req_id":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
+        let transaction = r#"{"req_id":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
         assert!(_verify_transaction_can_be_endorsed(transaction, "NcYxiDXkpYi6ov5FcYDi1e").is_err());
 
         // different endorser did
-        let transaction=  r#"{"req_id":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
+        let transaction = r#"{"req_id":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
         assert!(_verify_transaction_can_be_endorsed(transaction, "EbP4aYNeTHL6q385GuVpRV").is_err());
     }
 
@@ -509,7 +514,6 @@ mod test {
         endorse_transaction(&schema_request).unwrap();
     }
 }
-
 
 
 #[derive(Deserialize, Debug)]

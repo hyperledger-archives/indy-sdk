@@ -60,17 +60,13 @@ impl CreateSchema {
     }
 
     fn update_state(&mut self) -> VcxResult<u32> {
-        trace!("Schema::update_state >>>");
-        if let Ok(_) = anoncreds::get_schema_json(&self.schema_id) {
+        if let Ok(res) = anoncreds::get_schema_json(&self.schema_id) {
             self.state = PublicEntytiStateType::Published
         }
         Ok(self.state as u32)
     }
 
-    fn get_state(&self) -> u32 {
-        trace!("Schema::get_state >>>");
-        self.state as u32
-    }
+    fn get_state(&self) -> u32 { self.state as u32 }
 }
 
 pub fn create_and_publish_schema(source_id: &str,
@@ -81,8 +77,8 @@ pub fn create_and_publish_schema(source_id: &str,
     trace!("create_new_schema >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}", source_id, issuer_did, name, version, data);
     debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
 
-    let (schema_id, schema_req) = anoncreds::create_schema(&name, &version, &data)?;
-    let payment_txn = anoncreds::publish_schema(&name, &schema_req)?;
+    let (schema_id, schema) = anoncreds::create_schema(&name, &version, &data)?;
+    let payment_txn = anoncreds::publish_schema(&name, &schema)?;
 
     debug!("created schema on ledger with id: {}", schema_id);
 
@@ -91,19 +87,18 @@ pub fn create_and_publish_schema(source_id: &str,
     Ok(schema_handle)
 }
 
-pub fn create_schema(source_id: &str,
-                     issuer_did: String,
-                     name: String,
-                     version: String,
-                     data: String,
-                     endorser: String) -> VcxResult<(u32, String)> {
-    trace!("prepare_for_endorser >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}, endorser: {}", source_id, issuer_did, name, version, data, endorser);
+pub fn prepare_schema_for_endorser(source_id: &str,
+                                   issuer_did: String,
+                                   name: String,
+                                   version: String,
+                                   data: String,
+                                   endorser: String) -> VcxResult<(u32, String)> {
+    trace!("create_schema_for_endorser >>> source_id: {}, issuer_did: {}, name: {}, version: {}, data: {}, endorser: {}", source_id, issuer_did, name, version, data, endorser);
     debug!("preparing schema for endorser with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
 
-    let (schema_id, schema_req) = anoncreds::create_schema(&name, &version, &data)?;
-    let schema_request = anoncreds::build_schema_request(&name, &schema_req)?;
-
-    let schema_request = ledger::append_endorser(&schema_request, &endorser)?;
+    let (schema_id, schema) = anoncreds::create_schema(&name, &version, &data)?;
+    let schema_request = anoncreds::build_schema_request(&name, &schema)?;
+    let schema_request = ledger::set_endorser(&schema_request, &endorser)?;
 
     debug!("prepared schema for endorser with id: {}", schema_id);
 
@@ -226,13 +221,18 @@ pub mod tests {
     use rand::Rng;
     use utils::constants::{SCHEMA_ID, SCHEMA_JSON};
 
-    pub fn create_schema_real() -> u32 {
+    fn prepare_schema_data() -> (String, String, String, String) {
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
         let schema_version: String = format!("{}.{}", rand::thread_rng().gen::<u32>().to_string(),
                                              rand::thread_rng().gen::<u32>().to_string());
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
+        (did, schema_name, schema_version, data)
+    }
+
+    pub fn create_schema_real() -> u32 {
+        let (did, schema_name, schema_version, data) = prepare_schema_data();
         create_and_publish_schema("id", did, schema_name, schema_version, data).unwrap()
     }
 
@@ -270,6 +270,18 @@ pub mod tests {
                                           "name".to_string(),
                                           "1.0".to_string(),
                                           data.to_string()).is_ok());
+    }
+
+    #[test]
+    fn test_prepare_schema_success() {
+        init!("true");
+        let data = r#"["name","male"]"#;
+        assert!(prepare_schema_for_endorser("1",
+                                            "VsKV7grR1BUE29mG2Fm2kX".to_string(),
+                                            "name".to_string(),
+                                            "1.0".to_string(),
+                                            data.to_string(),
+                                            "V4SGRU86Z58d6TV7PBUe6f".to_string()).is_ok());
     }
 
     #[test]
@@ -373,5 +385,36 @@ pub mod tests {
     fn test_extract_data_from_schema_json() {
         let data: SchemaData = serde_json::from_str(SCHEMA_JSON).unwrap();
         assert_eq!(data.name, "test-licence".to_string());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_vcx_endorse_schema() {
+        use utils::libindy::payments::add_new_did;
+
+        init!("ledger");
+        let (did, schema_name, schema_version, data) = prepare_schema_data();
+
+        let (endorser_did, _) = add_new_did(Some("ENDORSER"));
+
+        let (handle, schema_request) = prepare_schema_for_endorser("test_vcx_schema_update_state_with_ledger", did, schema_name, schema_version, data, endorser_did.clone()).unwrap();
+        assert_eq!(0, get_state(handle).unwrap());
+        assert_eq!(0, update_state(handle).unwrap());
+
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &endorser_did);
+        ledger::endorse_transaction(&schema_request).unwrap();
+
+        ::std::thread::sleep(::std::time::Duration::from_millis(1000));
+
+        assert_eq!(1, update_state(handle).unwrap());
+        assert_eq!(1, get_state(handle).unwrap());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_vcx_schema_get_state_with_ledger() {
+        init!("ledger");
+        let handle = create_schema_real();
+        assert_eq!(1, get_state(handle).unwrap());
     }
 }
