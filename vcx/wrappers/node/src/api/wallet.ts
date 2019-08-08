@@ -245,7 +245,7 @@ export class Wallet {
    * ```
    * @returns {Promise<bool>}
    */
-  public async verifyWithPaymentAddress (paymentAddress: string, message: Buffer, signature: Buffer): Promise<boolean> {
+  public async verifyWithAddress (paymentAddress: string, message: Buffer, signature: Buffer): Promise<boolean> {
     try {
       return await createFFICallbackPromise<boolean>(
           (resolve, reject, cb) => {
