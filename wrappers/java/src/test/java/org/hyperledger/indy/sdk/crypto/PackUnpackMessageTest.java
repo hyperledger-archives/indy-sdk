@@ -78,7 +78,7 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testUnpackMessageErrorsWithInvalidPackedMessageStructure() throws Exception {
+	public void testUnpackMessageErrorsWithInvalidPackedMessageStructure() {
 		String packedMessage = "jibberish";
 
 		thrown.expect(ExecutionException.class);
