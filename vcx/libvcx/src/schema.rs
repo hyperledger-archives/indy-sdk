@@ -2,7 +2,7 @@ use serde_json;
 
 use std::string::ToString;
 
-use api::PublicEntytiStateType;
+use api::PublicEntityStateType;
 use settings;
 use utils::libindy::anoncreds;
 use utils::libindy::ledger;
@@ -33,7 +33,7 @@ pub struct CreateSchema {
     source_id: String,
     payment_txn: Option<PaymentTxn>,
     #[serde(default)]
-    state: PublicEntytiStateType
+    state: PublicEntityStateType
 }
 
 impl CreateSchema {
@@ -61,7 +61,7 @@ impl CreateSchema {
 
     fn update_state(&mut self) -> VcxResult<u32> {
         if let Ok(res) = anoncreds::get_schema_json(&self.schema_id) {
-            self.state = PublicEntytiStateType::Published
+            self.state = PublicEntityStateType::Published
         }
         Ok(self.state as u32)
     }
@@ -82,7 +82,7 @@ pub fn create_and_publish_schema(source_id: &str,
 
     debug!("created schema on ledger with id: {}", schema_id);
 
-    let schema_handle = _store_schema(source_id, issuer_did, name, version, schema_id, data, payment_txn, PublicEntytiStateType::Published)?;
+    let schema_handle = _store_schema(source_id, issuer_did, name, version, schema_id, data, payment_txn, PublicEntityStateType::Published)?;
 
     Ok(schema_handle)
 }
@@ -102,7 +102,7 @@ pub fn prepare_schema_for_endorser(source_id: &str,
 
     debug!("prepared schema for endorser with id: {}", schema_id);
 
-    let schema_handle = _store_schema(source_id, issuer_did, name, version, schema_id, data, None, PublicEntytiStateType::Built)?;
+    let schema_handle = _store_schema(source_id, issuer_did, name, version, schema_id, data, None, PublicEntityStateType::Built)?;
 
     Ok((schema_handle, schema_request))
 }
@@ -114,7 +114,7 @@ fn _store_schema(source_id: &str,
                  schema_id: String,
                  data: String,
                  payment_txn: Option<PaymentTxn>,
-                 state: PublicEntytiStateType) -> VcxResult<u32> {
+                 state: PublicEntityStateType) -> VcxResult<u32> {
     let schema = CreateSchema {
         source_id: source_id.to_string(),
         name,
@@ -147,7 +147,7 @@ pub fn get_schema_attrs(source_id: String, schema_id: String) -> VcxResult<(u32,
         version: schema_data.version,
         data: schema_data.attr_names,
         payment_txn: None,
-        state: PublicEntytiStateType::Published,
+        state: PublicEntityStateType::Published,
     };
 
     let schema_json = schema.to_string()?;
@@ -246,7 +246,7 @@ pub mod tests {
             source_id: "testId".to_string(),
             name: "schema_name".to_string(),
             payment_txn: None,
-            state: PublicEntytiStateType::Published,
+            state: PublicEntityStateType::Published,
         };
         let value: serde_json::Value = serde_json::from_str(&create_schema.to_string().unwrap()).unwrap();
         assert_eq!(value["version"], "1.0");

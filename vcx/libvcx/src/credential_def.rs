@@ -1,6 +1,6 @@
 use serde_json;
 
-use api::PublicEntytiStateType;
+use api::PublicEntityStateType;
 use object_cache::ObjectCache;
 use messages::ObjectWithVersion;
 use error::prelude::*;
@@ -28,7 +28,7 @@ pub struct CredentialDef {
     rev_reg_entry: Option<String>,
     tails_file: Option<String>,
     #[serde(default)]
-    state: PublicEntytiStateType
+    state: PublicEntityStateType
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -79,11 +79,11 @@ impl CredentialDef {
             if let (Ok(_), Ok(_), Ok(_)) = (anoncreds::get_cred_def_json(&self.id),
                                             anoncreds::get_rev_reg_def_json(rev_reg_id),
                                             anoncreds::get_rev_reg(rev_reg_id, ::time::get_time().sec as u64)) {
-                self.state = PublicEntytiStateType::Published
+                self.state = PublicEntityStateType::Published
             }
         } else {
             if let Ok(_) = anoncreds::get_cred_def_json(&self.id) {
-                self.state = PublicEntytiStateType::Published
+                self.state = PublicEntityStateType::Published
             }
         }
 
@@ -183,7 +183,7 @@ pub fn create_credentialdef_for_endorser(source_id: String,
         rev_reg_def,
         rev_reg_entry,
         tails_file: revocation_details.tails_file,
-        state: PublicEntytiStateType::Built,
+        state: PublicEntityStateType::Built,
     };
 
     let handle = CREDENTIALDEF_MAP.add(cred_def).or(Err(VcxError::from(VcxErrorKind::CreateCredDef)))?;
@@ -235,7 +235,7 @@ pub fn create_and_publish_credentialdef(source_id: String,
         rev_reg_def,
         rev_reg_entry,
         tails_file: revocation_details.tails_file,
-        state: PublicEntytiStateType::Published,
+        state: PublicEntityStateType::Published,
     };
 
     let handle = CREDENTIALDEF_MAP.add(cred_def).or(Err(VcxError::from(VcxErrorKind::CreateCredDef)))?;
@@ -325,6 +325,12 @@ pub fn update_state(handle: u32) -> VcxResult<u32> {
 pub fn get_state(handle: u32) -> VcxResult<u32> {
     CREDENTIALDEF_MAP.get_mut(handle, |s| {
         Ok(s.get_state())
+    })
+}
+
+pub fn check_is_published(handle: u32) -> VcxResult<bool> {
+    CREDENTIALDEF_MAP.get_mut(handle, |s| {
+        Ok(PublicEntityStateType::Published == s.state)
     })
 }
 

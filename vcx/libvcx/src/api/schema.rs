@@ -718,17 +718,17 @@ mod tests {
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
             let rc = vcx_schema_get_state(cb.command_handle, handle, Some(cb.get_callback()));
-            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntytiStateType::Built as u32)
+            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Built as u32)
         }
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
             let rc = vcx_schema_update_state(cb.command_handle, handle, Some(cb.get_callback()));
-            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntytiStateType::Published as u32);
+            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Published as u32);
         }
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
             let rc = vcx_schema_get_state(cb.command_handle, handle, Some(cb.get_callback()));
-            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntytiStateType::Published as u32)
+            assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Published as u32)
         }
     }
 }
