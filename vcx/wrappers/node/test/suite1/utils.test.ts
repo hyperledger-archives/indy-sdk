@@ -12,7 +12,8 @@ import {
   updateMessages,
   VCXCode,
   setActiveTxnAuthorAgreementMeta,
-  getLedgerAuthorAgreement
+  getLedgerAuthorAgreement,
+  endorseTransaction
 } from 'src'
 import { errorMessage } from '../../src/utils/error-message'
 describe('utils:', () => {

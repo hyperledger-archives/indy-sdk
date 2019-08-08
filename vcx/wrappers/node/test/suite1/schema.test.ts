@@ -6,10 +6,11 @@ import {
   dataSchemaCreate,
   dataSchemaLookup,
   schemaCreate,
+  schemaPrepareForEndorser,
   schemaLookup
 } from 'helpers/entities'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { Schema, SchemaPaymentManager, VCXCode } from 'src'
+import { Schema, SchemaPaymentManager, VCXCode, SchemaState } from 'src'
 
 describe('Schema:', () => {
   before(() => initVcxTestMode())
@@ -140,6 +141,21 @@ describe('Schema:', () => {
         const paymentTxn = await schema.paymentManager.getPaymentTxn()
         validatePaymentTxn(paymentTxn)
       })
+    })
+  })
+
+  describe('prepareForEndorser:', () => {
+    it('success', async () => {
+      await schemaPrepareForEndorser()
+    })
+  })
+
+  describe('updateState:', () => {
+    it(`success`, async () => {
+      const schema = await schemaPrepareForEndorser()
+      assert.equal(await schema.getState(), SchemaState.Built)
+      await schema.updateState()
+      assert.equal(await schema.getState(), SchemaState.Published)
     })
   })
 
