@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.json.JSONArray;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
@@ -83,10 +84,9 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Crypto.unpackMessage(wallet, packedMessage.getBytes()).get();
+		CompletableFuture<byte[]> future = Crypto.unpackMessage(wallet, packedMessage.getBytes());
 
-		// this assert should never trigger since unpackMessage should throw exception
-		assertTrue(false);
+		assertTrue(future.isCompletedExceptionally());
 	}
 
 	@Test
