@@ -24,8 +24,8 @@ public class WalletApiTest {
     private String value = "record value";
     private String tags = "{'tagName1':'str1','tagName2':'5','tagName3':'12'}";
     private String address = "address";
-    private byte[] message = [1, 2, 3];
-    private byte[] signature = [1, 2, 3];
+    private byte[] message = new byte[]{1, 2, 3};
+    private byte[] signature = new byte[]{1, 2, 3};
 
     @Test
     @DisplayName("create a record")
