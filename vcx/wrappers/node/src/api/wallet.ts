@@ -185,6 +185,81 @@ export class Wallet {
   }
 
   /**
+   * Sign with Address
+   *
+   * Example:
+   * ```
+   * address = await Wallet.signWithAddress('pay:null:addr', bufferOfMsg)
+   * await Wallet.signWithAddress('pay:null:addr', bufferOfMsg)
+   * ```
+   */
+  public static async signWithAddress (paymentAddress: string, message: Buffer): Promise<Buffer> {
+    try {
+      return await createFFICallbackPromise<Buffer>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_wallet_sign_with_address(0, paymentAddress, \
+            ref.address(message), message.length, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => Callback(
+          'void',
+          ['uint32', 'uint32', 'pointer', 'uint32'],
+          (xHandle: number, err: number, details: any, length: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            if (!details) {
+              reject(`Connection ${this.sourceId}  returned empty buffer`)
+              return
+            }
+            const newBuffer = voidPtrToUint8Array(details, length)
+            resolve(newBuffer)
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Verify with address
+   *
+   * Example:
+   * ```
+   * valid = await connection.verifyWithAddress("pay:null:addr", bufferWithMsg, bufferWithSig)
+   * ```
+   * @returns {Promise<bool>}
+   */
+  public async verifyWithPaymentAddress (paymentAddress: string, message: Buffer, signature: Buffer): Promise<boolean> {
+    try {
+      return await createFFICallbackPromise<boolean>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_wallet_verify_with_address(0, paymentAddress,
+              ref.address(message), message.length,
+              ref.address(signature), signature.length, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'bool'],
+            (xHandle: number, err: number, valid: boolean) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(valid)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+  /**
    * Sends token to a specified address
    *
    * Example:

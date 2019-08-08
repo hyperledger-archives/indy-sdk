@@ -74,6 +74,8 @@ export interface IFFIEntryPoint {
   // wallet
   vcx_wallet_get_token_info: (commandId: number, payment: number | undefined | null, cb: any) => number,
   vcx_wallet_create_payment_address: (commandId: number, seed: string | null, cb: any) => number,
+  vcx_wallet_sign_with_address: (commandID: number, address: string, message: number, messageLen: number, cb: Any) => number,
+  vcx_wallet_verify_with_address: (commandID: number, address: string, message: number, messageLen: number, signature: number, signatureLen: number, cb: Any) => number,
   vcx_wallet_send_tokens: (commandId: number, payment: number, tokens: string, recipient: string, cb: any) => number,
   vcx_wallet_add_record: (commandId: number, type: string, id: string, value: string, tags: string, cb: any) => number,
   vcx_wallet_update_record_value: (commandId: number, type: string, id: string, value: string, cb: any) => number,

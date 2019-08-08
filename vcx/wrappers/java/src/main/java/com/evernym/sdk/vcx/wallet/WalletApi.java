@@ -69,6 +69,107 @@ public class WalletApi extends VcxJava.API {
         return future;
     }
 
+    /**
+     * Callback used when bytesCb completes.
+     */
+    private static Callback signWithPaymentAddressCb = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, Pointer arr_raw, int arr_len) {
+
+            CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+            if (! checkResult(future, err)) return;
+
+            byte[] result = new byte[arr_len];
+            arr_raw.read(0, result, 0, arr_len);
+            future.complete(result);
+        }
+    };
+
+    /**
+     * Signs a message with a payment address.
+     *
+     * @param address:  Payment address of message signer. The key must be created by calling indy_create_address
+     * @param message   The message to be signed
+     *
+     * @return A future that resolves to a signature string.
+     * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<byte[]> signWithAddress(
+            String address,
+            byte[] message) throws IndyException {
+
+        ParamGuard.notNullOrWhiteSpace(address, "address");
+        ParamGuard.notNull(message, "message");
+
+        CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+        int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
+
+        int result = LibVcx.api.vcx_sign_with_address(
+                commandHandle,
+                address,
+                message,
+                message.length,
+                signWithPaymentAddressCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
+    /**
+     * Callback used when boolCb completes.
+     */
+    private static Callback verifyWithAddressCb = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, boolean valid) {
+
+            CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
+            if (! checkResult(future, err)) return;
+
+            Boolean result = valid;
+            future.complete(result);
+        }
+    };
+
+    /**
+     * Verify a signature with a payment address.
+     *
+     * @param address   Payment address of the message signer
+     * @param message   Message that has been signed
+     * @param signature A signature to be verified
+     * @return A future that resolves to true if signature is valid, otherwise false.
+     * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+     */
+    public static CompletableFuture<Boolean> verifyWithAddress(
+            String address,
+            byte[] message,
+            byte[] signature) throws IndyException {
+
+        ParamGuard.notNullOrWhiteSpace(address, "address");
+        ParamGuard.notNull(message, "message");
+        ParamGuard.notNull(signature, "signature");
+
+        CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
+        int commandHandle = addFuture(future);
+
+        int result = LibIndy.api.vcx_verify_with_address(
+                commandHandle,
+                address,
+                message,
+                message.length,
+                signature,
+                signature.length,
+                verifyWithAddressCb);
+
+        checkResult(future, result);
+
+        return future;
+    }
+
     private static Callback vcxAddRecordWalletCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int err) {

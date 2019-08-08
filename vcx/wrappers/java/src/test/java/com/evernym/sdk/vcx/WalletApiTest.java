@@ -23,6 +23,9 @@ public class WalletApiTest {
     private String id = "123";
     private String value = "record value";
     private String tags = "{'tagName1':'str1','tagName2':'5','tagName3':'12'}";
+    private String address = "address";
+    private byte[] message = [1, 2, 3];
+    private byte[] signature = [1, 2, 3];
 
     @Test
     @DisplayName("create a record")
@@ -53,5 +56,19 @@ public class WalletApiTest {
         int recordHandle = TestHelper.getResultFromFuture(WalletApi.addRecordWallet(type,id,value));
         int deleteRecordHandle = TestHelper.getResultFromFuture(WalletApi.deleteRecordWallet(type,id));
         assert (deleteRecordHandle != 0);
+    }
+
+    @Test
+    @DisplayName("sign with address")
+    void signWithAddress() throws VcxException, ExecutionException, InterruptedException {
+        byte[] signature_made = TestHelper.getResultFromFuture(WalletApi.signWithAddress(address,message));
+        assert (Arrays.equals(signature_made, signature));
+    }
+
+    @Test
+    @DisplayName("verify with address")
+    void verifyWithAddress() throws VcxException, ExecutionException, InterruptedException {
+        boolean res = TestHelper.getResultFromFuture(WalletApi.verifyWithAddress(address,message,signature));
+        assert res;
     }
 }

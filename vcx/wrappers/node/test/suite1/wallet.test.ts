@@ -96,6 +96,20 @@ describe('Wallet:', () => {
     })
   })
 
+  describe('signWithAddress:', () => {
+    it('success', async () => {
+      const sig = await Wallet.signWithAddress('pay:sov:1234', new Buffer('random string'))
+      assert.ok(sig)
+    })
+  })
+
+  describe('verifyWithAddress:', () => {
+    it('success', async () => {
+      const valid = await Wallet.verifyWithAddress('pay:sov:1234', new Buffer('random string'), new Buffer('random string'))
+      assert.ok(valid)
+    })
+  })
+
   describe('records:', () => {
     it('success', async () => {
       await Wallet.addRecord(WALLET_RECORD)
