@@ -243,9 +243,9 @@ export class Wallet {
    * ```
    * valid = await connection.verifyWithAddress("pay:null:addr", bufferWithMsg, bufferWithSig)
    * ```
-   * @returns {Promise<bool>}
+   * @returns {Promise<boolean>}
    */
-  public async verifyWithAddress (paymentAddress: string, message: Buffer, signature: Buffer): Promise<boolean> {
+  public static async verifyWithAddress (paymentAddress: string, message: Buffer, signature: Buffer): Promise<boolean> {
     try {
       return await createFFICallbackPromise<boolean>(
           (resolve, reject, cb) => {
