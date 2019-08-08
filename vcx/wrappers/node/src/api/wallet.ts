@@ -219,8 +219,6 @@ export class Wallet {
           'void',
           ['uint32', 'uint32', 'pointer', 'uint32'],
           (xHandle: number, err: number, details: any, length: number) => {
-	    console.log(err);
-	    console.log(length);
             if (err) {
               reject(err)
               return
