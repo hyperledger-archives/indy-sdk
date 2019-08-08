@@ -117,24 +117,24 @@ pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
 /// # Returns:
 /// a signature string
 #[no_mangle]
-pub extern fn vcx_wallet_sign_with_payment_address(command_handle: u32,
-                                                   payment_address: *const c_char,
-                                                   message_raw: *const u8,
-                                                   message_len: u32,
-                                                   cb: Option<extern fn(xcommand_handle: u32, err: u32,
-                                                                        signature: *const u8, signature_len: u32)>) -> u32 {
-    info!("vcx_wallet_sign_with_payment_address >>>");
+pub extern fn vcx_wallet_sign_with_address(command_handle: u32,
+                                           payment_address: *const c_char,
+                                           message_raw: *const u8,
+                                           message_len: u32,
+                                           cb: Option<extern fn(xcommand_handle: u32, err: u32,
+                                                                signature: *const u8, signature_len: u32)>) -> u32 {
+    info!("vcx_wallet_sign_with_address >>>");
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(payment_address, VcxErrorKind::InvalidOption);
     check_useful_c_byte_array!(message_raw, message_len, VcxErrorKind::InvalidOption, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_sign_with_payment_address(command_handle: {}, payment_address: {}, message_raw: {:?})",
+    trace!("vcx_wallet_sign_with_address(command_handle: {}, payment_address: {}, message_raw: {:?})",
            command_handle, payment_address, message_raw);
 
     spawn(move || {
         match sign_with_address(&payment_address, message_raw.as_slice()) {
             Ok(signature) => {
-                trace!("vcx_wallet_sign_with_payment_address_cb(command_handle: {}, rc: {}, signature: {:?})",
+                trace!("vcx_wallet_sign_with_address_cb(command_handle: {}, rc: {}, signature: {:?})",
                        command_handle, error::SUCCESS.message, signature);
 
                 let (signature_raw, signature_len) = ::utils::cstring::vec_to_pointer(&signature);
@@ -142,7 +142,7 @@ pub extern fn vcx_wallet_sign_with_payment_address(command_handle: u32,
                 cb(command_handle, error::SUCCESS.code_num, signature_raw, signature_len);
             }
             Err(error) => {
-                warn!("vcx_wallet_sign_with_payment_address_cb(command_handle: {}, error: {})",
+                warn!("vcx_wallet_sign_with_address_cb(command_handle: {}, error: {})",
                       command_handle, error);
 
                 let (sig, len) = ::utils::cstring::vec_to_pointer(&vec![]);
@@ -171,33 +171,33 @@ pub extern fn vcx_wallet_sign_with_payment_address(command_handle: u32,
 /// #Returns
 /// valid: true - if signature is valid, false - otherwise
 #[no_mangle]
-pub extern fn vcx_wallet_verify_with_payment_address(command_handle: u32,
-                                                     payment_address: *const c_char,
-                                                     message_raw: *const u8,
-                                                     message_len: u32,
-                                                     signature_raw: *const u8,
-                                                     signature_len: u32,
-                                                     cb: Option<extern fn(xcommand_handle: u32, err: u32,
-                                                                          result: bool)>) -> u32 {
-    info!("vcx_wallet_sign_with_payment_address >>>");
+pub extern fn vcx_wallet_verify_with_address(command_handle: u32,
+                                             payment_address: *const c_char,
+                                             message_raw: *const u8,
+                                             message_len: u32,
+                                             signature_raw: *const u8,
+                                             signature_len: u32,
+                                             cb: Option<extern fn(xcommand_handle: u32, err: u32,
+                                                                  result: bool)>) -> u32 {
+    info!("vcx_wallet_sign_with_address >>>");
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
     check_useful_c_str!(payment_address, VcxErrorKind::InvalidOption);
     check_useful_c_byte_array!(message_raw, message_len, VcxErrorKind::InvalidOption, VcxErrorKind::InvalidOption);
     check_useful_c_byte_array!(signature_raw, signature_len, VcxErrorKind::InvalidOption, VcxErrorKind::InvalidOption);
 
-    trace!("vcx_wallet_verify_with_payment_address(command_handle: {}, payment_address: {}, message_raw: {:?}, signature_raw: {:?})",
+    trace!("vcx_wallet_verify_with_address(command_handle: {}, payment_address: {}, message_raw: {:?}, signature_raw: {:?})",
            command_handle, payment_address, message_raw, signature_raw);
 
     spawn(move || {
         match verify_with_address(&payment_address, message_raw.as_slice(), signature_raw.as_slice()) {
             Ok(valid) => {
-                trace!("vcx_wallet_verify_with_payment_address_cb(command_handle: {}, rc: {}, valid: {})",
+                trace!("vcx_wallet_verify_with_address_cb(command_handle: {}, rc: {}, valid: {})",
                        command_handle, error::SUCCESS.message, valid);
 
                 cb(command_handle, error::SUCCESS.code_num, valid);
             },
             Err(error) => {
-                warn!("vcx_wallet_verify_with_payment_address_cb(command_handle: {}, error: {})",
+                warn!("vcx_wallet_verify_with_address_cb(command_handle: {}, error: {})",
                       command_handle, error);
 
                 cb(command_handle, error.into(), false);
@@ -942,7 +942,7 @@ pub mod tests {
         let msg = "message";
         let msg_len = msg.len();
         let msg_raw = CString::new(msg).unwrap();
-        assert_eq!(vcx_wallet_sign_with_payment_address(cb.command_handle,
+        assert_eq!(vcx_wallet_sign_with_address(cb.command_handle,
                                                         CString::new("address").unwrap().into_raw(),
                                                         msg_raw.as_ptr() as *const u8,
                                                         msg_len as u32,
@@ -962,7 +962,7 @@ pub mod tests {
         let sig = "signature";
         let sig_len = sig.len();
         let sig_raw = CString::new(sig).unwrap();
-        assert_eq!(vcx_wallet_verify_with_payment_address(cb.command_handle,
+        assert_eq!(vcx_wallet_verify_with_address(cb.command_handle,
                                                           CString::new("address").unwrap().into_raw(),
                                                           msg_raw.as_ptr() as *const u8,
                                                           msg_len as u32,

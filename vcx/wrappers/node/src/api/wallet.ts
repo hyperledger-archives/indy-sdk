@@ -197,7 +197,7 @@ export class Wallet {
     try {
       return await createFFICallbackPromise<Buffer>(
         (resolve, reject, cb) => {
-          const rc = rustAPI().vcx_wallet_sign_with_address(0, paymentAddress, \
+          const rc = rustAPI().vcx_wallet_sign_with_address(0, paymentAddress,
             ref.address(message), message.length, cb)
           if (rc) {
             reject(rc)

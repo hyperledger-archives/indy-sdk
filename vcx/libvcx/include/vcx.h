@@ -1332,7 +1332,7 @@ vcx_error_t vcx_wallet_create_payment_address(vcx_command_handle_t command_handl
 // # Returns:
 // a signature string
 
-vcx_error_t vcx_wallet_sign_with_payment_address(vcx_command_handle_t command_handle,
+vcx_error_t vcx_wallet_sign_with_address(vcx_command_handle_t command_handle,
                                                  const char *payment_address,
                                                  const unsigned short *message_raw,
                                                  vcx_u32_t message_len,
@@ -1351,7 +1351,7 @@ vcx_error_t vcx_wallet_sign_with_payment_address(vcx_command_handle_t command_ha
 //
 // #Returns
 // valid: true - if signature is valid, false - otherwise
-vcx_error_t vcx_wallet_verify_with_payment_address(vcx_command_handle_t command_handle,
+vcx_error_t vcx_wallet_verify_with_address(vcx_command_handle_t command_handle,
                                                    const char *payment_address,
                                                    const unsigned short *message_raw,
                                                    vcx_u32_t message_len,

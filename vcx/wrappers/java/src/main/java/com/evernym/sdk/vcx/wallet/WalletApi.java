@@ -156,7 +156,7 @@ public class WalletApi extends VcxJava.API {
         CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
         int commandHandle = addFuture(future);
 
-        int result = LibIndy.api.vcx_verify_with_address(
+        int result = LibVcx.api.vcx_verify_with_address(
                 commandHandle,
                 address,
                 message,
