@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 
 use errors::prelude::*;
 use utils::crypto::verkey_builder::build_full_verkey;
+use api::CommandHandle;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeData {
@@ -535,7 +536,7 @@ pub struct CommandProcess {
     pub nack_cnt: usize,
     pub replies: HashMap<HashableValue, usize>,
     pub accum_replies: Option<HashableValue>,
-    pub parent_cmd_ids: Vec<i32>,
+    pub parent_cmd_ids: Vec<CommandHandle>,
     pub resendable_request: Option<ResendableRequest>,
     pub full_cmd_timeout: Option<time::Tm>,
 }
