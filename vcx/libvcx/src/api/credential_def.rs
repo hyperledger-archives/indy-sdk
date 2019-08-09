@@ -174,13 +174,13 @@ pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: u32,
            endorser);
 
     spawn(move || {
-        match credential_def::create_credentialdef_for_endorser(source_id,
-                                                                credentialdef_name,
-                                                                issuer_did,
-                                                                schema_id,
-                                                                tag,
-                                                                revocation_details,
-                                                                endorser) {
+        match credential_def::prepare_credentialdef_for_endorser(source_id,
+                                                                 credentialdef_name,
+                                                                 issuer_did,
+                                                                 schema_id,
+                                                                 tag,
+                                                                 revocation_details,
+                                                                 endorser) {
             Ok((handle, cred_def_req, rev_reg_def_req, rev_reg_entry_req)) => {
                 trace!(target: "vcx", "vcx_credentialdef_prepare_for_endorser(command_handle: {}, rc: {}, handle: {}, cred_def_req: {}, cred_def_req: {:?}, cred_def_req: {:?}) source_id: {}",
                        command_handle, error::SUCCESS.message, handle, cred_def_req, rev_reg_def_req, rev_reg_entry_req, credential_def::get_source_id(handle).unwrap_or_default());
@@ -722,13 +722,13 @@ mod tests {
     fn test_vcx_cred_def_get_state() {
         init!("true");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (handle, _, _, _) = credential_def::create_credentialdef_for_endorser("testid".to_string(),
-                                                                                  "Test Credential Def".to_string(),
-                                                                                  "6vkhW3L28AophhA68SSzRS".to_string(),
-                                                                                  SCHEMA_ID.to_string(),
-                                                                                  "tag".to_string(),
-                                                                                  "{}".to_string(),
-                                                                                  "V4SGRU86Z58d6TV7PBUe6f".to_string()).unwrap();
+        let (handle, _, _, _) = credential_def::prepare_credentialdef_for_endorser("testid".to_string(),
+                                                                                   "Test Credential Def".to_string(),
+                                                                                   "6vkhW3L28AophhA68SSzRS".to_string(),
+                                                                                   SCHEMA_ID.to_string(),
+                                                                                   "tag".to_string(),
+                                                                                   "{}".to_string(),
+                                                                                   "V4SGRU86Z58d6TV7PBUe6f".to_string()).unwrap();
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
             let rc = vcx_credentialdef_get_state(cb.command_handle, handle, Some(cb.get_callback()));

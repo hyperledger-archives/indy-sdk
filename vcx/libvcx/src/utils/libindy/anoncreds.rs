@@ -461,33 +461,16 @@ pub fn build_rev_reg_request(issuer_did: &str, rev_reg_def_json: &str) -> VcxRes
     if settings::test_indy_mode_enabled() { return Ok("".to_string()); }
 
     let rev_reg_def_req = libindy_build_revoc_reg_def_request(issuer_did, &rev_reg_def_json)?;
-
     let rev_reg_def_req = append_txn_author_agreement_to_request(&rev_reg_def_req)?;
-
     Ok(rev_reg_def_req)
 }
 
 pub fn publish_rev_reg_def(issuer_did: &str, rev_reg_def_json: &str) -> VcxResult<Option<PaymentTxn>> {
     if settings::test_indy_mode_enabled() { return Ok(None); }
+
     let rev_reg_def_req = build_rev_reg_request(issuer_did, &rev_reg_def_json)?;
     let (payment, _) = pay_for_txn(&rev_reg_def_req, CREATE_REV_REG_DEF_ACTION)?;
     Ok(payment)
-}
-
-pub fn create_rev_reg_def(issuer_did: &str, cred_def_id: &str, tails_file: &str, max_creds: u32)
-                          -> VcxResult<(String, String, String, Option<PaymentTxn>)> {
-    debug!("creating revocation registry definition with issuer_did: {}, cred_def_id: {}, tails_file_path: {}, max_creds: {}",
-           issuer_did, cred_def_id, tails_file, max_creds);
-    if settings::test_indy_mode_enabled() { return Ok((REV_REG_ID.to_string(), rev_def_json(), "".to_string(), None)); }
-
-    let (rev_reg_id, rev_reg_def_json, rev_reg_entry_json) = generate_rev_reg(issuer_did,
-                                                                              cred_def_id,
-                                                                              tails_file,
-                                                                              max_creds)?;
-
-    let payment = publish_rev_reg_def(issuer_did, &rev_reg_def_json)?;
-
-    Ok((rev_reg_id, rev_reg_def_json, rev_reg_entry_json, payment))
 }
 
 pub fn get_rev_reg_def_json(rev_reg_id: &str) -> VcxResult<(String, String)> {

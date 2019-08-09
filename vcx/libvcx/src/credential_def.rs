@@ -133,14 +133,14 @@ fn _create_credentialdef(issuer_did: &str,
     Ok((cred_def_id, cred_def_json, rev_reg_id, rev_reg_def, rev_reg_entry))
 }
 
-pub fn create_credentialdef_for_endorser(source_id: String,
-                                         name: String,
-                                         issuer_did: String,
-                                         schema_id: String,
-                                         tag: String,
-                                         revocation_details: String,
-                                         endorser: String) -> VcxResult<(u32, String, Option<String>, Option<String>)> {
-    trace!("prepare_for_endorser >>> source_id: {}, name: {}, issuer_did: {}, schema_id: {}, revocation_details: {}, endorser: {}",
+pub fn prepare_credentialdef_for_endorser(source_id: String,
+                                          name: String,
+                                          issuer_did: String,
+                                          schema_id: String,
+                                          tag: String,
+                                          revocation_details: String,
+                                          endorser: String) -> VcxResult<(u32, String, Option<String>, Option<String>)> {
+    trace!("prepare_credentialdef_for_endorser >>> source_id: {}, name: {}, issuer_did: {}, schema_id: {}, revocation_details: {}, endorser: {}",
            source_id, name, issuer_did, schema_id, revocation_details, endorser);
 
     let revocation_details: RevocationDetails = _parse_revocation_details(&revocation_details)?;
@@ -156,7 +156,7 @@ pub fn create_credentialdef_for_endorser(source_id: String,
     let (rev_reg_def_req, rev_reg_delta_req) = match (&rev_reg_id, &rev_reg_def, &rev_reg_entry) {
         (Some(ref rev_reg_id), Some(ref rev_reg_def), Some(ref rev_reg_entry)) => {
             let rev_reg_def_req =
-                anoncreds::libindy_build_revoc_reg_def_request(&issuer_did, &rev_reg_def)
+                anoncreds::build_rev_reg_request(&issuer_did, &rev_reg_def)
                     .map_err(|err| err.map(VcxErrorKind::CreateCredDef, "Cannot create CredentialDefinition"))?;
 
             let rev_reg_delta_req = anoncreds::build_rev_reg_delta_request(&issuer_did, &rev_reg_id, &rev_reg_entry)
@@ -594,7 +594,7 @@ pub mod tests {
 
         let (endorser_did, _) = add_new_did(Some("ENDORSER"));
 
-        let (handle, cred_def_request, rev_reg_def_req, rev_reg_entry_req) = create_credentialdef_for_endorser("test_vcx_endorse_cred_def".to_string(), "Test Credential Def".to_string(), did, schema_id, "tag".to_string(), revocation_details.to_string(), endorser_did.clone()).unwrap();
+        let (handle, cred_def_request, rev_reg_def_req, rev_reg_entry_req) = prepare_credentialdef_for_endorser("test_vcx_endorse_cred_def".to_string(), "Test Credential Def".to_string(), did, schema_id, "tag".to_string(), revocation_details.to_string(), endorser_did.clone()).unwrap();
         assert_eq!(0, get_state(handle).unwrap());
         assert_eq!(0, update_state(handle).unwrap());
         assert!(rev_reg_def_req.is_none());
@@ -619,7 +619,7 @@ pub mod tests {
 
         let (endorser_did, _) = add_new_did(Some("ENDORSER"));
 
-        let (handle, cred_def_request, rev_reg_def_req, rev_reg_entry_req) = create_credentialdef_for_endorser("test_vcx_endorse_cred_def".to_string(), "Test Credential Def".to_string(), did, schema_id, "tag".to_string(), revocation_details.to_string(), endorser_did.clone()).unwrap();
+        let (handle, cred_def_request, rev_reg_def_req, rev_reg_entry_req) = prepare_credentialdef_for_endorser("test_vcx_endorse_cred_def".to_string(), "Test Credential Def".to_string(), did, schema_id, "tag".to_string(), revocation_details.to_string(), endorser_did.clone()).unwrap();
         assert_eq!(0, get_state(handle).unwrap());
         assert_eq!(0, update_state(handle).unwrap());
 

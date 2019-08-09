@@ -496,6 +496,7 @@ mod test {
         assert!(_verify_transaction_can_be_endorsed(transaction, "EbP4aYNeTHL6q385GuVpRV").is_err());
     }
 
+    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_endorse_transaction() {
         init!("ledger");
