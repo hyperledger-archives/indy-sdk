@@ -84,9 +84,16 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		CompletableFuture<byte[]> future = Crypto.unpackMessage(wallet, packedMessage.getBytes());
-
-		assertTrue(future.isCompletedExceptionally());
+		try {
+			CompletableFuture<byte[]> future = Crypto.unpackMessage(wallet, packedMessage.getBytes());
+			assertTrue(future.isCompletedExceptionally());
+		} catch (Exception e) {
+			// expected
+			System.err.println("testUnpackMessageErrorsWithInvalidPackedMessageStructure threw " + e);
+			return;
+		}
+		// this assert should never trigger since unpackMessage should throw exception
+		assertTrue(false);
 	}
 
 	@Test
