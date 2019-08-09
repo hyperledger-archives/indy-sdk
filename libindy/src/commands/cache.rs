@@ -6,9 +6,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use domain::wallet::Tags;
 use errors::prelude::*;
 use services::wallet::WalletService;
-use api::{WalletHandle, PoolHandle};
+use api::{WalletHandle, PoolHandle, CommandHandle};
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
+
+use api::next_command_handle;
 
 const CRED_DEF_CACHE: &str = "cred_def_cache";
 const SCHEMA_CACHE: &str = "schema_cache";
@@ -24,7 +26,7 @@ pub enum CacheCommand {
         WalletHandle,
         IndyResult<(String, String)>, // ledger_response
         GetCacheOptions,              // options
-        i32,                          // cb_id
+        CommandHandle,                          // cb_id
     ),
     GetCredDef(PoolHandle,
                WalletHandle,
@@ -36,7 +38,7 @@ pub enum CacheCommand {
         WalletHandle,
         IndyResult<(String, String)>, // ledger_response
         GetCacheOptions,              // options
-        i32,                          // cb_id
+        CommandHandle,                          // cb_id
     ),
     PurgeSchemaCache(WalletHandle,
                      String, // options json
@@ -49,7 +51,7 @@ pub enum CacheCommand {
 pub struct CacheCommandExecutor {
     wallet_service: Rc<WalletService>,
 
-    pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<String>)>>>,
+    pending_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<String>)>>>,
 }
 
 impl CacheCommandExecutor {
@@ -136,7 +138,7 @@ impl CacheCommandExecutor {
             return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)));
         }
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         CommandExecutor::instance().send(
@@ -162,7 +164,7 @@ impl CacheCommandExecutor {
         ).unwrap();
     }
 
-    fn _get_schema_continue(&self, wallet_handle: WalletHandle, ledger_response: IndyResult<(String, String)>, options: GetCacheOptions, cb_id: i32) {
+    fn _get_schema_continue(&self, wallet_handle: WalletHandle, ledger_response: IndyResult<(String, String)>, options: GetCacheOptions, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
 
         let (schema_id, schema_json) = try_cb!(ledger_response, cb);
@@ -231,7 +233,7 @@ impl CacheCommandExecutor {
             return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)));
         }
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         CommandExecutor::instance().send(
@@ -257,7 +259,7 @@ impl CacheCommandExecutor {
         ).unwrap();
     }
 
-    fn _get_cred_def_continue(&self, wallet_handle: WalletHandle, ledger_response: IndyResult<(String, String)>, options: GetCacheOptions, cb_id: i32) {
+    fn _get_cred_def_continue(&self, wallet_handle: WalletHandle, ledger_response: IndyResult<(String, String)>, options: GetCacheOptions, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
 
         let (cred_def_id, cred_def_json) = try_cb!(ledger_response, cb);
@@ -318,11 +320,9 @@ impl CacheCommandExecutor {
             self.wallet_service.delete_record(wallet_handle, SCHEMA_CACHE, record.get_id())?;
         }
 
-        let res = ();
+        trace!("purge_schema_cache <<< res: ()");
 
-        trace!("purge_schema_cache <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 
     fn purge_cred_def_cache(&self,
@@ -364,11 +364,9 @@ impl CacheCommandExecutor {
             self.wallet_service.delete_record(wallet_handle, CRED_DEF_CACHE, record.get_id())?;
         }
 
-        let res = ();
+        trace!("purge_cred_def_cache <<< res: ()");
 
-        trace!("purge_cred_def_cache <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 }
 

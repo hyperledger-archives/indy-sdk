@@ -25,27 +25,27 @@ use services::pool::{
 };
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::signature_serializer::serialize_signature;
-use api::WalletHandle;
+use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
 use commands::{Command, CommandExecutor};
 use rust_base58::ToBase58;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
-        i32, // pool handle
+        PoolHandle, // pool handle
         WalletHandle,
         String, // submitter did
         String, // request json
         Box<Fn(IndyResult<String>) + Send>),
     SubmitRequest(
-        i32, // pool handle
+        PoolHandle, // pool handle
         String, // request json
         Box<Fn(IndyResult<String>) + Send>),
     SubmitAck(
-        i32, // cmd_id
+        CommandHandle,
         IndyResult<String>, // result json or error
     ),
     SubmitAction(
-        i32, // pool handle
+        PoolHandle, // pool handle
         String, // request json
         Option<String>, // nodes
         Option<i32>, // timeout
@@ -211,24 +211,24 @@ pub enum LedgerCommand {
         Option<String>, // new value
         Box<Fn(IndyResult<String>) + Send>),
     GetSchema(
-        i32,
+        PoolHandle,
         Option<String>,
         String,
         Box<Fn(IndyResult<(String, String)>) + Send>,
     ),
     GetSchemaContinue(
         IndyResult<String>,
-        i32,
+        CommandHandle,
     ),
     GetCredDef(
-        i32,
+        PoolHandle,
         Option<String>,
         String,
         Box<Fn(IndyResult<(String, String)>) + Send>,
     ),
     GetCredDefContinue(
         IndyResult<String>,
-        i32,
+        CommandHandle,
     ),
     BuildTxnAuthorAgreementRequest(
         String, // submitter did
@@ -270,8 +270,8 @@ pub struct LedgerCommandExecutor {
     wallet_service: Rc<WalletService>,
     ledger_service: Rc<LedgerService>,
 
-    send_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<String>)>>>,
-    pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<(String, String)>)>>>,
+    send_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<String>)>>>,
+    pending_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<(String, String)>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -304,7 +304,7 @@ impl LedgerCommandExecutor {
                 match self.send_callbacks.borrow_mut().remove(&handle) {
                     Some(cb) => cb(result.map_err(IndyError::from)),
                     None => {
-                        error!("Can't process LedgerCommand::SubmitAck for handle {} with result {:?} - appropriate callback not found!",
+                        error!("Can't process LedgerCommand::SubmitAck for handle {:?} with result {:?} - appropriate callback not found!",
                                handle, result);
                     }
                 }
@@ -519,7 +519,7 @@ impl LedgerCommandExecutor {
     }
 
     fn sign_and_submit_request(&self,
-                               pool_handle: i32,
+                               pool_handle: PoolHandle,
                                wallet_handle: WalletHandle,
                                submitter_did: &str,
                                request_json: &str,
@@ -581,12 +581,12 @@ impl LedgerCommandExecutor {
     }
 
     fn submit_request(&self,
-                      handle: i32,
+                      handle: PoolHandle,
                       request_json: &str,
                       cb: Box<Fn(IndyResult<String>) + Send>) {
         debug!("submit_request >>> handle: {:?}, request_json: {:?}", handle, request_json);
 
-        let x: IndyResult<i32> = self.pool_service.send_tx(handle, request_json);
+        let x: IndyResult<CommandHandle> = self.pool_service.send_tx(handle, request_json);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
             Err(err) => { cb(Err(err)); }
@@ -594,7 +594,7 @@ impl LedgerCommandExecutor {
     }
 
     fn submit_action(&self,
-                     handle: i32,
+                     handle: PoolHandle,
                      request_json: &str,
                      nodes: Option<&str>,
                      timeout: Option<i32>,
@@ -605,7 +605,7 @@ impl LedgerCommandExecutor {
             return cb(Err(err));
         }
 
-        let x: IndyResult<i32> = self.pool_service.send_action(handle, request_json, nodes, timeout);
+        let x: IndyResult<CommandHandle> = self.pool_service.send_action(handle, request_json, nodes, timeout);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
             Err(err) => { cb(Err(err)); }
@@ -1205,7 +1205,7 @@ impl LedgerCommandExecutor {
     fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
         let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb);
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         self.submit_request(pool_handle, &request_json, Box::new(move |response| {
@@ -1220,7 +1220,7 @@ impl LedgerCommandExecutor {
         }));
     }
 
-    fn _get_schema_continue(&self, pool_response: IndyResult<String>, cb_id: i32) {
+    fn _get_schema_continue(&self, pool_response: IndyResult<String>, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
         let pool_response = try_cb!(pool_response, cb);
         cb(self.parse_get_schema_response(&pool_response));
@@ -1229,7 +1229,7 @@ impl LedgerCommandExecutor {
     fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
         let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb);
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         self.submit_request(pool_handle, &request_json, Box::new(move |response| {
@@ -1244,7 +1244,7 @@ impl LedgerCommandExecutor {
         }));
     }
 
-    fn _get_cred_def_continue(&self, pool_response: IndyResult<String>, cb_id: i32) {
+    fn _get_cred_def_continue(&self, pool_response: IndyResult<String>, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
         let pool_response = try_cb!(pool_response, cb);
         cb(self.parse_get_cred_def_response(&pool_response));

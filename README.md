@@ -20,7 +20,7 @@ functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-St
 
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
 
-* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
+* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/display/indy/).
 
 * You may also want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
 that explored the ecosystem via command line. That material is being
@@ -323,6 +323,7 @@ The documents that provide necessary information for Libindy migrations.
 
 ## How to Contribute
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
+* If you need to add a new call, read this [instruction](docs/how-tos/how-to-add-a-new-API-call.md).
 * You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
   so to get your pull requests accepted, you must certify your commits by signing off on each commit.

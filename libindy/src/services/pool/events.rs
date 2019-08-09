@@ -5,6 +5,7 @@ use domain::ledger::constants;
 use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::{PoolService, types:: *};
+use api::CommandHandle;
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&str; 10] = [
     constants::GET_NYM,
@@ -72,16 +73,16 @@ pub const COMMAND_REFRESH : &str = "refresh";
 
 #[derive(Clone, Debug)]
 pub enum PoolEvent {
-    CheckCache(i32),
+    CheckCache(CommandHandle),
     NodeReply(
         String, // reply
         String, // node alias
     ),
     Close(
-        i32, //cmd_id
+        CommandHandle
     ),
     Refresh(
-        i32, //cmd_id
+        CommandHandle
     ),
     CatchupTargetFound(
         Vec<u8>, //target_mt_root
@@ -100,7 +101,7 @@ pub enum PoolEvent {
     #[allow(dead_code)] //FIXME
     NodesBlacklisted,
     SendRequest(
-        i32, // cmd_id
+        CommandHandle,
         String, // request
         Option<i32>, // timeout
         Option<String>, // node list
@@ -203,8 +204,8 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                 _parse_msg(&msg).map(|parsed|
                     match parsed {
                         //TODO change mapping for CatchupReq. May be return None
-                        //TODO: REMOVE UNWRAP!!!!!
-                        Message::CatchupReq(_) => RequestEvent::CatchupReq(MerkleTree::from_vec(Vec::new()).unwrap(), 0, vec![]),
+                        Message::CatchupReq(_) => RequestEvent::CatchupReq(
+                            MerkleTree::default(), 0, vec![]),
                         Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep, node_alias),
                         Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias), None),
                         Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),

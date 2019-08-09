@@ -45,7 +45,7 @@ impl GetTxnAuthorAgreementOperation {
             _type: GET_TXN_AUTHR_AGRMT.to_string(),
             digest: data.as_ref().and_then(|d| d.digest.clone()),
             version: data.as_ref().and_then(|d| d.version.clone()),
-            timestamp: data.as_ref().and_then(|d| d.timestamp.clone()),
+            timestamp: data.as_ref().and_then(|d| d.timestamp),
         }
     }
 }
