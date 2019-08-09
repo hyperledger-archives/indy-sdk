@@ -165,7 +165,7 @@ impl Node {
     }
 
     pub fn get_all_values<'a>(&'a self, db: &'a TrieDB, prefix: Option<&[u8]>) -> IndyResult<Vec<(String, String)>> {
-        let node_and_prefix = prefix.map(|prf| self.get_node(db, &prf)).unwrap_or(Ok(Some((self, vec![]))))?;
+        let node_and_prefix = prefix.map(|prf| self.get_node(db, &prf)).unwrap_or_else(|| Ok(Some((self, vec![]))))?;
         if let Some((node, prf)) = node_and_prefix {
             let vals = node._get_all_values(db, prf)?;
             let mut res: Vec<(String, String)> = vec![];
@@ -182,7 +182,7 @@ impl Node {
         trace!("Node::get_node >> path: {:?}", path);
         let nibble_path = Node::path_to_nibbles(path);
         trace!("Node::get_node >> made some nibbles >> nibbles: {:?}", nibble_path);
-        return self._get_node(db, nibble_path.as_slice(), vec![].as_slice())
+        self._get_node(db, nibble_path.as_slice(), vec![].as_slice())
     }
 
     fn _get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8], seen_path: &'b [u8]) -> IndyResult<Option<(&Node, Vec<u8>)>> {

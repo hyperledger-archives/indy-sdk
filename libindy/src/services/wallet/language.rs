@@ -159,14 +159,14 @@ impl string::ToString for Operator {
                 )
             }
             Operator::And(ref operators) => {
-                if operators.len() > 0 {
+                if !operators.is_empty() {
                     format!(
                         r#"{{"$and":[{}]}}"#,
                         operators.iter().map(|o: &Operator| { o.to_string() }).collect::<Vec<String>>().join(","))
                 } else { "{}".to_string() }
             },
             Operator::Or(ref operators) => {
-                if operators.len() > 0 {
+                if !operators.is_empty() {
                     format!(
                         r#"{{"$or":[{}]}}"#,
                         operators.iter().map(|o: &Operator| { o.to_string() }).collect::<Vec<String>>().join(","))

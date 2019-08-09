@@ -416,11 +416,9 @@ impl CryptoService {
                                The 16- or 32-byte number upon which a DID is based should be 22/23 or 44/45 bytes when encoded as base58.", did.len())));
         }
 
-        let res = ();
+        trace!("validate_did <<< res: ()");
 
-        trace!("validate_did <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 
     pub fn encrypt_plaintext(&self,
