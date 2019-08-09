@@ -1,5 +1,5 @@
 
-use api::{ErrorCode, CommandHandle, PoolHandle};
+use api::{ErrorCode, CommandHandle, PoolHandle, INVALID_POOL_HANDLE};
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
 use domain::pool::{PoolConfig, PoolOpenConfig};
@@ -100,7 +100,7 @@ pub extern fn indy_open_pool_ledger(command_handle: CommandHandle,
             config_name,
             config,
             Box::new(move |result| {
-                let (err, pool_handle) = prepare_result_1!(result, 0);
+                let (err, pool_handle) = prepare_result_1!(result, INVALID_POOL_HANDLE);
                 trace!("indy_open_pool_ledger: pool_handle: {:?}", pool_handle);
                 cb(command_handle, err, pool_handle)
             })
