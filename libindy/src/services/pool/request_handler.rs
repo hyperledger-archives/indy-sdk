@@ -32,11 +32,12 @@ use super::ursa::bls::VerKey;
 
 use std::hash::{Hash, Hasher};
 use log_derive::logfn;
+use api::CommandHandle;
 use rust_base58::FromBase58;
 
 struct RequestSM<T: Networker> {
     f: usize,
-    cmd_ids: Vec<i32>,
+    cmd_ids: Vec<CommandHandle>,
     nodes: HashMap<String, Option<VerKey>>,
     generator: Generator,
     pool_name: String,
@@ -68,7 +69,7 @@ pub const DEFAULT_GENERATOR: &str = "3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCj
 impl<T: Networker> RequestSM<T> {
     pub fn new(networker: Rc<RefCell<T>>,
                f: usize,
-               cmd_ids: &[i32],
+               cmd_ids: &[CommandHandle],
                nodes: &HashMap<String, Option<VerKey>>,
                pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
         let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
@@ -87,7 +88,7 @@ impl<T: Networker> RequestSM<T> {
     }
 
     pub fn step(f: usize,
-                cmd_ids: Vec<i32>,
+                cmd_ids: Vec<CommandHandle>,
                 nodes: HashMap<String, Option<VerKey>>,
                 generator: Generator,
                 pool_name: String,
@@ -514,7 +515,7 @@ impl<T: Networker> RequestSM<T> {
 
     fn _full_request_handle_consensus_state(mut state: FullState<T>,
                                             req_id: String, node_alias: String, node_result: String,
-                                            cmd_ids: &[i32],
+                                            cmd_ids: &[CommandHandle],
                                             nodes: &HashMap<String, Option<VerKey>>) -> RequestState<T> {
         let is_first_resp = state.accum_reply.is_none();
         if is_first_resp {
@@ -600,7 +601,7 @@ impl<T: Networker> RequestSM<T> {
 }
 
 pub trait RequestHandler<T: Networker> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[i32], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[CommandHandle], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
     fn is_terminal(&self) -> bool;
 }
@@ -610,7 +611,7 @@ pub struct RequestHandlerImpl<T: Networker> {
 }
 
 impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[i32], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[CommandHandle], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
         RequestHandlerImpl {
             request_wrapper: Some(RequestSM::new(networker, f, cmd_ids, nodes, pool_name, timeout, extended_timeout)),
         }
@@ -642,7 +643,7 @@ impl<T: Networker> SingleState<T> {
             < total_nodes_cnt
     }
 
-    fn try_to_continue(self, req_id: String, node_alias: String, cmd_ids: &[i32], nodes_cnt: usize, timeout: i64) -> RequestState<T> {
+    fn try_to_continue(self, req_id: String, node_alias: String, cmd_ids: &[CommandHandle], nodes_cnt: usize, timeout: i64) -> RequestState<T> {
         if self.is_consensus_reachable(nodes_cnt) {
             self.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone(), timeout)));
             self.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone(), timeout)));
@@ -665,7 +666,7 @@ impl<T: Networker> ConsensusState<T> {
     }
 }
 
-fn _parse_nack(denied_nodes: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_ids: &[i32], node_alias: &str) -> bool {
+fn _parse_nack(denied_nodes: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_ids: &[CommandHandle], node_alias: &str) -> bool {
     if denied_nodes.len() == f {
         _send_ok_replies(cmd_ids, raw_msg);
         true
@@ -695,15 +696,15 @@ fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_r
     Ok(merkle)
 }
 
-fn _send_ok_replies(cmd_ids: &[i32], msg: &str) {
+fn _send_ok_replies(cmd_ids: &[CommandHandle], msg: &str) {
     _send_replies(cmd_ids, Ok(msg.to_string()))
 }
 
-fn _finish_request(cmd_ids: &[i32]) {
+fn _finish_request(cmd_ids: &[CommandHandle]) {
     _send_replies(cmd_ids, Err(err_msg(IndyErrorKind::PoolTerminated, "Pool is terminated")))
 }
 
-fn _send_replies(cmd_ids: &[i32], msg: IndyResult<String>) {
+fn _send_replies(cmd_ids: &[CommandHandle], msg: IndyResult<String>) {
     cmd_ids.iter().for_each(|id| {
         CommandExecutor::instance().send(
             Command::Ledger(
@@ -849,7 +850,7 @@ pub mod tests {
     pub struct MockRequestHandler {}
 
     impl<T: Networker> RequestHandler<T> for MockRequestHandler {
-        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &[i32], _nodes: &HashMap<String, Option<VerKey>>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
+        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &[CommandHandle], _nodes: &HashMap<String, Option<VerKey>>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
             MockRequestHandler {}
         }
 
@@ -871,17 +872,6 @@ pub mod tests {
                 ppSeqNo: None,
                 viewNo: None,
                 protocolVersion: None,
-            }
-        }
-    }
-
-    impl Default for MerkleTree {
-        fn default() -> Self {
-            MerkleTree {
-                root: Tree::Empty { hash: Vec::new() },
-                height: 0,
-                count: 0,
-                nodes_count: 0,
             }
         }
     }

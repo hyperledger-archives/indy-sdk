@@ -52,7 +52,7 @@ use services::pool::PoolService;
 use services::wallet::{RecordOptions, WalletService};
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
-use api::{WalletHandle, CallbackHandle};
+use api::{WalletHandle, CommandHandle, next_command_handle};
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -84,7 +84,7 @@ pub enum IssuerCommand {
         IndyResult<(CredentialDefinitionData,
                     CredentialPrivateKey,
                     CredentialKeyCorrectnessProof)>,
-        i32),
+        CommandHandle),
     CreateAndStoreRevocationRegistry(
         WalletHandle,
         String, // issuer did
@@ -130,7 +130,7 @@ pub struct IssuerCommandExecutor {
     pub pool_service: Rc<PoolService>,
     pub wallet_service: Rc<WalletService>,
     pub crypto_service: Rc<CryptoService>,
-    pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<(String, String)>) + Send>>>,
+    pending_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<(String, String)>) + Send>>>,
 }
 
 impl IssuerCommandExecutor {
@@ -248,7 +248,7 @@ impl IssuerCommandExecutor {
         let (cred_def_config, schema_id, cred_def_id, signature_type) =
             try_cb!(self._prepare_create_and_store_credential_definition(wallet_handle, issuer_did, schema, tag, type_, config), cb);
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         let tag = tag.to_string();
@@ -292,7 +292,7 @@ impl IssuerCommandExecutor {
     }
 
     fn _create_and_store_credential_definition_continue(&self,
-                                                        cb_id: CallbackHandle,
+                                                        cb_id: CommandHandle,
                                                         wallet_handle: WalletHandle,
                                                         schema: &SchemaV1,
                                                         schema_id: &str,
