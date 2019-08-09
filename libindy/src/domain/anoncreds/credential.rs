@@ -30,15 +30,15 @@ impl Credential {
     pub fn schema_id(&self) -> String { self.schema_id.to_string() }
 
     pub fn schema_issuer_did(&self) -> String {
-        self.schema_parts().get(0).map(|s| s.to_string()).unwrap_or(String::new())
+        self.schema_parts().get(0).map(|s| s.to_string()).unwrap_or_default()
     }
 
     pub fn schema_name(&self) -> String {
-        self.schema_parts().get(2).map(|s| s.to_string()).unwrap_or(String::new())
+        self.schema_parts().get(2).map(|s| s.to_string()).unwrap_or_default()
     }
 
     pub fn schema_version(&self) -> String {
-        self.schema_parts().get(3).map(|s| s.to_string()).unwrap_or(String::new())
+        self.schema_parts().get(3).map(|s| s.to_string()).unwrap_or_default()
     }
 
     pub fn issuer_did(&self) -> String {

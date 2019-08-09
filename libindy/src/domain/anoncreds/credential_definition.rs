@@ -83,7 +83,7 @@ impl CredentialDefinition {
     }
 
     pub fn issuer_did(cred_def_id: &str) -> Option<String> {
-        cred_def_id.split(":").collect::<Vec<&str>>().get(0).and_then(|s| Some(s.to_string()))
+        cred_def_id.split(':').collect::<Vec<&str>>().get(0).and_then(|s| Some(s.to_string()))
     }
 }
 

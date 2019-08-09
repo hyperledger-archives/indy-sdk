@@ -53,7 +53,7 @@ use services::pool::PoolService;
 use services::wallet::{RecordOptions, WalletService};
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
-use api::{WalletHandle, CallbackHandle};
+use api::{WalletHandle, CommandHandle, next_command_handle};
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -80,7 +80,7 @@ pub enum IssuerCommand {
         IndyResult<(CredentialDefinitionData,
                     CredentialPrivateKey,
                     CredentialKeyCorrectnessProof)>,
-        i32),
+        CommandHandle),
     RotateCredentialDefinitionStart(
         WalletHandle,
         String, // cred def id
@@ -95,7 +95,7 @@ pub enum IssuerCommand {
         IndyResult<(CredentialDefinitionData,
                     CredentialPrivateKey,
                     CredentialKeyCorrectnessProof)>,
-        i32),
+        CommandHandle),
     RotateCredentialDefinitionApply(
         WalletHandle,
         String, // cred def did
@@ -145,8 +145,8 @@ pub struct IssuerCommandExecutor {
     pub pool_service: Rc<PoolService>,
     pub wallet_service: Rc<WalletService>,
     pub crypto_service: Rc<CryptoService>,
-    pending_str_str_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<(String, String)>) + Send>>>,
-    pending_str_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<String>) + Send>>>,
+    pending_str_str_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<(String, String)>) + Send>>>,
+    pending_str_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<String>) + Send>>>,
 }
 
 impl IssuerCommandExecutor {
@@ -274,7 +274,7 @@ impl IssuerCommandExecutor {
         let (cred_def_config, schema_id, cred_def_id, signature_type) =
             try_cb!(self._prepare_create_and_store_credential_definition(wallet_handle, issuer_did, schema, tag, type_, config), cb);
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = next_command_handle();
         self.pending_str_str_callbacks.borrow_mut().insert(cb_id, cb);
 
         let tag = tag.to_string();
@@ -310,7 +310,7 @@ impl IssuerCommandExecutor {
     }
 
     fn _create_and_store_credential_definition_continue(&self,
-                                                        cb_id: CallbackHandle,
+                                                        cb_id: CommandHandle,
                                                         wallet_handle: WalletHandle,
                                                         schema: &SchemaV1,
                                                         schema_id: &str,
@@ -346,7 +346,7 @@ impl IssuerCommandExecutor {
             SignatureType::CL
         };
 
-        let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or(schema.id.clone());
+        let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or_else(|| schema.id.clone());
 
         let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema_id, &signature_type.to_str(), tag);
 
@@ -693,7 +693,7 @@ impl IssuerCommandExecutor {
                 }
 
                 if rev_reg_def.value.issuance_type == IssuanceType::ISSUANCE_ON_DEMAND {
-                    rev_reg_info.used_ids.insert(rev_reg_info.curr_id.clone());
+                    rev_reg_info.used_ids.insert(rev_reg_info.curr_id);
                 }
 
                 // TODO: FIXME: Review error kind!
