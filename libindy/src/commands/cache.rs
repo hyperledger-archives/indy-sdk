@@ -320,11 +320,9 @@ impl CacheCommandExecutor {
             self.wallet_service.delete_record(wallet_handle, SCHEMA_CACHE, record.get_id())?;
         }
 
-        let res = ();
+        trace!("purge_schema_cache <<< res: ()");
 
-        trace!("purge_schema_cache <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 
     fn purge_cred_def_cache(&self,
@@ -366,11 +364,9 @@ impl CacheCommandExecutor {
             self.wallet_service.delete_record(wallet_handle, CRED_DEF_CACHE, record.get_id())?;
         }
 
-        let res = ();
+        trace!("purge_cred_def_cache <<< res: ()");
 
-        trace!("purge_cred_def_cache <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 }
 

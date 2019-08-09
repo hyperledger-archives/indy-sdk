@@ -73,8 +73,8 @@ impl PluggedStorageIterator {
     fn new(storage: &PluggedStorage, search_handle: i32, options: SearchOptions) -> Self {
         Self {
             storage_handle: storage.handle,
-            search_handle: search_handle,
-            options: options,
+            search_handle,
+            options,
             fetch_search_next_record_handler: storage.fetch_search_next_record_handler,
             get_search_total_count_handler: storage.get_search_total_count_handler,
             get_record_type_handler: storage.get_record_type_handler,
@@ -179,10 +179,10 @@ impl StorageIterator for PluggedStorageIterator {
         } else { None };
 
         Ok(Some(StorageRecord {
-            type_: type_,
-            id: id,
-            value: value,
-            tags: tags,
+            type_,
+            id,
+            value,
+            tags,
         }))
     }
 

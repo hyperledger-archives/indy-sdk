@@ -136,7 +136,7 @@ pub struct LibindyDefaultLogger;
 
 impl LibindyDefaultLogger {
     pub fn init(pattern: Option<String>) -> Result<(), IndyError> {
-        let pattern = pattern.or(env::var("RUST_LOG").ok());
+        let pattern = pattern.or_else(|| env::var("RUST_LOG").ok());
 
         log_panics::init(); //Logging of panics is essential for android. As android does not log to stdout for native code
 

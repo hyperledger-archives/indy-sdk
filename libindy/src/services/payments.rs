@@ -503,7 +503,6 @@ impl PaymentsService {
         let prices: Vec<RequestInfo> = constraint.auth_constraints
             .iter()
             .flat_map(|constraint| PaymentsService::_handle_constraint(&constraint, requester_info, fees))
-            .into_iter()
             .flatten()
             .collect();
 
@@ -545,15 +544,15 @@ impl PaymentsService {
 
         if !constraint.off_ledger_signature && requester_info.is_off_ledger_signature {
             return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
-                                           format!("The requester must be published on the ledger.")));
+                                           "The requester must be published on the ledger.".to_string()));
         }
 
         if constraint.need_to_be_owner && !requester_info.is_owner {
             return Err(IndyError::from_msg(IndyErrorKind::TransactionNotAllowed,
-                                           format!("The requester must be an owner of the transaction that already present on the ledger.")));
+                                           "The requester must be an owner of the transaction that already present on the ledger.".to_string()));
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn _get_req_info(constraint: &RoleConstraint, fees: &Fees) -> IndyResult<RequestInfo> {
@@ -636,82 +635,82 @@ mod cbs {
     pub fn add_request_fees_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                     err: ErrorCode,
                                                                     req_with_fees_json: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::AddRequestFeesAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::AddRequestFeesAck))
     }
 
     pub fn parse_response_with_fees_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                             err: ErrorCode,
                                                                             c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseResponseWithFeesAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::ParseResponseWithFeesAck))
     }
 
     pub fn build_get_payment_sources_request_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                                      err: ErrorCode,
                                                                                      c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetPaymentSourcesRequestAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::BuildGetPaymentSourcesRequestAck))
     }
 
     pub fn parse_get_payment_sources_response_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                                       err: ErrorCode,
                                                                                       c_str: *const c_char,
                                                                                       num: i64) -> ErrorCode> {
-        send_ack_str_i64(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetPaymentSourcesResponseAck(cmd_handle, result)))
+        send_ack_str_i64(cmd_handle, Box::new(PaymentsCommand::ParseGetPaymentSourcesResponseAck))
     }
 
     pub fn build_payment_req_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                      err: ErrorCode,
                                                                      c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildPaymentReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new( PaymentsCommand::BuildPaymentReqAck))
     }
 
     pub fn parse_payment_response_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                           err: ErrorCode,
                                                                           c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParsePaymentResponseAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::ParsePaymentResponseAck))
     }
 
     pub fn build_mint_req_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                   err: ErrorCode,
                                                                   c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildMintReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::BuildMintReqAck))
     }
 
     pub fn build_set_txn_fees_req_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                           err: ErrorCode,
                                                                           c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildSetTxnFeesReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::BuildSetTxnFeesReqAck))
     }
 
     pub fn build_get_txn_fees_req(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                        err: ErrorCode,
                                                                        c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetTxnFeesReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::BuildGetTxnFeesReqAck))
     }
 
     pub fn parse_get_txn_fees_response(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                             err: ErrorCode,
                                                                             c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetTxnFeesResponseAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::ParseGetTxnFeesResponseAck))
     }
 
     pub fn build_verify_payment_req(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                          err: ErrorCode,
                                                                          c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildVerifyPaymentReqAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::BuildVerifyPaymentReqAck))
     }
 
     pub fn parse_verify_payment_response(cmd_handle: CommandHandle) -> Option<extern fn(command_handle_: CommandHandle,
                                                                               err: ErrorCode,
                                                                               c_str: *const c_char) -> ErrorCode> {
-        send_ack_str(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseVerifyPaymentResponseAck(cmd_handle, result)))
+        send_ack_str(cmd_handle, Box::new(PaymentsCommand::ParseVerifyPaymentResponseAck))
     }
 
     pub fn sign_with_address_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle: CommandHandle, err: ErrorCode, raw: *const u8, raw_len: u32) -> ErrorCode> {
-        send_array_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::SignWithAddressAck(cmd_handle, result)))
+        send_array_ack(cmd_handle, Box::new(PaymentsCommand::SignWithAddressAck))
     }
 
     pub fn verify_with_address_cb(cmd_handle: CommandHandle) -> Option<extern fn(command_handle: CommandHandle, err: ErrorCode, res: u8) -> ErrorCode> {
-        send_bool_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::VerifyWithAddressAck(cmd_handle, result)))
+        send_bool_ack(cmd_handle, Box::new(PaymentsCommand::VerifyWithAddressAck))
     }
 
     fn send_ack_str(cmd_handle: CommandHandle, builder: Box<Fn(CommandHandle, IndyResult<String>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,

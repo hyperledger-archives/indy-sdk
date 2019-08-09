@@ -351,7 +351,7 @@ impl PaymentsCommandExecutor {
         trace!("create_address >>> wallet_handle: {:?}, type_: {:?}, config: {:?}", wallet_handle, type_, config);
 
         match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
+            Err(err) => return cb(Err(err)),
             _ => ()
         };
         self._process_method_str(cb, &|i| self.payments_service.create_address(i, wallet_handle, type_, config));
@@ -367,7 +367,7 @@ impl PaymentsCommandExecutor {
                 self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new()).map(|_| res)
                     .map_err(IndyError::from)
             }
-            Err(err) => Err(IndyError::from(err))
+            Err(err) => Err(err)
         };
         self._common_ack_str(handle, total_result, "CreateAddressAck");
         trace!("create_address_ack <<<");
@@ -453,7 +453,7 @@ impl PaymentsCommandExecutor {
         trace!("build_get_payment_sources_request >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(IndyError::from(err))),
+                Err(err) => return cb(Err(err)),
                 _ => ()
             }
         }
@@ -496,7 +496,7 @@ impl PaymentsCommandExecutor {
         trace!("build_payment_req >>> wallet_handle: {:?}, submitter_did: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, inputs, outputs, extra);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(IndyError::from(err))),
+                Err(err) => return cb(Err(err)),
                 _ => ()
             }
         }
@@ -514,7 +514,7 @@ impl PaymentsCommandExecutor {
                 );
             }
             Err(error) => {
-                cb(Err(IndyError::from(error)))
+                cb(Err(error))
             }
         }
         trace!("build_payment_req <<<");
@@ -567,7 +567,7 @@ impl PaymentsCommandExecutor {
         trace!("build_mint_req >>> wallet_handle: {:?}, submitter_did: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs, extra);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(IndyError::from(err))),
+                Err(err) => return cb(Err(err)),
                 _ => ()
             }
         }
@@ -580,7 +580,7 @@ impl PaymentsCommandExecutor {
                     &|i| self.payments_service.build_mint_req(i, &type_copy, wallet_handle, submitter_did, outputs, extra),
                 );
             }
-            Err(error) => cb(Err(IndyError::from(error)))
+            Err(error) => cb(Err(error))
         }
         trace!("build_mint_req <<<");
     }
@@ -595,7 +595,7 @@ impl PaymentsCommandExecutor {
         trace!("build_set_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}, fees: {:?}", wallet_handle, submitter_did, type_, fees);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(IndyError::from(err))),
+                Err(err) => return cb(Err(err)),
                 _ => ()
             }
         }
@@ -651,7 +651,7 @@ impl PaymentsCommandExecutor {
         trace!("build_verify_payment_request >>> wallet_handle: {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(IndyError::from(err))),
+                Err(err) => return cb(Err(err)),
                 _ => ()
             }
         }
@@ -659,7 +659,7 @@ impl PaymentsCommandExecutor {
         let method = match self.payments_service.parse_method_from_payment_address(receipt) {
             Ok(method) => method,
             Err(err) => {
-                cb(Err(IndyError::from(err)));
+                cb(Err(err));
                 return;
             }
         };
@@ -694,14 +694,14 @@ impl PaymentsCommandExecutor {
         let method = match self.payments_service.parse_method_from_payment_address(address) {
             Ok(method) => method,
             Err(err) => {
-                cb(Err(IndyError::from(err)));
+                cb(Err(err));
                 return;
             }
         };
         let cmd_handle = next_command_handle();
 
         if let Err(err) = self.payments_service.sign_with_address(cmd_handle, &method, wallet_handle, address, message) {
-            cb(Err(IndyError::from(err)));
+            cb(Err(err));
         } else {
             self.pending_array_callbacks.borrow_mut().insert(cmd_handle, cb);
         }
@@ -722,7 +722,7 @@ impl PaymentsCommandExecutor {
         let method = match self.payments_service.parse_method_from_payment_address(address) {
             Ok(method) => method,
             Err(err) => {
-                cb(Err(IndyError::from(err)));
+                cb(Err(err));
                 return;
             }
         };
@@ -730,7 +730,7 @@ impl PaymentsCommandExecutor {
         let cmd_handle = next_command_handle();
 
         if let Err(err) = self.payments_service.verify_with_address(cmd_handle, &method, address, message, signature) {
-            cb(Err(IndyError::from(err)))
+            cb(Err(err))
         } else {
             self.pending_bool_callbacks.borrow_mut().insert(cmd_handle, cb);
         }
@@ -754,7 +754,7 @@ impl PaymentsCommandExecutor {
             Ok(()) => {
                 self.pending_callbacks_str.borrow_mut().insert(cmd_handle, cb);
             }
-            Err(err) => cb(Err(IndyError::from(err)))
+            Err(err) => cb(Err(err))
         }
     }
 
@@ -765,7 +765,7 @@ impl PaymentsCommandExecutor {
             Ok(()) => {
                 self.pending_callbacks_str_i64.borrow_mut().insert(cmd_handle, cb);
             }
-            Err(err) => cb(Err(IndyError::from(err)))
+            Err(err) => cb(Err(err))
         }
     }
 
