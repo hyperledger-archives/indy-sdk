@@ -876,17 +876,6 @@ pub mod tests {
         }
     }
 
-    impl Default for MerkleTree {
-        fn default() -> Self {
-            MerkleTree {
-                root: Tree::Empty { hash: Vec::new() },
-                height: 0,
-                count: 0,
-                nodes_count: 0,
-            }
-        }
-    }
-
     impl Default for Reply {
         fn default() -> Self {
             Reply::ReplyV1(ReplyV1 { result: ReplyResultV1 { txn: ReplyTxnV1 { metadata: ResponseMetadata { req_id: 1 } } } })

@@ -14,19 +14,29 @@ trap 'error_report $LINENO' ERR
 
 echo -e "${onyellow}Installing libindy...$endcolor"
 
+function brew_install {
+    if brew ls --versions $1 >/dev/null; then
+        if [[ $(brew outdated $1) ]]; then
+            HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade $1
+        fi
+    else
+        HOMEBREW_NO_AUTO_UPDATE=1 brew install $1
+    fi
+}
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
     xcode-select --version || xcode-select --install
     brew --version || yes | /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     cmake --version || brew install cmake # brew install cmake throws error, not warning if already installed
     curl https://sh.rustup.rs -sSf | sh -s -- -y
     export PATH="$HOME/.cargo/bin:$PATH" # so can use cargo without relog
-    brew install pkg-config \
-                 https://raw.githubusercontent.com/Homebrew/homebrew-core/6fc62ce98a65b474d3a67441b5e82b7b8e51ffd1/Formula/libsodium.rb \
-                 automake \
-                 autoconf \
-                 openssl \
-                 zeromq \
-                 zmq
+    brew_install pkg-config
+    brew_install libsodium
+    brew_install automake
+    brew_install autoconf
+    brew_install openssl
+    brew_install zeromq
+    brew_install zmq
     export PKG_CONFIG_ALLOW_CROSS=1
     export CARGO_INCREMENTAL=1
     export RUST_LOG=indy=trace
@@ -45,3 +55,5 @@ export LD_LIBRARY_PATH='$LIBRARY_PATH >> ~/.bash_profile
 else
     echo -e "${onred}You are not running MacOS. This is a MacOS installer.$endcolor"
 fi
+
+

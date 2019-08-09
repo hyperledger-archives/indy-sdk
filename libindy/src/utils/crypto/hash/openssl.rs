@@ -2,30 +2,17 @@ extern crate openssl;
 
 use errors::prelude::*;
 use self::openssl::error::ErrorStack;
-use self::openssl::hash::{DigestBytes, hash as openssl_hash, Hasher, MessageDigest};
+use self::openssl::hash::{Hasher, MessageDigest};
 
 pub const HASHBYTES: usize = 32;
+
+// these bytes are the same as openssl_hash(MessageDigest::sha256(), &[]) so we do not have to actually call the hash function
+pub const EMPTY_HASH_BYTES : [u8; HASHBYTES] = [227, 176, 196, 66, 152, 252, 28, 20, 154, 251, 244, 200, 153, 111, 185, 36, 39, 174, 65, 228, 100, 155, 147, 76, 164, 149, 153, 27, 120, 82, 184, 85];
 
 pub fn hash(input: &[u8]) -> Result<Vec<u8>, IndyError> {
     let mut hasher = Hash::new_context()?;
     hasher.update(input)?;
     Ok(hasher.finish().map(|b| b.to_vec())?)
-}
-
-pub struct Digest {
-    data: DigestBytes
-}
-
-impl Digest {
-    fn new(data: DigestBytes) -> Digest {
-        Digest {
-            data: data
-        }
-    }
-
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.data.to_vec()
-    }
 }
 
 pub struct Hash {}
@@ -35,23 +22,19 @@ impl Hash {
         Ok(Hasher::new(MessageDigest::sha256())?)
     }
 
-    pub fn hash_empty() -> Result<Digest, IndyError> {
-        Ok(Digest::new(openssl_hash(MessageDigest::sha256(), &[])?))
-    }
-
-    pub fn hash_leaf<T>(leaf: &T) -> Result<Digest, IndyError> where T: Hashable {
+    pub fn hash_leaf<T>(leaf: &T) -> Result<Vec<u8>, IndyError> where T: Hashable {
         let mut ctx = Hash::new_context()?;
         ctx.update(&[0x00])?;
         leaf.update_context(&mut ctx)?;
-        Ok(Digest::new(ctx.finish()?))
+        Ok(ctx.finish().map(|b| b.to_vec())?)
     }
 
-    pub fn hash_nodes<T>(left: &T, right: &T) -> Result<Digest, IndyError> where T: Hashable {
+    pub fn hash_nodes<T>(left: &T, right: &T) -> Result<Vec<u8>, IndyError> where T: Hashable {
         let mut ctx = Hash::new_context()?;
         ctx.update(&[0x01])?;
         left.update_context(&mut ctx)?;
         right.update_context(&mut ctx)?;
-        Ok(Digest::new(ctx.finish()?))
+        Ok(ctx.finish().map(|b| b.to_vec())?)
     }
 }
 
