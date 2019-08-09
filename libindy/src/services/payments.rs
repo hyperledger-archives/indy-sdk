@@ -581,7 +581,7 @@ impl PaymentsService {
 
         let address = CString::new(address)?;
 
-        let err = sign_with_address(cmd_handle, wallet_handle.0, address.as_ptr(), message.as_ptr() as *const u8, message.len() as u32, cbs::sign_with_address_cb(cmd_handle));
+        let err = sign_with_address(cmd_handle, wallet_handle, address.as_ptr(), message.as_ptr() as *const u8, message.len() as u32, cbs::sign_with_address_cb(cmd_handle));
 
         let res = err.into();
         trace!("sign_with_address <<< result: {:?}", res);

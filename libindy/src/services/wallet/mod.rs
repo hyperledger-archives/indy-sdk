@@ -15,14 +15,13 @@ use errors::prelude::*;
 pub use services::wallet::encryption::KeyDerivationData;
 use utils::crypto::chacha20poly1305_ietf;
 use utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
-use utils::sequence;
 
 use self::export_import::{export_continue, finish_import, preparse_file_to_import};
 use self::storage::{WalletStorage, WalletStorageType};
 use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Keys, Wallet};
-use api::WalletHandle;
+use api::{WalletHandle, next_wallet_handle};
 
 mod storage;
 mod encryption;
@@ -32,10 +31,6 @@ mod iterator;
 pub mod language;
 mod export_import;
 mod wallet;
-
-fn next_wallet_handle() -> WalletHandle {
-    WalletHandle(sequence::get_next_id())
-}
 
 pub struct WalletService {
     storage_types: RefCell<HashMap<String, Box<WalletStorageType>>>,

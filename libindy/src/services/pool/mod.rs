@@ -29,9 +29,8 @@ use domain::{
 use errors::*;
 use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
-use utils::sequence;
 use services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
-use api::{CommandHandle, next_command_handle, PoolHandle};
+use api::{CommandHandle, next_command_handle, PoolHandle, next_pool_handle};
 
 mod catchup;
 mod commander;
@@ -45,13 +44,6 @@ mod types;
 
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
-}
-
-//fn next_pool_handle() -> PoolHandle {
-//    PoolHandle(sequence::get_next_id())
-//}
-fn next_pool_handle() -> PoolHandle {
-    sequence::get_next_id()
 }
 
 pub struct PoolService {
