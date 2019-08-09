@@ -582,7 +582,7 @@ pub mod tests {
     fn test_verify_with_address() {
         init!("true");
         let res = verify_with_address("test", &[1, 2, 3], &[1, 2, 3]).unwrap();
-        assert_eq!(res, true)
+        assert!(res)
     }
 
     #[test]

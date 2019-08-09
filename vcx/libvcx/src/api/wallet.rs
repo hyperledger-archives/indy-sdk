@@ -7,6 +7,7 @@ use utils::libindy::wallet;
 use std::path::Path;
 use utils::threadpool::spawn;
 use std::thread;
+use std::ptr::null;
 use error::prelude::*;
 
 /// Get the total balance from all addresses contained in the configured wallet
@@ -145,8 +146,7 @@ pub extern fn vcx_wallet_sign_with_address(command_handle: u32,
                 warn!("vcx_wallet_sign_with_address_cb(command_handle: {}, error: {})",
                       command_handle, error);
 
-                let (sig, len) = ::utils::cstring::vec_to_pointer(&vec![]);
-                cb(command_handle, error.into(), sig, len);
+                cb(command_handle, error.into(), null(), 0);
             }
         };
 
@@ -936,7 +936,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_sign_with_address() {
+    fn test_sign_with_address_api() {
         init!("true");
         let cb = return_types_u32::Return_U32_BIN::new().unwrap();
         let msg = "message";
@@ -952,8 +952,10 @@ pub mod tests {
         assert_eq!(msg.as_bytes(), res.as_slice());
     }
 
+    use utils::libindy::pool;
+
     #[test]
-    fn test_verify_with_address() {
+    fn test_verify_with_address_api() {
         init!("true");
         let cb = return_types_u32::Return_U32_BOOL::new().unwrap();
         let msg = "message";
@@ -962,6 +964,7 @@ pub mod tests {
         let sig = "signature";
         let sig_len = sig.len();
         let sig_raw = CString::new(sig).unwrap();
+        let res = true;
         assert_eq!(vcx_wallet_verify_with_address(cb.command_handle,
                                                   CString::new("address").unwrap().into_raw(),
                                                   msg_raw.as_ptr() as *const u8,
@@ -971,7 +974,8 @@ pub mod tests {
                                                   Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         let res = cb.receive(Some(Duration::from_secs(10))).unwrap();
-        assert_eq!(true, res);
+        assert!(res);
+        let _ = pool::close().unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
