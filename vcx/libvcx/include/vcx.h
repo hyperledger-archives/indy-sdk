@@ -1324,7 +1324,7 @@ vcx_error_t vcx_wallet_create_payment_address(vcx_command_handle_t command_handl
 //
 // # Params:
 // command_handle: command handle to map callback to user context.
-// address: payment address of message signer. The key must be created by calling indy_create_address
+// address: payment address of message signer. The key must be created by calling vcx_wallet_create_address
 // message_raw: a pointer to first byte of message to be signed
 // message_len: a message length
 // cb: Callback that takes command result as parameter.
