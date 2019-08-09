@@ -90,7 +90,7 @@ public class WalletApi extends VcxJava.API {
     /**
      * Signs a message with a payment address.
      *
-     * @param address:  Payment address of message signer. The key must be created by calling indy_create_address
+     * @param address:  Payment address of message signer.
      * @param message   The message to be signed
      *
      * @return A future that resolves to a signature string.

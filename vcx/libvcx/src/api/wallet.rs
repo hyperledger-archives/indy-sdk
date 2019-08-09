@@ -109,7 +109,7 @@ pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
 ///
 /// # Params:
 /// command_handle: command handle to map callback to user context.
-/// address: payment address of message signer. The key must be created by calling indy_create_address
+/// payment_address: payment address of message signer. The key must be created by calling vcx_wallet_create_address
 /// message_raw: a pointer to first byte of message to be signed
 /// message_len: a message length
 /// cb: Callback that takes command result as parameter.
@@ -161,7 +161,7 @@ pub extern fn vcx_wallet_sign_with_address(command_handle: u32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// address: payment address of the message signer
+/// payment_address: payment address of the message signer
 /// message_raw: a pointer to first byte of message that has been signed
 /// message_len: a message length
 /// signature_raw: a pointer to first byte of signature to be verified
@@ -195,7 +195,7 @@ pub extern fn vcx_wallet_verify_with_address(command_handle: u32,
                        command_handle, error::SUCCESS.message, valid);
 
                 cb(command_handle, error::SUCCESS.code_num, valid);
-            },
+            }
             Err(error) => {
                 warn!("vcx_wallet_verify_with_address_cb(command_handle: {}, error: {})",
                       command_handle, error);
@@ -943,10 +943,10 @@ pub mod tests {
         let msg_len = msg.len();
         let msg_raw = CString::new(msg).unwrap();
         assert_eq!(vcx_wallet_sign_with_address(cb.command_handle,
-                                                        CString::new("address").unwrap().into_raw(),
-                                                        msg_raw.as_ptr() as *const u8,
-                                                        msg_len as u32,
-                                                        Some(cb.get_callback())),
+                                                CString::new("address").unwrap().into_raw(),
+                                                msg_raw.as_ptr() as *const u8,
+                                                msg_len as u32,
+                                                Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         let res = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert_eq!(msg.as_bytes(), res.as_slice());
@@ -963,15 +963,55 @@ pub mod tests {
         let sig_len = sig.len();
         let sig_raw = CString::new(sig).unwrap();
         assert_eq!(vcx_wallet_verify_with_address(cb.command_handle,
-                                                          CString::new("address").unwrap().into_raw(),
-                                                          msg_raw.as_ptr() as *const u8,
-                                                          msg_len as u32,
-                                                          sig_raw.as_ptr() as *const u8,
-                                                          sig_len as u32,
-                                                          Some(cb.get_callback())),
+                                                  CString::new("address").unwrap().into_raw(),
+                                                  msg_raw.as_ptr() as *const u8,
+                                                  msg_len as u32,
+                                                  sig_raw.as_ptr() as *const u8,
+                                                  sig_len as u32,
+                                                  Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         let res = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert_eq!(true, res);
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_sign_verify_with_address() {
+        init!("ledger");
+        let cb_sign = return_types_u32::Return_U32_BIN::new().unwrap();
+        let cb_verify = return_types_u32::Return_U32_BOOL::new().unwrap();
+        let cb_addr = return_types_u32::Return_U32_STR::new().unwrap();
+
+        let msg = "message";
+        let msg_len = msg.len();
+        let msg_raw = CString::new(msg).unwrap();
+
+        vcx_wallet_create_payment_address(cb_addr.command_handle,
+                                          ptr::null_mut(),
+                                          Some(cb_addr.get_callback()));
+        let addr = cb_addr.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        let addr_raw = CString::new(addr.clone()).unwrap();
+
+        let res_sign = vcx_wallet_sign_with_address(cb_sign.command_handle,
+                                                    addr_raw.into_raw(),
+                                                         msg_raw.as_ptr() as *const u8,
+                                                         msg_len as u32,
+                                                         Some(cb_sign.get_callback()));
+        assert_eq!(res_sign, error::SUCCESS.code_num);
+
+        let addr_raw = CString::new(addr).unwrap();
+        let sig = cb_sign.receive(Some(Duration::from_secs(10))).unwrap();
+
+        let res_verify = vcx_wallet_verify_with_address(cb_verify.command_handle,
+                                                      addr_raw.into_raw(),
+                                                      msg_raw.as_ptr() as *const u8,
+                                                      msg_len as u32,
+                                                      sig.as_ptr(),
+                                                      sig.len() as u32,
+                                                      Some(cb_verify.get_callback()));
+        assert_eq!(res_verify, error::SUCCESS.code_num);
+        let valid = cb_verify.receive(Some(Duration::from_secs(10))).unwrap();
+        assert!(valid);
     }
 
     #[cfg(feature = "pool_tests")]

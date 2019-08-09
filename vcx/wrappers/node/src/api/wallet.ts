@@ -5,6 +5,7 @@ import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { IUTXO } from './common'
+import { voidPtrToUint8Array } from './connection'
 
 export type PaymentAddress = string
 export type PaymentAmount = number
@@ -75,17 +76,6 @@ export interface IWalletTokenInfo {
 
 export interface IPaymentAddressSeed {
   seed?: string
-}
-
-function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
-  /**
-   * Read the contents of the pointer and copy it into a new Buffer
-   */
-  const ptrType = ref.refType('uint8 *')
-  const pointerBuf = ref.alloc(ptrType, origPtr)
-  const newPtr = ref.readPointer(pointerBuf, 0, length)
-  const newBuffer = Buffer.from(newPtr)
-  return newBuffer
 }
 
 /**
