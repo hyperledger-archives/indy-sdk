@@ -7,7 +7,7 @@ use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::{PoolService, types:: *};
 use api::CommandHandle;
 
-pub const REQUESTS_FOR_STATE_PROOFS: [&str; 10] = [
+pub const REQUESTS_FOR_STATE_PROOFS: [&str; 11] = [
     constants::GET_NYM,
     constants::GET_TXN_AUTHR_AGRMT,
     constants::GET_TXN_AUTHR_AGRMT_AML,
@@ -18,6 +18,7 @@ pub const REQUESTS_FOR_STATE_PROOFS: [&str; 10] = [
     constants::GET_REVOC_REG_DEF,
     constants::GET_REVOC_REG_DELTA,
     constants::GET_AUTH_RULE,
+    constants::GET_TXN,
 ];
 
 const REQUEST_FOR_FULL: [&str; 2] = [

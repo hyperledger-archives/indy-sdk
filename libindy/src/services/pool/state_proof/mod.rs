@@ -371,8 +371,14 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
     let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
         trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", proof);
         proof
-    } else if xtype == constants::GET_TXN && json_msg["audit_path"].as_vec().is_some() {
-
+    } else if let Some(proof) = json_msg["data"]["audit_path"].as_str() {
+        if xtype == constants::GET_TXN {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", proof);
+            //TODO: talk with alex about format
+            proof
+        } else {
+            return Err("Wrong txn type for such proof".to_string())
+        }
     } else {
         return Err("No proof".to_string());
     };
@@ -380,12 +386,18 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
     let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
         trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
         root_hash
-    } else if xtype == constants::GET_TXN && json_msg["root_hash"].as_str().is_some() {
-        json_msg["root_hash"].ok_or()
+    } else if Some(root_hash) = constants::GET_TXN && json_msg["data"]["root_hash"].as_str() {
+        if xtype == constants::GET_TXN {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
+            json_msg["root_hash"].ok_or()
+        } else {
+            return Err("Wrong txn type for such root hash".to_string())
+        }
     } else {
         return Err("No root hash".to_string());
     };
 
+    // TODO: find out how to parse a key from an existing data
     let value: Option<String> = match _parse_reply_for_proof_value(json_msg, data, parsed_data, xtype, sp_key) {
         Ok(value) => value,
         Err(err_str) => {
@@ -398,7 +410,7 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
     Ok(ParsedSP {
         root_hash: root_hash.to_owned(),
         proof_nodes: proof.to_owned(),
-        multi_signature: json_msg["state_proof"]["multi_signature"].clone(),
+        multi_signature: if xtype == constants::GET_TXN {json_msg["state_proof"]["multi_signature"].clone()} else {json_msg["data"]["multi_signature"].clone()},
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
             kvs: vec![(base64::encode(sp_key), value)],
             verification_type: KeyValueSimpleDataVerificationType::Simple,
