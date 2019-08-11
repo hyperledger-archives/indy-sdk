@@ -952,8 +952,6 @@ pub mod tests {
         assert_eq!(msg.as_bytes(), res.as_slice());
     }
 
-    use utils::libindy::pool;
-
     #[test]
     fn test_verify_with_address_api() {
         init!("true");
@@ -976,6 +974,8 @@ pub mod tests {
         let res = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert!(res);
     }
+    
+    use utils::libindy::pool;
 
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -1015,6 +1015,7 @@ pub mod tests {
         assert_eq!(res_verify, error::SUCCESS.code_num);
         let valid = cb_verify.receive(Some(Duration::from_secs(10))).unwrap();
         assert!(valid);
+        let _ = pool::close().unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
