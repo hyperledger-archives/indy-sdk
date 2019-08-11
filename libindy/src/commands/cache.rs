@@ -160,11 +160,13 @@ impl CacheCommandExecutor {
         ).unwrap();
     }
 
-    fn _get_schema_continue(&self, wallet_handle: WalletHandle, ledger_response: IndyResult<(String, String)>, options: GetCacheOptions, cb_id: CommandHandle) {
-        let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
-
-        let (schema_id, schema_json) = try_cb!(ledger_response, cb);
-
+    fn _delete_and_add_record(&self,
+                              wallet_handle: WalletHandle,
+                              options: GetCacheOptions,
+                              schema_id: &str,
+                              schema_json: &str,
+                              which_cache: &str) -> IndyResult<()>
+    {
         if !options.no_store.unwrap_or(false) {
             let mut tags = Tags::new();
             let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
@@ -175,11 +177,24 @@ impl CacheCommandExecutor {
                 }
             };
             tags.insert("timestamp".to_string(), ts.to_string());
-            let _ = self.wallet_service.delete_record(wallet_handle, SCHEMA_CACHE, &schema_id);
-            let _ = self.wallet_service.add_record(wallet_handle, SCHEMA_CACHE, &schema_id, &schema_json, &tags);
+            self.wallet_service.delete_record(wallet_handle, which_cache, &schema_id)?;
+            self.wallet_service.add_record(wallet_handle, which_cache, &schema_id, &schema_json, &tags)?
         }
+        Ok(())
+    }
 
-        cb(Ok(schema_json));
+    fn _get_schema_continue(&self,
+                            wallet_handle: WalletHandle,
+                            ledger_response: IndyResult<(String, String)>,
+                            options: GetCacheOptions, cb_id: CommandHandle) {
+        let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
+
+        let (schema_id, schema_json) = try_cb!(ledger_response, cb);
+
+        match self._delete_and_add_record(wallet_handle, options, &schema_id, &schema_json, SCHEMA_CACHE) {
+            Ok(_) => cb(Ok(schema_json)),
+            Err(err) => cb(Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("get_schema_continue failed: {:?}", err))))
+        }
     }
 
     fn get_cred_def(&self,
@@ -248,21 +263,10 @@ impl CacheCommandExecutor {
 
         let (cred_def_id, cred_def_json) = try_cb!(ledger_response, cb);
 
-        if !options.no_store.unwrap_or(false) {
-            let mut tags = Tags::new();
-            let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
-                Ok(ts) => ts.as_secs() as i32,
-                Err(err) => {
-                    warn!("Cannot get time: {:?}", err);
-                    0
-                }
-            };
-            tags.insert("timestamp".to_string(), ts.to_string());
-            let _ = self.wallet_service.delete_record(wallet_handle, CRED_DEF_CACHE, &cred_def_id);
-            let _ = self.wallet_service.add_record(wallet_handle, CRED_DEF_CACHE, &cred_def_id, &cred_def_json, &tags);
+        match self._delete_and_add_record(wallet_handle, options, &cred_def_id, &cred_def_json, CRED_DEF_CACHE) {
+            Ok(_) => cb(Ok(cred_def_json)),
+            Err(err) => cb(Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("get_cred_def_continue failed: {:?}", err))))
         }
-
-        cb(Ok(cred_def_json));
     }
 
     fn purge_schema_cache(&self,
