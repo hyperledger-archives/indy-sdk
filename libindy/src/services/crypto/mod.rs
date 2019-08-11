@@ -358,8 +358,15 @@ impl CryptoService {
             seed.as_bytes().to_vec()
         } else if seed.ends_with('=') {
             // is base64 string
-            base64::decode(&seed)
-                .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize Seed from Base64 string")?
+            let decoded = base64::decode(&seed)
+                .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize Seed from Base64 string")?;
+            if decoded.len() == ed25519_sign::SEEDBYTES {
+                decoded
+            } else {
+                return Err(err_msg(IndyErrorKind::InvalidStructure,
+                                   format!("Trying to use invalid base64 encoded `seed`. \
+                                   The number of bytes must be {} ", ed25519_sign::SEEDBYTES)));
+            }
         } else if seed.as_bytes().len() == ed25519_sign::SEEDBYTES * 2 {
             // is hex string
             Vec::from_hex(seed)
