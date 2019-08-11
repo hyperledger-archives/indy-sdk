@@ -975,7 +975,6 @@ pub mod tests {
                    error::SUCCESS.code_num);
         let res = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert!(res);
-        let _ = pool::close().unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
