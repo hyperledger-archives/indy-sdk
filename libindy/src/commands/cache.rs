@@ -59,11 +59,10 @@ macro_rules! check_cache {
     if let Some(cache) = $cache {
             let min_fresh = $options.min_fresh.unwrap_or(-1);
             if min_fresh >= 0 {
-                let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
-                    Ok(ts) => ts.as_secs() as i32,
+                let ts = match CacheCommandExecutor::get_seconds_since_epoch() {
+                    Ok(ts) => ts,
                     Err(err) => {
-                        error!("Cannot get time: {:?}", err);
-                        return $cb(Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err))))
+                        return $cb(Err(err))
                     }
                 };
                 if ts - min_fresh <= cache.get_tags().unwrap_or(&Tags::new()).get("timestamp").unwrap_or(&"-1".to_string()).parse().unwrap_or(-1) {
@@ -177,7 +176,7 @@ impl CacheCommandExecutor {
                 }
             };
             tags.insert("timestamp".to_string(), ts.to_string());
-            self.wallet_service.delete_record(wallet_handle, which_cache, &schema_id)?;
+            let _ignore = self.wallet_service.delete_record(wallet_handle, which_cache, &schema_id);
             self.wallet_service.add_record(wallet_handle, which_cache, &schema_id, &schema_json, &tags)?
         }
         Ok(())
