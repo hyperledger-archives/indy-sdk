@@ -5,7 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use domain::wallet::Tags;
 use errors::prelude::*;
-use services::wallet::WalletService;
+use services::wallet::{WalletService, WalletRecord};
 use api::{WalletHandle, PoolHandle, CommandHandle};
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
@@ -103,17 +103,7 @@ impl CacheCommandExecutor {
 
         let options = try_cb!(serde_json::from_str::<GetCacheOptions>(options_json).to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize options"), cb);
 
-        let cache = if !options.no_cache.unwrap_or(false) {
-            let options_json = json!({
-                "retrieveType": false,
-                "retrieveValue": true,
-                "retrieveTags": true,
-            }).to_string();
-            match self.wallet_service.get_record(wallet_handle, SCHEMA_CACHE, id, &options_json) {
-                Ok(record) => Ok(Some(record)),
-                Err(err) => if err.kind() == IndyErrorKind::WalletItemNotFound { Ok(None) } else { Err(err) }
-            }
-        } else { Ok(None) };
+        let cache = self.get_record_from_cache(wallet_handle, id, &options, SCHEMA_CACHE);
         let cache = try_cb!(cache, cb);
 
         if let Some(cache) = cache {
@@ -198,17 +188,7 @@ impl CacheCommandExecutor {
 
         let options = try_cb!(serde_json::from_str::<GetCacheOptions>(options_json).to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize options"), cb);
 
-        let cache = if !options.no_cache.unwrap_or(false) {
-            let options_json = json!({
-                "retrieveType": false,
-                "retrieveValue": true,
-                "retrieveTags": true,
-            }).to_string();
-            match self.wallet_service.get_record(wallet_handle, CRED_DEF_CACHE, id, &options_json) {
-                Ok(record) => Ok(Some(record)),
-                Err(err) => if err.kind() == IndyErrorKind::WalletItemNotFound { Ok(None) } else { Err(err) }
-            }
-        } else { Ok(None) };
+        let cache = self.get_record_from_cache(wallet_handle, id, &options, CRED_DEF_CACHE);
         let cache = try_cb!(cache, cb);
 
         if let Some(cache) = cache {
@@ -257,6 +237,20 @@ impl CacheCommandExecutor {
                 )
             )
         ).unwrap();
+    }
+
+    fn get_record_from_cache(&self, wallet_handle: WalletHandle, id: &str, options: &GetCacheOptions, which_cache: &str) -> Result<Option<WalletRecord>, IndyError> {
+        if !options.no_cache.unwrap_or(false) {
+            let options_json = json!({
+                "retrieveType": false,
+                "retrieveValue": true,
+                "retrieveTags": true,
+            }).to_string();
+            match self.wallet_service.get_record(wallet_handle, which_cache, id, &options_json) {
+                Ok(record) => Ok(Some(record)),
+                Err(err) => if err.kind() == IndyErrorKind::WalletItemNotFound { Ok(None) } else { Err(err) }
+            }
+        } else { Ok(None) }
     }
 
     fn _get_cred_def_continue(&self, wallet_handle: WalletHandle, ledger_response: IndyResult<(String, String)>, options: GetCacheOptions, cb_id: CommandHandle) {
