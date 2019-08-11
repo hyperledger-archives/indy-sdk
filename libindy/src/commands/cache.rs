@@ -54,6 +54,28 @@ pub struct CacheCommandExecutor {
     pending_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<String>)>>>,
 }
 
+macro_rules! check_cache {
+    ($cache: ident, $options: ident, $cb: ident) => {
+    if let Some(cache) = $cache {
+            let min_fresh = $options.min_fresh.unwrap_or(-1);
+            if min_fresh >= 0 {
+                let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                    Ok(ts) => ts.as_secs() as i32,
+                    Err(err) => {
+                        error!("Cannot get time: {:?}", err);
+                        return $cb(Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err))))
+                    }
+                };
+                if ts - min_fresh <= cache.get_tags().unwrap_or(&Tags::new()).get("timestamp").unwrap_or(&"-1".to_string()).parse().unwrap_or(-1) {
+                    return $cb(Ok(cache.get_value().unwrap_or("").to_string()))
+                }
+            } else {
+                return $cb(Ok(cache.get_value().unwrap_or("").to_string()))
+            }
+        }
+    };
+}
+
 impl CacheCommandExecutor {
     pub fn new(wallet_service: Rc<WalletService>) -> CacheCommandExecutor {
         CacheCommandExecutor {
@@ -106,23 +128,7 @@ impl CacheCommandExecutor {
         let cache = self.get_record_from_cache(wallet_handle, id, &options, SCHEMA_CACHE);
         let cache = try_cb!(cache, cb);
 
-        if let Some(cache) = cache {
-            let min_fresh = options.min_fresh.unwrap_or(-1);
-            if min_fresh >= 0 {
-                let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
-                    Ok(ts) => ts.as_secs() as i32,
-                    Err(err) => {
-                        error!("Cannot get time: {:?}", err);
-                        return cb(Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err))))
-                    }
-                };
-                if ts - min_fresh <= cache.get_tags().unwrap_or(&Tags::new()).get("timestamp").unwrap_or(&"-1".to_string()).parse().unwrap_or(-1) {
-                    return cb(Ok(cache.get_value().unwrap_or("").to_string()))
-                }
-            } else {
-                return cb(Ok(cache.get_value().unwrap_or("").to_string()))
-            }
-        }
+        check_cache!(cache, options, cb);
 
         if options.no_update.unwrap_or(false) {
             return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)));
@@ -191,23 +197,7 @@ impl CacheCommandExecutor {
         let cache = self.get_record_from_cache(wallet_handle, id, &options, CRED_DEF_CACHE);
         let cache = try_cb!(cache, cb);
 
-        if let Some(cache) = cache {
-            let min_fresh = options.min_fresh.unwrap_or(-1);
-            if min_fresh >= 0 {
-                let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
-                    Ok(ts) => ts.as_secs() as i32,
-                    Err(err) => {
-                        error!("Cannot get time: {:?}", err);
-                        return cb(Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err))))
-                    }
-                };
-                if ts - min_fresh <= cache.get_tags().unwrap_or(&Tags::new()).get("timestamp").unwrap_or(&"-1".to_string()).parse().unwrap_or(-1) {
-                    return cb(Ok(cache.get_value().unwrap_or("").to_string()))
-                }
-            } else {
-                return cb(Ok(cache.get_value().unwrap_or("").to_string()))
-            }
-        }
+        check_cache!(cache, options, cb);
 
         if options.no_update.unwrap_or(false) {
             return cb(Err(IndyError::from(IndyErrorKind::LedgerItemNotFound)));
