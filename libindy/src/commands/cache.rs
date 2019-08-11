@@ -269,6 +269,25 @@ impl CacheCommandExecutor {
         }
     }
 
+    fn get_seconds_since_epoch() -> Result<i32, IndyError> {
+        match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(ts) => Ok(ts.as_secs() as i32),
+            Err(err) => {
+                error!("Cannot get time: {:?}", err);
+                Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err)))
+            }
+        }
+    }
+
+    fn build_query_json(max_age: i32) -> Result<String, IndyError> {
+        if max_age >= 0 {
+            let ts = CacheCommandExecutor::get_seconds_since_epoch()?;
+            Ok(json!({"timestamp": {"$lt": ts - max_age}}).to_string())
+        } else {
+            Ok("{}".to_string())
+        }
+    }
+
     fn purge_schema_cache(&self,
                           wallet_handle: WalletHandle,
                           options_json: &str) -> IndyResult<()> {
@@ -278,18 +297,7 @@ impl CacheCommandExecutor {
             .to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize options")?;
 
         let max_age = options.max_age.unwrap_or(-1);
-        let query_json = if max_age >= 0 {
-            let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
-                Ok(ts) => ts.as_secs() as i32,
-                Err(err) => {
-                    error!("Cannot get time: {:?}", err);
-                    return Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err)))
-                }
-            };
-            json!({"timestamp": {"$lt": ts - max_age}}).to_string()
-        } else {
-            "{}".to_string()
-        };
+        let query_json = CacheCommandExecutor::build_query_json(max_age)?;
 
         let options_json = json!({
             "retrieveType": false,
@@ -322,18 +330,7 @@ impl CacheCommandExecutor {
             .to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize options")?;
 
         let max_age = options.max_age.unwrap_or(-1);
-        let query_json = if max_age >= 0 {
-            let ts = match SystemTime::now().duration_since(UNIX_EPOCH) {
-                Ok(ts) => ts.as_secs() as i32,
-                Err(err) => {
-                    error!("Cannot get time: {:?}", err);
-                    return Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot get time: {:?}", err)))
-                }
-            };
-            json!({"timestamp": {"$lt": ts - max_age}}).to_string()
-        } else {
-            "{}".to_string()
-        };
+        let query_json = CacheCommandExecutor::build_query_json(max_age)?;
 
         let options_json = json!({
             "retrieveType": false,
