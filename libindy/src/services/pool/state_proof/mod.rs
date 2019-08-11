@@ -371,6 +371,8 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
     let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
         trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", proof);
         proof
+    } else if xtype == constants::GET_TXN && json_msg["audit_path"].as_vec().is_some() {
+
     } else {
         return Err("No proof".to_string());
     };
@@ -378,6 +380,8 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
     let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
         trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
         root_hash
+    } else if xtype == constants::GET_TXN && json_msg["root_hash"].as_str().is_some() {
+        json_msg["root_hash"].ok_or()
     } else {
         return Err("No root hash".to_string());
     };
