@@ -1257,7 +1257,7 @@ extern "C" {
     ///
     /// Note: Both Transaction Author and Endorser must sign output request after that.
     ///
-    /// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorder.md
+    /// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
     ///                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
     ///
     /// #Params

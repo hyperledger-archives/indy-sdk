@@ -327,7 +327,13 @@ vcx_error_t vcx_wallet_update_record_value(vcx_command_handle_t chandle, const c
 
 /** Create payment address for using tokens */
 vcx_error_t vcx_wallet_create_payment_address(vcx_command_handle_t chandle, const char *seed, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *address));
-    
+
+/** Create signature with a payment address */
+vcx_error_t vcx_wallet_sign_with_address(vcx_command_handle_t chandle, const char *payment_address, const unsigned short *message_raw, vcx_u32_t message_len, void (*cb)(vcx_command_handle_t, vcx_error_t, const unsigned short *, vcx_u32_t))
+
+/** Verify signature with a payment address */
+vcx_error_t vcx_wallet_verify_with_address(vcx_command_handle_t chandle, const char *payment_address, const unsigned short *message_raw, vcx_u32_t message_len, const unsigned short *signature_raw, vcx_u32_t signature_len, void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_bool_t))
+
 /** Get wallet token info which contains balance and addresses */
 vcx_error_t vcx_wallet_get_token_info(vcx_command_handle_t chandle, vcx_payment_handle_t payment_handle, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *token_info));
 

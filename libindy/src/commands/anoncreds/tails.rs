@@ -59,9 +59,8 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
         accessor(&tail);
 
-        let res = ();
-        debug!("access_tail <<< res: {:?}", res);
-        Ok(res)
+        debug!("access_tail <<< res: ()");
+        Ok(())
     }
 }
 
