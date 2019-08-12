@@ -169,14 +169,8 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly
                         (name, value.clone())
                     }
                     Tag::Encrypted(ref ename, ref evalue) => {
-                        let name = match decrypt_merged(&ename, tag_name_key) {
-                            Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
-                            Ok(tag_name) => String::from_utf8(tag_name).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?
-                        };
-                        let value = match decrypt_merged(&evalue, tag_value_key) {
-                            Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
-                            Ok(tag_value) => String::from_utf8(tag_value).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?
-                        };
+                        let name = String::from_utf8(decrypt_merged(&ename, tag_name_key)?)?;
+                        let value = String::from_utf8(decrypt_merged(&evalue, tag_value_key)?)?;
                         (name, value)
                     }
                 };
