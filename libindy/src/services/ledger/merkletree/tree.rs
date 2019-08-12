@@ -6,7 +6,7 @@ pub use services::ledger::merkletree::proof::{
     Positioned,
     Proof
 };
-use utils::crypto::hash::{Digest, Hash};
+use utils::crypto::hash::{Hash};
 
 pub type TreeLeafData = Vec<u8>;
 
@@ -31,17 +31,17 @@ pub enum Tree {
 
 impl Tree {
     /// Create an empty tree
-    pub fn empty(hash: Digest) -> Self {
+    pub fn empty(hash: Vec<u8>) -> Self {
         Tree::Empty {
             hash: hash.to_vec()
         }
     }
 
     /// Create a new tree
-    pub fn new(hash: Digest, value: TreeLeafData) -> Self {
+    pub fn new(hash: Vec<u8>, value: TreeLeafData) -> Self {
         Tree::Leaf {
             hash: hash.to_vec(),
-            value: value
+            value
         }
     }
 

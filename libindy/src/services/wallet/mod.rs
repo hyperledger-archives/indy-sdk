@@ -15,14 +15,13 @@ use errors::prelude::*;
 pub use services::wallet::encryption::KeyDerivationData;
 use utils::crypto::chacha20poly1305_ietf;
 use utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
-use utils::sequence;
 
 use self::export_import::{export_continue, finish_import, preparse_file_to_import};
 use self::storage::{WalletStorage, WalletStorageType};
 use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Keys, Wallet};
-use api::WalletHandle;
+use api::{WalletHandle, next_wallet_handle};
 
 mod storage;
 mod encryption;
@@ -187,7 +186,7 @@ impl WalletService {
 
         let (storage, metadata, key_derivation_data) = self._open_storage_and_fetch_metadata(config, credentials)?;
 
-        let wallet_handle = WalletHandle(sequence::get_next_id());
+        let wallet_handle = next_wallet_handle();
 
         let rekey_data: Option<KeyDerivationData> = credentials.rekey.as_ref().map(|ref rekey|
             KeyDerivationData::from_passphrase_with_new_salt(rekey, &credentials.rekey_derivation_method));
@@ -462,7 +461,7 @@ impl WalletService {
         let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(exported_file_to_import, &export_config.key)?;
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
 
-        let wallet_handle = WalletHandle(sequence::get_next_id());
+        let wallet_handle = next_wallet_handle();
 
         let stashed_key_data = key_data.clone();
 
@@ -760,7 +759,7 @@ mod tests {
 
             let (storage, metadata, key_derivation_data) = self._open_storage_and_fetch_metadata(config, credentials)?;
 
-            let wallet_handle = WalletHandle(sequence::get_next_id());
+            let wallet_handle = next_wallet_handle();
 
             let rekey_data: Option<KeyDerivationData> = credentials.rekey.as_ref().map(|ref rekey|
                 KeyDerivationData::from_passphrase_with_new_salt(rekey, &credentials.rekey_derivation_method));
@@ -794,7 +793,7 @@ mod tests {
             let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(exported_file_to_import, &export_config.key)?;
             let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
 
-            let wallet_handle = WalletHandle(sequence::get_next_id());
+            let wallet_handle = next_wallet_handle();
 
             let import_key = import_key_derivation_data.calc_master_key()?;
             let master_key = key_data.calc_master_key()?;
@@ -1095,7 +1094,7 @@ mod tests {
             id: String::from("same_id"),
             storage_type: None,
             storage_config: Some(json!({
-                "path": _custom_path()
+                "path": _custom_path("wallet_service_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths")
             })),
         };
 
@@ -1108,6 +1107,8 @@ mod tests {
 
         wallet_service.delete_wallet(&config_1, &RAW_CREDENTIAL).unwrap();
         wallet_service.delete_wallet(&config_2, &RAW_CREDENTIAL).unwrap();
+
+        _cleanup("wallet_service_open_wallet_works_for_two_wallets_with_same_ids_but_different_paths");
     }
 
     #[test]
@@ -2310,7 +2311,7 @@ mod tests {
     }
 
     fn _export_file_path(name: &str) -> PathBuf {
-        let mut path = environment::tmp_file_path("export_tests");
+        let mut path = environment::tmp_path();
         path.push(name);
         path
     }
@@ -2394,9 +2395,9 @@ mod tests {
             .unwrap();
     }
 
-    fn _custom_path() -> String {
+    fn _custom_path(name : &str) -> String {
         let mut path = environment::tmp_path();
-        path.push("custom_wallet_path");
+        path.push(name );
         path.to_str().unwrap().to_owned()
     }
 }

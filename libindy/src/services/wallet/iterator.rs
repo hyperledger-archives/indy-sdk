@@ -17,7 +17,7 @@ impl WalletIterator {
     pub fn new(storage_iter: Box<StorageIterator>, keys: Rc<Keys>) -> Self {
         WalletIterator {
             storage_iterator: storage_iter,
-            keys: keys,
+            keys,
         }
     }
 

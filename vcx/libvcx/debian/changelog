@@ -1,6 +1,19 @@
-libvcx (0.3.2) unstable; urgency=medium
+libvcx (0.4.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+* 0.4.0
+* Added a set of new APIs around credentials and proofs that work with messages that should be exchanged without handling the transport of those messages.
+This removes the dependency on an agency/cloud-agent and allows the user of the SDK to transport those messages themselves.
+There are two types of functions:
+    * `vcx_*_get_request_msg` - gets a message that can be sent to the specified connection.
+    * `vcx_*_update_state_with_message` - checks for any state change from the given message and updates the the state attribute.
+* Added new *EXPEREMENTAL* functions to get requirements and price for a ledger request.
+    * `vcx_get_request_price` - returns request minimal request price for performing an action in case the requester can do it.
+* Updated Indy-SDK CI/CD pipelines to test, to build and to publish Android artifacts for Libvcx.
+* Bugfixes:
+    * Android Crash upon logging
+    * others minor bugfixes
 
 * 0.3.2
     * Bugfixes
