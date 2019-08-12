@@ -328,7 +328,7 @@ impl IssuerCommandExecutor {
             SignatureType::CL
         };
 
-        let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or(schema.id.clone());
+        let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or_else(|| schema.id.clone());
 
         let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema_id, &signature_type.to_str(), tag);
 
@@ -537,7 +537,7 @@ impl IssuerCommandExecutor {
                 }
 
                 if rev_reg_def.value.issuance_type == IssuanceType::ISSUANCE_ON_DEMAND {
-                    rev_reg_info.used_ids.insert(rev_reg_info.curr_id.clone());
+                    rev_reg_info.used_ids.insert(rev_reg_info.curr_id);
                 }
 
                 // TODO: FIXME: Review error kind!
