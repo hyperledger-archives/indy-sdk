@@ -30,8 +30,7 @@ from sbca_wrapper import Anoncreds, BlobStorage, Crypto, DID, Ledger, NonSecrets
 ```python
 from sbca_wrapper import  Wallet
 
-# TODO: Check if it Works
-await Wallet.create(parameters)
+await Wallet.create(wallet_config={'id': wallet_name}, wallet_credentials={'key': wallet_passphrase})
 
 ```
 
