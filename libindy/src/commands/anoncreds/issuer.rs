@@ -453,7 +453,7 @@ impl IssuerCommandExecutor {
     }
 
     fn rotate_credential_definition_start_complete(&self,
-                                                   cb_id: CallbackHandle,
+                                                   cb_id: CommandHandle,
                                                    wallet_handle: WalletHandle,
                                                    schema_id: &str,
                                                    cred_def_id: &str,
