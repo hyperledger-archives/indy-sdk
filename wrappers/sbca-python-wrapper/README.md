@@ -1,6 +1,6 @@
 ![logo2](./images/sbc-banner.png)
 
-#   SBC-Indy-Wrapper
+#   SBCA-Indy-Wrapper
 >   [blockchain.swisscom.com](https://blockchain.swisscom.com/)
 
 
