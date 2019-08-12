@@ -69,13 +69,13 @@ pub const DEFAULT_GENERATOR: &str = "3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCj
 impl<T: Networker> RequestSM<T> {
     pub fn new(networker: Rc<RefCell<T>>,
                f: usize,
-               cmd_ids: &Vec<CommandHandle>,
+               cmd_ids: &[CommandHandle],
                nodes: &HashMap<String, Option<VerKey>>,
                pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
         let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
         RequestSM {
             f,
-            cmd_ids: cmd_ids.clone(),
+            cmd_ids: cmd_ids.to_owned(),
             nodes: nodes.clone(),
             generator,
             pool_name: pool_name.to_string(),
@@ -323,7 +323,7 @@ impl<T: Networker> RequestSM<T> {
                             let hashable = HashableValue { inner: result_without_proof };
 
                             let cnt = {
-                                let set = state.replies.entry(hashable).or_insert(HashSet::new());
+                                let set = state.replies.entry(hashable).or_insert_with(HashSet::new);
                                 set.insert(node_alias.clone());
                                 set.len()
                             };
@@ -359,7 +359,7 @@ impl<T: Networker> RequestSM<T> {
                         state.timeout_nodes.insert(node_alias.clone());
                         if state.is_consensus_reachable(f, nodes.len()) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestState::Consensus(state.into()), None)
+                            (RequestState::Consensus(state), None)
                         } else {
                             //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
                             _send_replies(&cmd_ids, Err(err_msg(IndyErrorKind::PoolTimeout, "Consensus is impossible")));
@@ -371,7 +371,7 @@ impl<T: Networker> RequestSM<T> {
                         _finish_request(&cmd_ids);
                         (RequestState::finish(), None)
                     }
-                    _ => (RequestState::Consensus(state.into()), None)
+                    _ => (RequestState::Consensus(state), None)
                 }
             }
             RequestState::Single(mut state) => {
@@ -387,7 +387,7 @@ impl<T: Networker> RequestSM<T> {
                             let last_write_time = get_last_signed_time(&raw_msg).unwrap_or(0);
 
                             let (cnt, soonest) = {
-                                let set = state.replies.entry(hashable).or_insert(HashSet::new());
+                                let set = state.replies.entry(hashable).or_insert_with(HashSet::new);
                                 set.insert(NodeResponse { node_alias: node_alias.clone(), timestamp: last_write_time, raw_msg: raw_msg.clone() });
                                 (
                                     set.len(),
@@ -451,10 +451,10 @@ impl<T: Networker> RequestSM<T> {
                     _ => (RequestState::CatchupConsensus(state), None)
                 }
             }
-            RequestState::CatchupSingle(mut state) => {
+            RequestState::CatchupSingle(state) => {
                 match re {
                     RequestEvent::CatchupRep(mut cr, node_alias) => {
-                        match _process_catchup_reply(&mut cr, &mut state.merkle_tree, &state.target_mt_root, state.target_mt_size, &pool_name) {
+                        match _process_catchup_reply(&mut cr, &state.merkle_tree, &state.target_mt_root, state.target_mt_size, &pool_name) {
                             Ok(merkle) => {
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(state.req_id.clone(), None)));
                                 (RequestState::finish(), Some(PoolEvent::Synced(merkle)))
@@ -515,7 +515,7 @@ impl<T: Networker> RequestSM<T> {
 
     fn _full_request_handle_consensus_state(mut state: FullState<T>,
                                             req_id: String, node_alias: String, node_result: String,
-                                            cmd_ids: &Vec<CommandHandle>,
+                                            cmd_ids: &[CommandHandle],
                                             nodes: &HashMap<String, Option<VerKey>>) -> RequestState<T> {
         let is_first_resp = state.accum_reply.is_none();
         if is_first_resp {
@@ -528,7 +528,7 @@ impl<T: Networker> RequestSM<T> {
                 .insert(node_alias.clone(), SJsonValue::from(node_result));
         }
 
-        let required_reply_cnt = state.nodes_to_send.as_ref().map(Vec::len).unwrap_or(nodes.len());
+        let required_reply_cnt = state.nodes_to_send.as_ref().map(Vec::len).unwrap_or_else(|| nodes.len());
 
         let reply_cnt = state.accum_reply.as_ref().unwrap()
             .inner.as_object().unwrap().len();
@@ -601,7 +601,7 @@ impl<T: Networker> RequestSM<T> {
 }
 
 pub trait RequestHandler<T: Networker> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<CommandHandle>, nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[CommandHandle], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
     fn is_terminal(&self) -> bool;
 }
@@ -611,7 +611,7 @@ pub struct RequestHandlerImpl<T: Networker> {
 }
 
 impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<CommandHandle>, nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[CommandHandle], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
         RequestHandlerImpl {
             request_wrapper: Some(RequestSM::new(networker, f, cmd_ids, nodes, pool_name, timeout, extended_timeout)),
         }
@@ -643,7 +643,7 @@ impl<T: Networker> SingleState<T> {
             < total_nodes_cnt
     }
 
-    fn try_to_continue(self, req_id: String, node_alias: String, cmd_ids: &Vec<CommandHandle>, nodes_cnt: usize, timeout: i64) -> RequestState<T> {
+    fn try_to_continue(self, req_id: String, node_alias: String, cmd_ids: &[CommandHandle], nodes_cnt: usize, timeout: i64) -> RequestState<T> {
         if self.is_consensus_reachable(nodes_cnt) {
             self.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone(), timeout)));
             self.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone(), timeout)));
@@ -666,7 +666,7 @@ impl<T: Networker> ConsensusState<T> {
     }
 }
 
-fn _parse_nack(denied_nodes: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_ids: &Vec<CommandHandle>, node_alias: &str) -> bool {
+fn _parse_nack(denied_nodes: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_ids: &[CommandHandle], node_alias: &str) -> bool {
     if denied_nodes.len() == f {
         _send_ok_replies(cmd_ids, raw_msg);
         true
@@ -696,19 +696,19 @@ fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_r
     Ok(merkle)
 }
 
-fn _send_ok_replies(cmd_ids: &Vec<CommandHandle>, msg: &str) {
+fn _send_ok_replies(cmd_ids: &[CommandHandle], msg: &str) {
     _send_replies(cmd_ids, Ok(msg.to_string()))
 }
 
-fn _finish_request(cmd_ids: &Vec<CommandHandle>) {
+fn _finish_request(cmd_ids: &[CommandHandle]) {
     _send_replies(cmd_ids, Err(err_msg(IndyErrorKind::PoolTerminated, "Pool is terminated")))
 }
 
-fn _send_replies(cmd_ids: &Vec<CommandHandle>, msg: IndyResult<String>) {
-    cmd_ids.into_iter().for_each(|id| {
+fn _send_replies(cmd_ids: &[CommandHandle], msg: IndyResult<String>) {
+    cmd_ids.iter().for_each(|id| {
         CommandExecutor::instance().send(
             Command::Ledger(
-                LedgerCommand::SubmitAck(id.clone(), msg.clone()))
+                LedgerCommand::SubmitAck(*id, msg.clone()))
         ).unwrap();
     });
 }
@@ -815,7 +815,7 @@ fn _extract_left_last_write_time(msg_result: &SJsonValue) -> Option<u64> {
 }
 
 fn _get_freshness_threshold() -> u64 {
-    THRESHOLD.lock().unwrap().clone()
+    *THRESHOLD.lock().unwrap()
 }
 
 fn _get_cur_time() -> u64 {
@@ -850,7 +850,7 @@ pub mod tests {
     pub struct MockRequestHandler {}
 
     impl<T: Networker> RequestHandler<T> for MockRequestHandler {
-        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<CommandHandle>, _nodes: &HashMap<String, Option<VerKey>>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
+        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &[CommandHandle], _nodes: &HashMap<String, Option<VerKey>>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
             MockRequestHandler {}
         }
 

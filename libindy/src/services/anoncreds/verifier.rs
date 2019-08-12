@@ -218,8 +218,8 @@ impl Verifier {
             .iter()
             .map(|(referent, info)|
                 Verifier::_validate_timestamp(&received_revealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked)
-                    .or(Verifier::_validate_timestamp(&received_unrevealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked))
-                    .or(received_self_attested_attrs.get(referent).map(|_| ()).ok_or(IndyError::from(IndyErrorKind::InvalidStructure)))
+                    .or_else(|_|Verifier::_validate_timestamp(&received_unrevealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked))
+                    .or_else(|_|received_self_attested_attrs.get(referent).map(|_| ()).ok_or(IndyError::from(IndyErrorKind::InvalidStructure)))
             )
             .collect::<IndyResult<Vec<()>>>()?;
 
@@ -306,7 +306,7 @@ impl Verifier {
                                       received_predicates: &HashMap<String, Identifier>,
                                       self_attested_attrs: &HashSet<String>) -> IndyResult<()> {
         let proof_attr_identifiers: HashMap<String, Identifier> = received_revealed_attrs
-            .into_iter()
+            .iter()
             .chain(received_unrevealed_attrs)
             .map(|(r, id)| (r.to_string(), id.clone()))
             .collect();
@@ -319,7 +319,7 @@ impl Verifier {
 
         for (referent, info) in requested_attrs {
             let op = parse_from_json(
-                &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
+                &build_wql_query(&info.name, &referent, &info.restrictions, None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
@@ -330,7 +330,7 @@ impl Verifier {
 
         for (referent, info) in proof_req.requested_predicates.iter() {
             let op = parse_from_json(
-                &build_wql_query(&info.name, &referent, &info.restrictions, &None)?
+                &build_wql_query(&info.name, &referent, &info.restrictions, None)?
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, received_predicates, schemas, cred_defs)?;

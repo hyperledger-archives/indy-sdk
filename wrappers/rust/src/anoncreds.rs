@@ -75,6 +75,9 @@ fn _issuer_create_schema(command_handle: CommandHandle, issuer_did: &str, name: 
 ///
 /// It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 ///
+/// Note: Use combination of `issuer_rotate_credential_def_start` and `issuer_rotate_credential_def_apply` functions
+/// to generate new keys for an existing credential definition.
+///
 /// # Arguments
 /// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `issuer_did`: a DID of the issuer signing cred_def transaction to the Ledger
@@ -103,6 +106,10 @@ fn _issuer_create_schema(command_handle: CommandHandle, issuer_did: &str, name: 
 ///     },
 ///     ver: Version of the CredDef json
 /// }
+///
+/// Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+/// They should not be parsed and are likely to change in future versions.
+///
 pub fn issuer_create_and_store_credential_def(wallet_handle: WalletHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str) -> Box<Future<Item=(String, String), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -127,6 +134,70 @@ fn _issuer_create_and_store_credential_def(command_handle: CommandHandle, wallet
             tag.as_ptr(),
             opt_c_ptr!(signature_type, signature_type_str),
             config_json.as_ptr(),
+            cb
+        )
+    })
+}
+
+/// Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+///
+/// Use `issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
+///
+/// # Arguments
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
+/// * `cred_def_id`: an identifier of created credential definition stored in the wallet
+/// * `config_json`: (optional) type-specific configuration of credential definition as json:
+///     - 'CL':
+///         - support_revocation: whether to request non-revocation credential (optional, default false)
+///
+/// # Returns
+/// * `cred_def_json`: public part of temporary created credential definition
+pub fn issuer_rotate_credential_def_start(wallet_handle: WalletHandle, cred_def_id: &str, config_json: Option<&str>) -> Box<Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _issuer_rotate_credential_def_start(command_handle, wallet_handle, cred_def_id, config_json, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _issuer_rotate_credential_def_start(command_handle: CommandHandle, wallet_handle: WalletHandle, cred_def_id: &str, config: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let cred_def_id = c_str!(cred_def_id);
+    let config_str = opt_c_str!(config);
+
+    ErrorCode::from(unsafe {
+        anoncreds::indy_issuer_rotate_credential_def_start(
+            command_handle,
+            wallet_handle,
+            cred_def_id.as_ptr(),
+            opt_c_ptr!(config, config_str),
+            cb
+        )
+    })
+}
+
+/// Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+///
+/// # Arguments
+/// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
+/// * `cred_def_id`: an identifier of created credential definition stored in the wallet
+///
+/// # Returns
+pub fn issuer_rotate_credential_def_apply(wallet_handle: WalletHandle, cred_def_id: &str) -> Box<Future<Item=(), Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+    let err = _issuer_rotate_credential_def_apply(command_handle, wallet_handle, cred_def_id, cb);
+
+    ResultHandler::empty(command_handle, err, receiver)
+}
+
+fn _issuer_rotate_credential_def_apply(command_handle: CommandHandle, wallet_handle: WalletHandle, cred_def_id: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    let cred_def_id = c_str!(cred_def_id);
+
+    ErrorCode::from(unsafe {
+        anoncreds::indy_issuer_rotate_credential_def_apply(
+            command_handle,
+            wallet_handle,
+            cred_def_id.as_ptr(),
             cb
         )
     })

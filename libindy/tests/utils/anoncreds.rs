@@ -54,6 +54,14 @@ pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str,
     anoncreds::issuer_create_and_store_credential_def(wallet_handle, issuer_did, schema, tag, signature_type, config.unwrap_or("{}")).wait() // TODO: FIXME OPTIONAL CONFIG
 }
 
+pub fn issuer_rotate_credential_def_start(wallet_handle: i32, cred_def_id: &str, config_json: Option<&str>) -> Result<String, IndyError> {
+    anoncreds::issuer_rotate_credential_def_start(wallet_handle, cred_def_id, config_json).wait()
+}
+
+pub fn issuer_rotate_credential_def_apply(wallet_handle: i32, cred_def_id: &str) -> Result<(), IndyError> {
+    anoncreds::issuer_rotate_credential_def_apply(wallet_handle, cred_def_id).wait()
+}
+
 pub fn issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
                                          cred_def_id: &str, config_json: &str, tails_writer_handle: i32)
                                          -> Result<(String, String, String), IndyError> {

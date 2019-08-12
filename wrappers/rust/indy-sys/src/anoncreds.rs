@@ -23,6 +23,19 @@ extern {
                                                        cb: Option<ResponseStringStringCB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_issuer_rotate_credential_def_start(command_handle: CommandHandle,
+                                                   wallet_handle: WalletHandle,
+                                                   cred_def_id: CString,
+                                                   config_json: CString,
+                                                   cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_issuer_rotate_credential_def_apply(command_handle: CommandHandle,
+                                                   wallet_handle: WalletHandle,
+                                                   cred_def_id: CString,
+                                                   cb: Option<ResponseEmptyCB>) -> Error;
+
+    #[no_mangle]
     pub fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHandle,
                                                   wallet_handle: WalletHandle,
                                                   issuer_did: CString,

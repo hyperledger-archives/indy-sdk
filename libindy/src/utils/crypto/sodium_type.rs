@@ -48,7 +48,7 @@ macro_rules! sodium_type (($newtype:ident, $sodiumtype:path, $len:ident) => (
     impl<'de> ::serde::Deserialize<'de> for $newtype {
         fn deserialize<D>(deserializer: D) -> Result<$newtype, D::Error> where D: ::serde::Deserializer<'de>
         {
-            <$sodiumtype>::deserialize(deserializer).map(|inner| $newtype (inner))
+            <$sodiumtype>::deserialize(deserializer).map($newtype)
         }
     }
 

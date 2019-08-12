@@ -64,7 +64,7 @@ impl PoolService {
         trace!("PoolService::create {} with config {:?}", name, config);
 
         let mut path = environment::pool_path(name);
-        let pool_config = config.unwrap_or(PoolConfig::default_for_name(name));
+        let pool_config = config.unwrap_or_else( || PoolConfig::default_for_name(name));
 
         if path.as_path().exists() {
             return Err(err_msg(IndyErrorKind::PoolConfigAlreadyExists, format!("Pool ledger config file with name \"{}\" already exists", name)));
@@ -147,7 +147,7 @@ impl PoolService {
             }
         }
 
-        let config = config.unwrap_or(PoolOpenConfig::default());
+        let config = config.unwrap_or_default();
 
         let pool_handle: PoolHandle = next_pool_handle();
         let mut new_pool = Pool::new(name, pool_handle, config);
@@ -286,7 +286,7 @@ pub fn parse_response_metadata(response: &str) -> IndyResult<ResponseMetadata> {
     let response_metadata = match response_result["ver"].as_str() {
         None => _parse_transaction_metadata_v0(&response_result),
         Some("1") => _parse_transaction_metadata_v1(&response_result),
-        ver @ _ => return Err(err_msg(IndyErrorKind::InvalidTransaction, format!("Unsupported transaction response version: {:?}", ver)))
+        ver=> return Err(err_msg(IndyErrorKind::InvalidTransaction, format!("Unsupported transaction response version: {:?}", ver)))
     };
 
     trace!("indy::services::pool::parse_response_metadata >> response_metadata: {:?}", response_metadata);

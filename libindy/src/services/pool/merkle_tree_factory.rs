@@ -117,7 +117,7 @@ fn get_pool_stored_path_base(pool_name: &str, create_dir: bool, filename: &str, 
     path
 }
 
-pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> IndyResult<()> {
+pub fn dump_new_txns(pool_name: &str, txns: &[Vec<u8>]) -> IndyResult<()> {
     let p = get_pool_stored_path( pool_name, false);
     if !p.exists() {
         _dump_genesis_to_stored(&p, pool_name)?;
@@ -146,7 +146,7 @@ fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> IndyResult<()> {
     _dump_vec_to_file(&genesis_vec, &mut file)
 }
 
-fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file: &mut fs::File) -> IndyResult<()> {
+fn _dump_vec_to_file(v: &[Vec<u8>], file: &mut fs::File) -> IndyResult<()> {
     for ref line in v {
         file.write_u64::<LittleEndian>(line.len() as u64)
             .to_indy(IndyErrorKind::IOError, "Can't write to pool ledger cache file")?;
