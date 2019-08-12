@@ -27,11 +27,9 @@ impl SignatureType {
     }
 }
 
-fn default_false() -> bool { false }
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CredentialDefinitionConfig {
-    #[serde(default = "default_false")]
+    #[serde(default)]
     pub support_revocation: bool
 }
 
@@ -66,6 +64,13 @@ pub struct CredentialDefinitionV1 {
 pub enum CredentialDefinition {
     #[serde(rename = "1.0")]
     CredentialDefinitionV1(CredentialDefinitionV1)
+}
+
+#[derive(Debug, Serialize, Deserialize, NamedType)]
+pub struct TemporaryCredentialDefinition {
+    pub cred_def: CredentialDefinition,
+    pub cred_def_priv_key: CredentialDefinitionPrivateKey,
+    pub cred_def_correctness_proof: CredentialDefinitionCorrectnessProof
 }
 
 impl CredentialDefinition {
