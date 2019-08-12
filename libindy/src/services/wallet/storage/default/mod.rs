@@ -246,6 +246,15 @@ impl SQLiteStorageType {
     }
 }
 
+macro_rules! match_res_to_item_id {
+    ($res:ident) => {
+        match $res {
+            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
+            Err(err) => return Err(IndyError::from(err)),
+            Ok(id) => id
+        }
+    }
+}
 
 impl WalletStorage for SQLiteStorage {
     ///
@@ -399,11 +408,7 @@ impl WalletStorage for SQLiteStorage {
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0));
 
-        let item_id: i64 = match res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
-            Err(err) => return Err(IndyError::from(err)),
-            Ok(id) => id
-        };
+        let item_id: i64 = match_res_to_item_id!(res);
 
         if !tags.is_empty() {
             let mut enc_tag_insert_stmt = tx.prepare_cached("INSERT OR REPLACE INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
@@ -427,11 +432,7 @@ impl WalletStorage for SQLiteStorage {
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0));
 
-        let item_id: i64 = match res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
-            Err(err) => return Err(IndyError::from(err)),
-            Ok(id) => id
-        };
+        let item_id: i64 = match_res_to_item_id!(res);
 
         tx.execute("DELETE FROM tags_encrypted WHERE item_id = ?1", &[&item_id])?;
         tx.execute("DELETE FROM tags_plaintext WHERE item_id = ?1", &[&item_id])?;
