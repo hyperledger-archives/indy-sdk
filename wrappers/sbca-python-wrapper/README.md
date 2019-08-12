@@ -4,7 +4,7 @@
 >   [blockchain.swisscom.com](https://blockchain.swisscom.com/)
 
 
-This project is a custom python wrapper for Hyperledger's Libindy library that aims to optimize and remove redundant code of the existing wrapper. We are actively using this wrapper in our upcoming Hyperledger Indy project "Cloud Authenticator" where we gonna provide a Solution of Identity Management based on Indy.
+This project is a custom python wrapper for Hyperledger's Libindy library that aims to optimize and remove redundant code of the existing wrapper.
 
 
 ##  Setup
