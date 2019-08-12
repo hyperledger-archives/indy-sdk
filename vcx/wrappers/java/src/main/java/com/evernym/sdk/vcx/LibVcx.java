@@ -405,6 +405,12 @@ public abstract class LibVcx {
         /** Set wallet handle manually */
         public int vcx_wallet_set_handle(int handle);
 
+        /** Sign with payment address **/
+        public int vcx_wallet_sign_with_address(int command_handle, String address, byte[] message_raw, int message_len, Callback cb);
+
+        /** Verify with payment address **/
+        public int vcx_wallet_verify_with_address(int command_handle, String address, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
+
         /**
          * token object
          *
