@@ -113,6 +113,9 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
 ///
 /// It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 ///
+/// Note: Use combination of `indy_issuer_rotate_credential_def_start` and `indy_issuer_rotate_credential_def_apply` functions
+/// to generate new keys for an existing credential definition.
+///
 /// #Params
 /// wallet_handle: wallet handle (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
@@ -198,6 +201,120 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
     let res = prepare_result!(result);
 
     trace!("indy_issuer_create_and_store_credential_def: <<< res: {:?}", res);
+
+    res
+}
+
+/// Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+///
+/// Use `indy_issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
+///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handle (created by open_wallet).
+/// cred_def_id: an identifier of created credential definition stored in the wallet
+/// config_json: (optional) type-specific configuration of credential definition as json:
+/// - 'CL':
+///   - support_revocation: whether to request non-revocation credential (optional, default false)
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// cred_def_json: public part of temporary created credential definition
+///
+/// Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+/// They should not be parsed and are likely to change in future versions.
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Anoncreds*
+#[no_mangle]
+pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHandle,
+                                                      wallet_handle: WalletHandle,
+                                                      cred_def_id: *const c_char,
+                                                      config_json: *const c_char,
+                                                      cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
+                                                                           cred_def_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_issuer_rotate_credential_def_start: >>> wallet_handle: {:?}, cred_def_id: {:?}, config_json: {:?}",
+           wallet_handle, cred_def_id, config_json);
+
+    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_json!(config_json, ErrorCode::CommonInvalidParam4, CredentialDefinitionConfig);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_issuer_rotate_credential_def_start: entities >>> wallet_handle: {:?}, cred_def_id: {:?}, config_json: {:?}",
+           wallet_handle, cred_def_id, config_json);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Issuer(
+                IssuerCommand::RotateCredentialDefinitionStart(
+                    wallet_handle,
+                    cred_def_id,
+                    config_json,
+                    Box::new(move |result| {
+                        let (err, cred_def_json) = prepare_result_1!(result, String::new());
+                        trace!("indy_issuer_rotate_credential_def_start:cred_def_json: {:?}", cred_def_json);
+                        let cred_def_json = ctypes::string_to_cstring(cred_def_json);
+                        cb(command_handle, err, cred_def_json.as_ptr())
+                    })
+                ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_issuer_rotate_credential_def_start: <<< res: {:?}", res);
+
+    res
+}
+
+///  Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+///
+/// #Params
+/// wallet_handle: wallet handle (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// cred_def_id: an identifier of created credential definition stored in the wallet
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Anoncreds*
+#[no_mangle]
+pub extern fn indy_issuer_rotate_credential_def_apply(command_handle: CommandHandle,
+                                                      wallet_handle: WalletHandle,
+                                                      cred_def_id: *const c_char,
+                                                      cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_issuer_rotate_credential_def_apply: >>> wallet_handle: {:?}, cred_def_id: {:?}",
+           wallet_handle, cred_def_id);
+
+    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_issuer_rotate_credential_def_apply: entities >>> wallet_handle: {:?}, cred_def_id: {:?}",
+           wallet_handle, cred_def_id);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Issuer(
+                IssuerCommand::RotateCredentialDefinitionApply(
+                    wallet_handle,
+                    cred_def_id,
+                    Box::new(move |result| {
+                        let err = prepare_result!(result);
+                        trace!("indy_issuer_rotate_credential_def_apply:");
+                        cb(command_handle, err)
+                    })
+                ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_issuer_rotate_credential_def_apply: <<< res: {:?}", res);
 
     res
 }
