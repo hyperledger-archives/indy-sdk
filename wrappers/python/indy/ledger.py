@@ -1708,7 +1708,7 @@ async def append_request_endorser(request_json: str,
 
     Note: Both Transaction Author and Endorser must sign output request after that.
 
-    More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorder.md
+    More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
                                      https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
 
     :param request_json: original request data json.

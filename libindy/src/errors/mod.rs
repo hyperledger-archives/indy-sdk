@@ -347,7 +347,7 @@ impl From<ErrorCode> for IndyResult<()> {
 
 impl From<ErrorCode> for IndyError {
     fn from(err: ErrorCode) -> IndyError {
-        err_msg(err.into(), format!("Plugin returned error"))
+        err_msg(err.into(), "Plugin returned error".to_string())
     }
 }
 

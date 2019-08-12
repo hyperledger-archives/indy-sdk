@@ -1,0 +1,75 @@
+@startuml
+actor "Client app" as App
+participant "Client Thread" as Client
+note over Client
+    Thread of an application,
+    used to transfer commands
+    to Command thread.
+end note
+participant "Command Thread" as Command
+/ note over Command
+    Main thread of the library.
+    It executes biggest part of logic
+    that is implemented in Libindy
+end note
+participant "Expensive Thread" as Expensive
+/ note over Expensive
+    Thread that is occasionally
+    used for execution of
+    some heavy operations like
+    credential definition creation
+    or key derivation
+end note
+
+==Common command cycle==
+App -> Client: indy_create_and_store_my_did
+activate Client
+Client -> Command: CreateAndStoreMyDid
+activate Command
+Command -> Command: do_logic
+Client --> App: error code
+note over App
+    App waits for result
+    asynchronously if there
+    was no error before
+end note
+deactivate Client
+Command -> Command: execute callback
+Command --> App: result
+deactivate Command
+
+==Expensive commands (key derivation, credential definition creation)==
+App -> Client: indy_issuer_create_and_store_credential_def
+activate Client
+Client -> Command: CreateAndStoreCredentialDefinition
+activate Command
+Client --> App: error code
+deactivate Client
+note over App
+    App waits for result
+    asynchronously if there
+    was no error before
+end note
+Command -> Command: CreateCredentialDefinition
+Command -> Expensive: new_credential_definition
+deactivate Command
+note over Command
+    Command thread can execute
+    other commands during
+    the work of expensive thread
+end note
+activate Expensive
+Expensive -> Command: CreateAndStoreCredentialDefinitionContinue
+deactivate Expensive
+activate Command
+Command -> Command: execute callback
+Command --> App: result
+deactivate Command
+
+==Synchronous calls==
+App -> Client: indy_set_protocol_version
+activate Client
+Client -> Client: some config setup
+Client -> App: error code
+deactivate Client
+@enduml
