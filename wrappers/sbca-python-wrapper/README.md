@@ -38,7 +38,6 @@ await Wallet.create(wallet_config={'id': wallet_name}, wallet_credentials={'key'
 ```python
 from sbca_wrapper import  DID
 
-# TODO: Check if it Works
 await DID.create_and_store_did(wallet_handle=wallet_handle, did_json=did_json)
 
 ```
