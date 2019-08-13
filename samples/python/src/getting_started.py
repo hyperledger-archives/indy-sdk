@@ -38,6 +38,18 @@ if args.storage_type:
         print("Error unable to load wallet storage", result)
         parser.print_help()
         sys.exit(0)
+    
+    # for postgres storage, also call the storage init (non-standard)
+    if args.storage_type == "postgres_storage":
+        try:
+            print("Calling init_storagetype() for postgres:", args.config, args.creds)
+            init_storagetype = stg_lib["init_storagetype"]
+            c_config = c_char_p(args.config.encode('utf-8'))
+            c_credentials = c_char_p(args.creds.encode('utf-8'))
+            result = init_storagetype(c_config, c_credentials)
+            print(" ... returns ", result)
+        except RuntimeError as e:
+            print("Error initializing storage, ignoring ...", e)
 
     print("Success, loaded wallet storage", args.storage_type)
 
