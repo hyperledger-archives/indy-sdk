@@ -249,7 +249,6 @@ impl SQLiteStorageType {
 macro_rules! match_res_to_item_id {
     ($res:ident) => {
         match $res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
             Err(err) => return Err(IndyError::from(err)),
             Ok(id) => id
         }
@@ -777,10 +776,11 @@ impl WalletStorageType for SQLiteStorageType {
 impl From<rusqlite::Error> for IndyError {
     fn from(err: rusqlite::Error) -> IndyError {
         match err {
+            rusqlite::Error::QueryReturnedNoRows => err.to_indy(IndyErrorKind::WalletItemNotFound, "Item not found"),
             rusqlite::Error::SqliteFailure(
-                rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::ConstraintViolation, extended_code: _ }, _) =>
+                rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::ConstraintViolation, .. }, _) =>
                 err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
-            rusqlite::Error::SqliteFailure(rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::SystemIOFailure, extended_code: _ }, _) =>
+            rusqlite::Error::SqliteFailure(rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::SystemIOFailure, .. }, _) =>
                 err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
             _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
         }
