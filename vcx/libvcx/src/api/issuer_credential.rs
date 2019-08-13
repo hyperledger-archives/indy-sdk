@@ -71,6 +71,10 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
         return VcxError::from(VcxErrorKind::InvalidCredDefHandle).into()
     }
 
+    if !::credential_def::check_is_published(cred_def_handle).unwrap_or(false) {
+        return VcxError::from_msg(VcxErrorKind::InvalidCredDefHandle, "Credential Definition is not in the Published State yet").into()
+    }
+
     trace!("vcx_issuer_create_credential(command_handle: {}, source_id: {}, cred_def_handle: {}, issuer_did: {}, credential_data: {}, credential_name: {})",
            command_handle,
            source_id,
