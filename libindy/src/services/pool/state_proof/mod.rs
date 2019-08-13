@@ -144,7 +144,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_ATTR attr_name {:?}", attr_name);
 
                 let marker = if ProtocolVersion::is_node_1_3() { '\x01' } else { '1' };
-                let hash = openssl_hash(attr_name.as_bytes()).unwrap();
+                let hash = openssl_hash(attr_name.as_bytes()).ok()?;
                 format!(":{}:{}", marker, hex::encode(hash))
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_ATTR No key suffix");
@@ -256,7 +256,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
     let key_prefix = match type_ {
         constants::GET_NYM => {
             if let Some(dest) = dest {
-                openssl_hash(dest.as_bytes()).unwrap()
+                openssl_hash(dest.as_bytes()).ok()?
             } else {
                 debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
                 return None;
