@@ -75,6 +75,108 @@ cd indy-sdk/experimental/plugins/postgres_storage
 RUST_BACKTRACE=1 cargo test -- --nocapture --test-threads=1
 ```
 
+## Database-per-wallet vs Multi-wallet database
+
+The plug-in supports two schemes - a database per wallet, or a single database containing multiple wallets.
+
+Note to use the multi-wallet-database mode you need to call an initial init() function in the plug-in.
+
+In the initial wallet config:
+
+```
+{"url":"localhost:5432", "wallet_scheme":"MultiWalletSingleTable"}
+```
+
+The default if not specified is database-per-wallet.
+
+To run unit tests in each mode, specify:
+
+```
+WALLET_SCHEME=MultiWalletSingleTable cargo test -- --nocapture --test-threads=1
+```
+
+The default if not specified is database-per-wallet.
+
+## Loading and initializing the Postgres Plug-in
+
+There are two initialization methods to call now.  (The default postgres method is wallet-per-database so if this is the one you want you don't need to make the second call.)
+
+You can see an example of how to load the library here:  https://github.com/ianco/indy-sdk/blob/plugin_storage_tests/libindy/tests/utils/wallet.rs#L380
+
+(Note that this is to support unit tests so the error handling isn't perfect.)
+
+```
+/*
+ * Dynamically loads the specified library and registers storage
+ */
+pub fn load_storage_library(_stg_type: &str, library: &str, initializer: &str, config: &str, credentials: &str) -> Result<(), ()> {
+    let lib_res = _load_lib(library);
+    match lib_res {
+        Ok(lib) => {
+            unsafe {
+                let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(initializer.as_bytes()).unwrap();
+
+                match init_func() {
+                    ErrorCode::Success => println!("Plugin has been loaded: \"{}\"", library),
+                    _ => return Err(println!("Plugin has not been loaded: \"{}\"", library))
+                }
+
+                // call the one-time storage init() method to initialize storage
+                let init_storage_func: libloading::Symbol<unsafe extern fn(config: *const c_char, credentials: *const c_char) -> ErrorCode> = lib.get("init_storagetype".as_bytes()).unwrap();
+
+                let config = CString::new(config).expect("CString::new failed");
+                let credentials = CString::new(credentials).expect("CString::new failed");
+
+                let err = init_storage_func(config.as_ptr(), credentials.as_ptr());
+
+                if err != ErrorCode::Success {
+                    return Err(println!("Error init_storage returned an error {:?}", err));
+                }
+                println!("Called init_storagetype() function successfully");
+            }
+        },
+        Err(_) => return Err(println!("Plugin has not been loaded: \"{}\"", library))
+    }
+
+    Ok(())
+}
+```
+
+## Unit testing the Postgres Plug-in
+
+This module contains some stand-alone unit tests, however there are also capabilities to run some of the general indy-sdk unit tests using the postgres plug-in (in both database-per-wallet and multi-wallet modes).
+
+The code is on this branch, as it has not been accepted into the indy-sdk:  https://github.com/ianco/indy-sdk/tree/plugin_storage_tests
+
+To run the tests:
+
+```bash
+git clone https://github.com/ianco/indy-sdk.git
+git checkout plugin_storage_tests
+cd indy-sdk/libindy
+```
+
+... or merge the code from this branch into a branch of your own fork of the indy-sdk repo.
+
+Build the libraries as usual ("cargo build" in libindy and postgres).
+
+Then to run the unit tests:
+
+```bash
+RUST_BACKTRACE=1 STG_USE=postgres cargo test high_cases -- --nocapture --test-threads=1
+```
+
+... or:
+
+```bash
+RUST_BACKTRACE=1 STG_USE=postgres_multi cargo test high_cases -- --nocapture --test-threads=1
+```
+
+The ```STG_USE``` is a shortcut, you can specify plug-in parameters in detail.  Take a look at the code here:  https://github.com/ianco/indy-sdk/blob/plugin_storage_tests/libindy/tests/utils/wallet.rs#L491
+
+Some of the unit tests respect these parameters, and some don't.  Mostly the wallet and non-secrets tests in the tests directory.
+
+
 ## Running CLI with the Postgres Plug-in
 
 The CLI has been updated to include parameters to support loading external wallet storage from an external plug-in, and extra parameters to specify configuration and credentials when creating, opening and deleting a wallet:
