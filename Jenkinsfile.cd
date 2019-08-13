@@ -41,7 +41,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
+                'redhat-test' : { rhelTesting() },
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
                 'ios-test'    : { iosTesting() },
@@ -207,7 +207,7 @@ String getSrcVersion(folder) {
     }
 }
 
-def linuxTesting(file, env_name, network_name, stashBuildResults) {
+def linuxTesting(file, env_name, network_name, stashBuildResults, test_wrappers) {
     parallel([
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
@@ -223,22 +223,22 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                         "${env_name}-cli-test"   : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting, stashBuildResults)
                         },
-                        "${env_name}-rust-test"  : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting, stashBuildResults)
-                        },
-                        "${env_name}-nodejs-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting, stashBuildResults)
-                        },
                         "${env_name}-vcx-test"   : {
                             vcxTesting(file, env_name, network_name, stashBuildResults)
                         }
                 ]
-                if (env_name == "Ubuntu") {
+                if (test_wrappers) {
+                    jobs["${env_name}-nodejs-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting, stashBuildResults)
+                    }
                     jobs["${env_name}-java-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting, stashBuildResults)
                     }
                     jobs["${env_name}-python-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting, stashBuildResults)
+                    }
+                    jobs["${env_name}-rust-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting, stashBuildResults)
                     }
                 }
                 parallel(jobs)
@@ -695,7 +695,7 @@ def windowsTesting() {
 
 def ubuntuTesting() {
     stage('Ubuntu Test') {
-        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network", true)
+        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network", true, true)
     }
 }
 
@@ -825,7 +825,7 @@ def buildIOSPod(packageName, targets) {
 
 def rhelTesting() {
     stage('RedHat Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false, false)
     }
 }
 
