@@ -397,7 +397,7 @@ impl CryptoCommandExecutor {
                                     cek: &chacha20poly1305_ietf::Key,
                                     receiver_list: Vec<String>,
     ) -> IndyResult<String> {
-        let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
+        let mut encrypted_recipients_struct : Vec<Recipient> = Vec::with_capacity(receiver_list.len());
 
         for their_vk in receiver_list {
             //encrypt sender verkey
