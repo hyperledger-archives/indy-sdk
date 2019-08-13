@@ -15,7 +15,6 @@ use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
 use domain::ledger::auth_rule::AuthRules;
-use domain::ledger::request::Request;
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
@@ -1162,10 +1161,10 @@ impl LedgerCommandExecutor {
         debug!("append_txn_author_agreement_acceptance_to_request >>> request_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, acc_mech_type: {:?}, time: {:?}",
                request_json, text, version, taa_digest, acc_mech_type, time);
 
-        let mut request: Request<serde_json::Value> = serde_json::from_str(request_json)
+        let mut request: serde_json::Value = serde_json::from_str(request_json)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize request: {:?}", err)))?;
 
-        request.taa_acceptance = Some(self.ledger_service.prepare_acceptance_data(text, version, taa_digest, acc_mech_type, time)?);
+        request["taa_acceptance"] = json!(Some(self.ledger_service.prepare_acceptance_data(text, version, taa_digest, acc_mech_type, time)?));
 
         let res: String = serde_json::to_string(&request)
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding author agreement acceptance data")?;
@@ -1182,10 +1181,10 @@ impl LedgerCommandExecutor {
 
         self.crypto_service.validate_did(endorser_did)?;
 
-        let mut request: Request<serde_json::Value> = serde_json::from_str(request_json)
+        let mut request: serde_json::Value = serde_json::from_str(request_json)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize request: {:?}", err)))?;
 
-        request.endorser = Some(endorser_did.to_string());
+        request["endorser"] = json!(endorser_did);
 
         let res: String = serde_json::to_string(&request)
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding endorser")?;
