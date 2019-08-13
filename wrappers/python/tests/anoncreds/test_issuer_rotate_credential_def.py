@@ -11,7 +11,7 @@ from indy.anoncreds import \
 @pytest.mark.asyncio
 async def test_rotate_credential_def_works(wallet_handle, issuer_did, gvt_schema_json, tag):
     cred_def_id, cred_def_json = \
-        await issuer_create_and_store_credential_def(wallet_handle, issuer_did, gvt_schema_json, tag, "CL", None)
+        await issuer_create_and_store_credential_def(wallet_handle, issuer_did, gvt_schema_json, "test_rotate_credential_def_works", "CL", None)
 
     temp_cred_def_json = await issuer_rotate_credential_def_start(wallet_handle, cred_def_id, None)
 
