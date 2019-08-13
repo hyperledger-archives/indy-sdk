@@ -448,7 +448,9 @@ mod tests {
                "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
                "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
                "genesis_path": get_temp_dir_path(Some("pool1.txn")).to_str().unwrap(),
-               "payment_method": "null"}).to_string()
+               "payment_method": "null",
+               "pool_config": json!({"timeout":60}).to_string()
+           }).to_string()
     }
 
     #[cfg(feature = "agency")]
