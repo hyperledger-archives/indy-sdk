@@ -15,6 +15,7 @@ lazy_static! {
     pub static ref CALLBACKS_U32_BIN: Mutex<HashMap<u32, Box<FnMut(u32, Vec<u8>) + Send>>> = Default::default();
     pub static ref CALLBACKS_U32_OPTSTR_BIN: Mutex<HashMap<u32,Box<FnMut(u32, Option<String>, Vec<u8>) + Send>>> = Default::default();
     pub static ref CALLBACKS_U32_BIN_BIN: Mutex<HashMap<u32, Box<FnMut(u32, Vec<u8>, Vec<u8>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_U32_STR_STR_STR: Mutex<HashMap<u32, Box<FnMut(u32, u32, Option<String>, Option<String>, Option<String>) + Send>>> = Default::default();
 }
 
 pub extern "C" fn call_cb_u32(command_handle: u32, arg1: u32) {
@@ -88,6 +89,16 @@ pub extern "C" fn call_cb_u32_bin_bin(command_handle: u32, arg1: u32, buf1: *con
     let data2 = build_buf(buf2, buf2_len);
     if let Some(mut cb_fn) = cb {
         cb_fn(arg1, data1, data2)
+    }
+}
+
+pub extern "C" fn call_cb_u32_u32_str_str_str(command_handle: u32, arg1: u32, arg2: u32, arg3: *const c_char, arg4: *const c_char, arg5: *const c_char) {
+    let cb = get_cb(command_handle, CALLBACKS_U32_U32_STR_STR_STR.deref());
+    let str1 = build_string(arg3);
+    let str2 = build_string(arg4);
+    let str3 = build_string(arg5);
+    if let Some(mut cb_fn) = cb {
+        cb_fn(arg1, arg2, str1, str2, str3)
     }
 }
 
