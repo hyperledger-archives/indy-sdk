@@ -95,11 +95,11 @@ pub mod load_plugin_command {
         let library = get_str_param("library", params).map_err(error_err!())?;
         let initializer = get_str_param("initializer", params).map_err(error_err!())?;
 
-        let res = load_plugin(_ctx, library, initializer)?;
+        load_plugin(_ctx, library, initializer)?;
 
-        trace!("execute << {:?}", res);
+        trace!("execute << ");
 
-        Ok(res)
+        Ok(())
     }
 }
 
@@ -116,14 +116,14 @@ pub mod init_logger_command {
 
         let file = get_str_param("file", params).map_err(error_err!())?;
 
-        let res = match logger::IndyCliLogger::init(&file){
+        match logger::IndyCliLogger::init(&file){
             Ok(()) => println_succ!("Logger has been initialized according to the config file: \"{}\"", file),
             Err(err) => println_err!("{}", err)
         };
 
-        trace!("execute << {:?}", res);
+        trace!("execute << ");
 
-        Ok(res)
+        Ok(())
     }
 }
 
@@ -137,7 +137,10 @@ pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Re
 
         match init_func() {
             ErrorCode::Success => println_succ!("Plugin has been loaded: \"{}\"", library),
-            _ => return Err(println_err!("Plugin has not been loaded: \"{}\"", library))
+            _ => {
+                println_err!("Plugin has not been loaded: \"{}\"", library);
+                return Err(())
+            }
         }
     }
 

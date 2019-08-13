@@ -1,4 +1,4 @@
-# LibVCX migration guide from 0.1.x to 0.2.0
+# LibVCX migration guide from 0.2.x to 0.3.0
 
 ## A Developer Guide for LibVCX migration
 

@@ -2029,7 +2029,7 @@ But it is expecting that the transaction will be sent by the specified Endorser.
 
 Note: Both Transaction Author and Endorser must sign output request after that.
 
-More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorder.md
+More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
 
 * `requestJson`: Json - original request data json.

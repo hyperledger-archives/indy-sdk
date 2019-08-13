@@ -207,7 +207,9 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
 
 /// Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
 ///
-/// Use `indy_issuer_rotate_credential_def_apply` function to set temporary keys as the main.
+/// Use `indy_issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
+///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -220,6 +222,9 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
 ///
 /// #Returns
 /// cred_def_json: public part of temporary created credential definition
+///
+/// Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+/// They should not be parsed and are likely to change in future versions.
 ///
 /// #Errors
 /// Common*
@@ -265,6 +270,8 @@ pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHan
 }
 
 ///  Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
 ///
 /// #Params
 /// wallet_handle: wallet handle (created by open_wallet).

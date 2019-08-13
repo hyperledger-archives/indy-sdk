@@ -23,6 +23,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate indy_sys;
 
 #[macro_use]
 mod utils;
@@ -60,6 +61,7 @@ mod high_cases {
 
     mod issuer_create_and_store_credential_def {
         use super::*;
+        use indy_sys::INVALID_WALLET_HANDLE;
 
         #[test]
         fn issuer_create_and_store_credential_def_works() {
@@ -72,8 +74,7 @@ mod high_cases {
 
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let invalid_wallet_handle = wallet_handle + 100;
-            let res = anoncreds::issuer_create_credential_definition(invalid_wallet_handle,
+            let res = anoncreds::issuer_create_credential_definition(INVALID_WALLET_HANDLE,
                                                                      ISSUER_DID,
                                                                      &anoncreds::gvt_schema_json(),
                                                                      TAG_1,
@@ -3513,6 +3514,16 @@ mod high_cases {
             anoncreds::issuer_rotate_credential_def_apply(wallet_handle, &cred_def_id).unwrap();
 
             utils::tear_down_with_wallet(wallet_handle, "issuer_rotate_credential_def_works", &config);
+        }
+
+        #[test]
+        fn issuer_rotate_credential_def_works_no_cred_def() {
+            let (wallet_handle, config) = utils::setup_with_wallet("issuer_rotate_credential_def_works_no_cred_def");
+
+            let res = anoncreds::issuer_rotate_credential_def_start(wallet_handle, &anoncreds::issuer_1_gvt_cred_def_id(), None);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
+
+            utils::tear_down_with_wallet(wallet_handle, "issuer_rotate_credential_def_works_no_cred_def", &config);
         }
 
         #[test]
