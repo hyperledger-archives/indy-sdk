@@ -1448,6 +1448,45 @@ vcx_error_t vcx_wallet_create_payment_address(vcx_command_handle_t command_handl
                                            const char *seed,
                                            void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+// Signs a message with a payment address.
+//
+// # Params:
+// command_handle: command handle to map callback to user context.
+// address: payment address of message signer. The key must be created by calling vcx_wallet_create_address
+// message_raw: a pointer to first byte of message to be signed
+// message_len: a message length
+// cb: Callback that takes command result as parameter.
+//
+// # Returns:
+// a signature string
+
+vcx_error_t vcx_wallet_sign_with_address(vcx_command_handle_t command_handle,
+                                                 const char *payment_address,
+                                                 const unsigned short *message_raw,
+                                                 vcx_u32_t message_len,
+                                                 void (*cb)(vcx_command_handle_t, vcx_error_t, const unsigned short *, vcx_u32_t))
+
+// Verify a signature with a payment address.
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+// address: payment address of the message signer
+// message_raw: a pointer to first byte of message that has been signed
+// message_len: a message length
+// signature_raw: a pointer to first byte of signature to be verified
+// signature_len: a signature length
+// cb: Callback that takes command result as parameter.
+//
+// #Returns
+// valid: true - if signature is valid, false - otherwise
+vcx_error_t vcx_wallet_verify_with_address(vcx_command_handle_t command_handle,
+                                                   const char *payment_address,
+                                                   const unsigned short *message_raw,
+                                                   vcx_u32_t message_len,
+                                                   const unsigned short *signature_raw,
+                                                   vcx_u32_t signature_len,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_bool_t))
+
 // Deletes an existing record.
 // Assumes there is an open wallet and that a type and id pair already exists.
 // #Params
