@@ -212,4 +212,28 @@ public class UtilsApi extends VcxJava.API {
         checkResult(result);
         return future;
     }
+
+    private static Callback vcxEndorseTransactionCb = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            Integer result = commandHandle;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Integer> vcxEndorseTransaction(String transactionJson) throws VcxException {
+        ParamGuard.notNull(transactionJson, "transactionJson");
+        logger.debug("vcxEndorseTransaction() called with: transactionJson = [" + transactionJson + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_endorse_transaction(
+                commandHandle, transactionJson,
+                vcxEndorseTransactionCb);
+        checkResult(result);
+        return future;
+    }
 }
