@@ -230,7 +230,7 @@ async def vcx_get_request_price(action_json: str,
 
 async def vcx_endorse_transaction(transaction: str) -> None:
     """
-    Endorse transaction to the ledger with preserving an original author
+    Endorse transaction to the ledger preserving an original author
     :param transaction: transaction to endorse
     :return:
     """

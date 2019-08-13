@@ -413,7 +413,7 @@ pub extern fn vcx_get_request_price(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Endorse transaction to the ledger with preserving an original author
+/// Endorse transaction to the ledger preserving an original author
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

@@ -1785,7 +1785,7 @@ vcx_error_t vcx_get_ledger_author_agreement(vcx_u32_t command_handle,
 /// Error code as a u32
 vcx_error_t vcx_set_active_txn_author_agreement_meta(const char *text, const char *version, const char *hash, const char *acc_mech_type, vcx_u64_t type_);
 
-/// Endorse transaction to the ledger with preserving an original author
+/// Endorse transaction to the ledger preserving an original author
 ///
 /// #params
 ///
