@@ -1,7 +1,7 @@
 use errors::prelude::*;
 use services::ledger::merkletree::proof::{Lemma, Proof};
 use services::ledger::merkletree::tree::{LeavesIntoIterator, LeavesIterator, Tree, TreeLeafData};
-use utils::crypto::hash::{Hash, HASHBYTES, EMPTY_HASH_BYTES};
+use utils::crypto::hash::{Hash, EMPTY_HASH_BYTES};
 
 /// A Merkle tree is a binary tree, with values of type `T` at the leafs,
 /// and where every internal node holds the hash of the concatenation of the hashes of its children nodes.
@@ -102,12 +102,7 @@ impl MerkleTree {
 
     /// Returns the hex root hash of Merkle tree
     pub fn root_hash_hex(&self) -> String {
-        let rh = self.root.hash();
-        let mut ret:String = String::with_capacity(HASHBYTES *2);
-        for i in rh {
-            ret.push_str(&format!("{:02x}", i));
-        }
-        ret
+        hex::encode(self.root.hash())
     }
 
     /// Returns the height of Merkle tree
