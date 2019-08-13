@@ -22,7 +22,7 @@ macro_rules! prepare_result_1 {
 
 macro_rules! prepare_result_CString {
     ($result:ident) => {{
-        trace!("prepare_result_1: >>> {:?}", $result);
+        trace!("prepare_result_CString: >>> {:?}", $result);
         match $result {
             Ok(res) => (ErrorCode::Success, ctypes::string_to_cstring(res)),
             Err(err) => {
@@ -39,6 +39,18 @@ macro_rules! prepare_result_2 {
             Ok((res1, res2)) => (ErrorCode::Success, res1, res2),
             Err(err) => {
                 (err.into(), $default_value1, $default_value2)
+            }
+        }
+    }}
+}
+
+macro_rules! prepare_result_CString2 {
+    ($result:ident) => {{
+        trace!("prepare_result_CString2: >>> {:?}", $result);
+        match $result {
+            Ok((res1, res2)) => (ErrorCode::Success, ctypes::string_to_cstring(res1), ctypes::string_to_cstring(res2)),
+            Err(err) => {
+                (err.into(), CString::default(), CString::default())
             }
         }
     }}

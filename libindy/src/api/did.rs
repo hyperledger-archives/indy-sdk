@@ -72,10 +72,8 @@ pub  extern fn indy_create_and_store_my_did(command_handle: CommandHandle,
             wallet_handle,
             did_info,
             Box::new(move |result| {
-                let (err, did, verkey) = prepare_result_2!(result, String::new(), String::new());
+                let (err, did, verkey) = prepare_result_CString2!(result);
                 trace!("indy_create_and_store_my_did: did: {:?}, verkey: {:?}", did, verkey);
-                let did = ctypes::string_to_cstring(did);
-                let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, did.as_ptr(), verkey.as_ptr())
             }),
         )));

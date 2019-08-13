@@ -717,10 +717,8 @@ pub extern fn indy_parse_get_schema_response(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::ParseGetSchemaResponse(
             get_schema_response,
             Box::new(move |result| {
-                let (err, schema_id, schema_json) = prepare_result_2!(result, String::new(), String::new());
+                let (err, schema_id, schema_json) = prepare_result_CString2!(result);
                 trace!("indy_parse_get_schema_response: schema_id: {:?}, schema_json: {:?}", schema_id, schema_json);
-                let schema_id = ctypes::string_to_cstring(schema_id);
-                let schema_json = ctypes::string_to_cstring(schema_json);
                 cb(command_handle, err, schema_id.as_ptr(), schema_json.as_ptr())
             })
         )));
@@ -879,10 +877,8 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::ParseGetCredDefResponse(
             get_cred_def_response,
             Box::new(move |result| {
-                let (err, cred_def_id, cred_def_json) = prepare_result_2!(result, String::new(), String::new());
+                let (err, cred_def_id, cred_def_json) = prepare_result_CString2!(result);
                 trace!("indy_parse_get_cred_def_response: cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
-                let cred_def_id = ctypes::string_to_cstring(cred_def_id);
-                let cred_def_json = ctypes::string_to_cstring(cred_def_json);
                 cb(command_handle, err, cred_def_id.as_ptr(), cred_def_json.as_ptr())
             })
         )));
@@ -1385,11 +1381,8 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandl
         .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDefResponse(
             get_revoc_reg_def_response,
             Box::new(move |result| {
-                let (err, revoc_reg_def_id, revoc_reg_def_json) = prepare_result_2!(result, String::new(), String::new());
+                let (err, revoc_reg_def_id, revoc_reg_def_json) = prepare_result_CString2!(result);
                 trace!("indy_parse_get_revoc_reg_def_response: revoc_reg_def_id: {:?}, revoc_reg_def_json: {:?}", revoc_reg_def_id, revoc_reg_def_json);
-
-                let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
-                let revoc_reg_def_json = ctypes::string_to_cstring(revoc_reg_def_json);
                 cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_def_json.as_ptr())
             })
         )));

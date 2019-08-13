@@ -7,6 +7,7 @@ use commands::Command;
 use commands::payments::PaymentsCommand;
 use utils::ctypes;
 use errors::prelude::*;
+use std::ffi::CString;
 
 /// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
@@ -49,10 +50,8 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
                     payment_address,
                     from,
                     Box::new(move |result| {
-                        let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
+                        let (err, get_sources_txn_json, payment_method) = prepare_result_CString2!(result);
                         trace!("indy_build_get_payment_sources_with_from_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
-                        let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
-                        let payment_method = ctypes::string_to_cstring(payment_method);
                         cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
                     }))
             ));
