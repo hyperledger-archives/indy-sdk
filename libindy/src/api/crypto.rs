@@ -2,6 +2,7 @@
 use api::{ErrorCode, CommandHandle, WalletHandle};
 use commands::{Command, CommandExecutor};
 use commands::crypto::CryptoCommand;
+use domain::crypto::pack::JWE;
 use domain::crypto::key::KeyInfo;
 use errors::prelude::*;
 use utils::ctypes;
@@ -748,8 +749,14 @@ pub extern fn indy_unpack_message(
         jwe_len
     );
 
+    //serialize JWE to struct
+    let jwe_struct: JWE = match serde_json::from_slice(jwe_data.as_slice()) {
+        Ok(x) => x,
+        Err(_) => return ErrorCode::CommonInvalidParam3
+    };
+
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::UnpackMessage(
-        jwe_data,
+        jwe_struct,
         wallet_handle,
         Box::new(move |result| {
             let (err, res_json) = prepare_result_1!(result, Vec::new());
