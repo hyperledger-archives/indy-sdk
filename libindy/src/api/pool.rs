@@ -8,6 +8,7 @@ use utils::ctypes;
 
 use serde_json;
 use libc::c_char;
+use std::ffi::CString;
 
 /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
 ///
@@ -174,9 +175,8 @@ pub extern fn indy_list_pools(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::List(
             Box::new(move |result| {
-                let (err, pools) = prepare_result_1!(result, String::new());
+                let (err, pools) = prepare_result_CString!(result);
                 trace!("indy_list_pools: pools: {:?}", pools);
-                let pools = ctypes::string_to_cstring(pools);
                 cb(command_handle, err, pools.as_ptr())
             })
         )));

@@ -8,7 +8,7 @@ use utils::ctypes;
 
 use serde_json;
 use libc::c_char;
-
+use std::ffi::CString;
 
 /// Creates keys pair and stores in the wallet.
 ///
@@ -53,9 +53,8 @@ pub extern fn indy_create_key(command_handle: CommandHandle,
             wallet_handle,
             key_json,
             Box::new(move |result| {
-                let (err, verkey) = prepare_result_1!(result, String::new());
+                let (err, verkey) = prepare_result_CString!(result);
                 trace!("indy_create_key: verkey: {:?}", verkey);
-                let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
@@ -158,9 +157,8 @@ pub  extern fn indy_get_key_metadata(command_handle: CommandHandle,
             wallet_handle,
             verkey,
             Box::new(move |result| {
-                let (err, metadata) = prepare_result_1!(result, String::new());
+                let (err, metadata) = prepare_result_CString!(result);
                 trace!("indy_get_key_metadata: metadata: {:?}", metadata);
-                let metadata = ctypes::string_to_cstring(metadata);
                 cb(command_handle, err, metadata.as_ptr())
             })
         )));

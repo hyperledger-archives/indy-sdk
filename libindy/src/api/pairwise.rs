@@ -5,7 +5,7 @@ use errors::prelude::*;
 use utils::ctypes;
 
 use libc::c_char;
-
+use std::ffi::CString;
 
 /// Check if pairwise is exists.
 ///
@@ -135,9 +135,8 @@ pub  extern fn indy_list_pairwise(command_handle: CommandHandle,
         .send(Command::Pairwise(PairwiseCommand::ListPairwise(
             wallet_handle,
             Box::new(move |result| {
-                let (err, list_pairwise) = prepare_result_1!(result, String::new());
+                let (err, list_pairwise) = prepare_result_CString!(result);
                 trace!("indy_list_pairwise: list_pairwise: {:?}", list_pairwise);
-                let list_pairwise = ctypes::string_to_cstring(list_pairwise);
                 cb(command_handle, err, list_pairwise.as_ptr())
             })
         )));
@@ -182,9 +181,8 @@ pub  extern fn indy_get_pairwise(command_handle: CommandHandle,
             wallet_handle,
             their_did,
             Box::new(move |result| {
-                let (err, pairwise_info_json) = prepare_result_1!(result, String::new());
+                let (err, pairwise_info_json) = prepare_result_CString!(result);
                 trace!("indy_get_pairwise: pairwise_info_json: {:?}", pairwise_info_json);
-                let pairwise_info_json = ctypes::string_to_cstring(pairwise_info_json);
                 cb(command_handle, err, pairwise_info_json.as_ptr())
             })
         )));

@@ -23,6 +23,7 @@ use utils::ctypes;
 use libc::c_char;
 use std::ptr;
 use std::collections::HashMap;
+use std::ffi::CString;
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:
@@ -255,9 +256,8 @@ pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHan
                     cred_def_id,
                     config_json,
                     Box::new(move |result| {
-                        let (err, cred_def_json) = prepare_result_1!(result, String::new());
+                        let (err, cred_def_json) = prepare_result_CString!(result);
                         trace!("indy_issuer_rotate_credential_def_start:cred_def_json: {:?}", cred_def_json);
-                        let cred_def_json = ctypes::string_to_cstring(cred_def_json);
                         cb(command_handle, err, cred_def_json.as_ptr())
                     })
                 ))));
@@ -496,9 +496,8 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
                     wallet_handle,
                     cred_def_id,
                     Box::new(move |result| {
-                        let (err, cred_offer_json) = prepare_result_1!(result, String::new());
+                        let (err, cred_offer_json) = prepare_result_CString!(result);
                         trace!("indy_issuer_create_credential_offer: cred_offer_json: {:?}", cred_offer_json);
-                        let cred_offer_json = ctypes::string_to_cstring(cred_offer_json);
                         cb(command_handle, err, cred_offer_json.as_ptr())
                     })
                 ))));
@@ -664,9 +663,8 @@ pub extern fn indy_issuer_revoke_credential(command_handle: CommandHandle,
                     rev_reg_id,
                     cred_revoc_id,
                     Box::new(move |result| {
-                        let (err, revoc_reg_update_json) = prepare_result_1!(result, String::new());
+                        let (err, revoc_reg_update_json) = prepare_result_CString!(result);
                         trace!("indy_issuer_revoke_credential: revoc_reg_update_json: {:?}", revoc_reg_update_json);
-                        let revoc_reg_update_json = ctypes::string_to_cstring(revoc_reg_update_json);
                         cb(command_handle, err, revoc_reg_update_json.as_ptr())
                     })
                 ))));
@@ -771,9 +769,8 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: Comma
                     rev_reg_delta_json,
                     other_rev_reg_delta_json,
                     Box::new(move |result| {
-                        let (err, merged_rev_reg_delta) = prepare_result_1!(result, String::new());
+                        let (err, merged_rev_reg_delta) = prepare_result_CString!(result);
                         trace!("indy_issuer_merge_revocation_registry_deltas: merged_rev_reg_delta: {:?}", merged_rev_reg_delta);
-                        let merged_rev_reg_delta = ctypes::string_to_cstring(merged_rev_reg_delta);
                         cb(command_handle, err, merged_rev_reg_delta.as_ptr())
                     })
                 ))));
@@ -820,9 +817,8 @@ pub extern fn indy_prover_create_master_secret(command_handle: CommandHandle,
                     wallet_handle,
                     master_secret_id,
                     Box::new(move |result| {
-                        let (err, out_master_secret_id) = prepare_result_1!(result, String::new());
+                        let (err, out_master_secret_id) = prepare_result_CString!(result);
                         trace!("indy_prover_create_master_secret: out_master_secret_id: {:?}", out_master_secret_id);
-                        let out_master_secret_id = ctypes::string_to_cstring(out_master_secret_id);
                         cb(command_handle, err, out_master_secret_id.as_ptr())
                     })
                 ))));
@@ -1030,9 +1026,8 @@ pub extern fn indy_prover_get_credential_attr_tag_policy(command_handle: Command
                     wallet_handle,
                     cred_def_id,
                     Box::new(move |result| {
-                        let (err, catpol_json) = prepare_result_1!(result, String::new());
+                        let (err, catpol_json) = prepare_result_CString!(result);
                         trace!("indy_prover_get_credential_attr_tag_policy: catpol_json: {:?}", catpol_json);
-                        let catpol_json = ctypes::string_to_cstring(catpol_json);
                         cb(command_handle, err, catpol_json.as_ptr())
                     })
                 ))));
@@ -1112,9 +1107,8 @@ pub extern fn indy_prover_store_credential(command_handle: CommandHandle,
                     cred_def_json,
                     rev_reg_def_json,
                     Box::new(move |result| {
-                        let (err, out_cred_id) = prepare_result_1!(result, String::new());
+                        let (err, out_cred_id) = prepare_result_CString!(result);
                         trace!("indy_prover_store_credential: out_cred_id: {:?}", out_cred_id);
-                        let out_cred_id = ctypes::string_to_cstring(out_cred_id);
                         cb(command_handle, err, out_cred_id.as_ptr())
                     })
                 ))));
@@ -1169,9 +1163,8 @@ pub extern fn indy_prover_get_credential(command_handle: CommandHandle,
                     wallet_handle,
                     cred_id,
                     Box::new(move |result| {
-                        let (err, credential_json) = prepare_result_1!(result, String::new());
+                        let (err, credential_json) = prepare_result_CString!(result);
                         trace!("indy_prover_get_credential: credential_json: {:?}", credential_json);
-                        let credential_json = ctypes::string_to_cstring(credential_json);
                         cb(command_handle, err, credential_json.as_ptr())
                     })
                 ))));
@@ -1283,9 +1276,8 @@ pub extern fn indy_prover_get_credentials(command_handle: CommandHandle,
                     wallet_handle,
                     filter_json,
                     Box::new(move |result| {
-                        let (err, matched_credentials_json) = prepare_result_1!(result, String::new());
+                        let (err, matched_credentials_json) = prepare_result_CString!(result);
                         trace!("indy_prover_get_credentials: matched_credentials_json: {:?}", matched_credentials_json);
-                        let matched_credentials_json = ctypes::string_to_cstring(matched_credentials_json);
                         cb(command_handle, err, matched_credentials_json.as_ptr())
                     })
                 ))));
@@ -1394,9 +1386,8 @@ pub  extern fn indy_prover_fetch_credentials(command_handle: CommandHandle,
                     search_handle,
                     count,
                     Box::new(move |result| {
-                        let (err, credentials_json) = prepare_result_1!(result, String::new());
+                        let (err, credentials_json) = prepare_result_CString!(result);
                         trace!("indy_prover_fetch_credentials: credentials_json: {:?}", credentials_json);
-                        let credentials_json = ctypes::string_to_cstring(credentials_json);
                         cb(command_handle, err, credentials_json.as_ptr())
                     })
                 ))));
@@ -1550,9 +1541,8 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
                     wallet_handle,
                     proof_request_json,
                     Box::new(move |result| {
-                        let (err, credentials_json) = prepare_result_1!(result, String::new());
+                        let (err, credentials_json) = prepare_result_CString!(result);
                         trace!("indy_prover_get_credentials_for_proof_req: credentials_json: {:?}", credentials_json);
-                        let credentials_json = ctypes::string_to_cstring(credentials_json);
                         cb(command_handle, err, credentials_json.as_ptr())
                     })
                 ))));
@@ -1702,9 +1692,8 @@ pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: Comma
                     item_referent,
                     count,
                     Box::new(move |result| {
-                        let (err, credentials_json) = prepare_result_1!(result, String::new());
+                        let (err, credentials_json) = prepare_result_CString!(result);
                         trace!("indy_prover_fetch_credentials_for_proof_request: credentials_json: {:?}", credentials_json);
-                        let credentials_json = ctypes::string_to_cstring(credentials_json);
                         cb(command_handle, err, credentials_json.as_ptr())
                     }),
                 ))));
@@ -1926,9 +1915,8 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
             credential_defs_json,
             rev_states_json,
             Box::new(move |result| {
-                let (err, proof_json) = prepare_result_1!(result, String::new());
+                let (err, proof_json) = prepare_result_CString!(result);
                 trace!("indy_prover_create_proof: proof_json: {:?}", proof_json);
-                let proof_json = ctypes::string_to_cstring(proof_json);
                 cb(command_handle, err, proof_json.as_ptr())
             })
         ))));
@@ -2128,9 +2116,8 @@ pub extern fn indy_create_revocation_state(command_handle: CommandHandle,
             timestamp,
             cred_rev_id,
             Box::new(move |result| {
-                let (err, rev_state_json) = prepare_result_1!(result, String::new());
+                let (err, rev_state_json) = prepare_result_CString!(result);
                 trace!("indy_create_revocation_state: rev_state_json: {:?}", rev_state_json);
-                let rev_state_json = ctypes::string_to_cstring(rev_state_json);
                 cb(command_handle, err, rev_state_json.as_ptr())
             })
         ))));
@@ -2200,9 +2187,8 @@ pub extern fn indy_update_revocation_state(command_handle: CommandHandle,
             timestamp,
             cred_rev_id,
             Box::new(move |result| {
-                let (err, updated_rev_info_json) = prepare_result_1!(result, String::new());
+                let (err, updated_rev_info_json) = prepare_result_CString!(result);
                 trace!("indy_update_revocation_state: updated_rev_info_json: {:?}", updated_rev_info_json);
-                let updated_rev_info_json = ctypes::string_to_cstring(updated_rev_info_json);
                 cb(command_handle, err, updated_rev_info_json.as_ptr())
             })
         ))));
@@ -2237,9 +2223,8 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
         .send(Command::Anoncreds(AnoncredsCommand::Verifier(
             VerifierCommand::GenerateNonce(
                 Box::new(move |result| {
-                    let (err, nonce) = prepare_result_1!(result, String::new());
+                    let (err, nonce) = prepare_result_CString!(result);
                     trace!("indy_generate_nonce: nonce: {:?}", nonce);
-                    let nonce = ctypes::string_to_cstring(nonce);
                     cb(command_handle, err, nonce.as_ptr())
                 })
             ))));

@@ -8,6 +8,7 @@ use utils::ctypes;
 
 use serde_json;
 use libc::c_char;
+use std::ffi::CString;
 
 /// Create a new non-secret record in the wallet
 ///
@@ -356,9 +357,8 @@ pub  extern fn indy_get_wallet_record(command_handle: CommandHandle,
                 id,
                 options_json,
                 Box::new(move |result| {
-                    let (err, record_json) = prepare_result_1!(result, String::new());
+                    let (err, record_json) = prepare_result_CString!(result);
                     trace!("indy_get_wallet_record: record_json: {:?}", record_json);
-                    let record_json = ctypes::string_to_cstring(record_json);
                     cb(command_handle, err, record_json.as_ptr())
                 })
             )));
@@ -476,9 +476,8 @@ pub  extern fn indy_fetch_wallet_search_next_records(command_handle: CommandHand
                 wallet_search_handle,
                 count,
                 Box::new(move |result| {
-                    let (err, records_json) = prepare_result_1!(result, String::new());
+                    let (err, records_json) = prepare_result_CString!(result);
                     trace!("indy_fetch_wallet_search_next_records: records_json: {:?}", records_json);
-                    let records_json = ctypes::string_to_cstring(records_json);
                     cb(command_handle, err, records_json.as_ptr())
                 })
             )));

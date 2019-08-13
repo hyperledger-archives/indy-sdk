@@ -20,6 +20,18 @@ macro_rules! prepare_result_1 {
     }}
 }
 
+macro_rules! prepare_result_CString {
+    ($result:ident) => {{
+        trace!("prepare_result_1: >>> {:?}", $result);
+        match $result {
+            Ok(res) => (ErrorCode::Success, ctypes::string_to_cstring(res)),
+            Err(err) => {
+                (err.into(), CString::default())
+            }
+        }
+    }}
+}
+
 macro_rules! prepare_result_2 {
     ($result:ident, $default_value1:expr, $default_value2:expr) => {{
         trace!("prepare_result_2: >>> {:?}", $result);

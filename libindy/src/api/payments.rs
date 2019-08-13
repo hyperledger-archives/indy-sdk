@@ -1,4 +1,5 @@
 use libc::c_char;
+use std::ffi::CString;
 use api::{ErrorCode, CommandHandle, WalletHandle};
 use commands::{Command, CommandExecutor};
 use commands::payments::PaymentsCommand;
@@ -492,9 +493,8 @@ pub extern fn indy_create_payment_address(command_handle: CommandHandle,
                     payment_method,
                     config,
                     Box::new(move |result| {
-                        let (err, address) = prepare_result_1!(result, String::new());
+                        let (err, address) = prepare_result_CString!(result);
                         trace!("indy_create_payment_address: address: {:?}", address);
-                        let address = ctypes::string_to_cstring(address);
                         cb(command_handle, err, address.as_ptr());
                     }))
             ));
@@ -532,9 +532,8 @@ pub extern fn indy_list_payment_addresses(command_handle: CommandHandle,
                 PaymentsCommand::ListAddresses(
                     wallet_handle,
                     Box::new(move |result| {
-                        let (err, addresses_json) = prepare_result_1!(result, String::new());
+                        let (err, addresses_json) = prepare_result_CString!(result);
                         trace!("indy_list_payment_address: addresses_json: {:?}", addresses_json);
-                        let addresses_json = ctypes::string_to_cstring(addresses_json);
                         cb(command_handle, err, addresses_json.as_ptr());
                     }))
             ));
@@ -660,9 +659,8 @@ pub extern fn indy_parse_response_with_fees(command_handle: CommandHandle,
             Command::Payments(
                 PaymentsCommand::ParseResponseWithFees(
                     payment_method, resp_json, Box::new(move |result| {
-                        let (err, receipts_json) = prepare_result_1!(result, String::new());
+                        let (err, receipts_json) = prepare_result_CString!(result);
                         trace!("indy_parse_response_with_fees: receipts_json: {:?}", receipts_json);
-                        let receipts_json = ctypes::string_to_cstring(receipts_json);
                         cb(command_handle, err, receipts_json.as_ptr());
                     }))
             ));

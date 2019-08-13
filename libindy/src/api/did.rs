@@ -11,6 +11,8 @@ use serde_json;
 use libc::c_char;
 
 use std::ptr;
+use std::ffi::CString;
+
 use domain::ledger::attrib::Endpoint;
 
 
@@ -135,9 +137,8 @@ pub  extern fn indy_replace_keys_start(command_handle: CommandHandle,
             key_info,
             did,
             Box::new(move |result| {
-                let (err, verkey) = prepare_result_1!(result, String::new());
+                let (err, verkey) = prepare_result_CString!(result);
                 trace!("indy_replace_keys_start: verkey: {:?}", verkey);
-                let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
@@ -304,9 +305,8 @@ pub extern fn indy_key_for_did(command_handle: CommandHandle,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, key) = prepare_result_1!(result, String::new());
+                let (err, key) = prepare_result_CString!(result);
                 trace!("indy_key_for_did: key: {:?}", key);
-                let key = ctypes::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
@@ -365,9 +365,8 @@ pub extern fn indy_key_for_local_did(command_handle: CommandHandle,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, key) = prepare_result_1!(result, String::new());
+                let (err, key) = prepare_result_CString!(result);
                 trace!("indy_key_for_local_did: key: {:?}", key);
-                let key = ctypes::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
@@ -587,9 +586,8 @@ pub extern fn indy_get_did_metadata(command_handle: CommandHandle,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, metadata) = prepare_result_1!(result, String::new());
+                let (err, metadata) = prepare_result_CString!(result);
                 trace!("indy_get_did_metadata: metadata: {:?}", metadata);
-                let metadata = ctypes::string_to_cstring(metadata);
                 cb(command_handle, err, metadata.as_ptr())
             })
         )));
@@ -645,9 +643,8 @@ pub extern fn indy_get_my_did_with_meta(command_handle: CommandHandle,
             wallet_handle,
             my_did,
             Box::new(move |result| {
-                let (err, did_with_meta) = prepare_result_1!(result, String::new());
+                let (err, did_with_meta) = prepare_result_CString!(result);
                 trace!("indy_get_my_did_with_meta: did_with_meta: {:?}", did_with_meta);
-                let did_with_meta = ctypes::string_to_cstring(did_with_meta);
                 cb(command_handle, err, did_with_meta.as_ptr())
             })
         )));
@@ -697,9 +694,8 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::ListMyDidsWithMeta(
             wallet_handle,
             Box::new(move |result| {
-                let (err, dids) = prepare_result_1!(result, String::new());
+                let (err, dids) = prepare_result_CString!(result);
                 trace!("indy_list_my_dids_with_meta: dids: {:?}", dids);
-                let dids = ctypes::string_to_cstring(dids);
                 cb(command_handle, err, dids.as_ptr())
             })
         )));
@@ -749,9 +745,8 @@ pub  extern fn indy_abbreviate_verkey(command_handle: CommandHandle,
             did,
             full_verkey,
             Box::new(move |result| {
-                let (err, verkey) = prepare_result_1!(result, String::new());
+                let (err, verkey) = prepare_result_CString!(result);
                 trace!("indy_abbreviate_verkey: verkey: {:?}", verkey);
-                let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));

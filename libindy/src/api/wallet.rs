@@ -8,7 +8,7 @@ use utils::ctypes;
 
 use serde_json;
 use libc::c_char;
-
+use std::ffi::CString;
 
 /// Register custom wallet storage implementation.
 ///
@@ -572,9 +572,8 @@ pub extern fn indy_generate_wallet_key(command_handle: CommandHandle,
         .send(Command::Wallet(WalletCommand::GenerateKey(
             config,
             Box::new(move |result| {
-                let (err, key) = prepare_result_1!(result, String::new());
+                let (err, key) = prepare_result_CString!(result);
                 trace!("indy_generate_wallet_key: key: {:?}", key);
-                let key = ctypes::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
