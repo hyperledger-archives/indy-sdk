@@ -441,6 +441,7 @@ pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
 }
 
 pub fn endorse_transaction(transaction_json: &str) -> VcxResult<()> {
+    //TODO Potentially VCX should handle case when endorser would like to pay fee
     if settings::test_indy_mode_enabled() { return Ok(()); }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
