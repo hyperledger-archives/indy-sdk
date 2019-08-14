@@ -974,7 +974,8 @@ pub mod tests {
         let res = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert!(res);
     }
-    
+
+    #[cfg(feature = "pool_tests")]
     use utils::libindy::pool;
 
     #[cfg(feature = "pool_tests")]

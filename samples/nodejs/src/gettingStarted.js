@@ -243,8 +243,9 @@ async function run() {
     console.log("------------------------------");
 
     console.log("\"Acme\" -> Create \"Job-Application\" Proof Request");
+    let nonce = await indy.generateNonce()
     let jobApplicationProofRequestJson = {
-        'nonce': '1432422343242122312411212',
+        'nonce': nonce,
         'name': 'Job-Application',
         'version': '0.1',
         'requested_attributes': {
@@ -439,8 +440,9 @@ async function run() {
     console.log("------------------------------");
 
     console.log("\"Thrift\" -> Create \"Loan-Application-Basic\" Proof Request");
+    nonce = await indy.generateNonce()
     let applyLoanProofRequestJson = {
-        'nonce': '123432421212',
+        'nonce': nonce,
         'name': 'Loan-Application-Basic',
         'version': '0.1',
         'requested_attributes': {
@@ -540,8 +542,9 @@ async function run() {
     console.log("------------------------------");
 
     console.log("\"Thrift\" -> Create \"Loan-Application-KYC\" Proof Request");
+    nonce = await indy.generateNonce()
     let applyLoanKycProofRequestJson = {
-        'nonce': '123432421212',
+        'nonce': nonce,
         'name': 'Loan-Application-KYC',
         'version': '0.1',
         'requested_attributes': {

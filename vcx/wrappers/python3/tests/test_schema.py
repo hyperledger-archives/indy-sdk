@@ -114,3 +114,28 @@ async def test_get_schema_id_and_attributes():
     seq_number = await schema.get_schema_id()
     assert seq_number == 'id1'
     assert schema.attrs == data['data']['data']
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_schema_prepare_for_endorser():
+    schema = await Schema.prepare_for_endorser(source_id, name, version, attrs, 'V4SGRU86Z58d6TV7PBUe6f')
+    assert schema.source_id == source_id
+    assert schema.handle > 0
+    assert schema.transaction
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_schema_update_state():
+    schema = await Schema.prepare_for_endorser(source_id, name, version, attrs, 'V4SGRU86Z58d6TV7PBUe6f')
+    assert 0 == await schema.get_state()
+    assert 1 == await schema.update_state()
+    assert 1 == await schema.get_state()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_schema_get_state():
+    schema = await Schema.create(source_id, name, version, attrs, 0)
+    assert 1 == await schema.get_state()
