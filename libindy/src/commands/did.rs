@@ -190,9 +190,14 @@ impl DidCommandExecutor {
 
         let (did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 
-        if self.wallet_service.record_exists::<Did>(wallet_handle, &did.did)? {
-            return Err(err_msg(IndyErrorKind::DIDAlreadyExists, did.did));
-        };
+        if let Ok(current_did) = self._wallet_get_my_did(wallet_handle, &did.did) {
+            if did.verkey == current_did.verkey {
+                return Ok((did.did, did.verkey));
+            } else {
+                return Err(err_msg(IndyErrorKind::DIDAlreadyExists,
+                                   format!("DID \"{}\" already exists but with different Verkey. You should specify Seed used for initial generation", did.did)));
+            }
+        }
 
         self.wallet_service.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new())?;
         self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())?;
@@ -417,14 +422,14 @@ impl DidCommandExecutor {
         match endpoint {
             Ok(endpoint) => cb(Ok((endpoint.ha, endpoint.verkey))),
             Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => self._fetch_attrib_from_ledger(wallet_handle,
-                                                                                                                 pool_handle,
-                                                                                                                 &did,
-                                                                                                                 DidCommand::GetEndpointForDid(
-                                                                                                                     wallet_handle,
-                                                                                                                     pool_handle,
-                                                                                                                     did.clone(),
-                                                                                                                     cb)),
-             Err(err) => cb(Err(err)),
+                                                                                                              pool_handle,
+                                                                                                              &did,
+                                                                                                              DidCommand::GetEndpointForDid(
+                                                                                                                  wallet_handle,
+                                                                                                                  pool_handle,
+                                                                                                                  did.clone(),
+                                                                                                                  cb)),
+            Err(err) => cb(Err(err)),
         };
     }
 

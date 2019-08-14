@@ -603,8 +603,14 @@ mod high_cases {
         fn indy_create_my_did_works_for_duplicate() {
             let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_create_my_did_works_for_duplicate");
 
-            let (my_did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
-            let res = did::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, my_did));
+            let (did, verkey) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let (dup_did, dup_verkey) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            assert_eq!(did, dup_did);
+            assert_eq!(verkey, dup_verkey);
+
+            let res = did::create_my_did(wallet_handle, &json!({"did": did}).to_string());
             assert_code!(ErrorCode::DidAlreadyExistsError, res);
 
             utils::tear_down_with_wallet(wallet_handle, "indy_create_my_did_works_for_duplicate", &wallet_config);

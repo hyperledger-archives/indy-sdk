@@ -53,12 +53,7 @@ pub extern fn indy_get_cred_def(command_handle: CommandHandle,
             submitter_did,
             id,
             options_json,
-            Box::new(move |result| {
-                let (err, cred_def_json) = prepare_result_1!(result, String::new());
-                trace!("indy_get_cred_def: cred_def_json: {:?}", cred_def_json);
-                let cred_def_json = ctypes::string_to_cstring(cred_def_json);
-                cb(command_handle, err, cred_def_json.as_ptr())
-            })
+            boxed_callback_string!("indy_get_cred_def", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -116,12 +111,7 @@ pub extern fn indy_get_schema(command_handle: CommandHandle,
             submitter_did,
             id,
             options_json,
-            Box::new(move |result| {
-                let (err, schema_json) = prepare_result_1!(result, String::new());
-                trace!("indy_get_schema: schema_json: {:?}", schema_json);
-                let schema_json = ctypes::string_to_cstring(schema_json);
-                cb(command_handle, err, schema_json.as_ptr())
-            })
+            boxed_callback_string!("indy_get_schema", cb, command_handle)
         )));
 
     let res = prepare_result!(result);

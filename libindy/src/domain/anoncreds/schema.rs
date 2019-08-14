@@ -43,13 +43,7 @@ impl From<Schema> for SchemaV1 {
 }
 
 pub fn schemas_map_to_schemas_v1_map(schemas: HashMap<String, Schema>) -> HashMap<String, SchemaV1> {
-    let mut schemas_v1: HashMap<String, SchemaV1> = HashMap::new();
-
-    for (schema_id, schema) in schemas {
-        schemas_v1.insert(schema_id, SchemaV1::from(schema));
-    }
-
-    schemas_v1
+    schemas.into_iter().map( |(schema_id, schema)| { (schema_id, SchemaV1::from(schema))}).collect()
 }
 
 pub type AttributeNames = HashSet<String>;
