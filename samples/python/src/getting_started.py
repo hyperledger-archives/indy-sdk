@@ -399,8 +399,9 @@ async def run():
     logger.info("------------------------------")
 
     logger.info("\"Acme\" -> Create \"Job-Application\" Proof Request")
+    nonce = await anoncreds.generate_nonce()
     acme['job_application_proof_request'] = json.dumps({
-        'nonce': '1432422343242122312411212',
+        'nonce': nonce,
         'name': 'Job-Application',
         'version': '0.1',
         'requested_attributes': {
@@ -648,8 +649,9 @@ async def run():
         logger.info("------------------------------")
 
         logger.info("\"Thrift\" -> Create \"Loan-Application-Basic\" Proof Request")
+        nonce = await anoncreds.generate_nonce()
         thrift['apply_loan_proof_request'] = json.dumps({
-            'nonce': '123432421212',
+            'nonce': nonce,
             'name': 'Loan-Application-Basic',
             'version': '0.1',
             'requested_attributes': {
@@ -773,8 +775,9 @@ async def run():
     logger.info("------------------------------")
 
     logger.info("\"Thrift\" -> Create \"Loan-Application-KYC\" Proof Request")
+    nonce = await anoncreds.generate_nonce()
     thrift['apply_loan_kyc_proof_request'] = json.dumps({
-        'nonce': '123432421212',
+        'nonce': nonce,
         'name': 'Loan-Application-KYC',
         'version': '0.1',
         'requested_attributes': {
