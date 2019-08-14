@@ -6,6 +6,15 @@ from ctypes import *
 import logging
 
 
+"""
+These functions wrap the Ursa algorithm as documented in this paper:
+https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+
+And is documented in this HIPE:
+https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+"""
+
+
 async def issuer_create_schema(issuer_did: str,
                                name: str,
                                version: str,
@@ -74,19 +83,36 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
 
     It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    Note: Use combination of `issuer_rotate_credential_def_start` and `issuer_rotate_credential_def_apply` functions
+    to generate new keys for an existing credential definition.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
     :param schema_json: credential schema as a json
     :param tag: allows to distinct between credential definitions for the same issuer and schema
     :param signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
     Supported types are:
-        - 'CL': Camenisch-Lysyanskaya credential signature type
+        - 'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+                    https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+                And is documented in this HIPE:
+                    https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
     :param  config_json: (optional) type-specific configuration of credential definition as json:
         - 'CL':
           - support_revocation: whether to request non-revocation credential (optional, default false)
-    :return: 
+    :return:
         cred_def_id: identifier of created credential definition
         cred_def_json: public part of created credential definition
+            {
+                id: string - identifier of credential definition
+                schemaId: string - identifier of stored in ledger schema
+                type: string - type of the credential definition. CL is the only supported type now.
+                tag: string - allows to distinct between credential definitions for the same issuer and schema
+                value: Dictionary with Credential Definition's data is depended on the signature type: {
+                    primary: primary credential public key,
+                    Optional<revocation>: revocation credential public key
+                },
+                ver: Version of the CredDef json
+            }
     """
 
     logger = logging.getLogger(__name__)
@@ -124,6 +150,81 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     return res
 
 
+async def issuer_rotate_credential_def_start(wallet_handle: int,
+                                             cred_def_id: str,
+                                             config_json: Optional[str]) -> str:
+    """
+    Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+   
+    Use `issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
+
+    WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_def_id: an identifier of created credential definition stored in the wallet
+    :param  config_json: (optional) type-specific configuration of credential definition as json:
+        - 'CL':
+          - support_revocation: whether to request non-revocation credential (optional, default false)
+    :return:
+        cred_def_json: public part of temporary created credential definition
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_rotate_credential_def_start: >>> wallet_handle: %r, cred_def_id: %r, config_json: %r",
+                 wallet_handle,
+                 cred_def_id,
+                 config_json)
+
+    if not hasattr(issuer_rotate_credential_def_start, "cb"):
+        logger.debug("issuer_rotate_credential_def_start: Creating callback")
+        issuer_rotate_credential_def_start.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+    c_config_json = c_char_p(config_json.encode('utf-8')) if config_json is not None else None
+
+    credential_def_json = await do_call('indy_issuer_rotate_credential_def_start',
+                                        c_wallet_handle,
+                                        c_cred_def_id,
+                                        c_config_json,
+                                        issuer_rotate_credential_def_start.cb)
+
+    res = credential_def_json.decode()
+    logger.debug("issuer_rotate_credential_def_start: <<< res: %r", res)
+    return res
+
+
+async def issuer_rotate_credential_def_apply(wallet_handle: int,
+                                             cred_def_id: str):
+    """
+    Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+
+    WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_def_id: an identifier of created credential definition stored in the wallet
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_rotate_credential_def_apply: >>> wallet_handle: %r, cred_def_id: %r",
+                 wallet_handle,
+                 cred_def_id)
+
+    if not hasattr(issuer_rotate_credential_def_apply, "cb"):
+        logger.debug("issuer_rotate_credential_def_apply: Creating callback")
+        issuer_rotate_credential_def_apply.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+
+    await do_call('indy_issuer_rotate_credential_def_apply',
+                  c_wallet_handle,
+                  c_cred_def_id,
+                  issuer_rotate_credential_def_apply.cb)
+
+    logger.debug("issuer_rotate_credential_def_apply: <<<")
+
+
 async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                                             issuer_did: str,
                                             revoc_def_type: Optional[str],
@@ -149,10 +250,12 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
     This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param issuer_did: a DID of the issuer signing transaction to the Ledger
     :param revoc_def_type: revocation registry type (optional, default value depends on credential definition type). Supported types are:
-        - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+                - 'CL_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+                                  https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+                              This type is default for 'CL' credential definition type.
     :param tag: allows to distinct between revocation registries for the same issuer and credential definition
     :param cred_def_id: id of stored in ledger credential definition
     :param config_json: type-specific configuration of revocation registry as json:
@@ -163,11 +266,41 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                 2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
             "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
         }
-    :param tails_writer_handle:
-    :return: 
+    :param tails_writer_handle: handle of blob storage to store tails
+
+    NOTE:
+        Recursive creation of folder for Default Tails Writer (correspondent to `tails_writer_handle`)
+        in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+        In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+
+    :return:
         revoc_reg_id: identifier of created revocation registry definition
         revoc_reg_def_json: public part of revocation registry definition
+            {
+                "id": string - ID of the Revocation Registry,
+                "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+                "tag": string - Unique descriptive ID of the Registry,
+                "credDefId": string - ID of the corresponding CredentialDefinition,
+                "value": Registry-specific data {
+                    "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+                    "maxCredNum": number - Maximum number of credentials the Registry can serve.
+                    "tailsHash": string - Hash of tails.
+                    "tailsLocation": string - Location of tails file.
+                    "publicKeys": <public_keys> - Registry's public key (opaque type that contains data structures internal to Ursa.
+                                                                         It should not be parsed and are likely to change in future versions).
+                },
+                "ver": string - version of revocation registry definition json.
+            }
         revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry
+            {
+                value: {
+                    prevAccum: string - previous accumulator value.
+                    accum: string - current accumulator value.
+                    issued: array<number> - an array of issued indices.
+                    revoked: array<number> an array of revoked indices.
+                },
+                ver: string - version revocation registry entry json
+            }    
     """
 
     logger = logging.getLogger(__name__)
@@ -215,7 +348,7 @@ async def issuer_create_credential_offer(wallet_handle: int,
     credential request creation. Offer includes nonce and key correctness proof
     for authentication between protocol steps and integrity checking.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param cred_def_id: id of credential definition stored in the wallet
     :return:credential offer json:
      {
@@ -223,7 +356,9 @@ async def issuer_create_credential_offer(wallet_handle: int,
          "cred_def_id": string,
          // Fields below can depend on Cred Def type
          "nonce": string,
-         "key_correctness_proof" : <key_correctness_proof>
+         "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+                                   (opaque type that contains data structures internal to Ursa.
+                                   It should not be parsed and are likely to change in future versions).
      }
     """
 
@@ -279,7 +414,7 @@ async def issuer_create_credential(wallet_handle: int,
     :param rev_reg_id: (Optional) id of revocation registry definition stored in the wallet
     :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that
     will allow to read revocation tails
-    :return: 
+    :return:
      cred_json: Credential json containing signed credential values
      {
          "schema_id": string,
@@ -287,8 +422,12 @@ async def issuer_create_credential(wallet_handle: int,
          "rev_reg_def_id", Optional<string>,
          "values": <see cred_values_json above>,
          // Fields below can depend on Cred Def type
-         "signature": <signature>,
-         "signature_correctness_proof": <signature_correctness_proof>
+         "signature": <credential signature>,
+                       (opaque type that contains data structures internal to Ursa.
+                        It should not be parsed and are likely to change in future versions).
+         "signature_correctness_proof": credential signature correctness proof
+                                         (opaque type that contains data structures internal to Ursa.
+                                          It should not be parsed and are likely to change in future versions).
      }
      cred_revoc_id: local id for revocation info (Can be used for revocation of this cred)
      revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
@@ -345,7 +484,7 @@ async def issuer_revoke_credential(wallet_handle: int,
     This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
     Note that it is possible to accumulate deltas to reduce ledger load.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
     to read revocation tails
     :param rev_reg_id: id of revocation registry stored in wallet
@@ -395,7 +534,7 @@ async def issuer_revoke_credential(wallet_handle: int,
 #     This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
 #     Note that it is possible to accumulate deltas to reduce ledger load.
 #
-#     :param wallet_handle: wallet handler (created by open_wallet).
+#     :param wallet_handle: wallet handle (created by open_wallet).
 #     :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
 #     to read revocation tails
 #     :param rev_reg_id: id of revocation registry stored in wallet
@@ -471,7 +610,7 @@ async def prover_create_master_secret(wallet_handle: int,
     Creates a master secret with a given name and stores it in the wallet.
     The name must be unique.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param master_secret_name: (optional, if not present random one will be generated) new master id
     :return: id of generated master secret.
     """
@@ -504,28 +643,33 @@ async def prover_create_credential_req(wallet_handle: int,
                                        cred_def_json: str,
                                        master_secret_id: str) -> (str, str):
     """
-    Creates a clam request for the given credential offer.
+    Creates a credential request for the given credential offer.
 
     The method creates a blinded master secret for a master secret identified by a provided name.
     The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
     The blinded master secret is a part of the credential request.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param prover_did: a DID of the prover
     :param cred_offer_json: credential offer as a json containing information about the issuer and a credential
     :param cred_def_json: credential definition json related to <cred_def_id> in <cred_offer_json>
     :param master_secret_id: the id of the master secret stored in the wallet
-    :return: 
+    :return:
      cred_req_json: Credential request json for creation of credential by Issuer
      {
       "prover_did" : string,
       "cred_def_id" : string,
          // Fields below can depend on Cred Def type
       "blinded_ms" : <blinded_master_secret>,
+                     (opaque type that contains data structures internal to Ursa.
+                      It should not be parsed and are likely to change in future versions).
       "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+                     (opaque type that contains data structures internal to Ursa.
+                      It should not be parsed and are likely to change in future versions).
       "nonce": string
     }
      cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
+        Note: cred_req_metadata_json mustn't be shared with Issuer.
     """
 
     logger = logging.getLogger(__name__)
@@ -563,6 +707,83 @@ async def prover_create_credential_req(wallet_handle: int,
     return res
 
 
+async def prover_set_credential_attr_tag_policy(wallet_handle: int,
+                                                cred_def_id: str,
+                                                tag_attrs_json: Optional[str],
+                                                retroactive: bool) -> None:
+    """
+    Set credential attribute tag policy for input credential definition id.
+    Specify None to clear policy, resetting to default (tag all attributes).
+    Set retroactive to force all existing credentials in wallet on input credential definition id into compliance,
+    rewriting their tags accordingly.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_def_id: credential definition identifier.
+    :param tag_attrs_json: JSON array of attribute names to tag - empty array for None, null for all.
+    :param retroactive: whether to rewrite tags on existing credentials to comply with specified policy.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_set_credential_attr_tag_policy: >>> wallet_handle: %r, cred_def_id: %r, "
+                 "tag_attrs_json: %r, retroactive: %r",
+                 wallet_handle,
+                 cred_def_id,
+                 tag_attrs_json,
+                 retroactive)
+
+    if not hasattr(prover_set_credential_attr_tag_policy, "cb"):
+        logger.debug("prover_set_credential_attr_tag_policy: Creating callback")
+        prover_set_credential_attr_tag_policy.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+    c_tag_attrs_json = c_char_p(tag_attrs_json.encode('utf-8')) if tag_attrs_json is not None else None
+    c_retroactive = c_bool(retroactive)
+
+    res = await do_call('indy_prover_set_credential_attr_tag_policy',
+                        c_wallet_handle,
+                        c_cred_def_id,
+                        c_tag_attrs_json,
+                        c_retroactive,
+                        prover_set_credential_attr_tag_policy.cb)
+
+    logger.debug("prover_set_credential_attr_tag_policy: <<< res: %r", res)
+    return res
+
+
+async def prover_get_credential_attr_tag_policy(wallet_handle: int,
+                                                cred_def_id: str) -> str:
+    """
+    Get current attribute tag policy for input credential definition id, as a JSON list
+    of attribute names (null for default policy tagging all attributes).
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_def_id: credential definition identifier.
+    :return: credential attr tag policy as JSON list with canonical names of attributes to tag (JSON null for all).
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_get_credential_attr_tag_policy: >>> wallet_handle: %r, cred_def_id: %r",
+                 wallet_handle,
+                 cred_def_id)
+
+    if not hasattr(prover_get_credential_attr_tag_policy, "cb"):
+        logger.debug("prover_get_credential_attr_tag_policy: Creating callback")
+        prover_get_credential_attr_tag_policy.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+
+    catpol_json = await do_call('indy_prover_get_credential_attr_tag_policy',
+                                c_wallet_handle,
+                                c_cred_def_id,
+                                prover_get_credential_attr_tag_policy.cb)
+
+    res = catpol_json.decode()
+    logger.debug("prover_get_credential_attr_tag_policy: <<< res: %r", res)
+    return res
+
+
 async def prover_store_credential(wallet_handle: int,
                                   cred_id: Optional[str],
                                   cred_req_metadata_json: str,
@@ -572,7 +793,7 @@ async def prover_store_credential(wallet_handle: int,
     """
     Check credential provided by Issuer for the given credential request,
     updates the credential by a master secret and stores in a secure wallet.
-    
+
     To support efficient search the following tags will be created for stored credential:
         {
             "schema_id": <credential schema id>,
@@ -582,12 +803,12 @@ async def prover_store_credential(wallet_handle: int,
             "issuer_did": <credential issuer did>,
             "cred_def_id": <credential definition id>,
             "rev_reg_id": <credential revocation registry id>, # "None" as string if not present
-            // for every attribute in <credential values>
+            // for every attribute in <credential values> that credential attribute tagging policy marks taggable
             "attr::<attribute name>::marker": "1",
             "attr::<attribute name>::value": <attribute raw value>,
         }
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet
     :param cred_req_metadata_json: a credential request metadata created by prover_create_credential_req
     :param cred_json: credential json received from issuer
@@ -636,7 +857,7 @@ async def prover_get_credential(wallet_handle: int,
     """
     Gets human readable credential by the given id.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param cred_id: Identifier by which requested credential is stored in the wallet
     :return:  credential json
      {
@@ -671,6 +892,35 @@ async def prover_get_credential(wallet_handle: int,
     return res
 
 
+async def prover_delete_credential(wallet_handle: int,
+                                   cred_id: str) -> None:
+    """
+    Delete identified credential from wallet.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_id: identifier by which wallet stores credential to delete
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_delete_credential: >>> wallet_handle: %r, cred_id: %r",
+                 wallet_handle,
+                 cred_id)
+
+    if not hasattr(prover_delete_credential, "cb"):
+        logger.debug("prover_delete_credential: Creating callback")
+        prover_delete_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_id = c_char_p(cred_id.encode('utf-8'))
+
+    await do_call('indy_prover_delete_credential',
+                  c_wallet_handle,
+                  c_cred_id,
+                  prover_delete_credential.cb)
+
+    logger.debug("prover_delete_credential: <<<")
+
+
 async def prover_get_credentials(wallet_handle: int,
                                  filter_json: str) -> str:
     """
@@ -681,7 +931,7 @@ async def prover_get_credentials(wallet_handle: int,
     NOTE: This method is deprecated because immediately returns all fetched credentials.
     Use <prover_search_credentials> to fetch records by small batches.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param filter_json: filter for credentials
         {
             "schema_id": string, (Optional)
@@ -733,9 +983,9 @@ async def prover_search_credentials(wallet_handle: int,
     Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
     to fetch records by small batches (with prover_credentials_search_fetch_records).
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param query_json: wql style filter for credentials searching based on tags.
-        where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+        where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
     :return:
         search_handle: Search handle that can be used later to fetch records by small batches
             (with prover_credentials_search_fetch_records)
@@ -838,12 +1088,12 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
     NOTE: This method is deprecated because immediately returns all fetched credentials.
     Use <prover_search_credentials_for_proof_req> to fetch records by small batches.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param proof_request_json: proof request json
         {
             "name": string,
             "version": string,
-            "nonce": string,
+            "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
             "requested_attributes": { // set of requested attributes
                  "<attr_referent>": <attr_info>, // see below
                  ...,
@@ -939,12 +1189,12 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
     Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
     to fetch records by small batches (with prover_fetch_credentials_for_proof_req).
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param proof_request_json: proof request json
         {
             "name": string,
             "version": string,
-            "nonce": string,
+            "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
             "requested_attributes": { // set of requested attributes
                  "<attr_referent>": <attr_info>, // see below
                  ...,
@@ -963,7 +1213,7 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
             "<attr_referent>": <wql query>,
             "<predicate_referent>": <wql query>,
         }
-        where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+        where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
     :return: search_handle: Search handle that can be used later to fetch records by small batches (with prover_fetch_credentials_for_proof_req)
     """
 
@@ -1085,12 +1335,12 @@ async def prover_create_proof(wallet_handle: int,
     The proof request also contains nonce.
     The proof contains either proof or self-attested attribute value for each requested attribute.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param proof_req_json: proof request json
         {
             "name": string,
             "version": string,
-            "nonce": string,
+            "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
             "requested_attributes": { // set of requested attributes
                  "<attr_referent>": <attr_info>, // see below
                  ...,
@@ -1144,7 +1394,7 @@ async def prover_create_proof(wallet_handle: int,
               },
           }
     where
-     wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+     wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
      attr_referent: Proof-request local identifier of requested attribute
      attr_info: Describes requested attribute
          {
@@ -1181,7 +1431,7 @@ async def prover_create_proof(wallet_handle: int,
       Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
       There is also aggregated proof part common for all credential proofs.
           {
-              "requested": {
+              "requested_proof": {
                   "revealed_attrs": {
                       "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                       "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1200,7 +1450,8 @@ async def prover_create_proof(wallet_handle: int,
               "proof": {
                   "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
                   "aggregated_proof": <aggregated_proof>
-              }
+              } (opaque type that contains data structures internal to Ursa.
+                 It should not be parsed and are likely to change in future versions).
               "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
           }
     """
@@ -1253,11 +1504,11 @@ async def verifier_verify_proof(proof_request_json: str,
     Verifies a proof (of multiple credential).
     All required schemas, public keys and revocation registries must be provided.
 
-    :param proof_request_json: 
+    :param proof_request_json:
          {
              "name": string,
              "version": string,
-             "nonce": string,
+             "nonce": string, - a big number represented as a string (use `generate_nonce` function to generate 80-bit number)
              "requested_attributes": { // set of requested attributes
                   "<attr_referent>": <attr_info>, // see below
                   ...,
@@ -1273,7 +1524,7 @@ async def verifier_verify_proof(proof_request_json: str,
          }
     :param proof_json: created for request proof json
          {
-             "requested": {
+             "requested_proof": {
                  "revealed_attrs": {
                      "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                      "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1470,4 +1721,26 @@ async def update_revocation_state(blob_storage_reader_handle: int,
 
     res = updated_rev_state_json.decode()
     logger.debug("update_revocation_state: <<< res: %r", res)
+    return res
+
+
+async def generate_nonce() -> str:
+    """
+    Generates 80-bit numbers that can be used as a nonce for proof request.
+
+    :return: nonce: generated number as a string
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("generate_nonce: >>>")
+
+    if not hasattr(generate_nonce, "cb"):
+        logger.debug("generate_nonce: Creating callback")
+        generate_nonce.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    nonce = await do_call('indy_generate_nonce',
+                          generate_nonce.cb)
+
+    res = nonce.decode()
+    logger.debug("generate_nonce: <<< res: %r", res)
     return res

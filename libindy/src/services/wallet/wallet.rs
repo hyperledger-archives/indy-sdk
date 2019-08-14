@@ -1,6 +1,3 @@
-extern crate sodiumoxide;
-extern crate zeroize;
-
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -8,7 +5,7 @@ use utils::crypto::{hmacsha256, chacha20poly1305_ietf};
 
 use errors::prelude::*;
 
-use self::zeroize::Zeroize;
+use zeroize::Zeroize;
 
 use super::storage;
 use super::iterator::WalletIterator;
@@ -42,8 +39,6 @@ impl Keys {
     }
 
     pub fn serialize_encrypted(&self, master_key: &chacha20poly1305_ietf::Key) -> IndyResult<Vec<u8>> {
-        extern crate rmp_serde;
-
         let mut serialized = rmp_serde::to_vec(self)
             .to_indy(IndyErrorKind::InvalidState, "Unable to serialize keys")?;
 
@@ -54,8 +49,6 @@ impl Keys {
     }
 
     pub fn deserialize_encrypted(bytes: &[u8], master_key: &chacha20poly1305_ietf::Key) -> IndyResult<Keys> {
-        extern crate rmp_serde;
-
         let mut decrypted = decrypt_merged(bytes, master_key)?;
 
         let keys: Keys = rmp_serde::from_slice(&decrypted)
@@ -252,103 +245,136 @@ mod tests {
 
     #[test]
     fn wallet_get_id_works() {
-        _cleanup();
+        test::cleanup_wallet("wallet_get_id_works");
+        {
+            let mut wallet = _wallet("wallet_get_id_works");
+            assert_eq!(wallet.get_id(), "wallet_get_id_works");
 
-        let wallet = _wallet();
-        assert_eq!(wallet.get_id(), _wallet_id());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_get_id_works");
     }
 
     #[test]
     fn wallet_add_get_works() {
-        _cleanup();
+        test::cleanup_wallet("wallet_add_get_works");
+        {
+            let mut wallet = _wallet("wallet_add_get_works");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
+            assert_eq!(record.id, _id1());
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(record.tags.unwrap(), _tags());
 
-        let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.id, _id1());
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(record.tags.unwrap(), _tags());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_add_get_works");
     }
 
     #[test]
     fn wallet_add_get_works_for_reopen() {
-        _cleanup();
+        test::cleanup_wallet("wallet_add_get_works_for_reopen");
+        {
+            let mut wallet = _wallet("wallet_add_get_works_for_reopen");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            wallet.close().unwrap();
 
-        let mut wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
-        wallet.close().unwrap();
+            let mut wallet = _exists_wallet("wallet_add_get_works_for_reopen");
 
-        let wallet = _exists_wallet();
+            let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
+            assert_eq!(record.id, _id1());
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(record.tags.unwrap(), _tags());
 
-        let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.id, _id1());
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(record.tags.unwrap(), _tags());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_add_get_works_for_reopen");
     }
 
     #[test]
     fn wallet_get_works_for_non_existing() {
-        _cleanup();
+        test::cleanup_wallet("wallet_get_works_for_non_existing");
+        {
+            let mut wallet = _wallet("wallet_get_works_for_non_existing");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            let res = wallet.get(_type1(), _id2(), &_fetch_options(false, true, true));
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-        let res = wallet.get(_type1(), _id2(), &_fetch_options(false, true, true));
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_get_works_for_non_existing");
     }
 
     #[test]
     fn wallet_add_works_for_already_existing() {
-        _cleanup();
+        test::cleanup_wallet("wallet_add_works_for_already_existing");
+        {
+            let mut wallet = _wallet("wallet_add_works_for_already_existing");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            let res = wallet.add(_type1(), _id1(), _value2(), &_tags());
+            assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
 
-        let res = wallet.add(_type1(), _id1(), _value2(), &_tags());
-        assert_kind!(IndyErrorKind::WalletItemAlreadyExists, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_add_works_for_already_existing");
     }
 
     #[test]
     fn wallet_update_works() {
-        _cleanup();
+        test::cleanup_wallet("wallet_update_works");
+        {
+            let mut wallet = _wallet("wallet_update_works");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
+            assert_eq!(record.id, _id1());
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(record.tags.unwrap(), _tags());
 
-        let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.id, _id1());
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(record.tags.unwrap(), _tags());
+            wallet.update(_type1(), _id1(), _value2()).unwrap();
 
-        wallet.update(_type1(), _id1(), _value2()).unwrap();
+            let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
+            assert_eq!(record.id, _id1());
+            assert_eq!(record.value.unwrap(), _value2());
+            assert_eq!(record.tags.unwrap(), _tags());
 
-        let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.id, _id1());
-        assert_eq!(record.value.unwrap(), _value2());
-        assert_eq!(record.tags.unwrap(), _tags());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_update_works");
     }
 
     #[test]
     fn wallet_update_works_for_non_existing_id() {
-        _cleanup();
+        test::cleanup_wallet("wallet_update_works_for_non_existing_id");
+        {
+            let mut wallet = _wallet("wallet_update_works_for_non_existing_id");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            let res = wallet.update(_type1(), _id2(), _value2());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-        let res = wallet.update(_type1(), _id2(), _value2());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_update_works_for_non_existing_id");
     }
 
     #[test]
     fn wallet_update_works_for_non_existing_type() {
-        _cleanup();
+        test::cleanup_wallet("wallet_update_works_for_non_existing_type");
+        {
+            let mut wallet = _wallet("wallet_update_works_for_non_existing_type");
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let res = wallet.update(_type2(), _id1(), _value2());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+            let res = wallet.update(_type2(), _id1(), _value2());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_update_works_for_non_existing_type");
     }
 
     /**
@@ -356,1414 +382,1529 @@ mod tests {
      */
     #[test]
     fn wallet_add_tags_works() {
-        _cleanup();
+        test::cleanup_wallet("wallet_add_tags_works");
+        {
+            let tags = jsonmap!({
+                "tag_name_1": "tag_value_1",
+                "tag_name_2": "tag_value_2",
+             });
 
-        let tags = jsonmap!({
-            "tag_name_1": "tag_value_1",
-            "tag_name_2": "tag_value_2",
-         });
+            let mut wallet = _wallet("wallet_add_tags_works");
+            wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
+            let new_tags = jsonmap!({
+                "tag_name_2": "tag_value_2",
+                "~tag_name_3": "~tag_value_3",
+            });
 
-        let new_tags = jsonmap!({
-            "tag_name_2": "tag_value_2",
-            "~tag_name_3": "~tag_value_3",
-        });
+            wallet.add_tags(_type1(), _id1(), &new_tags).unwrap();
+            let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
 
-        wallet.add_tags(_type1(), _id1(), &new_tags).unwrap();
-        let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
+            let expected_tags = jsonmap!({
+                "tag_name_1": "tag_value_1",
+                "tag_name_2": "tag_value_2",
+                "~tag_name_3": "~tag_value_3",
+             });
 
-        let expected_tags = jsonmap!({
-            "tag_name_1": "tag_value_1",
-            "tag_name_2": "tag_value_2",
-            "~tag_name_3": "~tag_value_3",
-         });
+            assert_eq!(record.tags.unwrap(), expected_tags);
 
-        assert_eq!(record.tags.unwrap(), expected_tags);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_add_tags_works");
     }
 
     #[test]
     fn wallet_update_tags_works() {
-        _cleanup();
+        test::cleanup_wallet("wallet_update_tags_works");
+        {
+            let tags = jsonmap!({
+                "tag_name_1": "tag_value_1",
+                "tag_name_2": "tag_value_2",
+             });
 
-        let tags = jsonmap!({
-            "tag_name_1": "tag_value_1",
-            "tag_name_2": "tag_value_2",
-         });
+            let mut wallet = _wallet("wallet_update_tags_works");
+            wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
+            let new_tags = jsonmap!({
+                "tag_name_2": "tag_value_2",
+                "~tag_name_3": "~tag_value_3",
+            });
 
-        let new_tags = jsonmap!({
-            "tag_name_2": "tag_value_2",
-            "~tag_name_3": "~tag_value_3",
-        });
+            wallet.update_tags(_type1(), _id1(), &new_tags).unwrap();
 
-        wallet.update_tags(_type1(), _id1(), &new_tags).unwrap();
+            let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
+            assert_eq!(record.tags.unwrap(), new_tags);
 
-        let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.tags.unwrap(), new_tags);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_update_tags_works");
     }
 
     #[test]
     fn wallet_delete_tags_works() {
-        _cleanup();
+        test::cleanup_wallet("wallet_delete_tags_works");
+        {
+            let tags = jsonmap!({
+                "tag_name_1": "tag_value_1",
+                "tag_name_2": "tag_value_2",
+                "~tag_name_3": "~tag_value_3",
+                "~tag_name_4": "~tag_value_4",
+             });
 
-        let tags = jsonmap!({
-            "tag_name_1": "tag_value_1",
-            "tag_name_2": "tag_value_2",
-            "~tag_name_3": "~tag_value_3",
-            "~tag_name_4": "~tag_value_4",
-         });
+            let mut wallet = _wallet("wallet_delete_tags_works");
+            wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
+            wallet.delete_tags(_type1(), _id1(), &vec!["tag_name_1", "~tag_name_3", "tag_name_5", "~tag_name_6"]).unwrap();
 
-        wallet.delete_tags(_type1(), _id1(), &vec!["tag_name_1", "~tag_name_3", "tag_name_5", "~tag_name_6"]).unwrap();
+            let expected_tags = jsonmap!({
+                "tag_name_2": "tag_value_2",
+                "~tag_name_4": "~tag_value_4",
+             });
 
-        let expected_tags = jsonmap!({
-            "tag_name_2": "tag_value_2",
-            "~tag_name_4": "~tag_value_4",
-         });
+            let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
+            assert_eq!(record.tags.unwrap(), expected_tags);
 
-        let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.tags.unwrap(), expected_tags);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_delete_tags_works");
     }
 
     #[test]
     fn wallet_delete_works() {
-        _cleanup();
+        test::cleanup_wallet("wallet_delete_works");
+        {
+            let mut wallet = _wallet("wallet_delete_works");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
+            assert_eq!(record.id, _id1());
+            assert_eq!(record.value.unwrap(), _value1());
+            assert_eq!(record.tags.unwrap(), _tags());
 
-        let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.id, _id1());
-        assert_eq!(record.value.unwrap(), _value1());
-        assert_eq!(record.tags.unwrap(), _tags());
+            wallet.delete(_type1(), _id1()).unwrap();
 
-        wallet.delete(_type1(), _id1()).unwrap();
+            let res = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true));
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-        let res = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true));
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_delete_works");
     }
 
     #[test]
     fn wallet_delete_works_for_non_existing_id() {
-        _cleanup();
+        test::cleanup_wallet("wallet_delete_works_for_non_existing_id");
+        {
+            let mut wallet = _wallet("wallet_delete_works_for_non_existing_id");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            let res = wallet.delete(_type1(), _id2());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-        let res = wallet.delete(_type1(), _id2());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_delete_works_for_non_existing_id");
     }
 
     #[test]
     fn wallet_delete_works_for_non_existing_type() {
-        _cleanup();
+        test::cleanup_wallet("wallet_delete_works_for_non_existing_type");
+        {
+            let mut wallet = _wallet("wallet_delete_works_for_non_existing_type");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            let res = wallet.delete(_type2(), _id1());
+            assert_kind!(IndyErrorKind::WalletItemNotFound, res);
 
-        let res = wallet.delete(_type2(), _id1());
-        assert_kind!(IndyErrorKind::WalletItemNotFound, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_delete_works_for_non_existing_type");
     }
 
     #[test]
     fn language_parse_from_json_ecrypt_query_works() {
-        _cleanup();
-
-        let query = jsonstr!({
-            "k1": "v1",
-            "$or": [
-                {
-                    "~k2": {"$like": "like_target"},
-                    "~k3": {"$gte": "100"},
-                    "$not": {
-                        "k4": "v4",
-                        "~k5": {
-                            "$like": "like_string"
+        test::cleanup_wallet("language_parse_from_json_ecrypt_query_works");
+        {
+            let query = jsonstr!({
+                "k1": "v1",
+                "$or": [
+                    {
+                        "~k2": {"$like": "like_target"},
+                        "~k3": {"$gte": "100"},
+                        "$not": {
+                            "k4": "v4",
+                            "~k5": {
+                                "$like": "like_string"
+                            },
                         },
                     },
-                },
-                {
-                    "k6": {"$in": ["in_string_1", "in_string_2"]},
-                }
-            ],
-            "$not": {
+                    {
+                        "k6": {"$in": ["in_string_1", "in_string_2"]},
+                    }
+                ],
                 "$not": {
                     "$not": {
                         "$not": {
-                            "k7": "v7"
+                            "$not": {
+                                "k7": "v7"
+                            }
                         }
                     }
+                },
+                "$not": {
+                    "k8": "v8"
                 }
-            },
-            "$not": {
-                "k8": "v8"
-            }
-        });
+            });
 
-        let query = language::parse_from_json(&query).unwrap();
-        let encrypted_query = encrypt_query(query, &Keys::new()).unwrap();
+            let query = language::parse_from_json(&query).unwrap();
+            let encrypted_query = encrypt_query(query, &Keys::new()).unwrap();
 
-        assert_match!(Operator::And(_), encrypted_query);
+            assert_match!(Operator::And(_), encrypted_query);
+        }
+        test::cleanup_wallet("language_parse_from_json_ecrypt_query_works");
     }
 
     #[test]
     fn wallet_search_works_for_empty_query() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_empty_query");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_empty_query");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
+            let mut iterator = wallet.search(
+                _type1(),
+                "{}",
+                Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(
-            _type1(),
-            "{}",
-            Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                    type_: None,
+                },
+                WalletRecord {
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                    type_: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-                type_: None,
-            },
-            WalletRecord {
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-                type_: None,
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_empty_query");
     }
 
     #[test]
     fn wallet_search_works_for_empty_query_with_count() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_empty_query_with_count");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_empty_query_with_count");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
+            let mut iterator = wallet.search(
+                _type1(),
+                "{}",
+                Some(&_search_options(true, true, true, true, true))).unwrap();
 
-        let mut iterator = wallet.search(
-            _type1(),
-            "{}",
-            Some(&_search_options(true, true, true, true, true))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: Some(_tags()),
+                    type_: Some(_type1().to_string()),
+                },
+                WalletRecord {
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: Some(_tags()),
+                    type_: Some(_type1().to_string()),
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: Some(_tags()),
-                type_: Some(_type1().to_string()),
-            },
-            WalletRecord {
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: Some(_tags()),
-                type_: Some(_type1().to_string()),
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_empty_query_with_count");
     }
 
     #[test]
     fn wallet_search_works_for_empty_query_with_only_count() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_empty_query_with_only_count");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_empty_query_with_only_count");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &_tags()).unwrap();
+            let mut iterator = wallet.search(
+                _type1(),
+                "{}",
+                Some(&_search_options(false, true, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(
-            _type1(),
-            "{}",
-            Some(&_search_options(false, true, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
 
-        assert!(iterator.next().unwrap().is_none());
-        assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_empty_query_with_only_count");
     }
 
     #[test]
     fn wallet_search_works_for_eq_encrypted() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_eq_encrypted");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_eq_encrypted");
 
-        let wallet = _wallet();
+            let tags = jsonmap!({
+                "tag_name_1": "tag_value_1",
+                "~tag_name_2": "tag_value_2",
+             });
 
-        let tags = jsonmap!({
-            "tag_name_1": "tag_value_1",
-            "~tag_name_2": "tag_value_2",
-         });
+            wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
-        wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name_1": "tag_value_1"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name_1": "tag_value_1"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                }
+            ];
 
-        let expected_records = vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            }
-        ];
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful encrypted search with different tag name
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name_3": "tag_value_1"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful encrypted search with different tag name
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name_3": "tag_value_1"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful encrypted search with different tag value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name_1": "tag_value_2"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful encrypted search with different tag value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name_1": "tag_value_2"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful encrypted search with different type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"tag_name_1": "tag_value_1"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful encrypted search with different type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"tag_name_1": "tag_value_1"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful plain search equal name
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_1": "tag_value_1"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful plain search equal name
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_1": "tag_value_1"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_eq_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_empty_tag_plain() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_empty_tag_plain");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_empty_tag_plain");
+            wallet.add(_type1(), _id1(), _type1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _type1(), &_tags()).unwrap();
+            let res = wallet.search(_type1(),
+                                    &jsonstr!({
+                                        "tag1": "tag2",
+                                        "~": "tag3",
+                                    }),
+                                    Some(&_search_options(true, false, false, true, false)));
 
-        let res = wallet.search(_type1(),
-                                &jsonstr!({
-                                    "tag1": "tag2",
-                                    "~": "tag3",
-                                }),
-                                Some(&_search_options(true, false, false, true, false)));
+            assert_kind!(IndyErrorKind::WalletQueryError, res);
 
-        assert_kind!(IndyErrorKind::WalletQueryError, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_empty_tag_plain");
     }
 
     #[test]
     fn wallet_search_works_for_empty_tag_encrypted() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_empty_tag_encrypted");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_empty_tag_encrypted");
+            wallet.add(_type1(), _id1(), _type1(), &_tags()).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _type1(), &_tags()).unwrap();
+            let res = wallet.search(_type1(),
+                                    &jsonstr!({
+                                        "tag1": "tag2",
+                                        "": "tag3",
+                                    }),
+                                    Some(&_search_options(true, false, false, true, false)));
 
-        let res = wallet.search(_type1(),
-                                &jsonstr!({
-                                    "tag1": "tag2",
-                                    "": "tag3",
-                                }),
-                                Some(&_search_options(true, false, false, true, false)));
+            assert_kind!(IndyErrorKind::WalletQueryError, res);
 
-        assert_kind!(IndyErrorKind::WalletQueryError, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_empty_tag_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_eq_plan() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_eq_plan");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_eq_plan");
 
-        let wallet = _wallet();
+            let tags = jsonmap!({
+                "~tag_name_1": "tag_value_1",
+                "tag_name_2": "tag_value_2",
+             });
 
-        let tags = jsonmap!({
-            "~tag_name_1": "tag_value_1",
-            "tag_name_2": "tag_value_2",
-         });
+            wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
-        wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_1": "tag_value_1"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_1": "tag_value_1"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                }
+            ];
 
-        let expected_records = vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            }
-        ];
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful plain search with different tag name
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_3": "tag_value_1"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful plain search with different tag name
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_3": "tag_value_1"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful plain search with different tag value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_1": "tag_value_2"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful plain search with different tag value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_1": "tag_value_2"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful plain search with different type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"~tag_name_1": "tag_value_1"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful plain search with different type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"~tag_name_1": "tag_value_1"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful encrypted search equal name
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name_1": "tag_value_1"}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful encrypted search equal name
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name_1": "tag_value_1"}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_eq_plan");
     }
 
     // neq tests //
     #[test]
     fn wallet_search_works_for_neq_encrypted() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_neq_encrypted");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_neq_encrypted");
 
-        let wallet = _wallet();
+            let tags = jsonmap!({
+                "tag_name_1": "tag_value_1",
+                "~tag_name_2": "tag_value_2",
+             });
 
-        let tags = jsonmap!({
-            "tag_name_1": "tag_value_1",
-            "~tag_name_2": "tag_value_2",
-         });
+            wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
-        wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name_1": {"$neq": "tag_value_different"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name_1": {"$neq": "tag_value_different"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                }
+            ];
 
-        let expected_records = vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            }
-        ];
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful encrypted search with matching value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name_1": {"$neq": "tag_value_1"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful encrypted search with matching value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name_1": {"$neq": "tag_value_1"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful encrypted search with neq value and neq name
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name_different": {"$neq": "tag_value_different"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful encrypted search with neq value and neq name
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name_different": {"$neq": "tag_value_different"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful encrypted search with different type
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"tag_name_1": {"$neq": "tag_value_different"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful encrypted search with different type
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"tag_name_1": {"$neq": "tag_value_different"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful plain search
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_1": {"$neq": "tag_value_different"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful plain search
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_1": {"$neq": "tag_value_different"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_neq_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_neq_plain() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_neq_plain");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_neq_plain");
 
-        let wallet = _wallet();
+            let tags = jsonmap!({
+                "~tag_name_1": "tag_value_1",
+                "tag_name_2": "tag_value_2",
+             });
 
-        let tags = jsonmap!({
-            "~tag_name_1": "tag_value_1",
-            "tag_name_2": "tag_value_2",
-         });
+            wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
 
-        wallet.add(_type1(), _id1(), _value1(), &tags).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_1": {"$neq": "tag_value_different"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_1": {"$neq": "tag_value_different"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                }
+            ];
 
-        let expected_records = vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            }
-        ];
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful plain search with matching value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_1": {"$neq": "tag_value_1"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful plain search with matching value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_1": {"$neq": "tag_value_1"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful plain search with neq value and neq name
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_different": {"$neq": "tag_value_different"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful plain search with neq value and neq name
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_different": {"$neq": "tag_value_different"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful plain search with different type
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"~tag_name_1": {"$neq": "tag_value_different"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful plain search with different type
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"~tag_name_1": {"$neq": "tag_value_different"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful encrypted search
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name_1": {"$neq": "tag_value_different"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful encrypted search
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name_1": {"$neq": "tag_value_different"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_neq_plain");
     }
 
     #[test]
     fn wallet_search_works_for_gt_plain() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_gt_plain");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_gt_plain");
+            wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"1"})).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"2"})).unwrap();
+            wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"3"})).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"1"})).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"2"})).unwrap();
-        wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"3"})).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$gt": "1"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$gt": "1"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id3().to_string(),
-                value: Some(_value3().to_string()),
-                tags: None,
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with no matches
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$gt": "4"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with no matches
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$gt": "4"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with nonexisting value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_different": {"$gt": "1"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with nonexisting value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_different": {"$gt": "1"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with different type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"~tag_name": {"$gt": "1"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with different type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"~tag_name": {"$gt": "1"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_gt_plain");
     }
 
     #[test]
     fn wallet_search_works_for_gt_encrypted() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_gt_encrypted");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_gt_encrypted");
 
-        let wallet = _wallet();
+            let res = wallet.search(_type1(),
+                                    &jsonstr!({"tag_name": {"$gt": "1"}}),
+                                    Some(&_search_options(true, false, false, true, false)));
 
-        let res = wallet.search(_type1(),
-                                &jsonstr!({"tag_name": {"$gt": "1"}}),
-                                Some(&_search_options(true, false, false, true, false)));
-
-        assert_kind!(IndyErrorKind::WalletQueryError, res);
+            assert_kind!(IndyErrorKind::WalletQueryError, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_gt_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_gte_plain() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_gte_plain");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_gte_plain");
+            wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"1"})).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"2"})).unwrap();
+            wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"3"})).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"1"})).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"2"})).unwrap();
-        wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"3"})).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$gte": "2"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$gte": "2"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id3().to_string(),
-                value: Some(_value3().to_string()),
-                tags: None,
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with no matches
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$gte": "4"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with no matches
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$gte": "4"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with nonexisting value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_different": {"$gte": "1"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with nonexisting value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_different": {"$gte": "1"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with different type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"~tag_name": {"$gte": "1"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with different type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"~tag_name": {"$gte": "1"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
-
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_gte_plain");
     }
 
     #[test]
     fn wallet_search_works_for_gte_encrypted() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_gte_encrypted");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_gte_encrypted");
 
-        let wallet = _wallet();
+            let res = wallet.search(_type1(),
+                                    &jsonstr!({"tag_name": {"$gte": "1"}}),
+                                    Some(&_search_options(true, false, false, true, false)));
 
-        let res = wallet.search(_type1(),
-                                &jsonstr!({"tag_name": {"$gte": "1"}}),
-                                Some(&_search_options(true, false, false, true, false)));
-
-        assert_kind!(IndyErrorKind::WalletQueryError, res);
+            assert_kind!(IndyErrorKind::WalletQueryError, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_gte_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_lt_plain() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_lt_plain");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_lt_plain");
+            wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"2"})).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"3"})).unwrap();
+            wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"4"})).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"2"})).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"3"})).unwrap();
-        wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"4"})).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$lt": "4"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$lt": "4"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with no matches
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$lt": "2"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with no matches
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$lt": "2"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with nonexisting value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_different": {"$lt": "4"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with nonexisting value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_different": {"$lt": "4"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with different type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"~tag_name": {"$lt": "4"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with different type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"~tag_name": {"$lt": "4"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_lt_plain");
     }
 
     #[test]
     fn wallet_search_works_for_lt_encrypted() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_lt_encrypted");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_lt_encrypted");
 
-        let wallet = _wallet();
+            let res = wallet.search(_type1(),
+                                    &jsonstr!({"tag_name": {"$lt": "4"}}),
+                                    Some(&_search_options(true, false, false, true, false)));
 
-        let res = wallet.search(_type1(),
-                                &jsonstr!({"tag_name": {"$lt": "4"}}),
-                                Some(&_search_options(true, false, false, true, false)));
-
-        assert_kind!(IndyErrorKind::WalletQueryError, res);
+            assert_kind!(IndyErrorKind::WalletQueryError, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_lt_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_lte_plain() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_lte_plain");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_lte_plain");
+            wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"2"})).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"3"})).unwrap();
+            wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"4"})).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name":"2"})).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name":"3"})).unwrap();
-        wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name":"4"})).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$lte": "3"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$lte": "3"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with no matches
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$lte": "1"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with no matches
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$lte": "1"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with nonexisting value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_different": {"$lte": "3"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with nonexisting value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_different": {"$lte": "3"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with different type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"~tag_name": {"$lte": "3"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with different type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"~tag_name": {"$lte": "3"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
-
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_lte_plain");
     }
 
     #[test]
     fn wallet_search_works_for_lte_encrypted() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_lte_encrypted");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_lte_encrypted");
 
-        let wallet = _wallet();
+            let res = wallet.search(_type1(),
+                                    &jsonstr!({"tag_name": {"$lte": "3"}}),
+                                    Some(&_search_options(true, false, false, true, false)));
 
-        let res = wallet.search(_type1(),
-                                &jsonstr!({"tag_name": {"$lte": "3"}}),
-                                Some(&_search_options(true, false, false, true, false)));
-
-        assert_kind!(IndyErrorKind::WalletQueryError, res);
+            assert_kind!(IndyErrorKind::WalletQueryError, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_lte_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_like_plain() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_like_plain");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_like_plain");
+            wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name": "tag_value_1"})).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name": "tag_value_2"})).unwrap();
+            wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name": "not_matching"})).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name": "tag_value_1"})).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name": "tag_value_2"})).unwrap();
-        wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name": "not_matching"})).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$like": "tag_value_%"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$like": "tag_value_%"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with no matches
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$like": "tag_value_no_match%"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with no matches
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$like": "tag_value_no_match%"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with nonexisting value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_different": {"$like": "tag_value_%"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with nonexisting value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_different": {"$like": "tag_value_%"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search wrong type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"~tag_name": {"$like": "tag_value_%"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search wrong type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"~tag_name": {"$like": "tag_value_%"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_like_plain");
     }
 
     #[test]
     fn wallet_search_works_for_like_encrypted() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_like_encrypted");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_like_encrypted");
 
-        let wallet = _wallet();
+            let res = wallet.search(_type1(),
+                                    &jsonstr!({"tag_name": {"$like": "1"}}),
+                                    Some(&_search_options(true, false, false, true, false)));
 
-        let res = wallet.search(_type1(),
-                                &jsonstr!({"tag_name": {"$like": "1"}}),
-                                Some(&_search_options(true, false, false, true, false)));
+            assert_kind!(IndyErrorKind::WalletQueryError, res);
 
-        assert_kind!(IndyErrorKind::WalletQueryError, res);
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_like_encrypted");
     }
 
     #[test]
     fn wallet_search_works_for_in_plain() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_in_plain");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_in_plain");
+            wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name": "tag_value_1"})).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name": "tag_value_2"})).unwrap();
+            wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name": "tag_value_3"})).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"~tag_name": "tag_value_1"})).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"~tag_name": "tag_value_2"})).unwrap();
-        wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"~tag_name": "tag_value_3"})).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id3().to_string(),
-                value: Some(_value3().to_string()),
-                tags: None,
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with no matches
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$in": ["tag_value_4", "tag_value_5"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with no matches
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$in": ["tag_value_4", "tag_value_5"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with nonexisting tag
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name_different": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with nonexisting tag
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name_different": {"$in": ["tag_value_1", "tag_value_3"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful encrypted search
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful encrypted search
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search wrong type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"~tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search wrong type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"~tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_in_plain");
     }
 
     #[test]
     fn wallet_search_works_for_in_encrypted() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_in_encrypted");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_in_encrypted");
+            wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"tag_name": "tag_value_1"})).unwrap();
+            wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"tag_name": "tag_value_2"})).unwrap();
+            wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"tag_name": "tag_value_3"})).unwrap();
 
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &jsonmap!({"tag_name": "tag_value_1"})).unwrap();
-        wallet.add(_type1(), _id2(), _value2(), &jsonmap!({"tag_name": "tag_value_2"})).unwrap();
-        wallet.add(_type1(), _id3(), _value3(), &jsonmap!({"tag_name": "tag_value_3"})).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id3().to_string(),
-                value: Some(_value3().to_string()),
-                tags: None,
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with no matches
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name": {"$in": ["tag_value_4", "tag_value_5"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with no matches
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name": {"$in": ["tag_value_4", "tag_value_5"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search with nonexisting tag
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"tag_name_different": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search with nonexisting tag
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"tag_name_different": {"$in": ["tag_value_1", "tag_value_3"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful plain search
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"~tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful plain search
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"~tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // unsuccessful search wrong type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({"tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // unsuccessful search wrong type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({"tag_name": {"$in": ["tag_value_1", "tag_value_3"]}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_in_encrypted")
     }
 
 
     #[test]
     fn wallet_search_works_for_and() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_and");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_and");
 
-        let wallet = _wallet();
+            wallet.add(_type1(),
+                       _id1(),
+                       _value1(),
+                       &jsonmap!({
+                            "tag_name_1": "tag_value_1",
+                            "tag_name_2": "tag_value_2",
+                            "~tag_name_2": "tag_value_2",
+                            "~tag_name_3": "tag_value_3"})).unwrap();
 
-        wallet.add(_type1(),
-                   _id1(),
-                   _value1(),
-                   &jsonmap!({
-                        "tag_name_1": "tag_value_1",
-                        "tag_name_2": "tag_value_2",
-                        "~tag_name_2": "tag_value_2",
-                        "~tag_name_3": "tag_value_3"})).unwrap();
+            wallet.add(_type1(),
+                       _id2(),
+                       _value2(),
+                       &jsonmap!({
+                            "tag_name_1": "tag_value_1",
+                            "tag_name_2": "tag_value_2",
+                            "~tag_name_2": "tag_value_3",
+                            "~tag_name_3": "tag_value_3"})).unwrap();
 
-        wallet.add(_type1(),
-                   _id2(),
-                   _value2(),
-                   &jsonmap!({
-                        "tag_name_1": "tag_value_1",
-                        "tag_name_2": "tag_value_2",
-                        "~tag_name_2": "tag_value_3",
-                        "~tag_name_3": "tag_value_3"})).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                "tag_name_1": "tag_value_1",
+                                                "tag_name_2": "tag_value_2",
+                                                "~tag_name_2": "tag_value_2",
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                            "tag_name_1": "tag_value_1",
-                                            "tag_name_2": "tag_value_2",
-                                            "~tag_name_2": "tag_value_2",
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                }
+            ];
 
-        let expected_records = vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            }
-        ];
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                "tag_name_1": "tag_value_1",
+                                                "~tag_name_2": "tag_value_3",
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                            "tag_name_1": "tag_value_1",
-                                            "~tag_name_2": "tag_value_3",
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                }
+            ];
 
-        let expected_records = vec![
-            WalletRecord {
-                type_: None,
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-            }
-        ];
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                "tag_name_1": "tag_value_1",
+                                                "~tag_name_3": "tag_value_3",
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                            "tag_name_1": "tag_value_1",
-                                            "~tag_name_3": "tag_value_3",
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-            },
-        ]);
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // no matches
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                 "tag_name_1": "tag_value_1",
+                                                 "~tag_name_3": "tag_value_3",
+                                                 "tag_name_4": "tag_value_4",
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // no matches
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                             "tag_name_1": "tag_value_1",
-                                             "~tag_name_3": "tag_value_3",
-                                             "tag_name_4": "tag_value_4",
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // wrong type
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({
+                                                  "tag_name_1": "tag_value_1",
+                                                  "~tag_name_2": "tag_value_2",
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // wrong type
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({
-                                              "tag_name_1": "tag_value_1",
-                                              "~tag_name_2": "tag_value_2",
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // wrong tag name
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                   "tag_name_1": "tag_value_1",
+                                                   "tag_name_3": "tag_value_3",
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // wrong tag name
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                               "tag_name_1": "tag_value_1",
-                                               "tag_name_3": "tag_value_3",
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            // wrong tag value
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                     "tag_name_1": "tag_value_0",
+                                                      "~tag_name_2": "tag_value_3",
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // wrong tag value
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                                 "tag_name_1": "tag_value_0",
-                                                  "~tag_name_2": "tag_value_3",
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_and");
     }
 
     #[test]
     fn wallet_search_works_for_or() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_or");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_or");
 
-        let wallet = _wallet();
+            wallet.add(_type1(),
+                       _id1(),
+                       _value1(),
+                       &jsonmap!({
+                           "tag_name_1": "tag_value_1",
+                           "~tag_name_2": "tag_value_21",
+                           "~tag_name_3": "tag_value_3"})).unwrap();
 
-        wallet.add(_type1(),
-                   _id1(),
-                   _value1(),
-                   &jsonmap!({
-                       "tag_name_1": "tag_value_1",
-                       "~tag_name_2": "tag_value_21",
-                       "~tag_name_3": "tag_value_3"})).unwrap();
+            wallet.add(_type1(),
+                       _id2(),
+                       _value2(),
+                       &jsonmap!({
+                           "tag_name_1": "tag_value_1",
+                           "~tag_name_2": "tag_value_22",
+                           "~tag_name_3": "tag_value_3"})).unwrap();
 
-        wallet.add(_type1(),
-                   _id2(),
-                   _value2(),
-                   &jsonmap!({
-                       "tag_name_1": "tag_value_1",
-                       "~tag_name_2": "tag_value_22",
-                       "~tag_name_3": "tag_value_3"})).unwrap();
+            wallet.add(_type1(),
+                       _id3(),
+                       _value3(),
+                       &jsonmap!({
+                           "tag_name_1": "tag_value_1",
+                           "~tag_name_3": "tag_value_3",
+                           "~tag_name_4": "tag_value_4"})).unwrap();
 
-        wallet.add(_type1(),
-                   _id3(),
-                   _value3(),
-                   &jsonmap!({
-                       "tag_name_1": "tag_value_1",
-                       "~tag_name_3": "tag_value_3",
-                       "~tag_name_4": "tag_value_4"})).unwrap();
+            // All 3
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                  "$or": [
+                                                      {"tag_name_1": "tag_value_1"},
+                                                      {"~tag_name_2": "tag_value_22"},
+                                                      {"~tag_name_4": "tag_value_4"}
+                                                 ]
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        // All 3
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                              "$or": [
-                                                  {"tag_name_1": "tag_value_1"},
-                                                  {"~tag_name_2": "tag_value_22"},
-                                                  {"~tag_name_4": "tag_value_4"}
-                                             ]
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id3().to_string(),
-                value: Some(_value3().to_string()),
-                tags: None,
-            },
-        ]);
-
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
 
-        // 1 and 3 matching
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                              "$or": [
-                                                   {"~tag_name_2": "tag_value_21"},
-                                                   {"~tag_name_4": "tag_value_4"}
-                                             ]
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            // 1 and 3 matching
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                  "$or": [
+                                                       {"~tag_name_2": "tag_value_21"},
+                                                       {"~tag_name_4": "tag_value_4"}
+                                                 ]
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id3().to_string(),
-                value: Some(_value3().to_string()),
-                tags: None,
-            },
-        ]);
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        // 3 matching, 1 not because wrong tag type
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                              "$or": [
-                                                   {"tag_name_2": "tag_value_21"},
-                                                   {"~tag_name_4": "tag_value_4"}
-                                             ]
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            // 3 matching, 1 not because wrong tag type
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                  "$or": [
+                                                       {"tag_name_2": "tag_value_21"},
+                                                       {"~tag_name_4": "tag_value_4"}
+                                                 ]
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let expected_records = vec![
-            WalletRecord {
-                type_: None,
-                id: _id3().to_string(),
-                value: Some(_value3().to_string()),
-                tags: None,
-            },
-        ];
+            let expected_records = vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ];
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        // no matching
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                                 "tag_name_1": "tag_value_0",
-                                                  "~tag_name_2": "tag_value_3",
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            // no matching
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                     "tag_name_1": "tag_value_0",
+                                                      "~tag_name_2": "tag_value_3",
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        // no matching - wrong type_
-        let mut iterator = wallet.search(_type2(),
-                                         &jsonstr!({
-                                              "$or": [
-                                                  {"tag_name_1": "tag_value_1"},
-                                                  {"~tag_name_2": "tag_value_22"},
-                                                  {"~tag_name_4": "tag_value_4"}
-                                             ]
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            // no matching - wrong type_
+            let mut iterator = wallet.search(_type2(),
+                                             &jsonstr!({
+                                                  "$or": [
+                                                      {"tag_name_1": "tag_value_1"},
+                                                      {"~tag_name_2": "tag_value_22"},
+                                                      {"~tag_name_4": "tag_value_4"}
+                                                 ]
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_or");
     }
 
     #[test]
     fn wallet_search_works_for_not() {
-        _cleanup();
+        test::cleanup_wallet("wallet_search_works_for_not");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_not");
 
-        let wallet = _wallet();
+            wallet.add(_type1(),
+                       _id1(),
+                       _value1(),
+                       &jsonmap!({
+                           "tag_name_1": "tag_value_1",
+                           "~tag_name_2": "tag_value_21",
+                           "~tag_name_3": "tag_value_3"})).unwrap();
 
-        wallet.add(_type1(),
-                   _id1(),
-                   _value1(),
-                   &jsonmap!({
-                       "tag_name_1": "tag_value_1",
-                       "~tag_name_2": "tag_value_21",
-                       "~tag_name_3": "tag_value_3"})).unwrap();
+            wallet.add(_type1(),
+                       _id2(),
+                       _value2(),
+                       &jsonmap!({
+                           "tag_name_12": "tag_value_12",
+                           "~tag_name_2": "tag_value_22"})).unwrap();
 
-        wallet.add(_type1(),
-                   _id2(),
-                   _value2(),
-                   &jsonmap!({
-                       "tag_name_12": "tag_value_12",
-                       "~tag_name_2": "tag_value_22"})).unwrap();
-
-        wallet.add(_type1(),
-                   _id3(),
-                   _value3(),
-                   &jsonmap!({
-                       "tag_name_13": "tag_value_13",
-                       "~tag_name_4": "tag_value_4"})).unwrap();
+            wallet.add(_type1(),
+                       _id3(),
+                       _value3(),
+                       &jsonmap!({
+                           "tag_name_13": "tag_value_13",
+                           "~tag_name_4": "tag_value_4"})).unwrap();
 
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"$not": {"tag_name_1": "tag_value_1_different"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"$not": {"tag_name_1": "tag_value_1_different"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id2().to_string(),
-                value: Some(_value2().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id3().to_string(),
-                value: Some(_value3().to_string()),
-                tags: None,
-            },
-        ]);
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id2().to_string(),
+                    value: Some(_value2().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({"$not": {"~tag_name_2": "tag_value_22"}}),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({"$not": {"~tag_name_2": "tag_value_22"}}),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        let expected_records = _sort(vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-            WalletRecord {
-                type_: None,
-                id: _id3().to_string(),
-                value: Some(_value3().to_string()),
-                tags: None,
-            },
-        ]);
+            let expected_records = _sort(vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+                WalletRecord {
+                    type_: None,
+                    id: _id3().to_string(),
+                    value: Some(_value3().to_string()),
+                    tags: None,
+                },
+            ]);
 
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
 
-        let mut iterator = wallet.search(_type1(),
-                                         &jsonstr!({
-                                             "$not": {
-                                                  "$or": [
-                                                     {"tag_name_1": "tag_value_1"},
-                                                     {"~tag_name_2": "tag_value_22"},
-                                                     {"~tag_name_4": "tag_value_4"},
-                                                  ]
-                                              }
-                                         }),
-                                         Some(&_search_options(true, false, false, true, false))).unwrap();
+            let mut iterator = wallet.search(_type1(),
+                                             &jsonstr!({
+                                                 "$not": {
+                                                      "$or": [
+                                                         {"tag_name_1": "tag_value_1"},
+                                                         {"~tag_name_2": "tag_value_22"},
+                                                         {"~tag_name_4": "tag_value_4"},
+                                                      ]
+                                                  }
+                                             }),
+                                             Some(&_search_options(true, false, false, true, false))).unwrap();
 
-        assert!(iterator.next().unwrap().is_none());
-        assert!(iterator.get_total_count().unwrap().is_none());
+            assert!(iterator.next().unwrap().is_none());
+            assert!(iterator.get_total_count().unwrap().is_none());
+
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_not");
     }
 
     #[test]
     fn wallet_search_works_for_nested() {
-        _cleanup();
-
-        let wallet = _wallet();
-        wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
-
-        let query = jsonstr!({
-            "$or": [
-                    {"foo": "bar"},
-                    {"$not": {
-                        "$not": {
+        test::cleanup_wallet("wallet_search_works_for_nested");
+        {
+            let mut wallet = _wallet("wallet_search_works_for_nested");
+            wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
+    
+            let query = jsonstr!({
+                "$or": [
+                        {"foo": "bar"},
+                        {"$not": {
                             "$not": {
                                 "$not": {
-                                    "k7": "v7"
+                                    "$not": {
+                                        "k7": "v7"
+                                    }
                                 }
                             }
+                        },
+                            "$not": {
+                                "k8": "v8"
+                            }
                         }
-                    },
-                        "$not": {
-                            "k8": "v8"
-                        }
-                    }
-            ]
-        });
-
-        let mut iterator = wallet.search(_type1(), &query, Some(&_search_options(true, false, false, true, false))).unwrap();
-
-        let expected_records = vec![
-            WalletRecord {
-                type_: None,
-                id: _id1().to_string(),
-                value: Some(_value1().to_string()),
-                tags: None,
-            },
-        ];
-
-        assert_eq!(_fetch_all(&mut iterator), expected_records);
-        assert!(iterator.get_total_count().unwrap().is_none());
-    }
-
-    fn _cleanup() {
-        test::cleanup_storage();
+                ]
+            });
+    
+            let mut iterator = wallet.search(_type1(), &query, Some(&_search_options(true, false, false, true, false))).unwrap();
+    
+            let expected_records = vec![
+                WalletRecord {
+                    type_: None,
+                    id: _id1().to_string(),
+                    value: Some(_value1().to_string()),
+                    tags: None,
+                },
+            ];
+    
+            assert_eq!(_fetch_all(&mut iterator), expected_records);
+            assert!(iterator.get_total_count().unwrap().is_none());
+        
+            wallet.close().unwrap();
+        }
+        test::cleanup_wallet("wallet_search_works_for_nested");
     }
 
     fn _type1() -> &'static str {
@@ -1802,11 +1943,11 @@ mod tests {
         jsonmap!({"tag1": "tag_value_1"})
     }
 
-    fn _wallet_id() -> &'static str {
-        "w1"
-    }
+//    fn _wallet_id() -> &'static str {
+//        "w1"
+//    }
 
-    fn _wallet() -> Wallet {
+    fn _wallet(name: &str) -> Wallet {
         let storage_type = SQLiteStorageType::new();
         let master_key = _master_key();
 
@@ -1823,19 +1964,19 @@ mod tests {
             serde_json::to_vec(&metadata).unwrap()
         };
 
-        storage_type.create_storage(_wallet_id(),
+        storage_type.create_storage(name,
                                     None,
                                     None,
                                     &metadata).unwrap();
 
-        let storage = storage_type.open_storage(_wallet_id(), None, None).unwrap();
+        let storage = storage_type.open_storage(name, None, None).unwrap();
 
-        Wallet::new(_wallet_id().to_string(), storage, Rc::new(keys))
+        Wallet::new(name.to_string(), storage, Rc::new(keys))
     }
 
-    fn _exists_wallet() -> Wallet {
+    fn _exists_wallet(name: &str) -> Wallet {
         let storage_type = SQLiteStorageType::new();
-        let storage = storage_type.open_storage(_wallet_id(), None, None).unwrap();
+        let storage = storage_type.open_storage(name, None, None).unwrap();
 
         let metadata: MetadataArgon = {
             let metadata = storage.get_storage_metadata().unwrap();
@@ -1845,7 +1986,7 @@ mod tests {
         let master_key = _master_key();
         let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key).unwrap();
 
-        Wallet::new(_wallet_id().to_string(), storage, Rc::new(keys))
+        Wallet::new(name.to_string(), storage, Rc::new(keys))
     }
 
     fn _master_key() -> chacha20poly1305_ietf::Key {

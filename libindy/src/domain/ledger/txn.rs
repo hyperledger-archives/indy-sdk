@@ -1,7 +1,3 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
 use super::constants::GET_TXN;
 
 #[derive(Serialize, PartialEq, Debug)]

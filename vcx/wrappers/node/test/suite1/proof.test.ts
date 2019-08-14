@@ -7,7 +7,7 @@ import {
   proofCreate
 } from 'helpers/entities'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { Connection, Proof, ProofState, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
+import { Connection, DisclosedProof, Proof, ProofState, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
 describe('Proof:', () => {
   before(() => initVcxTestMode())
@@ -113,6 +113,12 @@ describe('Proof:', () => {
       assert.equal(await proof.getState(), StateType.OfferSent)
     })
 
+    it('successfully get request message', async () => {
+      const proof = await proofCreate()
+      const msg = await proof.getProofRequestMessage()
+      assert(msg)
+    })
+
     it('success -> received', async () => {
       const connection = await connectionCreateConnect()
       const proof = await proofCreate()
@@ -121,6 +127,21 @@ describe('Proof:', () => {
       VCXMock.setVcxMock(VCXMockMessage.Proof)
       VCXMock.setVcxMock(VCXMockMessage.UpdateProof)
       await proof.updateState()
+      assert.equal(await proof.getState(), StateType.Accepted)
+      const proofData = await proof.getProof(connection)
+      assert.ok(proofData)
+      assert.ok(proofData.proof)
+      assert.equal(proofData.proofState, ProofState.Verified)
+      assert.equal(proof.proofState, ProofState.Verified)
+    })
+
+    it('success via message-> received', async () => {
+      const connection = await connectionCreateConnect()
+      const proof = await proofCreate()
+      const request = await proof.getProofRequestMessage()
+      const disProof = await DisclosedProof.create({ connection, sourceId: 'name', request })
+      const proofMsg = await disProof.getProofMessage()
+      await proof.updateStateWithMessage(proofMsg)
       assert.equal(await proof.getState(), StateType.Accepted)
       const proofData = await proof.getProof(connection)
       assert.ok(proofData)

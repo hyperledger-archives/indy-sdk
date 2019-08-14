@@ -1,6 +1,58 @@
-indy-cli (1.6.8) unstable; urgency=medium
+indy-cli (1.11.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.11.0
+* Added new `payment-address sign/verify` commands to sign/verify a message with a payment address.
+* Updated Indy CLI behavior to complete values for the following parameters: wallet names, pool names, dids, payment addresses.
+* Updated  behavior to work with payment addresses for `ledger payment` command and commands providing the ability to set fees for a request.
+* Updated `constraint` parameter of `ledger auth-rule` command to accept optional `off_ledger_signature` field that specifies if a signature of unknown `DID` is allowed for an action performing (false by default).
+* Bugfixes:
+    * CLI to build transactions without adding a signature.
+    * CLI to handle exit signals proper way.
+    * CLI to persist both successes and failed commands.
+    * others minor bugfixes
+
+## 1.10.1
+* Updated behavior to persist command history between sessions.
+* Bugfixes:
+    * Corrected behavior of `ledger set-fees-prepare` command to not add `Transaction Author Agreement` to request.
+    * Corrected response data types in `ledger get-fees` command.
+    * others minor bugfixes
+
+## 1.10.0
+* Added `ledger auth-rules` command to change multiple auth rules.
+* Allowed offline signing of transactions.
+* Handle `exit` command within a batch mode.
+
+## 1.9.0
+* Updated Indy-CLI to use session based approach to support work with `Transaction Author Agreement` concept.
+    * user will be asked if he would like to accept TAA on `pool open` command.
+    * added `pool show-taa` to show and accept TAA.
+* Added new commands to set up Transaction Author Agreement on the ledger.
+    * `ledger txn-author-agreement` to send Transaction Author Agreement to the ledger.
+    * `ledger txn-acceptance-mechanisms` to send TAA Acceptance Mechanisms to the ledger.
+* Updated Indy-CLI to provide a functionality of saving requests into CLI context and the following usage of them.
+* Added optional `send` parameter to ledger related CLI commands.
+* Added commands to read/store transaction into a file.
+    * `ledger save-transaction` to save transaction from CLI context into a file.
+    * `ledger load-transaction` to read transaction from a file and store it into CLI context.
+
+## 1.8.3
+* Updated `ledger auth-rule` and `ledger get-auth-rule` commands.
+
+## 1.8.2
+* Added new commands to work with ledger auth rules:
+    * `ledger auth-rule` to change an existing.
+    * `ledger get-auth-rule` to get either specific one or all.
+* Updated Cli wallet related commands to accept `storage_config` and `storage_credentials` as optional params.
+
+* 1.8.0
+    * Updated error handling to show Libindy error message in some cases.
+    * Added `NETWORK_MONITOR` to list of supported values for parameter `role` in `ledger nym` command.
+
+* 1.7.0
+    * Piped logs from Libindy into logger configured by CLI.
 
 * 1.6.8
     * Update CLI help

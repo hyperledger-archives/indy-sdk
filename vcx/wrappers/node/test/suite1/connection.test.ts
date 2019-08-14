@@ -2,6 +2,7 @@ import '../module-resolver-helper'
 
 import { assert } from 'chai'
 import { connectionCreate, connectionCreateConnect, dataConnectionCreate } from 'helpers/entities'
+import { INVITE_ACCEPTED_MESSAGE } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow, sleep } from 'helpers/utils'
 import { Connection, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
@@ -40,6 +41,33 @@ describe('Connection:', () => {
     })
   })
 
+  describe('sendMessage:', () => {
+    it('success: sends message', async () => {
+      const connection = await connectionCreate()
+      await connection.connect({ data: '{"connection_type":"QR"}' })
+      const error = await shouldThrow(() => connection.sendMessage({ msg: 'msg', type: 'msg', title: 'title' }))
+      assert.equal(error.vcxCode, VCXCode.NOT_READY)
+    })
+  })
+
+  describe('signData:', () => {
+    it('success: signs data', async () => {
+      const connection = await connectionCreate()
+      await connection.connect({ data: '{"connection_type":"QR"}' })
+      const signature = await connection.signData(new Buffer('random string'))
+      assert(signature)
+    })
+  })
+
+  describe('verifySignature', () => {
+    it('success: verifies the signature', async () => {
+      const connection = await connectionCreate()
+      await connection.connect({ data: '{"connection_type":"QR"}' })
+      const valid = await connection.verifySignature({data: new Buffer('random string'),
+        signature: new Buffer('random string')})
+      assert(valid)
+    })
+  })
   describe('serialize:', () => {
     it('success', async () => {
       const connection = await connectionCreate()
@@ -101,14 +129,21 @@ describe('Connection:', () => {
 
     it(`returns ${StateType.OfferSent}: connected`, async () => {
       const connection = await connectionCreateConnect()
+      VCXMock.setVcxMock(VCXMockMessage.AcceptInvite)
       await connection.updateState()
-      assert.equal(await connection.getState(), StateType.OfferSent)
+      assert.equal(await connection.getState(), StateType.Accepted)
     })
 
     it(`returns ${StateType.Accepted}: mocked accepted`, async () => {
       const connection = await connectionCreateConnect()
       VCXMock.setVcxMock(VCXMockMessage.GetMessages)
       await connection.updateState()
+      assert.equal(await connection.getState(), StateType.Accepted)
+    })
+
+    it(`returns ${StateType.Accepted}: mocked accepted`, async () => {
+      const connection = await connectionCreateConnect()
+      await connection.updateStateWithMessage(INVITE_ACCEPTED_MESSAGE)
       assert.equal(await connection.getState(), StateType.Accepted)
     })
 

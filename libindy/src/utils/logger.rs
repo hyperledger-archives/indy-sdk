@@ -3,7 +3,6 @@ extern crate log_panics;
 extern crate log;
 #[cfg(target_os = "android")]
 extern crate android_logger;
-extern crate libc;
 
 use self::env_logger::Builder as EnvLoggerBuilder;
 use self::log::{LevelFilter, Level};
@@ -13,7 +12,7 @@ use std::io::Write;
 use self::android_logger::Filter;
 use log::{Record, Metadata};
 
-use self::libc::{c_void, c_char};
+use libc::{c_void, c_char};
 use std::ffi::CString;
 use std::ptr;
 
@@ -137,7 +136,7 @@ pub struct LibindyDefaultLogger;
 
 impl LibindyDefaultLogger {
     pub fn init(pattern: Option<String>) -> Result<(), IndyError> {
-        let pattern = pattern.or(env::var("RUST_LOG").ok());
+        let pattern = pattern.or_else(|| env::var("RUST_LOG").ok());
 
         log_panics::init(); //Logging of panics is essential for android. As android does not log to stdout for native code
 

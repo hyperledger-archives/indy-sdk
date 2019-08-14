@@ -23,6 +23,12 @@ impl LibnullpayLogger {
     }
 
     pub fn init() -> Result<(), ErrorCode> {
+        // logging, as implemented, crashes with VCX for android and ios, so
+        // for this hotfix (IS-1164) simply return OK
+        if cfg!(target_os = "android") || cfg!(target_os = "ios") {
+            return Ok(())
+        }
+
         let (context, enabled, log, flush) = libindy::logger::get_logger()?;
 
         let log = match log {

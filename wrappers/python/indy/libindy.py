@@ -1,14 +1,15 @@
+from logging import ERROR, WARNING, INFO, DEBUG, CRITICAL
+import logging
+from typing import Optional
+import asyncio
+import itertools
 import json
+import sys
 
-from .error import ErrorCode, IndyError
+from .error import ErrorCode, IndyError, errorcode_to_exception
 
 from ctypes import *
 
-import asyncio
-import sys
-import itertools
-import logging
-from logging import ERROR, WARNING, INFO, DEBUG
 
 TRACE = 5
 
@@ -66,22 +67,26 @@ def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
 
 
 def _get_indy_error(err: int) -> IndyError:
-    if err == ErrorCode.Success:
-        return IndyError(ErrorCode(err))
+    errorcode = ErrorCode(err)
+    if errorcode == ErrorCode.Success:
+        return IndyError(errorcode)
+
+    error_details = _get_error_details()
+    error_class = errorcode_to_exception(errorcode)
+    if error_class:
+        error = error_class(errorcode, error_details)
     else:
-        error_details = _get_error_details()
-        error = IndyError(ErrorCode(err), error_details['message'])
-        error.indy_backtrace = error_details['backtrace']
-        return error
+        error = IndyError(errorcode, error_details)
+    return error
 
 
-def _get_error_details() -> dict:
+def _get_error_details() -> Optional[dict]:
     logger = logging.getLogger(__name__)
     logger.debug("_get_error_details: >>>")
 
     error_c = c_char_p()
     getattr(_cdll(), 'indy_get_current_error')(byref(error_c))
-    error_details = json.loads(error_c.value.decode())
+    error_details = json.loads(error_c.value.decode()) if error_c.value else None
 
     logger.debug("_get_error_details: <<< error_details: %s", error_details)
     return error_details
@@ -163,6 +168,7 @@ def _load_cdll() -> CDLL:
 def _set_logger():
     logger = logging.getLogger(__name__)
     logging.addLevelName(TRACE, "TRACE")
+    logging.basicConfig(level=CRITICAL)
 
     logger.debug("set_logger: >>>")
 

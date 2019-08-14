@@ -17,6 +17,7 @@ use time;
 use utils::types::{Response, ResponseType};
 use utils::constants::PROTOCOL_VERSION;
 use utils::{environment, test};
+use api::PoolHandle;
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {
@@ -26,15 +27,16 @@ struct PoolConfig {
 pub fn create_genesis_txn_file(pool_name: &str,
                                txn_file_data: &str,
                                txn_file_path: Option<&Path>) -> PathBuf {
-    let txn_file_path = txn_file_path.map_or(
-        environment::tmp_file_path(format!("{}.txn", pool_name).as_str()),
-        |path| path.to_path_buf());
-
-    if !txn_file_path.parent().unwrap().exists() {
-        fs::DirBuilder::new()
-            .recursive(true)
-            .create(txn_file_path.parent().unwrap()).unwrap();
-    }
+    let txn_file_path= match txn_file_path {
+        Some(path) => path.to_path_buf(),
+        None => {
+            let mut pool_path = environment::tmp_file_path(pool_name);
+            fs::create_dir_all(pool_path.as_path()).unwrap();
+            pool_path.push(pool_name);
+            pool_path.set_extension("txn");
+            pool_path
+        }
+    };
 
     let mut f = fs::File::create(txn_file_path.as_path()).unwrap();
     f.write_all(txn_file_data.as_bytes()).unwrap();
@@ -115,7 +117,7 @@ pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> 
 }
 
 #[cfg(feature = "local_nodes_pool")]
-pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, IndyError> {
+pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<PoolHandle, IndyError> {
     pool::open_pool_ledger(pool_name, config).wait()
 }
 
@@ -163,7 +165,7 @@ fn _dump_genesis_txns_to_cache(pool_name: &str, node_txns: &Vec<String>) -> Resu
     Ok(())
 }
 
-pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, IndyError> {
+pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<PoolHandle, IndyError> {
     set_protocol_version(PROTOCOL_VERSION).unwrap();
     let txn_file_path = create_genesis_txn_file_for_test_pool(pool_name, None, None);
     let pool_config = pool_config_json(txn_file_path.as_path());
@@ -171,11 +173,11 @@ pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, IndyError> {
     open_pool_ledger(pool_name, None)
 }
 
-pub fn refresh(pool_handle: i32) -> Result<(), IndyError> {
+pub fn refresh(pool_handle: PoolHandle) -> Result<(), IndyError> {
     pool::refresh_pool_ledger(pool_handle).wait()
 }
 
-pub fn close(pool_handle: i32) -> Result<(), IndyError> {
+pub fn close(pool_handle: PoolHandle) -> Result<(), IndyError> {
     pool::close_pool_ledger(pool_handle).wait()
 }
 

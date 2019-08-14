@@ -5,3 +5,6 @@ pub mod invite;
 pub mod key_deligation_proof;
 pub mod status;
 pub mod internal_message;
+pub mod message_type;
+pub mod payload;
+pub mod protocol_type;

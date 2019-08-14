@@ -14,15 +14,26 @@ pub enum TagName {
 
 impl TagName {
     fn from(s: String) -> IndyResult<TagName> {
-        if s.is_empty() || s.starts_with("~") && s.len() == 1 {
+        if s.is_empty() || s.starts_with('~') && s.len() == 1 {
             return Err(err_msg(IndyErrorKind::WalletQueryError, "Tag name must not be empty"));
         }
 
-        if s.starts_with("~") {
+        if s.starts_with('~') {
             Ok(TagName::PlainTagName(s.into_bytes()[1..].to_vec()))
         } else {
             Ok(TagName::EncryptedTagName(s.into_bytes()))
         }
+    }
+
+    pub fn from_utf8(&self) -> IndyResult<String> {
+        let tag_name = match *self {
+            TagName::EncryptedTagName(ref v) => v,
+            TagName::PlainTagName(ref v) => v,
+        };
+
+        String::from_utf8(tag_name.clone()).map_err(|err| {
+            err_msg(IndyErrorKind::InvalidStructure, format!("Failed to convert message to UTF-8 {}", err))
+        })
     }
 }
 
@@ -39,6 +50,15 @@ impl string::ToString for TagName {
 pub enum TargetValue {
     Unencrypted(String),
     Encrypted(Vec<u8>),
+}
+
+impl TargetValue {
+    pub fn value(&self) -> String {
+        match *self {
+            TargetValue::Unencrypted(ref s) => s.to_string(),
+            TargetValue::Encrypted(ref v) => base64::encode(v),
+        }
+    }
 }
 
 impl From<String> for TargetValue {
@@ -139,14 +159,14 @@ impl string::ToString for Operator {
                 )
             }
             Operator::And(ref operators) => {
-                if operators.len() > 0 {
+                if !operators.is_empty() {
                     format!(
                         r#"{{"$and":[{}]}}"#,
                         operators.iter().map(|o: &Operator| { o.to_string() }).collect::<Vec<String>>().join(","))
                 } else { "{}".to_string() }
             },
             Operator::Or(ref operators) => {
-                if operators.len() > 0 {
+                if !operators.is_empty() {
                     format!(
                         r#"{{"$or":[{}]}}"#,
                         operators.iter().map(|o: &Operator| { o.to_string() }).collect::<Vec<String>>().join(","))
@@ -296,19 +316,18 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
 
 #[cfg(test)]
 mod tests {
-    extern crate rand;
-
     use super::*;
-    use self::rand::{thread_rng, Rng};
+    use rand::{thread_rng, Rng};
+    use rand::distributions::{Alphanumeric, Standard};
     use std::hash::Hash;
     use std::collections::HashSet;
 
     fn _random_vector(len: usize) -> Vec<u8> {
-        thread_rng().gen_iter().take(len).collect()
+        thread_rng().sample_iter(&Standard).take(len).collect()
     }
 
     fn _random_string(len: usize) -> String {
-        thread_rng().gen_ascii_chars().take(len).collect()
+        thread_rng().sample_iter(&Alphanumeric).take(len).collect()
     }
 
     trait ToVec {

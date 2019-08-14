@@ -1,10 +1,8 @@
-extern crate time;
-extern crate zmq;
-
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use rand::{Rng, thread_rng};
+use rand::thread_rng;
+use rand::prelude::SliceRandom;
 use time::Tm;
 
 use errors::prelude::*;
@@ -14,8 +12,8 @@ use utils::sequence;
 
 use super::time::Duration;
 
-use self::zmq::PollItem;
-use self::zmq::Socket as ZSocket;
+use super::zmq::PollItem;
+use super::zmq::Socket as ZSocket;
 
 pub trait Networker {
     fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>) -> Self;
@@ -50,7 +48,7 @@ impl Networker for ZMQNetworker {
         let mut cnt = 0;
         self.pool_connections.iter().map(|(_, pc)| {
             let ocnt = cnt;
-            cnt = cnt + pc.sockets.iter().filter(|s| s.is_some()).count();
+            cnt += pc.sockets.iter().filter(|s| s.is_some()).count();
             pc.fetch_events(&poll_items[ocnt..cnt])
         }).flat_map(|v| v.into_iter()).collect()
     }
@@ -58,7 +56,7 @@ impl Networker for ZMQNetworker {
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         match pe.clone() {
             Some(NetworkerEvent::SendAllRequest(_, req_id, _, _)) | Some(NetworkerEvent::SendOneRequest(_, req_id, _)) | Some(NetworkerEvent::Resend(req_id, _)) => {
-                let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
+                let num = self.req_id_mappings.get(&req_id).copied().or_else(|| {
                     trace!("sending new request");
                     self.pool_connections.iter().next_back().and_then(|(pc_idx, pc)| {
                         if pc.is_active() && pc.req_cnt < self.conn_limit
@@ -182,7 +180,7 @@ impl PoolConnection {
     fn new(mut nodes: Vec<RemoteNode>, active_timeout: i64, preordered_nodes: Vec<String>) -> Self {
         trace!("PoolConnection::new: from nodes {:?}", nodes);
 
-        thread_rng().shuffle(nodes.as_mut());
+        nodes.shuffle(&mut thread_rng());
 
         if !preordered_nodes.is_empty() {
             nodes.sort_by_key(|node: &RemoteNode| -> usize {
@@ -272,7 +270,7 @@ impl PoolConnection {
             }
             Some(NetworkerEvent::Resend(req_id, timeout)) => {
                 let resend = if let Some(&mut (ref mut cnt, ref req)) = self.resend.borrow_mut().get_mut(&req_id) {
-                    *cnt = *cnt + 1;
+                    *cnt += 1;
                     //TODO: FIXME: We can collect consensus just walking through if we are not collecting node aliases on the upper layer.
                     Some((*cnt % self.nodes.len(), req.clone()))
                 } else {
@@ -393,15 +391,15 @@ pub mod networker_tests {
     use std::thread;
 
     use domain::pool::{MAX_REQ_PER_POOL_CON, POOL_ACK_TIMEOUT, POOL_CON_ACTIVE_TO, POOL_REPLY_TIMEOUT};
-    use services::pool::rust_base58::FromBase58;
     use services::pool::tests::nodes_emulator;
     use utils::crypto::ed25519_sign;
 
     use super::*;
+    use rust_base58::base58::FromBase58;
 
-    const REQ_ID: &'static str = "1";
-    const MESSAGE: &'static str = "msg";
-    const NODE_NAME: &'static str = "n1";
+    const REQ_ID: &str = "1";
+    const MESSAGE: &str = "msg";
+    const NODE_NAME: &str = "n1";
 
     pub fn _remote_node(txn: &NodeTransactionV1) -> RemoteNode {
         RemoteNode {

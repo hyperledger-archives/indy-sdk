@@ -22,7 +22,8 @@ use std::ffi::CString;
 #[cfg(target_os = "android")]
 use self::android_logger::Filter;
 use utils::cstring::CStringUtils;
-use utils::error::LOGGING_ERROR;
+use error::prelude::*;
+
 
 use utils::libindy;
 
@@ -60,12 +61,15 @@ impl LibvcxLogger {
         LibvcxLogger { context, enabled, log, flush }
     }
 
-    pub fn init(context: *const CVoid, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), u32> {
+    pub fn init(context: *const CVoid, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> VcxResult<()> {
         trace!("LibvcxLogger::init >>>");
         let logger = LibvcxLogger::new(context, enabled, log, flush);
-        log::set_boxed_logger(Box::new(logger)).map_err(|_| LOGGING_ERROR.code_num)?;
+        log::set_boxed_logger(Box::new(logger))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::LoggingError, format!("Setting logger failed with: {}", err)))?;
         log::set_max_level(LevelFilter::Trace);
-        libindy::logger::set_logger(log::logger()).map_err(|_| LOGGING_ERROR.code_num)?;
+        libindy::logger::set_logger(log::logger())
+            .map_err(|err| err.map(VcxErrorKind::LoggingError, "Setting logger failed"))?;
+
         unsafe {
             LOGGER_STATE = LoggerState::Custom;
             CONTEXT = context;
@@ -140,14 +144,14 @@ impl LibvcxDefaultLogger {
 
         // ensures that the test that is calling this wont fail simply because
         // the user did not set the RUST_LOG env var.
-        let pattern = Some(env::var("RUST_LOG").unwrap_or("debug".to_string()));
+        let pattern = Some(env::var("RUST_LOG").unwrap_or("trace".to_string()));
         match LibvcxDefaultLogger::init(pattern) {
             Ok(_) => (),
             Err(_) => (),
         }
     }
 
-    pub fn init(pattern: Option<String>) -> Result<(), u32> {
+    pub fn init(pattern: Option<String>) -> VcxResult<()> {
         trace!("LibvcxDefaultLogger::init >>> pattern: {:?}", pattern);
 
         let pattern = pattern.or(env::var("RUST_LOG").ok());
@@ -182,7 +186,7 @@ impl LibvcxDefaultLogger {
                 Ok(_) => {}
                 Err(e) => {
                     error!("Error in logging init: {:?}", e);
-                    return Err(LOGGING_ERROR.code_num);
+                    return Err(VcxError::from_msg(VcxErrorKind::LoggingError, format!("Cannot init logger: {:?}", e)))
                 }
             }
         }

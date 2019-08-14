@@ -1,5 +1,3 @@
-extern crate libc;
-
 pub mod vcx;
 pub mod connection;
 pub mod issuer_credential;
@@ -15,13 +13,6 @@ pub mod return_types_u32;
 
 use std::fmt;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
-pub enum Errorcode
-{
-    Success = 0,
-    Failure = 1,
-    Waiting = 2,
-}
 /// This macro allows the VcxStateType to be
 /// serialized within serde as an integer (represented as
 /// a string, because its still JSON).
@@ -96,6 +87,18 @@ enum_number!(ProofStateType
     ProofValidated = 1,
     ProofInvalid = 2,
 });
+
+enum_number!(PublicEntityStateType
+{
+    Built = 0,
+    Published = 1,
+});
+
+impl Default for PublicEntityStateType{
+    fn default() -> Self {
+        PublicEntityStateType::Published
+    }
+}
 
 #[repr(C)]
 pub struct VcxStatus {

@@ -17,7 +17,7 @@ extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
 extern crate indy_sys;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -53,7 +53,7 @@ use std::thread;
 
 #[test]
 fn anoncreds_demo_works() {
-    utils::setup();
+    utils::setup("anoncreds_demo_works");
 
     let (issuer_create_wallet_receiver, issuer_create_wallet_command_handle, issuer_create_wallet_callback) = callback::_closure_to_cb_ec();
     let (prover_create_wallet_receiver, prover_create_wallet_command_handle, prover_create_wallet_callback) = callback::_closure_to_cb_ec();
@@ -455,7 +455,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, ErrorCode::from(err));
     let (err, valid) = verifier_verify_proof_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, ErrorCode::from(err));
-    assert_eq!(valid, true as u8); // TODO: FIXME
+    assert!(valid);
 
     // Issuer Closes Wallet
     let res = unsafe {
@@ -473,17 +473,19 @@ fn anoncreds_demo_works() {
     let res = prover_close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
-    utils::tear_down();
+    utils::tear_down_delete_wallet_with_credentials(&issuer_wallet_config, &issuer_wallet_credentials);
+    utils::tear_down_delete_wallet_with_credentials(&prover_wallet_config, &prover_wallet_credentials);
+    utils::tear_down("anoncreds_demo_works");
 }
 
 #[test]
 #[cfg(feature = "local_nodes_pool")]
 fn ledger_demo_works() {
-    utils::setup();
+    utils::setup("ledger_demo_works");
     let my_wallet_config = json!({"id": "my_wallet"}).to_string();
     let their_wallet_config = json!({"id": "their_wallet"}).to_string();
 
-    let pool_name = "pool_1";
+    let pool_name = "ledger_demo_works";
     let c_pool_name = CString::new(pool_name).unwrap();
 
     let (set_protocol_version_receiver, set_protocol_version_command_handle, set_protocol_version_callback) = callback::_closure_to_cb_ec();
@@ -718,7 +720,7 @@ fn ledger_demo_works() {
     let res = close_their_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
-    utils::tear_down();
+    utils::tear_down("ledger_demo_works");
 
     #[derive(Deserialize, Eq, PartialEq, Debug)]
     struct Reply {
@@ -745,7 +747,7 @@ fn ledger_demo_works() {
 
 #[test]
 fn crypto_demo_works() {
-    utils::setup();
+    utils::setup("crypto_demo_works");
 
     let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = callback::_closure_to_cb_ec();
     let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = callback::_closure_to_cb_ec_i32();
@@ -837,7 +839,7 @@ fn crypto_demo_works() {
 
     assert_eq!(ErrorCode::Success, ErrorCode::from(err));
     let (err, valid) = verify_receiver.recv_timeout(timeout::long_timeout()).unwrap();
-    assert_eq!(valid, true as u8);
+    assert!(valid);
     assert_eq!(ErrorCode::Success, ErrorCode::from(err));
 
     // 6. Close Wallet
@@ -846,5 +848,5 @@ fn crypto_demo_works() {
     let res = close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
-    utils::tear_down();
+    utils::tear_down("crypto_demo_works");
 }

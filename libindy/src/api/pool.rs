@@ -1,6 +1,5 @@
-extern crate libc;
 
-use api::{ErrorCode, IndyHandle};
+use api::{ErrorCode, CommandHandle, PoolHandle, INVALID_POOL_HANDLE};
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
 use domain::pool::{PoolConfig, PoolOpenConfig};
@@ -8,7 +7,7 @@ use errors::prelude::*;
 use utils::ctypes;
 
 use serde_json;
-use self::libc::c_char;
+use libc::c_char;
 
 /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
 ///
@@ -27,10 +26,10 @@ use self::libc::c_char;
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_create_pool_ledger_config(command_handle: IndyHandle,
+pub extern fn indy_create_pool_ledger_config(command_handle: CommandHandle,
                                              config_name: *const c_char,
                                              config: *const c_char,
-                                             cb: Option<extern fn(command_handle_: IndyHandle,
+                                             cb: Option<extern fn(command_handle_: CommandHandle,
                                                                   err: ErrorCode)>) -> ErrorCode {
     trace!("indy_create_pool_ledger_config: >>> config_name: {:?}, config: {:?}", config_name, config);
 
@@ -82,12 +81,12 @@ pub extern fn indy_create_pool_ledger_config(command_handle: IndyHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_open_pool_ledger(command_handle: IndyHandle,
+pub extern fn indy_open_pool_ledger(command_handle: CommandHandle,
                                     config_name: *const c_char,
                                     config: *const c_char,
-                                    cb: Option<extern fn(command_handle_: IndyHandle,
+                                    cb: Option<extern fn(command_handle_: CommandHandle,
                                                          err: ErrorCode,
-                                                         pool_handle: IndyHandle)>) -> ErrorCode {
+                                                         pool_handle: PoolHandle)>) -> ErrorCode {
     trace!("indy_open_pool_ledger: >>> config_name: {:?}, config: {:?}", config_name, config);
 
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
@@ -101,7 +100,7 @@ pub extern fn indy_open_pool_ledger(command_handle: IndyHandle,
             config_name,
             config,
             Box::new(move |result| {
-                let (err, pool_handle) = prepare_result_1!(result, 0);
+                let (err, pool_handle) = prepare_result_1!(result, INVALID_POOL_HANDLE);
                 trace!("indy_open_pool_ledger: pool_handle: {:?}", pool_handle);
                 cb(command_handle, err, pool_handle)
             })
@@ -126,9 +125,9 @@ pub extern fn indy_open_pool_ledger(command_handle: IndyHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_refresh_pool_ledger(command_handle: IndyHandle,
-                                       handle: IndyHandle,
-                                       cb: Option<extern fn(command_handle_: IndyHandle,
+pub extern fn indy_refresh_pool_ledger(command_handle: CommandHandle,
+                                       handle: PoolHandle,
+                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                             err: ErrorCode)>) -> ErrorCode {
     trace!("indy_refresh_pool_ledger: >>> handle: {:?}", handle);
 
@@ -162,8 +161,8 @@ pub extern fn indy_refresh_pool_ledger(command_handle: IndyHandle,
 ///
 /// #Errors
 #[no_mangle]
-pub extern fn indy_list_pools(command_handle: IndyHandle,
-                              cb: Option<extern fn(command_handle_: IndyHandle,
+pub extern fn indy_list_pools(command_handle: CommandHandle,
+                              cb: Option<extern fn(command_handle_: CommandHandle,
                                                    err: ErrorCode,
                                                    pools: *const c_char)>) -> ErrorCode {
     trace!("indy_list_pools: >>>");
@@ -201,9 +200,9 @@ pub extern fn indy_list_pools(command_handle: IndyHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_close_pool_ledger(command_handle: IndyHandle,
-                                     handle: IndyHandle,
-                                     cb: Option<extern fn(command_handle_: IndyHandle,
+pub extern fn indy_close_pool_ledger(command_handle: CommandHandle,
+                                     handle: PoolHandle,
+                                     cb: Option<extern fn(command_handle_: CommandHandle,
                                                           err: ErrorCode)>) -> ErrorCode {
     trace!("indy_close_pool_ledger: >>> handle: {:?}", handle);
 
@@ -240,9 +239,9 @@ pub extern fn indy_close_pool_ledger(command_handle: IndyHandle,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_delete_pool_ledger_config(command_handle: IndyHandle,
+pub extern fn indy_delete_pool_ledger_config(command_handle: CommandHandle,
                                              config_name: *const c_char,
-                                             cb: Option<extern fn(command_handle_: IndyHandle,
+                                             cb: Option<extern fn(command_handle_: CommandHandle,
                                                                   err: ErrorCode)>) -> ErrorCode {
     trace!("indy_delete_pool_ledger_config: >>> config_name: {:?}", config_name);
 
@@ -286,9 +285,9 @@ pub extern fn indy_delete_pool_ledger_config(command_handle: IndyHandle,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_set_protocol_version(command_handle: IndyHandle,
+pub extern fn indy_set_protocol_version(command_handle: CommandHandle,
                                         protocol_version: usize,
-                                        cb: Option<extern fn(command_handle_: IndyHandle,
+                                        cb: Option<extern fn(command_handle_: CommandHandle,
                                                              err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_protocol_version: >>> protocol_version: {:?}", protocol_version);
 

@@ -1,7 +1,4 @@
-extern crate libc;
-extern crate serde_json;
-
-use api::{ErrorCode, IndyHandle};
+use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
 use errors::prelude::*;
 use commands::{Command, CommandExecutor};
 use commands::anoncreds::AnoncredsCommand;
@@ -12,6 +9,7 @@ use domain::anoncreds::schema::{Schema, AttributeNames};
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
+use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
 use domain::anoncreds::credential::{Credential, AttributeValues};
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, RevocationRegistryDefinition};
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
@@ -22,9 +20,18 @@ use domain::anoncreds::revocation_registry::RevocationRegistry;
 use domain::anoncreds::revocation_state::RevocationState;
 use utils::ctypes;
 
-use self::libc::c_char;
+use libc::c_char;
 use std::ptr;
 use std::collections::HashMap;
+
+/*
+These functions wrap the Ursa algorithm as documented in this paper:
+https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+
+And is documented in this HIPE:
+https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+*/
+
 
 /// Create credential schema entity that describes credential attributes list and allows credentials
 /// interoperability.
@@ -52,12 +59,12 @@ use std::collections::HashMap;
 /// Common*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_schema(command_handle: IndyHandle,
+pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
                                         issuer_did: *const c_char,
                                         name: *const c_char,
                                         version: *const c_char,
                                         attrs: *const c_char,
-                                        cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                        cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                              schema_id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_schema: >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
@@ -70,8 +77,7 @@ pub extern fn indy_issuer_create_schema(command_handle: IndyHandle,
     trace!("indy_issuer_create_schema: entity >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
     if attrs.is_empty() {
-        set_current_error(&err_msg(IndyErrorKind::InvalidStructure, "Empty list of Schema attributes has been passed"));
-        return ErrorCode::CommonInvalidStructure;
+        return err_msg(IndyErrorKind::InvalidStructure, "Empty list of Schema attributes has been passed").into();
     }
 
     let result = CommandExecutor::instance()
@@ -84,7 +90,7 @@ pub extern fn indy_issuer_create_schema(command_handle: IndyHandle,
                     attrs,
                     Box::new(move |result| {
                         let (err, id, schema_json) = prepare_result_2!(result, String::new(), String::new());
-                        trace!("indy_crypto_cl_credential_public_key_to_json: id: {:?}, schema_json: {:?}", id, schema_json);
+                        trace!("ursa_cl_credential_public_key_to_json: id: {:?}, schema_json: {:?}", id, schema_json);
                         let id = ctypes::string_to_cstring(id);
                         let schema_json = ctypes::string_to_cstring(schema_json);
                         cb(command_handle, err, id.as_ptr(), schema_json.as_ptr())
@@ -107,14 +113,21 @@ pub extern fn indy_issuer_create_schema(command_handle: IndyHandle,
 ///
 /// It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 ///
+/// Note: Use combination of `indy_issuer_rotate_credential_def_start` and `indy_issuer_rotate_credential_def_apply` functions
+/// to generate new keys for an existing credential definition.
+///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
 /// schema_json: credential schema as a json
 /// tag: allows to distinct between credential definitions for the same issuer and schema
-/// signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:
-/// - 'CL': Camenisch-Lysyanskaya credential signature type
+/// signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
+/// Supported signature types:
+/// - 'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+///             https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+///         And is documented in this HIPE:
+///             https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
 /// config_json: (optional) type-specific configuration of credential definition as json:
 /// - 'CL':
 ///   - support_revocation: whether to request non-revocation credential (optional, default false)
@@ -123,20 +136,34 @@ pub extern fn indy_issuer_create_schema(command_handle: IndyHandle,
 /// #Returns
 /// cred_def_id: identifier of created credential definition
 /// cred_def_json: public part of created credential definition
+/// {
+///     id: string - identifier of credential definition
+///     schemaId: string - identifier of stored in ledger schema
+///     type: string - type of the credential definition. CL is the only supported type now.
+///     tag: string - allows to distinct between credential definitions for the same issuer and schema
+///     value: Dictionary with Credential Definition's data is depended on the signature type: {
+///         primary: primary credential public key,
+///         Optional<revocation>: revocation credential public key
+///     },
+///     ver: Version of the CredDef json
+/// }
+///
+/// Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+/// They should not be parsed and are likely to change in future versions.
 ///
 /// #Errors
 /// Common*
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_and_store_credential_def(command_handle: IndyHandle,
-                                                          wallet_handle: IndyHandle,
+pub extern fn indy_issuer_create_and_store_credential_def(command_handle: CommandHandle,
+                                                          wallet_handle: WalletHandle,
                                                           issuer_did: *const c_char,
                                                           schema_json: *const c_char,
                                                           tag: *const c_char,
                                                           signature_type: *const c_char,
                                                           config_json: *const c_char,
-                                                          cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                                          cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                                cred_def_id: *const c_char,
                                                                                cred_def_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_and_store_credential_def: >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, tag: {:?}, \
@@ -178,6 +205,120 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: IndyHa
     res
 }
 
+/// Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+///
+/// Use `indy_issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
+///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handle (created by open_wallet).
+/// cred_def_id: an identifier of created credential definition stored in the wallet
+/// config_json: (optional) type-specific configuration of credential definition as json:
+/// - 'CL':
+///   - support_revocation: whether to request non-revocation credential (optional, default false)
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// cred_def_json: public part of temporary created credential definition
+///
+/// Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+/// They should not be parsed and are likely to change in future versions.
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Anoncreds*
+#[no_mangle]
+pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHandle,
+                                                      wallet_handle: WalletHandle,
+                                                      cred_def_id: *const c_char,
+                                                      config_json: *const c_char,
+                                                      cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
+                                                                           cred_def_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_issuer_rotate_credential_def_start: >>> wallet_handle: {:?}, cred_def_id: {:?}, config_json: {:?}",
+           wallet_handle, cred_def_id, config_json);
+
+    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_json!(config_json, ErrorCode::CommonInvalidParam4, CredentialDefinitionConfig);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_issuer_rotate_credential_def_start: entities >>> wallet_handle: {:?}, cred_def_id: {:?}, config_json: {:?}",
+           wallet_handle, cred_def_id, config_json);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Issuer(
+                IssuerCommand::RotateCredentialDefinitionStart(
+                    wallet_handle,
+                    cred_def_id,
+                    config_json,
+                    Box::new(move |result| {
+                        let (err, cred_def_json) = prepare_result_1!(result, String::new());
+                        trace!("indy_issuer_rotate_credential_def_start:cred_def_json: {:?}", cred_def_json);
+                        let cred_def_json = ctypes::string_to_cstring(cred_def_json);
+                        cb(command_handle, err, cred_def_json.as_ptr())
+                    })
+                ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_issuer_rotate_credential_def_start: <<< res: {:?}", res);
+
+    res
+}
+
+///  Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+///
+/// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+///
+/// #Params
+/// wallet_handle: wallet handle (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// cred_def_id: an identifier of created credential definition stored in the wallet
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Anoncreds*
+#[no_mangle]
+pub extern fn indy_issuer_rotate_credential_def_apply(command_handle: CommandHandle,
+                                                      wallet_handle: WalletHandle,
+                                                      cred_def_id: *const c_char,
+                                                      cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_issuer_rotate_credential_def_apply: >>> wallet_handle: {:?}, cred_def_id: {:?}",
+           wallet_handle, cred_def_id);
+
+    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_issuer_rotate_credential_def_apply: entities >>> wallet_handle: {:?}, cred_def_id: {:?}",
+           wallet_handle, cred_def_id);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Issuer(
+                IssuerCommand::RotateCredentialDefinitionApply(
+                    wallet_handle,
+                    cred_def_id,
+                    Box::new(move |result| {
+                        let err = prepare_result!(result);
+                        trace!("indy_issuer_rotate_credential_def_apply:");
+                        cb(command_handle, err)
+                    })
+                ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_issuer_rotate_credential_def_apply: <<< res: {:?}", res);
+
+    res
+}
+
 /// Create a new revocation registry for the given credential definition as tuple of entities
 /// - Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
 ///   secrets used for credentials revocation
@@ -196,11 +337,13 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: IndyHa
 /// This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transaction to the Ledger
 /// revoc_def_type: revocation registry type (optional, default value depends on credential definition type). Supported types are:
-/// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+/// - 'CL_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+///                   https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+///               This type is default for 'CL' credential definition type.
 /// tag: allows to distinct between revocation registries for the same issuer and credential definition
 /// cred_def_id: id of stored in ledger credential definition
 /// config_json: type-specific configuration of revocation registry as json:
@@ -214,25 +357,54 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: IndyHa
 /// tails_writer_handle: handle of blob storage to store tails
 /// cb: Callback that takes command result as parameter.
 ///
+/// NOTE:
+///     Recursive creation of folder for Default Tails Writer (correspondent to `tails_writer_handle`)
+///     in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+///     In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+///
 /// #Returns
 /// revoc_reg_id: identifier of created revocation registry definition
 /// revoc_reg_def_json: public part of revocation registry definition
+///     {
+///         "id": string - ID of the Revocation Registry,
+///         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+///         "tag": string - Unique descriptive ID of the Registry,
+///         "credDefId": string - ID of the corresponding CredentialDefinition,
+///         "value": Registry-specific data {
+///             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+///             "maxCredNum": number - Maximum number of credentials the Registry can serve.
+///             "tailsHash": string - Hash of tails.
+///             "tailsLocation": string - Location of tails file.
+///             "publicKeys": <public_keys> - Registry's public key (opaque type that contains data structures internal to Ursa.
+///                                                                  It should not be parsed and are likely to change in future versions).
+///         },
+///         "ver": string - version of revocation registry definition json.
+///     }
 /// revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry
+/// {
+///     value: {
+///         prevAccum: string - previous accumulator value.
+///         accum: string - current accumulator value.
+///         issued: array<number> - an array of issued indices.
+///         revoked: array<number> an array of revoked indices.
+///     },
+///     ver: string - version revocation registry entry json
+/// }
 ///
 /// #Errors
 /// Common*
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: IndyHandle,
-                                                     wallet_handle: IndyHandle,
+pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHandle,
+                                                     wallet_handle: WalletHandle,
                                                      issuer_did: *const c_char,
                                                      revoc_def_type: *const c_char,
                                                      tag: *const c_char,
                                                      cred_def_id: *const c_char,
                                                      config_json: *const c_char,
                                                      tails_writer_handle: IndyHandle,
-                                                     cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                                     cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                           revoc_reg_id: *const c_char,
                                                                           revoc_reg_def_json: *const c_char,
                                                                           revoc_reg_entry_json: *const c_char)>) -> ErrorCode {
@@ -284,7 +456,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: IndyHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
-/// wallet_handle: wallet handler (created by open_wallet)
+/// wallet_handle: wallet handle (created by open_wallet)
 /// cred_def_id: id of credential definition stored in the wallet
 /// cb: Callback that takes command result as parameter
 ///
@@ -295,7 +467,9 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: IndyHandle,
 ///         "cred_def_id": string,
 ///         // Fields below can depend on Cred Def type
 ///         "nonce": string,
-///         "key_correctness_proof" : <key_correctness_proof>
+///         "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+///                                   (opaque type that contains data structures internal to Ursa.
+///                                   It should not be parsed and are likely to change in future versions).
 ///     }
 ///
 /// #Errors
@@ -303,10 +477,10 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: IndyHandle,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_credential_offer(command_handle: IndyHandle,
-                                                  wallet_handle: IndyHandle,
+pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
+                                                  wallet_handle: WalletHandle,
                                                   cred_def_id: *const c_char,
-                                                  cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                                  cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                        cred_offer_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_credential_offer: >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
 
@@ -348,7 +522,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: IndyHandle,
 /// Note that it is possible to accumulate deltas to reduce ledger load.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// cred_offer_json: a cred offer created by indy_issuer_create_credential_offer
 /// cred_req_json: a credential request created by indy_prover_create_credential_req
@@ -370,25 +544,29 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: IndyHandle,
 ///         "rev_reg_def_id", Optional<string>,
 ///         "values": <see cred_values_json above>,
 ///         // Fields below can depend on Cred Def type
-///         "signature": <signature>,
-///         "signature_correctness_proof": <signature_correctness_proof>
+///         "signature": <credential signature>,
+///                      (opaque type that contains data structures internal to Ursa.
+///                       It should not be parsed and are likely to change in future versions).
+///         "signature_correctness_proof": credential signature correctness proof
+///                      (opaque type that contains data structures internal to Ursa.
+///                       It should not be parsed and are likely to change in future versions).
 ///     }
 /// cred_revoc_id: local id for revocation info (Can be used for revocation of this credential)
 /// revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_create_credential(command_handle: IndyHandle,
-                                            wallet_handle: IndyHandle,
+pub extern fn indy_issuer_create_credential(command_handle: CommandHandle,
+                                            wallet_handle: WalletHandle,
                                             cred_offer_json: *const c_char,
                                             cred_req_json: *const c_char,
                                             cred_values_json: *const c_char,
                                             rev_reg_id: *const c_char,
                                             blob_storage_reader_handle: IndyHandle,
-                                            cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                            cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                  cred_json: *const c_char,
                                                                  cred_revoc_id: *const c_char,
                                                                  revoc_reg_delta_json: *const c_char)>) -> ErrorCode {
@@ -446,7 +624,7 @@ pub extern fn indy_issuer_create_credential(command_handle: IndyHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// blob_storage_reader_cfg_handle: configuration of blob storage reader handle that will allow to read revocation tails
 /// rev_reg_id: id of revocation registry stored in wallet
 /// cred_revoc_id: local id for revocation info
@@ -456,16 +634,16 @@ pub extern fn indy_issuer_create_credential(command_handle: IndyHandle,
 /// revoc_reg_delta_json: Revocation registry delta json with a revoked credential
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_revoke_credential(command_handle: IndyHandle,
-                                            wallet_handle: IndyHandle,
+pub extern fn indy_issuer_revoke_credential(command_handle: CommandHandle,
+                                            wallet_handle: WalletHandle,
                                             blob_storage_reader_cfg_handle: IndyHandle,
                                             rev_reg_id: *const c_char,
                                             cred_revoc_id: *const c_char,
-                                            cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                            cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                  revoc_reg_delta_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_revoke_credential: >>> wallet_handle: {:?}, blob_storage_reader_cfg_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
            wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id, cred_revoc_id);
@@ -510,7 +688,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: IndyHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// blob_storage_reader_cfg_handle: configuration of blob storage reader handle that will allow to read revocation tails
 /// rev_reg_id: id of revocation registry stored in wallet
 /// cred_revoc_id: local id for revocation info
@@ -520,16 +698,16 @@ pub extern fn indy_issuer_revoke_credential(command_handle: IndyHandle,
 /// revoc_reg_delta_json: Revocation registry delta json with a recovered credential
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_recover_credential(command_handle: IndyHandle,
-                                             wallet_handle: IndyHandle,
+pub extern fn indy_issuer_recover_credential(command_handle: CommandHandle,
+                                             wallet_handle: WalletHandle,
                                              blob_storage_reader_cfg_handle: IndyHandle,
                                              rev_reg_id: *const c_char,
                                              cred_revoc_id: *const c_char,
-                                             cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                             cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                   revoc_reg_delta_json: *const c_char,
                                              )>) -> ErrorCode {
     check_useful_c_str!(rev_reg_id, ErrorCode::CommonInvalidParam4);
@@ -567,14 +745,14 @@ pub extern fn indy_issuer_recover_credential(command_handle: IndyHandle,
 /// merged_rev_reg_delta: Merged revocation registry delta
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: IndyHandle,
+pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: CommandHandle,
                                                            rev_reg_delta_json: *const c_char,
                                                            other_rev_reg_delta_json: *const c_char,
-                                                           cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                                           cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                                 merged_rev_reg_delta: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_merge_revocation_registry_deltas: >>> rev_reg_delta_json: {:?}, other_rev_reg_delta_json: {:?}",
            rev_reg_delta_json, other_rev_reg_delta_json);
@@ -611,7 +789,7 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: IndyH
 /// The id must be unique.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// master_secret_id: (optional, if not present random one will be generated) new master id
 ///
@@ -619,14 +797,14 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: IndyH
 /// out_master_secret_id: Id of generated master secret
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_create_master_secret(command_handle: IndyHandle,
-                                               wallet_handle: IndyHandle,
+pub extern fn indy_prover_create_master_secret(command_handle: CommandHandle,
+                                               wallet_handle: WalletHandle,
                                                master_secret_id: *const c_char,
-                                               cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                               cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                     out_master_secret_id: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_create_master_secret: >>> wallet_handle: {:?}, master_secret_id: {:?}", wallet_handle, master_secret_id);
 
@@ -664,7 +842,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: IndyHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
-/// wallet_handle: wallet handler (created by open_wallet)
+/// wallet_handle: wallet handle (created by open_wallet)
 /// prover_did: a DID of the prover
 /// cred_offer_json: credential offer as a json containing information about the issuer and a credential
 /// cred_def_json: credential definition json related to <cred_def_id> in <cred_offer_json>
@@ -678,23 +856,28 @@ pub extern fn indy_prover_create_master_secret(command_handle: IndyHandle,
 ///      "cred_def_id" : string,
 ///         // Fields below can depend on Cred Def type
 ///      "blinded_ms" : <blinded_master_secret>,
+///                     (opaque type that contains data structures internal to Ursa.
+///                      It should not be parsed and are likely to change in future versions).
 ///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+///                     (opaque type that contains data structures internal to Ursa.
+///                      It should not be parsed and are likely to change in future versions).
 ///      "nonce": string
 ///    }
 /// cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
+///     Note: cred_req_metadata_json mustn't be shared with Issuer.
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_create_credential_req(command_handle: IndyHandle,
-                                                wallet_handle: IndyHandle,
+pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
+                                                wallet_handle: WalletHandle,
                                                 prover_did: *const c_char,
                                                 cred_offer_json: *const c_char,
                                                 cred_def_json: *const c_char,
                                                 master_secret_id: *const c_char,
-                                                cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                                cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                      cred_req_json: *const c_char,
                                                                      cred_req_metadata_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_create_credential_req: >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer_json: {:?}, cred_def_json: {:?}, master_secret_id: {:?}",
@@ -734,6 +917,133 @@ pub extern fn indy_prover_create_credential_req(command_handle: IndyHandle,
     res
 }
 
+/// Set credential attribute tagging policy.
+/// Writes a non-secret record marking attributes to tag, and optionally
+/// updates tags on existing credentials on the credential definition to match.
+///
+/// EXPERIMENTAL
+///
+/// The following tags are always present on write:
+///     {
+///         "schema_id": <credential schema id>,
+///         "schema_issuer_did": <credential schema issuer did>,
+///         "schema_name": <credential schema name>,
+///         "schema_version": <credential schema version>,
+///         "issuer_did": <credential issuer did>,
+///         "cred_def_id": <credential definition id>,
+///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+///     }
+///
+/// The policy sets the following tags for each attribute it marks taggable, written to subsequent
+/// credentials and (optionally) all existing credentials on the credential definition:
+///     {
+///         "attr::<attribute name>::marker": "1",
+///         "attr::<attribute name>::value": <attribute raw value>,
+///     }
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handle (created by open_wallet).
+/// cred_def_id: credential definition id
+/// tag_attrs_json: JSON array with names of attributes to tag by policy, or null for all
+/// retroactive: boolean, whether to apply policy to existing credentials on credential definition identifier
+/// cb: Callback that takes command result as parameter.
+///
+/// #Errors
+/// Anoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_set_credential_attr_tag_policy(command_handle: CommandHandle,
+                                                         wallet_handle: WalletHandle,
+                                                         cred_def_id: *const c_char,
+                                                         tag_attrs_json: *const c_char,
+                                                         retroactive: bool,
+                                                         cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_prover_set_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}, tag_attrs_json: {:?}, retroactive: {:?}", wallet_handle, cred_def_id, tag_attrs_json, retroactive);
+
+    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_json!(tag_attrs_json, ErrorCode::CommonInvalidParam4, CredentialAttrTagPolicy);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_prover_set_credential_attr_tag_policy: entities >>> wallet_handle: {:?}, cred_def_id: {:?}, tag_attrs_json: {:?}, retroactive: {:?}",
+           wallet_handle, cred_def_id, tag_attrs_json, retroactive);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::SetCredentialAttrTagPolicy(
+                    wallet_handle,
+                    cred_def_id,
+                    tag_attrs_json,
+                    retroactive,
+                    Box::new(move |result| {
+                        let err = prepare_result!(result);
+                        trace!("indy_prover_set_credential_attr_tag_policy: ");
+                        cb(command_handle, err)
+                    })
+                ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_prover_set_credential_attr_tag_policy: <<< res: {:?}", res);
+
+    res
+}
+
+/// Get credential attribute tagging policy by credential definition id.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handle (created by open_wallet).
+/// cred_def_id: credential definition id
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// JSON array with all attributes that current policy marks taggable;
+/// null for default policy (tag all credential attributes).
+/// 
+/// #Errors
+/// Anoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_get_credential_attr_tag_policy(command_handle: CommandHandle,
+                                                         wallet_handle: WalletHandle,
+                                                         cred_def_id: *const c_char,
+                                                         cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                              err: ErrorCode,
+                                                                              catpol_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_prover_get_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
+
+    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_prover_get_credential_attr_tag_policy: entities >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::GetCredentialAttrTagPolicy(
+                    wallet_handle,
+                    cred_def_id,
+                    Box::new(move |result| {
+                        let (err, catpol_json) = prepare_result_1!(result, String::new());
+                        trace!("indy_prover_get_credential_attr_tag_policy: catpol_json: {:?}", catpol_json);
+                        let catpol_json = ctypes::string_to_cstring(catpol_json);
+                        cb(command_handle, err, catpol_json.as_ptr())
+                    })
+                ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_prover_get_credential_attr_tag_policy: <<< res: {:?}", res);
+
+    res
+}
+
 /// Check credential provided by Issuer for the given credential request,
 /// updates the credential by a master secret and stores in a secure wallet.
 ///
@@ -746,14 +1056,14 @@ pub extern fn indy_prover_create_credential_req(command_handle: IndyHandle,
 ///         "issuer_did": <credential issuer did>,
 ///         "cred_def_id": <credential definition id>,
 ///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
-///         // for every attribute in <credential values>
+///         // for every attribute in <credential values> that credential attribute tagging policy marks taggable
 ///         "attr::<attribute name>::marker": "1",
 ///         "attr::<attribute name>::value": <attribute raw value>,
 ///     }
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet
 /// cred_req_metadata_json: a credential request metadata created by indy_prover_create_credential_req
 /// cred_json: credential json received from issuer
@@ -765,18 +1075,18 @@ pub extern fn indy_prover_create_credential_req(command_handle: IndyHandle,
 /// out_cred_id: identifier by which credential is stored in the wallet
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_store_credential(command_handle: IndyHandle,
-                                           wallet_handle: IndyHandle,
+pub extern fn indy_prover_store_credential(command_handle: CommandHandle,
+                                           wallet_handle: WalletHandle,
                                            cred_id: *const c_char,
                                            cred_req_metadata_json: *const c_char,
                                            cred_json: *const c_char,
                                            cred_def_json: *const c_char,
                                            rev_reg_def_json: *const c_char,
-                                           cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                           cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                 out_cred_id: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_store_credential: >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
     cred_def_json: {:?}", wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
@@ -819,7 +1129,7 @@ pub extern fn indy_prover_store_credential(command_handle: IndyHandle,
 /// Gets human readable credential by the given id.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// cred_id: Identifier by which requested credential is stored in the wallet
 /// cb: Callback that takes command result as parameter.
 ///
@@ -835,22 +1145,22 @@ pub extern fn indy_prover_store_credential(command_handle: IndyHandle,
 ///     }
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_get_credential(command_handle: IndyHandle,
-                                         wallet_handle: IndyHandle,
+pub extern fn indy_prover_get_credential(command_handle: CommandHandle,
+                                         wallet_handle: WalletHandle,
                                          cred_id: *const c_char,
                                          cb: Option<extern fn(
-                                             command_handle_: IndyHandle, err: ErrorCode,
+                                             command_handle_: CommandHandle, err: ErrorCode,
                                              credential_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_get_credential: >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
 
     check_useful_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_prover_get_credential: entities >>> wallet_handle: {:?}, cred_id: {:?}", cred_id, cred_id);
+    trace!("indy_prover_get_credential: entities >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -873,6 +1183,49 @@ pub extern fn indy_prover_get_credential(command_handle: IndyHandle,
     res
 }
 
+/// Deletes credential by given id.
+///
+/// #Params
+/// wallet_handle: wallet handle (created by open_wallet).
+/// cred_id: Identifier by which requested credential is stored in the wallet
+/// cb: Callback that takes command result as parameter.
+///
+/// #Errors
+/// Anoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_delete_credential(command_handle: CommandHandle,
+                                            wallet_handle: WalletHandle,
+                                            cred_id: *const c_char,
+                                            cb: Option<extern fn(
+                                                command_handle_: CommandHandle,
+                                                err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_prover_delete_credential: >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
+
+    check_useful_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::DeleteCredential(
+                    wallet_handle,
+                    cred_id,
+                    Box::new(move |result| {
+                        let err = prepare_result!(result);
+                        trace!("indy_prover_delete_credential: ");
+                        cb(command_handle, err)
+                    })
+                ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_prover_delete_credential: <<< res: {:?}", res);
+
+    res
+}
+
 /// Gets human readable credentials according to the filter.
 /// If filter is NULL, then all credentials are returned.
 /// Credentials can be filtered by Issuer, credential_def and/or Schema.
@@ -881,7 +1234,7 @@ pub extern fn indy_prover_get_credential(command_handle: IndyHandle,
 /// Use <indy_prover_search_credentials> to fetch records by small batches.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// filter_json: filter for credentials
 ///        {
 ///            "schema_id": string, (Optional)
@@ -905,16 +1258,16 @@ pub extern fn indy_prover_get_credential(command_handle: IndyHandle,
 ///     }]
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-#[deprecated(since="1.6.1", note="Please use indy_prover_search_credentials instead!")]
-pub extern fn indy_prover_get_credentials(command_handle: IndyHandle,
-                                          wallet_handle: IndyHandle,
+#[deprecated(since = "1.6.1", note = "Please use indy_prover_search_credentials instead!")]
+pub extern fn indy_prover_get_credentials(command_handle: CommandHandle,
+                                          wallet_handle: WalletHandle,
                                           filter_json: *const c_char,
                                           cb: Option<extern fn(
-                                              command_handle_: IndyHandle, err: ErrorCode,
+                                              command_handle_: CommandHandle, err: ErrorCode,
                                               matched_credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_get_credentials: >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
@@ -952,9 +1305,9 @@ pub extern fn indy_prover_get_credentials(command_handle: IndyHandle,
 /// to fetch records by small batches (with indy_prover_fetch_credentials).
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// query_json: Wql query filter for credentials searching based on tags.
-/// where query: indy-sdk/doc/design/011-wallet-query-language/README.md
+/// where query: indy-sdk/docs/design/011-wallet-query-language/README.md
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -962,16 +1315,16 @@ pub extern fn indy_prover_get_credentials(command_handle: IndyHandle,
 /// total_count: Total count of records
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_search_credentials(command_handle: IndyHandle,
-                                             wallet_handle: IndyHandle,
+pub extern fn indy_prover_search_credentials(command_handle: CommandHandle,
+                                             wallet_handle: WalletHandle,
                                              query_json: *const c_char,
                                              cb: Option<extern fn(
-                                                 command_handle_: IndyHandle, err: ErrorCode,
-                                                 search_handle: IndyHandle,
+                                                 command_handle_: CommandHandle, err: ErrorCode,
+                                                 search_handle: SearchHandle,
                                                  total_count: usize)>) -> ErrorCode {
     trace!("indy_prover_search_credentials: >>> wallet_handle: {:?}, query_json: {:?}", wallet_handle, query_json);
 
@@ -1019,14 +1372,14 @@ pub extern fn indy_prover_search_credentials(command_handle: IndyHandle,
 /// NOTE: The list of length less than the requested count means credentials search iterator is completed.
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_prover_fetch_credentials(command_handle: IndyHandle,
-                                             search_handle: IndyHandle,
+pub  extern fn indy_prover_fetch_credentials(command_handle: CommandHandle,
+                                             search_handle: SearchHandle,
                                              count: usize,
-                                             cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                             cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                   credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_fetch_credentials: >>> search_handle: {:?}, count: {:?}", search_handle, count);
 
@@ -1061,13 +1414,13 @@ pub  extern fn indy_prover_fetch_credentials(command_handle: IndyHandle,
 /// search_handle: Search handle (created by indy_prover_search_credentials)
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_prover_close_credentials_search(command_handle: IndyHandle,
-                                                    search_handle: IndyHandle,
-                                                    cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
+pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandle,
+                                                    search_handle: SearchHandle,
+                                                    cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_prover_close_credentials_search: >>> search_handle: {:?}", search_handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
@@ -1099,12 +1452,12 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: IndyHandle,
 /// Use <indy_prover_search_credentials_for_proof_req> to fetch records by small batches.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// proof_request_json: proof request json
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1171,16 +1524,16 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: IndyHandle,
 ///     }
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
-#[deprecated(since="1.6.1", note="Please use indy_prover_search_credentials_for_proof_req instead!")]
+#[deprecated(since = "1.6.1", note = "Please use indy_prover_search_credentials_for_proof_req instead!")]
 #[no_mangle]
-pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: IndyHandle,
-                                                        wallet_handle: IndyHandle,
+pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandHandle,
+                                                        wallet_handle: WalletHandle,
                                                         proof_request_json: *const c_char,
                                                         cb: Option<extern fn(
-                                                            command_handle_: IndyHandle, err: ErrorCode,
+                                                            command_handle_: CommandHandle, err: ErrorCode,
                                                             credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_get_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}", wallet_handle, proof_request_json);
 
@@ -1218,12 +1571,12 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: IndyHand
 /// to fetch records by small batches (with indy_prover_fetch_credentials_for_proof_req).
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// proof_request_json: proof request json
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1242,24 +1595,24 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: IndyHand
 ///         "<attr_referent>": <wql query>,
 ///         "<predicate_referent>": <wql query>,
 ///     }
-/// where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+/// where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
 /// search_handle: Search handle that can be used later to fetch records by small batches (with indy_prover_fetch_credentials_for_proof_req)
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: IndyHandle,
-                                                           wallet_handle: IndyHandle,
+pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: CommandHandle,
+                                                           wallet_handle: WalletHandle,
                                                            proof_request_json: *const c_char,
                                                            extra_query_json: *const c_char,
                                                            cb: Option<extern fn(
-                                                               command_handle_: IndyHandle, err: ErrorCode,
-                                                               search_handle: IndyHandle)>) -> ErrorCode {
+                                                               command_handle_: CommandHandle, err: ErrorCode,
+                                                               search_handle: SearchHandle)>) -> ErrorCode {
     trace!("indy_prover_search_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}", wallet_handle, proof_request_json, extra_query_json);
 
     check_useful_json!(proof_request_json, ErrorCode::CommonInvalidParam3, ProofRequest);
@@ -1324,15 +1677,15 @@ pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: IndyH
 /// correspondent to the requested <item_referent> is completed.
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: IndyHandle,
-                                                           search_handle: IndyHandle,
+pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: CommandHandle,
+                                                           search_handle: SearchHandle,
                                                            item_referent: *const c_char,
                                                            count: usize,
-                                                           cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                                           cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                                 credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_fetch_credentials_for_proof_req: >>> search_handle: {:?}, count: {:?}", search_handle, count);
 
@@ -1369,13 +1722,13 @@ pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: IndyH
 /// search_handle: Search handle (created by indy_prover_search_credentials_for_proof_req)
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle: IndyHandle,
-                                                                  search_handle: IndyHandle,
-                                                                  cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
+pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle: CommandHandle,
+                                                                  search_handle: SearchHandle,
+                                                                  cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_prover_close_credentials_search_for_proof_req: >>> search_handle: {:?}", search_handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
@@ -1410,13 +1763,13 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 /// The proof contains either proof or self-attested attribute value for each requested attribute.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// proof_request_json: proof request json
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1472,7 +1825,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 /// cb: Callback that takes command result as parameter.
 ///
 /// where
-/// where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+/// where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 /// attr_referent: Proof-request local identifier of requested attribute
 /// attr_info: Describes requested attribute
 ///     {
@@ -1508,7 +1861,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 /// Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
 /// There is also aggregated proof part common for all credential proofs.
 ///     {
-///         "requested": {
+///         "requested_proof": {
 ///             "revealed_attrs": {
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1527,24 +1880,25 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///         "proof": {
 ///             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
 ///             "aggregated_proof": <aggregated_proof>
-///         }
+///         } (opaque type that contains data structures internal to Ursa.
+///           It should not be parsed and are likely to change in future versions).
 ///         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
 ///     }
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_create_proof(command_handle: IndyHandle,
-                                       wallet_handle: IndyHandle,
+pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
+                                       wallet_handle: WalletHandle,
                                        proof_req_json: *const c_char,
                                        requested_credentials_json: *const c_char,
                                        master_secret_id: *const c_char,
                                        schemas_json: *const c_char,
                                        credential_defs_json: *const c_char,
                                        rev_states_json: *const c_char,
-                                       cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                       cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                             proof_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_create_proof: >>> wallet_handle: {:?}, proof_req_json: {:?}, requested_credentials_json: {:?}, master_secret_id: {:?}, \
     schemas_json: {:?}, credential_defs_json: {:?}, rev_states_json: {:?}",
@@ -1590,13 +1944,13 @@ pub extern fn indy_prover_create_proof(command_handle: IndyHandle,
 /// All required schemas, public keys and revocation registries must be provided.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
+/// wallet_handle: wallet handle (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// proof_request_json: proof request json
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string,
+///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1612,7 +1966,7 @@ pub extern fn indy_prover_create_proof(command_handle: IndyHandle,
 ///     }
 /// proof_json: created for request proof json
 ///     {
-///         "requested": {
+///         "requested_proof": {
 ///             "revealed_attrs": {
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1671,18 +2025,18 @@ pub extern fn indy_prover_create_proof(command_handle: IndyHandle,
 /// valid: true - if signature is valid, false - otherwise
 ///
 /// #Errors
-/// Annoncreds*
+/// Anoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_verifier_verify_proof(command_handle: IndyHandle,
+pub extern fn indy_verifier_verify_proof(command_handle: CommandHandle,
                                          proof_request_json: *const c_char,
                                          proof_json: *const c_char,
                                          schemas_json: *const c_char,
                                          credential_defs_json: *const c_char,
                                          rev_reg_defs_json: *const c_char,
                                          rev_regs_json: *const c_char,
-                                         cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
+                                         cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                               valid: bool)>) -> ErrorCode {
     trace!("indy_verifier_verify_proof: >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, credential_defs_json: {:?}, \
     rev_reg_defs_json: {:?}, rev_regs_json: {:?}", proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json);
@@ -1736,7 +2090,8 @@ pub extern fn indy_verifier_verify_proof(command_handle: IndyHandle,
 /// revocation state json:
 ///     {
 ///         "rev_reg": <revocation registry>,
-///         "witness": <witness>,
+///         "witness": <witness>,  (opaque type that contains data structures internal to Ursa.
+///                                 It should not be parsed and are likely to change in future versions).
 ///         "timestamp" : integer
 ///     }
 ///
@@ -1745,14 +2100,14 @@ pub extern fn indy_verifier_verify_proof(command_handle: IndyHandle,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_create_revocation_state(command_handle: IndyHandle,
+pub extern fn indy_create_revocation_state(command_handle: CommandHandle,
                                            blob_storage_reader_handle: IndyHandle,
                                            rev_reg_def_json: *const c_char,
                                            rev_reg_delta_json: *const c_char,
                                            timestamp: u64,
                                            cred_rev_id: *const c_char,
                                            cb: Option<extern fn(
-                                               command_handle_: IndyHandle, err: ErrorCode,
+                                               command_handle_: CommandHandle, err: ErrorCode,
                                                rev_state_json: *const c_char)>) -> ErrorCode {
     trace!("indy_create_revocation_state: >>> blob_storage_reader_handle: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, \
     cred_rev_id: {:?}", blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
@@ -1804,7 +2159,8 @@ pub extern fn indy_create_revocation_state(command_handle: IndyHandle,
 /// revocation state json:
 ///     {
 ///         "rev_reg": <revocation registry>,
-///         "witness": <witness>,
+///         "witness": <witness>,  (opaque type that contains data structures internal to Ursa.
+///                                 It should not be parsed and are likely to change in future versions).
 ///         "timestamp" : integer
 ///     }
 ///
@@ -1813,7 +2169,7 @@ pub extern fn indy_create_revocation_state(command_handle: IndyHandle,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_update_revocation_state(command_handle: IndyHandle,
+pub extern fn indy_update_revocation_state(command_handle: CommandHandle,
                                            blob_storage_reader_handle: IndyHandle,
                                            rev_state_json: *const c_char,
                                            rev_reg_def_json: *const c_char,
@@ -1821,7 +2177,7 @@ pub extern fn indy_update_revocation_state(command_handle: IndyHandle,
                                            timestamp: u64,
                                            cred_rev_id: *const c_char,
                                            cb: Option<extern fn(
-                                               command_handle_: IndyHandle, err: ErrorCode,
+                                               command_handle_: CommandHandle, err: ErrorCode,
                                                updated_rev_state_json: *const c_char)>) -> ErrorCode {
     trace!("indy_update_revocation_state: >>> blob_storage_reader_handle: {:?}, rev_state_json: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, \
     timestamp: {:?}, cred_rev_id: {:?}", blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
@@ -1857,3 +2213,41 @@ pub extern fn indy_update_revocation_state(command_handle: IndyHandle,
 
     res
 }
+
+
+///  Generates 80-bit numbers that can be used as a nonce for proof request.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context
+/// cb: Callback that takes command result as parameter
+///
+/// #Returns
+/// nonce: generated number as a string
+///
+#[no_mangle]
+pub extern fn indy_generate_nonce(command_handle: CommandHandle,
+                                  cb: Option<extern fn(
+                                      command_handle_: CommandHandle, err: ErrorCode,
+                                      nonce: *const c_char)>) -> ErrorCode {
+    trace!("indy_generate_nonce: >>> ");
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(AnoncredsCommand::Verifier(
+            VerifierCommand::GenerateNonce(
+                Box::new(move |result| {
+                    let (err, nonce) = prepare_result_1!(result, String::new());
+                    trace!("indy_generate_nonce: nonce: {:?}", nonce);
+                    let nonce = ctypes::string_to_cstring(nonce);
+                    cb(command_handle, err, nonce.as_ptr())
+                })
+            ))));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_generate_nonce: <<< res: {:?}", res);
+
+    res
+}
+

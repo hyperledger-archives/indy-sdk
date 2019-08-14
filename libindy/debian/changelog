@@ -1,6 +1,98 @@
-libindy (1.6.8) unstable; urgency=medium
+libindy (1.11.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.11.0
+* Updated `indy_append_txn_author_agreement_acceptance_to_request` function to discard the time portion of `acceptance time` on appending TAA metadata into request.
+It was done cause too much time precision can lead to privacy risk.
+    *NOTE* that if the following points are met:
+    - Indy Pool consists of nodes with version less 1.9.2
+    - Transaction Author Agreement is set on the Pool
+    Requests to the Pool will fail during the day TAA was set.
+* Added new Payment API functions (`indy_build_get_payment_sources_with_from_request` and `indy_parse_get_payment_sources_with_from_response`) to get payment sources with pagination support.
+Old `indy_build_get_payment_sources_request` and `indy_parse_get_payment_sources_response` were marked as *Deprecated*.
+    *NOTE* that `indy_register_payment_method` API function was updated to accept callbacks correspondent to the new functions instead of deprecated.
+* Added new Payment API functions (`indy_sign_with_address` and `indy_verify_with_address`) to sign/verify a message with a payment address.
+    *NOTE* that `indy_register_payment_method` API function was updated to accept additional callbacks correspondent to the new functions.
+* Added new *EXPEREMENTAL* functions to get requirements and price for a ledger request.
+    * `indy_get_request_info` - returns request requirements (with minimal price) correspondent to specific auth rule in case the requester can perform this action.
+* Added new API function `indy_append_request_endorser` to append Endorser to an existing request.
+It allows writing transactions to the ledger with preserving an original author but by different Endorser.
+An example flow can be found here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+* Added new API function `indy_generate_nonce` to generate a nonce of the size recommended for usage within a proof request.
+* Updated behavior of `indy_prover_create_proof` to create revocation proof based on `non_revoked` timestamps in a proof request. Now only `primary` proof can be built if `non_revoked` intervals were not requested by a verifier.
+* Updated `constraint` parameter of `indy_build_auth_rule_request` Libindy Ledger API function to accept new optional `off_ledger_signature` field that specifies if a signature of unknown `DID` is allowed for an action performing (false by default).
+* Improved state proof verification to support pagination.
+* Bugfixes:
+    * others minor bugfixes
+
+## 1.10.1
+* Bugfixes
+    * Fixed `State Proof` verification for GET_REVOC_REG_DELTA requests in case of from and to are before first entry.
+    * others minor bugfixes
+
+## 1.10.0
+* Added new *EXPERIMENTAL* functions to Anoncreds API to configure what tags to build on credential storage in prover wallet:
+    * `indy_prover_set_credential_attr_tag_policy` to set credential attribute tagging policy.
+    * `indy_prover_get_credential_attr_tag_policy` to get credential attribute tagging policy by credential definition id.
+* Added `indy_build_auth_rules_request` function to Libindy Ledger API to change multiple auth rules.
+* Bugfixes
+
+## 1.9.0
+* Added a set of functions to support work with `Transaction Author Agreement` concept
+   This guarantees that every write transaction author agree that the information they submit
+   to the ledger meets the requirements outlined by ledger governance.
+    * `indy_build_txn_author_agreement_request` to add a new version of Transaction Author Agreement to the ledger.
+    * `indy_build_get_txn_author_agreement_request` to get a Transaction Author Agreement from the ledger.
+    * `indy_build_acceptance_mechanisms_request` to add new acceptance mechanisms for transaction author agreement.
+    * `indy_build_get_acceptance_mechanisms_request` to get acceptance mechanisms from the ledger.
+    * `indy_append_txn_author_agreement_acceptance_to_request` to append transaction author agreement acceptance data to a request.
+    * `indy_append_txn_author_agreement_acceptance_to_request` to append transaction author agreement acceptance data to a request.
+    * `indy_prepare_payment_extra_with_acceptance_data` to prepare payment extra JSON with TAA acceptance data.
+* Updated `indy_verifier_verify_proof` function to check restrictions on requested predicates during validation of proof.
+* Updated Libindy to use [Ursa](https://github.com/hyperledger/ursa) instead of [Indy-Crypto](https://github.com/hyperledger/indy-crypto).
+* Added *EXPERIMENTAL* `Cache API` to Libindy that provides an ability to get and to store schemas and credential definitions into the wallet.
+    * `indy_get_cred_def` to get credential definition for specified credential definition id.
+    * `indy_purge_cred_def_cache` to purge credential definition cache.
+    * `indy_get_schema` to get schema for specified schema id.
+    * `indy_purge_schema_cache` to purge schema cache.
+* Implemented `State Proof` verification for some types of GET requests to the ledger.
+* Bugfixes:
+    * others minor bugfixes
+
+## 1.8.3
+* Bugfixes:
+    *  Fixed behavior of `auth_rule` and `get_auth_rule` request builders.
+    * Fixed `boolean` datatype representation for FFI.
+    * others minor bugfixes
+
+## 1.8.2
+ Added new functions to Libindy Ledger API:
+    * `indy_build_auth_rule_request` to change an existing ledger auth rule.
+    * `indy_build_get_auth_rule_request` to get either specific one or all ledger auth rules.
+* Removed Deprecation warnings from `indy_crypto_anon_crypt` and `indy_crypto_anon_decrypt` functions.
+* Restart catchup in case of outdated pool cache.
+* Bugfixes
+
+* 1.8.1
+    * Bugfixes
+
+* 1.8.0
+    * Added function `indy_get_current_error` to get additional information for last error occurred in Libindy.
+    * Implemented automatic filtering of outdated responses based on comparison of local time with latest transaction ordering time.
+    * Added *EXPERIMENTAL* `indy_pack_message` and `indy_unpack_message` functions to support
+        Wire Messages described in AMES HIPE(https://github.com/hyperledger/indy-hipe/pull/43)
+    * Functions `indy_crypto_anon_crypt` and `indy_crypto_anon_decrypt` marked as *Deprecated*.
+    * Added `NETWORK_MONITOR` role to NYM transaction builder.
+    * Bugfixes
+
+* 1.7.0
+    * Added Logging API
+        * Added function `indy_get_logger` for plugins to give their logging to libindy
+        * Added function `indy_set_logger` for client apps and wrappers to receive logs from libindy
+        * Integrated libindy logging into Slf4j for Java wrapper and into python logging facade
+    * Introduced multithreading for Wallet API and CRED_DEF generation
+    * Bugfixes
 
 * 1.6.8
     * Fix State Proof verification for some types of GET requests to the ledger

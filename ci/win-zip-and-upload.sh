@@ -1,4 +1,7 @@
-#!/bin/bash -xe
+#!/bin/bash
+
+set -e
+set -x
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: <folder> <package> <package_type> <version> <key> <type> <number>"
@@ -28,6 +31,7 @@ if [ ${package_type} = "lib" ] ; then
   mkdir ${TEMP_ARCH_DIR}/lib
   cp -r ${folder}/include ${TEMP_ARCH_DIR}
   cp ./target/release/*.dll ${TEMP_ARCH_DIR}/lib/
+  cp ./target/release/*.dll.lib ${TEMP_ARCH_DIR}/lib/
 elif [ ${package_type} = "executable" ] ; then
   cp ./target/release/*.dll ${TEMP_ARCH_DIR}/
   cp ./target/release/${package}.exe ${TEMP_ARCH_DIR}/
@@ -39,7 +43,7 @@ cd ${TEMP_ARCH_DIR} && zip -r ${package}_${version}.zip ./* && mv ${package}_${v
 
 rm -rf ${TEMP_ARCH_DIR}
 
-cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
+cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@$SOVRIN_REPO_HOST
 mkdir /var/repository/repos/windows/$package/$type/$version-$number
 cd /var/repository/repos/windows/$package/$type/$version-$number
 put -r ${package}_"${version}".zip

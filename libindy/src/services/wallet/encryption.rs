@@ -3,10 +3,11 @@ use std::str;
 
 use domain::wallet::{KeyDerivationMethod, Metadata};
 use errors::prelude::*;
-use utils::crypto::{base58, chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
+use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
 
 use super::{Keys, WalletRecord};
 use super::storage::{StorageRecord, Tag, TagName};
+use rust_base58::FromBase58;
 
 #[cfg(test)]
 pub(super) fn gen_master_key_salt() -> IndyResult<pwhash_argon2i13::Salt> {
@@ -78,8 +79,7 @@ fn _derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_deriv
 }
 
 fn _raw_master_key(passphrase: &str) -> IndyResult<chacha20poly1305_ietf::Key> {
-    let bytes = &base58::decode(passphrase)
-        .map_err(|err| err.extend("Invalid mastery key"))?;
+    let bytes = passphrase.from_base58()?;
 
     chacha20poly1305_ietf::Key::from_slice(&bytes)
         .map_err(|err| err.extend("Invalid mastery key"))
@@ -89,7 +89,7 @@ pub(super) fn encrypt_tag_names(tag_names: &[&str], tag_name_key: &chacha20poly1
     tag_names
         .iter()
         .map(|tag_name|
-            if tag_name.starts_with("~") {
+            if tag_name.starts_with('~') {
                 TagName::OfPlain(encrypt_as_searchable(
                     &tag_name.as_bytes()[1..], tag_name_key, tags_hmac_key))
             } else {
@@ -105,7 +105,7 @@ pub(super) fn encrypt_tags(tags: &HashMap<String, String>,
     tags
         .iter()
         .map(|(tag_name, tag_value)|
-            if tag_name.starts_with("~") {
+            if tag_name.starts_with('~') {
                 // '~' character on start is skipped.
                 Tag::PlainText(
                     encrypt_as_searchable(&tag_name.as_bytes()[1..], tag_name_key, tags_hmac_key),
@@ -154,21 +154,21 @@ pub(super) fn decrypt_merged(joined_data: &[u8], key: &chacha20poly1305_ietf::Ke
 }
 
 pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly1305_ietf::Key, tag_value_key: &chacha20poly1305_ietf::Key) -> IndyResult<Option<HashMap<String, String>>> {
-    match etags {
-        &None => Ok(None),
-        &Some(ref etags) => {
+    match *etags {
+        None => Ok(None),
+        Some(ref etags) => {
             let mut tags: HashMap<String, String> = HashMap::new();
 
             for etag in etags {
-                let (name, value) = match etag {
-                    &Tag::PlainText(ref ename, ref value) => {
+                let (name, value) = match *etag {
+                    Tag::PlainText(ref ename, ref value) => {
                         let name = match decrypt_merged(&ename, tag_name_key) {
                             Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
                             Ok(tag_name_bytes) => format!("~{}", str::from_utf8(&tag_name_bytes).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?)
                         };
                         (name, value.clone())
                     }
-                    &Tag::Encrypted(ref ename, ref evalue) => {
+                    Tag::Encrypted(ref ename, ref evalue) => {
                         let name = match decrypt_merged(&ename, tag_name_key) {
                             Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
                             Ok(tag_name) => String::from_utf8(tag_name).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?
@@ -215,8 +215,6 @@ pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Ind
 
 #[cfg(test)]
 mod tests {
-    extern crate serde_json;
-
     use services::wallet::wallet::EncryptedValue;
     use services::wallet::wallet::Keys;
     use utils::crypto::hmacsha256;

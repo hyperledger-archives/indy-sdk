@@ -11,11 +11,13 @@ import {
   ICredentialCreateWithMsgId,
   ICredentialCreateWithOffer,
   ICredentialDefCreateData,
+  ICredentialDefPrepareForEndorserData,
   IDisclosedProofCreateData,
   IDisclosedProofCreateWithMsgIdData,
   IIssuerCredentialCreateData,
   IProofCreateData,
   ISchemaCreateData,
+  ISchemaPrepareForEndorserData,
   ISchemaLookupData,
   IssuerCredential,
   Proof,
@@ -57,12 +59,34 @@ export const dataCredentialDefCreate = (): ICredentialDefCreateData => ({
   sourceId: 'testCredentialDefSourceId'
 })
 
+export const dataCredentialDefPrepareForEndorser = ():  ICredentialDefPrepareForEndorserData => ({
+  name: 'testCredentialDefName',
+  endorser: 'V4SGRU86Z58d6TV7PBUe6f',
+  revocationDetails: {
+    maxCreds: undefined,
+    supportRevocation: false,
+    tailsFile: undefined
+  },
+  schemaId: 'testCredentialDefSchemaId',
+  sourceId: 'testCredentialDefSourceId'
+})
+
 export const credentialDefCreate = async (data = dataCredentialDefCreate()) => {
   const credentialDef = await CredentialDef.create(data)
   assert.notEqual(credentialDef.handle, undefined)
   assert.equal(credentialDef.sourceId, data.sourceId)
   assert.equal(credentialDef.schemaId, data.schemaId)
   assert.equal(credentialDef.name, data.name)
+  return credentialDef
+}
+
+export const credentialDefPrepareForEndorser = async (data = dataCredentialDefPrepareForEndorser()) => {
+  const credentialDef = await CredentialDef.prepareForEndorser(data)
+  assert.notEqual(credentialDef.handle, undefined)
+  assert.equal(credentialDef.sourceId, data.sourceId)
+  assert.equal(credentialDef.schemaId, data.schemaId)
+  assert.equal(credentialDef.name, data.name)
+  assert.ok(credentialDef.credentialDefTransaction)
   return credentialDef
 }
 
@@ -274,6 +298,19 @@ export const dataSchemaCreate = (): ISchemaCreateData => ({
   sourceId: 'testSchemaSourceId'
 })
 
+export const dataSchemaPrepareForEndorser = (): ISchemaPrepareForEndorserData => ({
+  data: {
+    attrNames: [
+      'attr1',
+      'attr2'
+    ],
+    name: 'Schema',
+    version: '1.0.0'
+  },
+  endorser: 'V4SGRU86Z58d6TV7PBUe6f',
+  sourceId: 'testSchemaSourceId'
+})
+
 export const schemaCreate = async (data = dataSchemaCreate()) => {
   const schema = await Schema.create(data)
   assert.notEqual(schema.handle, undefined)
@@ -281,6 +318,17 @@ export const schemaCreate = async (data = dataSchemaCreate()) => {
   assert.equal(schema.name, data.data.name)
   assert.deepEqual(schema.schemaAttrs, data.data)
   assert.ok(schema.schemaId)
+  return schema
+}
+
+export const schemaPrepareForEndorser = async (data = dataSchemaPrepareForEndorser()) => {
+  const schema = await Schema.prepareForEndorser(data)
+  assert.notEqual(schema.handle, undefined)
+  assert.equal(schema.sourceId, data.sourceId)
+  assert.equal(schema.name, data.data.name)
+  assert.deepEqual(schema.schemaAttrs, data.data)
+  assert.ok(schema.schemaId)
+  assert.ok(schema.schemaTransaction)
   return schema
 }
 

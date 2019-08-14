@@ -24,7 +24,7 @@ class Proof(VcxStateful):
         self._proof_state = x
 
     @staticmethod
-    async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict):
+    async def create(source_id: str, name: str, requested_attrs: list, revocation_interval: dict, requested_predicates: list = []):
         """
          Builds a generic proof object
         :param source_id: Tag associated by user of sdk
@@ -42,7 +42,7 @@ class Proof(VcxStateful):
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
         c_name = c_char_p(name.encode('utf-8'))
-        c_req_predicates = c_char_p('[]'.encode('utf-8'))
+        c_req_predicates = c_char_p(json.dumps(requested_predicates).encode('utf-8'))
         c_req_attrs = c_char_p(json.dumps(requested_attrs).encode('utf-8'))
         c_revocation_interval = c_char_p(json.dumps(revocation_interval).encode('utf-8'))
         c_params = (c_source_id, c_req_attrs, c_req_predicates, c_revocation_interval, c_name)
@@ -94,6 +94,17 @@ class Proof(VcxStateful):
         """
         return await self._update_state(Proof, 'vcx_proof_update_state')
 
+    async def update_state_with_message(self, message: str) -> int:
+        """
+        Update the state of the proof based on the given message.
+        Example:
+        proof = await Proof.create(source_id)
+        assert await proof.update_state_with_message(message) == State.Accepted
+        :param message:
+        :return Current state of the Proof
+        """
+        return await self._update_state_with_message(Connection, message, 'vcx_proof_update_state_with_message')
+
     async def get_state(self) -> int:
         """
         Gets the state of the entity.
@@ -112,6 +123,28 @@ class Proof(VcxStateful):
         :return: None
         """
         self._release(Proof, 'vcx_proof_release')
+
+    async def get_proof_request_msg(self):
+        """
+        Example:
+        name = "proof name"
+        requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
+        proof = await Proof.create(source_id, name, requested_attrs)
+        await proof.get_proof_request_msg()
+        :param
+        :return:
+        """
+        if not hasattr(Proof.get_proof_request_msg, "cb"):
+            self.logger.debug("vcx_proof_send_request: Creating callback")
+            Proof.get_proof_request_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_proof_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_proof_get_request_msg',
+                      c_proof_handle,
+                      Proof.get_proof_request_msg.cb)
+
+        return json.loads(msg.decode())
 
     async def request_proof(self, connection: Connection):
         """

@@ -106,6 +106,43 @@ export async function getLedgerFees (): Promise<string> {
   }
 }
 
+export async function getLedgerAuthorAgreement (): Promise<string> {
+  /**
+   * Retrieve author agreement set on the sovrin network
+   */
+  try {
+    const agreement = await createFFICallbackPromise<string>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_get_ledger_author_agreement(0, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32','string'],
+        (xhandle: number, err: number, agreement: string) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(agreement)
+        })
+    )
+    return agreement
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}
+
+export function setActiveTxnAuthorAgreementMeta (text: string | null | undefined,
+                                                 version: string | null | undefined,
+                                                 hash: string | null | undefined,
+                                                 acc_mech_type: string,
+                                                 time_of_acceptance: number) {
+  return rustAPI().vcx_set_active_txn_author_agreement_meta(text, version, hash, acc_mech_type, time_of_acceptance)
+}
+
 export function shutdownVcx (deleteWallet: boolean): number {
   return rustAPI().vcx_shutdown(deleteWallet)
 }
@@ -176,6 +213,35 @@ export async function updateMessages ({ msgJson }: IUpdateMessagesConfigs): Prom
             return
           }
           resolve(err)
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}
+
+export function setPoolHandle (handle: number): void {
+  rustAPI().vcx_pool_set_handle(handle)
+}
+
+export async function endorseTransaction (transaction: string): Promise<void> {
+  try {
+    return await createFFICallbackPromise<void>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_endorse_transaction(0, transaction, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve()
         })
     )
   } catch (err) {

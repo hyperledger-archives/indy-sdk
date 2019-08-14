@@ -55,10 +55,6 @@ pub static POSTGRES_STORAGE_NAME: &str = "postgres_storage";
 
 #[no_mangle]
 pub extern fn postgresstorage_init() -> libindy::ErrorCode {
-    //if let Err(err) = utils::logger::LibnullpayLogger::init() {
-    //    return err;
-    //}
-
     let postgres_storage_name = CString::new(POSTGRES_STORAGE_NAME).unwrap();
 
     libindy::wallet::register_wallet_storage(
@@ -88,6 +84,11 @@ pub extern fn postgresstorage_init() -> libindy::ErrorCode {
         PostgresWallet::fetch_search_next_record,
         PostgresWallet::free_search,
     )
+}
+
+#[no_mangle]
+pub extern fn init_storagetype(config: *const c_char, credentials: *const c_char) -> libindy::ErrorCode {
+    return PostgresWallet::init(config, credentials);
 }
 
 struct PostgresStorageContext {
@@ -140,16 +141,37 @@ pub struct PostgresWallet {}
 
 impl PostgresWallet {
 
+    /// This needs to be called once at the beginning to create the database
+    pub extern fn init(config: *const c_char, credentials: *const c_char) -> ErrorCode {
+        check_useful_c_str!(config, ErrorCode::CommonInvalidState);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidState);
+
+        // create Postgres database, and create schema
+        let storage_type = ::postgres_storage::PostgresStorageType::new();
+        let res = storage_type.init_storage(Some(&config), Some(&credentials));
+
+        match res {
+            Ok(_) => ErrorCode::Success,
+            Err(err) => {
+                match err {
+                    WalletStorageError::AlreadyExists => ErrorCode::WalletAlreadyExistsError,
+                    _ => ErrorCode::WalletStorageError
+                }
+            }
+        }
+    }
+
     pub extern fn create(id: *const c_char,
                              config: *const c_char,
                              credentials: *const c_char,
                              metadata: *const c_char) -> ErrorCode {
-        check_useful_c_str!(id, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(config, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(credentials, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(metadata, ErrorCode::CommonInvalidState);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidParam1);
+        check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
+        check_useful_c_str!(metadata, ErrorCode::CommonInvalidParam4);
 
         // create Postgres database, create schema, and insert metadata
+        // ... or ... insert metadata
         let storage_type = ::postgres_storage::PostgresStorageType::new();
         let res = storage_type.create_storage(&id, Some(&config), Some(&credentials), &metadata.as_bytes()[..]);
 
@@ -169,9 +191,9 @@ impl PostgresWallet {
                            config: *const c_char,
                            credentials: *const c_char,
                            handle: *mut i32) -> ErrorCode {
-        check_useful_c_str!(id, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(config, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(credentials, ErrorCode::CommonInvalidState);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidParam1);
+        check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
 
         // open wallet and return handle
         // PostgresStorageType::open_storage(), returns a PostgresStorage that goes into the handle
@@ -992,6 +1014,7 @@ fn _tag_names_from_json(json: &str) -> Result<Vec<TagName>, WalletStorageError> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
     use std::ffi::{CString, CStr};
     use std::{slice, ptr};
     use wql::storage::ENCRYPTED_KEY_LEN;
@@ -1529,7 +1552,7 @@ mod tests {
 
         _close_and_delete_wallet(handle);
     }
-/* TODO unit test for eallet search
+/* TODO unit test for wallet search
     #[test]
     fn postgres_wallet_search_records_works() {
         _cleanup();
@@ -1676,6 +1699,10 @@ mod tests {
         let config = _wallet_config();
         let credentials = _wallet_credentials();
 
+        let err = PostgresWallet::init(config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                       credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
+        assert_eq!(err, ErrorCode::Success);
+
         let _err = PostgresWallet::delete(id.as_ptr(), 
                                             config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
                                             credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
@@ -1686,8 +1713,26 @@ mod tests {
     }
 
     fn _wallet_config() -> Option<CString> {
+        let wallet_scheme = env::var("WALLET_SCHEME");
+        match wallet_scheme {
+            Ok(scheme) => {
+                if scheme == "MultiWalletSingleTable" {
+                    return _wallet_config_multi();
+                }
+            },
+            Err(_) => ()
+        };
         let config = Some(json!({
             "url": "localhost:5432".to_owned()
+        }).to_string());
+        config.map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap()
+    }
+
+    fn _wallet_config_multi() -> Option<CString> {
+        let config = Some(json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSingleTable".to_owned()
         }).to_string());
         config.map(CString::new)
             .map_or(Ok(None), |r| r.map(Some)).unwrap()

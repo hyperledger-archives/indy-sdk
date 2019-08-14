@@ -195,7 +195,6 @@
              walletHandle:(IndyHandle)walletHandle
                completion:(void (^)(NSError *error, NSString *metadata))completion;
 
-
 /**
  Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 
@@ -207,4 +206,17 @@
               fullVerkey:(NSString *)fullVerkey
               completion:(void (^)(NSError *error, NSString *verkey))completion;
 
+
+/**
+ * Retrieves the information about all DIDs stored in the wallet.
+ *
+ * @param walletHandle The wallet.
+ * Completion returns metadata resolving to a list of dids: [{
+ *     "did": string - DID stored in the wallet,
+ *     "verkey": string - The DIDs transport key (ver key, key id).,
+ *     "metadata": string - The meta information stored with the DID
+ *   }]
+ */
++ (void)listMyDidsWithMeta:(IndyHandle)walletHandle
+                completion:(void (^)(NSError *error, NSString *metadata))completion;
 @end

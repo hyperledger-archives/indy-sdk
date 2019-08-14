@@ -49,6 +49,14 @@
                                               credDefId:(NSString **)credentialDefId
                                             credDefJson:(NSString **)credentialDefJson;
 
+- (NSError *)issuerRotateCredentialDefStartForId:(NSString *)credDefId
+                                      configJSON:(NSString *)configJSON
+                                    walletHandle:(IndyHandle)walletHandle
+                                     credDefJson:(NSString **)credentialDefJson;
+
+- (NSError *)issuerRotateCredentialDefApplyForId:(NSString *)credDefId
+                                    walletHandle:(IndyHandle)walletHandle;
+
 - (NSError *)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefID
                                                   issuerDID:(NSString *)issuerDID
                                                        type:(NSString *)type
@@ -177,6 +185,8 @@
                        revocRegDefsJSON:(NSString *)revocRegDefsJSON
                           revocRegsJSON:(NSString *)revocRegsJSON
                                 isValid:(BOOL *)isValid;
+
+- (NSError *)generateNonce:(NSString **)nonce;
 
 - (NSError *)initializeCommonWalletAndReturnHandle:(IndyHandle *)walletHandle
                                  credentialDefJson:(NSString **)credentialDefJson

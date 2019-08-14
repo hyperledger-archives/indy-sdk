@@ -733,6 +733,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         ///      "nonce": string
         ///    }
         /// cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
+        ///      Note: cred_req_metadata_json mustn't be shared with Issuer.
         ///</returns>
         /// <param name="wallet">Wallet.</param>
         /// <param name="proverDid">a DID of the prover.</param>
@@ -873,6 +874,32 @@ namespace Hyperledger.Indy.AnonCredsApi
                 wallet.Handle,
                 filterJson,
                 ProverGetCredentialsCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Deletes credential with the given identifier.
+        /// </summary>
+        /// <param name="wallet">The wallet</param>
+        /// <param name="credentialId">The credential identifier</param>
+        /// <returns></returns>
+        public static Task ProverDeleteCredentialAsync(Wallet wallet, string credentialId)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(credentialId, "credentialId");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_delete_credential(
+                commandHandle,
+                wallet.Handle,
+                credentialId,
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -1252,7 +1279,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
         /// There is also aggregated proof part common for all credential proofs.
         ///     {
-        ///         "requested": {
+        ///         "requested_proof": {
         ///             "revealed_attrs": {
         ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
         ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1394,7 +1421,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="proof">
         /// proof_json: created for request proof json
         ///     {
-        ///         "requested": {
+        ///         "requested_proof": {
         ///             "revealed_attrs": {
         ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
         ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},

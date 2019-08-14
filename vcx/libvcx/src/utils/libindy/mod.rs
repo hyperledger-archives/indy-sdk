@@ -12,11 +12,10 @@ pub mod logger;
 
 pub mod error_codes;
 
-extern crate libc;
-
 use settings;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
+use error::prelude::*;
 
 lazy_static!{
     static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
@@ -26,7 +25,7 @@ pub fn mock_libindy_rc() -> u32 { NEXT_LIBINDY_RC.lock().unwrap().pop().unwrap_o
 
 pub fn set_libindy_rc(rc: u32) {NEXT_LIBINDY_RC.lock().unwrap().push(rc as i32);}
 
-static COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+static COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
 pub fn next_i32_command_handle() -> i32 {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
@@ -36,7 +35,7 @@ pub fn next_u32_command_handle() -> u32 {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32
 }
 
-pub fn init_pool() -> Result<(), u32>  {
+pub fn init_pool() -> VcxResult<()>  {
     trace!("init_pool >>>");
 
     if settings::test_indy_mode_enabled() {return Ok (()); }
@@ -73,6 +72,6 @@ mod tests {
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         init_pool().unwrap();
-        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
     }
 }

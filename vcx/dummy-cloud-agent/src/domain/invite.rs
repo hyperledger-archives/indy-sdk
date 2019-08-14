@@ -15,6 +15,8 @@ pub struct InviteDetail {
     pub status_code: MessageStatusCode,
     #[serde(rename = "statusMsg")]
     pub status_msg: String,
+    #[serde(rename = "threadId")]
+    pub thread_id: Option<String>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

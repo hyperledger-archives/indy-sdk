@@ -183,19 +183,28 @@ impl ForwardAgent {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_anoncrypted(slf.wallet_handle, &slf.verkey, &msg)
+                A2AMessage::parse_anoncrypted(slf.wallet_handle, &slf.verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
             .and_then(move |mut msgs, slf, _| {
+                let send_to_router = |fwd: String, msg: Vec<u8>| {
+                    slf.router
+                        .send(RouteA2AMsg(fwd, msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .into_actor(slf)
+                        .into_box()
+                };
+
+
                 match msgs.pop() {
-                    Some(A2AMessage::Forward(msg)) => {
-                        slf.router
-                            .send(RouteA2AMsg(msg.fwd, msg.msg))
-                            .from_err()
-                            .and_then(|res| res)
-                            .into_actor(slf)
-                            .into_box()
+                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) => {
+                        send_to_router(msg.fwd, msg.msg)
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        send_to_router(msg.fwd, msg_)
                     }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
@@ -210,14 +219,17 @@ impl ForwardAgent {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
+                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
             .and_then(move |(sender_vk, mut msgs), slf, _| {
                 match msgs.pop() {
-                    Some(A2AMessage::Connect(msg)) => {
-                        slf._connect(sender_vk, msg)
+                    Some(A2AMessage::Version1(A2AMessageV1::Connect(msg))) => {
+                        slf._connect_v1(sender_vk, msg)
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::Connect(msg))) => {
+                        slf._connect_v2(sender_vk, msg)
                     }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
@@ -225,12 +237,53 @@ impl ForwardAgent {
             .into_box()
     }
 
-    fn _connect(&mut self,
-                sender_vk: String,
-                msg: Connect) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgent::_connect >> {:?}, {:?}", sender_vk, msg);
+    fn _connect_v1(&mut self,
+                   sender_vk: String,
+                   msg: Connect) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgent::_connect_v1 >> {:?}, {:?}", sender_vk, msg);
 
         let Connect { from_did: their_did, from_did_verkey: their_verkey } = msg;
+
+        self._connect(sender_vk.clone(), their_did.clone(), their_verkey.clone())
+            .and_then(move |(my_did, my_verkey), slf, _| {
+                let msgs = vec![A2AMessage::Version1(A2AMessageV1::Connected(Connected {
+                    with_pairwise_did: my_did,
+                    with_pairwise_did_verkey: my_verkey,
+                }))];
+
+                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.verkey, &their_verkey, &msgs)
+                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
+                    .into_actor(slf)
+            })
+            .into_box()
+    }
+
+    fn _connect_v2(&mut self,
+                   sender_vk: String,
+                   msg: Connect) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgent::_connect_v2 >> {:?}, {:?}", sender_vk, msg);
+
+        let Connect { from_did: their_did, from_did_verkey: their_verkey, .. } = msg;
+
+        self._connect(sender_vk.clone(), their_did.clone(), their_verkey.clone())
+            .and_then(move |(my_did, my_verkey), slf, _| {
+                let msg = A2AMessageV2::Connected(Connected {
+                    with_pairwise_did: my_did,
+                    with_pairwise_did_verkey: my_verkey,
+                });
+
+                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.verkey), &their_verkey, &msg)
+                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
+                    .into_actor(slf)
+            })
+            .into_box()
+    }
+
+    fn _connect(&mut self,
+                sender_vk: String,
+                their_did: String,
+                their_verkey: String) -> ResponseActFuture<Self, (String, String), Error> {
+        trace!("ForwardAgent::_connect >> {:?}, {:?}, {:?}", sender_vk, their_did, their_verkey);
 
         if their_verkey != sender_vk {
             return err_act!(self, err_msg("Inconsistent sender and connection verkeys"));
@@ -245,18 +298,7 @@ impl ForwardAgent {
                                                slf.router.clone(),
                                                slf.forward_agent_detail.clone(),
                                                slf.wallet_storage_config.clone())
-                    .map(|(my_did, my_verkey)| (my_did, my_verkey, their_verkey))
                     .map_err(|err| err.context("Can't create Forward Agent Connection.").into())
-                    .into_actor(slf)
-            })
-            .and_then(move |(my_did, my_verkey, their_verkey), slf, _| {
-                let msgs = vec![A2AMessage::Connected(Connected {
-                    with_pairwise_did: my_did,
-                    with_pairwise_did_verkey: my_verkey,
-                })];
-
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.verkey, &their_verkey, &msgs)
-                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
                     .into_actor(slf)
             })
             .into_box()

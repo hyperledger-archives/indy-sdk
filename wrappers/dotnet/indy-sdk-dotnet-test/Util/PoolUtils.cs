@@ -11,7 +11,7 @@ namespace Hyperledger.Indy.Test
     {
 
         //public const string DEFAULT_POOL_NAME = "default_pool";
-        public const int TEST_TIMEOUT_FOR_REQUEST_ENSURE = 20_000;
+        public const int TEST_TIMEOUT_FOR_REQUEST_ENSURE = 200_000;
         private const int RESUBMIT_REQUEST_TIMEOUT = 5_000;
         private const int RESUBMIT_REQUEST_CNT = 3;
         public const int PROTOCOL_VERSION = 1;

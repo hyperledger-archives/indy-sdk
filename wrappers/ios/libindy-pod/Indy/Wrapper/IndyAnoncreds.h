@@ -10,6 +10,14 @@
 @interface IndyAnoncreds : NSObject
 
 /**
+These functions wrap the Ursa algorithm as documented in this paper:
+https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+
+And is documented in this HIPE:
+https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+*.
+
+/**
  Create credential schema entity that describes credential attributes list and allows credentials
  interoperability.
 
@@ -50,15 +58,37 @@
  @param tag: allows to distinct between credential definitions for the same issuer and schema
  @param type: type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
  Supported types are:
-    - 'CL': Camenisch-Lysyanskaya credential signature type
+    - 'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+                https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+            And is documented in this HIPE:
+                https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+
  @param configJSON: type-specific configuration of credential definition as json:
  - 'CL':
    - revocationSupport: whether to request non-revocation credential (optional, default false)
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Callback that takes command result as parameter. 
+ @param completion Callback that takes command result as parameter.
+
+ Note: Use combination of `issuerRotateCredentialDefStartForId` and `issuerRotateCredentialDefApplyForId` functions
+ to generate new keys for an existing credential definition
+
  Returns:
     credDefId: identifier of created credential definition.
     credDefJson: public part of created credential definition
+   {
+       id: string - identifier of credential definition
+       schemaId: string - identifier of stored in ledger schema
+       type: string - type of the credential definition. CL is the only supported type now.
+       tag: string - allows to distinct between credential definitions for the same issuer and schema
+       value: Dictionary with Credential Definition's data is depended on the signature type: {
+           primary: primary credential public key,
+           Optional<revocation>: revocation credential public key
+       },
+       ver: Version of the CredDef json
+   }
+   
+   Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+   They should not be parsed and are likely to change in future versions.
 */
 + (void)issuerCreateAndStoreCredentialDefForSchema:(NSString *)schemaJSON
                                          issuerDID:(NSString *)issuerDID
@@ -67,6 +97,41 @@
                                         configJSON:(NSString *)configJSON
                                       walletHandle:(IndyHandle)walletHandle
                                         completion:(void (^)(NSError *error, NSString *credDefId, NSString *credDefJSON))completion;
+
+/**
+ Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+
+ Use `issuerRotateCredentialDefApplyForId` function to set temporary keys as the main.
+
+ WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+ @param credDefId an identifier of created credential definition stored in the wallet
+ @param configJSON: type-specific configuration of credential definition as json:
+ - 'CL':
+   - revocationSupport: whether to request non-revocation credential (optional, default false)
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns:
+    credDefJson: public part of temporary created credential definition
+*/
++ (void)issuerRotateCredentialDefStartForId:(NSString *)credDefId
+                                 configJSON:(NSString *)configJSON
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error, NSString *credDefJSON))completion;
+
+/**
+ Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+
+ WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+ @param credDefId an identifier of created credential definition stored in the wallet
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns: void
+*/
++ (void)issuerRotateCredentialDefApplyForId:(NSString *)credDefId
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error))completion;
 
 /**
  Create a new revocation registry for the given credential definition as tuple of entities:
@@ -89,7 +154,9 @@
  @param walletHandle: wallet handler (created by open_wallet).
  @param issuerDID: a DID of the issuer signing transaction to the Ledger
  @param type: (optional, default value depends on credential definition type). Supported types are:
-                - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+               - 'CL_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+                                 https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+                             This type is default for 'CL' credential definition type.
  @param tag: allows to distinct between revocation registries for the same issuer and credential definition
  @param credDefID: id of stored in ledger credential definition
  @param configJSON: type-specific configuration of revocation registry as json:
@@ -102,11 +169,41 @@
      }
  @param tailsWriterHandle: handle of blob storage to store tails
  @param completion Callback that takes command result as parameter.
+ 
+ NOTE:
+     Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
+     in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+     In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+ 
  Returns 
     revocRegID: identifier of created revocation registry definition
     revocRegDefJSON: public part of revocation registry definition
+       {
+           "id": string - ID of the Revocation Registry,
+           "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+           "tag": string - Unique descriptive ID of the Registry,
+           "credDefId": string - ID of the corresponding CredentialDefinition,
+           "value": Registry-specific data {
+               "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+               "maxCredNum": number - Maximum number of credentials the Registry can serve.
+               "tailsHash": string - Hash of tails.
+               "tailsLocation": string - Location of tails file.
+               "publicKeys": <public_keys> - Registry's public key (opaque type that contains data structures internal to Ursa.
+                                                                    It should not be parsed and are likely to change in future versions).
+           },
+           "ver": string - version of revocation registry definition json.
+       }
     revocRegEntryJSON: revocation registry entry that defines initial state of revocation registry
- */
+       {
+           value: {
+               prevAccum: string - previous accumulator value.
+               accum: string - current accumulator value.
+               issued: array<number> - an array of issued indices.
+               revoked: array<number> an array of revoked indices.
+           },
+           ver: string - version revocation registry entry json
+       }
+*/
 + (void)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefID
                                              issuerDID:(NSString *)issuerDID
                                                   type:(NSString *)type
@@ -130,7 +227,9 @@
          "cred_def_id": string,
          // Fields below can depend on Cred Def type
          "nonce": string,
-         "key_correctness_proof" : <key_correctness_proof>
+         "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+                                   (opaque type that contains data structures internal to Ursa.
+                                   It should not be parsed and are likely to change in future versions).
      }
 */
 + (void)issuerCreateCredentialOfferForCredDefId:(NSString *)credDefID
@@ -169,8 +268,12 @@
             "rev_reg_def_id", Optional<string>,
             "values": <see cred_values_json above>,
             // Fields below can depend on Cred Def type
-            "signature": <signature>,
-            "signature_correctness_proof": <signature_correctness_proof>
+            "signature": <credential signature>,
+                         (opaque type that contains data structures internal to Ursa.
+                          It should not be parsed and are likely to change in future versions).
+            "signature_correctness_proof": credential signature correctness proof
+                         (opaque type that contains data structures internal to Ursa.
+                          It should not be parsed and are likely to change in future versions).
         }
      credRevocID: local id for revocation info (Can be used for revocation of this cred)
      revocRegDeltaJSON: Revocation registry delta json with a newly issued credential
@@ -258,10 +361,15 @@
       "cred_def_id" : string,
          // Fields below can depend on Cred Def type
       "blinded_ms" : <blinded_master_secret>,
+                    (opaque type that contains data structures internal to Ursa.
+                     It should not be parsed and are likely to change in future versions).
       "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+                    (opaque type that contains data structures internal to Ursa.
+                     It should not be parsed and are likely to change in future versions).
       "nonce": string
     }
     credReqMetadataJSON: Credential request metadata json for further processing of received form Issuer credential.
+        Note: credReqMetadataJSON mustn't be shared with Issuer.
  */
 + (void)proverCreateCredentialReqForCredentialOffer:(NSString *)credOfferJSON
                                   credentialDefJSON:(NSString *)credentialDefJSON
@@ -371,7 +479,7 @@
   
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param queryJSON Wql style filter for credentials searching based on tags.
-        (indy-sdk/doc/design/011-wallet-query-language/README.md)
+        (indy-sdk/docs/design/011-wallet-query-language/README.md)
  @param completion Callback that takes command result as parameter. 
  Returns 
     searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsWithSearchHandle)
@@ -425,7 +533,7 @@
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -504,7 +612,7 @@
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` funciton to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see above
              ...,
@@ -523,7 +631,7 @@
         "<attr_referent>": <wql query>,
         "<predicate_referent>": <wql query>,
     }
- where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+ where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
  @param completion Callback that takes command result as parameter.
  Returns
     searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReqItemReferent)
@@ -594,7 +702,7 @@
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -657,7 +765,7 @@
   Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
   There is also aggregated proof part common for all credential proofs.
       {
-          "requested": {
+          "requested_proof": {
               "revealed_attrs": {
                   "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                   "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -676,7 +784,8 @@
           "proof": {
               "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
               "aggregated_proof": <aggregated_proof>
-          }
+          } - (opaque type that contains data structures internal to Ursa.
+              It should not be parsed and are likely to change in future versions).
           "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
       }
   */
@@ -697,7 +806,7 @@
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -713,7 +822,7 @@
     }
  @param proofJSON: proof json
       {
-          "requested": {
+          "requested_proof": {
               "revealed_attrs": {
                   "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                   "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -825,5 +934,13 @@
               revRegDeltaJSON:(NSString *)revRegDeltaJSON
       blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
                    completion:(void (^)(NSError *error, NSString *updatedRevStateJSON))completion;
+
+/**
+ Generates 80-bit numbers that can be used as a nonce for proof request.
+
+ @param completion Callback that takes command result as parameter.
+ Returns nonce: generated number as a string
+ */
++ (void)generateNonce:(void (^)(NSError *error, NSString *nonce))completion;
 
 @end

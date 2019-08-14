@@ -22,6 +22,13 @@ import com.sun.jna.Callback;
 
 /**
  * Functionality for anonymous credentials
+ * 
+ * These functions wrap the Ursa algorithm as documented in this paper:
+ * https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+ *
+ * And is documented in this HIPE:
+ * https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+ * 
  */
 public class Anoncreds extends IndyJava.API {
 
@@ -146,6 +153,22 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when function with empty result completes.
+	 */
+	private static Callback voidCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
@@ -207,19 +230,39 @@ public class Anoncreds extends IndyJava.API {
 	 * 
 	 * It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 	 *
+	 * Note: Use combination of `issuerRotateCredentialDefStart` and `issuerRotateCredentialDefApply` functions
+	 * to generate new keys for an existing credential definition.
+	 *
 	 * @param wallet     The wallet.
 	 * @param issuerDid  DID of the issuer signing cred_def transaction to the Ledger
 	 * @param schemaJson Сredential schema as a json
 	 * @param tag        Allows to distinct between credential definitions for the same issuer and schema
-	 * @param signature_type       Credential definition signature_type (optional, 'CL' by default) that defines credentials signature and revocation math.
+	 * @param signatureType       Credential definition signatureType (optional, 'CL' by default) that defines credentials signature and revocation math.
 	 *                   Supported types are:
-	 *                   - 'CL': Camenisch-Lysyanskaya credential signature signature_type
+	 *                   - 'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+	 *                              https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+	 *                          And is documented in this HIPE:
+	 *                              https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
 	 * @param configJson (optional) Type-specific configuration of credential definition as json:
 	 *                   - 'CL':
 	 *                      - revocationSupport: whether to request non-revocation credential (optional, default false)
 	 * @return A future resolving to IssuerCreateAndStoreCredentialDefResult containing:.
 	 * credDefId: identifier of created credential definition.
 	 * credDefJson: public part of created credential definition
+	 * {
+	 *     id: string - identifier of credential definition
+	 *     schemaId: string - identifier of stored in ledger schema
+	 *     type: string - type of the credential definition. CL is the only supported type now.
+	 *     tag: string - allows to distinct between credential definitions for the same issuer and schema
+	 *     value: Dictionary with Credential Definition's data is depended on the signature type: {
+	 *         primary: primary credential public key,
+	 *         Optional(revocation): revocation credential public key
+	 *     },
+	 *     ver: Version of the CredDef json
+	 * }
+	 * Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+	 * They should not be parsed and are likely to change in future versions.
+	 * 
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<IssuerCreateAndStoreCredentialDefResult> issuerCreateAndStoreCredentialDef(
@@ -227,7 +270,7 @@ public class Anoncreds extends IndyJava.API {
 			String issuerDid,
 			String schemaJson,
 			String tag,
-			String signature_type,
+			String signatureType,
 			String configJson) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
@@ -246,9 +289,87 @@ public class Anoncreds extends IndyJava.API {
 				issuerDid,
 				schemaJson,
 				tag,
-				signature_type,
+				signatureType,
 				configJson,
 				issuerCreateAndStoreCredentialDefCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+	 *
+	 * Use `issuerRotateCredentialDefApply` function to set temporary keys as the main.
+	 *
+	 * WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+	 *
+	 * @param wallet     The wallet.
+	 * @param credDefId  An identifier of created credential definition stored in the wallet
+	 * @param configJson (optional) Type-specific configuration of credential definition as json:
+	 *                   - 'CL':
+	 *                      - revocationSupport: whether to request non-revocation credential (optional, default false)
+	 *
+	 * @return A future resolving to IssuerCreateAndStoreCredentialDefResult containing:.
+	 * credDefJson: public part of temporary created credential definition
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String>issuerRotateCredentialDefStart(
+			Wallet wallet,
+			String credDefId,
+			String configJson) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(credDefId, "credDefId");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_issuer_rotate_credential_def_start(
+				commandHandle,
+				walletHandle,
+				credDefId,
+				configJson,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+	 *
+	 * WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+	 *
+	 * @param wallet     The wallet.
+	 * @param credDefId  An identifier of created credential definition stored in the wallet
+	 *
+	 * @return A future resolving to no value
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<Void>issuerRotateCredentialDefApply(
+			Wallet wallet,
+			String credDefId) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(credDefId, "credDefId");
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_issuer_rotate_credential_def_apply(
+				commandHandle,
+				walletHandle,
+				credDefId,
+				voidCb);
 
 		checkResult(future, result);
 
@@ -276,7 +397,9 @@ public class Anoncreds extends IndyJava.API {
 	 * @param wallet      The wallet.
 	 * @param issuerDid   The DID of the issuer.
 	 * @param revoc_def_type        Revocation registry revoc_def_type (optional, default value depends on credential definition revoc_def_type). Supported types are:
-	 *                    - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition revoc_def_type
+	 *                    - 'CL_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+	 *                          https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+	 *                          This type is default for 'CL' credential definition type.
 	 * @param tag         Allows to distinct between revocation registries for the same issuer and credential definition
 	 * @param credDefId   Id of stored in ledger credential definition
 	 * @param configJson  revoc_def_type-specific configuration of revocation registry as json:
@@ -288,10 +411,40 @@ public class Anoncreds extends IndyJava.API {
 	 *     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 	 * }
 	 * @param tailsWriter Handle of blob storage to store tails
+	 *
+	 * NOTE:
+	 *      Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriter`)
+	 *      in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+	 *      In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+	 *
 	 * @return A future resolving to:
 	 * revocRegId: identifier of created revocation registry definition
 	 * revocRegDefJson: public part of revocation registry definition
+	 *     {
+	 *         "id": string - ID of the Revocation Registry,
+	 *         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+	 *         "tag": string - Unique descriptive ID of the Registry,
+	 *         "credDefId": string - ID of the corresponding CredentialDefinition,
+	 *         "value": Registry-specific data {
+	 *             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+	 *             "maxCredNum": number - Maximum number of credentials the Registry can serve.
+	 *             "tailsHash": string - Hash of tails.
+	 *             "tailsLocation": string - Location of tails file.
+	 *             "publicKeys": (public_keys) - Registry's public key (opaque type that contains data structures internal to Ursa.
+	 *                                                                  It should not be parsed and are likely to change in future versions).
+	 *         },
+	 *         "ver": string - version of revocation registry definition json.
+	 *     }
 	 * revocRegEntryJson: revocation registry entry that defines initial state of revocation registry
+	 * {
+	 *     value: {
+	 *         prevAccum: string - previous accumulator value.
+	 *         accum: string - current accumulator value.
+	 *         issued: array(number) - an array of issued indices.
+	 *         revoked: array(number) an array of revoked indices.
+	 *     },
+	 *     ver: string - version revocation registry entry json
+	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<IssuerCreateAndStoreRevocRegResult> issuerCreateAndStoreRevocReg(
@@ -343,7 +496,9 @@ public class Anoncreds extends IndyJava.API {
 	 *         "cred_def_id": string,
 	 *         // Fields below can depend on Cred Def type
 	 *         "nonce": string,
-	 *         "key_correctness_proof" : {key_correctness_proof}
+	 *         "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+	 *                                   (opaque type that contains data structures internal to Ursa.
+	 *                                   It should not be parsed and are likely to change in future versions).
 	 *     }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -401,8 +556,12 @@ public class Anoncreds extends IndyJava.API {
 	 *         "rev_reg_def_id", Optional[string],
 	 *         "values": "see credValuesJson above",
 	 *         // Fields below can depend on Cred Def type
-	 *         "signature": {signature},
+	 *         "signature": {signature} 
+	 *                      (opaque type that contains data structures internal to Ursa.
+	 *                       It should not be parsed and are likely to change in future versions).
 	 *         "signature_correctness_proof": {signature_correctness_proof}
+	 *                      (opaque type that contains data structures internal to Ursa.
+	 *                       It should not be parsed and are likely to change in future versions).
 	 *     }
 	 * credRevocId: local id for revocation info (Can be used for revocation of this cred)
 	 * revocRegDeltaJson: Revocation registry delta json with a newly issued credential
@@ -608,10 +767,15 @@ public class Anoncreds extends IndyJava.API {
 	 *      "cred_def_id" : string,
 	 *         // Fields below can depend on Cred Def type
 	 *      "blinded_ms" : {blinded_master_secret},
+	 *                      (opaque type that contains data structures internal to Ursa.
+	 *                       It should not be parsed and are likely to change in future versions).
 	 *      "blinded_ms_correctness_proof" : {blinded_ms_correctness_proof},
+	 *                      (opaque type that contains data structures internal to Ursa.
+	 *                       It should not be parsed and are likely to change in future versions).
 	 *      "nonce": string
 	 *    }
 	 * credReqMetadataJson: Credential request metadata json for processing of received form Issuer credential.
+	 *    Note: credReqMetadataJson mustn't be shared with Issuer.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<ProverCreateCredentialRequestResult> proverCreateCredentialReq(
@@ -797,6 +961,36 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/**
+	 * Deletes credential by given id.
+	 *
+	 * @param wallet A wallet.
+	 * @param credId Identifier by which requested credential is stored in the wallet
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<Void> proverDeleteCredential(
+			Wallet wallet,
+			String credId) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(credId, "credId");
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_delete_credential(
+				commandHandle,
+				walletHandle,
+				credId,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
 	 * Gets human readable credentials matching the given proof request.
 	 *
 	 * NOTE: This method is deprecated because immediately returns all fetched credentials.
@@ -807,7 +1001,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string,
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -901,7 +1095,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string,
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -960,7 +1154,7 @@ public class Anoncreds extends IndyJava.API {
 	 * Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
 	 * There is also aggregated proof part common for all credential proofs.
 	 *     {
-	 *         "requested": {
+	 *         "requested_proof": {
 	 *             "revealed_attrs": {
 	 *                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 	 *                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1030,7 +1224,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string,
+	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
@@ -1046,7 +1240,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     }
 	 * @param proof          Proof json
 	 {     {
-	 *         "requested": {
+	 *         "requested_proof": {
 	 *             "revealed_attrs": {
 	 *                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 	 *                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1065,7 +1259,8 @@ public class Anoncreds extends IndyJava.API {
 	 *         "proof": {
 	 *             "proofs": [ {credential_proof}, {credential_proof}, {credential_proof} ],
 	 *             "aggregated_proof": {aggregated_proof}
-	 *         }
+	 *         } (opaque type that contains data structures internal to Ursa.
+	 *            It should not be parsed and are likely to change in future versions).
 	 *         "identifiers": [{schema_id, cred_def_id, Optional["rev_reg_id"], Optional[timestamp]}]
 	 *     }
 	 * @param schemas        All schemas json participating in the proof request
@@ -1221,6 +1416,27 @@ public class Anoncreds extends IndyJava.API {
 				revRegDelta,
 				timestamp,
 				credRevId,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Generates 80-bit numbers that can be used as a nonce for proof request.
+	 *
+	 * @return A future that resolves to a generated number as a string
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> generateNonce() throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_generate_nonce(
+				commandHandle,
 				stringCb);
 
 		checkResult(future, result);

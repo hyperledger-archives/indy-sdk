@@ -1,4 +1,7 @@
-#!/bin/sh -e
+#!/bin/sh
+
+set -e
+set -x
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: <package> <targets>"
@@ -10,8 +13,12 @@ package="$1"
 [ -z ${package} ] && exit 1
 
 export PKG_CONFIG_ALLOW_CROSS=1
-export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2l
 export POD_FILE_NAME=${package}.tar.gz
+export LIBINDY_POD_VERSION=1.8.2
+
+if [ -z "${OPENSSL_DIR}" ]; then
+    export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2q
+fi
 
 echo "Build IOS POD started..."
 

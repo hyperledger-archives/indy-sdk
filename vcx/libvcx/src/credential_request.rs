@@ -1,11 +1,3 @@
-extern crate serde_json;
-
-use error::issuer_cred::IssuerCredError;
-
-static ISSUER_DID: &'static str = "issuer_did";
-static SEQUENCE_NUMBER: &'static str = "schema_seq_no";
-static BLINDED_MS: &'static str ="blinded_ms";
-static PROVER_DID: &'static str = "prover_did";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct CredentialRequest {
@@ -22,26 +14,16 @@ pub struct CredentialRequest {
 
 impl CredentialRequest {
     pub fn new(did: &str) -> CredentialRequest {
-       CredentialRequest {
-           to_did: String::new(),
-           from_did: did.to_string(),
-           mid: String::new(),
-           tid: String::new(),
-           version: String::new(),
-           libindy_cred_req: String::new(),
-           libindy_cred_req_meta: String::new(),
-           cred_def_id: String::new(),
-           msg_ref_id: None
-       }
-    }
-
-    pub fn from_str(payload:&str) -> Result<CredentialRequest, IssuerCredError> {
-        match serde_json::from_str(payload) {
-            Ok(p) => Ok(p),
-            Err(_) => {
-                warn!("{}", IssuerCredError::InvalidCredRequest());
-                Err(IssuerCredError::InvalidCredRequest())
-            }
+        CredentialRequest {
+            to_did: String::new(),
+            from_did: did.to_string(),
+            mid: String::new(),
+            tid: String::new(),
+            version: String::new(),
+            libindy_cred_req: String::new(),
+            libindy_cred_req_meta: String::new(),
+            cred_def_id: String::new(),
+            msg_ref_id: None
         }
     }
 }
@@ -50,7 +32,8 @@ impl CredentialRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::constants::{ CREDENTIAL_REQ_STRING, CRED_REQ, CRED_REQ_META };
+    use serde_json;
+    use utils::constants::{CREDENTIAL_REQ_STRING, CRED_REQ, CRED_REQ_META};
 
     static TEMP_ISSUER_DID: &'static str = "4reqXeZVm7JZAffAoaNLsb";
 
@@ -83,7 +66,7 @@ mod tests {
 
     #[test]
     fn test_create_credential_request_from_raw_message() {
-        let credential_req: CredentialRequest = CredentialRequest::from_str(CREDENTIAL_REQ_STRING).unwrap();
+        let credential_req: CredentialRequest = serde_json::from_str(CREDENTIAL_REQ_STRING).unwrap();
 
         assert_eq!(credential_req.tid, "cCanHnpFAD");
         assert_eq!(credential_req.to_did, "BnRXf8yDMUwGyZVDkSENeq");
@@ -93,13 +76,5 @@ mod tests {
         assert_eq!(&credential_req.libindy_cred_req, CRED_REQ);
         assert_eq!(&credential_req.libindy_cred_req_meta, CRED_REQ_META);
     }
-
-    #[test]
-    fn test_error() {
-        let invalid_json = r#"{bad:json"#;
-        let cred_req = CredentialRequest::from_str(invalid_json);
-        assert_eq!(cred_req.err(), Some(IssuerCredError::InvalidCredRequest()));
-    }
 }
-
 

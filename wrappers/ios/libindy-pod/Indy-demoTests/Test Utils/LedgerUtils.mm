@@ -729,6 +729,90 @@
     return err;
 }
 
+- (NSError *)buildAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
+                                          txnType:(NSString *)txnType
+                                           action:(NSString *)action
+                                            field:(NSString *)field
+                                         oldValue:(NSString *)oldValue
+                                         newValue:(NSString *)newValue
+                                       constraint:(NSString *)constraint
+                                       outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildAuthRuleRequestWithSubmitterDid:submitterDid
+                                             txnType:txnType
+                                              action:action
+                                               field:field
+                                            oldValue:oldValue
+                                            newValue:newValue
+                                          constraint:constraint
+                                          completion:^(NSError *error, NSString *json) {
+                                              err = error;
+                                              outJson = json;
+                                              [completionExpectation fulfill];
+                                          }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                              data:(NSString *)data
+                                        outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildAuthRulesRequestWithSubmitterDid:submitterDid
+                                                 data:data
+                                           completion:^(NSError *error, NSString *json) {
+                                               err = error;
+                                               outJson = json;
+                                               [completionExpectation fulfill];
+                                           }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
+                                             txnType:(NSString *)txnType
+                                              action:(NSString *)action
+                                               field:(NSString *)field
+                                            oldValue:(NSString *)oldValue
+                                            newValue:(NSString *)newValue
+                                          outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildGetAuthRuleRequestWithSubmitterDid:submitterDid
+                                                txnType:txnType
+                                                 action:action
+                                                  field:field
+                                               oldValue:oldValue
+                                               newValue:newValue
+                                             completion:^(NSError *error, NSString *json) {
+                                                 err = error;
+                                                 outJson = json;
+                                                 [completionExpectation fulfill];
+                                             }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
 - (NSError *)getResponseMetadata:(NSString *)response
                 responseMetadata:(NSString **)responseMetadata {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
@@ -745,6 +829,176 @@
 
     if (responseMetadata) {*responseMetadata = result;}
     return err;
+}
+
+- (NSError *)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       text:(NSString *)text
+                                                    version:(NSString *)version
+                                                 outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildTxnAuthorAgreementRequestWithSubmitterDid:submitterDid
+                                                          text:text
+                                                       version:version
+                                                    completion:^(NSError *error, NSString *json) {
+                                                        err = error;
+                                                        outJson = json;
+                                                        [completionExpectation fulfill];
+                                                    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)buildGetTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
+                                                          data:(NSString *)data
+                                                    outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildGetTxnAuthorAgreementRequestWithSubmitterDid:submitterDid
+                                                             data:data
+                                                       completion:^(NSError *error, NSString *json) {
+                                                           err = error;
+                                                           outJson = json;
+                                                           [completionExpectation fulfill];
+                                                       }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                          aml:(NSString *)aml
+                                                      version:(NSString *)version
+                                                   amlContext:(NSString *)amlContext
+                                                   outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildAcceptanceMechanismsRequestWithSubmitterDid:submitterDid
+                                                             aml:aml
+                                                         version:version
+                                                      amlContext:amlContext
+                                                      completion:^(NSError *error, NSString *json) {
+                                                          err = error;
+                                                          outJson = json;
+                                                          [completionExpectation fulfill];
+                                                      }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)buildGetAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       timestamp:(NSNumber *)timestamp
+                                                         version:(NSString *)version
+                                                      outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildGetAcceptanceMechanismsRequestWithSubmitterDid:submitterDid
+                                                          timestamp:timestamp
+                                                            version:version
+                                                         completion:^(NSError *error, NSString *json) {
+                                                             err = error;
+                                                             outJson = json;
+                                                             [completionExpectation fulfill];
+                                                         }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                                    text:(NSString *)text
+                                                 version:(NSString *)version
+                                               taaDigest:(NSString *)taaDigest
+                                             accMechType:(NSString *)accMechType
+                                        timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                              outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger appendTxnAuthorAgreementAcceptanceToRequest:requestJson
+                                                       text:text
+                                                    version:version
+                                                  taaDigest:taaDigest
+                                                accMechType:accMechType
+                                           timeOfAcceptance:timeOfAcceptance
+                                                 completion:^(NSError *error, NSString *json) {
+                                                     err = error;
+                                                     outJson = json;
+                                                     [completionExpectation fulfill];
+                                                 }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)appendEndorserToRequest:(NSString *)requestJson
+                         endorserDid:(NSString *)endorserDid
+                          outRequest:(NSString **)outRequestJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger appendEndorserToRequest:requestJson
+                            endorserDid:endorserDid
+                             completion:^(NSError *error, NSString *json) {
+                                 err = error;
+                                 outJson = json;
+                                 [completionExpectation fulfill];
+                             }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (outRequestJson) {*outRequestJson = outJson;}
+
+    return err;
+}
+
+
+- (NSString *)submitRetry:(NSString *)requestJson
+               poolHandle:(IndyHandle)poolHandle {
+
+    NSString *response;
+    NSDictionary *resp;
+    int COUNT_RETRIES = 3;
+
+    for (int i = 0; i < COUNT_RETRIES; i++) {
+        [[LedgerUtils sharedInstance] submitRequest:requestJson
+                                     withPoolHandle:poolHandle
+                                         resultJson:&response];
+
+        resp = [NSDictionary fromString:response];
+        
+        if (resp[@"result"][@"seqNo"] != [NSNull null]) {
+            break;
+        };
+    }
+    return response;
 }
 
 @end

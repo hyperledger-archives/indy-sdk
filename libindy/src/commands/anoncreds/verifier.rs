@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1};
@@ -18,7 +18,9 @@ pub enum VerifierCommand {
         HashMap<String, CredentialDefinition>, // credential defs
         HashMap<String, RevocationRegistryDefinition>, // rev reg defs
         HashMap<String, HashMap<u64, RevocationRegistry>>, // rev reg entries
-        Box<Fn(IndyResult<bool>) + Send>)
+        Box<Fn(IndyResult<bool>) + Send>),
+    GenerateNonce(
+        Box<Fn(IndyResult<String>) + Send>)
 }
 
 pub struct VerifierCommandExecutor {
@@ -42,6 +44,10 @@ impl VerifierCommandExecutor {
                                      &rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs),
                                      &rev_regs_map_to_rev_regs_local_map(rev_regs)));
             }
+            VerifierCommand::GenerateNonce(cb) => {
+                info!(target: "verifier_command_executor", "GenerateNonce command received");
+                cb(self.generate_nonce());
+            }
         };
     }
 
@@ -56,66 +62,6 @@ impl VerifierCommandExecutor {
                rev_reg_defs: {:?}, rev_regs: {:?}",
                proof_req, proof, schemas, cred_defs, rev_reg_defs, rev_regs);
 
-        let requested_attrs: HashSet<String> =
-            proof_req.requested_attributes
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_revealed_attrs: HashSet<String> =
-            proof.requested_proof.revealed_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_unrevealed_attrs: HashSet<String> =
-            proof.requested_proof.unrevealed_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_self_attested_attrs: HashSet<String> =
-            proof.requested_proof.self_attested_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_attrs = received_revealed_attrs
-            .union(&received_unrevealed_attrs)
-            .cloned()
-            .collect::<HashSet<String>>()
-            .union(&received_self_attested_attrs)
-            .cloned()
-            .collect::<HashSet<String>>();
-
-        if requested_attrs != received_attrs {
-            return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs)));
-        }
-
-        let requested_predicates: HashSet<String> =
-            proof_req.requested_predicates
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_predicates: HashSet<String> =
-            proof.requested_proof.predicates
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        if requested_predicates != received_predicates {
-            return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates)));
-        }
-
         let result = self.anoncreds_service.verifier.verify(&proof,
                                                             &proof_req,
                                                             schemas,
@@ -124,6 +70,19 @@ impl VerifierCommandExecutor {
                                                             rev_regs)?;
 
         debug!("verify_proof <<< result: {:?}", result);
+
+        Ok(result)
+    }
+
+    fn generate_nonce(&self) -> IndyResult<String> {
+        debug!("generate_nonce >>> ");
+
+        let nonce = self.anoncreds_service.verifier.generate_nonce()?;
+
+        let result = nonce.to_dec()
+            .to_indy(IndyErrorKind::InvalidState, "Cannot serialize Nonce")?;
+
+        debug!("generate_nonce <<< result: {:?}", result);
 
         Ok(result)
     }

@@ -1,6 +1,5 @@
-extern crate libc;
 
-use api::{ErrorCode, IndyHandle};
+use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle, StorageHandle, INVALID_WALLET_HANDLE};
 use commands::{Command, CommandExecutor};
 use commands::wallet::WalletCommand;
 use domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
@@ -8,7 +7,7 @@ use errors::prelude::*;
 use utils::ctypes;
 
 use serde_json;
-use self::libc::c_char;
+use libc::c_char;
 
 
 /// Register custom wallet storage implementation.
@@ -42,7 +41,7 @@ use self::libc::c_char;
 /// #Returns
 /// Error code
 #[no_mangle]
-pub extern fn indy_register_wallet_storage(command_handle: IndyHandle,
+pub extern fn indy_register_wallet_storage(command_handle: CommandHandle,
                                            type_: *const c_char,
                                            create: Option<WalletCreate>,
                                            open: Option<WalletOpen>,
@@ -68,7 +67,7 @@ pub extern fn indy_register_wallet_storage(command_handle: IndyHandle,
                                            get_search_total_count: Option<WalletGetSearchTotalCount>,
                                            fetch_search_next_record: Option<WalletFetchSearchNextRecord>,
                                            free_search: Option<WalletFreeSearch>,
-                                           cb: Option<extern fn(command_handle_: IndyHandle,
+                                           cb: Option<extern fn(command_handle_: CommandHandle,
                                                                 err: ErrorCode)>) -> ErrorCode {
     trace!("indy_register_wallet_type: >>> command_handle: {:?}, type_: {:?}, cb: {:?}",
            command_handle, type_, cb); // TODO: Log all params
@@ -182,10 +181,10 @@ pub extern fn indy_register_wallet_storage(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_create_wallet(command_handle: IndyHandle,
+pub extern fn indy_create_wallet(command_handle: CommandHandle,
                                  config: *const c_char,
                                  credentials: *const c_char,
-                                 cb: Option<extern fn(command_handle_: IndyHandle,
+                                 cb: Option<extern fn(command_handle_: CommandHandle,
                                                       err: ErrorCode)>) -> ErrorCode {
     trace!("indy_create_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
@@ -263,12 +262,12 @@ pub extern fn indy_create_wallet(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_open_wallet(command_handle: IndyHandle,
+pub extern fn indy_open_wallet(command_handle: CommandHandle,
                                config: *const c_char,
                                credentials: *const c_char,
-                               cb: Option<extern fn(command_handle_: IndyHandle,
+                               cb: Option<extern fn(command_handle_: CommandHandle,
                                                     err: ErrorCode,
-                                                    handle: IndyHandle)>) -> ErrorCode {
+                                                    wallet_handle: WalletHandle)>) -> ErrorCode {
     trace!("indy_open_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
 
@@ -284,7 +283,7 @@ pub extern fn indy_open_wallet(command_handle: IndyHandle,
             config,
             credentials,
             Box::new(move |result| {
-                let (err, handle) = prepare_result_1!(result, 0);
+                let (err, handle) = prepare_result_1!(result, INVALID_WALLET_HANDLE);
                 trace!("indy_open_wallet: cb command_handle: {:?} err: {:?}, handle: {:?}",
                        command_handle, err, handle);
                 cb(command_handle, err, handle)
@@ -319,10 +318,10 @@ pub extern fn indy_open_wallet(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_export_wallet(command_handle: IndyHandle,
-                                 wallet_handle: IndyHandle,
+pub extern fn indy_export_wallet(command_handle: CommandHandle,
+                                 wallet_handle: WalletHandle,
                                  export_config: *const c_char,
-                                 cb: Option<extern fn(command_handle_: IndyHandle,
+                                 cb: Option<extern fn(command_handle_: CommandHandle,
                                                       err: ErrorCode)>) -> ErrorCode {
     trace!("indy_export_wallet: >>> wallet_handle: {:?}, export_config: {:?}", wallet_handle, export_config);
 
@@ -395,11 +394,11 @@ pub extern fn indy_export_wallet(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_import_wallet(command_handle: IndyHandle,
+pub extern fn indy_import_wallet(command_handle: CommandHandle,
                                  config: *const c_char,
                                  credentials: *const c_char,
                                  import_config: *const c_char,
-                                 cb: Option<extern fn(command_handle_: IndyHandle,
+                                 cb: Option<extern fn(command_handle_: CommandHandle,
                                                       err: ErrorCode)>) -> ErrorCode {
     trace!("indy_import_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, import_config: {:?}, cb: {:?}",
            command_handle, config, credentials, import_config, cb);
@@ -442,9 +441,9 @@ pub extern fn indy_import_wallet(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_close_wallet(command_handle: IndyHandle,
-                                wallet_handle: IndyHandle,
-                                cb: Option<extern fn(command_handle_: IndyHandle,
+pub extern fn indy_close_wallet(command_handle: CommandHandle,
+                                wallet_handle: WalletHandle,
+                                cb: Option<extern fn(command_handle_: CommandHandle,
                                                      err: ErrorCode)>) -> ErrorCode {
     trace!("indy_close_wallet: >>> command_handle: {:?}, wallet_handle: {:?}, cb: {:?}",
            command_handle, wallet_handle, cb);
@@ -508,10 +507,10 @@ pub extern fn indy_close_wallet(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_delete_wallet(command_handle: IndyHandle,
+pub extern fn indy_delete_wallet(command_handle: CommandHandle,
                                  config: *const c_char,
                                  credentials: *const c_char,
-                                 cb: Option<extern fn(command_handle_: IndyHandle,
+                                 cb: Option<extern fn(command_handle_: CommandHandle,
                                                       err: ErrorCode)>) -> ErrorCode {
     trace!("indy_delete_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
@@ -556,9 +555,9 @@ pub extern fn indy_delete_wallet(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_generate_wallet_key(command_handle: IndyHandle,
+pub extern fn indy_generate_wallet_key(command_handle: CommandHandle,
                                        config: *const c_char,
-                                       cb: Option<extern fn(command_handle_: IndyHandle,
+                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                             err: ErrorCode,
                                                             key: *const c_char)>) -> ErrorCode {
     trace!("indy_generate_wallet_key: >>> command_handle: {:?}, config: {:?}, cb: {:?}",
@@ -613,7 +612,7 @@ pub type WalletOpen = extern fn(name: *const c_char,
 ///
 /// #Params
 /// storage_handle: opened storage handle (See open handler)
-pub type WalletClose = extern fn(storage_handle: IndyHandle) -> ErrorCode;
+pub type WalletClose = extern fn(storage_handle: StorageHandle) -> ErrorCode;
 
 /// Delete the wallet storage (For example, database deletion)
 ///
@@ -639,7 +638,7 @@ pub type WalletDelete = extern fn(name: *const c_char,
 ///     "tagName2": 123, // numeric value
 ///   }
 ///   Note that null means no tags
-pub type WalletAddRecord = extern fn(storage_handle: IndyHandle,
+pub type WalletAddRecord = extern fn(storage_handle: StorageHandle,
                                      type_: *const c_char,
                                      id: *const c_char,
                                      value: *const u8,
@@ -654,7 +653,7 @@ pub type WalletAddRecord = extern fn(storage_handle: IndyHandle,
 /// id: the id of record
 /// value: the value of record (pointer to buffer)
 /// value_len: the value of record (buffer size)
-pub type WalletUpdateRecordValue = extern fn(storage_handle: IndyHandle,
+pub type WalletUpdateRecordValue = extern fn(storage_handle: StorageHandle,
                                              type_: *const c_char,
                                              id: *const c_char,
                                              value: *const u8,
@@ -672,7 +671,7 @@ pub type WalletUpdateRecordValue = extern fn(storage_handle: IndyHandle,
 ///     "tagName2": 123, // numeric value
 ///   }
 ///   Note that null means no tags
-pub type WalletUpdateRecordTags = extern fn(storage_handle: IndyHandle,
+pub type WalletUpdateRecordTags = extern fn(storage_handle: StorageHandle,
                                             type_: *const c_char,
                                             id: *const c_char,
                                             tags_json: *const c_char) -> ErrorCode;
@@ -692,7 +691,7 @@ pub type WalletUpdateRecordTags = extern fn(storage_handle: IndyHandle,
 ///   Note that null means no tags
 ///   Note if some from provided tags already assigned to the record than
 ///     corresponding tags values will be replaced
-pub type WalletAddRecordTags = extern fn(storage_handle: IndyHandle,
+pub type WalletAddRecordTags = extern fn(storage_handle: StorageHandle,
                                          type_: *const c_char,
                                          id: *const c_char,
                                          tags_json: *const c_char) -> ErrorCode;
@@ -706,7 +705,7 @@ pub type WalletAddRecordTags = extern fn(storage_handle: IndyHandle,
 /// tag_names_json: the list of tag names to remove from the record as json array:
 ///   ["tagName1", "tagName2", ...]
 ///   Note that null means no tag names
-pub type WalletDeleteRecordTags = extern fn(storage_handle: IndyHandle,
+pub type WalletDeleteRecordTags = extern fn(storage_handle: StorageHandle,
                                             type_: *const c_char,
                                             id: *const c_char,
                                             tag_names_json: *const c_char) -> ErrorCode;
@@ -717,7 +716,7 @@ pub type WalletDeleteRecordTags = extern fn(storage_handle: IndyHandle,
 /// storage_handle: opened storage handle (See open handler)
 /// type_: record type
 /// id: the id of record
-pub type WalletDeleteRecord = extern fn(storage_handle: IndyHandle,
+pub type WalletDeleteRecord = extern fn(storage_handle: StorageHandle,
                                         type_: *const c_char,
                                         id: *const c_char) -> ErrorCode;
 
@@ -734,7 +733,7 @@ pub type WalletDeleteRecord = extern fn(storage_handle: IndyHandle,
 ///    retrieveTags: (optional, true by default) Retrieve record tags
 ///  }
 /// record_handle_p: pointer to store retrieved record handle
-pub type WalletGetRecord = extern fn(storage_handle: IndyHandle,
+pub type WalletGetRecord = extern fn(storage_handle: StorageHandle,
                                      type_: *const c_char,
                                      id: *const c_char,
                                      options_json: *const c_char,
@@ -749,7 +748,7 @@ pub type WalletGetRecord = extern fn(storage_handle: IndyHandle,
 /// returns: record id
 ///          Note that pointer lifetime the same as retrieved record lifetime
 ///            (until record_free called)
-pub type WalletGetRecordId = extern fn(storage_handle: IndyHandle,
+pub type WalletGetRecordId = extern fn(storage_handle: StorageHandle,
                                        record_handle: IndyHandle,
                                        record_id_p: *mut *const c_char) -> ErrorCode;
 
@@ -762,7 +761,7 @@ pub type WalletGetRecordId = extern fn(storage_handle: IndyHandle,
 /// returns: record type
 ///          Note that pointer lifetime the same as retrieved record lifetime
 ///            (until record_free called)
-pub type WalletGetRecordType = extern fn(storage_handle: IndyHandle,
+pub type WalletGetRecordType = extern fn(storage_handle: StorageHandle,
                                          record_handle: IndyHandle,
                                          record_type_p: *mut *const c_char) -> ErrorCode;
 
@@ -776,7 +775,7 @@ pub type WalletGetRecordType = extern fn(storage_handle: IndyHandle,
 ///          Note that pointer lifetime the same as retrieved record lifetime
 ///            (until record_free called)
 ///          Note that null be returned if no value retrieved
-pub type WalletGetRecordValue = extern fn(storage_handle: IndyHandle,
+pub type WalletGetRecordValue = extern fn(storage_handle: StorageHandle,
                                           record_handle: IndyHandle,
                                           record_value_p: *mut *const u8,
                                           record_value_len_p: *mut usize) -> ErrorCode;
@@ -791,7 +790,7 @@ pub type WalletGetRecordValue = extern fn(storage_handle: IndyHandle,
 ///          Note that pointer lifetime the same as retrieved record lifetime
 ///            (until record_free called)
 ///          Note that null be returned if no tags retrieved
-pub type WalletGetRecordTags = extern fn(storage_handle: IndyHandle,
+pub type WalletGetRecordTags = extern fn(storage_handle: StorageHandle,
                                          record_handle: IndyHandle,
                                          record_tags_p: *mut *const c_char) -> ErrorCode;
 
@@ -800,7 +799,7 @@ pub type WalletGetRecordTags = extern fn(storage_handle: IndyHandle,
 /// #Params
 /// storage_handle: opened storage handle (See open_wallet_storage)
 /// record_handle: retrieved record handle (See wallet_storage_get_wallet_record)
-pub type WalletFreeRecord = extern fn(storage_handle: IndyHandle,
+pub type WalletFreeRecord = extern fn(storage_handle: StorageHandle,
                                       record_handle: IndyHandle) -> ErrorCode;
 
 /// Get storage metadata
@@ -810,7 +809,7 @@ pub type WalletFreeRecord = extern fn(storage_handle: IndyHandle,
 ///
 /// returns: metadata as base64 value
 ///          Note that pointer lifetime is static
-pub type WalletGetStorageMetadata = extern fn(storage_handle: IndyHandle,
+pub type WalletGetStorageMetadata = extern fn(storage_handle: StorageHandle,
                                               metadata_p: *mut *const c_char,
                                               metadata_handle: *mut IndyHandle) -> ErrorCode;
 
@@ -821,7 +820,7 @@ pub type WalletGetStorageMetadata = extern fn(storage_handle: IndyHandle,
 /// metadata_p: base64 value of metadata
 ///
 ///   Note if storage already have metadata record it will be overwritten.
-pub type WalletSetStorageMetadata = extern fn(storage_handle: IndyHandle,
+pub type WalletSetStorageMetadata = extern fn(storage_handle: StorageHandle,
                                               metadata_p: *const c_char) -> ErrorCode;
 
 /// Free retrieved storage metadata record (make retrieved storage metadata handle invalid)
@@ -829,7 +828,7 @@ pub type WalletSetStorageMetadata = extern fn(storage_handle: IndyHandle,
 /// #Params
 /// storage_handle: opened storage handle (See open_wallet_storage)
 /// metadata_handle: retrieved record handle (See wallet_storage_get_storage_metadata)
-pub type WalletFreeStorageMetadata = extern fn(storage_handle: IndyHandle,
+pub type WalletFreeStorageMetadata = extern fn(storage_handle: StorageHandle,
                                                metadata_handle: IndyHandle) -> ErrorCode;
 
 /// Search for wallet storage records
@@ -854,19 +853,19 @@ pub type WalletFreeStorageMetadata = extern fn(storage_handle: IndyHandle,
 ///    retrieveTags: (optional, true by default) Retrieve record tags,
 ///  }
 /// search_handle_p: pointer to store wallet search handle
-pub type WalletSearchRecords = extern fn(storage_handle: IndyHandle,
+pub type WalletSearchRecords = extern fn(storage_handle: StorageHandle,
                                          type_: *const c_char,
                                          query_json: *const c_char,
                                          options_json: *const c_char,
-                                         search_handle_p: *mut IndyHandle) -> ErrorCode;
+                                         search_handle_p: *mut SearchHandle) -> ErrorCode;
 
 /// Search for all wallet storage records
 ///
 /// #Params
 /// storage_handle: opened storage handle (See open handler)
 /// search_handle_p: pointer to store wallet search handle
-pub type WalletSearchAllRecords = extern fn(storage_handle: IndyHandle,
-                                            search_handle_p: *mut IndyHandle) -> ErrorCode;
+pub type WalletSearchAllRecords = extern fn(storage_handle: StorageHandle,
+                                            search_handle_p: *mut SearchHandle) -> ErrorCode;
 
 /// Get total count of records that corresponds to wallet storage search query
 ///
@@ -876,8 +875,8 @@ pub type WalletSearchAllRecords = extern fn(storage_handle: IndyHandle,
 ///
 /// returns: total count of records that corresponds to wallet storage search query
 ///          Note -1 will be returned if retrieveTotalCount set to false for search_records
-pub type WalletGetSearchTotalCount = extern fn(storage_handle: IndyHandle,
-                                               search_handle: IndyHandle,
+pub type WalletGetSearchTotalCount = extern fn(storage_handle: StorageHandle,
+                                               search_handle: SearchHandle,
                                                total_count_p: *mut usize) -> ErrorCode;
 
 /// Get the next wallet storage record handle retrieved by this wallet search.
@@ -888,8 +887,8 @@ pub type WalletGetSearchTotalCount = extern fn(storage_handle: IndyHandle,
 ///
 /// returns: record handle (the same as for get_record handler)
 ///          Note if no more records WalletNoRecords error will be returned
-pub type WalletFetchSearchNextRecord = extern fn(storage_handle: IndyHandle,
-                                                 search_handle: IndyHandle,
+pub type WalletFetchSearchNextRecord = extern fn(storage_handle: StorageHandle,
+                                                 Search_handle: SearchHandle,
                                                  record_handle_p: *mut IndyHandle) -> ErrorCode;
 
 /// Free wallet search (make search handle invalid)
@@ -897,5 +896,5 @@ pub type WalletFetchSearchNextRecord = extern fn(storage_handle: IndyHandle,
 /// #Params
 /// storage_handle: opened storage handle (See open handler)
 /// search_handle: wallet search handle (See search_records handler)
-pub type WalletFreeSearch = extern fn(storage_handle: IndyHandle,
-                                      search_handle: IndyHandle) -> ErrorCode;
+pub type WalletFreeSearch = extern fn(storage_handle: StorageHandle,
+                                      Search_handle: SearchHandle) -> ErrorCode;

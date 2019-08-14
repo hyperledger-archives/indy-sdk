@@ -1,10 +1,7 @@
 import json
 import pytest
 
-from indy import IndyError
-from indy import crypto
-
-from indy.error import ErrorCode
+from indy import crypto, error
 
 
 @pytest.mark.asyncio
@@ -35,9 +32,8 @@ async def test_pack_message_anoncrypt_works(wallet_handle, verkey_my2, pack_mess
 @pytest.mark.asyncio
 async def test_pack_message_invalid_sender_verkey(wallet_handle, verkey_my2, pack_message):
     receiver_verkeys = [verkey_my2]
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await crypto.pack_message(wallet_handle, pack_message, receiver_verkeys, "INVALID_SENDER_VERKEY")
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -45,15 +41,13 @@ async def test_pack_message_invalid_receiver_verkey(wallet_handle, verkey_my2, i
     _, sender_verkey = identity_my1
     # This test is expected to fail because the type is not a list
     receiver_verkeys = verkey_my2
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidParam4):
         await crypto.pack_message(wallet_handle, pack_message, receiver_verkeys, sender_verkey)
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_pack_message_invalid_wallet_handle(wallet_handle, verkey_my2, identity_my1, pack_message):
     sender_verkey, _ = identity_my1
     receiver_verkeys = [verkey_my2]
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         await crypto.pack_message(wallet_handle + 1, pack_message, receiver_verkeys, sender_verkey)
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code

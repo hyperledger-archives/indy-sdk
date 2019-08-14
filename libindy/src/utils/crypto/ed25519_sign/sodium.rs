@@ -1,11 +1,8 @@
-extern crate sodiumoxide;
-extern crate libc;
-
 use errors::prelude::*;
 
-use self::libc::c_int;
-use self::sodiumoxide::crypto::sign;
-use self::sodiumoxide::crypto::box_;
+use libc::c_int;
+use sodiumoxide::crypto::sign;
+use sodiumoxide::crypto::box_;
 
 use utils::crypto::ed25519_box;
 use utils::crypto::randombytes::randombytes;

@@ -1,7 +1,7 @@
 use super::DELIMITER;
 use super::super::ledger::request::ProtocolVersion;
 
-use indy_crypto::cl::{
+use ursa::cl::{
     CredentialPrimaryPublicKey,
     CredentialRevocationPublicKey,
     CredentialPrivateKey,
@@ -11,8 +11,8 @@ use indy_crypto::cl::{
 use std::collections::HashMap;
 use named_type::NamedType;
 
-pub const CL_SIGNATURE_TYPE: &'static str = "CL";
-pub const CRED_DEF_MARKER: &'static str = "3";
+pub const CL_SIGNATURE_TYPE: &str = "CL";
+pub const CRED_DEF_MARKER: &str = "3";
 
 #[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
 pub enum SignatureType {
@@ -21,17 +21,15 @@ pub enum SignatureType {
 
 impl SignatureType {
     pub fn to_str(&self) -> &'static str {
-        match self {
-            &SignatureType::CL => CL_SIGNATURE_TYPE
+        match *self {
+            SignatureType::CL => CL_SIGNATURE_TYPE
         }
     }
 }
 
-fn default_false() -> bool { false }
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CredentialDefinitionConfig {
-    #[serde(default = "default_false")]
+    #[serde(default)]
     pub support_revocation: bool
 }
 
@@ -68,6 +66,13 @@ pub enum CredentialDefinition {
     CredentialDefinitionV1(CredentialDefinitionV1)
 }
 
+#[derive(Debug, Serialize, Deserialize, NamedType)]
+pub struct TemporaryCredentialDefinition {
+    pub cred_def: CredentialDefinition,
+    pub cred_def_priv_key: CredentialDefinitionPrivateKey,
+    pub cred_def_correctness_proof: CredentialDefinitionCorrectnessProof
+}
+
 impl CredentialDefinition {
     pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str, tag: &str) -> String {
         if ProtocolVersion::is_node_1_3(){
@@ -75,6 +80,10 @@ impl CredentialDefinition {
         } else {
             format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)
         }
+    }
+
+    pub fn issuer_did(cred_def_id: &str) -> Option<String> {
+        cred_def_id.split(':').collect::<Vec<&str>>().get(0).and_then(|s| Some(s.to_string()))
     }
 }
 

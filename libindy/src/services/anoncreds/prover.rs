@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
-use indy_crypto::cl::{
+use ursa::cl::{
     BlindedCredentialSecrets,
     BlindedCredentialSecretsCorrectnessProof,
     CredentialPublicKey,
@@ -9,16 +9,17 @@ use indy_crypto::cl::{
     MasterSecret,
     SubProofRequest,
 };
-use indy_crypto::cl::issuer::Issuer as CryptoIssuer;
-use indy_crypto::cl::prover::Prover as CryptoProver;
-use indy_crypto::cl::verifier::Verifier as CryptoVerifier;
+use ursa::cl::issuer::Issuer as CryptoIssuer;
+use ursa::cl::prover::Prover as CryptoProver;
+use ursa::cl::verifier::Verifier as CryptoVerifier;
 
 use domain::anoncreds::credential::{AttributeValues, Credential};
+use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
 use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequestMetadata;
 use domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
-use domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, PredicateTypes, ProofRequest, ProofRequestExtraQuery, RequestedAttributeInfo, RequestedPredicateInfo};
+use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestExtraQuery, RequestedAttributeInfo, RequestedPredicateInfo};
 use domain::anoncreds::requested_credential::ProvingCredentialKey;
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
@@ -27,7 +28,7 @@ use domain::anoncreds::schema::SchemaV1;
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
-const ATTRIBUTE_EXISTENCE_MARKER: &'static str = "1";
+const ATTRIBUTE_EXISTENCE_MARKER: &str = "1";
 
 pub struct Prover {}
 
@@ -62,8 +63,8 @@ impl Prover {
                                   cred_def: &CredentialDefinition,
                                   master_secret: &MasterSecret,
                                   credential_offer: &CredentialOffer) -> IndyResult<(BlindedCredentialSecrets,
-                                                                                 CredentialSecretsBlindingFactors,
-                                                                                 BlindedCredentialSecretsCorrectnessProof)> {
+                                                                                     CredentialSecretsBlindingFactors,
+                                                                                     BlindedCredentialSecretsCorrectnessProof)> {
         trace!("new_credential_request >>> cred_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
                cred_def, secret!(&master_secret), credential_offer);
 
@@ -144,11 +145,7 @@ impl Prover {
             let cred_def: &CredentialDefinition = cred_defs.get(&credential.cred_def_id)
                 .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
 
-            let rev_state = if cred_def.value.revocation.is_some() {
-                let timestamp = cred_key.timestamp
-                    .clone()
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Timestamp not found"))?;
-
+            let rev_state = if let Some(timestamp) = cred_key.timestamp {
                 let rev_reg_id = credential.rev_reg_id
                     .clone()
                     .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
@@ -179,7 +176,7 @@ impl Prover {
                 schema_id: credential.schema_id.clone(),
                 cred_def_id: credential.cred_def_id.clone(),
                 rev_reg_id: credential.rev_reg_id.clone(),
-                timestamp: cred_key.timestamp.clone(),
+                timestamp: cred_key.timestamp,
             });
 
             self._update_requested_proof(req_attrs_for_cred,
@@ -204,16 +201,6 @@ impl Prover {
         Ok(full_proof)
     }
 
-    pub fn get_non_revoc_interval(&self, global_interval: &Option<NonRevocedInterval>, local_interval: &Option<NonRevocedInterval>) -> Option<NonRevocedInterval> {
-        trace!("_get_non_revoc_interval >>> global_interval: {:?}, local_interval: {:?}", global_interval, local_interval);
-
-        let interval = local_interval.clone().or(global_interval.clone().or(None));
-
-        trace!("_get_non_revoc_interval <<< interval: {:?}", interval);
-
-        interval
-    }
-
     pub fn _prepare_credentials_for_proving(requested_credentials: &RequestedCredentials,
                                             proof_req: &ProofRequest) -> IndyResult<HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)>> {
         trace!("_prepare_credentials_for_proving >>> requested_credentials: {:?}, proof_req: {:?}", requested_credentials, proof_req);
@@ -228,10 +215,10 @@ impl Prover {
             let req_attr_info = RequestedAttributeInfo {
                 attr_referent: attr_referent.clone(),
                 attr_info: attr_info.clone(),
-                revealed: requested_attr.revealed.clone(),
+                revealed: requested_attr.revealed,
             };
 
-            match credentials_for_proving.entry(ProvingCredentialKey { cred_id: requested_attr.cred_id.clone(), timestamp: requested_attr.timestamp.clone() }) {
+            match credentials_for_proving.entry(ProvingCredentialKey { cred_id: requested_attr.cred_id.clone(), timestamp: requested_attr.timestamp }) {
                 Entry::Occupied(cred_for_proving) => {
                     let &mut (ref mut attributes_for_credential, _) = cred_for_proving.into_mut();
                     attributes_for_credential.push(req_attr_info);
@@ -281,8 +268,8 @@ impl Prover {
         res
     }
 
-    pub fn build_credential_tags(&self, credential: &Credential) -> HashMap<String, String> {
-        trace!("build_credential_tags >>> credential: {:?}", credential);
+    pub fn build_credential_tags(&self, credential: &Credential, catpol: Option<&CredentialAttrTagPolicy>) -> HashMap<String, String> {
+        trace!("build_credential_tags >>> credential: {:?}, catpol: {:?}", credential, catpol);
 
         let mut res: HashMap<String, String> = HashMap::new();
         res.insert("schema_id".to_string(), credential.schema_id());
@@ -291,13 +278,16 @@ impl Prover {
         res.insert("schema_version".to_string(), credential.schema_version());
         res.insert("issuer_did".to_string(), credential.issuer_did());
         res.insert("cred_def_id".to_string(), credential.cred_def_id());
-        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.clone().unwrap_or("None".to_string()));
+        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.clone().unwrap_or_else(|| "None".to_string()));
 
         credential.values
             .iter()
             .for_each(|(attr, values)| {
-                res.insert(format!("attr::{}::marker", attr_common_view(&attr)), ATTRIBUTE_EXISTENCE_MARKER.to_string());
-                res.insert(format!("attr::{}::value", attr_common_view(&attr)), values.raw.clone());
+                if catpol.map(|cp| cp.is_taggable(attr.as_str())).unwrap_or(true) {
+                    // abstain for attrs policy marks untaggable
+                    res.insert(format!("attr::{}::marker", attr_common_view(&attr)), ATTRIBUTE_EXISTENCE_MARKER.to_string());
+                    res.insert(format!("attr::{}::value", attr_common_view(&attr)), values.raw.clone());
+                }
             });
 
         trace!("build_credential_tags <<< res: {:?}", res);
@@ -309,7 +299,7 @@ impl Prover {
                        name: &str,
                        referent: &str,
                        restrictions: &Option<serde_json::Value>,
-                       extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<String> {
+                       extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<String> {
         trace!("build_query >>> name: {:?}, referent: {:?}, restrictions: {:?}, extra_query: {:?}", name, referent, restrictions, extra_query);
 
         let mut sub_queries: Vec<serde_json::Value> = vec![];
@@ -333,9 +323,11 @@ impl Prover {
                     res.push(serde_json::Value::Object(sub_query));
                 }
 
-                sub_queries.push(serde_json::Value::Object(serde_map!(
+                if !res.is_empty() {
+                    sub_queries.push(serde_json::Value::Object(serde_map!(
                     "$or".to_string() => serde_json::Value::Array(res)
-                )));
+                    )));
+                }
             }
             Some(&serde_json::Value::Object(ref object)) => {
                 sub_queries.push(serde_json::Value::Object(object.clone()));
@@ -371,6 +363,21 @@ impl Prover {
                 let attribute_value = attribute_value.parse::<i32>()
                     .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
                 Ok(attribute_value >= predicate.p_value)
+            }
+            PredicateTypes::GT => {
+                let attribute_value = attribute_value.parse::<i32>()
+                    .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
+                Ok(attribute_value > predicate.p_value)
+            }
+            PredicateTypes::LE => {
+                let attribute_value = attribute_value.parse::<i32>()
+                    .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
+                Ok(attribute_value <= predicate.p_value)
+            }
+            PredicateTypes::LT => {
+                let attribute_value = attribute_value.parse::<i32>()
+                    .to_indy(IndyErrorKind::InvalidStructure, format!("Credential attribute value \"{:?}\" is invalid", attribute_value))?;
+                Ok(attribute_value < predicate.p_value)
             }
         };
 
@@ -415,8 +422,8 @@ impl Prover {
         Ok(())
     }
 
-    fn _build_sub_proof_request(req_attrs_for_credential: &Vec<RequestedAttributeInfo>,
-                                req_predicates_for_credential: &Vec<RequestedPredicateInfo>) -> IndyResult<SubProofRequest> {
+    fn _build_sub_proof_request(req_attrs_for_credential: &[RequestedAttributeInfo],
+                                req_predicates_for_credential: &[RequestedPredicateInfo]) -> IndyResult<SubProofRequest> {
         trace!("_build_sub_proof_request <<< req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}",
                req_attrs_for_credential, req_predicates_for_credential);
 
@@ -429,7 +436,9 @@ impl Prover {
         }
 
         for predicate in req_predicates_for_credential {
-            sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.predicate_info.name), "GE", predicate.predicate_info.p_value)?;
+            let p_type = format!("{}", predicate.predicate_info.p_type);
+
+            sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.predicate_info.name), &p_type, predicate.predicate_info.p_value)?;
         }
 
         let sub_proof_request = sub_proof_request_builder.finalize()?;
@@ -445,14 +454,14 @@ impl Prover {
 mod tests {
     use super::*;
 
-    const SCHEMA_ID: &'static str = "did:2:gvt:1.0";
-    const SCHEMA_ISSUER_DID: &'static str = "did";
-    const SCHEMA_NAME: &'static str = "gvt";
-    const SCHEMA_VERSION: &'static str = "1.0";
-    const ISSUER_DID: &'static str = "did";
-    const CRED_DEF_ID: &'static str = "did:3:CL:did:2:gvt:1.0";
-    const REV_REG_ID: &'static str = "did:4:did:3:CL:did:2:gvt:1.0:CL_ACCUM:TAG_1";
-    const NO_REV_REG_ID: &'static str = "None";
+    const SCHEMA_ID: &str = "did:2:gvt:1.0";
+    const SCHEMA_ISSUER_DID: &str = "did";
+    const SCHEMA_NAME: &str = "gvt";
+    const SCHEMA_VERSION: &str = "1.0";
+    const ISSUER_DID: &str = "did";
+    const CRED_DEF_ID: &str = "did:3:CL:did:2:gvt:1.0";
+    const REV_REG_ID: &str = "did:4:did:3:CL:did:2:gvt:1.0:CL_ACCUM:TAG_1";
+    const NO_REV_REG_ID: &str = "None";
 
     macro_rules! hashmap {
         ($( $key: expr => $val: expr ),*) => {
@@ -492,7 +501,7 @@ mod tests {
         #[test]
         fn build_credential_tags_works() {
             let ps = Prover::new();
-            let tags = ps.build_credential_tags(&_credential());
+            let tags = ps.build_credential_tags(&_credential(), None);
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -512,11 +521,32 @@ mod tests {
         }
 
         #[test]
+        fn build_credential_tags_works_for_catpol() {
+            let ps = Prover::new();
+            let catpol = CredentialAttrTagPolicy::from(vec!(String::from("name")));
+            let tags = ps.build_credential_tags(&_credential(), Some(catpol).as_ref());
+
+            let expected_tags: HashMap<String, String> = hashmap!(
+                    "schema_id".to_string() => SCHEMA_ID.to_string(),
+                    "schema_issuer_did".to_string() => SCHEMA_ISSUER_DID.to_string(),
+                    "schema_name".to_string() => SCHEMA_NAME.to_string(),
+                    "schema_version".to_string() => SCHEMA_VERSION.to_string(),
+                    "issuer_did".to_string() => ISSUER_DID.to_string(),
+                    "cred_def_id".to_string() => CRED_DEF_ID.to_string(),
+                    "rev_reg_id".to_string() => NO_REV_REG_ID.to_string(),
+                    "attr::name::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),
+                    "attr::name::value".to_string() => "Alex".to_string()
+                 );
+
+            assert_eq!(expected_tags, tags)
+        }
+
+        #[test]
         fn build_credential_tags_works_for_rev_reg_id() {
             let ps = Prover::new();
             let mut credential = _credential();
             credential.rev_reg_id = Some(REV_REG_ID.to_string());
-            let tags = ps.build_credential_tags(&credential);
+            let tags = ps.build_credential_tags(&credential, None);
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -539,8 +569,8 @@ mod tests {
     mod build_query {
         use super::*;
 
-        const ATTR_NAME: &'static str = "name";
-        const ATTR_REFERENT: &'static str = "attr_1";
+        const ATTR_NAME: &str = "name";
+        const ATTR_REFERENT: &str = "attr_1";
 
         fn _value(json: &str) -> serde_json::Value {
             serde_json::from_str::<serde_json::Value>(json).unwrap()
@@ -549,7 +579,7 @@ mod tests {
         #[test]
         fn build_query_works() {
             let ps = Prover::new();
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &None).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, None).unwrap();
             let expected_query = json!({
                 "$and": vec![
                     json!({
@@ -565,7 +595,7 @@ mod tests {
             let ps = Prover::new();
 
             let restriction = json!({"schema_id": SCHEMA_ID, "cred_def_id": CRED_DEF_ID});
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &None).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), None).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -583,6 +613,20 @@ mod tests {
         }
 
         #[test]
+        fn build_query_works_for_empty_restrictions() {
+            let ps = Prover::new();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(json!([])), None).unwrap();
+            let expected_query = json!({
+                "$and": vec![
+                    json!({
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
+                    })
+                ]
+            });
+            assert_eq!(expected_query, _value(&query));
+        }
+
+        #[test]
         fn build_query_works_for_extra_query() {
             let ps = Prover::new();
 
@@ -593,7 +637,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(&extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -622,7 +666,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(&extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -650,7 +694,7 @@ mod tests {
             let restriction_2 = json!({"cred_def_id": CRED_DEF_ID});
             let restirctions = serde_json::Value::Array(vec![restriction_1, restriction_2]);
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), &None).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), None).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -682,7 +726,7 @@ mod tests {
             let restriction_2 = json!({"schema_id":  serde_json::Value::Null, "cred_def_id": CRED_DEF_ID});
             let restirctions = serde_json::Value::Array(vec![restriction_1, restriction_2]);
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), &None).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), None).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -716,7 +760,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(&extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -751,7 +795,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(&extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": [
@@ -818,9 +862,9 @@ mod tests {
 
         use super::*;
 
-        const CRED_ID: &'static str = "8591bcac-ee7d-4bef-ba7e-984696440b30";
-        const ATTRIBUTE_REFERENT: &'static str = "attribute_referent";
-        const PREDICATE_REFERENT: &'static str = "predicate_referent";
+        const CRED_ID: &str = "8591bcac-ee7d-4bef-ba7e-984696440b30";
+        const ATTRIBUTE_REFERENT: &str = "attribute_referent";
+        const PREDICATE_REFERENT: &str = "predicate_referent";
 
         fn _attr_info() -> AttributeInfo {
             AttributeInfo {
@@ -842,7 +886,7 @@ mod tests {
 
         fn _proof_req() -> ProofRequest {
             ProofRequest {
-                nonce: indy_crypto::cl::new_nonce().unwrap(),
+                nonce: ursa::cl::new_nonce().unwrap(),
                 name: "Job-Application".to_string(),
                 version: "0.1".to_string(),
                 requested_attributes: hashmap!(

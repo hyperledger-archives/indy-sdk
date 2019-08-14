@@ -1,12 +1,10 @@
-extern crate libc;
-
-use api::{ErrorCode, IndyHandle};
+use api::{ErrorCode, CommandHandle, WalletHandle};
 use commands::{Command, CommandExecutor};
 use commands::pairwise::PairwiseCommand;
 use errors::prelude::*;
 use utils::ctypes;
 
-use self::libc::c_char;
+use libc::c_char;
 
 
 /// Check if pairwise is exists.
@@ -24,10 +22,10 @@ use self::libc::c_char;
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_is_pairwise_exists(command_handle: IndyHandle,
-                                       wallet_handle: IndyHandle,
+pub  extern fn indy_is_pairwise_exists(command_handle: CommandHandle,
+                                       wallet_handle: WalletHandle,
                                        their_did: *const c_char,
-                                       cb: Option<extern fn(command_handle_: IndyHandle,
+                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                             err: ErrorCode, exists: bool)>) -> ErrorCode {
     trace!("indy_is_pairwise_exists: >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
@@ -72,12 +70,12 @@ pub  extern fn indy_is_pairwise_exists(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_create_pairwise(command_handle: IndyHandle,
-                                    wallet_handle: IndyHandle,
+pub  extern fn indy_create_pairwise(command_handle: CommandHandle,
+                                    wallet_handle: WalletHandle,
                                     their_did: *const c_char,
                                     my_did: *const c_char,
                                     metadata: *const c_char,
-                                    cb: Option<extern fn(command_handle_: IndyHandle,
+                                    cb: Option<extern fn(command_handle_: CommandHandle,
                                                          err: ErrorCode)>) -> ErrorCode {
     trace!("indy_create_pairwise: >>> wallet_handle: {:?}, their_did: {:?}, my_did: {:?}, metadata: {:?}", wallet_handle, their_did, my_did, metadata);
 
@@ -122,9 +120,9 @@ pub  extern fn indy_create_pairwise(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_list_pairwise(command_handle: IndyHandle,
-                                  wallet_handle: IndyHandle,
-                                  cb: Option<extern fn(command_handle_: IndyHandle,
+pub  extern fn indy_list_pairwise(command_handle: CommandHandle,
+                                  wallet_handle: WalletHandle,
+                                  cb: Option<extern fn(command_handle_: CommandHandle,
                                                        err: ErrorCode,
                                                        list_pairwise: *const c_char)>) -> ErrorCode {
     trace!("indy_list_pairwise: >>> wallet_handle: {:?}", wallet_handle);
@@ -166,10 +164,10 @@ pub  extern fn indy_list_pairwise(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_get_pairwise(command_handle: IndyHandle,
-                                 wallet_handle: IndyHandle,
+pub  extern fn indy_get_pairwise(command_handle: CommandHandle,
+                                 wallet_handle: WalletHandle,
                                  their_did: *const c_char,
-                                 cb: Option<extern fn(command_handle_: IndyHandle,
+                                 cb: Option<extern fn(command_handle_: CommandHandle,
                                                       err: ErrorCode,
                                                       pairwise_info_json: *const c_char)>) -> ErrorCode {
     trace!("indy_get_pairwise: >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
@@ -214,11 +212,11 @@ pub  extern fn indy_get_pairwise(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_set_pairwise_metadata(command_handle: IndyHandle,
-                                          wallet_handle: IndyHandle,
+pub  extern fn indy_set_pairwise_metadata(command_handle: CommandHandle,
+                                          wallet_handle: WalletHandle,
                                           their_did: *const c_char,
                                           metadata: *const c_char,
-                                          cb: Option<extern fn(command_handle_: IndyHandle,
+                                          cb: Option<extern fn(command_handle_: CommandHandle,
                                                                err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_pairwise_metadata: >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
 

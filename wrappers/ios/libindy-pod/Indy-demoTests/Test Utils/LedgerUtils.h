@@ -179,9 +179,70 @@
                                   requestJson:(NSString *)requestJson
                                    resultJson:(NSString **)resultJson;
 
+// MARK: - Auth Rule request
+- (NSError *)buildAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
+                                          txnType:(NSString *)txnType
+                                           action:(NSString *)action
+                                            field:(NSString *)field
+                                         oldValue:(NSString *)oldValue
+                                         newValue:(NSString *)newValue
+                                       constraint:(NSString *)constraint
+                                       outRequest:(NSString **)resultJson;
+
+- (NSError *)buildAuthRulesRequestWithSubmitterDid:(NSString *)submitterDid
+                                              data:(NSString *)data
+                                        outRequest:(NSString **)resultJson;
+
+- (NSError *)buildGetAuthRuleRequestWithSubmitterDid:(NSString *)submitterDid
+                                             txnType:(NSString *)txnType
+                                              action:(NSString *)action
+                                               field:(NSString *)field
+                                            oldValue:(NSString *)oldValue
+                                            newValue:(NSString *)newValue
+                                          outRequest:(NSString **)resultJson;
+
+// MARK: - Author agreement
+- (NSError *)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       text:(NSString *)text
+                                                    version:(NSString *)version
+                                                 outRequest:(NSString **)resultJson;
+
+- (NSError *)buildGetTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
+                                                          data:(NSString *)data
+                                                    outRequest:(NSString **)resultJson;
+
+// MARK: - Acceptance mechanism
+- (NSError *)buildAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                          aml:(NSString *)aml
+                                                      version:(NSString *)version
+                                                   amlContext:(NSString *)amlContext
+                                                   outRequest:(NSString **)resultJson;
+
+- (NSError *)buildGetAcceptanceMechanismsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       timestamp:(NSNumber *)timestamp
+                                                         version:(NSString *)version
+                                                      outRequest:(NSString **)resultJson;
+
+// MARK: - Author Metadata
+- (NSError *)appendTxnAuthorAgreementAcceptanceToRequest:(NSString *)requestJson
+                                                    text:(NSString *)text
+                                                 version:(NSString *)version
+                                               taaDigest:(NSString *)taaDigest
+                                             accMechType:(NSString *)accMechType
+                                        timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                              outRequest:(NSString **)resultJson;
+
+// MARK: - Endorser
+- (NSError *)appendEndorserToRequest:(NSString *)requestJson
+                         endorserDid:(NSString *)endorserDid
+                          outRequest:(NSString **)outRequestJson;
+
 // MARK: - Response Metadata
 - (NSError *)getResponseMetadata:(NSString *)response
                 responseMetadata:(NSString **)responseMetadata;
+
+- (NSString *)submitRetry:(NSString *)requestJson
+               poolHandle:(IndyHandle)poolHandle;
 
 
 @end

@@ -11,17 +11,17 @@ macro_rules! init {
         "true" => {
             ::settings::set_defaults();
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"true");
-            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None).unwrap();
+            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         },
         "false" => {
             ::settings::set_defaults();
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
-            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None).unwrap();
+            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         },
         "indy" => {
             ::settings::set_defaults();
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"indy");
-            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None).unwrap();
+            ::utils::libindy::wallet::init_wallet(::settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         },
         "ledger" => {
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
@@ -33,7 +33,14 @@ macro_rules! init {
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::pool::tests::delete_test_pool();
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-            ::utils::devsetup::tests::setup_local_env();
+            ::utils::devsetup::tests::setup_local_env("1.0");
+        },
+        "agency_2_0" => {
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::pool::tests::delete_test_pool();
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+            ::utils::devsetup::tests::setup_local_env("2.0");
         },
         _ => {panic!("Invalid test mode");},
     };
@@ -152,13 +159,13 @@ pub mod tests {
         });
     }
 
-    #[cfg(all(unix, test))]
+    #[cfg(all(unix, test, not(target_os = "android")))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
         libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE)
             .map(libloading::Library::from)
     }
 
-    #[cfg(any(not(unix), not(test)))]
+    #[cfg(any(not(unix), not(test), target_os = "android"))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
         libloading::Library::new(library)
     }
@@ -181,7 +188,7 @@ pub mod tests {
 
         pool::tests::open_sandbox_pool();
 
-        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
 
         ::utils::libindy::anoncreds::libindy_prover_create_master_secret(settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
         set_trustee_did();
@@ -202,7 +209,7 @@ pub mod tests {
         unsafe {
             CONFIG_STRING.get(INSTITUTION_CONFIG, |t| {
                 settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
-                settings::process_config_string(&t)
+                settings::process_config_string(&t, true)
             }).unwrap();
         }
         change_wallet_handle();
@@ -213,7 +220,7 @@ pub mod tests {
         unsafe {
             CONFIG_STRING.get(CONSUMER_CONFIG, |t| {
                 settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
-                settings::process_config_string(&t)
+                settings::process_config_string(&t, true)
             }).unwrap();
         }
         change_wallet_handle();
@@ -224,7 +231,7 @@ pub mod tests {
         unsafe { wallet::WALLET_HANDLE = wallet_handle.parse::<i32>().unwrap() }
     }
 
-    pub fn setup_local_env() {
+    pub fn setup_local_env(protocol_type: &str) {
         use indy::ledger;
         use futures::Future;
 
@@ -246,6 +253,7 @@ pub mod tests {
             "name": "institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type,
         }).to_string();
         let enterprise_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
@@ -265,6 +273,7 @@ pub mod tests {
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type,
         }).to_string();
         let consumer_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
@@ -286,13 +295,13 @@ pub mod tests {
         settings::clear_config();
 
         // make enterprise and consumer trustees on the ledger
-        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         let (trustee_did, _) = ::utils::libindy::signus::create_and_store_my_did(Some(TRUSTEE)).unwrap();
         let req_nym = ledger::build_nym_request(&trustee_did, &did1, Some(&vk1), None, Some("TRUSTEE")).wait().unwrap();
         ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
         let req_nym = ledger::build_nym_request(&trustee_did, &did2, Some(&vk2), None, Some("TRUSTEE")).wait().unwrap();
         ::utils::libindy::ledger::libindy_sign_and_submit_request(&trustee_did, &req_nym).unwrap();
-        wallet::delete_wallet(settings::DEFAULT_WALLET_NAME, None).unwrap();
+        wallet::delete_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
 
         // as trustees, mint tokens into each wallet
         set_consumer();
@@ -303,7 +312,7 @@ pub mod tests {
     }
 
     fn _config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
-        let wallet_handle = wallet::open_wallet(wallet_n, None).unwrap();
+        let wallet_handle = wallet::open_wallet(wallet_n, None, None, None).unwrap();
         let mut config: serde_json::Value = serde_json::from_str(config).unwrap();
         config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.to_string());
         config.to_string()
@@ -319,13 +328,13 @@ pub mod tests {
     pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
         use utils::libindy::wallet::init_wallet;
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        init_wallet(test_name, None).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
+        init_wallet(test_name, None, None, None).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
     }
 
     pub fn cleanup_wallet_env(test_name: &str) -> Result<(), String> {
         use utils::libindy::wallet::delete_wallet;
         println!("Deleting Wallet");
-        delete_wallet(test_name, None).or(Err(format!("Unable to delete wallet: {}", test_name)))
+        delete_wallet(test_name, None, None, None).or(Err(format!("Unable to delete wallet: {}", test_name)))
     }
 
     #[cfg(feature = "agency")]
@@ -379,7 +388,7 @@ pub mod tests {
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
         ::utils::devsetup::tests::set_institution();
         thread::sleep(Duration::from_millis(2000));
-        update_state(alice).unwrap();
+        update_state(alice, None).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(alice));
 
         teardown!("agency");

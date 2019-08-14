@@ -9,7 +9,7 @@ import com.sun.jna.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java9.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
 
 public class ProofApi extends VcxJava.API {
     private ProofApi(){}
@@ -68,6 +68,30 @@ public class ProofApi extends VcxJava.API {
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_proof_send_request(commandHandle, proofHandle, connectionHandle, vcxProofSendRequestCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxProofGetRequestMsgCB = new Callback() {
+        public void callback(int commandHandle, int err, String msg){
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [" + msg + "]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if(!checkCallback(future,err)) return;
+            Integer result = commandHandle;
+            future.complete(msg);
+        }
+    };
+
+    public static CompletableFuture<String> proofGetRequestMsg(
+            int proofHandle
+    ) throws VcxException {
+        ParamGuard.notNull(proofHandle, "proofHandle");
+        logger.debug("proofGetRequestMsg() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_proof_get_request_msg(commandHandle, proofHandle, vcxProofGetRequestMsgCB);
         checkResult(result);
 
         return future;
@@ -134,6 +158,21 @@ public class ProofApi extends VcxJava.API {
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_proof_update_state(commandHandle, proofHandle, vcxProofUpdateStateCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    public static CompletableFuture<Integer> proofUpdateStateWithMessage(
+            int proofHandle,
+            String message
+    ) throws VcxException {
+        ParamGuard.notNull(proofHandle, "proofHandle");
+        logger.debug("proofUpdateStateWithMessage() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_proof_update_state_with_message(commandHandle, proofHandle, message, vcxProofUpdateStateCB);
         checkResult(result);
 
         return future;

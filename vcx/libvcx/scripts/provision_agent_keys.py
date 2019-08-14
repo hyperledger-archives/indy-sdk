@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument("--wallet-type", help="optional type of libindy wallet")
     parser.add_argument("--agent-seed", help="optional seed used to create enterprise->agent DID/VK")
     parser.add_argument("--enterprise-seed", help="optional seed used to create enterprise DID/VK")
-    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args()
 
 def get_agency_info(agency_url):
@@ -51,6 +51,10 @@ def get_agency_info(agency_url):
 def register_agent(args):
     vcx = CDLL("/usr/lib/libvcx.so")
 
+    if args.verbose:
+            c_debug = c_char_p('debug'.encode('utf-8'))
+            vcx.vcx_set_default_logger(c_debug)
+
     agency_info = get_agency_info(args.AGENCY_URL)
     json_str = json.dumps({'agency_url':args.AGENCY_URL,
         'agency_did':agency_info['DID'],
@@ -66,26 +70,24 @@ def register_agent(args):
     rc = vcx.vcx_provision_agent(c_json)
 
     if rc == 0:
-        sys.stderr.write("could not register agent, see log\n")
+        sys.stderr.write("could not register agent.  Try again with '-v' for more details\n")
         print(json.dumps({
             'provisioned': False,
-            'provisioned_status': 'Failed: Could not register agent, see log\n'
+            'provisioned_status': "Failed: Could not register agent.  Try again with '-v' for more details"
         },indent=2))
     else:
         pointer = c_int(rc)
         string = cast(pointer.value, c_char_p)
         new_config = json.loads(string.value.decode('utf-8'))
 
+        if 'payment_method' not in new_config:
+            new_config['payment_method'] = 'null'
+
         print(json.dumps(new_config, indent=2, sort_keys=True))
 
 
 async def main():
     args = parse_args()
-
-    if args.verbose:
-        os.environ["RUST_LOG"] = "info"
-    else:
-        os.environ["RUST_LOG"] = "error"
 
     register_agent(args)
 

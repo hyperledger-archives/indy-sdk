@@ -33,19 +33,10 @@ public class IndyException extends Exception {
 	 */
 	protected IndyException(String message, int sdkErrorCode) {
 		super(message);
+		ErrorDetails errorDetails = new ErrorDetails();
 		this.sdkErrorCode = sdkErrorCode;
-	}
-	/**
-	 * Initializes a new IndyException with the specified message.
-	 *
-	 * @param message The message for the exception.
-	 * @param sdkErrorCode The SDK error code to construct the exception from.
-	 * @param sdkBacktrace The SDK backtrace to construct the exception from.
-	 */
-	protected IndyException(String message, int sdkErrorCode, String sdkBacktrace) {
-		super(message);
-		this.sdkErrorCode = sdkErrorCode;
-		this.sdkBacktrace = sdkBacktrace;
+		this.sdkMessage = errorDetails.message;
+		this.sdkBacktrace = errorDetails.backtrace;
 	}
 
 	/**
@@ -58,10 +49,10 @@ public class IndyException extends Exception {
 	}
 
 	/**
-	 * Sets the SDK error backtrace for the exception.
+	 * Sets the SDK error message for the exception.
 	 */
-	private void setSdkBacktrace(String sdkBacktrace) {
-		this.sdkBacktrace = sdkBacktrace;
+	private String setSdkMessage() {
+		return sdkMessage;
 	}
 
 	/**
@@ -82,9 +73,13 @@ public class IndyException extends Exception {
 
 			LibIndy.api.indy_get_current_error(errorDetailsJson);
 
-			JSONObject errorDetails = new JSONObject(errorDetailsJson.getValue().getString(0));
-			this.message = errorDetails.optString("message");
-			this.backtrace = errorDetails.optString("backtrace");
+			try {
+				JSONObject errorDetails = new JSONObject(errorDetailsJson.getValue().getString(0));
+				this.message = errorDetails.optString("message");
+				this.backtrace = errorDetails.optString("backtrace");
+			} catch (Exception ignored){
+				// Nothing to do
+			}
 		}
 	}
 
@@ -98,7 +93,6 @@ public class IndyException extends Exception {
 	public static IndyException fromSdkError(int sdkErrorCode) {
 
 		ErrorCode errorCode = ErrorCode.valueOf(sdkErrorCode);
-		ErrorDetails errorDetails = new ErrorDetails();
 
 		switch (errorCode) {
 			case CommonInvalidParam1:
@@ -115,94 +109,96 @@ public class IndyException extends Exception {
 			case CommonInvalidParam12:
 			case CommonInvalidParam13:
 			case CommonInvalidParam14:
-				return new InvalidParameterException(sdkErrorCode, errorDetails.message, errorDetails.backtrace);
+				return new InvalidParameterException(sdkErrorCode);
 			case CommonInvalidState:
-				return new InvalidStateException(errorDetails.message, errorDetails.backtrace);
+				return new InvalidStateException();
 			case CommonInvalidStructure:
-				return new InvalidStructureException(errorDetails.message, errorDetails.backtrace);
+				return new InvalidStructureException();
 			case CommonIOError:
-				return new IOException(errorDetails.message, errorDetails.backtrace);
+				return new IOException();
 			case WalletInvalidHandle:
-				return new InvalidWalletException(errorDetails.message, errorDetails.backtrace);
+				return new InvalidWalletException();
 			case WalletUnknownTypeError:
-				return new UnknownWalletTypeException(errorDetails.message, errorDetails.backtrace);
+				return new UnknownWalletTypeException();
 			case WalletTypeAlreadyRegisteredError:
-				return new DuplicateWalletTypeException(errorDetails.message, errorDetails.backtrace);
+				return new DuplicateWalletTypeException();
 			case WalletAlreadyExistsError:
-				return new WalletExistsException(errorDetails.message, errorDetails.backtrace);
+				return new WalletExistsException();
 			case WalletNotFoundError:
-				return new WalletNotFoundException(errorDetails.message, errorDetails.backtrace);
+				return new WalletNotFoundException();
 			case WalletInputError:
-				return new WalletInputException(errorDetails.message, errorDetails.backtrace);
+				return new WalletInputException();
 			case WalletDecodingError:
-				return new WalletDecodingException(errorDetails.message, errorDetails.backtrace);
+				return new WalletDecodingException();
 			case WalletStorageError:
-				return new WalletStorageException(errorDetails.message, errorDetails.backtrace);
+				return new WalletStorageException();
 			case WalletEncryptionError:
-				return new WalletEncryptionException(errorDetails.message, errorDetails.backtrace);
+				return new WalletEncryptionException();
 			case WalletItemNotFound:
-				return new WalletItemNotFoundException(errorDetails.message, errorDetails.backtrace);
+				return new WalletItemNotFoundException();
 			case WalletItemAlreadyExists:
-				return new WalletItemAlreadyExistsException(errorDetails.message, errorDetails.backtrace);
+				return new WalletItemAlreadyExistsException();
 			case WalletQueryError:
-				return new WalletInvalidQueryException(errorDetails.message, errorDetails.backtrace);
+				return new WalletInvalidQueryException();
 			case WalletIncompatiblePoolError:
-				return new WrongWalletForPoolException(errorDetails.message, errorDetails.backtrace);
+				return new WrongWalletForPoolException();
 			case WalletAlreadyOpenedError:
-				return new WalletAlreadyOpenedException(errorDetails.message, errorDetails.backtrace);
+				return new WalletAlreadyOpenedException();
 			case WalletAccessFailed:
-				return new WalletAccessFailedException(errorDetails.message, errorDetails.backtrace);
+				return new WalletAccessFailedException();
 			case PoolLedgerNotCreatedError:
-				return new PoolConfigNotCreatedException(errorDetails.message, errorDetails.backtrace);
+				return new PoolConfigNotCreatedException();
 			case PoolLedgerInvalidPoolHandle:
-				return new InvalidPoolException(errorDetails.message, errorDetails.backtrace);
+				return new InvalidPoolException();
 			case PoolLedgerTerminated:
-				return new PoolLedgerTerminatedException(errorDetails.message, errorDetails.backtrace);
+				return new PoolLedgerTerminatedException();
 			case LedgerNoConsensusError:
-				return new ConsensusException(errorDetails.message, errorDetails.backtrace);
+				return new ConsensusException();
 			case LedgerInvalidTransaction:
-				return new LedgerInvalidTransactionException(errorDetails.message, errorDetails.backtrace);
+				return new LedgerInvalidTransactionException();
 			case LedgerSecurityError:
-				return new LedgerSecurityException(errorDetails.message, errorDetails.backtrace);
+				return new LedgerSecurityException();
 			case PoolLedgerConfigAlreadyExistsError:
-				return new PoolLedgerConfigExistsException(errorDetails.message, errorDetails.backtrace);
+				return new PoolLedgerConfigExistsException();
 			case PoolLedgerTimeout:
-				return new TimeoutException(errorDetails.message, errorDetails.backtrace);
+				return new TimeoutException();
 			case PoolIncompatibleProtocolVersion:
-				return new PoolIncompatibleProtocolVersionException(errorDetails.message, errorDetails.backtrace);
+				return new PoolIncompatibleProtocolVersionException();
 			case LedgerNotFound:
-				return new LedgerNotFoundException(errorDetails.message, errorDetails.backtrace);
+				return new LedgerNotFoundException();
 			case AnoncredsRevocationRegistryFullError:
-				return new RevocationRegistryFullException(errorDetails.message, errorDetails.backtrace);
+				return new RevocationRegistryFullException();
 			case AnoncredsInvalidUserRevocId:
-				return new AnoncredsInvalidUserRevocId(errorDetails.message, errorDetails.backtrace);
+				return new AnoncredsInvalidUserRevocId();
 			case AnoncredsMasterSecretDuplicateNameError:
-				return new DuplicateMasterSecretNameException(errorDetails.message, errorDetails.backtrace);
+				return new DuplicateMasterSecretNameException();
 			case AnoncredsProofRejected:
-				return new ProofRejectedException(errorDetails.message, errorDetails.backtrace);
+				return new ProofRejectedException();
 			case AnoncredsCredentialRevoked:
-				return new CredentialRevokedException(errorDetails.message, errorDetails.backtrace);
+				return new CredentialRevokedException();
 			case AnoncredsCredDefAlreadyExistsError:
-				return new CredDefAlreadyExistsException(errorDetails.message, errorDetails.backtrace);
+				return new CredDefAlreadyExistsException();
 			case UnknownCryptoTypeError:
-				return new UnknownCryptoException(errorDetails.message, errorDetails.backtrace);
+				return new UnknownCryptoException();
 			case DidAlreadyExistsError:
-				return new DidAlreadyExistsException(errorDetails.message, errorDetails.backtrace);
+				return new DidAlreadyExistsException();
 			case UnknownPaymentMethod:
-				return new UnknownPaymentMethodException(errorDetails.message, errorDetails.backtrace);
+				return new UnknownPaymentMethodException();
 			case IncompatiblePaymentError:
-				return new IncompatiblePaymentException(errorDetails.message, errorDetails.backtrace);
+				return new IncompatiblePaymentException();
 			case InsufficientFundsError:
-				return new InsufficientFundsException(errorDetails.message, errorDetails.backtrace);
+				return new InsufficientFundsException();
 			case ExtraFundsError:
-				return new ExtraFundsException(errorDetails.message, errorDetails.backtrace);
+				return new ExtraFundsException();
 			case PaymentSourceDoesNotExistError:
-				return new PaymentSourceDoesNotExistException(errorDetails.message, errorDetails.backtrace);
+				return new PaymentSourceDoesNotExistException();
 			case PaymentOperationNotSupportedError:
-				return new PaymentOperationNotSupportedException(errorDetails.message, errorDetails.backtrace);
+				return new PaymentOperationNotSupportedException();
+			case TransactionNotAllowedError:
+				return new TransactionNotAllowedException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
-				return new IndyException(errorDetails.message, sdkErrorCode, errorDetails.backtrace);
+				return new IndyException(message, sdkErrorCode);
 		}
 	}
 }

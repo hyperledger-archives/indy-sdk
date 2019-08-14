@@ -1,0 +1,59 @@
+@startuml
+
+() "C Interface" as cinterface
+[libindy] -- cinterface
+
+package "Libindy language bindings" {
+    [Java Wrapper] as java_wrapper
+    cinterface <.. java_wrapper
+    
+    [NodeJS Wrapper] as nodejs_wrapper
+    cinterface <.. nodejs_wrapper
+    
+    [Rust Wrapper] as rust_wrapper
+    cinterface <.. rust_wrapper
+    
+    [Python Wrapper] as python_wrapper
+    cinterface <.. python_wrapper
+    
+    [ObjectiveC Wrapper (iOS)] as objc_wrapper
+    cinterface <.. objc_wrapper
+
+    [.Net Wrapper] as dnet_wrapper
+    cinterface <.. dnet_wrapper
+}
+
+node "Pluggable payments" as payments {
+    [libnullpay]
+}
+
+cinterface <.. payments
+
+node "Pluggable wallet storages" as wallets {
+    [Postgres]
+}
+
+cinterface <.. wallets
+
+[Indy CLI] as cli
+rust_wrapper <.. cli
+
+rust_wrapper <.. [LibVCX]
+() "C Interface LibVCX" as cinterface_libvcx
+[LibVCX] -- cinterface_libvcx
+
+package "LibVCX language bindings" {
+    [ObjectiveC Wrapper (iOS)] as objc_wrapper_libvcx
+    cinterface_libvcx <.. objc_wrapper_libvcx
+
+    [Java Wrapper] as java_wrapper_libvcx
+    cinterface_libvcx <.. java_wrapper_libvcx
+
+    [NodeJS Wrapper] as nodejs_wrapper_libvcx
+    cinterface_libvcx <.. nodejs_wrapper_libvcx
+
+    [Python Wrapper] as python_wrapper_libvcx
+    cinterface_libvcx <.. python_wrapper_libvcx
+}
+
+@enduml

@@ -3,9 +3,11 @@ import json
 import random
 from ctypes import cdll
 from time import sleep
+import platform
 
 import logging
 
+from demo_utils import file_ext
 from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
@@ -36,7 +38,7 @@ provisionConfig = {
 
 async def main():
 
-    payment_plugin = cdll.LoadLibrary("libnullpay.so")
+    payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
     payment_plugin.nullpay_init()
 
     print("#1 Provision an agent and wallet, get back configuration details")
@@ -45,7 +47,7 @@ async def main():
     # Set some additional configuration options specific to faber
     config['institution_name'] = 'Faber'
     config['institution_logo_url'] = 'http://robohash.org/234'
-    config['genesis_path'] = 'docker.txn'
+    config['genesis_path'] = 'genesis.txn'
     
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))

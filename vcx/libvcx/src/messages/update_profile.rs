@@ -1,159 +1,124 @@
-extern crate rust_base58;
-extern crate serde_json;
-extern crate serde;
-extern crate rmp_serde;
-
 use settings;
-use utils::httpclient;
-use utils::error;
 use messages::*;
+use messages::message_type::MessageTypes;
+use utils::httpclient;
 use utils::constants::*;
-use serde::Deserialize;
-use self::rmp_serde::Deserializer;
-use self::rmp_serde::encode;
+use error::prelude::*;
 
+#[derive(Debug)]
+pub struct UpdateProfileDataBuilder {
+    to_did: String,
+    agent_payload: String,
+    configs: Vec<ConfigOption>
+}
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
-struct AttrValue {
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+pub struct ConfigOption {
     name: String,
     value: String,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
-#[serde(rename_all = "camelCase")]
-struct UpdateProfileDataPayload{
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+pub struct UpdateConfigs {
     #[serde(rename = "@type")]
-    msg_type: MsgType,
-    configs: Vec<AttrValue>,
+    msg_type: MessageTypes,
+    configs: Vec<ConfigOption>
 }
 
-
-#[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateProfileData {
-    #[serde(rename = "to")]
-    to_did: String,
-    agent_payload: String,
-    #[serde(skip_serializing, default)]
-    payload: UpdateProfileDataPayload,
-    #[serde(skip_serializing, default)]
-    validate_rc: u32,
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct UpdateProfileResponse {
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct UpdateConfigsResponse {
     #[serde(rename = "@type")]
-    code: MsgType,
+    msg_type: MessageTypes,
 }
 
-impl UpdateProfileData{
-
-    pub fn create() -> UpdateProfileData {
+impl UpdateProfileDataBuilder {
+    pub fn create() -> UpdateProfileDataBuilder {
         trace!("UpdateProfileData::create_message >>>");
 
-        UpdateProfileData {
+        UpdateProfileDataBuilder {
             to_did: String::new(),
-            payload: UpdateProfileDataPayload{
-                msg_type: MsgType { name: "UPDATE_CONFIGS".to_string(), ver: "1.0".to_string(), } ,
-                configs: Vec::new(),
-            },
+            configs: Vec::new(),
             agent_payload: String::new(),
-            validate_rc: error::SUCCESS.code_num,
         }
     }
 
-    pub fn name(&mut self, name: &str) -> &mut Self{
-        let config = AttrValue { name: "name".to_string(), value: name.to_string(), };
-        self.payload.configs.push(config);
-        self
+    pub fn to(&mut self, did: &str) -> VcxResult<&mut Self> {
+        validation::validate_did(did)?;
+        self.to_did = did.to_string();
+        Ok(self)
     }
 
-    pub fn logo_url(&mut self, url: &str)-> &mut Self{
-        match validation::validate_url(url){
-            Ok(x) => {
-                let config = AttrValue { name: "logoUrl".to_string(), value: url.to_string(), };
-                self.payload.configs.push(config);
-                self
-            }
-            Err(x) => {
-                self.validate_rc = x;
-                self
-            }
-        }
+    pub fn name(&mut self, name: &str) -> VcxResult<&mut Self> {
+        let config = ConfigOption { name: "name".to_string(), value: name.to_string() };
+        self.configs.push(config);
+        Ok(self)
     }
 
-    pub fn use_public_did(&mut self, did: &Option<String>) -> &mut Self {
-     if let Some(x) = did {
-            self.payload.configs.push(AttrValue {
-                name: "publicDid".to_string(),
-                value: x.to_string(),
-            });
+    pub fn logo_url(&mut self, url: &str) -> VcxResult<&mut Self> {
+        validation::validate_url(url)?;
+        let config = ConfigOption { name: "logoUrl".to_string(), value: url.to_string() };
+        self.configs.push(config);
+        Ok(self)
+    }
+
+    pub fn use_public_did(&mut self, did: &Option<String>) -> VcxResult<&mut Self> {
+        if let Some(x) = did {
+            let config = ConfigOption { name: "publicDid".to_string(), value: x.to_string() };
+            self.configs.push(config);
         };
-        self
+        Ok(self)
     }
 
-    pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
+    pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("UpdateProfileData::send_secure >>>");
 
-        let data = match self.msgpack() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
-
-        let mut result = Vec::new();
         if settings::test_agency_mode_enabled() {
-            result.push(parse_update_profile_response(UPDATE_PROFILE_RESPONSE.to_vec()).unwrap());
-            return Ok(result.to_owned());
+            return self.parse_response(UPDATE_PROFILE_RESPONSE.to_vec());
         }
 
-        match httpclient::post_u8(&data) {
-            Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => {
-                let response = parse_update_profile_response(response)?;
-                result.push(response);
-            },
+        let data = self.prepare_request()?;
+
+        let response = httpclient::post_u8(&data)?;
+
+        self.parse_response(response)
+    }
+
+    fn prepare_request(&self) -> VcxResult<Vec<u8>> {
+        let message = match settings::get_protocol_type() {
+            settings::ProtocolTypes::V1 =>
+                A2AMessage::Version1(
+                    A2AMessageV1::UpdateConfigs(
+                        UpdateConfigs {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConfigs),
+                            configs: self.configs.clone()
+                        }
+                    )
+                ),
+            settings::ProtocolTypes::V2 =>
+                A2AMessage::Version2(
+                    A2AMessageV2::UpdateConfigs(
+                        UpdateConfigs {
+                            msg_type: MessageTypes::build(A2AMessageKinds::UpdateConfigs),
+                            configs: self.configs.clone(),
+                        }
+                    )
+                )
         };
 
-        Ok(result.to_owned())
-    }
-}
+        let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-//Todo: Every GeneralMessage extension, duplicates code
-impl GeneralMessage for UpdateProfileData{
-    type Msg = UpdateProfileData;
-
-    fn set_agent_did(&mut self, did: String) {}
-    fn set_agent_vk(&mut self, vk: String) {}
-    fn set_to_did(&mut self, to_did: String){
-        self.to_did = to_did;
+        prepare_message_for_agency(&message, &agency_did)
     }
-    fn set_validate_rc(&mut self, rc: u32){
-        self.validate_rc = rc;
-    }
-    fn set_to_vk(&mut self, to_vk: String){ /* nothing to do here for CreateKeymsg */ }
 
-    fn msgpack(&mut self) -> Result<Vec<u8>,u32> {
-        if self.validate_rc != error::SUCCESS.code_num {
-            return Err(self.validate_rc)
+    fn parse_response(&self, response: Vec<u8>) -> VcxResult<()> {
+        let mut response = parse_response_from_agency(&response)?;
+
+        match response.remove(0) {
+            A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(res)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateConfigsResponse(res)) => Ok(()),
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConfigsResponse"))
         }
-        let data = encode::to_vec_named(&self.payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
-        trace!("update profile inner bundle: {:?}", data);
-        let msg = Bundled::create(data).encode()?;
-
-        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-        bundle_for_agency(msg, &to_did)
     }
-}
-
-fn parse_update_profile_response(response: Vec<u8>) -> Result<String, u32> {
-    let data = unbundle_from_agency(response)?;
-
-    let mut de = Deserializer::new(&data[0][..]);
-
-    let response: UpdateProfileResponse = Deserialize::deserialize(&mut de)
-        .or(Err(error::UNKNOWN_ERROR.code_num))?;
-
-    serde_json::to_string(&response).or(Err(error::INVALID_JSON.code_num))
 }
 
 #[cfg(test)]
@@ -169,10 +134,10 @@ mod tests {
         let name = "name";
         let url = "https://random.com";
         let msg = update_data()
-            .to(to_did)
-            .name(&name)
-            .logo_url(&url)
-            .msgpack().unwrap();
+            .to(to_did).unwrap()
+            .name(&name).unwrap()
+            .logo_url(&url).unwrap()
+            .prepare_request().unwrap();
     }
 
     #[test]
@@ -187,19 +152,16 @@ mod tests {
         settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
 
         let msg = update_data()
-            .to(agent_did.as_ref())
-            .name("name")
-            .logo_url("https://random.com")
-            .msgpack().unwrap();
+            .to(agent_did.as_ref()).unwrap()
+            .name("name").unwrap()
+            .logo_url("https://random.com").unwrap()
+            .prepare_request().unwrap();
         assert!(msg.len() > 0);
     }
 
     #[test]
     fn test_parse_update_profile_response() {
         init!("indy");
-
-        let result = parse_update_profile_response(UPDATE_PROFILE_RESPONSE.to_vec()).unwrap();
-
-        assert_eq!(result, UPDATE_PROFILE_RESPONSE_STR);
+        UpdateProfileDataBuilder::create().parse_response(UPDATE_PROFILE_RESPONSE.to_vec()).unwrap();
     }
 }

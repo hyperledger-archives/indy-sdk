@@ -50,9 +50,9 @@ pub enum Metadata {
 
 impl Metadata {
     pub fn get_keys(&self) -> &Vec<u8> {
-        match self {
-            &Metadata::MetadataArgon(ref metadata) => &metadata.keys,
-            &Metadata::MetadataRaw(ref metadata) => &metadata.keys,
+        match *self {
+            Metadata::MetadataArgon(ref metadata) => &metadata.keys,
+            Metadata::MetadataRaw(ref metadata) => &metadata.keys,
         }
     }
 }

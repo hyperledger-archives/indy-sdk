@@ -1,15 +1,10 @@
-extern crate indy_crypto;
-extern crate rmp_serde;
-extern crate serde;
-extern crate serde_json;
-extern crate time;
-
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
 use errors::prelude::*;
 use utils::crypto::verkey_builder::build_full_verkey;
+use api::CommandHandle;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeData {
@@ -271,9 +266,9 @@ pub enum Reply {
 
 impl Reply {
     pub fn req_id(&self) -> u64 {
-        match self {
-            &Reply::ReplyV0(ref reply) => reply.result.req_id,
-            &Reply::ReplyV1(ref reply) => reply.result.txn.metadata.req_id
+        match *self {
+            Reply::ReplyV0(ref reply) => reply.result.req_id,
+            Reply::ReplyV1(ref reply) => reply.result.txn.metadata.req_id
         }
     }
 }
@@ -307,9 +302,9 @@ pub enum Response {
 
 impl Response {
     pub fn req_id(&self) -> u64 {
-        match self {
-            &Response::ResponseV0(ref res) => res.req_id,
-            &Response::ResponseV1(ref res) => res.metadata.req_id
+        match *self {
+            Response::ResponseV0(ref res) => res.req_id,
+            Response::ResponseV1(ref res) => res.metadata.req_id
         }
     }
 }
@@ -431,10 +426,39 @@ pub enum KeyValuesInSP {
 
  All required data already present in parent SP Trie (built from `proof_nodes`).
  `kvs` can be verified directly in parent trie
+
+ Encoding of `key` in `kvs` is defined by verification type
 */
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct KeyValueSimpleData {
-    pub kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
+    pub kvs: Vec<(String /* key */, Option<String /* val */>)>,
+    #[serde(default)]
+    pub verification_type: KeyValueSimpleDataVerificationType
+}
+
+/**
+ Options of common state proof check process
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[serde(tag = "type")]
+pub enum KeyValueSimpleDataVerificationType {
+    /* key should be base64-encoded string */
+    Simple,
+    /* key should be plain string */
+    NumericalSuffixAscendingNoGaps(NumericalSuffixAscendingNoGapsData)
+}
+
+impl Default for KeyValueSimpleDataVerificationType {
+    fn default() -> Self {
+        KeyValueSimpleDataVerificationType::Simple
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct NumericalSuffixAscendingNoGapsData {
+    pub from: Option<u64>,
+    pub next: Option<u64>,
+    pub prefix: String
 }
 
 /**
@@ -512,7 +536,7 @@ pub struct CommandProcess {
     pub nack_cnt: usize,
     pub replies: HashMap<HashableValue, usize>,
     pub accum_replies: Option<HashableValue>,
-    pub parent_cmd_ids: Vec<i32>,
+    pub parent_cmd_ids: Vec<CommandHandle>,
     pub resendable_request: Option<ResendableRequest>,
     pub full_cmd_timeout: Option<time::Tm>,
 }

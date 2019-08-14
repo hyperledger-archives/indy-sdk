@@ -1,9 +1,9 @@
 extern crate sodiumoxide;
-extern crate zeroize;
 
 use domain::wallet::KeyDerivationMethod;
 use errors::prelude::*;
-use self::sodiumoxide::crypto::aead::chacha20poly1305_ietf;
+use self::sodiumoxide::crypto::aead::
+chacha20poly1305_ietf;
 use self::sodiumoxide::utils;
 use std::cmp;
 use std::io;
@@ -146,7 +146,7 @@ impl<W: Write> Write for Writer<W> {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        if self.buffer.len() > 0 {
+        if !self.buffer.is_empty() {
             self.inner.write_all(&encrypt(&self.buffer, &self.key, &self.nonce))?;
             self.nonce.increment();
         }
@@ -204,10 +204,10 @@ impl<R: Read> Read for Reader<R> {
         let mut pos = 0;
 
         // Consume from rest buffer
-        if self.rest_buffer.len() > 0 {
+        if !self.rest_buffer.is_empty() {
             let to_copy = cmp::min(self.rest_buffer.len(), buf.len() - pos);
             buf[pos..pos + to_copy].copy_from_slice(&self.rest_buffer[..to_copy]);
-            pos = pos + to_copy;
+            pos += to_copy;
             self.rest_buffer.drain(..to_copy);
         }
 
@@ -222,7 +222,7 @@ impl<R: Read> Read for Reader<R> {
 
             let to_copy = cmp::min(chunk.len(), buf.len() - pos);
             buf[pos..pos + to_copy].copy_from_slice(&chunk[..to_copy]);
-            pos = pos + to_copy;
+            pos += to_copy;
 
             // Save rest in rest buffer
             if pos == buf.len() && to_copy < chunk.len() {
@@ -299,10 +299,12 @@ mod tests {
     pub fn gen_nonce_and_encrypt_detached_decrypt_detached_works() {
         let data = randombytes(100);
         let key = gen_key();
-        let aad= randombytes(100);
+        // AAD allows the sender to tie extra (protocol) data to the encryption. Example JWE enc and alg
+        // Which the receiver MUST then check before decryption
+        let aad= b"some protocol data input to the encryption";
 
-        let (c, nonce, tag) = gen_nonce_and_encrypt_detached(&data, aad.as_slice(), &key);
-        let u = decrypt_detached(&c, &key, &nonce, &tag, Some(aad.as_slice())).unwrap();
+        let (c, nonce, tag) = gen_nonce_and_encrypt_detached(&data, aad, &key);
+        let u = decrypt_detached(&c, &key, &nonce, &tag, Some(aad)).unwrap();
         assert_eq!(data, u);
 }
 

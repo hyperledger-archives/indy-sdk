@@ -150,6 +150,36 @@ NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
+// MARK: - Prepare Payment Extra With Acceptance Data
+
+- (void)testPreparePaymentExtraWithAcceptanceDataWorks {
+    NSDictionary *extra = @{
+            @"data": @"some extra data"
+    };
+
+    NSString *extraWithAcceptance;
+    ret = [[PaymentUtils sharedInstance] preparePaymentExtraWithAcceptanceData:[NSDictionary toString:extra]
+                                                                          text:@"some agreement text"
+                                                                       version:@"1.0.0"
+                                                                     taaDigest:@"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e"
+                                                                   accMechType:@"acceptance type 1"
+                                                              timeOfAcceptance:@(123379200)
+                                                           extraWithAcceptance:&extraWithAcceptance];
+    XCTAssertEqual(ret.code, Success, @"PaymentUtils::preparePaymentExtraWithAcceptanceData() failed!");
+    NSDictionary *expectedExtra = @{
+            @"data": @"some extra data",
+            @"taaAcceptance": @{
+                    @"mechanism": @"acceptance type 1",
+                    @"taaDigest": @"050e52a57837fff904d3d059c8a123e3a04177042bf467db2b2c27abd8045d5e",
+                    @"time": @(123379200),
+            }
+    };
+
+    NSDictionary *actualExtra = [NSDictionary fromString:extraWithAcceptance];
+
+    XCTAssertTrue([expectedExtra isEqualToDictionary:actualExtra], @"Wrong Extra Json!");
+}
+
 // MARK: - Build Mint Request
 
 - (void)testBuildMintRequestWorks {
@@ -209,6 +239,25 @@ NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
     ret = [[PaymentUtils sharedInstance] parseVerifyPaymentResponse:@"{}"
                                                       paymentMethod:paymentMethod
                                                     receiptInfoJson:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+// MARK: - Sign / Verify with Address
+
+- (void)testSignWithAddressWorks {
+    ret = [[PaymentUtils sharedInstance] signWithAddress:paymentAddress
+                                                 message:[TestUtils message]
+                                            walletHandle: walletHandle
+                                               outSignature:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+- (void)testVerifyWithAddressWorks {
+    BOOL isValid = NO;
+    ret = [[PaymentUtils sharedInstance] verifyWithAddress:paymentAddress
+                                                   message:[TestUtils message]
+                                                 signature: [TestUtils signature]
+                                                outIsValid:&isValid];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 

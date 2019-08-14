@@ -89,9 +89,15 @@ pub fn get_opt_bool_param(key: &str, params: &CommandParams) -> Result<Option<bo
 
 pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<&'a str>, ()> {
     match params.get(name) {
-        None => Err(println_err!("No required \"{}\" parameter present", name)),
-        Some(v) if v.is_empty() => Err(println_err!("No required \"{}\" parameter present", name)),
-        Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>())
+        None => {
+            println_err!("No required \"{}\" parameter present", name);
+            Err(())
+        },
+        Some(v) if v.is_empty() => {
+            println_err!("No required \"{}\" parameter present", name);
+            Err(())
+        },
+        Some(v) => Ok(v.split(',').collect::<Vec<&'a str>>())
     }
 }
 
@@ -101,7 +107,7 @@ pub fn get_opt_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> 
             if v.is_empty() {
                 Ok(Some(Vec::<&'a str>::new()))
             } else {
-                Ok(Some(v.split(",").collect::<Vec<&'a str>>()))
+                Ok(Some(v.split(',').collect::<Vec<&'a str>>()))
             },
         None => Ok(None)
     }
@@ -125,7 +131,7 @@ pub fn get_opt_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Res
     }
 }
 
-fn extract_array_tuples<'a>(param: &'a str) -> Vec<String> {
+fn extract_array_tuples(param: &str) -> Vec<String> {
     let re = Regex::new(r#"\(([^\(\)]+)\),?"#).unwrap();
     re.captures_iter(param).map(|c| c[1].to_string()).collect::<Vec<String>>()
 }
@@ -134,13 +140,17 @@ pub fn get_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -
     match params.get(name) {
         Some(v) if !v.is_empty() => {
             let tuples = extract_array_tuples(v);
-            if tuples.len() == 0 {
-                Err(println_err!("Parameter \"{}\" has invalid format", name))
+            if tuples.is_empty() {
+                println_err!("Parameter \"{}\" has invalid format", name);
+                Err(())
             } else {
                 Ok(tuples)
             }
         }
-        _ => Err(println_err!("No required \"{}\" parameter present", name))
+        _ => {
+            println_err!("No required \"{}\" parameter present", name);
+            Err(())
+        }
     }
 }
 
@@ -159,7 +169,10 @@ pub fn get_opt_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParam
 pub fn ensure_active_did(ctx: &CommandContext) -> Result<String, ()> {
     match ctx.get_string_value("ACTIVE_DID") {
         Some(did) => Ok(did),
-        None => Err(println_err!("There is no active did"))
+        None => {
+            println_err!("There is no active did");
+            Err(())
+        }
     }
 }
 
@@ -175,7 +188,10 @@ pub fn set_active_did(ctx: &CommandContext, did: Option<String>) {
 pub fn ensure_opened_wallet_handle(ctx: &CommandContext) -> Result<i32, ()> {
     match ctx.get_int_value("OPENED_WALLET_HANDLE") {
         Some(wallet_handle) => Ok(wallet_handle),
-        None => Err(println_err!("There is no opened wallet now"))
+        None => {
+            println_err!("There is no opened wallet now");
+            Err(())
+        }
     }
 }
 
@@ -185,7 +201,10 @@ pub fn ensure_opened_wallet(ctx: &CommandContext) -> Result<(i32, String), ()> {
 
     match (handle, name) {
         (Some(handle), Some(name)) => Ok((handle, name)),
-        _ => Err(println_err!("There is no opened wallet now"))
+        _ => {
+            println_err!("There is no opened wallet now");
+            Err(())
+        }
     }
 }
 
@@ -200,6 +219,10 @@ pub fn get_opened_wallet(ctx: &CommandContext) -> Option<(i32, String)> {
     }
 }
 
+pub fn get_opened_wallet_handle(ctx: &CommandContext) -> Option<i32> {
+    ctx.get_int_value("OPENED_WALLET_HANDLE")
+}
+
 pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_int_value("OPENED_WALLET_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
     ctx.set_string_value("OPENED_WALLET_NAME", value.as_ref().map(|value| value.1.to_owned()));
@@ -209,7 +232,10 @@ pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(i32, String)>) {
 pub fn ensure_connected_pool_handle(ctx: &CommandContext) -> Result<i32, ()> {
     match ctx.get_int_value("CONNECTED_POOL_HANDLE") {
         Some(pool_handle) => Ok(pool_handle),
-        None => Err(println_err!("There is no opened pool now"))
+        None => {
+            println_err!("There is no opened pool now");
+            Err(())
+        }
     }
 }
 
@@ -219,7 +245,10 @@ pub fn ensure_connected_pool(ctx: &CommandContext) -> Result<(i32, String), ()> 
 
     match (handle, name) {
         (Some(handle), Some(name)) => Ok((handle, name)),
-        _ => Err(println_err!("There is no opened pool now"))
+        _ => {
+            println_err!("There is no opened pool now");
+            Err(())
+        }
     }
 }
 
@@ -238,6 +267,44 @@ pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
     ctx.set_int_value("CONNECTED_POOL_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
     ctx.set_string_value("CONNECTED_POOL_NAME", value.as_ref().map(|value| value.1.to_owned()));
     ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
+}
+
+
+pub fn set_transaction(ctx: &CommandContext, request: Option<String>) {
+    ctx.set_string_value("LEDGER_TRANSACTION", request.clone());
+}
+
+pub fn get_transaction(ctx: &CommandContext) -> Option<String> {
+    ctx.get_string_value("LEDGER_TRANSACTION")
+}
+
+pub fn ensure_set_transaction(ctx: &CommandContext) -> Result<String, ()> {
+    match ctx.get_string_value("LEDGER_TRANSACTION") {
+        Some(transaction) => Ok(transaction),
+        None => {
+            println_err!("There is no transaction stored into context");
+            Err(())
+        }
+    }
+}
+
+pub fn set_transaction_author_info(ctx: &CommandContext, value: Option<(String, String, u64)>) {
+    ctx.set_string_value("AGREEMENT_TEXT", value.as_ref().map(|value| value.0.to_owned()));
+    ctx.set_string_value("AGREEMENT_VERSION", value.as_ref().map(|value| value.1.to_owned()));
+    ctx.set_uint_value("AGREEMENT_TIME_OF_ACCEPTANCE", value.as_ref().map(|value| value.2));
+}
+
+pub fn get_transaction_author_info(ctx: &CommandContext) -> Option<(String, String, String, u64)> {
+    let text = ctx.get_string_value("AGREEMENT_TEXT");
+    let version = ctx.get_string_value("AGREEMENT_VERSION");
+    let acc_mech_type = ctx.get_taa_acceptance_mechanism();
+    let time_of_acceptance = ctx.get_uint_value("AGREEMENT_TIME_OF_ACCEPTANCE");
+
+    if let (Some(text), Some(version),Some(time_of_acceptance)) = (text, version, time_of_acceptance) {
+        Some((text, version, acc_mech_type, time_of_acceptance))
+    } else {
+        None
+    }
 }
 
 pub fn handle_indy_error(err: IndyError, submitter_did: Option<&str>, pool_name: Option<&str>, wallet_name: Option<&str>) {

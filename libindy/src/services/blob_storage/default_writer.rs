@@ -1,5 +1,3 @@
-extern crate rust_base58;
-
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -12,7 +10,7 @@ use utils::environment;
 
 use super::{WritableBlob, Writer, WriterType};
 
-use self::rust_base58::ToBase58;
+use rust_base58::ToBase58;
 
 #[allow(dead_code)]
 pub struct DefaultWriter {

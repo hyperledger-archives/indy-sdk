@@ -14,13 +14,13 @@ us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to
 If you have just started learning about self-sovereign identity, here are some resources to increase your understanding:
 
 * This extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
-functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](doc/getting-started/getting-started.md)
+functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](docs/getting-started/indy-walkthrough.md)
 
-* Hyperledger Indy Working Group calls happen every Thursday at 8amPT, 9amMT, 11amET, 4pmBST. Add to your calendar and join from any device: https://zoom.us/j/232861185 
-  
+* Hyperledger Indy Working Group calls happen every Thursday at 8amPT, 9amMT, 11amET, 4pmBST. Add to your calendar and join from any device: https://zoom.us/j/232861185
+
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
 
-* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
+* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/display/indy/).
 
 * You may also want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
 that explored the ecosystem via command line. That material is being
@@ -30,7 +30,7 @@ rewritten but still contains some useful ideas.
 
 ### libindy
 
-The major artifact of the SDK is a C-callable library that provides the basic building blocks for 
+The major artifact of the SDK is a C-callable library that provides the basic building blocks for
 the creation of applications on the top of [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy).
 It is available for most popular desktop, mobile and server platforms.
 
@@ -82,22 +82,22 @@ These wrappers are currently in **experimental** state and it is not part of off
 For the main workflow example check [VCX Python demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
 
 ### Dummy Cloud Agent
-[Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent. 
-The main purpose of this implementation is VCX testing, demos and documentation of VCX protocol. 
-There is an parallel work on providing reference implementation of Agent2Agent protocol in indy-agent repo. 
+[Dummy Cloud Agent](/vcx/dummy-cloud-agent/README.md) is simple implementation of VCX compatible Cloud Agent.
+The main purpose of this implementation is VCX testing, demos and documentation of VCX protocol.
+There is an parallel work on providing reference implementation of Agent2Agent protocol in indy-agent repo.
 We plan to migrate to this protocol and implementation soon.
 
 ## How-To Tutorials
 
 Short, simple tutorials that demonstrate how to accomplish common tasks
-are also available. See the [doc/how-tos](doc/how-tos) folder.
+are also available. See the [docs/how-tos](docs/how-tos) folder.
 
-1. [Write a DID and Query Its Verkey](doc/how-tos/write-did-and-query-verkey/README.md)
-2. [Rotate a Key](doc/how-tos/rotate-key/README.md)
-3. [Save a Schema and Cred Def](doc/how-tos/save-schema-and-cred-def/README.md)
-4. [Issue a Credential](doc/how-tos/issue-credential/README.md)
-5. [Negotiate a Proof](doc/how-tos/negotiate-proof/README.md)
-6. [Send a Secure Message](doc/how-tos/send-secure-msg/README.md)
+1. [Write a DID and Query Its Verkey](docs/how-tos/write-did-and-query-verkey/README.md)
+2. [Rotate a Key](docs/how-tos/rotate-key/README.md)
+3. [Save a Schema and Cred Def](docs/how-tos/save-schema-and-cred-def/README.md)
+4. [Issue a Credential](docs/how-tos/issue-credential/README.md)
+5. [Negotiate a Proof](docs/how-tos/negotiate-proof/README.md)
+6. [Send a Secure Message](docs/how-tos/send-secure-msg/README.md)
 
 ## Installing the SDK
 ### Release channels
@@ -107,12 +107,12 @@ The Indy SDK release process defines the following release channels:
 * `rc` - release candidates.
 * `stable` - stable releases.
 
-Please refer to our [release workflow](doc/release-workflow.md) for more details.
+Please refer to our [release workflow](docs/contributors/release-workflow.md) for more details.
 
 ### Ubuntu based distributions (Ubuntu 16.04)
 It is recommended to install the SDK packages with APT:
 
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
     sudo apt-get update
     sudo apt-get install -y libindy
@@ -170,43 +170,38 @@ See [wrapper iOS install documentation](wrappers/ios/README.md "How to install")
 that may be need for your applications.
 
 `lib` contains three types of binaries.
- * `libindy.so` - This is a shared library which is statically linked with all the depenedencies. 
+ * `libindy.so` - This is a shared library which is statically linked with all the depenedencies.
  You dont need to sidelaod other dependencies like zmq, sodium and openssl to android app if you use this.
- 
- * `libindy_shared.so` - This is pure shared library. It is not dynamically linked to its dependencies. 
+
+ * `libindy_shared.so` - This is pure shared library. It is not dynamically linked to its dependencies.
  You need to sideload the binaries with its dependencies. You can download the needed pre-built dependencies from [here](https://github.com/evernym/indy-android-dependencies/tree/v1.0.2)
     * Rename this library to `libindy.so` before loading it into the app. This will help you in having the compatibility with existing wrappers.
-    
+
  * `libindy.a` - This is a static library, which is compiled with NDK.
- 
- [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/doc/android-build.md#usage)  
+
+ [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/android-build.md#usage)  
 
 {release channel} must be replaced with rc or stable to define corresponded release channel.
 See section "Release channels" for more details.
 
  **Note** :
- 
+
  - [WARNING] This library should be considered as experimental as currently unit tests are *not* executed in the CI phase.
- 
- - We are using the [NDK16b](https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip) because it is the last NDK to have support for `gnustl_shared` stl. 
+
+ - We are using the [NDK16b](https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip) because it is the last NDK to have support for `gnustl_shared` stl.
  gnustl_shared is deprecated in latest NDK. gnustal_shared is needed because the dependencies are compiled using gnustal_shared and you will get build errors if more than one type of stl while compiling.
- 
- 
+
+
 ### MacOS
 
-Pre-built libraries are not provided for MacOS. Please look [here](doc/mac-build.md)
-for details on building from source for MacOS.
+Pre-built libraries are not provided for MacOS.
 
- **Note:** After building `libindy`, add the path containing the library the `LD_LIBRARY_PATH` and
-`DYLD_LIBRARY_PATH` environment variables. This is necessary for dynamically linking
-your application with `libindy`. The dynamic linker will first check for the library in
-`LD_LIBRARY_PATH` if the library in your application doesn't include directory names.
-If the library in your application does include any directory name, then dynamic
-linker will search for the library in `DYLD_LIBRARY_PATH` (not `LD_LIBRARY_PATH`)
-so we recommend you set both variables to be safe.
+Clone the repo and run `mac.build.sh` in the `libindy` folder.
+
+Please see [here](docs/build-guides/mac-build.md) for manual build steps.
 
 ### RHEL-based distributions (Amazon Linux 2017.03)
-Pre-built libraries are not provided for RHEL-based distributions. Please look [here](doc/rhel-build.md)
+Pre-built libraries are not provided for RHEL-based distributions. Please look [here](docs/build-guides/rhel-build.md)
 for details on building from source for RHEL-based distributions.
 
 After successfully compiling `libindy`, you will need to add the path containing `libindy.so` to the
@@ -215,22 +210,22 @@ After successfully compiling `libindy`, you will need to add the path containing
 
 ## How to build Indy SDK from source
 
-* [Ubuntu based distributions (Ubuntu 16.04)](doc/ubuntu-build.md)
-* [RHEL based distributions (Amazon Linux 2017.03)](doc/rhel-build.md)
-* [Windows](doc/windows-build.md)
-* [MacOS](doc/mac-build.md)
-* [Android](doc/android-build.md)
+* [Ubuntu based distributions (Ubuntu 16.04)](docs/build-guides/ubuntu-build.md)
+* [RHEL based distributions (Amazon Linux 2017.03)](docs/build-guides/rhel-build.md)
+* [Windows](docs/build-guides/windows-build.md)
+* [MacOS](docs/build-guides/mac-build.md)
+* [Android](docs/build-guides/android-build.md)
 
 **Note:**
 By default `cargo build` produce debug artifacts with a large amount of run-time checks.
 It's good for development, but this build can be in 100+ times slower for some math calculation.
-If you would like to analyse CPU performance of libindy for your use case, you have to use release artifacts (`cargo build --release`). 
+If you would like to analyse CPU performance of libindy for your use case, you have to use release artifacts (`cargo build --release`).
 
 ## How to start local nodes pool with docker
 To test the SDK codebase with a virtual Indy node network, you can start a pool of local nodes using docker:
 
 **Note: If you are getting a PoolLedgerTimeout error it's because the IP addresses in
-cli/docker_pool_transactions_genesis and the pool configuration don't match. 
+cli/docker_pool_transactions_genesis and the pool configuration don't match.
 Use method 3 to configure the IPs of the docker containers to match the pool.**
 
 ### 1) Starting the test pool on localhost
@@ -243,7 +238,7 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
 
 ### 2) Starting the test pool on a specific IP address
  Dockerfile `ci/indy-pool.dockerfile` supports an optional pool_ip param that allows
- changing ip of pool nodes in generated pool configuration. 
+ changing ip of pool nodes in generated pool configuration.
 
  You can start the pool with e.g. with the IP address of your development machine's WIFI interface
  so that mobile apps in the same network can reach the pool.
@@ -253,7 +248,7 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
  docker build --build-arg pool_ip=192.168.179.90 -f ci/indy-pool.dockerfile -t indy_pool .
  docker run -itd -p 192.168.179.90:9701-9708:9701-9708 indy_pool
  ```
- To connect to the pool the IP addresses in /var/lib/indy/sandbox/pool_transactions_genesis (in docker) and 
+ To connect to the pool the IP addresses in /var/lib/indy/sandbox/pool_transactions_genesis (in docker) and
  the pool configuration you use in your mobile app must match.
 
 ### 3) Starting the test pool on a docker network
@@ -315,24 +310,30 @@ details.
 * An explanation of how to install the official command line interface for that provides commands to manage wallets and interactions with the ledger: [Indy CLI](cli/README.md)
 
 ## How to migrate
-The documents that provide necessary information for Libindy migration. This document is written for developers using Libindy 1.3.0 to provide necessary information and
-to simplify their transition to API of Libindy 1.4.0.
-* [v1.3.0 → v1.4.0](doc/migration-guide-1.3.0-1.4.0.md)
-* [v1.4.0 → v1.5.0](doc/migration-guide-1.4.0-1.5.0.md)
-* [v1.5.0 → v1.6.x](doc/migration-guide-1.5.0-1.6.0.md)
+The documents that provide necessary information for Libindy migrations.
+ 
+* [v1.3.0 → v1.4.0](docs/migration-guides/migration-guide-1.3.0-1.4.0.md)
+* [v1.4.0 → v1.5.0](docs/migration-guides/migration-guide-1.4.0-1.5.0.md)
+* [v1.5.0 → v1.6.x](docs/migration-guides/migration-guide-1.5.0-1.6.0.md)
+* [v1.6.0 → v1.7.x](docs/migration-guides/migration-guide-1.6.0-1.7.0.md)
+* [v1.7.0 → v1.8.x](docs/migration-guides/migration-guide-1.7.0-1.8.0.md)
+* [v1.8.0 → v1.9.x](docs/migration-guides/migration-guide-1.8.0-1.9.0.md)
+* [v1.9.0 → v1.10.x](docs/migration-guides/migration-guide-1.9.0-1.10.0.md)
+* [v1.10.0 → v1.11.x](docs/migration-guides/migration-guide-1.10.0-1.11.0.md)
 
 ## How to Contribute
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
+* If you need to add a new call, read this [instruction](docs/how-tos/how-to-add-a-new-API-call.md).
 * You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
   so to get your pull requests accepted, you must certify your commits by signing off on each commit.
-  More information can be found in [Signing Commits](doc/signing-commits.md) article.
+  More information can be found in [Signing Commits](docs/contributors/signing-commits.md) article.
 
 
 #### Notes
-* Libindy implements multithreading approach based on **mpsc channels**. 
+* Libindy implements multithreading approach based on **mpsc channels**.
 If your application needs to use Libindy from multiple processes you should keep in mind the following restrictions:
     * Fork - duplicates only the main thread. So, child threads will not be duplicated.
       If any out-of-process requirements are possible, the caller must fork first **before any calls to Libindy**
-      (otherwise the command from a child thread will hang). Fork is only available on Unix. 
+      (otherwise the command from a child thread will hang). Fork is only available on Unix.
     * Popen - spawns a new OS level process which will create its own child threads. Popen is cross-platform.
