@@ -246,7 +246,6 @@ impl SQLiteStorageType {
     }
 }
 
-
 impl WalletStorage for SQLiteStorage {
     ///
     /// Tries to fetch values and/or tags from the storage.
@@ -285,19 +284,13 @@ impl WalletStorage for SQLiteStorage {
         };
 
 
-        let res: Result<(i64, Vec<u8>, Vec<u8>), rusqlite::Error> = self.conn.query_row(
+        let item: (i64, Vec<u8>, Vec<u8>) = self.conn.query_row(
             "SELECT id, value, key FROM items where type = ?1 AND name = ?2",
             &[&type_.to_vec(), &id.to_vec()],
             |row| {
                 Ok((row.get(0)?, row.get(1)?, row.get(2)?))
             },
-        );
-
-        let item = match res {
-            Ok(entity) => entity,
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
-            Err(err) => return Err(IndyError::from(err))
-        };
+        )?;
 
         let value = if options.retrieve_value
             { Some(EncryptedValue::new(item.1, item.2)) } else { None };
@@ -396,14 +389,8 @@ impl WalletStorage for SQLiteStorage {
     fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> IndyResult<()> {
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
 
-        let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
-            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0));
-
-        let item_id: i64 = match res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
-            Err(err) => return Err(IndyError::from(err)),
-            Ok(id) => id
-        };
+        let item_id: i64 = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
+            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0))?;
 
         if !tags.is_empty() {
             let mut enc_tag_insert_stmt = tx.prepare_cached("INSERT OR REPLACE INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
@@ -424,14 +411,8 @@ impl WalletStorage for SQLiteStorage {
     fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> IndyResult<()> {
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
 
-        let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
-            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0));
-
-        let item_id: i64 = match res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to update not found")),
-            Err(err) => return Err(IndyError::from(err)),
-            Ok(id) => id
-        };
+        let item_id: i64 = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
+            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0))?;
 
         tx.execute("DELETE FROM tags_encrypted WHERE item_id = ?1", &[&item_id])?;
         tx.execute("DELETE FROM tags_plaintext WHERE item_id = ?1", &[&item_id])?;
@@ -453,14 +434,8 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> IndyResult<()> {
-        let res = self.conn.prepare_cached("SELECT id FROM items WHERE type =?1 AND name = ?2")?
-            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0));
-
-        let item_id: i64 = match res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to delete not found")),
-            Err(err) => return Err(IndyError::from(err)),
-            Ok(id) => id
-        };
+        let item_id: i64 = self.conn.prepare_cached("SELECT id FROM items WHERE type =?1 AND name = ?2")?
+            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0))?;
 
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
         {
@@ -519,17 +494,11 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn get_storage_metadata(&self) -> IndyResult<Vec<u8>> {
-        let res: Result<Vec<u8>, rusqlite::Error> = self.conn.query_row(
+        self.conn.query_row(
             "SELECT value FROM metadata",
             rusqlite::NO_PARAMS,
             |row| { row.get(0) },
-        );
-
-        match res {
-            Ok(entity) => Ok(entity),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
-            Err(err) => Err(IndyError::from(err))
-        }
+        ).map_err(IndyError::from)
     }
 
     fn set_storage_metadata(&self, metadata: &[u8]) -> IndyResult<()> {
@@ -776,10 +745,11 @@ impl WalletStorageType for SQLiteStorageType {
 impl From<rusqlite::Error> for IndyError {
     fn from(err: rusqlite::Error) -> IndyError {
         match err {
+            rusqlite::Error::QueryReturnedNoRows => err.to_indy(IndyErrorKind::WalletItemNotFound, "Item not found"),
             rusqlite::Error::SqliteFailure(
-                rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::ConstraintViolation, extended_code: _ }, _) =>
+                rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::ConstraintViolation, .. }, _) =>
                 err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
-            rusqlite::Error::SqliteFailure(rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::SystemIOFailure, extended_code: _ }, _) =>
+            rusqlite::Error::SqliteFailure(rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::SystemIOFailure, .. }, _) =>
                 err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
             _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
         }
