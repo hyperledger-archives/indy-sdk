@@ -134,7 +134,6 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
 
 #[logfn(Trace)]
 pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Vec<u8>> {
-    use sha2::digest::{FixedOutput, Input};
     let type_ = json_msg["operation"]["type"].as_str()?;
     let json_msg = &json_msg["operation"];
     let key_suffix: String = match type_ {
@@ -144,10 +143,9 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 .or_else(|| json_msg["hash"].as_str()) {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_ATTR attr_name {:?}", attr_name);
 
-                let mut hasher = sha2::Sha256::default();
-                hasher.input(attr_name.as_bytes());
                 let marker = if ProtocolVersion::is_node_1_3() { '\x01' } else { '1' };
-                format!(":{}:{}", marker, hex::encode(hasher.fixed_result()))
+                let hash = openssl_hash(attr_name.as_bytes()).ok()?;
+                format!(":{}:{}", marker, hex::encode(hash))
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_ATTR No key suffix");
                 return None;
@@ -258,9 +256,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
     let key_prefix = match type_ {
         constants::GET_NYM => {
             if let Some(dest) = dest {
-                let mut hasher = sha2::Sha256::default();
-                hasher.input(dest.as_bytes());
-                hasher.fixed_result().to_vec()
+                openssl_hash(dest.as_bytes()).ok()?
             } else {
                 debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
                 return None;
@@ -603,7 +599,6 @@ fn _verify_proof_signature(signature: &str,
 }
 
 fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<String>, String> {
-    use sha2::digest::{FixedOutput, Input};
     if let Some(data) = data {
         let mut value = json!({});
 
@@ -631,9 +626,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 value["verkey"] = parsed_data["verkey"].clone();
             }
             constants::GET_ATTR => {
-                let mut hasher = sha2::Sha256::default();
-                hasher.input(data.as_bytes());
-                value["val"] = SJsonValue::String(hex::encode(hasher.fixed_result()));
+                value["val"] = SJsonValue::String(hex::encode(openssl_hash(data.as_bytes()).unwrap()));
             }
             constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
                 value["val"] = parsed_data.clone();
