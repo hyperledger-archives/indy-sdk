@@ -44,6 +44,7 @@ pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
 pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
 pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
 pub static CONFIG_TXN_AUTHOR_AGREEMENT: &'static str = "author_agreement";
+pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -463,6 +464,17 @@ pub mod tests {
         }).to_string();
 
         assert_eq!(process_config_string(&content, true).unwrap(), error::SUCCESS.code_num);
+    }
+
+    #[test]
+    fn test_process_for_pool_config() {
+        let pool_config = r#"{"timeout":40}"#;
+        let config = json!({
+            "pool_config" : pool_config,
+        }).to_string();
+
+        assert_eq!(process_config_string(&config, false).unwrap(), error::SUCCESS.code_num);
+        assert_eq!(get_config_value("pool_config").unwrap(), pool_config.to_string());
     }
 
     #[test]
