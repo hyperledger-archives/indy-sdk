@@ -241,12 +241,6 @@ impl From<rust_base58::base58::FromBase58Error> for IndyError {
     }
 }
 
-impl From<std::string::FromUtf8Error> for IndyError {
-    fn from(err: std::string::FromUtf8Error) -> Self {
-        IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("utf8 conversion failed {}", err))
-    }
-}
-
 impl<T> From<IndyResult<T>> for ErrorCode {
     fn from(r: Result<T, IndyError>) -> ErrorCode {
         match r {
