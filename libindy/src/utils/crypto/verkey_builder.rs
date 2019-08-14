@@ -1,5 +1,6 @@
 use errors::prelude::*;
 use rust_base58::{FromBase58, ToBase58};
+use services::crypto::DEFAULT_CRYPTO_TYPE;
 
 
 pub fn build_full_verkey(dest: &str, verkey: Option<&str>) -> Result<String, IndyError> {
@@ -30,5 +31,23 @@ pub fn build_full_verkey(dest: &str, verkey: Option<&str>) -> Result<String, Ind
     } else {
         // Cryptonym
         Ok(dest.to_owned())
+    }
+}
+
+pub fn split_verkey(verkey: &str) -> (&str, &str) {
+    if verkey.contains(':') {
+        let splits: Vec<&str> = verkey.split(':').collect();
+        (splits[0], splits[1])
+    } else {
+        (verkey, DEFAULT_CRYPTO_TYPE)
+    }
+}
+
+pub fn verkey_get_cryptoname(verkey: &str) -> &str {
+    if verkey.contains(':') {
+        let splits: Vec<&str> = verkey.split(':').collect();
+        splits[1]
+    } else {
+        DEFAULT_CRYPTO_TYPE
     }
 }
