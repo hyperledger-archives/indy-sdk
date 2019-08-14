@@ -284,19 +284,13 @@ impl WalletStorage for SQLiteStorage {
         };
 
 
-        let res: Result<(i64, Vec<u8>, Vec<u8>), rusqlite::Error> = self.conn.query_row(
+        let item: (i64, Vec<u8>, Vec<u8>) = self.conn.query_row(
             "SELECT id, value, key FROM items where type = ?1 AND name = ?2",
             &[&type_.to_vec(), &id.to_vec()],
             |row| {
                 Ok((row.get(0)?, row.get(1)?, row.get(2)?))
             },
-        );
-
-        let item = match res {
-            Ok(entity) => entity,
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
-            Err(err) => return Err(IndyError::from(err))
-        };
+        )?;
 
         let value = if options.retrieve_value
             { Some(EncryptedValue::new(item.1, item.2)) } else { None };
@@ -440,14 +434,8 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> IndyResult<()> {
-        let res = self.conn.prepare_cached("SELECT id FROM items WHERE type =?1 AND name = ?2")?
-            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0));
-
-        let item_id: i64 = match res {
-            Err(rusqlite::Error::QueryReturnedNoRows) => return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Item to delete not found")),
-            Err(err) => return Err(IndyError::from(err)),
-            Ok(id) => id
-        };
+        let item_id: i64 = self.conn.prepare_cached("SELECT id FROM items WHERE type =?1 AND name = ?2")?
+            .query_row(&[&type_.to_vec(), &id.to_vec()], |row| row.get(0))?;
 
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
         {
@@ -506,17 +494,11 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn get_storage_metadata(&self) -> IndyResult<Vec<u8>> {
-        let res: Result<Vec<u8>, rusqlite::Error> = self.conn.query_row(
+        self.conn.query_row(
             "SELECT value FROM metadata",
             rusqlite::NO_PARAMS,
             |row| { row.get(0) },
-        );
-
-        match res {
-            Ok(entity) => Ok(entity),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Err(err_msg(IndyErrorKind::WalletItemNotFound, "Wallet item not found")),
-            Err(err) => Err(IndyError::from(err))
-        }
+        ).map_err(IndyError::from)
     }
 
     fn set_storage_metadata(&self, metadata: &[u8]) -> IndyResult<()> {
