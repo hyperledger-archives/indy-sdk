@@ -1873,7 +1873,7 @@ pub mod aml_command {
 pub mod endorse_transaction_command {
     use super::*;
 
-    command!(CommandMetadata::build("endorse", "Endorse transaction to the ledger with preserving an original author.")
+    command!(CommandMetadata::build("endorse", "Endorse transaction to the ledger preserving an original author.")
                 .add_optional_param("txn","Transaction to endorse. Skip to use a transaction stored into CLI context.")
                 .add_example(r#"ledger endorse txn={"reqId":123456789,"type":"100"}"#)
                 .add_example(r#"ledger endorse"#)

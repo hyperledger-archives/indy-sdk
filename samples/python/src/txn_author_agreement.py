@@ -9,6 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 async def demo():
     logger.info("Transaction Author Agreement sample -> started")
 
@@ -135,8 +136,14 @@ async def demo():
 
     # Trustee reset Transaction Agreement
     txn_agreement_req = \
-        await ledger.build_txn_author_agreement_request(trustee['did'], '',  str(randint(0, 1000)))
+        await ledger.build_txn_author_agreement_request(trustee['did'], '', str(randint(0, 1000)))
     await ledger.sign_and_submit_request(trustee['pool'], trustee['wallet'], trustee['did'], txn_agreement_req)
+
+    #       User sends ATTRIB transaction to Ledger without Transaction Agreement
+    attr_req = \
+        await ledger.build_attrib_request(user['did'], user['did'], None, '{"endpoint":{"ha":"10.0.0.2:5555"}}', None)
+    resp = json.loads(await ledger.sign_and_submit_request(user['pool'], user['wallet'], user['did'], attr_req))
+    assert resp['op'] == 'REPLY'
 
     #  Trustee closes and deletes Wallet
     await wallet.close_wallet(trustee['wallet'])

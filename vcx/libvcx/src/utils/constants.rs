@@ -5,11 +5,11 @@ pub static PROOF_OFFER_SENT: &str = r#"{"version": "1.0", "data": {"nonce":"1234
 pub const LARGE_NONCE: usize = 80;
 pub static SCHEMA_CREATOR_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
 pub static SCHEMA_TYPE: &str = "101";
-pub static SCHEMA_DATA: &str = r#"{"name":"gvt","version":"1.0","attr_names":["address1","address2","zip","city","state"]}"#;
+pub static SCHEMA_DATA: &str = r#"{"id":"id","name":"gvt","version":"1.0","attrNames":["address1","address2","zip","city","state"],"ver":"1.0"}"#;
 pub static SCHEMAS_JSON: &str = r#"{"seqNo":22,"dest":"2hoqvcwupRTUNkXn6ArYzs","data":{"name":"gvt","version":"1.0","attr_names":["address1","address2","zip","city","state"]}}"#;
 pub static SCHEMA_WITH_VERSION: &str = r#"{"data":{"data":["name","dob"],"name":"TestSchema-546716196","payment_txn":{"amount":2,"credit":false,"inputs":["pay:null:1_ceAXEYIC68WAwI3"],"outputs":[{"amount":998,"extra":null,"recipient":"pay:null:wxfQyJUZJfCijhW"}]},"schema_id":"V4SGRU86Z58d6TV7PBUe6f:2:TestSchema-546716196:0.0.0","sequence_num":0,"source_id":"Test Source ID","version":"0.0.0"},"version":"1.0"}"#;
 pub static DEFAULT_SERIALIZE_VERSION: &str = "1.0";
-pub static SCHEMA_TXN: &str = r#"{"seqNo":344,"identifier":"VsKV7grR1BUE29mG2Fm2kX","txnTime":1516284381,"type":"101","data":{"name":"get schema attrs","version":"1.0","attr_names":["test","get","schema","attrs"]}}"#;
+pub static SCHEMA_TXN: &str = r#"{"seqNo":344,"reqId":1522866729726860308,"identifier":"VsKV7grR1BUE29mG2Fm2kX","txnTime":1516284381,"type":"101","data":{"name":"get schema attrs","version":"1.0","attr_names":["test","get","schema","attrs"]}}"#;
 pub static DEFAULT_SCHEMA_ATTRS: &str = r#"["address1","address2","zip","city","state"]"#;
 pub static DEFAULT_SCHEMA_ATTRS_5: &str = r#"["key1", "key2", "key3","key4", "key5"]"#;
 pub static DEFAULT_SCHEMA_ID: &str = "2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4";
@@ -163,7 +163,7 @@ pub static REV_REG_DELTA_JSON: &str = r#"{"ver":"1.0","value":{"accum":"2 0A0752
 pub static REV_STATE_JSON: &str = r#"{"V4SGRU86Z58d6TV7PBUe6f:4:V4SGRU86Z58d6TV7PBUe6f:3:CL:744:tag1:CL_ACCUM:tag1":{"1540930249":{"rev_reg":{"accum":"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 2 095E45DDF417D05FB10933FFC63D474548B7FFFF7888802F07FFFFFF7D07A8A8 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"},"timestamp":100,"witness":{"omega":"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 2 095E45DDF417D05FB10933FFC63D474548B7FFFF7888802F07FFFFFF7D07A8A8 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"}}}}"#;
 pub static REV_REG_JSON: &str = r#"{"ver":"1.0","value":{"accum":"2 0204F2D2B1F2B705A11AAFEEE73C9BA084C12AF1179294529AC4D14CA54E87F3 2 222BAE38FAF2673F7BCBB86D8DE1A327F5065BDC892E9A122164260C97BC0C63 2 1565105F8BA53037978B66E0CC9F53205F189DEEB6B7168744456DD98D2F4E88 2 1AC9E76B2868141A42329778831C14AEAAF7A9981209C1D96AECA4E69CAFB243 2 095E45DDF417D05FB10933FFC63D474548B7FFFF7888802F07FFFFFF7D07A8A8 1 0000000000000000000000000000000000000000000000000000000000000000"}}"#;
 pub static TEST_TAILS_FILE: &str = r#"tails_file"#;
-
+pub static REQUEST_WITH_ENDORSER: &str = r#"{"seqNo":344,"reqId":1522866729726860308,"identifier":"VsKV7grR1BUE29mG2Fm2kX","txnTime":1516284381,"type":"101","endorser":"V4SGRU86Z58d6TV7PBUe6f"}"#;
 pub fn rev_def_json() -> String {
     use utils::get_temp_dir_path;
     json!({
