@@ -153,6 +153,22 @@ public class Anoncreds extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when function with empty result completes.
+	 */
+	private static Callback voidCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
@@ -214,11 +230,14 @@ public class Anoncreds extends IndyJava.API {
 	 * 
 	 * It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 	 *
+	 * Note: Use combination of `issuerRotateCredentialDefStart` and `issuerRotateCredentialDefApply` functions
+	 * to generate new keys for an existing credential definition.
+	 *
 	 * @param wallet     The wallet.
 	 * @param issuerDid  DID of the issuer signing cred_def transaction to the Ledger
 	 * @param schemaJson Сredential schema as a json
 	 * @param tag        Allows to distinct between credential definitions for the same issuer and schema
-	 * @param signature_type       Credential definition signature_type (optional, 'CL' by default) that defines credentials signature and revocation math.
+	 * @param signatureType       Credential definition signatureType (optional, 'CL' by default) that defines credentials signature and revocation math.
 	 *                   Supported types are:
 	 *                   - 'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
 	 *                              https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
@@ -251,7 +270,7 @@ public class Anoncreds extends IndyJava.API {
 			String issuerDid,
 			String schemaJson,
 			String tag,
-			String signature_type,
+			String signatureType,
 			String configJson) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
@@ -270,9 +289,87 @@ public class Anoncreds extends IndyJava.API {
 				issuerDid,
 				schemaJson,
 				tag,
-				signature_type,
+				signatureType,
 				configJson,
 				issuerCreateAndStoreCredentialDefCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+	 *
+	 * Use `issuerRotateCredentialDefApply` function to set temporary keys as the main.
+	 *
+	 * WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+	 *
+	 * @param wallet     The wallet.
+	 * @param credDefId  An identifier of created credential definition stored in the wallet
+	 * @param configJson (optional) Type-specific configuration of credential definition as json:
+	 *                   - 'CL':
+	 *                      - revocationSupport: whether to request non-revocation credential (optional, default false)
+	 *
+	 * @return A future resolving to IssuerCreateAndStoreCredentialDefResult containing:.
+	 * credDefJson: public part of temporary created credential definition
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String>issuerRotateCredentialDefStart(
+			Wallet wallet,
+			String credDefId,
+			String configJson) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(credDefId, "credDefId");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_issuer_rotate_credential_def_start(
+				commandHandle,
+				walletHandle,
+				credDefId,
+				configJson,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+	 *
+	 * WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+	 *
+	 * @param wallet     The wallet.
+	 * @param credDefId  An identifier of created credential definition stored in the wallet
+	 *
+	 * @return A future resolving to no value
+	 *
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<Void>issuerRotateCredentialDefApply(
+			Wallet wallet,
+			String credDefId) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(credDefId, "credDefId");
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_issuer_rotate_credential_def_apply(
+				commandHandle,
+				walletHandle,
+				credDefId,
+				voidCb);
 
 		checkResult(future, result);
 
