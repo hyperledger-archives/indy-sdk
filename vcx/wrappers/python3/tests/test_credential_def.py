@@ -83,3 +83,28 @@ async def test_get_cred_def_id_and_payment_txn():
     txn = await credential_def.get_payment_txn()
     assert txn
 
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_credential_def_prepare_for_endorser():
+    credential_def = await CredentialDef.prepare_for_endorser(source_id, name, schema_id, 'V4SGRU86Z58d6TV7PBUe6f')
+    assert credential_def.source_id == source_id
+    assert credential_def.handle > 0
+    assert credential_def.transaction
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_schema_update_state():
+    credential_def = await CredentialDef.prepare_for_endorser(source_id, name, schema_id, 'V4SGRU86Z58d6TV7PBUe6f')
+    assert 0 == await credential_def.get_state()
+    assert 1 == await credential_def.update_state()
+    assert 1 == await credential_def.get_state()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_schema_get_state():
+    credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
+    assert 1 == await credential_def.get_state()
+

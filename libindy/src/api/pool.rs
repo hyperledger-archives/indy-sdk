@@ -172,14 +172,7 @@ pub extern fn indy_list_pools(command_handle: CommandHandle,
     trace!("indy_list_pools: entities >>>");
 
     let result = CommandExecutor::instance()
-        .send(Command::Pool(PoolCommand::List(
-            Box::new(move |result| {
-                let (err, pools) = prepare_result_1!(result, String::new());
-                trace!("indy_list_pools: pools: {:?}", pools);
-                let pools = ctypes::string_to_cstring(pools);
-                cb(command_handle, err, pools.as_ptr())
-            })
-        )));
+        .send(Command::Pool(PoolCommand::List(boxed_callback_string!("indy_list_pools", cb, command_handle))));
 
     let res = prepare_result!(result);
 

@@ -1,12 +1,14 @@
+from typing import Optional
 from ctypes import *
-from vcx.error import VcxError, ErrorCode, error_message
+from vcx.error import VcxError, ErrorCode
 from vcx.api.vcx_base import VcxBase
 from vcx.common import do_call, create_cb
+from vcx.api.vcx_stateful import VcxStateful
 
 import json
 
 
-class CredentialDef(VcxBase):
+class CredentialDef(VcxStateful):
     """
     Object that represents a credential definition written on the ledger.
 
@@ -14,13 +16,17 @@ class CredentialDef(VcxBase):
         source_id: user generated unique identifier
         schema_id: the ledger ID of the schema
         name: name of the credential definition
+        transaction: credential def transaction that must be published to the ledger by Endorser
     """
 
-    def __init__(self, source_id: str, name: str, schema_id: str):
+
+    def __init__(self, source_id: str, name: str, schema_id: str, transaction: Optional[str] = None):
         VcxBase.__init__(self, source_id)
         self._source_id = source_id
         self._schema_id = schema_id
         self._name = name
+        self._transaction = transaction
+
 
     def __del__(self):
         self.release()
@@ -42,6 +48,17 @@ class CredentialDef(VcxBase):
     def schema_id(self, x):
         self._schema_id = x
 
+
+    @property
+    def transaction(self):
+        return self._transaction
+
+
+    @transaction.setter
+    def transaction(self, x):
+        self._transaction = x
+
+
     @staticmethod
     async def create(source_id: str, name: str, schema_id: str, payment_handle: int):
         """
@@ -54,9 +71,10 @@ class CredentialDef(VcxBase):
         Example:
         source_id = 'foobar123'
         schema_name = 'Schema Name'
-        payment_handle = 0
-        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
-        :return: credential_def object, written to ledger
+        endorser = 'V4SGRU86Z58d6TV7PBUe6f'
+        credential_def1 = await CredentialDef.prepare_for_endorser(source_id, name, schema_id, endorser)
+        :return: credential_def object,
+        credential_def transaction that should be passed to Endorser for witting to ledger
         """
         constructor_params = (source_id, name, schema_id)
 
@@ -74,6 +92,59 @@ class CredentialDef(VcxBase):
         return await CredentialDef._create("vcx_credentialdef_create",
                                            constructor_params,
                                            c_params)
+
+
+    @staticmethod
+    async def prepare_for_endorser(source_id: str, name: str, schema_id: str, endorser: str):
+        """
+        Create a new CredentialDef object that will be published by Endorser later.
+
+        :param source_id: Institution's unique ID for the credential definition
+        :param name: Name of credential definition
+        :param schema_id: The schema ID given during the creation of the schema
+        :param endorser: DID of the Endorser that will submit the transaction.
+        Example:
+        source_id = 'foobar123'
+        schema_name = 'Schema Name'
+        payment_handle = 0
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        :return: credential_def object, written to ledger
+        """
+        try:
+            credentialdef = CredentialDef(source_id, '', '')
+
+            if not hasattr(CredentialDef.prepare_for_endorser, "cb"):
+                credentialdef.logger.debug("vcx_prepare_for_endorser: Creating callback")
+                CredentialDef.prepare_for_endorser.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32,
+                                                                            c_char_p, c_char_p, c_char_p))
+
+            c_source_id = c_char_p(source_id.encode('utf-8'))
+            c_name = c_char_p(name.encode('utf-8'))
+            c_schema_id = c_char_p(schema_id.encode('utf-8'))
+            c_endorser = c_char_p(endorser.encode('utf-8'))
+            c_issuer_did = None
+            c_tag = c_char_p('tag1'.encode('utf-8'))
+            c_config = c_char_p('{"support_revocation":false}'.encode('utf-8'))
+
+            handle, transaction, _, _ = await do_call('vcx_credentialdef_prepare_for_endorser',
+                                                      c_source_id,
+                                                      c_name,
+                                                      c_schema_id,
+                                                      c_issuer_did,
+                                                      c_tag,
+                                                      c_config,
+                                                      c_endorser,
+                                                      CredentialDef.prepare_for_endorser.cb)
+            credentialdef.logger.debug("created credential def object")
+
+            credentialdef.name = name
+            credentialdef.handle = handle
+            credentialdef.schema_id = schema_id
+            credentialdef.transaction = transaction
+            return credentialdef
+        except KeyError:
+            raise VcxError(ErrorCode.InvalidCredentialDef)
+
 
     async def serialize(self) -> dict:
         """
@@ -131,7 +202,7 @@ class CredentialDef(VcxBase):
         cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
         c_handle = c_uint32(self.handle)
         cred_def_id = await do_call('vcx_credentialdef_get_cred_def_id', c_handle, cb)
-        return cred_def_id .decode()
+        return cred_def_id.decode()
 
     def release(self) -> None:
         """
@@ -165,7 +236,35 @@ class CredentialDef(VcxBase):
         c_credential_handle = c_uint32(self.handle)
 
         payment_txn = await do_call('vcx_credentialdef_get_payment_txn',
-                      c_credential_handle,
-                      CredentialDef.get_payment_txn.cb)
+                                    c_credential_handle,
+                                    CredentialDef.get_payment_txn.cb)
 
         return json.loads(payment_txn.decode())
+
+
+    async def update_state(self) -> int:
+        """
+        Checks if credential definition is published on the Ledger and updates the the state
+        Example:
+        source_id = 'foobar123'
+        schema_name = 'Schema Name'
+        payment_handle = 0
+        credential_def = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        assert await credential_def.update_state() == PublicEntityState.Published
+        :return: Current state of the сredential definition
+        """
+        return await self._update_state(CredentialDef, 'vcx_credentialdef_update_state')
+
+
+    async def get_state(self) -> int:
+        """
+        Get the current state of the credential definition object
+        Example:
+        source_id = 'foobar123'
+        schema_name = 'Schema Name'
+        payment_handle = 0
+        credential_def = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        assert await credential_def.get_state() == PublicEntityState.Published
+        :return:  Current internal state of the schema
+        """
+        return await self._get_state(CredentialDef, 'vcx_credentialdef_get_state')

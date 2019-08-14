@@ -5,7 +5,6 @@ from vcx.api.connection import Connection
 from vcx.api.vcx_stateful import VcxStateful
 
 import json
-import json
 
 
 class Credential(VcxStateful):
