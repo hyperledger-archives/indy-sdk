@@ -1,5 +1,5 @@
 extern crate zmq;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate log;
 
 use std::cell::{BorrowError, BorrowMutError};
