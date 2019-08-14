@@ -2,6 +2,7 @@ import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.crypto.CryptoResults.AuthDecryptResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.json.JSONObject;
 import org.junit.Assert;
 import utils.PoolUtils;
 
@@ -25,14 +26,14 @@ class Crypto {
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		// 2. Create and Open My Wallet
-		String myWalletConfig = "{\"id\":\"myWallet\"}";
-		String myWalletCredentials = "{\"key\":\"my_wallet_key\"}";
+		String myWalletConfig = new JSONObject().put("id", "myWallet").toString();
+		String myWalletCredentials = new JSONObject().put("key", "my_wallet_key").toString();
 		Wallet.createWallet(myWalletConfig, myWalletCredentials).get();
 		Wallet myWallet = Wallet.openWallet(myWalletConfig, myWalletCredentials).get();
 
 		// 3. Create and Open Their Wallet
-		String theirWalletConfig = "{\"id\":\"theirWallet\"}";
-		String theirWalletCredentials = "{\"key\":\"their_wallet_key\"}";
+		String theirWalletConfig = new JSONObject().put("id", "theirWallet").toString();
+		String theirWalletCredentials = new JSONObject().put("key", "their_wallet_key").toString();
 		Wallet.createWallet(theirWalletConfig, theirWalletCredentials).get();
 		Wallet theirWallet = Wallet.openWallet(theirWalletConfig, theirWalletCredentials).get();
 
@@ -45,14 +46,14 @@ class Crypto {
 		String theirVerkey = createTheirDidResult.getVerkey();
 
 		// 6. Their auth encrypt message
-		String msg = "{\n" +
-				"        \"reqId\":1495034346617224651,\n" +
-				"        \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
-				"        \"operation\":{\n" +
-				"            \"type\":\"1\",\n" +
-				"            \"dest\":\"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB\"\n" +
-				"        }\n" +
-				"    }";
+		String msg = new JSONObject()
+				.put("reqId", "1495034346617224651")
+				.put("identifier", "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL")
+				.put("operation", new JSONObject()
+						.put("type", "1")
+						.put("dest", "4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB")
+				)
+				.toString();
 
 		byte[] encryptedMessage = authCrypt(theirWallet, theirVerkey, myVerkey, msg.getBytes()).get();
 

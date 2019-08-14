@@ -27,14 +27,14 @@ class Ledger {
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		// 2. Create and Open My Wallet
-		String myWalletConfig = "{\"id\":\"myWallet\"}";
-		String myWalletCredentials = "{\"key\":\"my_wallet_key\"}";
+		String myWalletConfig = new JSONObject().put("id", "myWallet").toString();
+		String myWalletCredentials = new JSONObject().put("key", "my_wallet_key").toString();
 		Wallet.createWallet(myWalletConfig, myWalletCredentials).get();
 		Wallet myWallet = Wallet.openWallet(myWalletConfig, myWalletCredentials).get();
 
 		// 3. Create and Open Trustee Wallet
-		String trusteeWalletConfig = "{\"id\":\"theirWallet\"}";
-		String trusteeWalletCredentials = "{\"key\":\"trustee_wallet_key\"}";
+		String trusteeWalletConfig = new JSONObject().put("id", "theirWallet").toString();
+		String trusteeWalletCredentials = new JSONObject().put("key", "trustee_wallet_key").toString();
 		Wallet.createWallet(trusteeWalletConfig, trusteeWalletCredentials).get();
 		Wallet trusteeWallet = Wallet.openWallet(trusteeWalletConfig, trusteeWalletCredentials).get();
 
