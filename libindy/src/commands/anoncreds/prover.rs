@@ -34,24 +34,24 @@ pub enum ProverCommand {
     CreateMasterSecret(
         WalletHandle,
         Option<String>, // master secret id
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     CreateCredentialRequest(
         WalletHandle,
         String, // prover did
         CredentialOffer, // credential offer
         CredentialDefinition, // credential def
         String, // master secret name
-        Box<Fn(IndyResult<(String, String)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
     SetCredentialAttrTagPolicy(
         WalletHandle,
         String, // credential definition id
         Option<CredentialAttrTagPolicy>, // credential attr tag policy
         bool,  // retroactive
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     GetCredentialAttrTagPolicy(
         WalletHandle,
         String, // credential definition id
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     StoreCredential(
         WalletHandle,
         Option<String>, // credential id
@@ -59,47 +59,47 @@ pub enum ProverCommand {
         Credential, // credentials
         CredentialDefinition, // credential definition
         Option<RevocationRegistryDefinition>, // revocation registry definition
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     GetCredentials(
         WalletHandle,
         Option<String>, // filter json
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     GetCredential(
         WalletHandle,
         String, // credential id
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     DeleteCredential(
         WalletHandle,
         String, // credential id
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     SearchCredentials(
         WalletHandle,
         Option<String>, // query json
-        Box<Fn(IndyResult<(i32, usize)>) + Send>),
+        Box<dyn Fn(IndyResult<(i32, usize)>) + Send>),
     FetchCredentials(
         i32, // search handle
         usize, // count
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     CloseCredentialsSearch(
         i32, // search handle
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     GetCredentialsForProofReq(
         WalletHandle,
         ProofRequest, // proof request
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     SearchCredentialsForProofReq(
         WalletHandle,
         ProofRequest, // proof request
         Option<ProofRequestExtraQuery>, // extra query
-        Box<Fn(IndyResult<i32>) + Send>),
+        Box<dyn Fn(IndyResult<i32>) + Send>),
     FetchCredentialForProofReq(
         i32, // search handle
         String, // item referent
         usize, // count
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     CloseCredentialsSearchForProofReq(
         i32, // search handle
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     CreateProof(
         WalletHandle,
         ProofRequest, // proof request
@@ -108,14 +108,14 @@ pub enum ProverCommand {
         HashMap<String, Schema>, // schemas
         HashMap<String, CredentialDefinition>, // credential defs
         HashMap<String, HashMap<u64, RevocationState>>, // revocation states
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     CreateRevocationState(
         i32, // blob storage reader handle
         RevocationRegistryDefinition, // revocation registry definition
         RevocationRegistryDelta, // revocation registry delta
         u64, //timestamp
         String, //credential revocation id
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     UpdateRevocationState(
         i32, // tails reader _handle
         RevocationState, // revocation state
@@ -123,7 +123,7 @@ pub enum ProverCommand {
         RevocationRegistryDelta, // revocation registry delta
         u64, //timestamp
         String, //credential revocation id
-        Box<Fn(IndyResult<String>) + Send>)
+        Box<dyn Fn(IndyResult<String>) + Send>)
 }
 
 struct SearchForProofRequest {

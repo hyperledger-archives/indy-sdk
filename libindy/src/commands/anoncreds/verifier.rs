@@ -18,9 +18,9 @@ pub enum VerifierCommand {
         HashMap<String, CredentialDefinition>, // credential defs
         HashMap<String, RevocationRegistryDefinition>, // rev reg defs
         HashMap<String, HashMap<u64, RevocationRegistry>>, // rev reg entries
-        Box<Fn(IndyResult<bool>) + Send>),
+        Box<dyn Fn(IndyResult<bool>) + Send>),
     GenerateNonce(
-        Box<Fn(IndyResult<String>) + Send>)
+        Box<dyn Fn(IndyResult<String>) + Send>)
 }
 
 pub struct VerifierCommandExecutor {
