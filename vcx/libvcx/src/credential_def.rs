@@ -521,14 +521,12 @@ pub mod tests {
                                                       "tag_1".to_string(),
                                                       r#"{"support_revocation":false}"#.to_string()).unwrap();
 
-        let rc = create_and_publish_credentialdef("1".to_string(),
-                                                  "name".to_string(),
-                                                  my_did,
-                                                  schema_id,
-                                                  "tag_1".to_string(),
-                                                  r#"{"support_revocation":false}"#.to_string());
-
-        assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::CredDefAlreadyCreated);
+        create_and_publish_credentialdef("1".to_string(),
+                                         "name".to_string(),
+                                         my_did,
+                                         schema_id,
+                                         "tag_1".to_string(),
+                                         r#"{"support_revocation":false}"#.to_string()).unwrap();
     }
 
     #[test]

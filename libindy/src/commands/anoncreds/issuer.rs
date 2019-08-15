@@ -271,8 +271,13 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema: {:?}, tag: {:?}, \
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 
+
         let (cred_def_config, schema_id, cred_def_id, signature_type) =
-            try_cb!(self._prepare_create_and_store_credential_definition(wallet_handle, issuer_did, schema, tag, type_, config), cb);
+            try_cb!(self._prepare_create_and_store_credential_definition(issuer_did, schema, tag, type_, config), cb);
+
+        if let Ok(cred_def) = self.wallet_service.get_indy_record_value::<CredentialDefinition>(wallet_handle, &cred_def_id, &RecordOptions::id_value()) {
+            return cb(Ok((cred_def_id, cred_def)));
+        }
 
         let cb_id = next_command_handle();
         self.pending_str_str_callbacks.borrow_mut().insert(cb_id, cb);
@@ -328,7 +333,6 @@ impl IssuerCommandExecutor {
     }
 
     fn _prepare_create_and_store_credential_definition(&self,
-                                                       wallet_handle: WalletHandle,
                                                        issuer_did: &str,
                                                        schema: &SchemaV1,
                                                        tag: &str,
@@ -349,11 +353,6 @@ impl IssuerCommandExecutor {
         let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or_else(|| schema.id.clone());
 
         let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema_id, &signature_type.to_str(), tag);
-
-        if self.wallet_service.record_exists::<CredentialDefinition>(wallet_handle, &cred_def_id)? {
-            return Err(err_msg(IndyErrorKind::CredDefAlreadyExists, format!("CredentialDefinition for cred_def_id: {:?} already exists, \
-                         Use combination of `indy_issuer_rotate_credential_def_start` and `indy_issuer_rotate_credential_def_apply` functions to generate new CredDef keys.", cred_def_id)));
-        };
 
         Ok((cred_def_config.clone(), schema_id, cred_def_id, signature_type))
     }
@@ -563,6 +562,11 @@ impl IssuerCommandExecutor {
         let max_cred_num = config.max_cred_num.unwrap_or(100000);
 
         let rev_reg_id = RevocationRegistryDefinition::rev_reg_id(issuer_did, cred_def_id, &rev_reg_type, tag);
+
+        if let (Ok(rev_reg_def), Ok(rev_reg)) = (self.wallet_service.get_indy_record_value::<RevocationRegistryDefinition>(wallet_handle, &rev_reg_id, &RecordOptions::id_value()),
+                                                 self.wallet_service.get_indy_record_value::<RevocationRegistry>(wallet_handle, &rev_reg_id, &RecordOptions::id_value())) {
+            return Ok((cred_def_id.to_string(), rev_reg_def, rev_reg));
+        }
 
         let cred_def: CredentialDefinition = self.wallet_service.get_indy_object(wallet_handle, &cred_def_id, &RecordOptions::id_value())?;
 
