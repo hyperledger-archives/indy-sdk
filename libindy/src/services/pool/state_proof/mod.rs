@@ -559,7 +559,7 @@ fn _verify_proof_signature(signature: &str,
                            gen: &Generator) -> IndyResult<bool> {
     trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, value);
 
-    let mut ver_keys: Vec<&VerKey> = Vec::new();
+    let mut ver_keys: Vec<&VerKey> = Vec::with_capacity(nodes.len());
 
     for (name, verkey) in nodes {
         if participants.contains(&name.as_str()) {
