@@ -32,25 +32,12 @@ use self::indy::ErrorCode;
 use utils::payments;
 use utils::constants::*;
 
-use api::INVALID_WALLET_HANDLE;
-
 static EMPTY_OBJECT: &str = "{}";
 static EMPTY_ARRAY: &str = "[]";
 static PAYMENT_METHOD_NAME: &str = "null";
-static WRONG_PAYMENT_METHOD_NAME: &str = "null_payment_handler";
 static CORRECT_INPUTS: &str = r#"["pay:null:1", "pay:null:2"]"#;
 static CORRECT_OUTPUTS: &str = r#"[{"recipient": "pay:null:1", "amount":1}, {"recipient": "pay:null:2", "amount":2}]"#;
-static INPUTS_UNKNOWN_METHOD: &str = r#"["pay:unknown_payment_method:1"]"#;
-static OUTPUTS_UNKNOWN_METHOD: &str = r#"[{"recipient": "pay:unknown_payment_method:1", "amount":1}]"#;
-static INPUTS_INVALID_FORMAT: &str = r#"pay:null:1"#;
-static OUTPUTS_INVALID_FORMAT: &str = r#"["pay:null:1",1]"#;
-static INCOMPATIBLE_INPUTS: &str = r#"["pay:PAYMENT_METHOD_1:1", "pay:PAYMENT_METHOD_2:1"]"#;
-static INCOMPATIBLE_OUTPUTS: &str = r#"[{"recipient": "pay:PAYMENT_METHOD_1:1", "amount":1}, {"recipient": "pay:PAYMENT_METHOD_2:1", "amount":1}]"#;
-static EQUAL_INPUTS: &str = r#"["pay:null1:1", "pay:null1:1", "pay:null1:2"]"#;
-static EQUAL_OUTPUTS: &str = r#"[{"paymentAddress": "pay:null:1", "amount":1}, {"paymentAddress": "pay:null:1", "amount":2}, {"paymentAddress": "pay:null:2", "amount":2, "extra":"2"}]"#;
 static CORRECT_FEES: &str = r#"{"txnType1":1, "txnType2":2}"#;
-static PAYMENT_RESPONSE: &str = r#"{"reqId":1, "sources":[{"input": "pay:null:1", "amount":1}, {"input": "pay:null:2", "amount":2}]}"#;
-static GET_TXN_FEES_RESPONSE: &str = r#"{"reqId":1, fees:{"txnType1":1, "txnType2":2}}"#;
 static TEST_RES_STRING: &str = "test";
 static CORRECT_PAYMENT_ADDRESS: &str = "pay:null:test";
 static EXTRA: &str = "extra_1";
@@ -63,6 +50,7 @@ fn setup(name: &str) -> (i32, String) {
 
 mod high_cases {
     use super::*;
+
 
     mod register_payment_method {
         use super::*;
@@ -865,8 +853,21 @@ mod high_cases {
     }
 }
 
+#[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     use super::*;
+    use api::INVALID_WALLET_HANDLE;
+    static WRONG_PAYMENT_METHOD_NAME: &str = "null_payment_handler";
+    static INPUTS_UNKNOWN_METHOD: &str = r#"["pay:unknown_payment_method:1"]"#;
+    static OUTPUTS_UNKNOWN_METHOD: &str = r#"[{"recipient": "pay:unknown_payment_method:1", "amount":1}]"#;
+    static INPUTS_INVALID_FORMAT: &str = r#"pay:null:1"#;
+    static OUTPUTS_INVALID_FORMAT: &str = r#"["pay:null:1",1]"#;
+    static INCOMPATIBLE_INPUTS: &str = r#"["pay:PAYMENT_METHOD_1:1", "pay:PAYMENT_METHOD_2:1"]"#;
+    static INCOMPATIBLE_OUTPUTS: &str = r#"[{"recipient": "pay:PAYMENT_METHOD_1:1", "amount":1}, {"recipient": "pay:PAYMENT_METHOD_2:1", "amount":1}]"#;
+    static EQUAL_INPUTS: &str = r#"["pay:null1:1", "pay:null1:1", "pay:null1:2"]"#;
+    static EQUAL_OUTPUTS: &str = r#"[{"paymentAddress": "pay:null:1", "amount":1}, {"paymentAddress": "pay:null:1", "amount":2}, {"paymentAddress": "pay:null:2", "amount":2, "extra":"2"}]"#;
+    static PAYMENT_RESPONSE: &str = r#"{"reqId":1, "sources":[{"input": "pay:null:1", "amount":1}, {"input": "pay:null:2", "amount":2}]}"#;
+    static GET_TXN_FEES_RESPONSE: &str = r#"{"reqId":1, fees:{"txnType1":1, "txnType2":2}}"#;
 
     mod register_payment_method {
         use super::*;
