@@ -1,12 +1,12 @@
 #!groovy
 
 
-Ununtu16 = "Ubuntu 16.04"
-Ununtu18 = "Ubuntu 18.04"
+Ubuntu16 = "Ubuntu 16.04"
+Ubuntu18 = "Ubuntu 18.04"
 RedHat = "RedHat"
 
-libindyBuildFinished = [(Ununtu16): false, (Ununtu18): false, (RedHat): false]
-libvcxBuildFinished = [(Ununtu16): false, (Ununtu18): false, (RedHat): false]
+libindyBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
+libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
 
 testing()
 
@@ -345,10 +345,10 @@ def ubuntuTesting() {
     stage('Ubuntu Test') {
         parallel([
                 "ubuntu:16.04": {
-                    linuxTesting("ci/ubuntu.dockerfile ci", Ununtu16, "pool_network", true)
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true)
                 },
                 "ubuntu:18.04": {
-                    linuxTesting("ci/ubuntu18.dockerfile ci", Ununtu18, "pool_network", false)
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", false)
                 }
         ])
     }

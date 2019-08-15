@@ -14,13 +14,13 @@ properties([
         ]]
 ]);
 
-Ununtu16 = "Ubuntu 16.04"
-Ununtu18 = "Ubuntu 18.04"
+Ubuntu16 = "Ubuntu 16.04"
+Ubuntu18 = "Ubuntu 18.04"
 RedHat = "RedHat"
 
-libindyBuildFinished = [(Ununtu16): false, (Ununtu18): false, (RedHat): false]
-libvcxBuildFinished = [(Ununtu16): false, (Ununtu18): false, (RedHat): false]
-ubuntuPakageTypes = [(Ununtu16): "xenial", (Ununtu18): "bionic"]
+libindyBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
+libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
+ubuntuPakageTypes = [(Ubuntu16): "xenial", (Ubuntu18): "bionic"]
 
 gitHubUserCredId = env.GITHUB_BOT_USER ?: 'sovbot-github'
 sovrinPackagingRepo = env.SOVRIN_PACKAGING_REPO ?: 'https://github.com/sovrin-foundation/sovrin-packaging'
@@ -703,10 +703,10 @@ def ubuntuTesting() {
     stage('Ubuntu Test') {
         parallel([
                 "ubuntu:16.04": {
-                    linuxTesting("ci/ubuntu.dockerfile ci", Ununtu16, "pool_network", true, true)
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true, true)
                 },
                 "ubuntu:18.04": {
-                    linuxTesting("ci/ubuntu18.dockerfile ci", Ununtu18, "pool_network", true, false)
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", true, false)
                 }
         ])
     }
@@ -931,8 +931,8 @@ def rhelPublishing() {
 
 def ubuntuPublishing() {
     stage('Ubuntu Publishing') {
-        def libindyVersion = linuxPublishing("ci/ubuntu.dockerfile ci", Ununtu16, true)
-        linuxPublishing("ci/ubuntu18.dockerfile ci", Ununtu18, false)
+        def libindyVersion = linuxPublishing("ci/ubuntu.dockerfile ci", Ubuntu16, true)
+        linuxPublishing("ci/ubuntu18.dockerfile ci", Ubuntu18, false)
         return libindyVersion
     }
 }
@@ -1356,7 +1356,7 @@ def publishingRCtoStable() {
                 def libnullpayVersion = getSrcVersion("libnullpay")
                 def libvcxVersion = getSrcVersion("vcx/libvcx")
 
-                def env_name = Ununtu16
+                def env_name = Ubuntu16
 
                 echo 'Moving Windows RC artifacts to Stable: libindy'
                 publishLibindyWindowsFilesRCtoStable(libindyVersion)
@@ -1433,7 +1433,7 @@ def publishingRCtoStable() {
                 echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu18.dockerfile libindy/ci')
 
-                env_name = Ununtu18
+                env_name = Ubuntu18
 
                 echo "Moving ${env_name} RC artifacts to Stable: libindy"
                 publishLibindyDebRCtoStable(testEnv, libindyVersion, env_name)
