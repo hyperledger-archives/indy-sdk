@@ -3688,14 +3688,12 @@ mod medium_cases {
 
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let res = anoncreds::issuer_create_credential_definition(wallet_handle,
-                                                                     ISSUER_DID,
-                                                                     &anoncreds::gvt_schema_json(),
-                                                                     TAG_1,
-                                                                     Some(SIGNATURE_TYPE),
-                                                                     Some(&anoncreds::default_cred_def_config()));
-            assert_code!(ErrorCode::AnoncredsCredDefAlreadyExistsError, res);
-
+            anoncreds::issuer_create_credential_definition(wallet_handle,
+                                                           ISSUER_DID,
+                                                           &anoncreds::gvt_schema_json(),
+                                                           TAG_1,
+                                                           Some(SIGNATURE_TYPE),
+                                                           Some(&anoncreds::default_cred_def_config())).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
         }
 
