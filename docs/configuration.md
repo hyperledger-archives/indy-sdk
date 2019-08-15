@@ -44,6 +44,7 @@ This function accepts a `config` parameter that defines the behavior of the clie
         "preordered_nodes": array<string> -  (optional), names of nodes which will have priority during request sending.
             This can be useful if a user prefers querying specific nodes.
             Note: Nodes not specified will be placed randomly.
+        "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
     }
     ```
 
