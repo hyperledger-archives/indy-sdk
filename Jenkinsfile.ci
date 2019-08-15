@@ -484,6 +484,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
             sh '''
                 cd libindy
                 RUST_BACKTRACE=1 cargo test -j 1 --no-run --features sodium_static
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features sodium_static
             '''
         }
 
@@ -492,6 +493,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
             sh '''
                 cd libnullpay
                 LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
             '''
         }
     }
@@ -694,6 +696,7 @@ def linuxCLITesting(env_name, network_name, testEnv) {
             cd cli
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --features fatal_warnings
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --features "nullpay_plugin" --no-run
+            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "nullpay_plugin"
         '''
     }
 }
