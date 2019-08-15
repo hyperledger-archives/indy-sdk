@@ -1,8 +1,12 @@
 #!groovy
 
 
-libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
-libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
+Ubuntu16 = "Ubuntu 16.04"
+Ubuntu18 = "Ubuntu 18.04"
+RedHat = "RedHat"
+
+libindyBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
+libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
 
 testing()
 
@@ -339,7 +343,14 @@ def iosTesting() {
 
 def ubuntuTesting() {
     stage('Ubuntu Test') {
-        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network", true)
+        parallel([
+                "ubuntu:16.04": {
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true)
+                },
+                "ubuntu:18.04": {
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", false)
+                }
+        ])
     }
 }
 
@@ -366,7 +377,7 @@ def linuxTesting(file, env_name, network_name, test_wrappers) {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
                         "${env_name}-vcx-test"        : {
-                            vcxTesting(file, env_name, network_name)
+                            vcxTesting(file, env_name, network_name, test_wrappers)
                         }
                 ]
                 if (test_wrappers) {
@@ -391,7 +402,7 @@ def linuxTesting(file, env_name, network_name, test_wrappers) {
     ])
 }
 
-def vcxTesting(file, env_name, network_name) {
+def vcxTesting(file, env_name, network_name, test_wrappers) {
     parallel([
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
@@ -400,23 +411,23 @@ def vcxTesting(file, env_name, network_name) {
                 }
             },
             "${env_name} Test: test other vcx components": {
-                waitUntil {
-                    libvcxBuildFinished[env_name]
-                }
-                def jobs = [
-                        "${env_name}-vcx-nodejs-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
-                        }
-                ]
-                if (env_name == "Ubuntu") {
-                    jobs["${env_name}-vcx-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                if (test_wrappers) {
+                    waitUntil {
+                        libvcxBuildFinished[env_name]
                     }
-                    jobs["${env_name}-vcx-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
-                    }
+                    def jobs = [
+                            "${env_name}-vcx-nodejs-test": {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
+                            },
+                            "${env_name}-vcx-java-test"  : {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                            },
+                            "${env_name}-vcx-python-test": {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
+                            }
+                    ]
+                    parallel(jobs)
                 }
-                parallel(jobs)
             },
     ])
 }
