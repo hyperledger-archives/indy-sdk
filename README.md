@@ -117,8 +117,8 @@ It is recommended to install the SDK packages with APT:
     sudo apt-get update
     sudo apt-get install -y libindy
 
-{release channel} must be replaced with master, rc or stable to define corresponded release channel.
-(xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu
+* (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
+* {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section "Release channels" above for more details.
 
 ### Windows
