@@ -72,6 +72,7 @@ pub extern fn indy_create_pool_ledger_config(command_handle: CommandHandle,
 ///     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
 ///         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
 ///         Note: Not specified nodes will be placed in a random way.
+///     "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
 /// }
 ///
 /// #Returns
@@ -172,14 +173,7 @@ pub extern fn indy_list_pools(command_handle: CommandHandle,
     trace!("indy_list_pools: entities >>>");
 
     let result = CommandExecutor::instance()
-        .send(Command::Pool(PoolCommand::List(
-            Box::new(move |result| {
-                let (err, pools) = prepare_result_1!(result, String::new());
-                trace!("indy_list_pools: pools: {:?}", pools);
-                let pools = ctypes::string_to_cstring(pools);
-                cb(command_handle, err, pools.as_ptr())
-            })
-        )));
+        .send(Command::Pool(PoolCommand::List(boxed_callback_string!("indy_list_pools", cb, command_handle))));
 
     let res = prepare_result!(result);
 

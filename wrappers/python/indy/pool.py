@@ -60,6 +60,7 @@ async def open_pool_ledger(config_name: str,
             "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
                 ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
                 Note: Not specified nodes will be placed in a random way.
+            "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
         }
     :return: Handle to opened pool to use in methods that require pool connection.
     """

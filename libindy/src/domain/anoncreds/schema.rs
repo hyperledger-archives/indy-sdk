@@ -1,6 +1,7 @@
 use super::DELIMITER;
 
 use std::collections::{HashMap, HashSet};
+use named_type::NamedType;
 
 pub const SCHEMA_MARKER: &str = "2";
 pub const MAX_ATTRIBUTES_COUNT: usize = 125;
@@ -16,7 +17,7 @@ pub struct SchemaV1 {
     pub seq_no: Option<u32>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, NamedType)]
 #[serde(tag = "ver")]
 pub enum Schema {
     #[serde(rename = "1.0")]
@@ -42,13 +43,7 @@ impl From<Schema> for SchemaV1 {
 }
 
 pub fn schemas_map_to_schemas_v1_map(schemas: HashMap<String, Schema>) -> HashMap<String, SchemaV1> {
-    let mut schemas_v1: HashMap<String, SchemaV1> = HashMap::new();
-
-    for (schema_id, schema) in schemas {
-        schemas_v1.insert(schema_id, SchemaV1::from(schema));
-    }
-
-    schemas_v1
+    schemas.into_iter().map( |(schema_id, schema)| { (schema_id, SchemaV1::from(schema))}).collect()
 }
 
 pub type AttributeNames = HashSet<String>;

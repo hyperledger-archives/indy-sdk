@@ -571,12 +571,7 @@ pub extern fn indy_generate_wallet_key(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::GenerateKey(
             config,
-            Box::new(move |result| {
-                let (err, key) = prepare_result_1!(result, String::new());
-                trace!("indy_generate_wallet_key: key: {:?}", key);
-                let key = ctypes::string_to_cstring(key);
-                cb(command_handle, err, key.as_ptr())
-            })
+            boxed_callback_string!("indy_generate_wallet_key", cb, command_handle)
         )));
 
     let res = prepare_result!(result);

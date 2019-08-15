@@ -79,7 +79,7 @@ pub enum CryptoCommand {
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     UnpackMessage(
-        Vec<u8>, // JWE
+        JWE,
         WalletHandle,
         Box<Fn(IndyResult<Vec<u8>>) + Send>,
     ),
@@ -397,7 +397,7 @@ impl CryptoCommandExecutor {
                                     cek: &chacha20poly1305_ietf::Key,
                                     receiver_list: Vec<String>,
     ) -> IndyResult<String> {
-        let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
+        let mut encrypted_recipients_struct : Vec<Recipient> = Vec::with_capacity(receiver_list.len());
 
         for their_vk in receiver_list {
             //encrypt sender verkey
@@ -494,14 +494,7 @@ impl CryptoCommandExecutor {
         })
     }
 
-    pub fn unpack_msg(&self, jwe_json: Vec<u8>, wallet_handle: WalletHandle) -> IndyResult<Vec<u8>> {
-        //serialize JWE to struct
-        let jwe_struct: JWE = serde_json::from_slice(jwe_json.as_slice()).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to deserialize JWE {}",
-                err
-            ))
-        })?;
+    pub fn unpack_msg(&self, jwe_struct: JWE, wallet_handle: WalletHandle) -> IndyResult<Vec<u8>> {
         //decode protected data
         let protected_decoded_vec = base64::decode_urlsafe(&jwe_struct.protected)?;
         let protected_decoded_str = String::from_utf8(protected_decoded_vec).map_err(|err| {

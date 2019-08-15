@@ -2,6 +2,7 @@ pub const POOL_CON_ACTIVE_TO: i64 = 5;
 pub const POOL_ACK_TIMEOUT: i64 = 20;
 pub const POOL_REPLY_TIMEOUT: i64 = 60;
 pub const MAX_REQ_PER_POOL_CON: usize = 5;
+pub const NUMBER_READ_NODES: u8 = 2;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PoolConfig {
@@ -18,16 +19,18 @@ impl PoolConfig {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PoolOpenConfig {
-    #[serde(default="PoolOpenConfig::default_timeout")]
+    #[serde(default = "PoolOpenConfig::default_timeout")]
     pub timeout: i64,
-    #[serde(default="PoolOpenConfig::default_extended_timeout")]
+    #[serde(default = "PoolOpenConfig::default_extended_timeout")]
     pub extended_timeout: i64,
-    #[serde(default="PoolOpenConfig::default_conn_limit")]
+    #[serde(default = "PoolOpenConfig::default_conn_limit")]
     pub conn_limit: usize,
-    #[serde(default="PoolOpenConfig::default_conn_active_timeout")]
+    #[serde(default = "PoolOpenConfig::default_conn_active_timeout")]
     pub conn_active_timeout: i64,
-    #[serde(default="PoolOpenConfig::default_preordered_nodes")]
+    #[serde(default = "PoolOpenConfig::default_preordered_nodes")]
     pub preordered_nodes: Vec<String>,
+    #[serde(default = "PoolOpenConfig::default_number_read_nodes")]
+    pub number_read_nodes: u8,
 }
 
 impl Default for PoolOpenConfig {
@@ -37,7 +40,8 @@ impl Default for PoolOpenConfig {
             extended_timeout: PoolOpenConfig::default_extended_timeout(),
             conn_limit: PoolOpenConfig::default_conn_limit(),
             conn_active_timeout: PoolOpenConfig::default_conn_active_timeout(),
-            preordered_nodes: PoolOpenConfig::default_preordered_nodes()
+            preordered_nodes: PoolOpenConfig::default_preordered_nodes(),
+            number_read_nodes: PoolOpenConfig::default_number_read_nodes(),
         }
     }
 }
@@ -62,4 +66,6 @@ impl PoolOpenConfig {
     fn default_preordered_nodes() -> Vec<String> {
         Vec::new()
     }
+
+    fn default_number_read_nodes() -> u8 { NUMBER_READ_NODES }
 }
