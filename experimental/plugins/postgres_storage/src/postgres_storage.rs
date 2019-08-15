@@ -897,13 +897,13 @@ impl WalletStorage for PostgresStorage {
             let mut tags = Vec::new();
 
             // get all encrypted.
-            let mut rows = match query_qualifier {
+            let rows = match query_qualifier {
                 Some(_) => {
-                    let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1 AND wallet_id = $2")?;
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1 AND wallet_id = $2")?;
                     stmt.query(&[&item.0, &self.wallet_id])?
                 },
                 None => {
-                    let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1")?;
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1")?;
                     stmt.query(&[&item.0])?
                 }
             };
@@ -917,13 +917,13 @@ impl WalletStorage for PostgresStorage {
             }
 
             // get all plain
-            let mut rows = match query_qualifier {
+            let rows = match query_qualifier {
                 Some(_) => {
-                    let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1 AND wallet_id = $2")?;
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1 AND wallet_id = $2")?;
                     stmt.query(&[&item.0, &self.wallet_id])?
                 },
                 None => {
-                    let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1")?;
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1")?;
                     stmt.query(&[&item.0])?
                 }
             };
