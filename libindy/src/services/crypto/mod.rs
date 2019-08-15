@@ -358,8 +358,15 @@ impl CryptoService {
             seed.as_bytes().to_vec()
         } else if seed.ends_with('=') {
             // is base64 string
-            base64::decode(&seed)
-                .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize Seed from Base64 string")?
+            let decoded = base64::decode(&seed)
+                .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize Seed from Base64 string")?;
+            if decoded.len() == ed25519_sign::SEEDBYTES {
+                decoded
+            } else {
+                return Err(err_msg(IndyErrorKind::InvalidStructure,
+                                   format!("Trying to use invalid base64 encoded `seed`. \
+                                   The number of bytes must be {} ", ed25519_sign::SEEDBYTES)));
+            }
         } else if seed.as_bytes().len() == ed25519_sign::SEEDBYTES * 2 {
             // is hex string
             Vec::from_hex(seed)
@@ -416,11 +423,9 @@ impl CryptoService {
                                The 16- or 32-byte number upon which a DID is based should be 22/23 or 44/45 bytes when encoded as base58.", did.len())));
         }
 
-        let res = ();
+        trace!("validate_did <<< res: ()");
 
-        trace!("validate_did <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 
     pub fn encrypt_plaintext(&self,

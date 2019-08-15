@@ -131,6 +131,7 @@ pub struct Config {
     path: Option<String>,
     storage_config: Option<String>,
     storage_credentials: Option<String>,
+    pool_config: Option<String>,
 }
 
 
@@ -162,6 +163,9 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     }
     if let Some(_storage_credentials) = &my_config.storage_credentials {
         settings::set_config_value(settings::CONFIG_WALLET_STORAGE_CREDS, _storage_credentials);
+    }
+    if let Some(pool_config) = &my_config.pool_config {
+        settings::set_config_value(settings::CONFIG_POOL_CONFIG, pool_config);
     }
 
     wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str),
@@ -216,14 +220,14 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     if let Some(wallet_type) = &my_config.wallet_type {
         final_config["wallet_type"] = json!(wallet_type);
     }
-    if let Some(_wallet_type) = &my_config.wallet_type {
-        final_config["wallet_type"] = json!(_wallet_type);
-    }
     if let Some(_storage_config) = &my_config.storage_config {
         final_config["storage_config"] = json!(_storage_config);
     }
     if let Some(_storage_credentials) = &my_config.storage_credentials {
         final_config["storage_credentials"] = json!(_storage_credentials);
+    }
+    if let Some(_pool_config) = &my_config.pool_config {
+        final_config["pool_config"] = json!(_pool_config);
     }
 
     wallet::close_wallet()?;

@@ -226,3 +226,26 @@ async def vcx_get_request_price(action_json: str,
 
     logger.debug("vcx_get_request_price completed")
     return result
+
+
+async def vcx_endorse_transaction(transaction: str) -> None:
+    """
+    Endorse transaction to the ledger preserving an original author
+    :param transaction: transaction to endorse
+    :return:
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_endorse_transaction, "cb"):
+        logger.debug("vcx_endorse_transaction: Creating callback")
+        vcx_endorse_transaction.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+    c_transaction = c_char_p(transaction.encode('utf-8'))
+
+    result = await do_call('vcx_endorse_transaction',
+                           c_transaction,
+                           vcx_endorse_transaction.cb)
+
+    logger.debug("vcx_endorse_transaction completed")
+    return result
+

@@ -100,6 +100,22 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+
+    if settings::test_indy_mode_enabled() {return Ok(Vec::from(message).to_owned()); }
+
+    payments::sign_with_address(get_wallet_handle() as i32, address, message).wait().map_err(map_rust_indy_sdk_error)
+}
+
+pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> VcxResult<bool> {
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+
+    if settings::test_indy_mode_enabled() { return Ok(true); }
+
+    payments::verify_with_address(address, message, signature).wait().map_err(map_rust_indy_sdk_error)
+}
+
 pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
     if settings::test_indy_mode_enabled() {
         let utxos = json!(
@@ -126,18 +142,36 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    let (txn, _) = payments::build_get_payment_sources_request(get_wallet_handle() as i32, Some(&did), address)
+    let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, None)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
     let response = libindy_sign_and_submit_request(&did, &txn)?;
 
-    let response = payments::parse_get_payment_sources_response(settings::get_payment_method().as_str(), &response)
+    let (response, next) = payments::parse_get_payment_sources_with_from_response(settings::get_payment_method().as_str(), &response)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
-    let utxo: Vec<UTXO> = ::serde_json::from_str(&response)
+    let mut utxo: Vec<UTXO> = ::serde_json::from_str(&response.clone())
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payment sources response: {}", err)))?;
+    let mut next_seqno = next;
+
+    while next_seqno.is_some() {
+        let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, next_seqno)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)?;
+
+        let response = libindy_sign_and_submit_request(&did, &txn)?;
+
+        let (response, next) = payments::parse_get_payment_sources_with_from_response(settings::get_payment_method().as_str(), &response)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)?;
+        let mut res: Vec<UTXO> = ::serde_json::from_str(&response)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payment sources response: {}", err)))?;
+        next_seqno = next;
+
+        utxo.append(&mut res);
+    }
 
     let info = AddressInfo { address: address.to_string(), balance: _address_balance(&utxo), utxo };
 
@@ -448,9 +482,9 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         None
     };
 
-    let (did_2, _) = add_new_trustee_did();
-    let (did_3, _) = add_new_trustee_did();
-    let (did_4, _) = add_new_trustee_did();
+    let (did_2, _) = add_new_did(Some("TRUSTEE"));
+    let (did_3, _) = add_new_did(Some("TRUSTEE"));
+    let (did_4, _) = add_new_did(Some("TRUSTEE"));
 
     let number_of_addresses = number_of_addresses.unwrap_or(1);
 
@@ -503,7 +537,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
     Ok(())
 }
 
-fn add_new_trustee_did() -> (String, String) {
+pub fn add_new_did(role: Option<&str>) -> (String, String) {
     use indy::ledger;
 
     let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -534,6 +568,21 @@ pub mod tests {
     fn test_create_address() {
         init!("true");
         create_address(None).unwrap();
+    }
+
+
+    #[test]
+    fn test_sign_with_address() {
+        init!("true");
+        let res = sign_with_address("test", &[1, 2, 3]).unwrap();
+        assert_eq!(res, vec![1, 2, 3])
+    }
+
+    #[test]
+    fn test_verify_with_address() {
+        init!("true");
+        let res = verify_with_address("test", &[1, 2, 3], &[1, 2, 3]).unwrap();
+        assert!(res)
     }
 
     #[test]

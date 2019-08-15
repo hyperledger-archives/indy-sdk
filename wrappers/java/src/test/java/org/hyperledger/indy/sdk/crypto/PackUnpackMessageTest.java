@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.json.JSONArray;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
@@ -81,7 +82,7 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
 		String packedMessage = "jibberish";
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
+		thrown.expectCause(isA(InvalidParameterException.class));
 
 		Crypto.unpackMessage(wallet, packedMessage.getBytes()).get();
 

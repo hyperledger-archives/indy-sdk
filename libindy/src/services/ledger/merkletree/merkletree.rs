@@ -1,7 +1,7 @@
 use errors::prelude::*;
 use services::ledger::merkletree::proof::{Lemma, Proof};
 use services::ledger::merkletree::tree::{LeavesIntoIterator, LeavesIterator, Tree, TreeLeafData};
-use utils::crypto::hash::{Hash, HASHBYTES};
+use utils::crypto::hash::{Hash, EMPTY_HASH_BYTES};
 
 /// A Merkle tree is a binary tree, with values of type `T` at the leafs,
 /// and where every internal node holds the hash of the concatenation of the hashes of its children nodes.
@@ -21,6 +21,17 @@ pub struct MerkleTree {
     pub nodes_count: usize
 }
 
+impl Default for MerkleTree {
+    fn default() -> Self {
+        MerkleTree {
+            root: Tree::Empty { hash: EMPTY_HASH_BYTES.to_vec() },
+            height: 0,
+            count: 0,
+            nodes_count: 0,
+        }
+    }
+}
+
 impl MerkleTree {
 
     /// Constructs a Merkle Tree from a vector of data blocks.
@@ -28,12 +39,7 @@ impl MerkleTree {
     pub fn from_vec(values: Vec<TreeLeafData>) -> IndyResult<Self> {
 
         if values.is_empty() {
-            return Ok(MerkleTree {
-                root: Tree::empty(Hash::hash_empty()?),
-                height: 0,
-                count: 0,
-                nodes_count: 0
-            });
+            return Ok(MerkleTree::default());
         }
 
         let count = values.len();
@@ -82,10 +88,10 @@ impl MerkleTree {
         let root = cur.remove(0);
 
         Ok(MerkleTree {
-            root: root,
-            height: height,
-            count: count,
-            nodes_count: nodes_count
+            root,
+            height,
+            count,
+            nodes_count
         })
     }
 
@@ -96,12 +102,7 @@ impl MerkleTree {
 
     /// Returns the hex root hash of Merkle tree
     pub fn root_hash_hex(&self) -> String {
-        let rh = self.root.hash();
-        let mut ret:String = String::with_capacity(HASHBYTES *2);
-        for i in rh {
-            ret.push_str(&format!("{:02x}", i));
-        }
-        ret
+        hex::encode(self.root.hash())
     }
 
     /// Returns the height of Merkle tree

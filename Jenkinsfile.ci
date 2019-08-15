@@ -20,7 +20,7 @@ def testing() {
                 'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
-                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
+                'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -28,10 +28,10 @@ def testing() {
 
 def staticValidation() {
     parallel([
-            'libindy'    : { runValdiationRust('libindy') },
-            'libnullpay' : { runValdiationRust('libnullpay') },
-            'libvcx'     : { runValdiationRust('vcx/libvcx') },
-            'cli'        : { runValdiationRust('cli') }
+            'libindy'   : { runValdiationRust('libindy') },
+            'libnullpay': { runValdiationRust('libnullpay') },
+            'libvcx'    : { runValdiationRust('vcx/libvcx') },
+            'cli'       : { runValdiationRust('cli') }
     ])
 }
 
@@ -252,7 +252,7 @@ def androidTesting() {
 
 def iosTesting() {
 
-    def setupRustIOS ={
+    def setupRustIOS = {
         sh "rustup target add x86_64-apple-ios"
     }
 
@@ -384,14 +384,14 @@ def linuxTesting(file, env_name, network_name, test_wrappers) {
                     jobs["${env_name}-nodejs-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
                     }
-                    jobs["${env_name}-rust-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
-                    }
                     jobs["${env_name}-java-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
                     }
                     jobs["${env_name}-python-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                    }
+                    jobs["${env_name}-rust-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
                     }
                     jobs["${env_name}-cloud-agent-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
@@ -495,7 +495,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
             sh '''
                 cd libindy
                 RUST_BACKTRACE=1 cargo test -j 1 --no-run --features sodium_static
-                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features sodium_static
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test -j 1 --features sodium_static
             '''
         }
 
@@ -555,7 +555,7 @@ def linuxVcxBuild(file, env_name, network_name) {
             echo "${env_name} Libvcx Test: Run tests"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency"
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test -j 1 --features "pool_tests agency"
             '''
         }
 
@@ -569,7 +569,7 @@ def linuxVcxBuild(file, env_name, network_name) {
             echo "${env_name} Libvcx Test: Run tests"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test -j 1 --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
             '''
         }
     }
