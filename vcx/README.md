@@ -20,8 +20,8 @@ It is recommended to install the VCX packages with APT:
     sudo apt-get update
     sudo apt-get install -y libvcx
 
-{release channel} must be replaced with master, rc or stable to define corresponded release channel.
-(xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu
+* (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
+* {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section [Release channels](../README.md/#release-channels) for more details.
 
 ### Windows
