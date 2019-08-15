@@ -1164,7 +1164,7 @@ impl LedgerCommandExecutor {
         let mut request: serde_json::Value = serde_json::from_str(request_json)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize request: {:?}", err)))?;
 
-        request["taaAcceptance"] = json!(Some(self.ledger_service.prepare_acceptance_data(text, version, taa_digest, acc_mech_type, time)?));
+        request["taaAcceptance"] = json!(self.ledger_service.prepare_acceptance_data(text, version, taa_digest, acc_mech_type, time)?);
 
         let res: String = serde_json::to_string(&request)
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding author agreement acceptance data")?;
