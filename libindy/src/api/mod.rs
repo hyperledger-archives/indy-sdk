@@ -17,19 +17,28 @@ use libc::c_char;
 use domain::IndyConfig;
 use errors::prelude::*;
 
-use utils::ctypes;
+use utils::{ctypes, sequence};
 
 pub type IndyHandle = i32;
 
-//pub type WalletHandle = i32;
-#[repr(transparent)]
-#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
-pub struct WalletHandle(pub i32);
-pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
+pub type WalletHandle = i32;
+pub const INVALID_WALLET_HANDLE : WalletHandle = 0;
+pub (crate) fn next_wallet_handle() -> WalletHandle { sequence::get_next_id() }
 
 pub type CallbackHandle = i32;
+
 pub type PoolHandle = i32;
+pub const INVALID_POOL_HANDLE : PoolHandle = 0;
+pub (crate) fn next_pool_handle() -> PoolHandle {
+    sequence::get_next_id()
+}
+
 pub type CommandHandle = i32;
+pub const INVALID_COMMAND_HANDLE : CommandHandle = 0;
+pub (crate) fn next_command_handle() -> CommandHandle {
+    sequence::get_next_id()
+}
+
 pub type StorageHandle = i32;
 pub type SearchHandle = i32;
 

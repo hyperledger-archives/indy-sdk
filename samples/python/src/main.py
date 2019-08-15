@@ -1,6 +1,6 @@
 import time
 
-from src import anoncreds, anoncreds_revocation, crypto, ledger, getting_started, txn_author_agreement
+from src import anoncreds, anoncreds_revocation, crypto, ledger, getting_started, txn_author_agreement, endorser
 from src.utils import run_coroutine
 
 
@@ -12,6 +12,7 @@ async def main():
     await crypto.demo()
     await ledger.demo()
     await txn_author_agreement.demo()
+    await endorser.demo()
 
 if __name__ == '__main__':
     run_coroutine(main)

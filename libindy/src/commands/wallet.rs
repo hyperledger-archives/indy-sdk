@@ -213,7 +213,7 @@ impl WalletCommandExecutor {
                       free_search: WalletFreeSearch) -> IndyResult<()> {
         trace!("_register_type >>> type_: {:?}", type_);
 
-        let res = self
+        self
             .wallet_service
             .register_wallet_storage(
                 type_, create, open, close, delete, add_record, update_record_value, update_record_tags,
@@ -222,8 +222,8 @@ impl WalletCommandExecutor {
                 free_storage_metadata, search_records, search_all_records,
                 get_search_total_count, fetch_search_next_record, free_search)?;
 
-        trace!("_register_type <<< res: {:?}", res);
-        Ok(res)
+        trace!("_register_type <<< res: ()");
+        Ok(())
     }
 
     fn _create(&self,
@@ -336,10 +336,10 @@ impl WalletCommandExecutor {
               wallet_handle: WalletHandle) -> IndyResult<()> {
         trace!("_close >>> handle: {:?}", wallet_handle);
 
-        let res = self.wallet_service.close_wallet(wallet_handle)?;
+        self.wallet_service.close_wallet(wallet_handle)?;
 
-        trace!("_close <<< res: {:?}", res);
-        Ok(res)
+        trace!("_close <<< res: ()");
+        Ok(())
     }
 
     fn _delete(&self,

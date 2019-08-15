@@ -122,7 +122,7 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
                 }
             }
             //TODO IS-713 support KeyValuesInSP::SubTrie
-            kvs @ _ => {
+            kvs => {
                 warn!("Unsupported parsed state proof format for key-values {:?} ", kvs);
                 return false;
             }
@@ -134,20 +134,18 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
 
 #[logfn(Trace)]
 pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Vec<u8>> {
-    use sha2::digest::{FixedOutput, Input};
     let type_ = json_msg["operation"]["type"].as_str()?;
     let json_msg = &json_msg["operation"];
     let key_suffix: String = match type_ {
         constants::GET_ATTR => {
             if let Some(attr_name) = json_msg["raw"].as_str()
-                .or(json_msg["enc"].as_str())
-                .or(json_msg["hash"].as_str()) {
+                .or_else(|| json_msg["enc"].as_str())
+                .or_else(|| json_msg["hash"].as_str()) {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_ATTR attr_name {:?}", attr_name);
 
-                let mut hasher = sha2::Sha256::default();
-                hasher.input(attr_name.as_bytes());
                 let marker = if ProtocolVersion::is_node_1_3() { '\x01' } else { '1' };
-                format!(":{}:{}", marker, hex::encode(hasher.fixed_result()))
+                let hash = openssl_hash(attr_name.as_bytes()).ok()?;
+                format!(":{}:{}", marker, hex::encode(hash))
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_ATTR No key suffix");
                 return None;
@@ -159,7 +157,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_CRED_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
                 let marker = if ProtocolVersion::is_node_1_3() { '\x03' } else { '3' };
                 let tag = if ProtocolVersion::is_node_1_3() { None } else { json_msg["tag"].as_str() };
-                let tag = tag.map(|t| format!(":{}", t)).unwrap_or("".to_owned());
+                let tag = tag.map(|t| format!(":{}", t)).unwrap_or_else(|| "".to_owned());
                 format!(":{}:{}:{}{}", marker, sign_type, sch_seq_no, tag)
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_CRED_DEF No key suffix");
@@ -254,13 +252,11 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
         }
     };
 
-    let dest = json_msg["dest"].as_str().or(json_msg["origin"].as_str());
+    let dest = json_msg["dest"].as_str().or_else(|| json_msg["origin"].as_str());
     let key_prefix = match type_ {
         constants::GET_NYM => {
             if let Some(dest) = dest {
-                let mut hasher = sha2::Sha256::default();
-                hasher.input(dest.as_bytes());
-                hasher.fixed_result().to_vec()
+                openssl_hash(dest.as_bytes()).ok()?
             } else {
                 debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
                 return None;
@@ -496,7 +492,7 @@ fn _verify_proof_range(proofs_rlp: &[u8],
                        prefix: &str,
                        from: Option<u64>,
                        next: Option<u64>,
-                       kvs: &Vec<(String, Option<String>)>) -> bool {
+                       kvs: &[(String, Option<String>)]) -> bool {
     debug!("verify_proof_range >> from {:?}, prefix {:?}, kvs {:?}", from, prefix, kvs);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
@@ -550,7 +546,7 @@ fn _verify_proof_range(proofs_rlp: &[u8],
         } else {
             vals_with_from.as_slice()
         };
-        let vals_prepared: Vec<(String, Option<String>)> = vals_slice.into_iter().map(|&(_, ref pair)| pair.clone()).collect();
+        let vals_prepared: Vec<(String, Option<String>)> = vals_slice.iter().map(|&(_, ref pair)| pair.clone()).collect();
         vals_prepared[..] == kvs[..]
     }).unwrap_or(false)
 }
@@ -603,7 +599,6 @@ fn _verify_proof_signature(signature: &str,
 }
 
 fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<Option<String>, String> {
-    use sha2::digest::{FixedOutput, Input};
     if let Some(data) = data {
         let mut value = json!({});
 
@@ -631,9 +626,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 value["verkey"] = parsed_data["verkey"].clone();
             }
             constants::GET_ATTR => {
-                let mut hasher = sha2::Sha256::default();
-                hasher.input(data.as_bytes());
-                value["val"] = SJsonValue::String(hex::encode(hasher.fixed_result()));
+                value["val"] = SJsonValue::String(hex::encode(openssl_hash(data.as_bytes()).unwrap()));
             }
             constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
                 value["val"] = parsed_data.clone();
@@ -701,11 +694,11 @@ fn _calculate_taa_digest(text: &str, version: &str) -> IndyResult<Vec<u8>> {
 }
 
 fn _is_full_taa_state_value_expected(expected_state_key: &[u8]) -> bool {
-    expected_state_key.starts_with("2:d:".as_bytes())
+    expected_state_key.starts_with(b"2:d:")
 }
 
 fn _if_rev_delta_multi_state_proof_expected(sp_key: &[u8]) -> bool {
-    sp_key.starts_with("\x06:".as_bytes()) || sp_key.starts_with("6:".as_bytes())
+    sp_key.starts_with(b"\x06:") || sp_key.starts_with(b"6:")
 }
 
 #[cfg(test)]
