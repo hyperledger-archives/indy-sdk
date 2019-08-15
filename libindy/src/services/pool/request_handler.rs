@@ -43,6 +43,7 @@ struct RequestSM<T: Networker> {
     pool_name: String,
     timeout: i64,
     extended_timeout: i64,
+    number_read_nodes: u8,
     state: RequestState<T>,
 }
 
@@ -71,8 +72,8 @@ impl<T: Networker> RequestSM<T> {
                f: usize,
                cmd_ids: &[CommandHandle],
                nodes: &HashMap<String, Option<VerKey>>,
-               pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
-        let generator : Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
+               pool_name: &str, timeout: i64, extended_timeout: i64, number_read_nodes: u8) -> Self {
+        let generator: Generator = Generator::from_bytes(&DEFAULT_GENERATOR.from_base58().unwrap()).unwrap();
         RequestSM {
             f,
             cmd_ids: cmd_ids.to_owned(),
@@ -81,6 +82,7 @@ impl<T: Networker> RequestSM<T> {
             pool_name: pool_name.to_string(),
             timeout,
             extended_timeout,
+            number_read_nodes,
             state: RequestState::Start(StartState {
                 networker
             }),
@@ -94,6 +96,7 @@ impl<T: Networker> RequestSM<T> {
                 pool_name: String,
                 timeout: i64,
                 extended_timeout: i64,
+                number_read_nodes: u8,
                 state: RequestState<T>) -> Self {
         RequestSM {
             f,
@@ -103,6 +106,7 @@ impl<T: Networker> RequestSM<T> {
             pool_name,
             timeout,
             extended_timeout,
+            number_read_nodes,
             state,
         }
     }
@@ -244,7 +248,7 @@ impl Hash for NodeResponse {
 
 impl<T: Networker> RequestSM<T> {
     fn handle_event(self, re: RequestEvent) -> (Self, Option<PoolEvent>) {
-        let RequestSM { state, f, cmd_ids, nodes, generator, pool_name, timeout, extended_timeout } = self;
+        let RequestSM { state, f, cmd_ids, nodes, generator, pool_name, timeout, extended_timeout, number_read_nodes } = self;
         let (state, event) = match state {
             RequestState::Start(state) => {
                 match re {
@@ -274,7 +278,11 @@ impl<T: Networker> RequestSM<T> {
                     }
                     RequestEvent::CustomSingleRequest(msg, req_id, sp_key, timestamps) => {
                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(msg.clone(), req_id.clone(), timeout)));
-                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id, timeout)));
+
+                        for _ in 0..number_read_nodes - 1 {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone(), timeout)));
+                        }
+
                         (RequestState::Single((state, sp_key, timestamps).into()), None)
                     }
                     RequestEvent::CustomFullRequest(msg, req_id, local_timeout, nodes_to_send) => {
@@ -498,7 +506,7 @@ impl<T: Networker> RequestSM<T> {
             }
             RequestState::Finish(state) => (RequestState::Finish(state), None)
         };
-        (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, timeout, extended_timeout, state), event)
+        (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, timeout, extended_timeout, number_read_nodes, state), event)
     }
 
     fn is_terminal(&self) -> bool {
@@ -601,7 +609,7 @@ impl<T: Networker> RequestSM<T> {
 }
 
 pub trait RequestHandler<T: Networker> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[CommandHandle], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self;
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[CommandHandle], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64, number_read_nodes: u8) -> Self;
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
     fn is_terminal(&self) -> bool;
 }
@@ -611,9 +619,9 @@ pub struct RequestHandlerImpl<T: Networker> {
 }
 
 impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[CommandHandle], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64) -> Self {
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &[CommandHandle], nodes: &HashMap<String, Option<VerKey>>, pool_name: &str, timeout: i64, extended_timeout: i64, number_read_nodes: u8) -> Self {
         RequestHandlerImpl {
-            request_wrapper: Some(RequestSM::new(networker, f, cmd_ids, nodes, pool_name, timeout, extended_timeout)),
+            request_wrapper: Some(RequestSM::new(networker, f, cmd_ids, nodes, pool_name, timeout, extended_timeout, number_read_nodes)),
         }
     }
 
@@ -832,6 +840,7 @@ pub mod tests {
     use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
     use utils::test;
     use utils::test::test_pool_create_poolfile;
+    use domain::pool::NUMBER_READ_NODES;
 
     use super::*;
     use std::io::Write;
@@ -850,7 +859,7 @@ pub mod tests {
     pub struct MockRequestHandler {}
 
     impl<T: Networker> RequestHandler<T> for MockRequestHandler {
-        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &[CommandHandle], _nodes: &HashMap<String, Option<VerKey>>, _pool_name: &str, _timeout: i64, _extended_timeout: i64) -> Self {
+        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &[CommandHandle], _nodes: &HashMap<String, Option<VerKey>>, _pool_name: &str, _timeout: i64, _extended_timeout: i64, _number_read_nodes: u8) -> Self {
             MockRequestHandler {}
         }
 
@@ -930,7 +939,8 @@ pub mod tests {
                                 &nodes,
                                 pool_name,
                                 0,
-                                0)
+                                0,
+                                NUMBER_READ_NODES)
     }
 
     // required because of dumping txns to cache
