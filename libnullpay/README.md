@@ -15,7 +15,7 @@ Pre-Built binaries can be downloaded from https://repo.sovrin.org/:
 On Ubuntu it is recommended to install packages with APT (change stable to `master` or `rc` if needed):
 ```
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
-sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master"
+sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) stable"
 sudo apt-get update
 sudo apt-get install -y libnullpay
 ```
