@@ -303,7 +303,7 @@ impl DidCommandExecutor {
             let did_id = did_record.get_id();
 
             let did: Did = did_record.get_value()
-                .ok_or(err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
+                .ok_or_else(||err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
                 .and_then(|tags_json| serde_json::from_str(&tags_json)
                     .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
 

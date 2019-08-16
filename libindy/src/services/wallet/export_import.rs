@@ -63,10 +63,10 @@ pub(super) fn export_continue(wallet: &Wallet, writer: &mut dyn Write, version: 
 
     while let Some(WalletRecord { type_, id, value, tags }) = records.next()? {
         let record = Record {
-            type_: type_.ok_or(err_msg(IndyErrorKind::InvalidState, "No type fetched for exported record"))?,
+            type_: type_.ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "No type fetched for exported record"))?,
             id,
-            value: value.ok_or(err_msg(IndyErrorKind::InvalidState, "No value fetched for exported record"))?,
-            tags: tags.ok_or(err_msg(IndyErrorKind::InvalidState, "No tags fetched for exported record"))?,
+            value: value.ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "No value fetched for exported record"))?,
+            tags: tags.ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "No tags fetched for exported record"))?,
         };
 
         let record = rmp_serde::to_vec(&record)

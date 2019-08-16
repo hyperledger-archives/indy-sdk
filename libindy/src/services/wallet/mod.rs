@@ -198,7 +198,7 @@ impl WalletService {
 
     pub fn open_wallet_continue(&self, wallet_handle: WalletHandle, master_key: (&MasterKey, Option<&MasterKey>)) -> IndyResult<WalletHandle> {
         let (id, storage, metadata, rekey_data) = self.pending_for_open.borrow_mut().remove(&wallet_handle)
-            .ok_or(err_msg(IndyErrorKind::InvalidState, "Open data not found"))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "Open data not found"))?;
 
         let (master_key, rekey) = master_key;
         let keys = self._restore_keys(&metadata, &master_key)?;
@@ -348,7 +348,7 @@ impl WalletService {
         }?;
 
         let record_value = record.get_value()
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("{} not found for id: {:?}", type_, name)))?.to_string();
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("{} not found for id: {:?}", type_, name)))?.to_string();
 
         Ok(record_value)
     }
@@ -430,7 +430,7 @@ impl WalletService {
         let wallets = self.wallets.borrow();
         let wallet = wallets
             .get(&wallet_handle)
-            .ok_or(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))?;
 
         let path = PathBuf::from(&export_config.path);
 
@@ -515,7 +515,7 @@ impl WalletService {
 
             storage_types
                 .get(storage_type)
-                .ok_or(err_msg(IndyErrorKind::UnknownWalletStorageType, "Unknown wallet storage type"))?
+                .ok_or_else(|| err_msg(IndyErrorKind::UnknownWalletStorageType, "Unknown wallet storage type"))?
         };
 
         let storage_config = config.storage_config.as_ref().map(|value| value.to_string());

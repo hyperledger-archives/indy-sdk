@@ -702,7 +702,7 @@ impl IssuerCommandExecutor {
 
                 // TODO: FIXME: Review error kind!
                 let blob_storage_reader_handle = blob_storage_reader_handle
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "TailsReaderHandle not found"))?;
+                    .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "TailsReaderHandle not found"))?;
 
                 let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                                blob_storage_reader_handle,
@@ -920,7 +920,7 @@ impl IssuerCommandExecutor {
     fn _wallet_get_schema_id(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<String> {
         let schema_id_record = self.wallet_service.get_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), &key, &RecordOptions::id_value())?;
         Ok(schema_id_record.get_value()
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("SchemaId not found for id: {}", key)))?.to_string())
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidStructure, format!("SchemaId not found for id: {}", key)))?.to_string())
     }
 
     fn _wallet_get_rev_reg_def(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<RevocationRegistryDefinition> {
