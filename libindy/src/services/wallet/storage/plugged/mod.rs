@@ -305,7 +305,7 @@ fn _tags_from_json(json: &str) -> IndyResult<Vec<Tag>> {
     let string_tags: HashMap<String, String> = serde_json::from_str(json)
         .to_indy(IndyErrorKind::InvalidState, "Unable to deserialize tags from json")?;
 
-    let mut tags = Vec::new();
+    let mut tags = Vec::with_capacity(string_tags.len());
 
     for (k, v) in string_tags {
         if k.starts_with('~') {
@@ -330,16 +330,11 @@ fn _tags_from_json(json: &str) -> IndyResult<Vec<Tag>> {
 }
 
 fn _tags_names_to_json(tag_names: &[TagName]) -> IndyResult<String> {
-    let mut tags: Vec<String> = Vec::new();
-
-    for tag_name in tag_names {
-        tags.push(
-            match *tag_name {
-                TagName::OfEncrypted(ref tag_name) => base64::encode(tag_name),
-                TagName::OfPlain(ref tag_name) => format!("~{}", base64::encode(tag_name))
-            }
-        )
-    }
+    let tags : Vec<String> = tag_names.iter().map(|tag_name|
+        match *tag_name {
+            TagName::OfEncrypted(ref tag_name) => base64::encode(tag_name),
+            TagName::OfPlain(ref tag_name) => format!("~{}", base64::encode(tag_name))
+        }).collect();
 
     serde_json::to_string(&tags)
         .to_indy(IndyErrorKind::InvalidState, "Unable to serialize tag names as json")

@@ -190,7 +190,7 @@ impl PoolConnection {
             });
         }
 
-        let mut sockets: Vec<Option<ZSocket>> = Vec::new();
+        let mut sockets: Vec<Option<ZSocket>> = Vec::with_capacity(nodes.len());
 
         for _ in 0..nodes.len() { sockets.push(None); }
 
