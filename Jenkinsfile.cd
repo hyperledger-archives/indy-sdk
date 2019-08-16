@@ -350,7 +350,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults, full_test
 
         echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
-            def features_args = full_testing ? '--features sodium_static' : '--features "sodium_static only_high_cases"'
+            def features_args = full_testing ? "--features sodium_static" : "--features 'sodium_static only_high_cases'"
 
             sh """
                 cd libindy
