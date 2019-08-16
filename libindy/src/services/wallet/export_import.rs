@@ -95,7 +95,7 @@ pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> IndyRes
     let header_len = reader.read_u32::<LittleEndian>().map_err(_map_io_err)? as usize;
 
     if header_len == 0 {
-        Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header length"))?;
+        return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header length"));
     }
 
     let mut header_bytes = vec![0u8; header_len];
@@ -105,7 +105,7 @@ pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> IndyRes
         .to_indy(IndyErrorKind::InvalidStructure, "Header is malformed json")?;
 
     if header.version != 0 {
-        Err(err_msg(IndyErrorKind::InvalidStructure, "Unsupported version"))?;
+        return Err(err_msg(IndyErrorKind::InvalidStructure, "Unsupported version"));
     }
 
     let key_derivation_method = match header.encryption_method {
@@ -155,7 +155,7 @@ pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chach
     reader.read_exact(&mut header_hash).map_err(_map_io_err)?;
 
     if hash(&header_bytes)? != header_hash {
-        Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header hash"))?;
+        return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header hash"));
     }
 
     loop {

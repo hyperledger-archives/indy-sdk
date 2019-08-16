@@ -119,7 +119,7 @@ impl WalletService {
         trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         if config.id.is_empty() {
-            Err(err_msg(IndyErrorKind::InvalidStructure, "Wallet id is empty"))?
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "Wallet id is empty"));
         }
 
         let storage_types = self.storage_types.borrow();
@@ -145,7 +145,7 @@ impl WalletService {
         trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
-            Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", WalletService::_get_wallet_id(config))))?
+            return Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", WalletService::_get_wallet_id(config))));
         }
 
         // check credentials and close connection before deleting wallet
@@ -422,7 +422,7 @@ impl WalletService {
         trace!("export_wallet >>> wallet_handle: {:?}, export_config: {:?}, version: {:?}", wallet_handle, secret!(export_config), version);
 
         if version != 0 {
-            Err(err_msg(IndyErrorKind::InvalidState, "Unsupported version"))?;
+            return Err(err_msg(IndyErrorKind::InvalidState, "Unsupported version"));
         }
 
         let (key_data, key) = key;
@@ -526,11 +526,11 @@ impl WalletService {
 
     fn _is_id_from_config_not_used(&self, config: &Config) -> IndyResult<()> {
         if config.id.is_empty() {
-            Err(err_msg(IndyErrorKind::InvalidStructure, "Wallet id is empty"))?
+            return Err(err_msg(IndyErrorKind::InvalidStructure, "Wallet id is empty"));
         }
 
         if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
-            Err(err_msg(IndyErrorKind::WalletAlreadyOpened, format!("Wallet {} already opened", WalletService::_get_wallet_id(config))))?
+            return Err(err_msg(IndyErrorKind::WalletAlreadyOpened, format!("Wallet {} already opened", WalletService::_get_wallet_id(config))));
         }
 
         Ok(())
