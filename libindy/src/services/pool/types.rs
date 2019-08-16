@@ -445,7 +445,9 @@ pub enum KeyValueSimpleDataVerificationType {
     /* key should be base64-encoded string */
     Simple,
     /* key should be plain string */
-    NumericalSuffixAscendingNoGaps(NumericalSuffixAscendingNoGapsData)
+    NumericalSuffixAscendingNoGaps(NumericalSuffixAscendingNoGapsData),
+    /* nodes are from a simple merkle tree */
+    MerkleTree(u64)
 }
 
 impl Default for KeyValueSimpleDataVerificationType {
