@@ -39,6 +39,7 @@ sodium_static = []
 hmacsha256_sodium = ["sodiumoxide"]
 memzero_sodium = ["sodiumoxide"]
 randombytes_sodium = ["sodiumoxide"]
+only_high_cases = []
 
 # Causes the build to fail on all warnings
 fatal_warnings = []

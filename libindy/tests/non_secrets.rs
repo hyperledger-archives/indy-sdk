@@ -1336,7 +1336,7 @@ mod high_cases {
     }
 }
 
-
+#[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     use super::*;
 

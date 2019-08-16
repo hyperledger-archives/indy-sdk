@@ -43,7 +43,7 @@ use self::rand::distributions::Alphanumeric;
 
 use utils::domain::ledger::constants;
 use utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
-use utils::domain::anoncreds::schema::{Schema, SchemaV1};
+use utils::domain::anoncreds::schema::{SchemaV1};
 use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
@@ -3126,8 +3126,10 @@ mod high_cases {
     }
 }
 
+#[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     use super::*;
+    use utils::domain::anoncreds::schema::{Schema};
 
     mod requests {
         use super::*;
