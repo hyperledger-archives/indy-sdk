@@ -40,7 +40,7 @@ pub fn parse_generic_reply_for_proof_checking(json_msg: &SJsonValue, raw_msg: &s
             _parse_reply_for_builtin_sp(json_msg, type_, sp_key)
         } else {
             warn!("parse_generic_reply_for_proof_checking: can't get key in sp for built-in type");
-            return None;
+            None
         }
     } else if let Some((parser, free)) = PoolService::get_sp_parser(type_) {
         trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugged: parser {:?}, free {:?}",
