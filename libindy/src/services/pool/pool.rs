@@ -311,7 +311,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                     PoolEvent::CatchupRestart(merkle_tree) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-                            state.request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, &pool_name, timeout, extended_timeout, number_read_nodes);
+                            state.request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &[], &nodes, &pool_name, timeout, extended_timeout, number_read_nodes);
                             let ls = _ledger_status(&merkle_tree);
                             state.request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle_tree))));
                             PoolState::GettingCatchupTarget(state)
@@ -322,7 +322,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                     PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle_tree) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-                            let mut request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &vec![], &nodes, &pool_name, timeout, extended_timeout, number_read_nodes);
+                            let mut request_handler = R::new(state.networker.clone(), _get_f(nodes.len()), &[], &nodes, &pool_name, timeout, extended_timeout, number_read_nodes);
                             request_handler.process_event(Some(RequestEvent::CatchupReq(merkle_tree, target_mt_size, target_mt_root)));
                             PoolState::SyncCatchup((request_handler, state).into())
                         } else {
@@ -385,7 +385,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                         let re: Option<RequestEvent> = pe.into();
                         match re.as_ref().map(|r| r.get_req_id()) {
                             Some(req_id) => {
-                                let mut request_handler = R::new(state.networker.clone(), _get_f(state.nodes.len()), &vec![cmd_id], &state.nodes, &pool_name, timeout, extended_timeout, number_read_nodes);
+                                let mut request_handler = R::new(state.networker.clone(), _get_f(state.nodes.len()), &[cmd_id], &state.nodes, &pool_name, timeout, extended_timeout, number_read_nodes);
                                 request_handler.process_event(re);
                                 state.request_handlers.insert(req_id.to_string(), request_handler); //FIXME check already exists
                             }
@@ -628,7 +628,7 @@ fn _get_request_handler_with_ledger_status_sent<T: Networker, R: RequestHandler<
         }
     };
     networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-    let mut request_handler = R::new(networker.clone(), _get_f(nodes.len()), &vec![], &nodes, pool_name, timeout, extended_timeout, number_read_nodes);
+    let mut request_handler = R::new(networker.clone(), _get_f(nodes.len()), &[], &nodes, pool_name, timeout, extended_timeout, number_read_nodes);
     let ls = _ledger_status(&merkle);
     request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle))));
     Ok(request_handler)
