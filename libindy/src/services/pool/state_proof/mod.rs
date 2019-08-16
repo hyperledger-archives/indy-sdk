@@ -292,6 +292,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 return None;
             }
         }
+        constants::GET_TXN => vec![],
         _ => {
             if let Some(dest) = dest {
                 dest.as_bytes().to_vec()
@@ -399,7 +400,7 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
 
         (proof, root_hash, KeyValueSimpleDataVerificationType::Simple, json_msg["state_proof"]["multi_signature"].clone())
     } else {
-        let proof = if let Some(path) = parsed_data["audit_path"].as_array() {
+        let proof = if let Some(path) = parsed_data["auditPath"].as_array() {
             let path_str = json!(path).to_string();
             trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", path);
             base64::encode(&path_str)
@@ -407,14 +408,14 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
             return Err("No proof".to_string());
         };
 
-        let root_hash = if let Some(root_hash) = parsed_data["root_hash"].as_str() {
+        let root_hash = if let Some(root_hash) = parsed_data["rootHash"].as_str() {
             trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
             root_hash
         } else {
             return Err("No root hash".to_string());
         };
 
-        let len = if let Some(len) = parsed_data["ledger_size"].as_u64() {
+        let len = if let Some(len) = parsed_data["ledgerSize"].as_u64() {
             trace!("Ledger length: {}", len);
             len
         } else {
