@@ -461,7 +461,7 @@ impl PaymentsCommandExecutor {
         let method = match self.payments_service.parse_method_from_payment_address(payment_address) {
             Ok(method) => method,
             Err(err) => {
-                cb(Err(IndyError::from(err)));
+                cb(Err(err));
                 return;
             }
         };
@@ -620,7 +620,7 @@ impl PaymentsCommandExecutor {
         trace!("build_get_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}", wallet_handle, submitter_did, type_);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(IndyError::from(err))),
+                Err(err) => return cb(Err(err)),
                 _ => ()
             }
         }
