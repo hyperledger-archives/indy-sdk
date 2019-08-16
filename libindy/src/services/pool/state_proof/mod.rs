@@ -545,7 +545,7 @@ fn _verify_merkle_tree(proof_nodes: &[u8], root_hash: &[u8], kvs: &[(String, Opt
         }
     };
 
-    let turns = _calculate_turns(length, seq_no);
+    let turns = _calculate_turns(length, seq_no - 1);
     trace!("_verify_merkle_tree >> turns: {:?}", turns);
 
     if hashes.len() != turns.len() {
@@ -597,15 +597,15 @@ fn _verify_merkle_tree(proof_nodes: &[u8], root_hash: &[u8], kvs: &[(String, Opt
 // true is right
 // false is left
 fn _calculate_turns(length: u64, idx: u64) -> Vec<bool> {
-    let mut _idx: usize = (idx - 1) as usize;
-    let mut _length: usize = length as usize;
+    let mut idx = idx;
+    let mut length = length;
     let mut result: Vec<bool> = vec![];
-    while _length != 1 {
-        let middle = _length.next_power_of_two()/2;
-        let right = _idx < middle;
+    while length != 1 {
+        let middle = length.next_power_of_two()/2;
+        let right = idx < middle;
         result.push(right);
-        _idx = if right {_idx} else {_idx - middle};
-        _length = if right {middle} else {_length - middle};
+        idx = if right {idx} else {idx - middle};
+        length = if right {middle} else {length - middle};
     }
     result.reverse();
     result
@@ -897,7 +897,7 @@ mod tests {
     fn audit_proof_verify_works_for_invalid_root_hash() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj", // wrong hash in this value
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
                 "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
                 "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
             ]
@@ -912,7 +912,7 @@ mod tests {
     fn audit_proof_verify_works_for_invalid_ledger_length() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj", // wrong hash in this value
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
                 "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
                 "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
             ]
@@ -927,7 +927,7 @@ mod tests {
     fn audit_proof_verify_works_for_invalid_value() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj", // wrong hash in this value
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
                 "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
                 "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
             ]
@@ -942,7 +942,7 @@ mod tests {
     fn audit_proof_verify_works_for_invalid_seqno() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj", // wrong hash in this value
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
                 "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
                 "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
             ]
