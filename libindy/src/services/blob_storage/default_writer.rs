@@ -27,7 +27,7 @@ struct DefaultWriterConfig {
 }
 
 impl WriterType for DefaultWriterType {
-    fn open(&self, config: &str) -> IndyResult<Box<Writer>> {
+    fn open(&self, config: &str) -> IndyResult<Box<dyn Writer>> {
         let config: DefaultWriterConfig = serde_json::from_str(config)
             .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize DefaultWriterConfig")?;
 
@@ -36,7 +36,7 @@ impl WriterType for DefaultWriterType {
 }
 
 impl Writer for DefaultWriterConfig {
-    fn create(&self, id: i32) -> IndyResult<Box<WritableBlob>> {
+    fn create(&self, id: i32) -> IndyResult<Box<dyn WritableBlob>> {
         let path = PathBuf::from(&self.base_dir);
 
         fs::DirBuilder::new()

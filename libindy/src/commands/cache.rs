@@ -21,7 +21,7 @@ pub enum CacheCommand {
               String, // submitter_did
               String, // id
               String, // options_json
-              Box<Fn(IndyResult<String>) + Send>),
+              Box<dyn Fn(IndyResult<String>) + Send>),
     GetSchemaContinue(
         WalletHandle,
         IndyResult<(String, String)>, // ledger_response
@@ -33,7 +33,7 @@ pub enum CacheCommand {
                String, // submitter_did
                String, // id
                String, // options_json
-               Box<Fn(IndyResult<String>) + Send>),
+               Box<dyn Fn(IndyResult<String>) + Send>),
     GetCredDefContinue(
         WalletHandle,
         IndyResult<(String, String)>, // ledger_response
@@ -42,16 +42,16 @@ pub enum CacheCommand {
     ),
     PurgeSchemaCache(WalletHandle,
                      String, // options json
-                     Box<Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send>),
     PurgeCredDefCache(WalletHandle,
                       String, // options json
-                      Box<Fn(IndyResult<()>) + Send>),
+                      Box<dyn Fn(IndyResult<()>) + Send>),
 }
 
 pub struct CacheCommandExecutor {
     wallet_service: Rc<WalletService>,
 
-    pending_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<String>)>>>,
+    pending_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>)>>>,
 }
 
 macro_rules! check_cache {
@@ -118,7 +118,7 @@ impl CacheCommandExecutor {
                   submitter_did: &str,
                   id: &str,
                   options_json: &str,
-                  cb: Box<Fn(IndyResult<String>) + Send>) {
+                  cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         trace!("get_schema >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, id: {:?}, options_json: {:?}",
                pool_handle, wallet_handle, submitter_did, id, options_json);
 
@@ -202,7 +202,7 @@ impl CacheCommandExecutor {
                     submitter_did: &str,
                     id: &str,
                     options_json: &str,
-                    cb: Box<Fn(IndyResult<String>) + Send>) {
+                    cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         trace!("get_cred_def >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, id: {:?}, options_json: {:?}",
                pool_handle, wallet_handle, submitter_did, id, options_json);
 

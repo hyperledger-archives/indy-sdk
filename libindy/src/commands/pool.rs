@@ -12,39 +12,39 @@ pub enum PoolCommand {
     Create(
         String, // name
         Option<PoolConfig>, // config
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     Delete(
         String, // name
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     Open(
         String, // name
         Option<PoolOpenConfig>, // config
-        Box<Fn(IndyResult<PoolHandle>) + Send>),
+        Box<dyn Fn(IndyResult<PoolHandle>) + Send>),
     OpenAck(
         CommandHandle, // cmd id
         PoolHandle, // pool handle
         IndyResult<()>),
-    List(Box<Fn(IndyResult<String>) + Send>),
+    List(Box<dyn Fn(IndyResult<String>) + Send>),
     Close(
         PoolHandle, // pool handle
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     CloseAck(CommandHandle,
              IndyResult<()>),
     Refresh(
         PoolHandle, // pool handle
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     RefreshAck(CommandHandle,
                IndyResult<()>),
     SetProtocolVersion(
         usize, // protocol version
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
 }
 
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
-    close_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<()>)>>>,
-    refresh_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<()>)>>>,
-    open_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<PoolHandle>)>>>,
+    close_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
+    refresh_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
+    open_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<PoolHandle>)>>>,
 }
 
 impl PoolCommandExecutor {
@@ -155,7 +155,7 @@ impl PoolCommandExecutor {
         Ok(())
     }
 
-    fn open(&self, name: &str, config: Option<PoolOpenConfig>, cb: Box<Fn(IndyResult<PoolHandle>) + Send>) {
+    fn open(&self, name: &str, config: Option<PoolOpenConfig>, cb: Box<dyn Fn(IndyResult<PoolHandle>) + Send>) {
         debug!("open >>> name: {:?}, config: {:?}", name, config);
 
         let result = self.pool_service.open(name, config)
@@ -185,7 +185,7 @@ impl PoolCommandExecutor {
         Ok(res)
     }
 
-    fn close(&self, pool_handle: PoolHandle, cb: Box<Fn(IndyResult<()>) + Send>) {
+    fn close(&self, pool_handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
         debug!("close >>> handle: {:?}", pool_handle);
 
         let result = self.pool_service.close(pool_handle)
@@ -203,7 +203,7 @@ impl PoolCommandExecutor {
         debug!("close <<<");
     }
 
-    fn refresh(&self, handle: PoolHandle, cb: Box<Fn(IndyResult<()>) + Send>) {
+    fn refresh(&self, handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
         debug!("refresh >>> handle: {:?}", handle);
 
         let result = self.pool_service.refresh(handle)
