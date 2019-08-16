@@ -33,6 +33,7 @@ use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, ANONCREDS_WALLET_CO
 
 use indy::ErrorCode;
 use utils::constants::*;
+use utils::Setup;
 
 use utils::domain::anoncreds::schema::{Schema, AttributeNames, MAX_ATTRIBUTES_COUNT};
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
@@ -3496,9 +3497,9 @@ mod high_cases {
 
         #[test]
         fn issuer_rotate_credential_def_works() {
-            let (wallet_handle, config) = utils::setup_with_wallet("issuer_rotate_credential_def_works");
+            let setup = Setup::wallet();
 
-            let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(wallet_handle,
+            let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(setup.wallet_handle,
                                                                                               ISSUER_DID,
                                                                                               &anoncreds::gvt_schema_json(),
                                                                                               TAG_1,
@@ -3506,34 +3507,28 @@ mod high_cases {
                                                                                               Some(&anoncreds::default_cred_def_config()))
                 .unwrap();
 
-            let temp_cred_def_json = anoncreds::issuer_rotate_credential_def_start(wallet_handle, &cred_def_id, None).unwrap();
+            let temp_cred_def_json = anoncreds::issuer_rotate_credential_def_start(setup.wallet_handle, &cred_def_id, None).unwrap();
 
             assert_ne!(serde_json::from_str::<serde_json::Value>(&cred_def_json).unwrap(),
                        serde_json::from_str::<serde_json::Value>(&temp_cred_def_json).unwrap());
 
-            anoncreds::issuer_rotate_credential_def_apply(wallet_handle, &cred_def_id).unwrap();
-
-            utils::tear_down_with_wallet(wallet_handle, "issuer_rotate_credential_def_works", &config);
+            anoncreds::issuer_rotate_credential_def_apply(setup.wallet_handle, &cred_def_id).unwrap();
         }
 
         #[test]
         fn issuer_rotate_credential_def_works_no_cred_def() {
-            let (wallet_handle, config) = utils::setup_with_wallet("issuer_rotate_credential_def_works_no_cred_def");
+            let setup = Setup::wallet();
 
-            let res = anoncreds::issuer_rotate_credential_def_start(wallet_handle, &anoncreds::issuer_1_gvt_cred_def_id(), None);
+            let res = anoncreds::issuer_rotate_credential_def_start(setup.wallet_handle, &anoncreds::issuer_1_gvt_cred_def_id(), None);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "issuer_rotate_credential_def_works_no_cred_def", &config);
         }
 
         #[test]
         fn issuer_rotate_credential_def_apply_works_for_no_temporary_cred_def() {
-            let (wallet_handle, config) = utils::setup_with_wallet("issuer_rotate_credential_def_apply_works_for_no_temporary_cred_def");
+            let setup = Setup::wallet();
 
-            let res = anoncreds::issuer_rotate_credential_def_apply(wallet_handle, &anoncreds::issuer_1_gvt_cred_def_id());
+            let res = anoncreds::issuer_rotate_credential_def_apply(setup.wallet_handle, &anoncreds::issuer_1_gvt_cred_def_id());
             assert_code!(ErrorCode::WalletItemNotFound, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "issuer_rotate_credential_def_apply_works_for_no_temporary_cred_def", &config);
         }
     }
 }

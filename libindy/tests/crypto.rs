@@ -64,7 +64,7 @@ mod high_cases {
 
         #[test]
         fn indy_create_key_works_for_invalid_wallet_handle() {
-            let _ = Setup::empty();
+            Setup::empty();
             let res = crypto::create_key(INVALID_WALLET_HANDLE, None);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
         }
@@ -324,13 +324,13 @@ mod high_cases {
 
         #[test]
         fn indy_anon_crypt_works() {
-            let _ = Setup::empty();
+            Setup::empty();
             crypto::anon_crypt(VERKEY_MY2, &MESSAGE.as_bytes()).unwrap();
         }
 
         #[test]
         fn indy_anon_crypt_works_for_invalid_their_vk() {
-            let _ = Setup::empty();
+            Setup::empty();
 
             let res = crypto::anon_crypt(INVALID_VERKEY_LENGTH, &MESSAGE.as_bytes());
             assert_code!(ErrorCode::CommonInvalidStructure, res);
@@ -591,7 +591,7 @@ mod load {
     */
     #[test]
     fn parallel_auth_encrypt() {
-        let _ = Setup::empty();
+        Setup::empty();
 
         let agent_cnt = std::env::var("AGENTS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(AGENT_CNT);
         let data_sz = std::env::var("DATA_SZ").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(DATA_SZ);

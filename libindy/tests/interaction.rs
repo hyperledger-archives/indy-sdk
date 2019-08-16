@@ -34,6 +34,7 @@ use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID};
 use utils::anoncreds::{CREDENTIAL2_ID, CREDENTIAL3_ID};
 
 use utils::constants::*;
+use utils::Setup;
 
 use utils::domain::anoncreds::schema::Schema;
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
@@ -44,6 +45,7 @@ use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistry
 use utils::domain::anoncreds::proof::Proof;
 use utils::domain::anoncreds::revocation_state::RevocationState;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
+
 
 use std::thread;
 
@@ -197,7 +199,7 @@ impl Issuer {
         // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
         let _schema_response = pool.submit_schema(&self.issuer_did, self.issuer_wallet_handle,&schema_json);
 
-        ::std::thread::sleep(::std::time::Duration::from_secs(2));
+        ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
         // Issuer gets Schema from Ledger
         let (_ , schema_json) = pool.get_schema(Some(&self.issuer_did),&schema_id);
@@ -541,7 +543,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default()
 // the common function for two previous tests
 fn anoncreds_revocation_interaction_test_one_prover(pool_name: &str, revocation_registry_config: &str)
 {
-    utils::setup(pool_name);
+    Setup::empty();
 
     let pool = Pool::new(pool_name);
 
@@ -580,7 +582,7 @@ fn anoncreds_revocation_interaction_test_one_prover(pool_name: &str, revocation_
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     // Verifying Prover's Credential
-    thread::sleep(std::time::Duration::from_secs(3));
+    thread::sleep(std::time::Duration::from_secs(1));
 
     let to = time::get_time().sec as u64;
 
@@ -615,7 +617,7 @@ fn anoncreds_revocation_interaction_test_one_prover(pool_name: &str, revocation_
     let _rev_reg_delta_json = issuer.revoke_credential(&pool, &cred_rev_id );
 
     // Verifying Prover Credential after Revocation
-    thread::sleep(std::time::Duration::from_secs(3));
+    thread::sleep(std::time::Duration::from_secs(1));
 
     let from = to;
     let to = time::get_time().sec as u64;
@@ -630,8 +632,6 @@ fn anoncreds_revocation_interaction_test_one_prover(pool_name: &str, revocation_
     prover.close();
 
     pool.close();
-
-    utils::tear_down(pool_name);
 }
 
 
@@ -657,7 +657,7 @@ fn multi_steps_create_revocation_credential(pool : &Pool, issuer: &Issuer, prove
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first() {
-    utils::setup("anoncreds_4711");
+    Setup::empty();
 
     let pool = Pool::new("anoncreds_4711");
 
@@ -692,7 +692,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
 
     // Verifying Prover1 Credential
-    thread::sleep(std::time::Duration::from_secs(3));
+    thread::sleep(std::time::Duration::from_secs(1));
 
     let to = time::get_time().sec as u64;
 
@@ -727,15 +727,13 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     prover3.close();
 
     pool.close();
-
-    utils::tear_down("anoncreds_4711");
 }
 
 #[cfg(feature = "revocation_tests")]
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all() {
-    utils::setup("aritibdtcpcepa");
+    Setup::empty();
 
     let pool = Pool::new("aritibdtcpcepa");
 
@@ -779,7 +777,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 //    ledger::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
 
     // Verifying Prover1 Credential
-    thread::sleep(std::time::Duration::from_secs(3));
+    thread::sleep(std::time::Duration::from_secs(1));
 
     let to = time::get_time().sec as u64;
 
@@ -827,7 +825,4 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     prover3.close();
 
     pool.close();
-
-
-    utils::tear_down("aritibdtcpcepa");
 }
