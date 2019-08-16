@@ -352,9 +352,11 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults, full_test
         testEnv.inside("--network=${network_name}") {
             def features_args = full_testing ? '--features sodium_static' : '--features "sodium_static only_high_cases"'
 
-            sh "cd libindy && " +
-                    "RUST_BACKTRACE=1 cargo test --release -j 1 --no-run ${features_args} &&" +
-                    "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release -j 1 ${features_args}"
+            sh """
+                cd libindy
+                RUST_BACKTRACE=1 cargo test --release --no-run ${features_args}
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release ${features_args}
+            """
         }
 
         echo "${env_name} Libnullpay Test: Test"
@@ -416,7 +418,7 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
             echo "${env_name} Libvcx Test: Run tests"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release -j 1 --features "pool_tests agency"
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
             '''
         }
 
@@ -430,7 +432,7 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
             echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release -j 1 --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
             '''
         }
     }
