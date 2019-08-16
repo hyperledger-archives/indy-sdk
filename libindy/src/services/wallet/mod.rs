@@ -258,7 +258,7 @@ impl WalletService {
     }
 
     pub fn add_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T, tags: &Tags)
-                              -> IndyResult<String> where T: ::serde::Serialize + Sized, T: NamedType {
+                              -> IndyResult<String> where T: ::serde::Serialize + Sized + NamedType {
         let type_ = T::short_type_name();
 
         let object_json = serde_json::to_string(object)
@@ -277,7 +277,7 @@ impl WalletService {
         }
     }
 
-    pub fn update_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T) -> IndyResult<String> where T: ::serde::Serialize + Sized, T: NamedType {
+    pub fn update_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T) -> IndyResult<String> where T: ::serde::Serialize + Sized + NamedType {
         let type_ = T::short_type_name();
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
@@ -354,7 +354,7 @@ impl WalletService {
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<T> where T: ::serde::de::DeserializeOwned, T: NamedType {
+    pub fn get_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<T> where T: ::serde::de::DeserializeOwned + NamedType {
         let record_value = self.get_indy_record_value::<T>(wallet_handle, name, options_json)?;
 
         serde_json::from_str(&record_value)
@@ -362,7 +362,7 @@ impl WalletService {
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_opt_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<Option<T>> where T: ::serde::de::DeserializeOwned, T: NamedType {
+    pub fn get_indy_opt_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<Option<T>> where T: ::serde::de::DeserializeOwned + NamedType {
         match self.get_indy_object::<T>(wallet_handle, name, options_json) {
             Ok(res) => Ok(Some(res)),
             Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => Ok(None),
@@ -391,7 +391,7 @@ impl WalletService {
     }
 
     pub fn upsert_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T) -> IndyResult<String>
-        where T: ::serde::Serialize + Sized, T: NamedType {
+        where T: ::serde::Serialize + Sized + NamedType {
         if self.record_exists::<T>(wallet_handle, name)? {
             self.update_indy_object::<T>(wallet_handle, name, object)
         } else {
