@@ -503,7 +503,7 @@ impl<S: Networker, R: RequestHandler<S>> Pool<S, R> {
         let active_timeout = self.active_timeout;
         let conn_limit = self.conn_limit;
         let preordered_nodes = self.preordered_nodes.clone();
-        let number_read_nodes = self.number_read_nodes.clone();
+        let number_read_nodes = self.number_read_nodes;
         self.worker = Some(thread::spawn(move || {
             let mut pool_thread: PoolThread<S, R> = PoolThread::new(cmd_socket, name, id,
                                                                     timeout, extended_timeout,
