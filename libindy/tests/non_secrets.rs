@@ -35,7 +35,6 @@ use utils::types::{WalletRecord, SearchRecords};
 use std::collections::HashMap;
 
 use self::indy::ErrorCode;
-use api::INVALID_WALLET_HANDLE;
 
 pub const FORBIDDEN_TYPE: &'static str = "Indy::Test";
 
@@ -68,68 +67,6 @@ mod high_cases {
 
             let res = add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None);
             assert_code!(ErrorCode::WalletItemAlreadyExists, res);
-        }
-
-        #[test]
-        fn indy_add_wallet_record_works_for_tags() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
-            check_record_field(setup.wallet_handle, TYPE, ID, "tags", TAGS);
-        }
-
-        #[test]
-        fn indy_add_wallet_record_works_same_types_different_ids() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
-            add_wallet_record(setup.wallet_handle, TYPE, ID_2, VALUE, None).unwrap();
-        }
-
-        #[test]
-        fn indy_add_wallet_record_works_same_ids_different_types() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
-            add_wallet_record(setup.wallet_handle, TYPE_2, ID, VALUE, None).unwrap();
-        }
-
-        #[test]
-        fn indy_add_wallet_record_works_for_invalid_type() {
-            let setup = Setup::wallet();
-
-            let res = add_wallet_record(setup.wallet_handle, FORBIDDEN_TYPE, ID, VALUE, None);
-            assert_code!(ErrorCode::WalletAccessFailed, res);
-        }
-
-        #[test]
-        fn indy_add_wallet_record_works_for_invalid_handle() {
-            Setup::empty();
-
-            let res = add_wallet_record(INVALID_WALLET_HANDLE, TYPE, ID, VALUE, None);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
-
-        #[test]
-        fn indy_add_wallet_record_works_for_invalid_tags() {
-            let setup = Setup::wallet();
-
-            let res = add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(r#"tag:1"#));
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-        }
-
-        #[test]
-        fn indy_add_wallet_record_works_for_empty_params() {
-            let setup = Setup::wallet();
-
-            let res = add_wallet_record(setup.wallet_handle, "", ID, VALUE, None);
-            assert_code!(ErrorCode::CommonInvalidParam3, res);
-
-            let res = add_wallet_record(setup.wallet_handle, TYPE, "", VALUE, None);
-            assert_code!(ErrorCode::CommonInvalidParam4, res);
-
-            let res = add_wallet_record(setup.wallet_handle, TYPE, ID, "", None);
-            assert_code!(ErrorCode::CommonInvalidParam5, res);
         }
     }
 
@@ -164,32 +101,6 @@ mod high_cases {
 
             let res = update_wallet_record_value(setup.wallet_handle, TYPE, ID, VALUE);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-        }
-
-        #[test]
-        fn indy_update_record_value_works_for_invalid_wallet_handle() {
-            Setup::empty();
-
-            let res = update_wallet_record_value(INVALID_WALLET_HANDLE, TYPE, ID, VALUE_2);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
-
-        #[test]
-        fn indy_update_record_value_works_for_empty_value() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
-
-            let res = update_wallet_record_value(setup.wallet_handle, TYPE, ID, "");
-            assert_code!(ErrorCode::CommonInvalidParam5, res);
-        }
-
-        #[test]
-        fn indy_update_record_value_works_for_invalid_type() {
-            let setup = Setup::wallet();
-
-            let res = update_wallet_record_value(setup.wallet_handle, FORBIDDEN_TYPE, ID, VALUE);
-            assert_code!(ErrorCode::WalletAccessFailed, res);
         }
     }
 
@@ -228,32 +139,6 @@ mod high_cases {
             let res = update_wallet_record_tags(setup.wallet_handle, TYPE, ID, TAGS);
             assert_code!(ErrorCode::WalletItemNotFound, res);
         }
-
-        #[test]
-        fn indy_update_wallet_record_tags_works_for_empty() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
-
-            let res = update_wallet_record_tags(setup.wallet_handle, TYPE, ID, "");
-            assert_code!(ErrorCode::CommonInvalidParam5, res);
-        }
-
-        #[test]
-        fn indy_update_wallet_record_tags_works_for_invalid_wallet_handle() {
-            Setup::empty();
-
-            let res = update_wallet_record_tags(INVALID_WALLET_HANDLE, TYPE, ID, TAGS);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
-
-        #[test]
-        fn indy_update_wallet_record_tags_works_for_invalid_type() {
-            let setup = Setup::wallet();
-
-            let res = update_wallet_record_tags(setup.wallet_handle, FORBIDDEN_TYPE, ID, TAGS);
-            assert_code!(ErrorCode::WalletAccessFailed, res);
-        }
     }
 
     mod add_record_tags {
@@ -289,52 +174,11 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_add_wallet_record_tags_works_for_twice_add_same_tag() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
-            check_record_field(setup.wallet_handle, TYPE, ID, "tags", TAGS);
-
-            add_wallet_record_tags(setup.wallet_handle, TYPE, ID, TAGS).unwrap();
-            check_record_field(setup.wallet_handle, TYPE, ID, "tags", TAGS);
-        }
-
-        #[test]
-        fn indy_add_wallet_record_tags_works_for_rewrite_tag() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
-            check_record_field(setup.wallet_handle, TYPE, ID, "tags", TAGS);
-
-            let tags_json = r#"{"tagName1": "str2"}"#;
-            add_wallet_record_tags(setup.wallet_handle, TYPE, ID, tags_json).unwrap();
-
-            let expected_result = r#"{"tagName1": "str2", "~tagName2": "5", "~tagName3": "8"}"#;
-            check_record_field(setup.wallet_handle, TYPE, ID, "tags", expected_result);
-        }
-
-        #[test]
         fn indy_add_wallet_record_tags_works_for_not_found_record() {
             let setup = Setup::wallet();
 
             let res = add_wallet_record_tags(setup.wallet_handle, TYPE, ID, TAGS);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-        }
-
-        #[test]
-        fn indy_add_wallet_record_tags_works_for_not_invalid_handle() {
-            Setup::empty();
-
-            let res = add_wallet_record_tags(INVALID_WALLET_HANDLE, TYPE, ID, TAGS);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
-
-        #[test]
-        fn indy_add_wallet_record_tags_works_for_not_invalid_type() {
-            let setup = Setup::wallet();
-
-            let res = add_wallet_record_tags(setup.wallet_handle, FORBIDDEN_TYPE, ID, TAGS);
-            assert_code!(ErrorCode::WalletAccessFailed, res);
         }
     }
 
@@ -380,45 +224,6 @@ mod high_cases {
 
             delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
         }
-
-        #[test]
-        fn indy_delete_wallet_record_tags_works_for_twice_delete() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
-
-            delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
-            delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["~tagName2"]"#).unwrap();
-
-            let expected_tags = r#"{"~tagName3": "8"}"#;
-            check_record_field(setup.wallet_handle, TYPE, ID, "tags", expected_tags);
-        }
-
-        #[test]
-        fn indy_delete_wallet_record_tags_works_for_twice_delete_same_tag() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
-
-            delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
-            delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
-        }
-
-        #[test]
-        fn indy_delete_wallet_record_tags_works_for_invalid_handle() {
-            Setup::empty();
-
-            let res = delete_wallet_record_tags(INVALID_WALLET_HANDLE, TYPE, ID, r#"["tagName1"]"#);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
-
-        #[test]
-        fn indy_delete_wallet_record_tags_works_for_invalid_type() {
-            let setup = Setup::wallet();
-
-            let res = delete_wallet_record_tags(setup.wallet_handle, FORBIDDEN_TYPE, ID, r#"["tagName1"]"#);
-            assert_code!(ErrorCode::WalletAccessFailed, res);
-        }
     }
 
     mod delete_record {
@@ -444,47 +249,6 @@ mod high_cases {
 
             let res = delete_wallet_record(setup.wallet_handle, TYPE, ID);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-        }
-
-        #[test]
-        fn indy_delete_wallet_record_works_for_twice() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
-
-            get_wallet_record(setup.wallet_handle, TYPE, ID, OPTIONS_EMPTY).unwrap();
-
-            delete_wallet_record(setup.wallet_handle, TYPE, ID).unwrap();
-
-            let res = delete_wallet_record(setup.wallet_handle, TYPE, ID);
-            assert_code!(ErrorCode::WalletItemNotFound, res);
-        }
-
-        #[test]
-        fn indy_delete_wallet_record_works_for_invalid_handle() {
-            Setup::empty();
-
-            let res = delete_wallet_record(INVALID_WALLET_HANDLE, TYPE, ID);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
-
-        #[test]
-        fn indy_delete_wallet_record_works_for_empty_params() {
-            let setup = Setup::wallet();
-
-            let res = delete_wallet_record(setup.wallet_handle, "", ID);
-            assert_code!(ErrorCode::CommonInvalidParam3, res);
-
-            let res = delete_wallet_record(setup.wallet_handle, TYPE, "");
-            assert_code!(ErrorCode::CommonInvalidParam4, res);
-        }
-
-        #[test]
-        fn indy_delete_wallet_record_works_for_invalid_type() {
-            let setup = Setup::wallet();
-
-            let res = delete_wallet_record(setup.wallet_handle, FORBIDDEN_TYPE, ID);
-            assert_code!(ErrorCode::WalletAccessFailed, res);
         }
     }
 
@@ -598,24 +362,6 @@ mod high_cases {
 
             let res = get_wallet_record(setup.wallet_handle, TYPE, ID, OPTIONS_EMPTY);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-        }
-
-        #[test]
-        fn indy_get_wallet_record_works_for_invalid_options() {
-            let setup = Setup::wallet();
-
-            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
-
-            let res = get_wallet_record(setup.wallet_handle, TYPE, ID, "not_json");
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-        }
-
-        #[test]
-        fn indy_get_wallet_record_works_for_invalid_type() {
-            let setup = Setup::wallet();
-
-            let res = get_wallet_record(setup.wallet_handle, FORBIDDEN_TYPE, ID, OPTIONS_EMPTY);
-            assert_code!(ErrorCode::WalletAccessFailed, res);
         }
     }
 
@@ -1096,6 +842,339 @@ mod high_cases {
             }
         }
 
+        mod close {
+            use super::*;
+
+            #[test]
+            fn indy_close_wallet_search_works() {
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_close_wallet_search_works"}"#;
+                let wallet_handle = setup("indy_close_wallet_search_works", SEARCH_WALLET_CONFIG);
+
+                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+
+                close_wallet_search(search_handle).unwrap();
+                wallet::close_wallet(wallet_handle).unwrap();
+                cleanup_wallet("indy_close_wallet_search_works");
+            }
+
+            #[test]
+            fn close_wallet_search_works_for_twice() {
+                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"close_wallet_search_works_for_twice"}"#;
+                let wallet_handle = setup("close_wallet_search_works_for_twice", SEARCH_WALLET_CONFIG);
+
+                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+
+                close_wallet_search(search_handle).unwrap();
+
+                let res = close_wallet_search(search_handle);
+                assert_code!(ErrorCode::WalletInvalidHandle, res);
+
+                wallet::close_wallet(wallet_handle).unwrap();
+                cleanup_wallet("close_wallet_search_works_for_twice");
+            }
+        }
+    }
+}
+
+#[cfg(not(feature = "only_high_cases"))]
+mod medium_cases {
+    use super::*;
+    use api::INVALID_WALLET_HANDLE;
+
+    mod add_record {
+        use super::*;
+
+        #[test]
+        fn indy_add_wallet_record_works_for_tags() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
+            check_record_field(setup.wallet_handle, TYPE, ID, "tags", TAGS);
+        }
+
+        #[test]
+        fn indy_add_wallet_record_works_same_types_different_ids() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
+            add_wallet_record(setup.wallet_handle, TYPE, ID_2, VALUE, None).unwrap();
+        }
+
+        #[test]
+        fn indy_add_wallet_record_works_same_ids_different_types() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
+            add_wallet_record(setup.wallet_handle, TYPE_2, ID, VALUE, None).unwrap();
+        }
+
+        #[test]
+        fn indy_add_wallet_record_works_for_invalid_type() {
+            let setup = Setup::wallet();
+
+            let res = add_wallet_record(setup.wallet_handle, FORBIDDEN_TYPE, ID, VALUE, None);
+            assert_code!(ErrorCode::WalletAccessFailed, res);
+        }
+
+        #[test]
+        fn indy_add_wallet_record_works_for_invalid_handle() {
+            Setup::empty();
+
+            let res = add_wallet_record(INVALID_WALLET_HANDLE, TYPE, ID, VALUE, None);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+
+        #[test]
+        fn indy_add_wallet_record_works_for_invalid_tags() {
+            let setup = Setup::wallet();
+
+            let res = add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(r#"tag:1"#));
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        fn indy_add_wallet_record_works_for_empty_params() {
+            let setup = Setup::wallet();
+
+            let res = add_wallet_record(setup.wallet_handle, "", ID, VALUE, None);
+            assert_code!(ErrorCode::CommonInvalidParam3, res);
+
+            let res = add_wallet_record(setup.wallet_handle, TYPE, "", VALUE, None);
+            assert_code!(ErrorCode::CommonInvalidParam4, res);
+
+            let res = add_wallet_record(setup.wallet_handle, TYPE, ID, "", None);
+            assert_code!(ErrorCode::CommonInvalidParam5, res);
+        }
+    }
+
+    mod update_record_value {
+        use super::*;
+
+        #[test]
+        fn indy_update_record_value_works_for_invalid_wallet_handle() {
+            Setup::empty();
+
+            let res = update_wallet_record_value(INVALID_WALLET_HANDLE, TYPE, ID, VALUE_2);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+
+        #[test]
+        fn indy_update_record_value_works_for_empty_value() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
+
+            let res = update_wallet_record_value(setup.wallet_handle, TYPE, ID, "");
+            assert_code!(ErrorCode::CommonInvalidParam5, res);
+        }
+
+        #[test]
+        fn indy_update_record_value_works_for_invalid_type() {
+            let setup = Setup::wallet();
+
+            let res = update_wallet_record_value(setup.wallet_handle, FORBIDDEN_TYPE, ID, VALUE);
+            assert_code!(ErrorCode::WalletAccessFailed, res);
+        }
+    }
+
+    mod update_record_tags {
+        use super::*;
+
+        #[test]
+        fn indy_update_wallet_record_tags_works_for_empty() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
+
+            let res = update_wallet_record_tags(setup.wallet_handle, TYPE, ID, "");
+            assert_code!(ErrorCode::CommonInvalidParam5, res);
+        }
+
+        #[test]
+        fn indy_update_wallet_record_tags_works_for_invalid_wallet_handle() {
+            Setup::empty();
+
+            let res = update_wallet_record_tags(INVALID_WALLET_HANDLE, TYPE, ID, TAGS);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+
+        #[test]
+        fn indy_update_wallet_record_tags_works_for_invalid_type() {
+            let setup = Setup::wallet();
+
+            let res = update_wallet_record_tags(setup.wallet_handle, FORBIDDEN_TYPE, ID, TAGS);
+            assert_code!(ErrorCode::WalletAccessFailed, res);
+        }
+    }
+
+    mod add_record_tags {
+        use super::*;
+
+        #[test]
+        fn indy_add_wallet_record_tags_works_for_twice_add_same_tag() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
+            check_record_field(setup.wallet_handle, TYPE, ID, "tags", TAGS);
+
+            add_wallet_record_tags(setup.wallet_handle, TYPE, ID, TAGS).unwrap();
+            check_record_field(setup.wallet_handle, TYPE, ID, "tags", TAGS);
+        }
+
+        #[test]
+        fn indy_add_wallet_record_tags_works_for_rewrite_tag() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
+            check_record_field(setup.wallet_handle, TYPE, ID, "tags", TAGS);
+
+            let tags_json = r#"{"tagName1": "str2"}"#;
+            add_wallet_record_tags(setup.wallet_handle, TYPE, ID, tags_json).unwrap();
+
+            let expected_result = r#"{"tagName1": "str2", "~tagName2": "5", "~tagName3": "8"}"#;
+            check_record_field(setup.wallet_handle, TYPE, ID, "tags", expected_result);
+        }
+
+        #[test]
+        fn indy_add_wallet_record_tags_works_for_not_invalid_handle() {
+            Setup::empty();
+
+            let res = add_wallet_record_tags(INVALID_WALLET_HANDLE, TYPE, ID, TAGS);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+
+        #[test]
+        fn indy_add_wallet_record_tags_works_for_not_invalid_type() {
+            let setup = Setup::wallet();
+
+            let res = add_wallet_record_tags(setup.wallet_handle, FORBIDDEN_TYPE, ID, TAGS);
+            assert_code!(ErrorCode::WalletAccessFailed, res);
+        }
+    }
+
+    mod delete_record_tags {
+        use super::*;
+
+        #[test]
+        fn indy_delete_wallet_record_tags_works_for_twice_delete() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
+
+            delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
+            delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["~tagName2"]"#).unwrap();
+
+            let expected_tags = r#"{"~tagName3": "8"}"#;
+            check_record_field(setup.wallet_handle, TYPE, ID, "tags", expected_tags);
+        }
+
+        #[test]
+        fn indy_delete_wallet_record_tags_works_for_twice_delete_same_tag() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
+
+            delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
+            delete_wallet_record_tags(setup.wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
+        }
+
+        #[test]
+        fn indy_delete_wallet_record_tags_works_for_invalid_handle() {
+            Setup::empty();
+
+            let res = delete_wallet_record_tags(INVALID_WALLET_HANDLE, TYPE, ID, r#"["tagName1"]"#);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+
+        #[test]
+        fn indy_delete_wallet_record_tags_works_for_invalid_type() {
+            let setup = Setup::wallet();
+
+            let res = delete_wallet_record_tags(setup.wallet_handle, FORBIDDEN_TYPE, ID, r#"["tagName1"]"#);
+            assert_code!(ErrorCode::WalletAccessFailed, res);
+        }
+    }
+
+    mod delete_record {
+        use super::*;
+
+        #[test]
+        fn indy_delete_wallet_record_works_for_twice() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
+
+            get_wallet_record(setup.wallet_handle, TYPE, ID, OPTIONS_EMPTY).unwrap();
+
+            delete_wallet_record(setup.wallet_handle, TYPE, ID).unwrap();
+
+            let res = delete_wallet_record(setup.wallet_handle, TYPE, ID);
+            assert_code!(ErrorCode::WalletItemNotFound, res);
+        }
+
+        #[test]
+        fn indy_delete_wallet_record_works_for_invalid_handle() {
+            Setup::empty();
+
+            let res = delete_wallet_record(INVALID_WALLET_HANDLE, TYPE, ID);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+
+        #[test]
+        fn indy_delete_wallet_record_works_for_empty_params() {
+            let setup = Setup::wallet();
+
+            let res = delete_wallet_record(setup.wallet_handle, "", ID);
+            assert_code!(ErrorCode::CommonInvalidParam3, res);
+
+            let res = delete_wallet_record(setup.wallet_handle, TYPE, "");
+            assert_code!(ErrorCode::CommonInvalidParam4, res);
+        }
+
+        #[test]
+        fn indy_delete_wallet_record_works_for_invalid_type() {
+            let setup = Setup::wallet();
+
+            let res = delete_wallet_record(setup.wallet_handle, FORBIDDEN_TYPE, ID);
+            assert_code!(ErrorCode::WalletAccessFailed, res);
+        }
+    }
+
+    mod get_record {
+        use super::*;
+
+        #[test]
+        fn indy_get_wallet_record_works_for_invalid_options() {
+            let setup = Setup::wallet();
+
+            add_wallet_record(setup.wallet_handle, TYPE, ID, VALUE, None).unwrap();
+
+            let res = get_wallet_record(setup.wallet_handle, TYPE, ID, "not_json");
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        fn indy_get_wallet_record_works_for_invalid_type() {
+            let setup = Setup::wallet();
+
+            let res = get_wallet_record(setup.wallet_handle, FORBIDDEN_TYPE, ID, OPTIONS_EMPTY);
+            assert_code!(ErrorCode::WalletAccessFailed, res);
+        }
+    }
+
+    mod search {
+        use super::*;
+
+        fn setup(name: &str, wallet_config: &str) -> i32{
+            init_non_secret_test_wallet(name, wallet_config);
+            wallet::open_wallet(wallet_config, WALLET_CREDENTIALS).unwrap()
+        }
+
+        fn tear_down(wallet_handle: i32, search_handle: i32){
+            close_wallet_search(search_handle).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
         #[test]
         fn indy_wallet_search_for_fetch_twice() {
             const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_wallet_search_for_fetch_twice"}"#;
@@ -1173,58 +1252,21 @@ mod high_cases {
             cleanup_wallet("indy_wallet_search_for_invalid_type");
         }
 
-        mod close {
-            use super::*;
+        #[test]
+        fn indy_close_wallet_search_works_for_invalid_handle() {
+            const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_close_wallet_search_works_for_invalid_handle"}"#;
+            let wallet_handle = setup("indy_close_wallet_search_works_for_invalid_handle", SEARCH_WALLET_CONFIG);
 
-            #[test]
-            fn indy_close_wallet_search_works() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_close_wallet_search_works"}"#;
-                let wallet_handle = setup("indy_close_wallet_search_works", SEARCH_WALLET_CONFIG);
+            let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+            let res = close_wallet_search(search_handle + 1);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
-                close_wallet_search(search_handle).unwrap();
-                wallet::close_wallet(wallet_handle).unwrap();
-                cleanup_wallet("indy_close_wallet_search_works");
-            }
-
-            #[test]
-            fn indy_close_wallet_search_works_for_invalid_handle() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"indy_close_wallet_search_works_for_invalid_handle"}"#;
-                let wallet_handle = setup("indy_close_wallet_search_works_for_invalid_handle", SEARCH_WALLET_CONFIG);
-
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
-
-                let res = close_wallet_search(search_handle + 1);
-                assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-                close_wallet_search(search_handle).unwrap();
-                wallet::close_wallet(wallet_handle).unwrap();
-                cleanup_wallet("indy_close_wallet_search_works_for_invalid_handle");
-            }
-
-            #[test]
-            fn close_wallet_search_works_for_twice() {
-                const SEARCH_WALLET_CONFIG: &str = r#"{"id":"close_wallet_search_works_for_twice"}"#;
-                let wallet_handle = setup("close_wallet_search_works_for_twice", SEARCH_WALLET_CONFIG);
-
-                let search_handle = open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
-
-                close_wallet_search(search_handle).unwrap();
-
-                let res = close_wallet_search(search_handle);
-                assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-                wallet::close_wallet(wallet_handle).unwrap();
-                cleanup_wallet("close_wallet_search_works_for_twice");
-            }
+            close_wallet_search(search_handle).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            cleanup_wallet("indy_close_wallet_search_works_for_invalid_handle");
         }
     }
-}
-
-#[cfg(not(feature="only_high_cases"))]
-mod medium_cases {
-    use super::*;
 
     mod rusqlite_transaction_fix {
         use super::*;

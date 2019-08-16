@@ -83,22 +83,6 @@ mod high_cases {
             let res = did::key_for_did(setup.pool_handle, setup.wallet_handle, DID);
             assert_code!(ErrorCode::WalletItemNotFound, res);
         }
-
-        #[test]
-        fn indy_key_for_did_works_for_invalid_pool_handle() {
-            let setup = Setup::wallet();
-
-            let res = did::key_for_did(INVALID_POOL_HANDLE, setup.wallet_handle, DID_TRUSTEE);
-            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
-        }
-
-        #[test]
-        fn indy_key_for_did_works_for_invalid_wallet_handle() {
-            Setup::empty();
-
-            let res = did::key_for_did(-1, INVALID_WALLET_HANDLE, DID);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
     }
 
     mod key_for_local_did {
@@ -129,14 +113,6 @@ mod high_cases {
             let res = did::key_for_local_did(setup.wallet_handle, DID);
             assert_code!(ErrorCode::WalletItemNotFound, res);
         }
-
-        #[test]
-        fn indy_key_for_local_did_works_for_invalid_wallet_handle() {
-            Setup::empty();
-
-            let res = did::key_for_local_did(INVALID_WALLET_HANDLE, DID_TRUSTEE);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
     }
 
     mod set_endpoint_for_did {
@@ -146,49 +122,6 @@ mod high_cases {
         fn indy_set_endpoint_for_did_works() {
             let setup = Setup::wallet();
             did::set_endpoint_for_did(setup.wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
-        }
-
-        #[test]
-        fn indy_set_endpoint_for_did_works_for_replace() {
-            let setup = Setup::wallet_and_pool();
-
-            did::set_endpoint_for_did(setup.wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
-            let (endpoint, key) = did::get_endpoint_for_did(setup.wallet_handle, setup.pool_handle, DID).unwrap();
-            assert_eq!(ENDPOINT, endpoint);
-            assert_eq!(VERKEY, key.unwrap());
-
-            let new_endpoint = "10.10.10.1:9710";
-            did::set_endpoint_for_did(setup.wallet_handle, DID, new_endpoint, VERKEY_MY2).unwrap();
-            let (updated_endpoint, updated_key) = did::get_endpoint_for_did(setup.wallet_handle, setup.pool_handle, DID).unwrap();
-            assert_eq!(new_endpoint, updated_endpoint);
-            assert_eq!(VERKEY_MY2, updated_key.unwrap());
-        }
-
-        #[test]
-        fn indy_set_endpoint_for_did_works_for_invalid_did() {
-            let setup = Setup::wallet();
-
-            let res = did::set_endpoint_for_did(setup.wallet_handle, INVALID_BASE58_DID, ENDPOINT, VERKEY);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-        }
-
-        #[test]
-        fn indy_set_endpoint_for_did_works_for_invalid_transport_key() {
-            let setup = Setup::wallet();
-
-            let res = did::set_endpoint_for_did(setup.wallet_handle, DID, ENDPOINT, INVALID_BASE58_VERKEY);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            let res = did::set_endpoint_for_did(setup.wallet_handle, DID, ENDPOINT, INVALID_VERKEY_LENGTH);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-        }
-
-        #[test]
-        fn indy_set_endpoint_for_did_works_for_invalid_handle() {
-            Setup::empty();
-
-            let res = did::set_endpoint_for_did(INVALID_WALLET_HANDLE, DID, ENDPOINT, VERKEY);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
         }
     }
 
@@ -345,15 +278,6 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_get_did_metadata_works_for_empty_string() {
-            let setup = Setup::did();
-
-            did::set_did_metadata(setup.wallet_handle, &setup.did, "").unwrap();
-            let metadata = did::get_did_metadata(setup.wallet_handle, &setup.did).unwrap();
-            assert_eq!("", metadata);
-        }
-
-        #[test]
         fn indy_get_did_metadata_works_for_no_metadata() {
             let setup = Setup::did();
 
@@ -367,14 +291,6 @@ mod high_cases {
 
             let res = did::get_did_metadata(setup.wallet_handle, DID);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-        }
-
-        #[test]
-        fn indy_get_did_metadata_works_for_invalid_handle() {
-            Setup::empty();
-
-            let res = did::get_did_metadata(INVALID_WALLET_HANDLE, DID);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
         }
     }
 
@@ -446,39 +362,6 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_create_my_did_works_as_cid() {
-            let setup = Setup::wallet();
-
-            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","cid":true}"#).unwrap();
-            assert_eq!(my_did, VERKEY);
-            assert_eq!(my_verkey, VERKEY);
-        }
-
-        #[test]
-        fn indy_create_my_did_works_with_passed_did() {
-            let setup = Setup::wallet();
-
-            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, &format!(r#"{{"did":"{}","seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#, DID)).unwrap();
-            assert_eq!(my_did, DID);
-            assert_eq!(my_verkey, VERKEY);
-        }
-
-        #[test]
-        fn indy_create_my_did_works_for_exists_crypto_type() {
-            let setup = Setup::wallet();
-
-            did::create_my_did(setup.wallet_handle, r#"{"crypto_type":"ed25519"}"#).unwrap();
-        }
-
-        #[test]
-        fn indy_create_my_did_works_for_invalid_wallet_handle() {
-            Setup::empty();
-
-            let res = did::create_my_did(INVALID_WALLET_HANDLE, "{}");
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
-
-        #[test]
         fn indy_create_my_did_works_for_duplicate() {
             let setup = Setup::wallet();
 
@@ -503,14 +386,6 @@ mod high_cases {
 
             let new_verkey = did::replace_keys_start(setup.wallet_handle, &setup.did, "{}").unwrap();
             assert_ne!(new_verkey, setup.verkey);
-        }
-
-        #[test]
-        fn indy_replace_keys_start_works_for_invalid_wallet_handle() {
-            Setup::empty();
-
-            let res = did::replace_keys_start(INVALID_WALLET_HANDLE, DID, "{}");
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
         }
 
         #[test]
@@ -552,14 +427,6 @@ mod high_cases {
             let res = did::replace_keys_apply(setup.wallet_handle, DID);
             assert_code!(ErrorCode::WalletItemNotFound, res);
         }
-
-        #[test]
-        fn indy_replace_keys_apply_works_for_invalid_wallet_handle() {
-            Setup::empty();
-
-            let res = did::replace_keys_apply(INVALID_WALLET_HANDLE, DID);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-        }
     }
 
     mod store_their_did {
@@ -580,6 +447,223 @@ mod high_cases {
             let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
             did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
         }
+
+        #[test]
+        fn indy_store_their_did_works_twice() {
+            let setup = Setup::wallet();
+
+            let identity_json = json!({"did": DID}).to_string();
+            did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
+
+            let res = did::store_their_did(setup.wallet_handle, &identity_json);
+            assert_code!(ErrorCode::WalletItemAlreadyExists, res);
+        }
+    }
+
+    mod replace_keys {
+        use super::*;
+
+        #[test]
+        fn indy_replace_keys_demo() {
+            // 1. Create and open pool
+            // 2. Create and open wallet
+            // 3. Generate did from Trustee seed
+            // 4. Generate my did
+            // 5. Send Nym request to Ledger
+            let setup = Setup::new_identity();
+
+            // 6. Start replacing of keys
+            let new_verkey = did::replace_keys_start(setup.wallet_handle, &setup.did, "{}").unwrap();
+
+            // 7. Send Nym request to Ledger with new verkey
+            let nym_request = ledger::build_nym_request(&setup.did, &setup.did, Some(&new_verkey), None, None).unwrap();
+            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
+
+            // 8. Send Schema request before apply replacing of keys
+            let schema_request = ledger::build_schema_request(&setup.did, SCHEMA_DATA).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+
+            // 9. Apply replacing of keys
+            did::replace_keys_apply(setup.wallet_handle, &setup.did).unwrap();
+
+            // 10. Send Schema request
+            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
+        }
+    }
+
+    mod abbreviate_verkey {
+        use super::*;
+
+        #[test]
+        fn indy_abbreviate_verkey_works_for_abbr_key() {
+            let setup = Setup::did();
+
+            let abbr_verkey = did::abbreviate_verkey(&setup.did, &setup.verkey).unwrap();
+            assert_ne!(setup.verkey, abbr_verkey);
+        }
+
+        #[test]
+        fn indy_abbreviate_verkey_works_for_not_abbr_key() {
+            let setup = Setup::wallet();
+
+            let (did, verkey) = did::create_my_did(setup.wallet_handle, &format!(r#"{{"did":{:?}}}"#, DID_TRUSTEE)).unwrap();
+
+            let full_verkey = did::abbreviate_verkey(&did, &verkey).unwrap();
+
+            assert_eq!(verkey, full_verkey);
+        }
+    }
+}
+
+#[cfg(not(feature = "only_high_cases"))]
+mod medium_cases {
+    use super::*;
+
+    mod key_for_did {
+        use super::*;
+
+        #[test]
+        fn indy_key_for_did_works_for_invalid_pool_handle() {
+            let setup = Setup::wallet();
+
+            let res = did::key_for_did(INVALID_POOL_HANDLE, setup.wallet_handle, DID_TRUSTEE);
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
+        }
+
+        #[test]
+        fn indy_key_for_did_works_for_invalid_wallet_handle() {
+            Setup::empty();
+
+            let res = did::key_for_did(-1, INVALID_WALLET_HANDLE, DID);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+    }
+
+    mod key_for_local_did {
+        use super::*;
+
+        #[test]
+        fn indy_key_for_local_did_works_for_invalid_wallet_handle() {
+            Setup::empty();
+
+            let res = did::key_for_local_did(INVALID_WALLET_HANDLE, DID_TRUSTEE);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+    }
+
+    mod set_endpoint_for_did {
+        use super::*;
+        #[test]
+        fn indy_set_endpoint_for_did_works_for_replace() {
+            let setup = Setup::wallet_and_pool();
+
+            did::set_endpoint_for_did(setup.wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
+            let (endpoint, key) = did::get_endpoint_for_did(setup.wallet_handle, setup.pool_handle, DID).unwrap();
+            assert_eq!(ENDPOINT, endpoint);
+            assert_eq!(VERKEY, key.unwrap());
+
+            let new_endpoint = "10.10.10.1:9710";
+            did::set_endpoint_for_did(setup.wallet_handle, DID, new_endpoint, VERKEY_MY2).unwrap();
+            let (updated_endpoint, updated_key) = did::get_endpoint_for_did(setup.wallet_handle, setup.pool_handle, DID).unwrap();
+            assert_eq!(new_endpoint, updated_endpoint);
+            assert_eq!(VERKEY_MY2, updated_key.unwrap());
+        }
+    }
+
+    mod get_did_metadata {
+        use super::*;
+
+        #[test]
+        fn indy_get_did_metadata_works_for_empty_string() {
+            let setup = Setup::did();
+
+            did::set_did_metadata(setup.wallet_handle, &setup.did, "").unwrap();
+            let metadata = did::get_did_metadata(setup.wallet_handle, &setup.did).unwrap();
+            assert_eq!("", metadata);
+        }
+
+        #[test]
+        fn indy_get_did_metadata_works_for_invalid_handle() {
+            Setup::empty();
+
+            let res = did::get_did_metadata(INVALID_WALLET_HANDLE, DID);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+    }
+
+    mod create_my_did {
+        use super::*;
+
+        #[test]
+        fn indy_create_my_did_works_as_cid() {
+            let setup = Setup::wallet();
+
+            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","cid":true}"#).unwrap();
+            assert_eq!(my_did, VERKEY);
+            assert_eq!(my_verkey, VERKEY);
+        }
+
+        #[test]
+        fn indy_create_my_did_works_with_passed_did() {
+            let setup = Setup::wallet();
+
+            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, &format!(r#"{{"did":"{}","seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#, DID)).unwrap();
+            assert_eq!(my_did, DID);
+            assert_eq!(my_verkey, VERKEY);
+        }
+
+        #[test]
+        fn indy_create_my_did_works_for_exists_crypto_type() {
+            let setup = Setup::wallet();
+
+            did::create_my_did(setup.wallet_handle, r#"{"crypto_type":"ed25519"}"#).unwrap();
+        }
+
+        #[test]
+        fn indy_create_my_did_works_for_invalid_wallet_handle() {
+            Setup::empty();
+
+            let res = did::create_my_did(INVALID_WALLET_HANDLE, "{}");
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+    }
+
+    mod replace_keys_start {
+        use super::*;
+
+        #[test]
+        fn indy_replace_keys_start_works_for_invalid_wallet_handle() {
+            Setup::empty();
+
+            let res = did::replace_keys_start(INVALID_WALLET_HANDLE, DID, "{}");
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+
+        #[test]
+        fn indy_replace_keys_start_works_for_seed() {
+            let setup = Setup::did();
+
+            let new_verkey = did::replace_keys_start(setup.wallet_handle, &setup.did, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
+            assert_eq!(new_verkey, VERKEY);
+            assert_ne!(setup.verkey, new_verkey);
+        }
+    }
+
+    mod replace_keys_apply {
+        use super::*;
+
+        #[test]
+        fn indy_replace_keys_apply_works_for_invalid_wallet_handle() {
+            Setup::empty();
+
+            let res = did::replace_keys_apply(INVALID_WALLET_HANDLE, DID);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+    }
+
+    mod store_their_did {
+        use super::*;
 
         #[test]
         fn indy_store_their_did_works_for_verkey_with_crypto_type() {
@@ -640,7 +724,6 @@ mod high_cases {
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
-
         #[test]
         fn indy_store_their_did_works_for_verkey_with_invalid_crypto_type() {
             let setup = Setup::wallet();
@@ -648,17 +731,6 @@ mod high_cases {
             let identity_json = json!({"did": DID, "verkey": VERKEY.to_owned() + ":crypto_type"}).to_string();
             let res = did::store_their_did(setup.wallet_handle, &identity_json);
             assert_code!(ErrorCode::UnknownCryptoTypeError, res);
-        }
-
-        #[test]
-        fn indy_store_their_did_works_twice() {
-            let setup = Setup::wallet();
-
-            let identity_json = json!({"did": DID}).to_string();
-            did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
-
-            let res = did::store_their_did(setup.wallet_handle, &identity_json);
-            assert_code!(ErrorCode::WalletItemAlreadyExists, res);
         }
 
         #[test]
@@ -687,34 +759,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn indy_replace_keys_demo() {
-            // 1. Create and open pool
-            // 2. Create and open wallet
-            // 3. Generate did from Trustee seed
-            // 4. Generate my did
-            // 5. Send Nym request to Ledger
-            let setup = Setup::new_identity();
-
-            // 6. Start replacing of keys
-            let new_verkey = did::replace_keys_start(setup.wallet_handle, &setup.did, "{}").unwrap();
-
-            // 7. Send Nym request to Ledger with new verkey
-            let nym_request = ledger::build_nym_request(&setup.did, &setup.did, Some(&new_verkey), None, None).unwrap();
-            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
-
-            // 8. Send Schema request before apply replacing of keys
-            let schema_request = ledger::build_schema_request(&setup.did, SCHEMA_DATA).unwrap();
-            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-
-            // 9. Apply replacing of keys
-            did::replace_keys_apply(setup.wallet_handle, &setup.did).unwrap();
-
-            // 10. Send Schema request
-            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
-        }
-
-        #[test]
         fn indy_replace_keys_without_nym_transaction() {
             let setup = Setup::wallet_and_pool();
 
@@ -729,27 +773,9 @@ mod high_cases {
         }
     }
 
+
     mod abbreviate_verkey {
         use super::*;
-
-        #[test]
-        fn indy_abbreviate_verkey_works_for_abbr_key() {
-            let setup = Setup::did();
-
-            let abbr_verkey = did::abbreviate_verkey(&setup.did, &setup.verkey).unwrap();
-            assert_ne!(setup.verkey, abbr_verkey);
-        }
-
-        #[test]
-        fn indy_abbreviate_verkey_works_for_not_abbr_key() {
-            let setup = Setup::wallet();
-
-            let (did, verkey) = did::create_my_did(setup.wallet_handle, &format!(r#"{{"did":{:?}}}"#, DID_TRUSTEE)).unwrap();
-
-            let full_verkey = did::abbreviate_verkey(&did, &verkey).unwrap();
-
-            assert_eq!(verkey, full_verkey);
-        }
 
         #[test]
         fn indy_abbreviate_verkey_works_for_invalid_did() {
@@ -763,4 +789,5 @@ mod high_cases {
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
+
 }

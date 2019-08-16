@@ -60,28 +60,10 @@ mod high_cases {
 
     mod issuer_create_and_store_credential_def {
         use super::*;
-        use indy_sys::INVALID_WALLET_HANDLE;
 
         #[test]
         fn issuer_create_and_store_credential_def_works() {
             anoncreds::init_common_wallet();
-        }
-
-        #[test]
-        fn issuer_create_and_store_credential_def_works_for_invalid_wallet() {
-            anoncreds::init_common_wallet();
-
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let res = anoncreds::issuer_create_credential_definition(INVALID_WALLET_HANDLE,
-                                                                     ISSUER_DID,
-                                                                     &anoncreds::gvt_schema_json(),
-                                                                     TAG_1,
-                                                                     None,
-                                                                     Some(&anoncreds::default_cred_def_config()));
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            wallet::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -92,20 +74,6 @@ mod high_cases {
         fn issuer_create_credential_offer_works() {
             anoncreds::init_common_wallet();
         }
-
-        #[test]
-        fn issuer_create_credential_offer_works_for_invalid_wallet_handle() {
-            anoncreds::init_common_wallet();
-
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let invalid_wallet_handle = wallet_handle + 100;
-            let res = anoncreds::issuer_create_credential_offer(invalid_wallet_handle,
-                                                                &anoncreds::issuer_1_gvt_cred_def_id());
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-        }
     }
 
     mod prover_create_master_secret {
@@ -114,19 +82,6 @@ mod high_cases {
         #[test]
         fn prover_create_master_secret_works() {
             anoncreds::init_common_wallet();
-        }
-
-        #[test]
-        fn prover_create_master_secret_works_invalid_wallet_handle() {
-            anoncreds::init_common_wallet();
-
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let invalid_wallet_handle = wallet_handle + 100;
-            let res = anoncreds::prover_create_master_secret(invalid_wallet_handle, COMMON_MASTER_SECRET);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            wallet::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -137,44 +92,6 @@ mod high_cases {
         fn prover_create_credential_req_works() {
             anoncreds::init_common_wallet();
         }
-
-        #[test]
-        fn prover_create_credential_req_works_for_invalid_wallet() {
-            let (credential_def, credential_offer, _, _) = anoncreds::init_common_wallet();
-
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let invalid_wallet_handle = wallet_handle + 100;
-            let res = anoncreds::prover_create_credential_req(invalid_wallet_handle,
-                                                              DID_MY1,
-                                                              &credential_offer,
-                                                              &credential_def,
-                                                              COMMON_MASTER_SECRET);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_create_credential_req_works_for_credential_def_not_correspond_to_credential_offer() {
-            let (issuer1_gvt_credential_def, issuer1_gvt_credential_offer, _, _) = anoncreds::init_common_wallet();
-
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let mut issuer_create_credential_offer: serde_json::Value = serde_json::from_str(&issuer1_gvt_credential_offer).unwrap();
-            issuer_create_credential_offer["key_correctness_proof"]["c"] = serde_json::Value::String("11111111".to_string());
-
-            let other_credential_offer = serde_json::to_string(&issuer_create_credential_offer).unwrap();
-
-            let res = anoncreds::prover_create_credential_req(wallet_handle,
-                                                              DID_MY1,
-                                                              &other_credential_offer,
-                                                              &issuer1_gvt_credential_def,
-                                                              COMMON_MASTER_SECRET);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-        }
     }
 
     mod issuer_create_credential {
@@ -184,41 +101,6 @@ mod high_cases {
         fn issuer_create_credential_works() {
             anoncreds::init_common_wallet();
         }
-
-        #[test]
-        fn issuer_create_credential_works_for_credential_does_not_correspond_to_credential_values() {
-            let (_, credential_offer, credential_req, _) = anoncreds::init_common_wallet();
-
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let res = anoncreds::issuer_create_credential(wallet_handle,
-                                                          &credential_offer,
-                                                          &credential_req,
-                                                          &anoncreds::xyz_credential_values_json(),
-                                                          None,
-                                                          None);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn issuer_create_credential_works_for_for_invalid_wallet_handle() {
-            let (_, credential_offer, credential_req, _) = anoncreds::init_common_wallet();
-
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let invalid_wallet_handle = wallet_handle + 100;
-            let res = anoncreds::issuer_create_credential(invalid_wallet_handle,
-                                                          &credential_offer,
-                                                          &credential_req,
-                                                          &anoncreds::gvt_credential_values_json(),
-                                                          None,
-                                                          None);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-        }
     }
 
     mod prover_store_credential {
@@ -227,42 +109,6 @@ mod high_cases {
         #[test]
         fn prover_store_credential_works() {
             anoncreds::init_common_wallet();
-        }
-
-        #[test]
-        fn prover_store_credential_works_for_invalid_wallet_handle() {
-            let (credential_def_json, credential_offer, _, _) = anoncreds::init_common_wallet();
-
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("prover_store_credential_works_for_invalid_wallet_handle").unwrap();
-
-            anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
-
-            let (credential_req, credential_req_meta) = anoncreds::prover_create_credential_req(prover_wallet_handle,
-                                                                                                DID_MY1,
-                                                                                                &credential_offer,
-                                                                                                credential_def_json,
-                                                                                                COMMON_MASTER_SECRET).unwrap();
-
-            let (credential_json, _, _) = anoncreds::issuer_create_credential(wallet_handle,
-                                                                              &credential_offer,
-                                                                              &credential_req,
-                                                                              &anoncreds::gvt_credential_values_json(),
-                                                                              None,
-                                                                              None).unwrap();
-
-            let invalid_wallet_handle = wallet_handle + 100;
-            let res = anoncreds::prover_store_credential(invalid_wallet_handle,
-                                                         CREDENTIAL1_ID,
-                                                         &credential_req_meta,
-                                                         &credential_json,
-                                                         &credential_def_json,
-                                                         None);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-            wallet::close_wallet(prover_wallet_handle).unwrap();
-            wallet::delete_wallet(&prover_wallet_config, WALLET_CREDENTIALS).unwrap();
         }
     }
 
@@ -3038,33 +2884,6 @@ mod high_cases {
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
-
-        #[test]
-        fn prover_create_proof_works_for_invalid_wallet_handle() {
-            anoncreds::init_common_wallet();
-
-            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let requested_credentials_json = json!({
-                 "self_attested_attributes": json!({}),
-                 "requested_attributes": json!({
-                    "attr1_referent": json!({ "cred_id": CREDENTIAL1_ID, "revealed":true })
-                 }),
-                 "requested_predicates": json!({})
-            }).to_string();
-
-            let invalid_wallet_handle = wallet_handle + 100;
-            let res = anoncreds::prover_create_proof(invalid_wallet_handle,
-                                                     &anoncreds::proof_request_attr(),
-                                                     &requested_credentials_json,
-                                                     COMMON_MASTER_SECRET,
-                                                     &anoncreds::schemas_for_proof(),
-                                                     &anoncreds::cred_defs_for_proof(),
-                                                     "{}");
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            wallet::close_wallet(wallet_handle).unwrap();
-        }
     }
 
     mod verifier_verify_proof {
@@ -3104,19 +2923,6 @@ mod high_cases {
                                                        "{}",
                                                        "{}");
             assert_code!(ErrorCode::CommonInvalidStructure, res);
-        }
-
-        #[test]
-        fn verifier_verify_proof_works_for_wrong_proof() {
-            let proof_json = anoncreds::proof_json().replace("1139481716457488690172217916278103335", "1111111111111111111111111111111111111");
-
-            let valid = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
-                                                         &proof_json,
-                                                         &anoncreds::schemas_for_proof(),
-                                                         &anoncreds::cred_defs_for_proof(),
-                                                         "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
         }
     }
 
@@ -3573,6 +3379,7 @@ mod medium_cases {
 
     mod issuer_create_and_store_credential_def {
         use super::*;
+        use indy_sys::INVALID_WALLET_HANDLE;
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_schema() {
@@ -3707,6 +3514,23 @@ mod medium_cases {
             wallet::close_wallet(wallet_handle).unwrap();
             wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
         }
+
+        #[test]
+        fn issuer_create_and_store_credential_def_works_for_invalid_wallet() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let res = anoncreds::issuer_create_credential_definition(INVALID_WALLET_HANDLE,
+                                                                     ISSUER_DID,
+                                                                     &anoncreds::gvt_schema_json(),
+                                                                     TAG_1,
+                                                                     None,
+                                                                     Some(&anoncreds::default_cred_def_config()));
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
     }
 
     mod issuer_create_credential_offer {
@@ -3723,6 +3547,20 @@ mod medium_cases {
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
+
+        #[test]
+        fn issuer_create_credential_offer_works_for_invalid_wallet_handle() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let invalid_wallet_handle = wallet_handle + 100;
+            let res = anoncreds::issuer_create_credential_offer(invalid_wallet_handle,
+                                                                &anoncreds::issuer_1_gvt_cred_def_id());
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
     }
 
     mod prover_create_master_secret {
@@ -3736,6 +3574,19 @@ mod medium_cases {
 
             let res = anoncreds::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET);
             assert_code!(ErrorCode::AnoncredsMasterSecretDuplicateNameError, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn prover_create_master_secret_works_invalid_wallet_handle() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let invalid_wallet_handle = wallet_handle + 100;
+            let res = anoncreds::prover_create_master_secret(invalid_wallet_handle, COMMON_MASTER_SECRET);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3799,10 +3650,83 @@ mod medium_cases {
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
+
+        #[test]
+        fn prover_create_credential_req_works_for_invalid_wallet() {
+            let (credential_def, credential_offer, _, _) = anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let invalid_wallet_handle = wallet_handle + 100;
+            let res = anoncreds::prover_create_credential_req(invalid_wallet_handle,
+                                                              DID_MY1,
+                                                              &credential_offer,
+                                                              &credential_def,
+                                                              COMMON_MASTER_SECRET);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn prover_create_credential_req_works_for_credential_def_not_correspond_to_credential_offer() {
+            let (issuer1_gvt_credential_def, issuer1_gvt_credential_offer, _, _) = anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let mut issuer_create_credential_offer: serde_json::Value = serde_json::from_str(&issuer1_gvt_credential_offer).unwrap();
+            issuer_create_credential_offer["key_correctness_proof"]["c"] = serde_json::Value::String("11111111".to_string());
+
+            let other_credential_offer = serde_json::to_string(&issuer_create_credential_offer).unwrap();
+
+            let res = anoncreds::prover_create_credential_req(wallet_handle,
+                                                              DID_MY1,
+                                                              &other_credential_offer,
+                                                              &issuer1_gvt_credential_def,
+                                                              COMMON_MASTER_SECRET);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
     }
 
     mod issuer_create_credential {
         use super::*;
+
+        #[test]
+        fn issuer_create_credential_works_for_credential_does_not_correspond_to_credential_values() {
+            let (_, credential_offer, credential_req, _) = anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let res = anoncreds::issuer_create_credential(wallet_handle,
+                                                          &credential_offer,
+                                                          &credential_req,
+                                                          &anoncreds::xyz_credential_values_json(),
+                                                          None,
+                                                          None);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn issuer_create_credential_works_for_for_invalid_wallet_handle() {
+            let (_, credential_offer, credential_req, _) = anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let invalid_wallet_handle = wallet_handle + 100;
+            let res = anoncreds::issuer_create_credential(invalid_wallet_handle,
+                                                          &credential_offer,
+                                                          &credential_req,
+                                                          &anoncreds::gvt_credential_values_json(),
+                                                          None,
+                                                          None);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
 
         #[test]
         fn issuer_create_credential_works_for_for_invalid_credential_req_json() {
@@ -3853,6 +3777,42 @@ mod medium_cases {
 
     mod prover_store_credential {
         use super::*;
+
+        #[test]
+        fn prover_store_credential_works_for_invalid_wallet_handle() {
+            let (credential_def_json, credential_offer, _, _) = anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("prover_store_credential_works_for_invalid_wallet_handle").unwrap();
+
+            anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+            let (credential_req, credential_req_meta) = anoncreds::prover_create_credential_req(prover_wallet_handle,
+                                                                                                DID_MY1,
+                                                                                                &credential_offer,
+                                                                                                credential_def_json,
+                                                                                                COMMON_MASTER_SECRET).unwrap();
+
+            let (credential_json, _, _) = anoncreds::issuer_create_credential(wallet_handle,
+                                                                              &credential_offer,
+                                                                              &credential_req,
+                                                                              &anoncreds::gvt_credential_values_json(),
+                                                                              None,
+                                                                              None).unwrap();
+
+            let invalid_wallet_handle = wallet_handle + 100;
+            let res = anoncreds::prover_store_credential(invalid_wallet_handle,
+                                                         CREDENTIAL1_ID,
+                                                         &credential_req_meta,
+                                                         &credential_json,
+                                                         &credential_def_json,
+                                                         None);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+            wallet::close_wallet(prover_wallet_handle).unwrap();
+            wallet::delete_wallet(&prover_wallet_config, WALLET_CREDENTIALS).unwrap();
+        }
 
         #[test]
         fn prover_store_credential_works_for_invalid_credential_json() {
@@ -3987,6 +3947,33 @@ mod medium_cases {
         use super::*;
 
         #[test]
+        fn prover_create_proof_works_for_invalid_wallet_handle() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let requested_credentials_json = json!({
+                 "self_attested_attributes": json!({}),
+                 "requested_attributes": json!({
+                    "attr1_referent": json!({ "cred_id": CREDENTIAL1_ID, "revealed":true })
+                 }),
+                 "requested_predicates": json!({})
+            }).to_string();
+
+            let invalid_wallet_handle = wallet_handle + 100;
+            let res = anoncreds::prover_create_proof(invalid_wallet_handle,
+                                                     &anoncreds::proof_request_attr(),
+                                                     &requested_credentials_json,
+                                                     COMMON_MASTER_SECRET,
+                                                     &anoncreds::schemas_for_proof(),
+                                                     &anoncreds::cred_defs_for_proof(),
+                                                     "{}");
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
         fn prover_create_proof_works_for_invalid_master_secret() {
             anoncreds::init_common_wallet();
 
@@ -4090,6 +4077,19 @@ mod medium_cases {
 
     mod verifier_verify_proof {
         use super::*;
+
+        #[test]
+        fn verifier_verify_proof_works_for_wrong_proof() {
+            let proof_json = anoncreds::proof_json().replace("1139481716457488690172217916278103335", "1111111111111111111111111111111111111");
+
+            let valid = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
+                                                         &proof_json,
+                                                         &anoncreds::schemas_for_proof(),
+                                                         &anoncreds::cred_defs_for_proof(),
+                                                         "{}",
+                                                         "{}").unwrap();
+            assert!(!valid);
+        }
 
         #[test]
         fn verifier_verify_proof_works_for_invalid_proof_json_format() {

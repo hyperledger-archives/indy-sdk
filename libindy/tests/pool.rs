@@ -30,7 +30,7 @@ mod utils;
 
 use self::indy::ErrorCode;
 
-use utils::{environment, ledger, pool};
+use utils::{environment, pool};
 use utils::constants::*;
 use utils::Setup;
 
@@ -43,55 +43,25 @@ mod high_cases {
 
         #[test]
         fn create_pool_ledger_config_works() {
-            Setup::empty();
+            let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works", None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
 
-            pool::create_pool_ledger_config("create_pool_ledger_config_works", Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
         }
-
-        #[test]
-        fn create_pool_ledger_config_works_for_empty_name() {
-            Setup::empty();
-
-            let pool_name = "";
-            let res = pool::create_pool_ledger_config(pool_name, None);
-            assert_code!(ErrorCode::CommonInvalidParam2, res);
-        }
-
-        #[test]
-        fn create_pool_ledger_config_works_for_config_json() {
-            Setup::empty();
-
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works_for_config_json", None, None);
-            let pool_config = pool::pool_config_json(txn_file_path.as_path());
-
-            pool::create_pool_ledger_config("create_pool_ledger_config_works_for_config_json", Some(pool_config.as_str())).unwrap();
-        }
-
 
         #[test]
         fn create_pool_ledger_config_works_for_specific_config() {
-            Setup::empty();
+            let setup = Setup::empty();
 
             let txn_file_path = environment::tmp_file_path("specific_filename.txn");
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works_for_specific_config", None, Some(txn_file_path.as_path()));
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, Some(txn_file_path.as_path()));
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
 
-            pool::create_pool_ledger_config("create_pool_ledger_config_works_for_specific_config", Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
             let _ = fs::remove_file(txn_file_path);
-        }
-
-        #[test]
-        fn create_pool_ledger_config_works_for_empty_genesis_txns() {
-            Setup::empty();
-
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("create_pool_ledger_config_works_for_empty_genesis_txns", Some(0), None);
-            let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            let res = pool::create_pool_ledger_config("create_pool_ledger_config_works_for_empty_genesis_txns", Some(pool_config.as_str()));
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
 
@@ -101,106 +71,74 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works() {
-            Setup::empty();
+            let setup = Setup::empty();
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let pool_name = "open_pool_ledger_works";
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
-            pool::open_pool_ledger(pool_name, None).unwrap();
+            pool::open_pool_ledger(&setup.name, None).unwrap();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_config() {
-            Setup::empty();
+            let setup = Setup::empty();
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let pool_name = "open_pool_ledger_works_for_config";
             let config = r#"{"timeout": 20}"#;
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
-            pool::open_pool_ledger(pool_name, Some(config)).unwrap();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn open_pool_ledger_works_for_twice() {
-            Setup::empty();
-
-            let pool_name = "open_pool_ledger_works_for_twice";
-            pool::create_and_open_pool_ledger(pool_name).unwrap();
-
-            let res = pool::open_pool_ledger(pool_name, None);
-            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
+            pool::open_pool_ledger(&setup.name, Some(config)).unwrap();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_two_nodes() {
-            Setup::empty();
+            let setup = Setup::empty();
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let pool_name = "open_pool_ledger_works_for_two_nodes";
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, Some(2), None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(2), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
-            pool::open_pool_ledger(pool_name, None).unwrap();
+            pool::open_pool_ledger(&setup.name, None).unwrap();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_three_nodes() {
-            Setup::empty();
+            let setup = Setup::empty();
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let pool_name = "open_pool_ledger_works_for_three_nodes";
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, Some(3), None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(3), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
-            pool::open_pool_ledger(pool_name, None).unwrap();
+            pool::open_pool_ledger(&setup.name, None).unwrap();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         pub fn open_pool_ledger_works_for_cached_txns() {
-            Setup::empty();
+            let setup = Setup::empty();
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let pool_name = "open_pool_ledger_works_for_cached_txns";
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
-            pool::dump_correct_genesis_txns_to_cache(pool_name).unwrap();
+            pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
+            pool::dump_correct_genesis_txns_to_cache(&setup.name).unwrap();
 
-            pool::open_pool_ledger(pool_name, None).unwrap();
-        }
-
-        #[test]
-        pub fn open_pool_ledger_works_for_corrupted_cached_txns() {
-            Setup::empty();
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
-            let pool_name = "open_pool_ledger_works_for_corrupted_cached_txns";
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
-            let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
-            pool::dump_incorrect_genesis_txns_to_cache(pool_name).unwrap();
-
-            pool::open_pool_ledger(pool_name, None).unwrap();
+            pool::open_pool_ledger(&setup.name, None).unwrap();
         }
     }
 
@@ -218,26 +156,10 @@ mod high_cases {
     mod close {
         use super::*;
 
-        extern crate futures;
-
-        use self::futures::Future;
-
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works() {
             Setup::pool();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_close_pool_ledger_works_for_twice() {
-            let setup = Setup::empty();
-
-            let pool_handle = pool::create_and_open_pool_ledger(&setup.name).unwrap();
-
-            pool::close(pool_handle).unwrap();
-            let res = pool::close(pool_handle);
-            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
         }
 
         #[test]
@@ -248,27 +170,6 @@ mod high_cases {
             pool::close(setup.pool_handle).unwrap();
             setup.pool_handle = pool::open_pool_ledger(&setup.name, None).unwrap();
         }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_close_pool_ledger_works_for_pending_request() {
-            let setup = Setup::empty();
-
-            let pool_handle = pool::create_and_open_pool_ledger(&setup.name).unwrap();
-
-            let get_nym_req = ledger::build_get_nym_request(Some(DID_MY1), DID_MY1).unwrap();
-
-            let submit_fut = indy::ledger::submit_request(pool_handle, &get_nym_req);
-
-            pool::close(pool_handle).unwrap();
-
-            let res = submit_fut.wait();
-            assert_code!(ErrorCode::PoolLedgerTerminated, res);
-
-            /* Now any request to API can failed, if pool::close works incorrect in case of pending requests.
-               For example try to delete the pool. */
-            pool::delete(&setup.name).unwrap();
-        }
     }
 
     mod delete {
@@ -276,13 +177,13 @@ mod high_cases {
 
         #[test]
         fn indy_delete_pool_ledger_config_works() {
-            Setup::empty();
+            let setup = Setup::empty();
 
-            let txn_file_path = pool::create_genesis_txn_file_for_test_pool("indy_delete_pool_ledger_config_works", None, None);
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
-            pool::create_pool_ledger_config("indy_delete_pool_ledger_config_works", Some(pool_config.as_str())).unwrap();
+            pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
-            pool::delete("indy_delete_pool_ledger_config_works").unwrap();
+            pool::delete(&setup.name).unwrap();
         }
 
         #[test]
@@ -292,15 +193,6 @@ mod high_cases {
 
             let res = pool::delete(&setup.name);
             assert_code!(ErrorCode::CommonInvalidState, res);
-        }
-
-        #[test]
-        fn indy_delete_pool_ledger_config_works_for_closed() {
-            Setup::empty();
-
-            let pool_handle = pool::create_and_open_pool_ledger("indy_delete_pool_ledger_config_works_for_closed").unwrap();
-            pool::close(pool_handle).unwrap();
-            pool::delete("indy_delete_pool_ledger_config_works_for_closed").unwrap();
         }
     }
 
@@ -314,12 +206,32 @@ mod high_cases {
     }
 }
 
-#[cfg(not(feature="only_high_cases"))]
+#[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
+    use utils::ledger;
 
     mod create {
         use super::*;
+
+        #[test]
+        fn create_pool_ledger_config_works_for_empty_name() {
+            Setup::empty();
+
+            let pool_name = "";
+            let res = pool::create_pool_ledger_config(pool_name, None);
+            assert_code!(ErrorCode::CommonInvalidParam2, res);
+        }
+
+        #[test]
+        fn create_pool_ledger_config_works_for_empty_genesis_txns() {
+            let setup = Setup::empty();
+
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(0), None);
+            let pool_config = pool::pool_config_json(txn_file_path.as_path());
+            let res = pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str()));
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
 
         #[test]
         fn create_pool_ledger_config_works_for_invalid_config_json() {
@@ -363,6 +275,31 @@ mod medium_cases {
 
     mod open {
         use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works_for_twice() {
+            let setup = Setup::empty();
+
+            pool::create_and_open_pool_ledger(&setup.name).unwrap();
+
+            let res = pool::open_pool_ledger(&setup.name, None);
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
+        }
+
+        #[test]
+        pub fn open_pool_ledger_works_for_corrupted_cached_txns() {
+            let setup = Setup::empty();
+
+            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
+            let pool_config = pool::pool_config_json(txn_file_path.as_path());
+            pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
+            pool::dump_incorrect_genesis_txns_to_cache(&setup.name).unwrap();
+
+            pool::open_pool_ledger(&setup.name, None).unwrap();
+        }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -488,6 +425,43 @@ mod medium_cases {
     mod close {
         use super::*;
 
+        extern crate futures;
+
+        use self::futures::Future;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_close_pool_ledger_works_for_twice() {
+            let setup = Setup::empty();
+
+            let pool_handle = pool::create_and_open_pool_ledger(&setup.name).unwrap();
+
+            pool::close(pool_handle).unwrap();
+            let res = pool::close(pool_handle);
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_close_pool_ledger_works_for_pending_request() {
+            let setup = Setup::empty();
+
+            let pool_handle = pool::create_and_open_pool_ledger(&setup.name).unwrap();
+
+            let get_nym_req = ledger::build_get_nym_request(Some(DID_MY1), DID_MY1).unwrap();
+
+            let submit_fut = indy::ledger::submit_request(pool_handle, &get_nym_req);
+
+            pool::close(pool_handle).unwrap();
+
+            let res = submit_fut.wait();
+            assert_code!(ErrorCode::PoolLedgerTerminated, res);
+
+            /* Now any request to API can failed, if pool::close works incorrect in case of pending requests.
+               For example try to delete the pool. */
+            pool::delete(&setup.name).unwrap();
+        }
+
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_invalid_handle() {
@@ -500,6 +474,15 @@ mod medium_cases {
 
     mod delete {
         use super::*;
+
+        #[test]
+        fn indy_delete_pool_ledger_config_works_for_closed() {
+            let setup = Setup::empty();
+
+            let pool_handle = pool::create_and_open_pool_ledger(&setup.name).unwrap();
+            pool::close(pool_handle).unwrap();
+            pool::delete(&setup.name).unwrap();
+        }
 
         #[test]
         fn indy_delete_pool_ledger_config_works_for_not_created() {

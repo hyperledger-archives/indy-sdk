@@ -38,8 +38,6 @@ use utils::types::*;
 use utils::constants::*;
 use utils::Setup;
 
-use openssl::hash::{MessageDigest, Hasher};
-use sodiumoxide::crypto::secretbox;
 use self::rand::distributions::Alphanumeric;
 
 use utils::domain::ledger::constants;
@@ -149,38 +147,6 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_submit_action_works_for_validator_info() {
-            let setup = Setup::trustee();
-
-            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
-            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
-            ledger::submit_action(setup.pool_handle, &get_validator_info_request, None, None).unwrap();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_submit_action_works_for_not_supported_request_type() {
-            let setup = Setup::trustee();
-
-            let get_nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
-            let res = ledger::submit_action(setup.pool_handle, &get_nym_request, None, None);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_submit_action_works_for_pool_restart_for_invalid_pool_handle() {
-            let setup = Setup::did();
-
-            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
-            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
-
-            let res = ledger::submit_action(INVALID_POOL_HANDLE, &get_validator_info_request, None, None);
-            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_list_nodes() {
             let setup = Setup::trustee();
 
@@ -227,22 +193,6 @@ mod high_cases {
 
             let res = ledger::sign_request(setup.wallet_handle, DID, REQUEST);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-        }
-
-        #[test]
-        fn indy_sign_request_works_for_invalid_message_format() {
-            let setup = Setup::did();
-
-            let res = ledger::sign_request(setup.wallet_handle, &setup.did, "1495034346617224651");
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-        }
-
-        #[test]
-        fn indy_sign_request_works_for_invalid_handle() {
-            Setup::empty();
-
-            let res = ledger::sign_request(INVALID_WALLET_HANDLE, DID, MESSAGE);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
         }
     }
 
@@ -291,31 +241,7 @@ mod high_cases {
             let res = ledger::multi_sign_request(setup.wallet_handle, DID, REQUEST);
             assert_code!(ErrorCode::WalletItemNotFound, res);
         }
-
-        #[test]
-        fn indy_multi_sign_request_works_for_invalid_message_format() {
-            let setup = Setup::did();
-
-            let res = ledger::multi_sign_request(setup.wallet_handle, &setup.did, "1495034346617224651");
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-        }
-
-        #[test]
-        fn indy_multi_sign_request_works_for_twice_use_same_did() {
-            let setup = Setup::wallet();
-
-            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, Some(MY1_SEED)).unwrap();
-
-            let message = ledger::multi_sign_request(setup.wallet_handle, &did, REQUEST).unwrap();
-            let message = ledger::multi_sign_request(setup.wallet_handle, &did, &message).unwrap();
-            let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
-            let signatures = msg["signatures"].as_object().unwrap();
-
-            assert_eq!(1, signatures.len());
-            assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
-        }
     }
-
 
     mod nym_requests {
         use super::*;
@@ -384,32 +310,10 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_nym_request_works_without_signature() {
-            let setup = Setup::trustee();
-
-            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
-            let nym_request = ledger::build_nym_request(&setup.did, &did, None, None, None).unwrap();
-            let response = ledger::submit_request(setup.pool_handle, &nym_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_send_get_nym_request_works() {
             let setup = Setup::trustee();
 
             let get_nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
-            let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_send_get_nym_request_works_default_submitter_did() {
-            let setup = Setup::trustee();
-
-            let get_nym_request = ledger::build_get_nym_request(None, DID_TRUSTEE).unwrap();
             let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
             let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
             assert!(get_nym_response.result.data.is_some());
@@ -533,16 +437,6 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_request_works_without_signature() {
-            let setup = Setup::trustee();
-
-            let attrib_request = ledger::build_attrib_request(&setup.did, &setup.did, None, Some(ATTRIB_RAW_DATA), None).unwrap();
-            let response = ledger::submit_request(setup.pool_handle, &attrib_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_raw_value() {
             let setup = Setup::new_identity();
 
@@ -555,74 +449,6 @@ mod high_cases {
             pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
 
             let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, Some("endpoint"), None, None).unwrap();
-            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-
-            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
-            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_requests_works_for_hash_value() {
-            let setup = Setup::new_identity();
-
-            let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
-            ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
-            let hashed_attr = hex::encode(ctx.finish().unwrap().as_ref());
-
-            let attrib_request = ledger::build_attrib_request(&setup.did,
-                                                              &setup.did,
-                                                              Some(&hashed_attr),
-                                                              None,
-                                                              None).unwrap();
-            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
-            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
-
-            let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, None, Some(&hashed_attr), None).unwrap();
-            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-
-            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
-            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), hashed_attr.as_str());
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_requests_works_for_encrypted_value() {
-            let setup = Setup::new_identity();
-
-            let key = secretbox::gen_key();
-            let nonce = secretbox::gen_nonce();
-            let encryted_attr = hex::encode(secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key));
-
-            let attrib_request = ledger::build_attrib_request(&setup.did,
-                                                              &setup.did,
-                                                              None,
-                                                              None,
-                                                              Some(&encryted_attr)).unwrap();
-            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
-            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
-
-            let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, None, None, Some(&encryted_attr)).unwrap();
-            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-
-            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
-            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), encryted_attr.as_str());
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_attrib_requests_works_for_default_submitter_did() {
-            let setup = Setup::new_identity();
-
-            let attrib_request = ledger::build_attrib_request(&setup.did,
-                                                              &setup.did,
-                                                              None,
-                                                              Some(ATTRIB_RAW_DATA),
-                                                              None).unwrap();
-            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
-            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
-
-            let get_attrib_request = ledger::build_get_attrib_request(None, &setup.did, Some("endpoint"), None, None).unwrap();
             let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
 
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
@@ -674,36 +500,12 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_schema_request_works_without_signature() {
-            let setup = Setup::trustee();
-
-            let schema_request = ledger::build_schema_request(&setup.did, SCHEMA_DATA).unwrap();
-            let response = ledger::submit_request(setup.pool_handle, &schema_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_schema_requests_works() {
             let setup = Setup::pool();
 
             let (schema_id, _, _) = ledger::post_entities();
 
             let get_schema_request = ledger::build_get_schema_request(Some(DID_MY1), &schema_id).unwrap();
-            let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
-            let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
-
-            let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_schema_requests_works_for_default_submitter_did() {
-            let setup = Setup::pool();
-
-            let (schema_id, _, _) = ledger::post_entities();
-
-            let get_schema_request = ledger::build_get_schema_request(None, &schema_id).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
             let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
 
@@ -733,16 +535,6 @@ mod high_cases {
 
             let request = ledger::build_node_request(IDENTIFIER, DEST, NODE_DATA).unwrap();
             check_request(&request, expected_result);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_send_node_request_works_without_signature() {
-            let setup = Setup::steward();
-
-            let node_request = ledger::build_node_request(&setup.did, &setup.did, NODE_DATA).unwrap();
-            let response = ledger::submit_request(setup.pool_handle, &node_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
         }
 
         #[test]
@@ -833,36 +625,12 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_cred_def_request_works_without_signature() {
-            let setup = Setup::trustee();
-
-            let cred_def_request = ledger::build_cred_def_txn(&setup.did, &anoncreds::credential_def_json()).unwrap();
-            let response = ledger::submit_request(setup.pool_handle, &cred_def_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_cred_def_requests_works() {
             let setup = Setup::pool();
 
             let (_, cred_def_id, _) = ledger::post_entities();
 
             let get_cred_def_request = ledger::build_get_cred_def_request(Some(DID_MY1), &cred_def_id).unwrap();
-            let get_cred_def_response = ledger::submit_request(setup.pool_handle, &get_cred_def_request).unwrap();
-            let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
-
-            let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_cred_def_requests_works_for_default_submitter_did() {
-            let setup = Setup::pool();
-
-            let (_, cred_def_id, _) = ledger::post_entities();
-
-            let get_cred_def_request = ledger::build_get_cred_def_request(None, &cred_def_id).unwrap();
             let get_cred_def_response = ledger::submit_request(setup.pool_handle, &get_cred_def_request).unwrap();
             let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
@@ -966,26 +734,6 @@ mod high_cases {
 
             let expected_schema_data: SchemaData = serde_json::from_str(r#"{"name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#).unwrap();
             assert_eq!(expected_schema_data, get_txn_schema_data);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_txn_request_works_for_invalid_seq_no() {
-            let setup = Setup::new_identity();
-
-            let schema_request = ledger::build_schema_request(&setup.did, &anoncreds::gvt_schema_json()).unwrap();
-            let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
-            pool::check_response_type(&schema_response, ResponseType::REPLY);
-
-            let seq_no = ledger::extract_seq_no_from_reply(&schema_response).unwrap() as i32;
-
-            thread::sleep(std::time::Duration::from_secs(1));
-
-            let get_txn_request = ledger::build_get_txn_request(Some(DID), seq_no + 1, None).unwrap();
-
-            let get_txn_response = ledger::submit_request(setup.pool_handle, &get_txn_request).unwrap();
-            let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert!(get_txn_response.result.data.is_none());
         }
     }
 
@@ -1280,20 +1028,6 @@ mod high_cases {
             let (_, revoc_reg_def_json) = ledger::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
             let _revoc_reg_def: RevocationRegistryDefinitionV1 = serde_json::from_str(&revoc_reg_def_json).unwrap();
         }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_revoc_get_reg_def_requests_works_for_default_submitter_did() {
-            let setup = Setup::pool();
-
-            let (_, _, rev_reg_id) = ledger::post_entities();
-
-            let get_rev_reg_def_request = ledger::build_get_revoc_reg_def_request(None, &rev_reg_id).unwrap();
-            let get_rev_reg_def_response = ledger::submit_request(setup.pool_handle, &get_rev_reg_def_request).unwrap();
-
-            let (_, revoc_reg_def_json) = ledger::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
-            let _revoc_reg_def: RevocationRegistryDefinitionV1 = serde_json::from_str(&revoc_reg_def_json).unwrap();
-        }
     }
 
     mod revoc_reg_entry_request {
@@ -1361,22 +1095,6 @@ mod high_cases {
             let (_, revoc_reg_json, _) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
             let _revoc_reg: RevocationRegistryV1 = serde_json::from_str(&revoc_reg_json).unwrap();
         }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_revoc_reg_request_works_for_default_submitter_did() {
-            let setup = Setup::pool();
-
-            let (_, _, rev_reg_id) = ledger::post_entities();
-
-            let timestamp = time::get_time().sec as u64 + 1000;
-
-            let get_rev_reg_req = ledger::build_get_revoc_reg_request(None, &rev_reg_id, timestamp).unwrap();
-            let get_rev_reg_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_req).unwrap();
-
-            let (_, revoc_reg_json, _) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
-            let _revoc_reg: RevocationRegistryV1 = serde_json::from_str(&revoc_reg_json).unwrap();
-        }
     }
 
     mod get_revoc_reg_delta_request {
@@ -1428,22 +1146,6 @@ mod high_cases {
             let from = time::get_time().sec as u64;
             let to = time::get_time().sec as u64 + 300;
             let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(Some(DID_MY1), &rev_reg_id, Some(from), to).unwrap();
-            let get_rev_reg_delta_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_delta_req).unwrap();
-
-            let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
-
-            let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_revoc_reg_delta_request_works_for_default_submitter_did() {
-            let setup = Setup::pool();
-
-            let (_, _, rev_reg_id) = ledger::post_entities();
-
-            let to = time::get_time().sec as u64 + 1000;
-            let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(None, &rev_reg_id, None, to).unwrap();
             let get_rev_reg_delta_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_delta_req).unwrap();
 
             let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
@@ -1548,33 +1250,6 @@ mod high_cases {
             _check_read_response_metadata(&response_metadata);
         }
 
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn get_response_metadata_works_for_invalid_response() {
-            Setup::empty();
-
-            let res = ledger::get_response_metadata("{}");
-            assert_code!(ErrorCode::LedgerInvalidTransaction, res);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn get_response_metadata_works_for_not_found_response() {
-            let setup = Setup::wallet_and_pool();
-
-            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
-
-            let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
-            let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
-
-            let response_metadata = ledger::get_response_metadata(&get_nym_response).unwrap();
-            let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
-
-            assert!(response_metadata["lastTxnTime"].as_u64().is_some());
-            assert!(response_metadata["seqNo"].as_u64().is_none());
-            assert!(response_metadata["txnTime"].as_u64().is_none());
-            assert!(response_metadata["lastSeqNo"].as_u64().is_none());
-        }
 
         fn _check_write_response_metadata(response_metadata: &str) {
             let response_metadata: serde_json::Value = serde_json::from_str(response_metadata).unwrap();
@@ -2111,6 +1786,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_auth_rule_requests_works_for_demote_trustee() {
             let setup = Setup::trustee();
 
@@ -2139,6 +1815,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_auth_rule_requests_works_for_promote_role_to_trustee() {
             let setup = Setup::trustee();
 
@@ -2167,6 +1844,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_auth_rule_requests_works_for_change_trustee_to_steward() {
             let setup = Setup::trustee();
 
@@ -2762,6 +2440,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_reset_author_agreement_works() {
             let setup = Setup::trustee();
 
@@ -2808,6 +2487,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_author_agreement_works_for_using_invalid_aml() {
             let setup = Setup::trustee();
 
@@ -2833,6 +2513,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_author_agreement_works_for_using_not_last_taa() {
             let setup = Setup::trustee();
 
@@ -2920,6 +2601,7 @@ mod high_cases {
         }
 
         #[test]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_send_request_by_endorser_for_both_author_and_endorser_must_sign() {
             let setup = Setup::endorser();
             let my_did = _setup_new_identity(setup.wallet_handle, setup.pool_handle);
@@ -2946,6 +2628,8 @@ mod high_cases {
 #[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     use super::*;
+    use openssl::hash::{MessageDigest, Hasher};
+    use sodiumoxide::crypto::secretbox;
     use utils::domain::anoncreds::schema::{Schema};
 
     mod requests {
@@ -2984,6 +2668,26 @@ mod medium_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn indy_submit_action_works_for_validator_info() {
+            let setup = Setup::trustee();
+
+            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
+            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
+            ledger::submit_action(setup.pool_handle, &get_validator_info_request, None, None).unwrap();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_submit_action_works_for_not_supported_request_type() {
+            let setup = Setup::trustee();
+
+            let get_nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
+            let res = ledger::submit_action(setup.pool_handle, &get_nym_request, None, None);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_pool_restart_for_unknown_node_name() {
             let setup = Setup::trustee();
 
@@ -3007,10 +2711,91 @@ mod medium_cases {
             let res = ledger::submit_action(setup.pool_handle, &get_validator_info_request, Some(nodes), None);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_submit_action_works_for_pool_restart_for_invalid_pool_handle() {
+            let setup = Setup::did();
+
+            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
+            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
+
+            let res = ledger::submit_action(INVALID_POOL_HANDLE, &get_validator_info_request, None, None);
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
+        }
+    }
+
+    mod sign_request {
+        use super::*;
+
+        #[test]
+        fn indy_sign_request_works_for_invalid_message_format() {
+            let setup = Setup::did();
+
+            let res = ledger::sign_request(setup.wallet_handle, &setup.did, "1495034346617224651");
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        fn indy_sign_request_works_for_invalid_handle() {
+            Setup::empty();
+
+            let res = ledger::sign_request(INVALID_WALLET_HANDLE, DID, MESSAGE);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+    }
+
+    mod multi_sign_request {
+        use super::*;
+
+        #[test]
+        fn indy_multi_sign_request_works_for_invalid_message_format() {
+            let setup = Setup::did();
+
+            let res = ledger::multi_sign_request(setup.wallet_handle, &setup.did, "1495034346617224651");
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        fn indy_multi_sign_request_works_for_twice_use_same_did() {
+            let setup = Setup::wallet();
+
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let message = ledger::multi_sign_request(setup.wallet_handle, &did, REQUEST).unwrap();
+            let message = ledger::multi_sign_request(setup.wallet_handle, &did, &message).unwrap();
+            let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
+            let signatures = msg["signatures"].as_object().unwrap();
+
+            assert_eq!(1, signatures.len());
+            assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
+        }
     }
 
     mod nym_requests {
         use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_send_get_nym_request_works_default_submitter_did() {
+            let setup = Setup::trustee();
+
+            let get_nym_request = ledger::build_get_nym_request(None, DID_TRUSTEE).unwrap();
+            let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
+            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
+            assert!(get_nym_response.result.data.is_some());
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_nym_request_works_without_signature() {
+            let setup = Setup::trustee();
+
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+            let nym_request = ledger::build_nym_request(&setup.did, &did, None, None, None).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &nym_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -3161,6 +2946,64 @@ mod medium_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn indy_attrib_requests_works_for_hash_value() {
+            let setup = Setup::new_identity();
+
+            let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
+            ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
+            let hashed_attr = hex::encode(ctx.finish().unwrap().as_ref());
+
+            let attrib_request = ledger::build_attrib_request(&setup.did,
+                                                              &setup.did,
+                                                              Some(&hashed_attr),
+                                                              None,
+                                                              None).unwrap();
+            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
+            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
+
+            let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, None, Some(&hashed_attr), None).unwrap();
+            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), hashed_attr.as_str());
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_attrib_requests_works_for_encrypted_value() {
+            let setup = Setup::new_identity();
+
+            let key = secretbox::gen_key();
+            let nonce = secretbox::gen_nonce();
+            let encryted_attr = hex::encode(secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key));
+
+            let attrib_request = ledger::build_attrib_request(&setup.did,
+                                                              &setup.did,
+                                                              None,
+                                                              None,
+                                                              Some(&encryted_attr)).unwrap();
+            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
+            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
+
+            let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, None, None, Some(&encryted_attr)).unwrap();
+            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), encryted_attr.as_str());
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_attrib_request_works_without_signature() {
+            let setup = Setup::trustee();
+
+            let attrib_request = ledger::build_attrib_request(&setup.did, &setup.did, None, Some(ATTRIB_RAW_DATA), None).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &attrib_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_request_works_for_unknown_did() {
             let setup = Setup::wallet_and_pool();
 
@@ -3170,6 +3013,26 @@ mod medium_cases {
 
             let response = ledger::submit_request(setup.pool_handle, &attrib_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_attrib_requests_works_for_default_submitter_did() {
+            let setup = Setup::new_identity();
+
+            let attrib_request = ledger::build_attrib_request(&setup.did,
+                                                              &setup.did,
+                                                              None,
+                                                              Some(ATTRIB_RAW_DATA),
+                                                              None).unwrap();
+            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
+            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
+
+            let get_attrib_request = ledger::build_get_attrib_request(None, &setup.did, Some("endpoint"), None, None).unwrap();
+            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
         }
 
         #[test]
@@ -3227,6 +3090,30 @@ mod medium_cases {
 
     mod schemas_requests {
         use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_schema_request_works_without_signature() {
+            let setup = Setup::trustee();
+
+            let schema_request = ledger::build_schema_request(&setup.did, SCHEMA_DATA).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &schema_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_schema_requests_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (schema_id, _, _) = ledger::post_entities();
+
+            let get_schema_request = ledger::build_get_schema_request(None, &schema_id).unwrap();
+            let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
+            let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
+
+            let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
+        }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -3317,6 +3204,16 @@ mod medium_cases {
         use super::*;
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_send_node_request_works_without_signature() {
+            let setup = Setup::steward();
+
+            let node_request = ledger::build_node_request(&setup.did, &setup.did, NODE_DATA).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &node_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
+
+        #[test]
         fn indy_build_node_request_works_for_missed_fields_in_data_json() {
             let res = ledger::build_node_request(IDENTIFIER, DEST, r#"{ }"#);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
@@ -3382,6 +3279,30 @@ mod medium_cases {
         use super::*;
 
         #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_cred_def_request_works_without_signature() {
+            let setup = Setup::trustee();
+
+            let cred_def_request = ledger::build_cred_def_txn(&setup.did, &anoncreds::credential_def_json()).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &cred_def_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_cred_def_requests_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (_, cred_def_id, _) = ledger::post_entities();
+
+            let get_cred_def_request = ledger::build_get_cred_def_request(None, &cred_def_id).unwrap();
+            let get_cred_def_response = ledger::submit_request(setup.pool_handle, &get_cred_def_request).unwrap();
+            let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
+
+            let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
+        }
+
+        #[test]
         fn indy_build_cred_def_request_works_for_invalid_data_json() {
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"}}}"#;
             let res = ledger::build_cred_def_txn(IDENTIFIER, data);
@@ -3433,6 +3354,120 @@ mod medium_cases {
             let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
             let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
+        }
+    }
+
+    mod get_txn_requests {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_txn_request_works_for_invalid_seq_no() {
+            let setup = Setup::new_identity();
+
+            let schema_request = ledger::build_schema_request(&setup.did, &anoncreds::gvt_schema_json()).unwrap();
+            let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
+            pool::check_response_type(&schema_response, ResponseType::REPLY);
+
+            let seq_no = ledger::extract_seq_no_from_reply(&schema_response).unwrap() as i32;
+
+            thread::sleep(std::time::Duration::from_secs(1));
+
+            let get_txn_request = ledger::build_get_txn_request(Some(DID), seq_no + 1, None).unwrap();
+
+            let get_txn_response = ledger::submit_request(setup.pool_handle, &get_txn_request).unwrap();
+            let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
+            assert!(get_txn_response.result.data.is_none());
+        }
+    }
+
+    mod revoc_reg_def_requests {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_revoc_get_reg_def_requests_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (_, _, rev_reg_id) = ledger::post_entities();
+
+            let get_rev_reg_def_request = ledger::build_get_revoc_reg_def_request(None, &rev_reg_id).unwrap();
+            let get_rev_reg_def_response = ledger::submit_request(setup.pool_handle, &get_rev_reg_def_request).unwrap();
+
+            let (_, revoc_reg_def_json) = ledger::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
+            let _revoc_reg_def: RevocationRegistryDefinitionV1 = serde_json::from_str(&revoc_reg_def_json).unwrap();
+        }
+    }
+
+    mod get_revoc_reg_request {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_revoc_reg_request_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (_, _, rev_reg_id) = ledger::post_entities();
+
+            let timestamp = time::get_time().sec as u64 + 1000;
+
+            let get_rev_reg_req = ledger::build_get_revoc_reg_request(None, &rev_reg_id, timestamp).unwrap();
+            let get_rev_reg_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_req).unwrap();
+
+            let (_, revoc_reg_json, _) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
+            let _revoc_reg: RevocationRegistryV1 = serde_json::from_str(&revoc_reg_json).unwrap();
+        }
+    }
+
+    mod get_revoc_reg_delta_request {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_revoc_reg_delta_request_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (_, _, rev_reg_id) = ledger::post_entities();
+
+            let to = time::get_time().sec as u64 + 1000;
+            let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(None, &rev_reg_id, None, to).unwrap();
+            let get_rev_reg_delta_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_delta_req).unwrap();
+
+            let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
+
+            let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
+        }
+    }
+
+    mod get_response_metadata {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_invalid_response() {
+            Setup::empty();
+
+            let res = ledger::get_response_metadata("{}");
+            assert_code!(ErrorCode::LedgerInvalidTransaction, res);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_not_found_response() {
+            let setup = Setup::wallet_and_pool();
+
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+
+            let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
+            let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&get_nym_response).unwrap();
+            let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
+
+            assert!(response_metadata["lastTxnTime"].as_u64().is_some());
+            assert!(response_metadata["seqNo"].as_u64().is_none());
+            assert!(response_metadata["txnTime"].as_u64().is_none());
+            assert!(response_metadata["lastSeqNo"].as_u64().is_none());
         }
     }
 }

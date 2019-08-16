@@ -36,12 +36,14 @@ use self::indy::ErrorCode;
 use std::path::PathBuf;
 use std::fs;
 
-pub const CONFIG: &'static str = r#"{"freshness_time":1000}"#;
-
 fn cleanup_file(path: &PathBuf) {
     if path.exists() {
         fs::remove_file(path).unwrap();
     }
+}
+
+fn config(name: &str) -> String {
+    json!({"id": name}).to_string()
 }
 
 mod high_cases {
@@ -68,19 +70,20 @@ mod high_cases {
 
         #[test]
         fn indy_create_wallet_works() {
-            Setup::empty();
-            wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
         }
 
         #[test]
         fn indy_create_wallet_works_for_custom_path() {
-            Setup::empty();
+            let setup = Setup::empty();
 
             let config = json!({
-                "id": "wallet_1_indy_create_wallet_works_for_custom_path",
+                "id": &setup.name,
                 "storage_type": "default",
                 "storage_config": {
-                    "path": _custom_path("indy_create_wallet_works_for_custom_path"),
+                    "path": _custom_path(&setup.name),
                 }
             }).to_string();
 
@@ -105,14 +108,6 @@ mod high_cases {
             let res = wallet::create_wallet(UNKNOWN_WALLET_CONFIG, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::WalletUnknownTypeError, res);
         }
-
-        #[test]
-        fn indy_create_wallet_works_for_empty_type() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_create_wallet_works_for_empty_type"}"#;
-            Setup::empty();
-
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-        }
     }
 
     mod delete_wallet {
@@ -120,23 +115,24 @@ mod high_cases {
 
         #[test]
         fn indy_delete_wallet_works() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_delete_wallet_works"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
         }
 
         #[test]
         fn indy_delete_wallet_works_for_custom_path() {
-            Setup::empty();
+            let setup = Setup::empty();
 
             let config = json!({
-                "id": "wallet_1_indy_delete_wallet_works_for_custom_path",
+                "id": &setup.name,
                 "storage_type": "default",
                 "storage_config": {
-                    "path": _custom_path("indy_delete_wallet_works_for_custom_path"),
+                    "path": _custom_path(&setup.name),
                 }
             }).to_string();
 
@@ -146,25 +142,13 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_delete_wallet_works_for_closed() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_delete_wallet_works_for_closed"}"#;
-            Setup::empty();
-
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            wallet::close_wallet(wallet_handle).unwrap();
-            wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-        }
-
-        #[test]
         fn indy_delete_wallet_works_for_opened() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_delete_wallet_works_for_opened"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let res = wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let res = wallet::delete_wallet(&config, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::CommonInvalidState, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
@@ -194,13 +178,13 @@ mod high_cases {
 
         #[test]
         fn indy_open_wallet_works_for_custom_path() {
-            Setup::empty();
+            let setup = Setup::empty();
 
             let config = json!({
-                "id": "indy_open_wallet_works_for_custom_path",
+                "id": &setup.name,
                 "storage_type": "default",
                 "storage_config": {
-                    "path": _custom_path("indy_open_wallet_works_for_custom_path"),
+                    "path": _custom_path(&setup.name),
                 }
             }).to_string();
 
@@ -231,17 +215,16 @@ mod high_cases {
         #[test]
         fn indy_close_wallet_works() {
             let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            let wallet_config = json!({"id": &setup.name}).to_string();
-
-            wallet::create_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
-            let wallet_handle = wallet::open_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
 
-            let wallet_handle = wallet::open_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
 
-            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
         }
 
         #[test]
@@ -269,7 +252,7 @@ mod high_cases {
         fn indy_export_wallet_works() {
             let setup = Setup::wallet();
 
-            let path = wallet::export_wallet_path("indy_export_wallet_works");
+            let path = wallet::export_wallet_path(&setup.name);
             let config_json = wallet::prepare_export_wallet_config(&path);
 
             did::create_my_did(setup.wallet_handle, "{}").unwrap();
@@ -280,7 +263,7 @@ mod high_cases {
 
             assert!(path.exists());
 
-            test::cleanup_files(&path, "indy_export_wallet_works_export_wallet");
+            test::cleanup_files(&path, &setup.name);
         }
     }
 
@@ -289,13 +272,13 @@ mod high_cases {
 
         #[test]
         fn indy_import_wallet_works() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_import_wallet_works"}"#;
-            Setup::empty();
+            let setup = Setup::wallet();
+            let config = config(&setup.name);
 
-            let path = wallet::export_wallet_path("indy_import_wallet_works");
+            let path = wallet::export_wallet_path(&setup.name);
             let config_json = wallet::prepare_export_wallet_config(&path);
 
-            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet("indy_import_wallet_works").unwrap();
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&setup.name).unwrap();
 
             let (did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
@@ -308,9 +291,9 @@ mod high_cases {
             wallet::close_wallet(wallet_handle).unwrap();
             wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
 
-            wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json).unwrap();
+            wallet::import_wallet(&config, WALLET_CREDENTIALS, &config_json).unwrap();
 
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
 
             let did_with_meta_after_import = did::get_my_did_with_metadata(wallet_handle, &did).unwrap();
 
@@ -326,34 +309,34 @@ mod high_cases {
 
         #[test]
         fn indy_generate_wallet_key_works() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_generate_wallet_key_works"}"#;
-            Setup::empty();
+            let setup = Setup::wallet();
+            let config = config(&setup.name);
 
             let key = wallet::generate_wallet_key(None).unwrap();
 
             let credentials = json!({"key": key, "key_derivation_method": "RAW"}).to_string();
-            wallet::create_wallet(WALLET_CONFIG, &credentials).unwrap();
+            wallet::create_wallet(&config, &credentials).unwrap();
 
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, &credentials).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, &credentials).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            wallet::delete_wallet(WALLET_CONFIG, &credentials).unwrap();
+            wallet::delete_wallet(&config, &credentials).unwrap();
         }
 
         #[test]
         fn indy_generate_wallet_key_works_for_seed() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_generate_wallet_key_works_for_seed"}"#;
-            Setup::empty();
+            let setup = Setup::wallet();
+            let wallet_config = config(&setup.name);
 
             let config = json!({"seed": MY1_SEED}).to_string();
             let key = wallet::generate_wallet_key(Some(config.as_str())).unwrap();
             assert_eq!(key.from_base58().unwrap(), vec![177, 92, 220, 199, 104, 203, 161, 4, 218, 78, 105, 13, 7, 50, 66, 107, 154, 155, 108, 133, 1, 30, 87, 149, 233, 76, 39, 156, 178, 46, 230, 124]);
 
             let credentials = json!({"key": key, "key_derivation_method": "RAW"}).to_string();
-            wallet::create_wallet(WALLET_CONFIG, &credentials).unwrap();
+            wallet::create_wallet(&wallet_config, &credentials).unwrap();
 
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, &credentials).unwrap();
+            let wallet_handle = wallet::open_wallet(&wallet_config, &credentials).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            wallet::delete_wallet(WALLET_CONFIG, &credentials).unwrap();
+            wallet::delete_wallet(&wallet_config, &credentials).unwrap();
         }
     }
 }
@@ -406,39 +389,48 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn indy_create_wallet_works_for_duplicate_name() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_create_wallet_works_for_duplicate_name"}"#;
-            Setup::empty();
+        fn indy_create_wallet_works_for_empty_type() {
+            let setup = Setup::wallet();
+            let config = config(&setup.name);
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let res = wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+        }
+
+        #[test]
+        fn indy_create_wallet_works_for_duplicate_name() {
+            let setup = Setup::wallet();
+            let config = config(&setup.name);
+
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let res = wallet::create_wallet(&config, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::WalletAlreadyExistsError, res);
         }
 
         #[test]
         fn indy_create_wallet_works_for_missed_key() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_create_wallet_works_for_missed_key"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            let res = wallet::create_wallet(WALLET_CONFIG, r#"{}"#);
+            let res = wallet::create_wallet(&config, r#"{}"#);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         fn indy_create_wallet_works_for_empty_name() {
             Setup::empty();
+            let config = config("");
 
-            let res = wallet::create_wallet(r#"{"id": ""}"#, WALLET_CREDENTIALS);
+            let res = wallet::create_wallet(&config, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         fn indy_create_wallet_works_for_raw_key_invalid_length() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_create_wallet_works_for_raw_key_invalid_length"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
             let credentials = json!({"key": "key", "key_derivation_method": "RAW"}).to_string();
-            let res = wallet::create_wallet(WALLET_CONFIG, &credentials);
+            let res = wallet::create_wallet(&config, &credentials);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
@@ -447,32 +439,44 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn indy_delete_wallet_works_for_not_created() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_delete_wallet_works_for_not_created"}"#;
-            Setup::empty();
+        fn indy_delete_wallet_works_for_closed() {
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            let res = wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+        }
+
+        #[test]
+        fn indy_delete_wallet_works_for_not_created() {
+            let setup = Setup::empty();
+            let config = config(&setup.name);
+
+            let res = wallet::delete_wallet(&config, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::WalletNotFoundError, res);
         }
 
         #[test]
         fn indy_delete_wallet_works_for_twice() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_delete_wallet_works_for_twice"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let res = wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let res = wallet::delete_wallet(&config, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::WalletNotFoundError, res);
         }
 
         #[test]
         fn indy_delete_wallet_works_for_wrong_credentials() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_delete_wallet_works_for_wrong_credentials"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            wallet::create_wallet(WALLET_CONFIG, r#"{"key":"key"}"#).unwrap();
-            let res = wallet::delete_wallet(WALLET_CONFIG, r#"{"key":"other_key"}"#);
+            wallet::create_wallet(&config, r#"{"key":"key"}"#).unwrap();
+            let res = wallet::delete_wallet(&config, r#"{"key":"other_key"}"#);
             assert_code!(ErrorCode::WalletAccessFailed, res);
         }
     }
@@ -482,22 +486,22 @@ mod medium_cases {
 
         #[test]
         fn indy_open_wallet_works_for_not_created_wallet() {
-            const WALLET_CONFIG: &'static str = r#"{"id":"indy_open_wallet_works_for_not_created_wallet"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            let res = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
+            let res = wallet::open_wallet(&config, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::WalletNotFoundError, res);
         }
 
         #[test]
         fn indy_open_wallet_works_for_twice() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_open_wallet_works_for_twice"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
 
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let res = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
+            let wallet_handle = wallet::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let res = wallet::open_wallet(&config, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::WalletAlreadyOpenedError, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
@@ -554,35 +558,34 @@ mod medium_cases {
 
         #[test]
         fn indy_open_wallet_works_for_invalid_credentials() {
-            const WALLET_CONFIG: &'static str = r#"{"id":"indy_open_wallet_works_for_invalid_credentials"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            wallet::create_wallet(WALLET_CONFIG, r#"{"key":"key"}"#).unwrap();
-            let res = wallet::open_wallet(WALLET_CONFIG, r#"{"key":"other_key"}"#);
+            wallet::create_wallet(&config, r#"{"key":"key"}"#).unwrap();
+            let res = wallet::open_wallet(&config, r#"{"key":"other_key"}"#);
             assert_code!(ErrorCode::WalletAccessFailed, res);
         }
 
         #[test]
         fn indy_open_wallet_works_for_changing_credentials() {
-            const WALLET_CONFIG: &'static str = r#"{"id":"indy_open_wallet_works_for_changing_credentials"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            wallet::create_wallet(WALLET_CONFIG, r#"{"key":"key"}"#).unwrap();
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, r#"{"key":"key", "rekey":"other_key"}"#).unwrap();
+            wallet::create_wallet(&config, r#"{"key":"key"}"#).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, r#"{"key":"key", "rekey":"other_key"}"#).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
 
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, r#"{"key":"other_key"}"#).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, r#"{"key":"other_key"}"#).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn indy_open_wallet_works_for_invalid_config() {
-            const WALLET_CONFIG: &'static str = r#"{"id":"indy_open_wallet_works_for_invalid_config"}"#;
             Setup::empty();
 
             let config = r#"{"field":"value"}"#;
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
             let res = wallet::open_wallet(config, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
@@ -676,23 +679,23 @@ mod medium_cases {
 
         #[test]
         fn indy_import_wallet_returns_error_if_invalid_config() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_import_wallet_returns_error_if_path_doesnt_exist"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
-            let res = wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, "{}");
+            let res = wallet::import_wallet(&config, WALLET_CREDENTIALS, "{}");
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 
         #[test]
         fn indy_import_wallet_works_for_other_key() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_import_wallet_works_for_other_key"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
             let path = wallet::export_wallet_path("indy_import_wallet_works_for_other_key_export_wallet");
             let config_json = wallet::prepare_export_wallet_config(&path);
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
 
             did::create_my_did(wallet_handle, "{}").unwrap();
 
@@ -700,14 +703,14 @@ mod medium_cases {
             wallet::export_wallet(wallet_handle, &config_json).unwrap();
 
             wallet::close_wallet(wallet_handle).unwrap();
-            wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            wallet::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
 
             let config_json = json!({
                 "path": path.to_str().unwrap(),
                 "key": "other_key",
             }).to_string();
 
-            let res = wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
+            let res = wallet::import_wallet(&config, WALLET_CREDENTIALS, &config_json);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             cleanup_file(&path);
@@ -715,21 +718,21 @@ mod medium_cases {
 
         #[test]
         fn indy_import_wallet_works_for_duplicate_name() {
-            const WALLET_CONFIG: &str = r#"{"id":"indy_import_wallet_works_for_duplicate_name"}"#;
-            Setup::empty();
+            let setup = Setup::empty();
+            let config = config(&setup.name);
 
             let path = wallet::export_wallet_path("indy_import_wallet_works_for_duplicate_name_export_wallet");
             let config_json = wallet::prepare_export_wallet_config(&path);
 
-            wallet::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = wallet::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
 
             did::create_my_did(wallet_handle, "{}").unwrap();
 
             cleanup_file(&path);
             wallet::export_wallet(wallet_handle, &config_json).unwrap();
 
-            let res = wallet::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
+            let res = wallet::import_wallet(&config, WALLET_CREDENTIALS, &config_json);
             assert_code!(ErrorCode::WalletAlreadyExistsError, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
