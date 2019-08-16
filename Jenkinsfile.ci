@@ -1,8 +1,12 @@
 #!groovy
 
 
-libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
-libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
+Ubuntu16 = "Ubuntu 16.04"
+Ubuntu18 = "Ubuntu 18.04"
+RedHat = "RedHat"
+
+libindyBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
+libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
 
 testing()
 
@@ -80,7 +84,7 @@ def windowsTesting() {
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --features fatal_warnings"
-                            bat "cargo test --no-run"
+                            bat 'cargo test --no-run --features "only_high_cases"'
 
                             echo "Windows Libindy before Test: Deleting %TEMP\\indy_client"
                             bat "DEL /S /Q /F %TEMP%\\indy_client"
@@ -92,7 +96,7 @@ def windowsTesting() {
                                     "RUST_LOG=indy::=debug,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
-                                bat "cargo test"
+                                bat 'cargo test --features "only_high_cases"'
                             }
 
                             echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
@@ -339,7 +343,14 @@ def iosTesting() {
 
 def ubuntuTesting() {
     stage('Ubuntu Test') {
-        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network", true)
+        parallel([
+                "ubuntu:16.04": {
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true)
+                },
+                "ubuntu:18.04": {
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", false)
+                }
+        ])
     }
 }
 
@@ -349,12 +360,12 @@ def rhelTesting() {
     }
 }
 
-def linuxTesting(file, env_name, network_name, test_wrappers) {
+def linuxTesting(file, env_name, network_name, full_testing) {
     parallel([
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
-                    linuxLibindyBuild(file, env_name, network_name)
+                    linuxLibindyBuild(file, env_name, network_name, full_testing)
                 }
             },
             "${env_name} Test: test other components" : {
@@ -366,10 +377,10 @@ def linuxTesting(file, env_name, network_name, test_wrappers) {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
                         "${env_name}-vcx-test"        : {
-                            vcxTesting(file, env_name, network_name)
+                            vcxTesting(file, env_name, network_name, full_testing)
                         }
                 ]
-                if (test_wrappers) {
+                if (full_testing) {
                     jobs["${env_name}-nodejs-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
                     }
@@ -391,7 +402,7 @@ def linuxTesting(file, env_name, network_name, test_wrappers) {
     ])
 }
 
-def vcxTesting(file, env_name, network_name) {
+def vcxTesting(file, env_name, network_name, full_testing) {
     parallel([
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
@@ -400,28 +411,28 @@ def vcxTesting(file, env_name, network_name) {
                 }
             },
             "${env_name} Test: test other vcx components": {
-                waitUntil {
-                    libvcxBuildFinished[env_name]
-                }
-                def jobs = [
-                        "${env_name}-vcx-nodejs-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
-                        }
-                ]
-                if (env_name == "Ubuntu") {
-                    jobs["${env_name}-vcx-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                if (full_testing) {
+                    waitUntil {
+                        libvcxBuildFinished[env_name]
                     }
-                    jobs["${env_name}-vcx-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
-                    }
+                    def jobs = [
+                            "${env_name}-vcx-nodejs-test": {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
+                            },
+                            "${env_name}-vcx-java-test"  : {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                            },
+                            "${env_name}-vcx-python-test": {
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
+                            }
+                    ]
+                    parallel(jobs)
                 }
-                parallel(jobs)
             },
     ])
 }
 
-def linuxLibindyBuild(file, env_name, network_name) {
+def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -481,11 +492,13 @@ def linuxLibindyBuild(file, env_name, network_name) {
 
         echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
-            sh '''
+            def features_args = full_testing ? '--features sodium_static' : '--features "sodium_static only_high_cases"'
+
+            sh """
                 cd libindy
-                RUST_BACKTRACE=1 cargo test -j 1 --no-run --features sodium_static
-                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test -j 1 --features sodium_static
-            '''
+                RUST_BACKTRACE=1 cargo test --no-run ${features_args}
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test ${features_args}
+            """
         }
 
         echo "${env_name} Libnullpay Test: Test"
@@ -544,7 +557,7 @@ def linuxVcxBuild(file, env_name, network_name) {
             echo "${env_name} Libvcx Test: Run tests"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test -j 1 --features "pool_tests agency"
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency"
             '''
         }
 
@@ -558,7 +571,7 @@ def linuxVcxBuild(file, env_name, network_name) {
             echo "${env_name} Libvcx Test: Run tests"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test -j 1 --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
             '''
         }
     }

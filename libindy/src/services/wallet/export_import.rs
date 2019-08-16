@@ -16,7 +16,7 @@ use super::{Wallet, WalletRecord};
 
 const CHUNK_SIZE: usize = 1024;
 
-pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> IndyResult<()> {
+pub(super) fn export_continue(wallet: &Wallet, writer: &mut dyn Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> IndyResult<()> {
     let nonce = chacha20poly1305_ietf::gen_nonce();
     let chunk_size = CHUNK_SIZE;
 
@@ -202,7 +202,7 @@ mod tests {
 
     use super::*;
 
-    fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> IndyResult<()> {
+    fn export(wallet: &Wallet, writer: &mut dyn Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> IndyResult<()> {
         if version != 0 {
             Err(err_msg(IndyErrorKind::InvalidState, "Unsupported version"))?;
         }

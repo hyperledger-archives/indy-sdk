@@ -22,66 +22,66 @@ pub enum CryptoCommand {
     CreateKey(
         WalletHandle,
         KeyInfo, // key info
-        Box<Fn(IndyResult<String /*verkey*/>) + Send>,
+        Box<dyn Fn(IndyResult<String /*verkey*/>) + Send>,
     ),
     SetKeyMetadata(
         WalletHandle,
         String, // verkey
         String, // metadata
-        Box<Fn(IndyResult<()>) + Send>,
+        Box<dyn Fn(IndyResult<()>) + Send>,
     ),
     GetKeyMetadata(
         WalletHandle,
         String, // verkey
-        Box<Fn(IndyResult<String>) + Send>,
+        Box<dyn Fn(IndyResult<String>) + Send>,
     ),
     CryptoSign(
         WalletHandle,
         String,  // my vk
         Vec<u8>, // msg
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     CryptoVerify(
         String,  // their vk
         Vec<u8>, // msg
         Vec<u8>, // signature
-        Box<Fn(IndyResult<bool>) + Send>,
+        Box<dyn Fn(IndyResult<bool>) + Send>,
     ),
     AuthenticatedEncrypt(
         WalletHandle,
         String,  // my vk
         String,  // their vk
         Vec<u8>, // msg
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     AuthenticatedDecrypt(
         WalletHandle,
         String,  // my vk
         Vec<u8>, // encrypted msg
-        Box<Fn(IndyResult<(String, Vec<u8>)>) + Send>,
+        Box<dyn Fn(IndyResult<(String, Vec<u8>)>) + Send>,
     ),
     AnonymousEncrypt(
         String,  // their vk
         Vec<u8>, // msg
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     AnonymousDecrypt(
         WalletHandle,
         String,  // my vk
         Vec<u8>, // msg
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     PackMessage(
         Vec<u8>, // plaintext message
         Vec<String>,  // list of receiver's keys
         Option<String>,  // senders verkey
         WalletHandle,
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     UnpackMessage(
         JWE,
         WalletHandle,
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
 }
 

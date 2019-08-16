@@ -33,7 +33,6 @@ use utils::constants::*;
 use utils::Setup;
 
 use self::indy::ErrorCode;
-use api::INVALID_WALLET_HANDLE;
 use std::path::PathBuf;
 use std::fs;
 
@@ -44,8 +43,6 @@ fn cleanup_file(path: &PathBuf) {
         fs::remove_file(path).unwrap();
     }
 }
-
-use utils::test::cleanup_wallet;
 
 mod high_cases {
     use super::*;
@@ -361,11 +358,15 @@ mod high_cases {
     }
 }
 
+#[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     extern crate libc;
 
     use super::*;
     use std::ffi::CString;
+
+    use api::INVALID_WALLET_HANDLE;
+    use utils::test::cleanup_wallet;
 
     mod register_wallet_type {
         use super::*;

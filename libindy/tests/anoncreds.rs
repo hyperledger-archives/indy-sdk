@@ -35,14 +35,12 @@ use indy::ErrorCode;
 use utils::constants::*;
 use utils::Setup;
 
-use utils::domain::anoncreds::schema::{Schema, AttributeNames, MAX_ATTRIBUTES_COUNT};
+use utils::domain::anoncreds::schema::{Schema};
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use utils::domain::anoncreds::proof::Proof;
-use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequest};
 
-use std::collections::HashSet;
 
 mod high_cases {
     use super::*;
@@ -3533,8 +3531,12 @@ mod high_cases {
     }
 }
 
+#[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     use super::*;
+    use std::collections::HashSet;
+    use utils::domain::anoncreds::schema::{AttributeNames, MAX_ATTRIBUTES_COUNT};
+    use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequest};
 
     mod issuer_create_schema {
         use super::*;
