@@ -9,7 +9,7 @@ use ursa::cl::{
 };
 use ursa::cl::{CredentialKeyCorrectnessProof, CredentialPrivateKey};
 
-use commands::{Command, CommandExecutor};
+use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use commands::anoncreds::AnoncredsCommand;
 use domain::anoncreds::credential::{AttributeValues, Credential};
 use domain::anoncreds::credential_definition::{
@@ -61,7 +61,7 @@ pub enum IssuerCommand {
         String, // name
         String, // version
         AttributeNames, // attribute names
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     CreateAndStoreCredentialDefinition(
         WalletHandle,
         String, // issuer did
@@ -69,7 +69,7 @@ pub enum IssuerCommand {
         String, // tag
         Option<String>, // type
         Option<CredentialDefinitionConfig>, // config
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     CreateAndStoreCredentialDefinitionContinue(
         WalletHandle,
         SchemaV1, // credentials
@@ -145,7 +145,7 @@ pub struct IssuerCommandExecutor {
     pub pool_service: Rc<PoolService>,
     pub wallet_service: Rc<WalletService>,
     pub crypto_service: Rc<CryptoService>,
-    pending_str_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<(String, String)>) + Send>>>,
+    pending_str_str_callbacks: RefCell<HashMap<CommandHandle, BoxedCallbackStringStringSend>>,
     pending_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>) + Send>>>,
 }
 
@@ -267,7 +267,7 @@ impl IssuerCommandExecutor {
                                               tag: &str,
                                               type_: Option<&str>,
                                               config: Option<&CredentialDefinitionConfig>,
-                                              cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+                                              cb: BoxedCallbackStringStringSend) {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema: {:?}, tag: {:?}, \
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 

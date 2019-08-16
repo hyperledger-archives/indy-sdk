@@ -5,7 +5,7 @@ use std::str;
 
 use serde_json;
 
-use commands::{Command, CommandExecutor};
+use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use commands::ledger::LedgerCommand;
 use domain::crypto::did::{Did, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo};
 use domain::crypto::key::KeyInfo;
@@ -23,7 +23,7 @@ pub enum DidCommand {
     CreateAndStoreMyDid(
         WalletHandle,
         MyDidInfo, // my did info
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     ReplaceKeysStart(
         WalletHandle,
         KeyInfo, // key info

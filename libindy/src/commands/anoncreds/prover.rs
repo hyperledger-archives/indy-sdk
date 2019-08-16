@@ -29,6 +29,7 @@ use utils::sequence;
 
 use super::tails::SDKTailsAccessor;
 use api::WalletHandle;
+use commands::BoxedCallbackStringStringSend;
 
 pub enum ProverCommand {
     CreateMasterSecret(
@@ -41,7 +42,7 @@ pub enum ProverCommand {
         CredentialOffer, // credential offer
         CredentialDefinition, // credential def
         String, // master secret name
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     SetCredentialAttrTagPolicy(
         WalletHandle,
         String, // credential definition id
