@@ -25,7 +25,7 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
-pub fn set_logger(logger: &'static log::Log) {
+pub fn set_logger(logger: &'static dyn log::Log) {
     logger::set_logger(logger).ok();
 }
 

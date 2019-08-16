@@ -126,7 +126,6 @@ impl Prover {
         let mut proof_builder = CryptoProver::new_proof_builder()?;
         proof_builder.add_common_attribute("master_secret")?;
 
-        let mut identifiers: Vec<Identifier> = Vec::new();
         let mut requested_proof = RequestedProof::default();
 
         requested_proof.self_attested_attrs = requested_credentials.self_attested_attributes.clone();
@@ -135,6 +134,7 @@ impl Prover {
         let mut sub_proof_index = 0;
         let non_credential_schema = build_non_credential_schema()?;
 
+        let mut identifiers: Vec<Identifier> = Vec::with_capacity(credentials_for_proving.len());
         for (cred_key, (req_attrs_for_cred, req_predicates_for_cred)) in credentials_for_proving {
             let credential: &Credential = credentials.get(cred_key.cred_id.as_str())
                 .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Credential not found by id: {:?}", cred_key.cred_id)))?;

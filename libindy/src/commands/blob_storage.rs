@@ -7,11 +7,11 @@ pub enum BlobStorageCommand {
     OpenReader(
         String, // type
         String, // config
-        Box<Fn(IndyResult<i32 /* handle */>) + Send>),
+        Box<dyn Fn(IndyResult<i32 /* handle */>) + Send>),
     OpenWriter(
         String, // writer type
         String, // writer config JSON
-        Box<Fn(IndyResult<i32 /* handle */>) + Send>),
+        Box<dyn Fn(IndyResult<i32 /* handle */>) + Send>),
 }
 
 pub struct BlobStorageCommandExecutor {

@@ -9,22 +9,21 @@ use utils::types::ResponseType;
 use api::PoolHandle;
 
 
-pub fn create_store_and_publish_my_did_from_trustee(wallet_handle: i32, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
+pub fn create_store_and_publish_did(wallet_handle: i32, pool_handle: PoolHandle, role: &str) -> Result<(String, String), IndyError> {
     let (trustee_did, _) = create_and_store_my_did(wallet_handle, Some(::utils::constants::TRUSTEE_SEED))?;
-    let (my_did, my_vk) = create_and_store_my_did(wallet_handle, None)?;
-    let nym = ledger::build_nym_request(&trustee_did, &my_did, Some(&my_vk), None, Some("TRUSTEE"))?;
+    let (did, vk) = create_and_store_my_did(wallet_handle, None)?;
+    let nym = ledger::build_nym_request(&trustee_did, &did, Some(&vk), None, Some(role))?;
     let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym)?;
     pool::check_response_type(&response, ResponseType::REPLY);
-    Ok((my_did, my_vk))
+    Ok((did, vk))
+}
+
+pub fn create_store_and_publish_my_did_from_trustee(wallet_handle: i32, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
+    create_store_and_publish_did(wallet_handle, pool_handle, "TRUSTEE")
 }
 
 pub fn create_store_and_publish_my_did_from_steward(wallet_handle: i32, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
-    let (trustee_did, _) = create_and_store_my_did(wallet_handle, Some(::utils::constants::TRUSTEE_SEED))?;
-    let (my_did, my_vk) = create_and_store_my_did(wallet_handle, None)?;
-    let nym = ledger::build_nym_request(&trustee_did, &my_did, Some(&my_vk), None, Some("STEWARD"))?;
-    let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym)?;
-    pool::check_response_type(&response, ResponseType::REPLY);
-    Ok((my_did, my_vk))
+    create_store_and_publish_did(wallet_handle, pool_handle, "STEWARD")
 }
 
 pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String), IndyError> {

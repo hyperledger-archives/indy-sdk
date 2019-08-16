@@ -61,7 +61,7 @@ pub enum IssuerCommand {
         String, // name
         String, // version
         AttributeNames, // attribute names
-        Box<Fn(IndyResult<(String, String)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
     CreateAndStoreCredentialDefinition(
         WalletHandle,
         String, // issuer did
@@ -69,7 +69,7 @@ pub enum IssuerCommand {
         String, // tag
         Option<String>, // type
         Option<CredentialDefinitionConfig>, // config
-        Box<Fn(IndyResult<(String, String)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
     CreateAndStoreCredentialDefinitionContinue(
         WalletHandle,
         SchemaV1, // credentials
@@ -85,7 +85,7 @@ pub enum IssuerCommand {
         WalletHandle,
         String, // cred def id
         Option<CredentialDefinitionConfig>, // config
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     RotateCredentialDefinitionStartComplete(
         WalletHandle,
         String,
@@ -99,7 +99,7 @@ pub enum IssuerCommand {
     RotateCredentialDefinitionApply(
         WalletHandle,
         String, // cred def did
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     CreateAndStoreRevocationRegistry(
         WalletHandle,
         String, // issuer did
@@ -108,11 +108,11 @@ pub enum IssuerCommand {
         String, // credential definition id
         RevocationRegistryConfig, // config
         i32, // tails writer handle
-        Box<Fn(IndyResult<(String, String, String)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String, String)>) + Send>),
     CreateCredentialOffer(
         WalletHandle,
         String, // credential definition id
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     CreateCredential(
         WalletHandle,
         CredentialOffer, // credential offer
@@ -120,23 +120,23 @@ pub enum IssuerCommand {
         HashMap<String, AttributeValues>, // credential values
         Option<String>, // revocation registry id
         Option<i32>, // blob storage reader config handle
-        Box<Fn(IndyResult<(String, Option<String>, Option<String>)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, Option<String>, Option<String>)>) + Send>),
     RevokeCredential(
         WalletHandle,
         i32, // blob storage reader config handle
         String, //revocation revoc id
         String, //credential revoc id
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     /*    RecoverCredential(
             WalletHandle,
             i32, // blob storage reader config handle
             String, //revocation revoc id
             String, //credential revoc id
-            Box<Fn(Result<String, IndyError>) + Send>),*/
+            Box<dyn Fn(Result<String, IndyError>) + Send>),*/
     MergeRevocationRegistryDeltas(
         RevocationRegistryDelta, //revocation registry delta
         RevocationRegistryDelta, //other revocation registry delta
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
 }
 
 pub struct IssuerCommandExecutor {
@@ -145,8 +145,8 @@ pub struct IssuerCommandExecutor {
     pub pool_service: Rc<PoolService>,
     pub wallet_service: Rc<WalletService>,
     pub crypto_service: Rc<CryptoService>,
-    pending_str_str_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<(String, String)>) + Send>>>,
-    pending_str_callbacks: RefCell<HashMap<CommandHandle, Box<Fn(IndyResult<String>) + Send>>>,
+    pending_str_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<(String, String)>) + Send>>>,
+    pending_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>) + Send>>>,
 }
 
 impl IssuerCommandExecutor {
@@ -267,7 +267,7 @@ impl IssuerCommandExecutor {
                                               tag: &str,
                                               type_: Option<&str>,
                                               config: Option<&CredentialDefinitionConfig>,
-                                              cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
+                                              cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema: {:?}, tag: {:?}, \
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 
@@ -307,7 +307,7 @@ impl IssuerCommandExecutor {
     fn _create_credential_definition(&self,
                                      attr_names: &AttributeNames,
                                      support_revocation: bool,
-                                     cb: Box<Fn(IndyResult<(CredentialDefinitionData,
+                                     cb: Box<dyn Fn(IndyResult<(CredentialDefinitionData,
                                                             CredentialPrivateKey,
                                                             CredentialKeyCorrectnessProof)>) + Send>) {
         let attr_names = attr_names.clone();
@@ -406,7 +406,7 @@ impl IssuerCommandExecutor {
                                           wallet_handle: WalletHandle,
                                           cred_def_id: &str,
                                           cred_def_config: Option<&CredentialDefinitionConfig>,
-                                          cb: Box<Fn(IndyResult<String>) + Send>) {
+                                          cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         debug!("rotate_credential_definition_start >>> wallet_handle: {:?}, cred_def_id: {:?}, cred_def_config: {:?}",
                wallet_handle, cred_def_id, cred_def_config);
 
