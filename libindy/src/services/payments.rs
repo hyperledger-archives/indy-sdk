@@ -430,7 +430,7 @@ impl PaymentsService {
 
         let res = prices.into_iter()
             .min_by_key(|x| x.price)
-            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, "RequestInfo not found"))?;
+            .ok_or_else(|| IndyError::from_msg(IndyErrorKind::InvalidStructure, "RequestInfo not found"))?;
 
         trace!("get_request_info_with_min_price <<< result: {:?}", res);
         Ok(res)
@@ -476,7 +476,7 @@ impl PaymentsService {
             .collect();
 
         let price = req_info.get(0)
-            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, "AND Constraint doesn't contain sub constraints."))?
+            .ok_or_else(|| IndyError::from_msg(IndyErrorKind::InvalidStructure, "AND Constraint doesn't contain sub constraints."))?
             .price;
 
         if req_info.iter().any(|x| x.price != price) {
