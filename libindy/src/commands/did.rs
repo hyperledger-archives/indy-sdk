@@ -23,59 +23,59 @@ pub enum DidCommand {
     CreateAndStoreMyDid(
         WalletHandle,
         MyDidInfo, // my did info
-        Box<Fn(IndyResult<(String, String)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
     ReplaceKeysStart(
         WalletHandle,
         KeyInfo, // key info
         String, // did
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     ReplaceKeysApply(
         WalletHandle,
         String, // my did
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     StoreTheirDid(
         WalletHandle,
         TheirDidInfo, // their did info json
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     GetMyDidWithMeta(
         WalletHandle,
         String, // my did
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     ListMyDidsWithMeta(
         WalletHandle,
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     KeyForDid(
         PoolHandle, // pool handle
         WalletHandle,
         String, // did (my or their)
-        Box<Fn(IndyResult<String/*key*/>) + Send>),
+        Box<dyn Fn(IndyResult<String/*key*/>) + Send>),
     KeyForLocalDid(
         WalletHandle,
         String, // did (my or their)
-        Box<Fn(IndyResult<String/*key*/>) + Send>),
+        Box<dyn Fn(IndyResult<String/*key*/>) + Send>),
     SetEndpointForDid(
         WalletHandle,
         String, // did
         Endpoint, // endpoint address and optional verkey
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     GetEndpointForDid(
         WalletHandle,
         PoolHandle, // pool handle
         String, // did
-        Box<Fn(IndyResult<(String, Option<String>)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, Option<String>)>) + Send>),
     SetDidMetadata(
         WalletHandle,
         String, // did
         String, // metadata
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     GetDidMetadata(
         WalletHandle,
         String, // did
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     AbbreviateVerkey(
         String, // did
         String, // verkey
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     // Internal commands
     GetNymAck(
         WalletHandle,
@@ -332,7 +332,7 @@ impl DidCommandExecutor {
                    pool_handle: PoolHandle,
                    wallet_handle: WalletHandle,
                    did: String,
-                   cb: Box<Fn(IndyResult<String>) + Send>) {
+                   cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         debug!("key_for_did >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
 
         try_cb!(self.crypto_service.validate_did(&did), cb);
@@ -411,7 +411,7 @@ impl DidCommandExecutor {
                             wallet_handle: WalletHandle,
                             pool_handle: PoolHandle,
                             did: String,
-                            cb: Box<Fn(IndyResult<(String, Option<String>)>) + Send>) {
+                            cb: Box<dyn Fn(IndyResult<(String, Option<String>)>) + Send>) {
         debug!("get_endpoint_for_did >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
 
         try_cb!(self.crypto_service.validate_did(&did), cb);

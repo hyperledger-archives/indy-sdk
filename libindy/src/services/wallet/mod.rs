@@ -33,16 +33,16 @@ mod export_import;
 mod wallet;
 
 pub struct WalletService {
-    storage_types: RefCell<HashMap<String, Box<WalletStorageType>>>,
+    storage_types: RefCell<HashMap<String, Box<dyn WalletStorageType>>>,
     wallets: RefCell<HashMap<WalletHandle, Box<Wallet>>>,
-    pending_for_open: RefCell<HashMap<WalletHandle, (String /* id */, Box<WalletStorage>, Metadata, Option<KeyDerivationData>)>>,
+    pending_for_open: RefCell<HashMap<WalletHandle, (String /* id */, Box<dyn WalletStorage>, Metadata, Option<KeyDerivationData>)>>,
     pending_for_import: RefCell<HashMap<WalletHandle, (BufReader<::std::fs::File>, chacha20poly1305_ietf::Nonce, usize, Vec<u8>, KeyDerivationData)>>,
 }
 
 impl WalletService {
     pub fn new() -> WalletService {
         let storage_types = {
-            let mut map: HashMap<String, Box<WalletStorageType>> = HashMap::new();
+            let mut map: HashMap<String, Box<dyn WalletStorageType>> = HashMap::new();
             map.insert("default".to_string(), Box::new(SQLiteStorageType::new()));
             RefCell::new(map)
         };
@@ -218,7 +218,7 @@ impl WalletService {
         Ok(wallet_handle)
     }
 
-    fn _open_storage_and_fetch_metadata(&self, config: &Config, credentials: &Credentials) -> IndyResult<(Box<WalletStorage>, Metadata, KeyDerivationData)> {
+    fn _open_storage_and_fetch_metadata(&self, config: &Config, credentials: &Credentials) -> IndyResult<(Box<dyn WalletStorage>, Metadata, KeyDerivationData)> {
         let storage = self._open_storage(config, credentials)?;
         let metadata: Metadata = {
             let metadata = storage.get_storage_metadata()?;
@@ -506,7 +506,7 @@ impl WalletService {
         res
     }
 
-    fn _get_config_and_cred_for_storage<'a>(config: &Config, credentials: &Credentials, storage_types: &'a HashMap<String, Box<WalletStorageType>>) -> IndyResult<(&'a Box<WalletStorageType>, Option<String>, Option<String>)> {
+    fn _get_config_and_cred_for_storage<'a>(config: &Config, credentials: &Credentials, storage_types: &'a HashMap<String, Box<dyn WalletStorageType>>) -> IndyResult<(&'a Box<dyn WalletStorageType>, Option<String>, Option<String>)> {
         let storage_type = {
             let storage_type = config.storage_type
                 .as_ref()
@@ -542,7 +542,7 @@ impl WalletService {
         wallet_id
     }
 
-    fn _open_storage(&self, config: &Config, credentials: &Credentials) -> IndyResult<Box<WalletStorage>> {
+    fn _open_storage(&self, config: &Config, credentials: &Credentials) -> IndyResult<Box<dyn WalletStorage>> {
         let storage_types = self.storage_types.borrow();
         let (storage_type, storage_config, storage_credentials) =
             WalletService::_get_config_and_cred_for_storage(config, credentials, &storage_types)?;

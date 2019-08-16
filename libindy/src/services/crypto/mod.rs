@@ -37,12 +37,12 @@ trait CryptoType {
 }
 
 pub struct CryptoService {
-    crypto_types: HashMap<&'static str, Box<CryptoType>>
+    crypto_types: HashMap<&'static str, Box<dyn CryptoType>>
 }
 
 impl CryptoService {
     pub fn new() -> CryptoService {
-        let mut crypto_types: HashMap<&str, Box<CryptoType>> = HashMap::new();
+        let mut crypto_types: HashMap<&str, Box<dyn CryptoType>> = HashMap::new();
         crypto_types.insert(DEFAULT_CRYPTO_TYPE, Box::new(ED25519CryptoType::new()));
 
         CryptoService {
