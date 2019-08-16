@@ -51,13 +51,13 @@ pub trait WalletStorage {
     fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), IndyError>;
     fn get_storage_metadata(&self) -> Result<Vec<u8>, IndyError>;
     fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), IndyError>;
-    fn get_all(&self) -> Result<Box<StorageIterator>, IndyError>;
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, IndyError>;
+    fn get_all(&self) -> Result<Box<dyn StorageIterator>, IndyError>;
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<dyn StorageIterator>, IndyError>;
     fn close(&mut self) -> Result<(), IndyError>;
 }
 
 pub trait WalletStorageType {
     fn create_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), IndyError>;
-    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, IndyError>;
+    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<dyn WalletStorage>, IndyError>;
     fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), IndyError>;
 }

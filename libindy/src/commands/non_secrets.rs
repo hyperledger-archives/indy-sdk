@@ -15,47 +15,47 @@ pub enum NonSecretsCommand {
               String, // id
               String, // value
               Option<Tags>, //tags
-              Box<Fn(IndyResult<()>) + Send>),
+              Box<dyn Fn(IndyResult<()>) + Send>),
     UpdateRecordValue(WalletHandle,
                       String, // type
                       String, // id
                       String, // value
-                      Box<Fn(IndyResult<()>) + Send>),
+                      Box<dyn Fn(IndyResult<()>) + Send>),
     UpdateRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      Tags, //tags
-                     Box<Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send>),
     AddRecordTags(WalletHandle,
                   String, // type
                   String, // id
                   Tags, //tags
-                  Box<Fn(IndyResult<()>) + Send>),
+                  Box<dyn Fn(IndyResult<()>) + Send>),
     DeleteRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      String, //tag names json
-                     Box<Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send>),
     DeleteRecord(WalletHandle,
                  String, // type
                  String, // id
-                 Box<Fn(IndyResult<()>) + Send>),
+                 Box<dyn Fn(IndyResult<()>) + Send>),
     GetRecord(WalletHandle,
               String, // type
               String, // id
               String, // options json
-              Box<Fn(IndyResult<String>) + Send>),
+              Box<dyn Fn(IndyResult<String>) + Send>),
     OpenSearch(WalletHandle,
                String, // type
                String, // query json
                String, // options json
-               Box<Fn(IndyResult<i32>) + Send>),
+               Box<dyn Fn(IndyResult<i32>) + Send>),
     FetchSearchNextRecords(WalletHandle,
                            i32, // wallet search handle
                            usize, // count
-                           Box<Fn(IndyResult<String>) + Send>),
+                           Box<dyn Fn(IndyResult<String>) + Send>),
     CloseSearch(i32, // wallet search handle
-                Box<Fn(IndyResult<()>) + Send>),
+                Box<dyn Fn(IndyResult<()>) + Send>),
 }
 
 pub struct NonSecretsCommandExecutor {

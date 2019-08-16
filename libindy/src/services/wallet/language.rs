@@ -94,7 +94,7 @@ pub enum Operator {
 
 
 impl Operator {
-    pub fn transform(self, f: &Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Operator> {
+    pub fn transform(self, f: &dyn Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Operator> {
         match self {
             Operator::And(operators) => Ok(Operator::And(Operator::transform_list_operators(operators, f)?)),
             Operator::Or(operators) => Ok(Operator::Or(Operator::transform_list_operators(operators, f)?)),
@@ -103,7 +103,7 @@ impl Operator {
         }
     }
 
-    fn transform_list_operators(operators: Vec<Operator>, f: &Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Vec<Operator>> {
+    fn transform_list_operators(operators: Vec<Operator>, f: &dyn Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Vec<Operator>> {
         let mut transformed = Vec::with_capacity(operators.len());
 
         for operator in operators {
