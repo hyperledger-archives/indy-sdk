@@ -10,7 +10,7 @@ use std::ptr::null;
 
 use utils::ctypes::c_str_to_string;
 
-static mut LOGGER: Option<Box<(&'static Log)>> = None;
+static mut LOGGER: Option<Box<(&'static dyn Log)>> = None;
 
 /// Set default logger implementation.
 ///
@@ -36,7 +36,7 @@ pub fn set_default_logger(pattern: Option<&str>) -> Result<(), IndyError> {
 ///
 /// # Arguments
 /// * `logger` - reference to logger used by application.
-pub fn set_logger(logger: &'static Log) -> Result<(), IndyError> {
+pub fn set_logger(logger: &'static dyn Log) -> Result<(), IndyError> {
     {
         unsafe {
             if LOGGER.is_some() {
