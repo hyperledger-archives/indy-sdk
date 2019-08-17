@@ -114,7 +114,7 @@ const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where it
 const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = $1";
 const _PLAIN_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_plaintext where item_id = $1 and wallet_id = $2";
 const _ENCRYPTED_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_encrypted where item_id = $1 and wallet_id = $2";
-const _CREATE_WALLET_DATABASE: &str = "CREATE DATABASE $1";
+const _CREATE_WALLET_DATABASE: &str = "CREATE DATABASE \"$1\"";
 const _CREATE_WALLETS_DATABASE: &str = "CREATE DATABASE wallets";
 // Note: wallet id length was constrained before by postgres database name length to 64 characters, keeping the same restrictions
 const _CREATE_SCHEMA: [&str; 12] = [
@@ -206,7 +206,7 @@ const _CREATE_SCHEMA_MULTI: [&str; 14] = [
     "CREATE INDEX IF NOT EXISTS ix_tags_plaintext_value ON tags_plaintext(wallet_id, value)",
     "CREATE INDEX IF NOT EXISTS ix_tags_plaintext_wallet_id_item_id ON tags_plaintext(wallet_id, item_id)"
     ];
-const _DROP_WALLET_DATABASE: &str = "DROP DATABASE $1";
+const _DROP_WALLET_DATABASE: &str = "DROP DATABASE \"$1\"";
 const _DROP_SCHEMA: [&str; 4] = [
     "DROP TABLE tags_plaintext",
     "DROP TABLE tags_encrypted",
