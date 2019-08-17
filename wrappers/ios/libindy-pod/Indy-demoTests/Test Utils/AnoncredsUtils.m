@@ -39,10 +39,10 @@
 }
 
 - (NSString *)credDefId {
-    return @"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+    return @"NcYxiDXkpYi6ov5FcYDi1e:3:CL:1";
 }
 
-- (NSString *)revRegDefId {
+- (NSString *)revRegId {
     return @"NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:CL_ACCUM:TAG_1";
 }
 
