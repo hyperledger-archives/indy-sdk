@@ -13,6 +13,7 @@ use utils::ctypes;
 
 use serde_json;
 use libc::c_char;
+use rust_base58::FromBase58;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -2260,17 +2261,31 @@ pub extern fn indy_append_request_endorser(command_handle: CommandHandle,
 
     trace!("indy_append_request_endorser: entities >>> request_json: {:?},endorser_did: {:?}", request_json, endorser_did);
 
-    let result = CommandExecutor::instance()
-        .send(Command::Ledger(
-            LedgerCommand::AppendRequestEndorser(
-                request_json,
-                endorser_did,
-                boxed_callback_string!("indy_append_request_endorser", cb, command_handle)
-            )));
+    let request= serde_json::from_str(&request_json);
+    if request.is_err() {
+        return ErrorCode::CommonInvalidStructure;
+    }
+    let mut request: serde_json::Value = request.unwrap();
 
-    let res = prepare_result!(result);
+    let decoded_did = endorser_did.from_base58();
+    if decoded_did.is_err() {
+        return ErrorCode::CommonInvalidStructure;
+    }
+    let decoded_did = decoded_did.unwrap();
 
-    trace!("indy_append_request_endorser: <<< res: {:?}", res);
+    if decoded_did.len() != 16 && decoded_did.len() != 32 {
+        return ErrorCode::CommonInvalidStructure;
+    }
 
-    res
+    request["endorser"] = json!(endorser_did);
+    println!("indy_append_request_endorser: >>> request: {:?}", request);
+
+    let out_request_json = ctypes::string_to_cstring(request.to_string());
+    println!("indy_append_request_endorser: >>> out_request_json: {:?}", out_request_json);
+
+    cb(command_handle, ErrorCode::Success, out_request_json.as_ptr());
+
+    trace!("indy_append_request_endorser: <<< res: success");
+
+    ErrorCode::Success
 }
