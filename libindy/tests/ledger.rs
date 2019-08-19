@@ -36,9 +36,8 @@ use self::indy::ErrorCode;
 use utils::{pool, ledger, did, anoncreds};
 use utils::types::*;
 use utils::constants::*;
+use utils::Setup;
 
-use openssl::hash::{MessageDigest, Hasher};
-use sodiumoxide::crypto::secretbox;
 use self::rand::distributions::Alphanumeric;
 
 use utils::domain::ledger::constants;
@@ -53,6 +52,7 @@ use std::collections::HashMap;
 use std::thread;
 
 use api::INVALID_WALLET_HANDLE;
+use api::INVALID_POOL_HANDLE;
 
 mod high_cases {
     use super::*;
@@ -63,40 +63,34 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_request_works_for_invalid_pool_handle() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_send_request_works_for_invalid_pool_handle");
+            Setup::empty();
 
-            let res = ledger::submit_request(pool_handle + 1, REQUEST);
+            let res = ledger::submit_request(INVALID_POOL_HANDLE, REQUEST);
             assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_request_works_for_invalid_pool_handle", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works_for_invalid_pool_handle() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_sign_and_submit_request_works_for_invalid_pool_handle");
+            let setup = Setup::trustee();
 
-            let res = ledger::sign_and_submit_request(pool_handle + 1, wallet_handle, &trustee_did, REQUEST);
+            let res = ledger::sign_and_submit_request(INVALID_POOL_HANDLE, setup.wallet_handle, &setup.did, REQUEST);
             assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_sign_and_submit_request_works_for_invalid_pool_handle", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works_for_invalid_wallet_handle() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_sign_and_submit_request_works_for_invalid_wallet_handle");
+            let setup = Setup::trustee();
 
-            let res = ledger::sign_and_submit_request(pool_handle, INVALID_WALLET_HANDLE, &trustee_did, REQUEST);
+            let res = ledger::sign_and_submit_request(setup.pool_handle, INVALID_WALLET_HANDLE, &setup.did, REQUEST);
             assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_sign_and_submit_request_works_for_invalid_wallet_handle", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_request_works() {
-            let pool_handle = utils::setup_with_pool("indy_submit_request_works");
+            let setup = Setup::pool();
 
             let request = r#"{
                         "reqId":1491566332010860,
@@ -108,7 +102,7 @@ mod high_cases {
                          "protocolVersion":2,
                          "signature":"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV"}"#;
 
-            let resp = ledger::submit_request(pool_handle, request);
+            let resp = ledger::submit_request(setup.pool_handle, request);
             let reply: serde_json::Value = serde_json::from_str(resp.unwrap().as_str()).unwrap();
 
             assert_eq!(reply["op"].as_str().unwrap(), "REPLY");
@@ -123,21 +117,18 @@ mod high_cases {
 
             assert_eq!(reply["result"]["identifier"].as_str().unwrap(), "Th7MpTaRZVRYnPiabds81Y");
             assert_eq!(reply["result"]["dest"].as_str().unwrap(), "Th7MpTaRZVRYnPiabds81Y");
-
-            utils::tear_down_with_pool(pool_handle, "indy_submit_request_works");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_sign_and_submit_request_works");
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let setup = Setup::trustee();
 
-            let nym_request = ledger::build_nym_request(&trustee_did, &did, None, None, None).unwrap();
-            let nym_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+
+            let nym_request = ledger::build_nym_request(&setup.did, &did, None, None, None).unwrap();
+            let nym_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
             pool::check_response_type(&nym_response, ResponseType::REPLY);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_sign_and_submit_request_works", &wallet_config);
         }
     }
 
@@ -147,82 +138,38 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_pool_restart() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_submit_action_works_for_pool_restart");
+            let setup = Setup::trustee();
 
-            let pool_request_request = ledger::build_pool_restart_request(DID_TRUSTEE, "start", None).unwrap();
-            let pool_request_request = ledger::sign_request(wallet_handle, &trustee_did, &pool_request_request).unwrap();
-            ledger::submit_action(pool_handle, &pool_request_request, None, None).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_action_works_for_pool_restart", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_submit_action_works_for_validator_info() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_submit_action_works_for_validator_info");
-
-            let get_validator_info_request = ledger::build_get_validator_info_request(&trustee_did).unwrap();
-            let get_validator_info_request = ledger::sign_request(wallet_handle, &trustee_did, &get_validator_info_request).unwrap();
-            ledger::submit_action(pool_handle, &get_validator_info_request, None, None).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_action_works_for_validator_info", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_submit_action_works_for_not_supported_request_type() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_submit_action_works_for_not_supported_request_type");
-
-            let get_nym_request = ledger::build_get_nym_request(Some(&trustee_did), &trustee_did).unwrap();
-            let res = ledger::submit_action(pool_handle, &get_nym_request, None, None);
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_action_works_for_not_supported_request_type", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_submit_action_works_for_pool_restart_for_invalid_pool_handle() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_submit_action_works_for_pool_restart_for_invalid_pool_handle");
-
-            let get_validator_info_request = ledger::build_get_validator_info_request(&trustee_did).unwrap();
-            let get_validator_info_request = ledger::sign_request(wallet_handle, &trustee_did, &get_validator_info_request).unwrap();
-
-            let res = ledger::submit_action(pool_handle + 1, &get_validator_info_request, None, None);
-            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_action_works_for_pool_restart_for_invalid_pool_handle", &wallet_config);
+            let pool_request_request = ledger::build_pool_restart_request(&setup.did, "start", None).unwrap();
+            let pool_request_request = ledger::sign_request(setup.wallet_handle, &setup.did, &pool_request_request).unwrap();
+            ledger::submit_action(setup.pool_handle, &pool_request_request, None, None).unwrap();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_list_nodes() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_submit_action_works_for_list_nodes");
+            let setup = Setup::trustee();
 
-            let get_validator_info_request = ledger::build_get_validator_info_request(&trustee_did).unwrap();
-            let get_validator_info_request = ledger::sign_request(wallet_handle, &trustee_did, &get_validator_info_request).unwrap();
+            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
+            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
 
             let nodes = r#"["Node1", "Node2"]"#;
-            let response = ledger::submit_action(pool_handle, &get_validator_info_request, Some(nodes), None).unwrap();
+            let response = ledger::submit_action(setup.pool_handle, &get_validator_info_request, Some(nodes), None).unwrap();
             let responses: HashMap<String, serde_json::Value> = serde_json::from_str(&response).unwrap();
 
             assert_eq!(2, responses.len());
             assert!(responses.contains_key("Node1"));
             assert!(responses.contains_key("Node2"));
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_action_works_for_list_nodes", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_timeout() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_submit_action_works_for_timeout");
+            let setup = Setup::trustee();
 
-            let get_validator_info_request = ledger::build_get_validator_info_request(&trustee_did).unwrap();
-            let get_validator_info_request = ledger::sign_request(wallet_handle, &trustee_did, &get_validator_info_request).unwrap();
-            ledger::submit_action(pool_handle, &get_validator_info_request, None, Some(100)).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_action_works_for_timeout", &wallet_config);
+            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
+            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
+            ledger::submit_action(setup.pool_handle, &get_validator_info_request, None, Some(100)).unwrap();
         }
     }
 
@@ -231,43 +178,21 @@ mod high_cases {
 
         #[test]
         fn indy_sign_request_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_sign_request_works");
+            let setup = Setup::wallet();
 
-            let request = ledger::sign_request(wallet_handle, &trustee_did, REQUEST).unwrap();
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            let request = ledger::sign_request(setup.wallet_handle, &did, REQUEST).unwrap();
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
             assert_eq!(request["signature"].as_str().unwrap(), "65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW");
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_sign_request_works", &wallet_config);
         }
 
         #[test]
         fn indy_sign_works_for_unknown_signer() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_sign_works_for_unknown_signer");
+            let setup = Setup::wallet();
 
-            let res = ledger::sign_request(wallet_handle, DID, REQUEST);
+            let res = ledger::sign_request(setup.wallet_handle, DID, REQUEST);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "indy_sign_works_for_unknown_signer", &wallet_config);
-        }
-
-        #[test]
-        fn indy_sign_request_works_for_invalid_message_format() {
-            let (wallet_handle, my_did, wallet_config) = utils::setup_did("indy_sign_request_works_for_invalid_message_format");
-
-            let res = ledger::sign_request(wallet_handle, &my_did, "1495034346617224651");
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "indy_sign_request_works_for_invalid_message_format", &wallet_config);
-        }
-
-        #[test]
-        fn indy_sign_request_works_for_invalid_handle() {
-            let (wallet_handle, my_did, wallet_config) = utils::setup_did("indy_sign_request_works_for_invalid_handle");
-
-            let res = ledger::sign_request(INVALID_WALLET_HANDLE, &my_did, MESSAGE);
-            assert_code!(ErrorCode::WalletInvalidHandle, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "indy_sign_request_works_for_invalid_handle", &wallet_config);
         }
     }
 
@@ -276,32 +201,30 @@ mod high_cases {
 
         #[test]
         fn indy_multi_sign_request_works() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_multi_sign_request_works");
+            let setup = Setup::wallet();
 
-            let (did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-            let (did2, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (did1, _) = did::create_and_store_my_did(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (did2, _) = did::create_and_store_my_did(setup.wallet_handle, Some(MY1_SEED)).unwrap();
 
-            let message = ledger::multi_sign_request(wallet_handle, &did, REQUEST).unwrap();
-            let message = ledger::multi_sign_request(wallet_handle, &did2, &message).unwrap();
+            let message = ledger::multi_sign_request(setup.wallet_handle, &did1, REQUEST).unwrap();
+            let message = ledger::multi_sign_request(setup.wallet_handle, &did2, &message).unwrap();
 
             let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
             let signatures = msg["signatures"].as_object().unwrap();
 
             assert_eq!(signatures[DID_TRUSTEE], r#"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"#);
             assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
-
-            utils::tear_down_with_wallet(wallet_handle, "indy_multi_sign_request_works", &wallet_config);
         }
 
         #[test]
         fn indy_multi_sign_request_works_for_start_from_single_signature() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_multi_sign_request_works_for_start_from_single_signature");
+            let setup = Setup::wallet();
 
-            let (did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-            let (did2, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (did2, _) = did::create_and_store_my_did(setup.wallet_handle, Some(MY1_SEED)).unwrap();
 
-            let message = ledger::sign_request(wallet_handle, &did, REQUEST_FROM_TRUSTEE).unwrap();
-            let message = ledger::multi_sign_request(wallet_handle, &did2, &message).unwrap();
+            let message = ledger::sign_request(setup.wallet_handle, &did, REQUEST_FROM_TRUSTEE).unwrap();
+            let message = ledger::multi_sign_request(setup.wallet_handle, &did2, &message).unwrap();
 
             let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
             let signatures = msg["signatures"].as_object().unwrap();
@@ -309,48 +232,16 @@ mod high_cases {
             assert!(!msg.as_object().unwrap().contains_key("signature"));
             assert_eq!(signatures[DID_TRUSTEE], r#"3YnLxoUd4utFLzeXUkeGefAqAdHUD7rBprpSx2CJeH7gRYnyjkgJi7tCnFgUiMo62k6M2AyUDtJrkUSgHfcq3vua"#);
             assert_eq!(signatures[DID_MY1], r#"4EyvSFPoeQCJLziGVqjuMxrbuoWjAWUGPd6LdxeZuG9w3Bcbt7cSvhjrv8SX5e8mGf8jrf3K6xd9kEhXsQLqUg45"#);
-
-            utils::tear_down_with_wallet(wallet_handle, "indy_multi_sign_request_works_for_start_from_single_signature", &wallet_config);
         }
 
         #[test]
         fn indy_multi_sign_request_works_for_unknown_signer() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_multi_sign_request_works_for_unknown_signer");
+            let setup = Setup::wallet();
 
-            let res = ledger::multi_sign_request(wallet_handle, DID, REQUEST);
+            let res = ledger::multi_sign_request(setup.wallet_handle, DID, REQUEST);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "indy_multi_sign_request_works_for_unknown_signer", &wallet_config);
-        }
-
-        #[test]
-        fn indy_multi_sign_request_works_for_invalid_message_format() {
-            let (wallet_handle, my_did, wallet_config) = utils::setup_did("indy_multi_sign_request_works_for_invalid_message_format");
-
-            let res = ledger::multi_sign_request(wallet_handle, &my_did, "1495034346617224651");
-            assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down_with_wallet(wallet_handle, "indy_multi_sign_request_works_for_invalid_message_format", &wallet_config);
-        }
-
-        #[test]
-        fn indy_multi_sign_request_works_for_twice_use_same_did() {
-            let (wallet_handle, wallet_config) = utils::setup_with_wallet("indy_multi_sign_request_works_for_twice_use_same_did");
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
-
-            let message = ledger::multi_sign_request(wallet_handle, &did, REQUEST).unwrap();
-            let message = ledger::multi_sign_request(wallet_handle, &did, &message).unwrap();
-            let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
-            let signatures = msg["signatures"].as_object().unwrap();
-
-            assert_eq!(1, signatures.len());
-            assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
-
-            utils::tear_down_with_wallet(wallet_handle, "indy_multi_sign_request_works_for_twice_use_same_did", &wallet_config);
         }
     }
-
 
     mod nym_requests {
         use super::*;
@@ -419,61 +310,31 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_nym_request_works_without_signature() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_nym_request_works_without_signature");
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
-            let nym_request = ledger::build_nym_request(&trustee_did, &did, None, None, None).unwrap();
-            let response = ledger::submit_request(pool_handle, &nym_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_nym_request_works_without_signature", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_send_get_nym_request_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_send_get_nym_request_works");
+            let setup = Setup::trustee();
 
-            let get_nym_request = ledger::build_get_nym_request(Some(&trustee_did), &trustee_did).unwrap();
-            let get_nym_response = ledger::submit_request(pool_handle, &get_nym_request).unwrap();
+            let get_nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
+            let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
             let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
             assert!(get_nym_response.result.data.is_some());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_get_nym_request_works", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_send_get_nym_request_works_default_submitter_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_send_get_nym_request_works_default_submitter_did");
-
-            let get_nym_request = ledger::build_get_nym_request(None, DID_TRUSTEE).unwrap();
-            let get_nym_response = ledger::submit_request(pool_handle, &get_nym_request).unwrap();
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_get_nym_request_works_default_submitter_did", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_requests_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_nym_requests_works");
+            let setup = Setup::trustee();
 
-            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (my_did, my_verkey) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let nym_request = ledger::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), None, None).unwrap();
-            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let nym_request = ledger::build_nym_request(&setup.did, &my_did, Some(&my_verkey), None, None).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
             pool::check_response_type(&nym_resp, ResponseType::REPLY);
 
             let get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
-            let get_nym_response = ledger::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
+            let get_nym_response = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_resp).unwrap();
 
             let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
             assert!(get_nym_response.result.data.is_some());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_nym_requests_works", &wallet_config);
         }
     }
 
@@ -576,110 +437,22 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_request_works_without_signature() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_attrib_request_works_without_signature");
-
-            let attrib_request = ledger::build_attrib_request(&trustee_did, &trustee_did, None, Some(ATTRIB_RAW_DATA), None).unwrap();
-            let response = ledger::submit_request(pool_handle, &attrib_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_attrib_request_works_without_signature", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_raw_value() {
-            let (wallet_handle, pool_handle, did, _my_vk, wallet_config) = utils::setup_new_identity("indy_attrib_requests_works_for_raw_value");
+            let setup = Setup::new_identity();
 
-            let attrib_request = ledger::build_attrib_request(&did,
-                                                              &did,
+            let attrib_request = ledger::build_attrib_request(&setup.did,
+                                                              &setup.did,
                                                               None,
                                                               Some(ATTRIB_RAW_DATA),
                                                               None).unwrap();
-            let attrib_req_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &attrib_request).unwrap();
+            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
             pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
 
-            let get_attrib_request = ledger::build_get_attrib_request(Some(&did), &did, Some("endpoint"), None, None).unwrap();
-            let get_attrib_response = ledger::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
+            let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, Some("endpoint"), None, None).unwrap();
+            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
 
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_attrib_requests_works_for_raw_value", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_requests_works_for_hash_value() {
-            let (wallet_handle, pool_handle, did, _my_vk, wallet_config) = utils::setup_new_identity("indy_attrib_requests_works_for_hash_value");
-
-            let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
-            ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
-            let hashed_attr = hex::encode(ctx.finish().unwrap().as_ref());
-
-            let attrib_request = ledger::build_attrib_request(&did,
-                                                              &did,
-                                                              Some(&hashed_attr),
-                                                              None,
-                                                              None).unwrap();
-            let attrib_req_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &attrib_request).unwrap();
-            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
-
-            let get_attrib_request = ledger::build_get_attrib_request(Some(&did), &did, None, Some(&hashed_attr), None).unwrap();
-            let get_attrib_response = ledger::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-
-            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
-            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), hashed_attr.as_str());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_attrib_requests_works_for_hash_value", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_requests_works_for_encrypted_value() {
-            let (wallet_handle, pool_handle, did, _my_vk, wallet_config) = utils::setup_new_identity("indy_attrib_requests_works_for_encrypted_value");
-
-            let key = secretbox::gen_key();
-            let nonce = secretbox::gen_nonce();
-            let encryted_attr = hex::encode(secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key));
-
-            let attrib_request = ledger::build_attrib_request(&did,
-                                                              &did,
-                                                              None,
-                                                              None,
-                                                              Some(&encryted_attr)).unwrap();
-            let attrib_req_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &attrib_request).unwrap();
-            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
-
-            let get_attrib_request = ledger::build_get_attrib_request(Some(&did), &did, None, None, Some(&encryted_attr)).unwrap();
-            let get_attrib_response = ledger::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-
-            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
-            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), encryted_attr.as_str());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_attrib_requests_works_for_encrypted_value", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_attrib_requests_works_for_default_submitter_did() {
-            let (wallet_handle, pool_handle, did, _my_vk, wallet_config) = utils::setup_new_identity("indy_get_attrib_requests_works_for_default_submitter_did");
-
-            let attrib_request = ledger::build_attrib_request(&did,
-                                                              &did,
-                                                              None,
-                                                              Some(ATTRIB_RAW_DATA),
-                                                              None).unwrap();
-            let attrib_req_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &attrib_request).unwrap();
-            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
-
-            let get_attrib_request = ledger::build_get_attrib_request(None, &did, Some("endpoint"), None, None).unwrap();
-            let get_attrib_response = ledger::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-
-            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
-            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_attrib_requests_works_for_default_submitter_did", &wallet_config);
         }
     }
 
@@ -727,46 +500,16 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_schema_request_works_without_signature() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_schema_request_works_without_signature");
-
-            let schema_request = ledger::build_schema_request(&DID_TRUSTEE, SCHEMA_DATA).unwrap();
-            let response = ledger::submit_request(pool_handle, &schema_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_schema_request_works_without_signature", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_schema_requests_works() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_schema_requests_works");
+            let setup = Setup::pool();
 
             let (schema_id, _, _) = ledger::post_entities();
 
             let get_schema_request = ledger::build_get_schema_request(Some(DID_MY1), &schema_id).unwrap();
-            let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
+            let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
             let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
 
             let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_schema_requests_works", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_schema_requests_works_for_default_submitter_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_schema_requests_works_for_default_submitter_did");
-
-            let (schema_id, _, _) = ledger::post_entities();
-
-            let get_schema_request = ledger::build_get_schema_request(None, &schema_id).unwrap();
-            let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
-            let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
-
-            let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_schema_requests_works_for_default_submitter_did", &wallet_config);
         }
     }
 
@@ -796,31 +539,17 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_send_node_request_works_without_signature() {
-            let (wallet_handle, pool_handle, did, wallet_config) = utils::setup_steward("indy_send_node_request_works_without_signature");
-
-            let node_request = ledger::build_node_request(&did, &did, NODE_DATA).unwrap();
-            let response = ledger::submit_request(pool_handle, &node_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_node_request_works_without_signature", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         #[ignore] //FIXME currently unstable pool behaviour after new non-existing node was added
         fn indy_submit_node_request_works_for_new_steward() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_submit_node_request_works_for_new_steward");
+            let setup = Setup::wallet_and_pool();
 
-            let (my_did, _) = did::create_store_and_publish_my_did_from_steward(wallet_handle, pool_handle).unwrap();
+            let (my_did, _) = did::create_store_and_publish_my_did_from_steward(setup.wallet_handle, setup.pool_handle).unwrap();
 
             let dest = "A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y"; // random(32) and base58
 
             let node_request = ledger::build_node_request(&my_did, dest, NODE_DATA).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &my_did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_node_request_works_for_new_steward", &wallet_config);
         }
     }
 
@@ -896,48 +625,16 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_cred_def_request_works_without_signature() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_cred_def_request_works_without_signature");
-
-            let (did, _) = did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
-
-            let cred_def_request = ledger::build_cred_def_txn(&did, &anoncreds::credential_def_json()).unwrap();
-            let response = ledger::submit_request(pool_handle, &cred_def_request).unwrap();
-            pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_cred_def_request_works_without_signature", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_cred_def_requests_works() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_cred_def_requests_works");
+            let setup = Setup::pool();
 
             let (_, cred_def_id, _) = ledger::post_entities();
 
             let get_cred_def_request = ledger::build_get_cred_def_request(Some(DID_MY1), &cred_def_id).unwrap();
-            let get_cred_def_response = ledger::submit_request(pool_handle, &get_cred_def_request).unwrap();
+            let get_cred_def_response = ledger::submit_request(setup.pool_handle, &get_cred_def_request).unwrap();
             let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
             let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_cred_def_requests_works", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_cred_def_requests_works_for_default_submitter_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_cred_def_requests_works_for_default_submitter_did");
-
-            let (_, cred_def_id, _) = ledger::post_entities();
-
-            let get_cred_def_request = ledger::build_get_cred_def_request(None, &cred_def_id).unwrap();
-            let get_cred_def_response = ledger::submit_request(pool_handle, &get_cred_def_request).unwrap();
-            let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
-
-            let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_cred_def_requests_works_for_default_submitter_did", &wallet_config);
         }
     }
 
@@ -957,17 +654,15 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_validator_info_request_works() {
-            let (wallet_handle, pool_handle, did, wallet_config) = utils::setup_trustee("indy_get_validator_info_request_works");
+            let setup = Setup::trustee();
 
-            let get_validator_info_request = ledger::build_get_validator_info_request(&did).unwrap();
-            let get_validator_info_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &get_validator_info_request).unwrap();
+            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
+            let get_validator_info_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
 
             let get_validator_info_response: HashMap<String, String> = serde_json::from_str(&get_validator_info_response).unwrap();
             for value in get_validator_info_response.values() {
                 serde_json::from_str::<Reply<GetValidatorInfoResult>>(value).unwrap();
             }
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_validator_info_request_works", &wallet_config);
         }
     }
 
@@ -1019,18 +714,18 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_txn_request_works() {
-            let (wallet_handle, pool_handle, did, _my_vk, wallet_config) = utils::setup_new_identity("indy_get_txn_request_works");
+            let setup = Setup::new_identity();
 
-            let schema_request = ledger::build_schema_request(&did, &anoncreds::gvt_schema_json()).unwrap();
-            let schema_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
+            let schema_request = ledger::build_schema_request(&setup.did, &anoncreds::gvt_schema_json()).unwrap();
+            let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
             pool::check_response_type(&schema_response, ResponseType::REPLY);
 
             let seq_no = ledger::extract_seq_no_from_reply(&schema_response).unwrap() as i32;
 
-            thread::sleep(std::time::Duration::from_secs(3));
+            thread::sleep(std::time::Duration::from_secs(1));
 
-            let get_txn_request = ledger::build_get_txn_request(Some(&did), seq_no, None).unwrap();
-            let get_txn_response = ledger::submit_request(pool_handle, &get_txn_request).unwrap();
+            let get_txn_request = ledger::build_get_txn_request(Some(&setup.did), seq_no, None).unwrap();
+            let get_txn_response = ledger::submit_request(setup.pool_handle, &get_txn_request).unwrap();
 
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
             let get_txn_schema_data: SchemaData = serde_json::from_value(
@@ -1039,31 +734,6 @@ mod high_cases {
 
             let expected_schema_data: SchemaData = serde_json::from_str(r#"{"name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#).unwrap();
             assert_eq!(expected_schema_data, get_txn_schema_data);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_txn_request_works", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_txn_request_works_for_invalid_seq_no() {
-            let (wallet_handle, pool_handle, did, _my_vk, wallet_config) = utils::setup_new_identity("indy_get_txn_request_works_for_invalid_seq_no");
-
-            let schema_request = ledger::build_schema_request(&did, &anoncreds::gvt_schema_json()).unwrap();
-            let schema_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
-            pool::check_response_type(&schema_response, ResponseType::REPLY);
-
-            let seq_no = ledger::extract_seq_no_from_reply(&schema_response).unwrap() as i32;
-            let seq_no = seq_no + 1;
-
-            thread::sleep(std::time::Duration::from_secs(3));
-
-            let get_txn_request = ledger::build_get_txn_request(Some(&did), seq_no, None).unwrap();
-
-            let get_txn_response = ledger::submit_request(pool_handle, &get_txn_request).unwrap();
-            let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-            assert!(get_txn_response.result.data.is_none());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_txn_request_works_for_invalid_seq_no", &wallet_config);
         }
     }
 
@@ -1086,33 +756,29 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_pool_config_request_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_pool_config_request_works");
+            let setup = Setup::trustee();
 
-            let request = ledger::build_pool_config_request(&trustee_did, true, false).unwrap();
-            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_pool_config_request_works", &wallet_config);
+            let request = ledger::build_pool_config_request(&setup.did, true, false).unwrap();
+            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &request).unwrap();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_pool_config_request_works_for_disabling_writing() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_pool_config_request_works_for_disabling_writing");
+            let setup = Setup::trustee();
 
             // set Ledger as readonly
-            let request = ledger::build_pool_config_request(&trustee_did, false, false).unwrap();
-            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+            let request = ledger::build_pool_config_request(&setup.did, false, false).unwrap();
+            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &request).unwrap();
 
             // try send schema request
-            let schema_request = ledger::build_schema_request(&trustee_did, &anoncreds::gvt_schema_json()).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &schema_request).unwrap();
+            let schema_request = ledger::build_schema_request(&setup.did, &anoncreds::gvt_schema_json()).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
 
             // return Ledger to the previous state
-            let request = ledger::build_pool_config_request(&trustee_did, true, false).unwrap();
-            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_pool_config_request_works_for_disabling_writing", &wallet_config);
+            let request = ledger::build_pool_config_request(&setup.did, true, false).unwrap();
+            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &request).unwrap();
         }
     }
 
@@ -1154,17 +820,15 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_pool_restart_request_works_for_start_cancel_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_pool_restart_request_works_for_start_cancel_works");
+            let setup = Setup::trustee();
 
             //start
-            let request = ledger::build_pool_restart_request(&trustee_did, "start", Some(&DATETIME)).unwrap();
-            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+            let request = ledger::build_pool_restart_request(&setup.did, "start", Some(&DATETIME)).unwrap();
+            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &request).unwrap();
 
             //cancel
-            let request = ledger::build_pool_restart_request(&trustee_did, "cancel", None).unwrap();
-            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_pool_restart_request_works_for_start_cancel_works", &wallet_config);
+            let request = ledger::build_pool_restart_request(&setup.did, "cancel", None).unwrap();
+            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &request).unwrap();
         }
     }
 
@@ -1269,10 +933,10 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_pool_upgrade_request_works_for_start_cancel_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_pool_upgrade_request_works_for_start_cancel_works");
+            let setup = Setup::trustee();
 
             //start
-            let request = ledger::build_pool_upgrade_request(&trustee_did,
+            let request = ledger::build_pool_upgrade_request(&setup.did,
                                                              "upgrade-libindy",
                                                              "2.0.0",
                                                              "start",
@@ -1283,10 +947,10 @@ mod high_cases {
                                                              false,
                                                              false,
                                                              None).unwrap();
-            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &request).unwrap();
 
             //cancel
-            let request = ledger::build_pool_upgrade_request(&trustee_did,
+            let request = ledger::build_pool_upgrade_request(&setup.did,
                                                              "upgrade-libindy",
                                                              "2.0.0",
                                                              "cancel",
@@ -1297,9 +961,7 @@ mod high_cases {
                                                              false,
                                                              false,
                                                              None).unwrap();
-            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_pool_upgrade_request_works_for_start_cancel_works", &wallet_config);
+            ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &request).unwrap();
         }
     }
 
@@ -1332,8 +994,6 @@ mod high_cases {
 
             let request = ledger::build_revoc_reg_def_request(DID, &data).unwrap();
             assert!(request.contains(expected_result));
-
-            utils::tear_down("indy_build_revoc_reg_def_request");
         }
 
         #[test]
@@ -1358,33 +1018,15 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_revoc_reg_def_requests_works() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_revoc_reg_def_requests_works");
+            let setup = Setup::pool();
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 
             let get_rev_reg_def_request = ledger::build_get_revoc_reg_def_request(Some(DID_MY1), &rev_reg_id).unwrap();
-            let get_rev_reg_def_response = ledger::submit_request(pool_handle, &get_rev_reg_def_request).unwrap();
+            let get_rev_reg_def_response = ledger::submit_request(setup.pool_handle, &get_rev_reg_def_request).unwrap();
 
             let (_, revoc_reg_def_json) = ledger::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
             let _revoc_reg_def: RevocationRegistryDefinitionV1 = serde_json::from_str(&revoc_reg_def_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_revoc_reg_def_requests_works", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_revoc_get_reg_def_requests_works_for_default_submitter_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_revoc_get_reg_def_requests_works_for_default_submitter_did");
-
-            let (_, _, rev_reg_id) = ledger::post_entities();
-
-            let get_rev_reg_def_request = ledger::build_get_revoc_reg_def_request(None, &rev_reg_id).unwrap();
-            let get_rev_reg_def_response = ledger::submit_request(pool_handle, &get_rev_reg_def_request).unwrap();
-
-            let (_, revoc_reg_def_json) = ledger::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
-            let _revoc_reg_def: RevocationRegistryDefinitionV1 = serde_json::from_str(&revoc_reg_def_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_revoc_get_reg_def_requests_works_for_default_submitter_did", &wallet_config);
         }
     }
 
@@ -1411,11 +1053,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_revoc_reg_entry_requests_works() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_revoc_reg_entry_requests_works");
-
             ledger::post_entities();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_revoc_reg_entry_requests_works", &wallet_config);
         }
     }
 
@@ -1445,37 +1083,17 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_revoc_reg_request_works() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_revoc_reg_request_works");
+            let setup = Setup::pool();
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 
             let timestamp = time::get_time().sec as u64 + 1000;
 
             let get_rev_reg_req = ledger::build_get_revoc_reg_request(Some(DID_MY1), &rev_reg_id, timestamp).unwrap();
-            let get_rev_reg_resp = ledger::submit_request(pool_handle, &get_rev_reg_req).unwrap();
+            let get_rev_reg_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_req).unwrap();
 
             let (_, revoc_reg_json, _) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
             let _revoc_reg: RevocationRegistryV1 = serde_json::from_str(&revoc_reg_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_revoc_reg_request_works", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_revoc_reg_request_works_for_default_submitter_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_revoc_reg_request_works_for_default_submitter_did");
-
-            let (_, _, rev_reg_id) = ledger::post_entities();
-
-            let timestamp = time::get_time().sec as u64 + 1000;
-
-            let get_rev_reg_req = ledger::build_get_revoc_reg_request(None, &rev_reg_id, timestamp).unwrap();
-            let get_rev_reg_resp = ledger::submit_request(pool_handle, &get_rev_reg_req).unwrap();
-
-            let (_, revoc_reg_json, _) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
-            let _revoc_reg: RevocationRegistryV1 = serde_json::from_str(&revoc_reg_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_revoc_reg_request_works_for_default_submitter_did", &wallet_config);
         }
     }
 
@@ -1505,56 +1123,34 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_revoc_reg_delta_request_works() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_revoc_reg_delta_request_works");
+            let setup = Setup::pool();
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 
             let to = time::get_time().sec as u64 + 300;
             let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(Some(DID_MY1), &rev_reg_id, None, to).unwrap();
-            let get_rev_reg_delta_resp = ledger::submit_request(pool_handle, &get_rev_reg_delta_req).unwrap();
+            let get_rev_reg_delta_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_delta_req).unwrap();
 
             let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
 
             let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_revoc_reg_delta_request_works", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_revoc_reg_delta_request_works_for_two_timestamps() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_revoc_reg_delta_request_works_for_two_timestamps");
+            let setup = Setup::pool();
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 
             let from = time::get_time().sec as u64;
             let to = time::get_time().sec as u64 + 300;
             let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(Some(DID_MY1), &rev_reg_id, Some(from), to).unwrap();
-            let get_rev_reg_delta_resp = ledger::submit_request(pool_handle, &get_rev_reg_delta_req).unwrap();
+            let get_rev_reg_delta_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_delta_req).unwrap();
 
             let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
 
             let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_revoc_reg_delta_request_works_for_two_timestamps", &wallet_config);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_revoc_reg_delta_request_works_for_default_submitter_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_revoc_reg_delta_request_works_for_default_submitter_did");
-
-            let (_, _, rev_reg_id) = ledger::post_entities();
-
-            let to = time::get_time().sec as u64 + 1000;
-            let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(None, &rev_reg_id, None, to).unwrap();
-            let get_rev_reg_delta_resp = ledger::submit_request(pool_handle, &get_rev_reg_delta_req).unwrap();
-
-            let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
-
-            let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_revoc_reg_delta_request_works_for_default_submitter_did", &wallet_config);
         }
     }
 
@@ -1567,7 +1163,7 @@ mod high_cases {
 
         #[test]
         fn indy_register_transaction_parser_for_sp_works() {
-            utils::setup("indy_register_transaction_parser_for_sp_works");
+            Setup::empty();
 
             extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> i32 {
                 unsafe { *parsed = msg; }
@@ -1576,8 +1172,6 @@ mod high_cases {
             extern fn free(_buf: *const c_char) -> i32 { ErrorCode::Success as i32 }
 
             ledger::register_transaction_parser_for_sp("my_txn_type", parse, free).unwrap();
-
-            utils::tear_down("indy_register_transaction_parser_for_sp_works");
         }
     }
 
@@ -1587,46 +1181,31 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn get_response_metadata_works_for_nym_requests() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("get_response_metadata_works_for_nym_requests");
+            let setup = Setup::trustee();
 
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let nym_request = ledger::build_nym_request(&trustee_did, &did, None, None, None).unwrap();
-            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let nym_request = ledger::build_nym_request(&setup.did, &did, None, None, None).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
             pool::check_response_type(&nym_resp, ResponseType::REPLY);
 
             let response_metadata = ledger::get_response_metadata(&nym_resp).unwrap();
             _check_write_response_metadata(&response_metadata);
 
             let get_nym_request = ledger::build_get_nym_request(None, &did).unwrap();
-            let get_nym_response = ledger::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
+            let get_nym_response = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_resp).unwrap();
 
             let response_metadata = ledger::get_response_metadata(&get_nym_response).unwrap();
             _check_read_response_metadata(&response_metadata);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "get_response_metadata_works_for_nym_requests", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn get_response_metadata_works_for_get_txn_request() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("get_response_metadata_works_for_get_txn_request");
+            let setup = Setup::pool();
 
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
-
-            let nym_request = ledger::build_nym_request(&trustee_did, &did, None, None, None).unwrap();
-            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
-            pool::check_response_type(&nym_resp, ResponseType::REPLY);
-
-            let response_metadata = ledger::get_response_metadata(&nym_resp).unwrap();
-            let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
-
-            let seq_no = response_metadata["seqNo"].as_u64().unwrap() as i32;
-
-            thread::sleep(std::time::Duration::from_secs(2));
-
-            let get_txn_request = ledger::build_get_txn_request(None, seq_no, None).unwrap();
-            let get_txn_response = ledger::submit_request(pool_handle, &get_txn_request).unwrap();
+            let get_txn_request = ledger::build_get_txn_request(None, 1, None).unwrap();
+            let get_txn_response = ledger::submit_request(setup.pool_handle, &get_txn_request).unwrap();
 
             let response_metadata = ledger::get_response_metadata(&get_txn_response).unwrap();
             let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
@@ -1634,80 +1213,43 @@ mod high_cases {
             assert!(response_metadata["txnTime"].as_u64().is_none());
             assert!(response_metadata["lastTxnTime"].as_u64().is_none());
             assert!(response_metadata["lastSeqNo"].as_u64().is_none());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "get_response_metadata_works_for_get_txn_request", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn get_response_metadata_works_for_pool_config_request() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("get_response_metadata_works_for_pool_config_request");
+            let setup = Setup::trustee();
 
-            let request = ledger::build_pool_config_request(&trustee_did, true, false).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+            let request = ledger::build_pool_config_request(&setup.did, true, false).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
 
             let response_metadata = ledger::get_response_metadata(&response).unwrap();
             _check_write_response_metadata(&response_metadata);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "get_response_metadata_works_for_pool_config_request", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn get_response_metadata_works_for_revocation_related_get_requests() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("get_response_metadata_works_for_revocation_related_get_requests");
+            let setup = Setup::pool();
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 
             let timestamp = time::get_time().sec as u64 + 1000;
 
             let get_rev_reg_req = ledger::build_get_revoc_reg_request(Some(DID_MY1), &rev_reg_id, timestamp).unwrap();
-            let get_rev_reg_resp = ledger::submit_request(pool_handle, &get_rev_reg_req).unwrap();
+            let get_rev_reg_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_req).unwrap();
 
             let response_metadata = ledger::get_response_metadata(&get_rev_reg_resp).unwrap();
             _check_read_response_metadata(&response_metadata);
 
             let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(Some(DID_MY1), &rev_reg_id, None, timestamp).unwrap();
-            let get_rev_reg_delta_resp = ledger::submit_request(pool_handle, &get_rev_reg_delta_req).unwrap();
+            let get_rev_reg_delta_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_delta_req).unwrap();
 
             let response_metadata = ledger::get_response_metadata(&get_rev_reg_delta_resp).unwrap();
             _check_read_response_metadata(&response_metadata);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "get_response_metadata_works_for_revocation_related_get_requests", &wallet_config);
         }
 
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn get_response_metadata_works_for_invalid_response() {
-            utils::setup("get_response_metadata_works_for_invalid_response");
-
-            let res = ledger::get_response_metadata("{}");
-            assert_code!(ErrorCode::LedgerInvalidTransaction, res);
-
-            utils::tear_down("get_response_metadata_works_for_invalid_response");
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn get_response_metadata_works_for_not_found_response() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("get_response_metadata_works_for_not_found_response");
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
-
-            let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
-            let get_nym_response = ledger::submit_request(pool_handle, &get_nym_request).unwrap();
-
-            let response_metadata = ledger::get_response_metadata(&get_nym_response).unwrap();
-            let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
-
-            assert!(response_metadata["lastTxnTime"].as_u64().is_some());
-            assert!(response_metadata["seqNo"].as_u64().is_none());
-            assert!(response_metadata["txnTime"].as_u64().is_none());
-            assert!(response_metadata["lastSeqNo"].as_u64().is_none());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "get_response_metadata_works_for_not_found_response", &wallet_config);
-        }
 
         fn _check_write_response_metadata(response_metadata: &str) {
             let response_metadata: serde_json::Value = serde_json::from_str(response_metadata).unwrap();
@@ -2189,19 +1731,19 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rule_requests_works_for_adding_new_trustee() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_work");
+            let setup = Setup::trustee();
 
-            let (_, default_constraint_json) = _get_constraint(pool_handle, ADD_AUTH_ACTION,
+            let (_, default_constraint_json) = _get_constraint(setup.pool_handle, ADD_AUTH_ACTION,
                                                                constants::NYM, FIELD,
                                                                None, Some(VALUE));
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, ADD_AUTH_ACTION,
                                constants::NYM, FIELD,
                                None, Some(VALUE), ROLE_CONSTRAINT);
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, ADD_AUTH_ACTION,
+            let (actual_constraint, _) = _get_constraint(setup.pool_handle, ADD_AUTH_ACTION,
                                                          constants::NYM, FIELD,
                                                          None, Some(VALUE));
 
@@ -2209,132 +1751,125 @@ mod high_cases {
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, ADD_AUTH_ACTION,
                                constants::NYM, FIELD,
                                None, Some(VALUE), &default_constraint_json);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_work", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rule_requests_works_for_adding_new_identity_owner() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_works_for_adding_new_identity_owner");
+            let setup = Setup::trustee();
 
-            let (_, default_constraint_json) = _get_constraint(pool_handle,
+            let (_, default_constraint_json) = _get_constraint(setup.pool_handle,
                                                                &ADD_AUTH_ACTION,
                                                                constants::NYM,
                                                                FIELD,
                                                                None,
                                                                None);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, ADD_AUTH_ACTION,
                                constants::NYM, FIELD, None, None, ROLE_CONSTRAINT);
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, ADD_AUTH_ACTION,
+            let (actual_constraint, _) = _get_constraint(setup.pool_handle, ADD_AUTH_ACTION,
                                                          constants::NYM, FIELD, None, None);
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, ADD_AUTH_ACTION, constants::NYM,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, ADD_AUTH_ACTION, constants::NYM,
                                FIELD, None, None, &default_constraint_json);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_works_for_adding_new_identity_owner", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_auth_rule_requests_works_for_demote_trustee() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_works_for_demote_trustee");
+            let setup = Setup::trustee();
 
-            let (_, default_constraint_json) = _get_constraint(pool_handle,
+            let (_, default_constraint_json) = _get_constraint(setup.pool_handle,
                                                                &EDIT_AUTH_ACTION,
                                                                constants::NYM,
                                                                FIELD,
                                                                Some(VALUE),
                                                                None);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, EDIT_AUTH_ACTION,
                                constants::NYM, FIELD, Some(VALUE), None, ROLE_CONSTRAINT);
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM,
+            let (actual_constraint, _) = _get_constraint(setup.pool_handle, EDIT_AUTH_ACTION, constants::NYM,
                                                          FIELD, Some(VALUE), None);
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, EDIT_AUTH_ACTION, constants::NYM,
                                FIELD, Some(VALUE), None, &default_constraint_json);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_works_for_demote_trustee", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_auth_rule_requests_works_for_promote_role_to_trustee() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_works_for_promote_role_to_trustee");
+            let setup = Setup::trustee();
 
-            let (_, default_constraint_json) = _get_constraint(pool_handle,
+            let (_, default_constraint_json) = _get_constraint(setup.pool_handle,
                                                                &EDIT_AUTH_ACTION,
                                                                constants::NYM,
                                                                FIELD,
                                                                None,
                                                                Some(VALUE));
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, EDIT_AUTH_ACTION,
                                constants::NYM, FIELD, None, Some(VALUE), ROLE_CONSTRAINT);
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION, constants::NYM,
+            let (actual_constraint, _) = _get_constraint(setup.pool_handle, EDIT_AUTH_ACTION, constants::NYM,
                                                          FIELD, None, Some(VALUE));
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION, constants::NYM,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, EDIT_AUTH_ACTION, constants::NYM,
                                FIELD, None, Some(VALUE), &default_constraint_json);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_works_for_promote_role_to_trustee", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_auth_rule_requests_works_for_change_trustee_to_steward() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rule_requests_works_for_change_trustee_to_steward");
+            let setup = Setup::trustee();
 
-            let (_, default_constraint_json) = _get_constraint(pool_handle,
+            let (_, default_constraint_json) = _get_constraint(setup.pool_handle,
                                                                &EDIT_AUTH_ACTION,
                                                                constants::NYM,
                                                                FIELD,
                                                                Some("0"),
                                                                Some("2"));
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, EDIT_AUTH_ACTION,
                                constants::NYM, FIELD, Some("0"),
                                Some("2"), ROLE_CONSTRAINT);
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, EDIT_AUTH_ACTION,
+            let (actual_constraint, _) = _get_constraint(setup.pool_handle, EDIT_AUTH_ACTION,
                                                          constants::NYM, FIELD, Some("0"), Some("2"));
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
 
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, EDIT_AUTH_ACTION,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, EDIT_AUTH_ACTION,
                                constants::NYM, FIELD, Some("0"), Some("2"), &default_constraint_json);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rule_requests_works_for_change_trustee_to_steward", &wallet_config);
         }
 
         fn _change_constraint(pool_handle: i32, wallet_handle: i32, trustee_did: &str, action: &str, txn_type: &str, field: &str,
@@ -2372,7 +1907,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_auth_rule_request_works_for_getting_all() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_auth_rule_request_works_for_getting_all");
+            let setup = Setup::pool();
 
             let get_auth_rule_request = ledger::build_get_auth_rule_request(None,
                                                                             None,
@@ -2381,20 +1916,18 @@ mod high_cases {
                                                                             None,
                                                                             None).unwrap();
 
-            let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &get_auth_rule_request).unwrap();
 
             let response: Reply<serde_json::Value> = serde_json::from_str(&response).unwrap();
 
             let constraints = response.result["data"].as_array().unwrap();
             assert!(constraints.len() > 0);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_auth_rule_request_works_for_getting_all", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_auth_rule_request_works_for_no_constraint() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_auth_rule_request_works_for_no_constraint");
+            let setup = Setup::pool();
 
             let get_auth_rule_request = ledger::build_get_auth_rule_request(None,
                                                                             Some(constants::NYM),
@@ -2403,24 +1936,22 @@ mod high_cases {
                                                                             None,
                                                                             Some("wrong_new_value")).unwrap();
 
-            let response = ledger::submit_request(pool_handle, &get_auth_rule_request).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &get_auth_rule_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_auth_rule_request_works_for_no_constraint", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_auth_rules_request_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_auth_rules_request_works");
+            let setup = Setup::trustee();
 
             let action1: (&str, &str, &str, Option<&str>, Option<&str>) = (ADD_AUTH_ACTION, constants::NYM, FIELD, None, Some(VALUE));
             let action2: (&str, &str, &str, Option<&str>, Option<&str>) = (EDIT_AUTH_ACTION, constants::NYM, FIELD, Some(VALUE), Some(NEW_VALUE));
 
-            let (_, default_constraint_action_1) = _get_constraint(pool_handle, action1.0,
+            let (_, default_constraint_action_1) = _get_constraint(setup.pool_handle, action1.0,
                                                                    action1.1, action1.2, action1.3, action1.4);
 
-            let (_, default_constraint_action_2) = _get_constraint(pool_handle, action2.0,
+            let (_, default_constraint_action_2) = _get_constraint(setup.pool_handle, action2.0,
                                                                    action2.1, action2.2, action2.3, action2.4);
 
             let data = json!([
@@ -2453,30 +1984,28 @@ mod high_cases {
                 }
             ]);
 
-            let auth_rule_request = ledger::build_auth_rules_request(&trustee_did, &data.to_string()).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &auth_rule_request).unwrap();
+            let auth_rule_request = ledger::build_auth_rules_request(&setup.did, &data.to_string()).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &auth_rule_request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
 
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, action1.0, action1.1, action1.2, action1.3, action1.4);
+            let (actual_constraint, _) = _get_constraint(setup.pool_handle, action1.0, action1.1, action1.2, action1.3, action1.4);
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
             assert_eq!(expected_constraint, actual_constraint);
 
-            let (actual_constraint, _) = _get_constraint(pool_handle, action2.0,
+            let (actual_constraint, _) = _get_constraint(setup.pool_handle, action2.0,
                                                          action2.1, action2.2, action2.3, action2.4);
 
             let expected_constraint: serde_json::Value = serde_json::from_str(ROLE_CONSTRAINT).unwrap();
             assert_eq!(expected_constraint, actual_constraint);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, action1.0,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, action1.0,
                                action1.1, action1.2, action1.3, action1.4, &default_constraint_action_1);
 
-            _change_constraint(pool_handle, wallet_handle, &trustee_did, action2.0,
+            _change_constraint(setup.pool_handle, setup.wallet_handle, &setup.did, action2.0,
                                action2.1, action2.2, action2.3, action2.4, &default_constraint_action_2);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_auth_rules_request_works", &wallet_config);
         }
     }
 
@@ -2687,7 +2216,7 @@ mod high_cases {
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version() {
-            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version");
+            Setup::empty();
 
             let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                     Some(TEXT),
@@ -2696,13 +2225,11 @@ mod high_cases {
                                                                                     ACCEPTANCE_MECH_TYPE,
                                                                                     TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
-
-            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_hash() {
-            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_hash");
+            Setup::empty();
 
             let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                     None,
@@ -2711,13 +2238,11 @@ mod high_cases {
                                                                                     ACCEPTANCE_MECH_TYPE,
                                                                                     TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
-
-            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_hash");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash() {
-            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash");
+            Setup::empty();
 
             let request = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                     Some(TEXT),
@@ -2726,13 +2251,11 @@ mod high_cases {
                                                                                     ACCEPTANCE_MECH_TYPE,
                                                                                     TIME_OF_ACCEPTANCE).unwrap();
             _check_request_meta(&request);
-
-            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_and_hash");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash() {
-            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash");
+            Setup::empty();
 
             let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                 Some("other text"),
@@ -2741,13 +2264,11 @@ mod high_cases {
                                                                                 ACCEPTANCE_MECH_TYPE,
                                                                                 TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_text_version_not_correspond_to_hash");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request() {
-            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request");
+            Setup::empty();
 
             let res = ledger::append_txn_author_agreement_acceptance_to_request("Invalid request string",
                                                                                 None,
@@ -2756,13 +2277,11 @@ mod high_cases {
                                                                                 ACCEPTANCE_MECH_TYPE,
                                                                                 TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_invalid_request");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash() {
-            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash");
+            Setup::empty();
 
             let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                 None,
@@ -2771,13 +2290,11 @@ mod high_cases {
                                                                                 ACCEPTANCE_MECH_TYPE,
                                                                                 TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_missed_text_version_hash");
         }
 
         #[test]
         fn indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version() {
-            utils::setup("indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version");
+            Setup::empty();
 
             let res = ledger::append_txn_author_agreement_acceptance_to_request(REQUEST,
                                                                                 Some(TEXT),
@@ -2794,8 +2311,6 @@ mod high_cases {
                                                                                 ACCEPTANCE_MECH_TYPE,
                                                                                 TIME_OF_ACCEPTANCE);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down("indy_append_txn_author_agreement_acceptance_to_request_works_for_partial_combination_of_text_version");
         }
 
         fn _rand_string() -> String {
@@ -2853,37 +2368,35 @@ mod high_cases {
 
         #[test]
         fn indy_txn_author_agreement_requests_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_txn_author_agreement_requests_works");
+            let setup = Setup::trustee();
 
-            _set_aml(pool_handle, wallet_handle, &trustee_did);
+            _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (taa_text, taa_version) = _gen_taa_data();
 
-            let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&trustee_did, &taa_text, &taa_version).unwrap();
-            let txn_author_agreement_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &txn_author_agreement_request).unwrap();
+            let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&setup.did, &taa_text, &taa_version).unwrap();
+            let txn_author_agreement_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &txn_author_agreement_request).unwrap();
             pool::check_response_type(&txn_author_agreement_response, ResponseType::REPLY);
 
-            let get_txn_author_agreement_request = ledger::build_get_txn_author_agreement_request(Some(&trustee_did), None).unwrap();
-            let get_txn_author_agreement_response = ledger::submit_request_with_retries(pool_handle, &get_txn_author_agreement_request, &txn_author_agreement_response).unwrap();
+            let get_txn_author_agreement_request = ledger::build_get_txn_author_agreement_request(Some(&setup.did), None).unwrap();
+            let get_txn_author_agreement_response = ledger::submit_request_with_retries(setup.pool_handle, &get_txn_author_agreement_request, &txn_author_agreement_response).unwrap();
             pool::check_response_type(&get_txn_author_agreement_response, ResponseType::REPLY);
 
             let response: serde_json::Value = serde_json::from_str(&get_txn_author_agreement_response).unwrap();
             let expected_data = json!({"text": taa_text, "version": taa_version});
             assert_eq!(response["result"]["data"], expected_data);
 
-            _reset_taa(pool_handle, wallet_handle, &trustee_did);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_txn_author_agreement_requests_works", &wallet_config);
+            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
 
         #[test]
         fn indy_acceptance_mechanism_requests_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_acceptance_mechanism_requests_works");
+            let setup = Setup::trustee();
 
             let (aml, _, aml_version, aml_context) = _gen_aml_data();
 
-            let acceptance_mechanisms_request = ledger::build_acceptance_mechanisms_request(&trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
-            let acceptance_mechanisms_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &acceptance_mechanisms_request).unwrap();
+            let acceptance_mechanisms_request = ledger::build_acceptance_mechanisms_request(&setup.did, &aml, &aml_version, Some(&aml_context)).unwrap();
+            let acceptance_mechanisms_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &acceptance_mechanisms_request).unwrap();
             pool::check_response_type(&acceptance_mechanisms_response, ResponseType::REPLY);
 
             //            {
@@ -2895,75 +2408,70 @@ mod high_cases {
             //                let expected_data = json!({"aml": aml, "version": aml_version, "amlContext": aml_context});
             //                assert_eq!(response["result"]["data"], expected_data);
             //            }
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_acceptance_mechanism_requests_works", &wallet_config);
         }
 
         #[test]
         fn indy_author_agreement_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_author_agreement_works");
+            let setup = Setup::trustee();
 
-            let (_, aml_label, _, _) = _set_aml(pool_handle, wallet_handle, &trustee_did);
-            let (taa_text, taa_version) = _set_taa(pool_handle, wallet_handle, &trustee_did);
+            let (_, aml_label, _, _) = _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text, taa_version) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
-            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
-            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
             pool::check_response_type(&nym_resp, ResponseType::REJECT);
 
-            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
             let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
                                                                                     Some(&taa_text), Some(&taa_version),
                                                                                     None, &aml_label,
                                                                                     time::get_time().sec as u64).unwrap();
 
-            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
             pool::check_response_type(&nym_resp, ResponseType::REPLY);
 
-            let get_nym_req = ledger::build_get_nym_request(Some(&trustee_did), &did_).unwrap();
-            let get_nym_resp = ledger::submit_request_with_retries(pool_handle, &get_nym_req, &nym_resp).unwrap();
+            let get_nym_req = ledger::build_get_nym_request(Some(&setup.did), &did_).unwrap();
+            let get_nym_resp = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_req, &nym_resp).unwrap();
             pool::check_response_type(&get_nym_resp, ResponseType::REPLY);
 
-            _reset_taa(pool_handle, wallet_handle, &trustee_did);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_author_agreement_works", &wallet_config);
+            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
 
         #[test]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_reset_author_agreement_works() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_reset_author_agreement_works");
+            let setup = Setup::trustee();
 
-            _set_aml(pool_handle, wallet_handle, &trustee_did);
-            _set_taa(pool_handle, wallet_handle, &trustee_did);
+            _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
-            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
 
-            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
             pool::check_response_type(&nym_resp, ResponseType::REJECT);
 
-            _reset_taa(pool_handle, wallet_handle, &trustee_did);
+            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
-            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
-            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
             pool::check_response_type(&nym_resp, ResponseType::REPLY);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_reset_author_agreement_works", &wallet_config);
         }
 
         #[test]
         fn indy_author_agreement_works_for_using_invalid_taa() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_author_agreement_works_for_using_invalid_taa");
+            let setup = Setup::trustee();
 
-            let (_, aml_label, _, _) = _set_aml(pool_handle, wallet_handle, &trustee_did);
-            _set_taa(pool_handle, wallet_handle, &trustee_did);
+            let (_, aml_label, _, _) = _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
-            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
             {
-                let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
 
                 let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
                                                                                         Some("INVALID TAA TEXT"),
@@ -2971,26 +2479,25 @@ mod high_cases {
                                                                                         None, &aml_label,
                                                                                         time::get_time().sec as u64).unwrap();
 
-                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
                 pool::check_response_type(&nym_resp, ResponseType::REJECT);
             }
 
-            _reset_taa(pool_handle, wallet_handle, &trustee_did);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_author_agreement_works_for_using_invalid_taa", &wallet_config);
+            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
 
         #[test]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_author_agreement_works_for_using_invalid_aml() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_author_agreement_works_for_using_invalid_aml");
+            let setup = Setup::trustee();
 
-            _set_aml(pool_handle, wallet_handle, &trustee_did);
-            let (taa_text, taa_version) = _set_taa(pool_handle, wallet_handle, &trustee_did);
+            _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text, taa_version) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
-            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
             {
-                let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
                 let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
                                                                                         Some(&taa_text),
                                                                                         Some(&taa_version),
@@ -2998,26 +2505,25 @@ mod high_cases {
                                                                                         "INVALID AML LABEL",
                                                                                         time::get_time().sec as u64).unwrap();
 
-                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
                 pool::check_response_type(&nym_resp, ResponseType::REJECT);
             }
 
-            _reset_taa(pool_handle, wallet_handle, &trustee_did);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_author_agreement_works_for_using_invalid_aml", &wallet_config);
+            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
 
         #[test]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_author_agreement_works_for_using_not_last_taa() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_author_agreement_works_for_using_not_last_taa");
+            let setup = Setup::trustee();
 
-            let (_, aml_label, _, _) = _set_aml(pool_handle, wallet_handle, &trustee_did);
-            let (taa_text, taa_version) = _set_taa(pool_handle, wallet_handle, &trustee_did);
-            let (taa_text_2, taa_version_2) = _set_taa(pool_handle, wallet_handle, &trustee_did);
+            let (_, aml_label, _, _) = _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text, taa_version) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text_2, taa_version_2) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
-            let (did_, verkey_) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
 
             {
                 let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
@@ -3025,11 +2531,11 @@ mod high_cases {
                                                                                         None, &aml_label,
                                                                                         time::get_time().sec as u64).unwrap();
 
-                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
                 pool::check_response_type(&nym_resp, ResponseType::REJECT);
             }
 
-            let nym_req = ledger::build_nym_request(&trustee_did, &did_, Some(&verkey_), None, None).unwrap();
+            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
 
             {
                 let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
@@ -3037,20 +2543,18 @@ mod high_cases {
                                                                                         None, &aml_label,
                                                                                         time::get_time().sec as u64).unwrap();
 
-                let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_req).unwrap();
+                let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
                 pool::check_response_type(&nym_resp, ResponseType::REPLY);
             }
 
-            _reset_taa(pool_handle, wallet_handle, &trustee_did);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_author_agreement_works_for_using_not_last_taa", &wallet_config);
+            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
     }
 
     mod append_request_endorser {
         use super::*;
 
-        fn _setup_new_identity(wallet_handle: i32, pool_handle: i32) -> String{
+        fn _setup_new_identity(wallet_handle: i32, pool_handle: i32) -> String {
             let (my_did, my_vk) = did::create_and_store_my_did(wallet_handle, None).unwrap();
             let nym = ledger::build_nym_request(DID_TRUSTEE, &my_did, Some(&my_vk), None, None).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, DID_TRUSTEE, &nym).unwrap();
@@ -3060,68 +2564,63 @@ mod high_cases {
 
         #[test]
         fn indy_append_request_endorser_works() {
-            utils::setup("indy_append_request_endorser_works");
+            Setup::empty();
 
             let endorser_did = DID_TRUSTEE;
 
             let request = ledger::append_request_endorser(REQUEST, endorser_did).unwrap();
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
             assert_eq!(endorser_did, request["endorser"].as_str().unwrap());
-
-            utils::tear_down("indy_append_request_endorser_works");
         }
 
         #[test]
         fn indy_send_request_by_endorser_works() {
-            let (wallet_handle, pool_handle, endorser_did, _, config) = utils::setup_new_endorser("indy_send_request_by_endorser_works");
+            let setup = Setup::endorser();
 
             // Multi sign + Multi Sign
 
-            let my_did = _setup_new_identity(wallet_handle, pool_handle);
+            let my_did = _setup_new_identity(setup.wallet_handle, setup.pool_handle);
 
             let request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
-            let request = ledger::append_request_endorser(&request, &endorser_did).unwrap();
-            let request = ledger::multi_sign_request(wallet_handle, &my_did, &request).unwrap();
-            let request = ledger::multi_sign_request(wallet_handle, &endorser_did, &request).unwrap();
-            let response = ledger::submit_request(pool_handle, &request).unwrap();
+            let request = ledger::append_request_endorser(&request, &setup.did).unwrap();
+            let request = ledger::multi_sign_request(setup.wallet_handle, &my_did, &request).unwrap();
+            let request = ledger::multi_sign_request(setup.wallet_handle, &setup.did, &request).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
 
             // Sign + Multi Sign
 
-            let my_did = _setup_new_identity(wallet_handle, pool_handle);
+            let my_did = _setup_new_identity(setup.wallet_handle, setup.pool_handle);
 
             let request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
-            let request = ledger::append_request_endorser(&request, &endorser_did).unwrap();
-            let request = ledger::sign_request(wallet_handle, &my_did, &request).unwrap();
-            let request = ledger::multi_sign_request(wallet_handle, &endorser_did, &request).unwrap();
-            let response = ledger::submit_request(pool_handle, &request).unwrap();
+            let request = ledger::append_request_endorser(&request, &setup.did).unwrap();
+            let request = ledger::sign_request(setup.wallet_handle, &my_did, &request).unwrap();
+            let request = ledger::multi_sign_request(setup.wallet_handle, &setup.did, &request).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_request_by_endorser_works", &config);
         }
 
         #[test]
+        #[cfg(not(feature="only_high_cases"))]
         fn indy_send_request_by_endorser_for_both_author_and_endorser_must_sign() {
-            let (wallet_handle, pool_handle, endorser_did, _, config) = utils::setup_new_endorser("indy_send_request_by_endorser_for_both_author_and_endorser_must_sign");
-            let my_did = _setup_new_identity(wallet_handle, pool_handle);
+            let setup = Setup::endorser();
+            let my_did = _setup_new_identity(setup.wallet_handle, setup.pool_handle);
 
             let request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
 
             // Sign and Send by an unknown DID
-            let request_1 = ledger::multi_sign_request(wallet_handle, &my_did, &request).unwrap();
-            let response = ledger::submit_request(pool_handle, &request_1).unwrap();
+            let request_1 = ledger::multi_sign_request(setup.wallet_handle, &my_did, &request).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &request_1).unwrap();
             pool::check_response_type(&response, ResponseType::REJECT);
 
             // Sign and Send by an Endorser only
-            let my_did = _setup_new_identity(wallet_handle, pool_handle);
+            let my_did = _setup_new_identity(setup.wallet_handle, setup.pool_handle);
             let request = ledger::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
 
-            let request_2 = ledger::append_request_endorser(&request, &endorser_did).unwrap();
-            let request_2 = ledger::multi_sign_request(wallet_handle, &endorser_did, &request_2).unwrap();
-            let response = ledger::submit_request(pool_handle, &request_2).unwrap();
+            let request_2 = ledger::append_request_endorser(&request, &setup.did).unwrap();
+            let request_2 = ledger::multi_sign_request(setup.wallet_handle, &setup.did, &request_2).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &request_2).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_request_by_endorser_for_both_author_and_endorser_must_sign", &config);
         }
     }
 }
@@ -3129,6 +2628,8 @@ mod high_cases {
 #[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     use super::*;
+    use openssl::hash::{MessageDigest, Hasher};
+    use sodiumoxide::crypto::secretbox;
     use utils::domain::anoncreds::schema::{Schema};
 
     mod requests {
@@ -3137,34 +2638,28 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works_for_not_found_signer() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_sign_and_submit_request_works_for_not_found_signer");
+            let setup = Setup::wallet_and_pool();
 
-            let res = ledger::sign_and_submit_request(pool_handle, wallet_handle, &DID, REQUEST);
+            let res = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &DID, REQUEST);
             assert_code!(ErrorCode::WalletItemNotFound, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_sign_and_submit_request_works_for_not_found_signer", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_request_works_for_invalid_message() {
-            let pool_handle = utils::setup_with_pool("indy_submit_request_works_for_invalid_message");
+            let setup = Setup::pool();
 
-            let res = ledger::submit_request(pool_handle, "request");
+            let res = ledger::submit_request(setup.pool_handle, "request");
             assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down_with_pool(pool_handle, "indy_submit_request_works_for_invalid_message");
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works_for_invalid_json() {
-            let (wallet_handle, pool_handle, did, wallet_config) = utils::setup_trustee("indy_sign_and_submit_request_works_for_invalid_json");
+            let setup = Setup::new_identity();
 
-            let res = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, "request");
+            let res = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, "request");
             assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_sign_and_submit_request_works_for_invalid_json", &wallet_config);
         }
     }
 
@@ -3173,32 +2668,107 @@ mod medium_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_submit_action_works_for_pool_restart_for_unknown_node_name() {
-            let (wallet_handle, pool_handle, did, wallet_config) = utils::setup_trustee("indy_submit_action_works_for_pool_restart_for_unknown_node_name");
+        fn indy_submit_action_works_for_validator_info() {
+            let setup = Setup::trustee();
 
-            let get_validator_info_request = ledger::build_get_validator_info_request(&did).unwrap();
-            let get_validator_info_request = ledger::sign_request(wallet_handle, &did, &get_validator_info_request).unwrap();
+            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
+            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
+            ledger::submit_action(setup.pool_handle, &get_validator_info_request, None, None).unwrap();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_submit_action_works_for_not_supported_request_type() {
+            let setup = Setup::trustee();
+
+            let get_nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
+            let res = ledger::submit_action(setup.pool_handle, &get_nym_request, None, None);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_submit_action_works_for_pool_restart_for_unknown_node_name() {
+            let setup = Setup::trustee();
+
+            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
+            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
 
             let nodes = r#"["Other Node"]"#;
-            let res = ledger::submit_action(pool_handle, &get_validator_info_request, Some(nodes), None);
+            let res = ledger::submit_action(setup.pool_handle, &get_validator_info_request, Some(nodes), None);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_action_works_for_pool_restart_for_unknown_node_name", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_pool_restart_for_invalid_nodes_format() {
-            let (wallet_handle, pool_handle, did, wallet_config) = utils::setup_trustee("indy_submit_action_works_for_pool_restart_for_invalid_nodes_format");
+            let setup = Setup::trustee();
 
-            let get_validator_info_request = ledger::build_get_validator_info_request(&did).unwrap();
-            let get_validator_info_request = ledger::sign_request(wallet_handle, &did, &get_validator_info_request).unwrap();
+            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
+            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
 
             let nodes = r#""Node1""#;
-            let res = ledger::submit_action(pool_handle, &get_validator_info_request, Some(nodes), None);
+            let res = ledger::submit_action(setup.pool_handle, &get_validator_info_request, Some(nodes), None);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_action_works_for_pool_restart_for_invalid_nodes_format", &wallet_config);
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_submit_action_works_for_pool_restart_for_invalid_pool_handle() {
+            let setup = Setup::did();
+
+            let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
+            let get_validator_info_request = ledger::sign_request(setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
+
+            let res = ledger::submit_action(INVALID_POOL_HANDLE, &get_validator_info_request, None, None);
+            assert_code!(ErrorCode::PoolLedgerInvalidPoolHandle, res);
+        }
+    }
+
+    mod sign_request {
+        use super::*;
+
+        #[test]
+        fn indy_sign_request_works_for_invalid_message_format() {
+            let setup = Setup::did();
+
+            let res = ledger::sign_request(setup.wallet_handle, &setup.did, "1495034346617224651");
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        fn indy_sign_request_works_for_invalid_handle() {
+            Setup::empty();
+
+            let res = ledger::sign_request(INVALID_WALLET_HANDLE, DID, MESSAGE);
+            assert_code!(ErrorCode::WalletInvalidHandle, res);
+        }
+    }
+
+    mod multi_sign_request {
+        use super::*;
+
+        #[test]
+        fn indy_multi_sign_request_works_for_invalid_message_format() {
+            let setup = Setup::did();
+
+            let res = ledger::multi_sign_request(setup.wallet_handle, &setup.did, "1495034346617224651");
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        fn indy_multi_sign_request_works_for_twice_use_same_did() {
+            let setup = Setup::wallet();
+
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let message = ledger::multi_sign_request(setup.wallet_handle, &did, REQUEST).unwrap();
+            let message = ledger::multi_sign_request(setup.wallet_handle, &did, &message).unwrap();
+            let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
+            let signatures = msg["signatures"].as_object().unwrap();
+
+            assert_eq!(1, signatures.len());
+            assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
         }
     }
 
@@ -3207,43 +2777,59 @@ mod medium_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn indy_send_get_nym_request_works_default_submitter_did() {
+            let setup = Setup::trustee();
+
+            let get_nym_request = ledger::build_get_nym_request(None, DID_TRUSTEE).unwrap();
+            let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
+            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
+            assert!(get_nym_response.result.data.is_some());
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_nym_request_works_without_signature() {
+            let setup = Setup::trustee();
+
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+            let nym_request = ledger::build_nym_request(&setup.did, &did, None, None, None).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &nym_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_send_nym_request_works_for_only_required_fields() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_send_nym_request_works_for_only_required_fields");
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let setup = Setup::trustee();
+            let (my_did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let nym_request = ledger::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let nym_request = ledger::build_nym_request(&setup.did, &my_did, None, None, None).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_nym_request_works_for_only_required_fields", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_nym_request_works_with_option_fields() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_send_nym_request_works_with_option_fields");
-            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let setup = Setup::trustee();
+            let (my_did, my_verkey) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let nym_request = ledger::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), Some("some_alias"), Some("STEWARD")).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let nym_request = ledger::build_nym_request(&setup.did, &my_did, Some(&my_verkey), Some("some_alias"), Some("STEWARD")).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_nym_request_works_with_option_fields", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_nym_request_works_for_different_roles() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_send_nym_request_works_for_different_roles");
+            let setup = Setup::trustee();
 
             for role in ["STEWARD", "TRUSTEE", "TRUST_ANCHOR", "ENDORSER", "NETWORK_MONITOR"].iter() {
-                let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
-                let nym_request = ledger::build_nym_request(&trustee_did, &my_did, None, None, Some(role)).unwrap();
-                let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+                let (my_did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+                let nym_request = ledger::build_nym_request(&setup.did, &my_did, None, None, Some(role)).unwrap();
+                let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
                 pool::check_response_type(&response, ResponseType::REPLY);
             }
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_nym_request_works_for_different_roles", &wallet_config);
         }
 
         #[test]
@@ -3256,48 +2842,42 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_request_works_for_wrong_signer_role() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_nym_request_works_for_wrong_signer_role");
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let setup = Setup::trustee();
+            let (my_did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let nym_request = ledger::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let nym_request = ledger::build_nym_request(&setup.did, &my_did, None, None, None).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
 
-            let (my_did2, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (my_did2, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
             let nym_request = ledger::build_nym_request(&my_did, &my_did2, None, None, None).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &my_did, &nym_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_nym_request_works_for_wrong_signer_role", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_request_works_for_unknown_signer_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_nym_request_works_for_unknown_signer_did");
+            let setup = Setup::wallet_and_pool();
 
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
             let nym_request = ledger::build_nym_request(&did, DID, None, None, None).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &nym_request).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &did, &nym_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_nym_request_works_for_unknown_signer_did", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_nym_request_works_for_unknown_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_nym_request_works_for_unknown_did");
+            let setup = Setup::wallet_and_pool();
 
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
             let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
-            let get_nym_response = ledger::submit_request(pool_handle, &get_nym_request).unwrap();
+            let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
             let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
             assert!(get_nym_response.result.data.is_none());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_nym_request_works_for_unknown_did", &wallet_config);
         }
 
         #[test]
@@ -3331,35 +2911,33 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_requests_works_for_reset_role() {
-            let (wallet_handle, pool_handle, trustee_did, wallet_config) = utils::setup_trustee("indy_nym_requests_works_for_reset_role");
-            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let setup = Setup::trustee();
+            let (my_did, my_verkey) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let mut nym_request = ledger::build_nym_request(&trustee_did, &my_did,
+            let mut nym_request = ledger::build_nym_request(&setup.did, &my_did,
                                                             Some(&my_verkey), None, Some("TRUSTEE")).unwrap();
-            let nym_req_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let nym_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
             pool::check_response_type(&nym_req_resp, ResponseType::REPLY);
 
             let mut get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
-            let get_nym_response_with_role = ledger::submit_request_with_retries(pool_handle, &get_nym_request, &nym_req_resp).unwrap();
+            let get_nym_response_with_role = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_req_resp).unwrap();
 
             let get_nym_response_with_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_with_role).unwrap();
             let get_nym_response_data_with_role: GetNymResultData = serde_json::from_str(&get_nym_response_with_role.result.data.unwrap()).unwrap();
 
             nym_request = ledger::build_nym_request(&my_did, &my_did,
                                                     Some(&my_verkey), None, Some("")).unwrap();
-            let nym_req_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
+            let nym_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &my_did, &nym_request).unwrap();
             pool::check_response_type(&nym_req_resp, ResponseType::REPLY);
 
             get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
-            let get_nym_response_without_role = ledger::submit_request_with_retries(pool_handle, &get_nym_request, &nym_req_resp).unwrap();
+            let get_nym_response_without_role = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_req_resp).unwrap();
 
             let get_nym_response_without_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_without_role).unwrap();
             let get_nym_response_data_without_role: GetNymResultData = serde_json::from_str(&get_nym_response_without_role.result.data.unwrap()).unwrap();
 
             assert!(get_nym_response_data_without_role.role.is_none());
             assert_ne!(get_nym_response_data_without_role.role, get_nym_response_data_with_role.role);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_nym_requests_works_for_reset_role", &wallet_config);
         }
     }
 
@@ -3368,44 +2946,116 @@ mod medium_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_request_works_for_unknown_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_attrib_request_works_for_unknown_did");
+        fn indy_attrib_requests_works_for_hash_value() {
+            let setup = Setup::new_identity();
 
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
+            ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
+            let hashed_attr = hex::encode(ctx.finish().unwrap().as_ref());
+
+            let attrib_request = ledger::build_attrib_request(&setup.did,
+                                                              &setup.did,
+                                                              Some(&hashed_attr),
+                                                              None,
+                                                              None).unwrap();
+            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
+            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
+
+            let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, None, Some(&hashed_attr), None).unwrap();
+            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), hashed_attr.as_str());
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_attrib_requests_works_for_encrypted_value() {
+            let setup = Setup::new_identity();
+
+            let key = secretbox::gen_key();
+            let nonce = secretbox::gen_nonce();
+            let encryted_attr = hex::encode(secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key));
+
+            let attrib_request = ledger::build_attrib_request(&setup.did,
+                                                              &setup.did,
+                                                              None,
+                                                              None,
+                                                              Some(&encryted_attr)).unwrap();
+            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
+            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
+
+            let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, None, None, Some(&encryted_attr)).unwrap();
+            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), encryted_attr.as_str());
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_attrib_request_works_without_signature() {
+            let setup = Setup::trustee();
+
+            let attrib_request = ledger::build_attrib_request(&setup.did, &setup.did, None, Some(ATTRIB_RAW_DATA), None).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &attrib_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_attrib_request_works_for_unknown_did() {
+            let setup = Setup::wallet_and_pool();
+
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
             let attrib_request = ledger::build_attrib_request(&did, &did, None, Some(ATTRIB_RAW_DATA), None).unwrap();
 
-            let response = ledger::submit_request(pool_handle, &attrib_request).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &attrib_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
+        }
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_attrib_request_works_for_unknown_did", &wallet_config);
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_attrib_requests_works_for_default_submitter_did() {
+            let setup = Setup::new_identity();
+
+            let attrib_request = ledger::build_attrib_request(&setup.did,
+                                                              &setup.did,
+                                                              None,
+                                                              Some(ATTRIB_RAW_DATA),
+                                                              None).unwrap();
+            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
+            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
+
+            let get_attrib_request = ledger::build_get_attrib_request(None, &setup.did, Some("endpoint"), None, None).unwrap();
+            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_attrib_request_works_for_unknown_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_attrib_request_works_for_unknown_did");
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let setup = Setup::wallet_and_pool();
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
             let get_attrib_request = ledger::build_get_attrib_request(Some(&did), &did, Some("endpoint"), None, None).unwrap();
-            let get_attrib_response = ledger::submit_request(pool_handle, &get_attrib_request).unwrap();
+            let get_attrib_response = ledger::submit_request(setup.pool_handle, &get_attrib_request).unwrap();
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert!(get_attrib_response.result.data.is_none());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_attrib_request_works_for_unknown_did", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_attrib_request_works_for_unknown_attribute() {
-            let (wallet_handle, pool_handle, did, _my_vk, wallet_config) = utils::setup_new_identity("indy_get_attrib_request_works_for_unknown_attribute");
+            let setup = Setup::new_identity();
 
-            let get_attrib_request = ledger::build_get_attrib_request(Some(&did), &did, Some("some_attribute"), None, None).unwrap();
-            let get_attrib_response = ledger::submit_request(pool_handle, &get_attrib_request).unwrap();
+            let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, Some("some_attribute"), None, None).unwrap();
+            let get_attrib_response = ledger::submit_request(setup.pool_handle, &get_attrib_request).unwrap();
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert!(get_attrib_response.result.data.is_none());
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_attrib_request_works_for_unknown_attribute", &wallet_config);
         }
 
 
@@ -3440,6 +3090,30 @@ mod medium_cases {
 
     mod schemas_requests {
         use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_schema_request_works_without_signature() {
+            let setup = Setup::trustee();
+
+            let schema_request = ledger::build_schema_request(&setup.did, SCHEMA_DATA).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &schema_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_schema_requests_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (schema_id, _, _) = ledger::post_entities();
+
+            let get_schema_request = ledger::build_get_schema_request(None, &schema_id).unwrap();
+            let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
+            let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
+
+            let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
+        }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -3479,63 +3153,65 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_schema_request_works_for_unknown_did() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_schema_request_works_for_unknown_did");
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let setup = Setup::wallet_and_pool();
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
             let schema_request = ledger::build_schema_request(&did, SCHEMA_DATA).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &did, &schema_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_schema_request_works_for_unknown_did", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_request_works_for_unknown_schema() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_schema_request_works_for_unknown_schema");
+            let setup = Setup::pool();
 
             let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &Schema::schema_id(DID, "other_schema", "1.0")).unwrap();
-            let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
+            let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
             assert_code!(ErrorCode::LedgerNotFound, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_schema_request_works_for_unknown_schema", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_parse_returns_error_for_wrong_type() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_parse_returns_error_for_wrong_type");
+            let setup = Setup::pool();
 
             let (schema_id, _, _) = ledger::post_entities();
 
             let get_schema_request = ledger::build_get_schema_request(Some(DID_MY1), &schema_id).unwrap();
-            let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
+            let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_cred_def_response(&get_schema_response);
             assert_code!(ErrorCode::LedgerInvalidTransaction, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_parse_returns_error_for_wrong_type", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_parse_returns_error_for_wrong_type_and_unknown_schema() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_get_parse_returns_error_for_wrong_type_and_unknown_schema");
+            let setup = Setup::pool();
 
             let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &Schema::schema_id(DID, "other_schema", "1.0")).unwrap();
-            let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
+            let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_cred_def_response(&get_schema_response);
             assert_code!(ErrorCode::LedgerInvalidTransaction, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_get_parse_returns_error_for_wrong_type_and_unknown_schema", &wallet_config);
         }
     }
 
     mod node_requests {
         use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_send_node_request_works_without_signature() {
+            let setup = Setup::steward();
+
+            let node_request = ledger::build_node_request(&setup.did, &setup.did, NODE_DATA).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &node_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
 
         #[test]
         fn indy_build_node_request_works_for_missed_fields_in_data_json() {
@@ -3553,62 +3229,78 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_node_request_works_for_wrong_role() {
-            let (wallet_handle, pool_handle, did, wallet_config) = utils::setup_trustee("indy_send_node_request_works_for_wrong_role");
+            let setup = Setup::trustee();
 
-            let key = utils::crypto::create_key(wallet_handle, None).unwrap();
-            let node_request = ledger::build_node_request(&did, &key, NODE_DATA).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
+            let key = utils::crypto::create_key(setup.wallet_handle, None).unwrap();
+            let node_request = ledger::build_node_request(&setup.did, &key, NODE_DATA).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REJECT);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_send_node_request_works_for_wrong_role", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_node_request_works_for_steward_already_has_node() {
-            let (wallet_handle, pool_handle, did, wallet_config) = utils::setup_steward("indy_submit_node_request_works_for_steward_already_has_node");
+            let setup = Setup::steward();
 
-            let key = utils::crypto::create_key(wallet_handle, None).unwrap();
-            let node_request = ledger::build_node_request(&did, &key, NODE_DATA).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
+            let key = utils::crypto::create_key(setup.wallet_handle, None).unwrap();
+            let node_request = ledger::build_node_request(&setup.did, &key, NODE_DATA).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REJECT);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_node_request_works_for_steward_already_has_node", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_node_request_works_for_new_node_without_bls_pop() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_submit_node_request_works_for_new_node_without_bls_pop");
+            let setup = Setup::wallet_and_pool();
 
-            let (my_did, _) = did::create_store_and_publish_my_did_from_steward(wallet_handle, pool_handle).unwrap();
+            let (my_did, _) = did::create_store_and_publish_my_did_from_steward(setup.wallet_handle, setup.pool_handle).unwrap();
 
             let node_data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 2, "alias":"some", "services": ["VALIDATOR"], "blskey": "4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba"}"#;
             let node_request = ledger::build_node_request(&my_did, DEST, node_data).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &my_did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_node_request_works_for_new_node_without_bls_pop", &wallet_config);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_node_request_works_for_pop_not_correspond_blskey() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_submit_node_request_works_for_pop_not_correspond_blskey");
+            let setup = Setup::wallet_and_pool();
 
-            let (my_did, _) = did::create_store_and_publish_my_did_from_steward(wallet_handle, pool_handle).unwrap();
+            let (my_did, _) = did::create_store_and_publish_my_did_from_steward(setup.wallet_handle, setup.pool_handle).unwrap();
 
             let node_data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 2, "alias":"some", "services": ["VALIDATOR"], "blskey": "4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba", "blskey_pop": "RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP"}"#;
             let node_request = ledger::build_node_request(&my_did, DEST, node_data).unwrap();
-            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request).unwrap();
+            let response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &my_did, &node_request).unwrap();
             pool::check_response_type(&response, ResponseType::REQNACK);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_submit_node_request_works_for_pop_not_correspond_blskey", &wallet_config);
         }
     }
 
     mod cred_def_requests {
         use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_cred_def_request_works_without_signature() {
+            let setup = Setup::trustee();
+
+            let cred_def_request = ledger::build_cred_def_txn(&setup.did, &anoncreds::credential_def_json()).unwrap();
+            let response = ledger::submit_request(setup.pool_handle, &cred_def_request).unwrap();
+            pool::check_response_type(&response, ResponseType::REQNACK);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_cred_def_requests_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (_, cred_def_id, _) = ledger::post_entities();
+
+            let get_cred_def_request = ledger::build_get_cred_def_request(None, &cred_def_id).unwrap();
+            let get_cred_def_response = ledger::submit_request(setup.pool_handle, &get_cred_def_request).unwrap();
+            let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
+
+            let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
+        }
 
         #[test]
         fn indy_build_cred_def_request_works_for_invalid_data_json() {
@@ -3632,40 +3324,150 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_cred_def_requests_works_for_hash_field() {
-            let (wallet_handle, pool_handle, wallet_config) = utils::setup_with_wallet_and_pool("indy_cred_def_requests_works_for_hash_field");
+            let setup = Setup::new_identity();
 
-            let (issuer_did, _) = did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
-
-            let (schema_id, schema_json) = anoncreds::issuer_create_schema(&issuer_did,
+            let (schema_id, schema_json) = anoncreds::issuer_create_schema(&setup.did,
                                                                            GVT_SCHEMA_NAME,
                                                                            SCHEMA_VERSION,
                                                                            r#"["enc", "raw", "hash"]"#).unwrap();
 
-            let schema_request = ledger::build_schema_request(&issuer_did, &schema_json).unwrap();
-            let schema_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
+            let schema_request = ledger::build_schema_request(&setup.did, &schema_json).unwrap();
+            let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
             pool::check_response_type(&schema_response, ::utils::types::ResponseType::REPLY);
 
-            let get_schema_request = ledger::build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
-            let get_schema_response = ledger::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
+            let get_schema_request = ledger::build_get_schema_request(Some(&setup.did), &schema_id).unwrap();
+            let get_schema_response = ledger::submit_request_with_retries(setup.pool_handle, &get_schema_request, &schema_response).unwrap();
             let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
 
-            let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(wallet_handle,
-                                                                                              &issuer_did,
+            let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(setup.wallet_handle,
+                                                                                              &setup.did,
                                                                                               &schema_json,
                                                                                               TAG_1,
                                                                                               None,
                                                                                               Some(&anoncreds::default_cred_def_config())).unwrap();
-            let cred_def_request = ledger::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
-            let cred_def_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
+            let cred_def_request = ledger::build_cred_def_txn(&setup.did, &cred_def_json).unwrap();
+            let cred_def_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &cred_def_request).unwrap();
             pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
 
             let get_cred_def_request = ledger::build_get_cred_def_request(Some(DID_MY1), &cred_def_id).unwrap();
-            let get_cred_def_response = ledger::submit_request_with_retries(pool_handle, &get_cred_def_request, &cred_def_response).unwrap();
+            let get_cred_def_response = ledger::submit_request_with_retries(setup.pool_handle, &get_cred_def_request, &cred_def_response).unwrap();
             let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
             let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
+        }
+    }
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle, "indy_cred_def_requests_works_for_hash_field", &wallet_config);
+    mod get_txn_requests {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_txn_request_works_for_invalid_seq_no() {
+            let setup = Setup::new_identity();
+
+            let schema_request = ledger::build_schema_request(&setup.did, &anoncreds::gvt_schema_json()).unwrap();
+            let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
+            pool::check_response_type(&schema_response, ResponseType::REPLY);
+
+            let seq_no = ledger::extract_seq_no_from_reply(&schema_response).unwrap() as i32;
+
+            thread::sleep(std::time::Duration::from_secs(1));
+
+            let get_txn_request = ledger::build_get_txn_request(Some(DID), seq_no + 1, None).unwrap();
+
+            let get_txn_response = ledger::submit_request(setup.pool_handle, &get_txn_request).unwrap();
+            let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
+            assert!(get_txn_response.result.data.is_none());
+        }
+    }
+
+    mod revoc_reg_def_requests {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_revoc_get_reg_def_requests_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (_, _, rev_reg_id) = ledger::post_entities();
+
+            let get_rev_reg_def_request = ledger::build_get_revoc_reg_def_request(None, &rev_reg_id).unwrap();
+            let get_rev_reg_def_response = ledger::submit_request(setup.pool_handle, &get_rev_reg_def_request).unwrap();
+
+            let (_, revoc_reg_def_json) = ledger::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
+            let _revoc_reg_def: RevocationRegistryDefinitionV1 = serde_json::from_str(&revoc_reg_def_json).unwrap();
+        }
+    }
+
+    mod get_revoc_reg_request {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_revoc_reg_request_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (_, _, rev_reg_id) = ledger::post_entities();
+
+            let timestamp = time::get_time().sec as u64 + 1000;
+
+            let get_rev_reg_req = ledger::build_get_revoc_reg_request(None, &rev_reg_id, timestamp).unwrap();
+            let get_rev_reg_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_req).unwrap();
+
+            let (_, revoc_reg_json, _) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
+            let _revoc_reg: RevocationRegistryV1 = serde_json::from_str(&revoc_reg_json).unwrap();
+        }
+    }
+
+    mod get_revoc_reg_delta_request {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_revoc_reg_delta_request_works_for_default_submitter_did() {
+            let setup = Setup::pool();
+
+            let (_, _, rev_reg_id) = ledger::post_entities();
+
+            let to = time::get_time().sec as u64 + 1000;
+            let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(None, &rev_reg_id, None, to).unwrap();
+            let get_rev_reg_delta_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_delta_req).unwrap();
+
+            let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
+
+            let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
+        }
+    }
+
+    mod get_response_metadata {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_invalid_response() {
+            Setup::empty();
+
+            let res = ledger::get_response_metadata("{}");
+            assert_code!(ErrorCode::LedgerInvalidTransaction, res);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn get_response_metadata_works_for_not_found_response() {
+            let setup = Setup::wallet_and_pool();
+
+            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+
+            let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
+            let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
+
+            let response_metadata = ledger::get_response_metadata(&get_nym_response).unwrap();
+            let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
+
+            assert!(response_metadata["lastTxnTime"].as_u64().is_some());
+            assert!(response_metadata["seqNo"].as_u64().is_none());
+            assert!(response_metadata["txnTime"].as_u64().is_none());
+            assert!(response_metadata["lastSeqNo"].as_u64().is_none());
         }
     }
 }

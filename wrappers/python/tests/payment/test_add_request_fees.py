@@ -20,9 +20,3 @@ async def test_add_request_fees_works_for_empty_inputs(wallet_handle, did_truste
 async def test_add_request_fees_works_for_several_methods(wallet_handle, did_trustee):
     with pytest.raises(error.PaymentIncompatibleMethodsError):
         await payment.add_request_fees(wallet_handle, did_trustee, empty_object, incompatible_inputs, empty_array, None)
-
-
-@pytest.mark.asyncio
-async def test_add_request_fees_works_for_invalid_input(wallet_handle, did_trustee):
-    with pytest.raises(error.CommonInvalidStructure):
-        await payment.add_request_fees(wallet_handle, did_trustee, empty_object, invalid_inputs, empty_array, None)
