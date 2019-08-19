@@ -46,7 +46,7 @@ impl Drop for SDKTailsAccessor {
 }
 
 impl RevocationTailsAccessor for SDKTailsAccessor {
-    fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), UrsaCryptoError> {
+    fn access_tail(&self, tail_id: u32, accessor: &mut dyn FnMut(&Tail)) -> Result<(), UrsaCryptoError> {
         debug!("access_tail >>> tail_id: {:?}", tail_id);
 
         let tail_bytes = self.tails_service
@@ -59,9 +59,8 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
         accessor(&tail);
 
-        let res = ();
-        debug!("access_tail <<< res: {:?}", res);
-        Ok(res)
+        debug!("access_tail <<< res: ()");
+        Ok(())
     }
 }
 

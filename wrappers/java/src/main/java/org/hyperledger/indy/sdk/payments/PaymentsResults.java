@@ -23,6 +23,24 @@ public class PaymentsResults {
 		}
 	}
 
+	public static class ParseGetPaymentSourcesWithFromResponseResult {
+		private String sourcesJson;
+		private int next;
+
+		public ParseGetPaymentSourcesWithFromResponseResult(String sourcesJson, int next) {
+			this.next = next;
+			this.sourcesJson = sourcesJson;
+		}
+
+		public String getSourcesJson() {
+			return sourcesJson;
+		}
+
+		public int getNext() {
+			return next;
+		}
+	}
+
 	/**
 	 * Result from calling BuildGetPaymentSourcesRequestResult
 	 */

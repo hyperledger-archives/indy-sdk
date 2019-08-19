@@ -121,7 +121,7 @@ pub struct IndyError {
 }
 
 impl Fail for IndyError {
-    fn cause(&self) -> Option<&Fail> {
+    fn cause(&self) -> Option<&dyn Fail> {
         self.inner.cause()
     }
 
@@ -235,6 +235,12 @@ impl From<UrsaCryptoError> for IndyError {
     }
 }
 
+impl From<rust_base58::base58::FromBase58Error> for IndyError {
+    fn from(_err: rust_base58::base58::FromBase58Error) -> Self {
+        IndyError::from_msg(IndyErrorKind::InvalidStructure, "The base58 input contained a character not part of the base58 alphabet")
+    }
+}
+
 impl<T> From<IndyResult<T>> for ErrorCode {
     fn from(r: Result<T, IndyError>) -> ErrorCode {
         match r {
@@ -341,7 +347,7 @@ impl From<ErrorCode> for IndyResult<()> {
 
 impl From<ErrorCode> for IndyError {
     fn from(err: ErrorCode) -> IndyError {
-        err_msg(err.into(), format!("Plugin returned error"))
+        err_msg(err.into(), "Plugin returned error".to_string())
     }
 }
 

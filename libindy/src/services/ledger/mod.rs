@@ -75,7 +75,7 @@ impl LedgerService {
                     "TRUST_ANCHOR" | "ENDORSER" => ENDORSER,
                     "NETWORK_MONITOR" => NETWORK_MONITOR,
                     role if ROLES.contains(&role) => role,
-                    role @ _ => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
+                    role => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
                 }.to_string())
             }
         }
@@ -313,10 +313,14 @@ impl LedgerService {
 
         let cred_def = match reply.result() {
             GetCredDefReplyResult::GetCredDefReplyResultV0(res) => CredentialDefinitionV1 {
-                id: CredentialDefinition::cred_def_id(&res.origin, &res.ref_.to_string(), &res.signature_type.to_str(), &res.tag.clone().unwrap_or(String::new())),
+                id: CredentialDefinition::cred_def_id(
+                    &res.origin,
+                    &res.ref_.to_string(),
+                    &res.signature_type.to_str(),
+                    &res.tag.clone().unwrap_or_default()),
                 schema_id: res.ref_.to_string(),
                 signature_type: res.signature_type,
-                tag: res.tag.unwrap_or(String::new()),
+                tag: res.tag.unwrap_or_default(),
                 value: res.data,
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
@@ -914,8 +918,9 @@ mod tests {
             Constraint::RoleConstraint(RoleConstraint {
                 sig_count: 0,
                 metadata: None,
-                role: String::new(),
+                role: Some(String::new()),
                 need_to_be_owner: false,
+                off_ledger_signature: false,
             })
         }
 

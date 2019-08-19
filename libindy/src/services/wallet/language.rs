@@ -94,7 +94,7 @@ pub enum Operator {
 
 
 impl Operator {
-    pub fn transform(self, f: &Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Operator> {
+    pub fn transform(self, f: &dyn Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Operator> {
         match self {
             Operator::And(operators) => Ok(Operator::And(Operator::transform_list_operators(operators, f)?)),
             Operator::Or(operators) => Ok(Operator::Or(Operator::transform_list_operators(operators, f)?)),
@@ -103,8 +103,8 @@ impl Operator {
         }
     }
 
-    fn transform_list_operators(operators: Vec<Operator>, f: &Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Vec<Operator>> {
-        let mut transformed = Vec::new();
+    fn transform_list_operators(operators: Vec<Operator>, f: &dyn Fn(Operator) -> IndyResult<Operator>) -> IndyResult<Vec<Operator>> {
+        let mut transformed = Vec::with_capacity(operators.len());
 
         for operator in operators {
             let transformed_operator = Operator::transform(operator, f)?;
@@ -159,14 +159,14 @@ impl string::ToString for Operator {
                 )
             }
             Operator::And(ref operators) => {
-                if operators.len() > 0 {
+                if !operators.is_empty() {
                     format!(
                         r#"{{"$and":[{}]}}"#,
                         operators.iter().map(|o: &Operator| { o.to_string() }).collect::<Vec<String>>().join(","))
                 } else { "{}".to_string() }
             },
             Operator::Or(ref operators) => {
-                if operators.len() > 0 {
+                if !operators.is_empty() {
                     format!(
                         r#"{{"$or":[{}]}}"#,
                         operators.iter().map(|o: &Operator| { o.to_string() }).collect::<Vec<String>>().join(","))
@@ -190,7 +190,7 @@ pub fn parse_from_json(json: &str) -> IndyResult<Operator> {
 
 
 fn parse(map: serde_json::Map<String, serde_json::Value>) -> IndyResult<Operator> {
-    let mut operators: Vec<Operator> = Vec::new();
+    let mut operators: Vec<Operator> = Vec::with_capacity(map.len());
 
     for (key, value) in map.into_iter() {
         let suboperator = parse_operator(key, value)?;
@@ -205,7 +205,7 @@ fn parse(map: serde_json::Map<String, serde_json::Value>) -> IndyResult<Operator
 fn parse_operator(key: String, value: serde_json::Value) -> IndyResult<Operator> {
     match (&*key, value) {
         ("$and", serde_json::Value::Array(values)) => {
-            let mut operators: Vec<Operator> = Vec::new();
+            let mut operators: Vec<Operator> = Vec::with_capacity(values.len());
 
             for value in values.into_iter() {
                 if let serde_json::Value::Object(map) = value {
@@ -220,7 +220,7 @@ fn parse_operator(key: String, value: serde_json::Value) -> IndyResult<Operator>
         }
         ("$and", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$and must be array of JSON objects")),
         ("$or", serde_json::Value::Array(values)) => {
-            let mut operators: Vec<Operator> = Vec::new();
+            let mut operators: Vec<Operator> = Vec::with_capacity(values.len());
 
             for value in values.into_iter() {
                 if let serde_json::Value::Object(map) = value {
@@ -297,7 +297,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
         }
         ("$like", _) => Err(err_msg(IndyErrorKind::WalletQueryError, "$like must be used with string")),
         ("$in", serde_json::Value::Array(values)) => {
-            let mut target_values: Vec<TargetValue> = Vec::new();
+            let mut target_values: Vec<TargetValue> = Vec::with_capacity(values.len());
 
             for v in values.into_iter() {
                 if let serde_json::Value::String(s) = v {

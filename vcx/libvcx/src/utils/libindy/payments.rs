@@ -100,6 +100,22 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+
+    if settings::test_indy_mode_enabled() {return Ok(Vec::from(message).to_owned()); }
+
+    payments::sign_with_address(get_wallet_handle() as i32, address, message).wait().map_err(map_rust_indy_sdk_error)
+}
+
+pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> VcxResult<bool> {
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+
+    if settings::test_indy_mode_enabled() { return Ok(true); }
+
+    payments::verify_with_address(address, message, signature).wait().map_err(map_rust_indy_sdk_error)
+}
+
 pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
     if settings::test_indy_mode_enabled() {
         let utxos = json!(
@@ -126,18 +142,36 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    let (txn, _) = payments::build_get_payment_sources_request(get_wallet_handle() as i32, Some(&did), address)
+    let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, None)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
     let response = libindy_sign_and_submit_request(&did, &txn)?;
 
-    let response = payments::parse_get_payment_sources_response(settings::get_payment_method().as_str(), &response)
+    let (response, next) = payments::parse_get_payment_sources_with_from_response(settings::get_payment_method().as_str(), &response)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
-    let utxo: Vec<UTXO> = ::serde_json::from_str(&response)
+    let mut utxo: Vec<UTXO> = ::serde_json::from_str(&response.clone())
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payment sources response: {}", err)))?;
+    let mut next_seqno = next;
+
+    while next_seqno.is_some() {
+        let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, next_seqno)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)?;
+
+        let response = libindy_sign_and_submit_request(&did, &txn)?;
+
+        let (response, next) = payments::parse_get_payment_sources_with_from_response(settings::get_payment_method().as_str(), &response)
+            .wait()
+            .map_err(map_rust_indy_sdk_error)?;
+        let mut res: Vec<UTXO> = ::serde_json::from_str(&response)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payment sources response: {}", err)))?;
+        next_seqno = next;
+
+        utxo.append(&mut res);
+    }
 
     let info = AddressInfo { address: address.to_string(), balance: _address_balance(&utxo), utxo };
 
@@ -213,7 +247,7 @@ pub fn get_ledger_fees() -> VcxResult<String> {
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, &str)) -> VcxResult<(Option<PaymentTxn>, String)> {
+pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, Option<&str>)) -> VcxResult<(Option<PaymentTxn>, String)> {
     debug!("pay_for_txn(req: {}, txn_action: {:?})", req, txn_action);
     if settings::test_indy_mode_enabled() {
         let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
@@ -221,7 +255,7 @@ pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, &str)
         return Ok((Some(PaymentTxn::from_parts(inputs, outputs, 1, false)), SUBMIT_SCHEMA_RESPONSE.to_string()));
     }
 
-    let txn_price = get_txn_price(txn_action)?;
+    let txn_price = get_action_price(txn_action, None)?;
     if txn_price == 0 {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
         let txn_response = libindy_sign_and_submit_request(&did, req)?;
@@ -275,7 +309,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
     trace!("pay_a_payee >>> price: {}, address {}", price, address);
     debug!("sending {} tokens to address {}", price, address);
 
-    let ledger_cost = get_txn_price(CREATE_TRANSFER_ACTION)?;
+    let ledger_cost = get_action_price(CREATE_TRANSFER_ACTION, None)?;
     let (remainder, input, refund_address) = inputs(price + ledger_cost)?;
     let outputs = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
@@ -319,22 +353,72 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
     Ok((payment, result))
 }
 
-fn get_txn_price(txn_action: (&str, &str, &str, Option<&str>, &str)) -> VcxResult<u64> {
-    let action_fee_alias = auth_rule::get_action_fee_alias(txn_action).ok();
-    let alias = match action_fee_alias.and_then(|alias| alias) {
-        Some(alias_) => alias_,
-        None => return Ok(0)
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct RequestInfo {
+    pub price: u64,
+    pub requirements: Vec<::serde_json::Value>
+}
+
+fn get_request_info(get_auth_rule_resp_json: &str, requester_info_json: &str, fees_json: &str) -> VcxResult<RequestInfo> {
+    let req_info = payments::get_request_info(get_auth_rule_resp_json, requester_info_json, fees_json)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)?;
+
+    ::serde_json::from_str(&req_info)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err))
+}
+
+pub fn get_request_price(action_json: String, requester_info_json: Option<String>) -> VcxResult<u64> {
+    let action: auth_rule::Action = ::serde_json::from_str(&action_json)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Action: {:?}", err)))?;
+
+    get_action_price((&action.auth_type,
+                      &action.auth_action,
+                      &action.field,
+                      action.old_value.as_ref().map(String::as_str),
+                      action.new_value.as_ref().map(String::as_str)),
+                     requester_info_json)
+}
+
+fn get_action_price(action: (&str, &str, &str, Option<&str>, Option<&str>), requester_info_json: Option<String>) -> VcxResult<u64> {
+    let get_auth_rule_resp = match auth_rule::get_action_auth_rule(action) {
+        // TODO: Huck to save backward compatibility
+        Ok(resp) => resp,
+        Err(_) => return Ok(0)
     };
 
     let ledger_fees = get_ledger_fees()?;
 
-    let fees: HashMap<String, u64> = serde_json::from_str(&ledger_fees)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize fees: {}", err)))?;
+    let requester_info = get_requester_info(requester_info_json)?;
 
-    match fees.get(&alias) {
-        Some(x) => Ok(*x),
-        None => Ok(0),
-    }
+    let req_info = get_request_info(&get_auth_rule_resp, &requester_info, &ledger_fees)?;
+
+    Ok(req_info.price)
+}
+
+fn get_requester_info(requester_info_json: Option<String>) -> VcxResult<String> {
+    // TODO: THINK better
+    let role = match settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_ROLE) {
+        Ok(role) => role,
+        Err(_) => {
+            let role_ = ::utils::libindy::ledger::get_role(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?)?;
+            settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_ROLE, &role_);
+            role_
+        }
+    };
+    let role = if role == "null" { None } else { Some(role) };
+
+    // TODO: think about better way
+    let res = match requester_info_json {
+        Some(requester_info) => requester_info,
+        None => json!({
+            "role": role,
+            "sig_count": 1,
+            "is_owner": true,
+            "is_off_ledger_signature": false,
+        }).to_string()
+    };
+    Ok(res)
 }
 
 fn _address_balance(address: &Vec<UTXO>) -> u64 {
@@ -398,9 +482,9 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         None
     };
 
-    let (did_2, _) = add_new_trustee_did();
-    let (did_3, _) = add_new_trustee_did();
-    let (did_4, _) = add_new_trustee_did();
+    let (did_2, _) = add_new_did(Some("TRUSTEE"));
+    let (did_3, _) = add_new_did(Some("TRUSTEE"));
+    let (did_4, _) = add_new_did(Some("TRUSTEE"));
 
     let number_of_addresses = number_of_addresses.unwrap_or(1);
 
@@ -453,7 +537,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
     Ok(())
 }
 
-fn add_new_trustee_did() -> (String, String) {
+pub fn add_new_did(role: Option<&str>) -> (String, String) {
     use indy::ledger;
 
     let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -484,6 +568,21 @@ pub mod tests {
     fn test_create_address() {
         init!("true");
         create_address(None).unwrap();
+    }
+
+
+    #[test]
+    fn test_sign_with_address() {
+        init!("true");
+        let res = sign_with_address("test", &[1, 2, 3]).unwrap();
+        assert_eq!(res, vec![1, 2, 3])
+    }
+
+    #[test]
+    fn test_verify_with_address() {
+        init!("true");
+        let res = verify_with_address("test", &[1, 2, 3], &[1, 2, 3]).unwrap();
+        assert!(res)
     }
 
     #[test]
@@ -636,11 +735,11 @@ pub mod tests {
     #[test]
     fn test_get_txn_cost() {
         init!("true");
-        assert_eq!(get_txn_price(::utils::constants::CREATE_SCHEMA_ACTION).unwrap(), 2);
-        assert_eq!(get_txn_price(::utils::constants::CREATE_CRED_DEF_ACTION).unwrap(), 42);
+        assert_eq!(get_action_price(::utils::constants::CREATE_SCHEMA_ACTION, None).unwrap(), 2);
+        assert_eq!(get_action_price(::utils::constants::CREATE_CRED_DEF_ACTION, None).unwrap(), 42);
 
-        let unknown_action = ("unknown txn", "ADD", "*", None, "*");
-        assert_eq!(get_txn_price(unknown_action).unwrap(), 0);
+        let unknown_action = ("unknown txn", "ADD", "*", None, Some("*"));
+        assert_eq!(get_action_price(unknown_action, None).unwrap(), 0);
     }
 
     #[test]
@@ -739,7 +838,7 @@ pub mod tests {
         let ledger_fees = json!({"10001": transfer_fee}).to_string();
         mint_tokens_and_set_fees(None, None, Some(ledger_fees), None).unwrap();
         assert_eq!(get_my_balance(), initial_wallet_balance);
-        assert_eq!(get_txn_price(CREATE_TRANSFER_ACTION).unwrap(), transfer_fee);
+        assert_eq!(get_action_price(CREATE_TRANSFER_ACTION, None).unwrap(), transfer_fee);
 
         // Transfer everything besides 50. Remaining balance will be 50 - ledger fees
         let balance_after_transfer = 50;
@@ -843,5 +942,44 @@ pub mod tests {
     fn test_two_init() {
         init!("ledger");
         init!("ledger");
+    }
+
+    fn _action() -> String {
+        json!({
+            "auth_type":"101",
+            "auth_action":"ADD",
+            "new_value":"0",
+            "field":"role"
+        }).to_string()
+    }
+
+    #[test]
+    fn get_action_price_for_requester_match_to_constraint() {
+        init!("true");
+
+        let requester_info = json!({
+            "role": "0",
+            "need_to_be_owner":false,
+            "sig_count":1,
+        }).to_string();
+
+        let price = get_request_price(_action(), Some(requester_info)).unwrap();
+        assert_eq!(2, price);
+    }
+
+    #[test]
+    fn get_action_price_for_requester_not_match_to_constraint() {
+        init!("true");
+
+        let action_json = _action();
+
+        let requester_info = json!({
+            "role": "101",
+            "need_to_be_owner":false,
+            "sig_count":1,
+        }).to_string();
+
+        let res = get_request_price(action_json, Some(requester_info));
+        assert!(res.is_err());
     }
 }

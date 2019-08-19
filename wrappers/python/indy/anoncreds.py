@@ -83,6 +83,9 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
 
     It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 
+    Note: Use combination of `issuer_rotate_credential_def_start` and `issuer_rotate_credential_def_apply` functions
+    to generate new keys for an existing credential definition.
+
     :param wallet_handle: wallet handle (created by open_wallet).
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
     :param schema_json: credential schema as a json
@@ -147,6 +150,81 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     return res
 
 
+async def issuer_rotate_credential_def_start(wallet_handle: int,
+                                             cred_def_id: str,
+                                             config_json: Optional[str]) -> str:
+    """
+    Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+   
+    Use `issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
+
+    WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_def_id: an identifier of created credential definition stored in the wallet
+    :param  config_json: (optional) type-specific configuration of credential definition as json:
+        - 'CL':
+          - support_revocation: whether to request non-revocation credential (optional, default false)
+    :return:
+        cred_def_json: public part of temporary created credential definition
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_rotate_credential_def_start: >>> wallet_handle: %r, cred_def_id: %r, config_json: %r",
+                 wallet_handle,
+                 cred_def_id,
+                 config_json)
+
+    if not hasattr(issuer_rotate_credential_def_start, "cb"):
+        logger.debug("issuer_rotate_credential_def_start: Creating callback")
+        issuer_rotate_credential_def_start.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+    c_config_json = c_char_p(config_json.encode('utf-8')) if config_json is not None else None
+
+    credential_def_json = await do_call('indy_issuer_rotate_credential_def_start',
+                                        c_wallet_handle,
+                                        c_cred_def_id,
+                                        c_config_json,
+                                        issuer_rotate_credential_def_start.cb)
+
+    res = credential_def_json.decode()
+    logger.debug("issuer_rotate_credential_def_start: <<< res: %r", res)
+    return res
+
+
+async def issuer_rotate_credential_def_apply(wallet_handle: int,
+                                             cred_def_id: str):
+    """
+    Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+
+    WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param cred_def_id: an identifier of created credential definition stored in the wallet
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_rotate_credential_def_apply: >>> wallet_handle: %r, cred_def_id: %r",
+                 wallet_handle,
+                 cred_def_id)
+
+    if not hasattr(issuer_rotate_credential_def_apply, "cb"):
+        logger.debug("issuer_rotate_credential_def_apply: Creating callback")
+        issuer_rotate_credential_def_apply.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+
+    await do_call('indy_issuer_rotate_credential_def_apply',
+                  c_wallet_handle,
+                  c_cred_def_id,
+                  issuer_rotate_credential_def_apply.cb)
+
+    logger.debug("issuer_rotate_credential_def_apply: <<<")
+
+
 async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                                             issuer_did: str,
                                             revoc_def_type: Optional[str],
@@ -188,7 +266,13 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                 2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
             "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
         }
-    :param tails_writer_handle:
+    :param tails_writer_handle: handle of blob storage to store tails
+
+    NOTE:
+        Recursive creation of folder for Default Tails Writer (correspondent to `tails_writer_handle`)
+        in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+        In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+
     :return:
         revoc_reg_id: identifier of created revocation registry definition
         revoc_reg_def_json: public part of revocation registry definition

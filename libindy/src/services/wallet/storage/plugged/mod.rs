@@ -73,8 +73,8 @@ impl PluggedStorageIterator {
     fn new(storage: &PluggedStorage, search_handle: i32, options: SearchOptions) -> Self {
         Self {
             storage_handle: storage.handle,
-            search_handle: search_handle,
-            options: options,
+            search_handle,
+            options,
             fetch_search_next_record_handler: storage.fetch_search_next_record_handler,
             get_search_total_count_handler: storage.get_search_total_count_handler,
             get_record_type_handler: storage.get_record_type_handler,
@@ -179,10 +179,10 @@ impl StorageIterator for PluggedStorageIterator {
         } else { None };
 
         Ok(Some(StorageRecord {
-            type_: type_,
-            id: id,
-            value: value,
-            tags: tags,
+            type_,
+            id,
+            value,
+            tags,
         }))
     }
 
@@ -305,7 +305,7 @@ fn _tags_from_json(json: &str) -> IndyResult<Vec<Tag>> {
     let string_tags: HashMap<String, String> = serde_json::from_str(json)
         .to_indy(IndyErrorKind::InvalidState, "Unable to deserialize tags from json")?;
 
-    let mut tags = Vec::new();
+    let mut tags = Vec::with_capacity(string_tags.len());
 
     for (k, v) in string_tags {
         if k.starts_with('~') {
@@ -330,16 +330,11 @@ fn _tags_from_json(json: &str) -> IndyResult<Vec<Tag>> {
 }
 
 fn _tags_names_to_json(tag_names: &[TagName]) -> IndyResult<String> {
-    let mut tags: Vec<String> = Vec::new();
-
-    for tag_name in tag_names {
-        tags.push(
-            match *tag_name {
-                TagName::OfEncrypted(ref tag_name) => base64::encode(tag_name),
-                TagName::OfPlain(ref tag_name) => format!("~{}", base64::encode(tag_name))
-            }
-        )
-    }
+    let tags : Vec<String> = tag_names.iter().map(|tag_name|
+        match *tag_name {
+            TagName::OfEncrypted(ref tag_name) => base64::encode(tag_name),
+            TagName::OfPlain(ref tag_name) => format!("~{}", base64::encode(tag_name))
+        }).collect();
 
     serde_json::to_string(&tags)
         .to_indy(IndyErrorKind::InvalidState, "Unable to serialize tag names as json")
@@ -558,7 +553,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn get_all(&self) -> IndyResult<Box<StorageIterator>> {
+    fn get_all(&self) -> IndyResult<Box<dyn StorageIterator>> {
         let mut search_handle: i32 = -1;
 
         let err = (self.search_all_records_handler)(self.handle, &mut search_handle);
@@ -582,7 +577,7 @@ impl WalletStorage for PluggedStorage {
         ))
     }
 
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> IndyResult<Box<StorageIterator>> {
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> IndyResult<Box<dyn StorageIterator>> {
         let type_ = CString::new(base64::encode(type_))?;
         let query = CString::new(query.to_string())?;
         let options_cstr = CString::new(options.unwrap_or("{}"))?;
@@ -742,7 +737,7 @@ impl WalletStorageType for PluggedStorageType {
         Ok(())
     }
 
-    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> IndyResult<Box<WalletStorage>> {
+    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> IndyResult<Box<dyn WalletStorage>> {
         let mut handle: i32 = -1;
         let id = CString::new(id)?;
 
@@ -1454,7 +1449,7 @@ mod tests {
         assert_eq!(&expected_call, debug.get(0).unwrap());
     }
 
-    fn _open_storage() -> Box<WalletStorage> {
+    fn _open_storage() -> Box<dyn WalletStorage> {
         // save the current index inside of DEBUG_VEC.
         let open_index = DEBUG_VEC.read().unwrap().len();
 
@@ -1931,7 +1926,7 @@ mod tests {
         {
             let mut storage_iterator = storage.search(&type_, &query, Some(&options)).unwrap();
 
-            // TODO: solve how to get &PluggedStorage from Box<WalletStorage>
+            // TODO: solve how to get &PluggedStorage from Box<dyn WalletStorage>
 
             //        let expected_storage_iterator = PluggedStorageIterator{
             //            storage: &storage.downcast::<PluggedStorage>().unwrap(),
@@ -2031,7 +2026,7 @@ mod tests {
         {
             let mut storage_iterator = storage.search(&type_, &query, Some(&options)).unwrap();
 
-            // TODO: solve how to get &PluggedStorage from Box<WalletStorage>
+            // TODO: solve how to get &PluggedStorage from Box<dyn WalletStorage>
 
             //        let expected_storage_iterator = PluggedStorageIterator{
             //            storage: &storage.downcast::<PluggedStorage>().unwrap(),
@@ -2116,7 +2111,7 @@ mod tests {
         {
             let mut storage_iterator = storage.get_all().unwrap();
 
-            // TODO: solve how to get &PluggedStorage from Box<WalletStorage>
+            // TODO: solve how to get &PluggedStorage from Box<dyn WalletStorage>
 
             //        let expected_storage_iterator = PluggedStorageIterator{
             //            storage: &storage.downcast::<PluggedStorage>().unwrap(),

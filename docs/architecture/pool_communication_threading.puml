@@ -1,0 +1,89 @@
+@startuml
+actor "Client app" as App
+participant "Client Thread" as Client
+note over Client
+    Thread of an application,
+    used to transfer commands
+    to Command thread.
+end note
+participant "Command Thread" as Command
+/ note over Command
+    Main thread of the library.
+    It executes biggest part of logic
+    that is implemented in Libindy
+end note
+participant "Pool Thread" as Pool
+/ note over Pool
+    Thread used for communication
+    with nodes in pool
+end note
+actor "Pool with nodes" as Nodes #blue
+==Pool communication commands==
+App -> Client: indy_open_pool
+activate Client
+Client -> Command: Open
+activate Command
+Client --> App: error code
+deactivate Client
+Command -> Pool: Pool::new
+deactivate Command
+activate Pool
+Pool -> Nodes: sync network
+Nodes --> Pool: fresh network info
+Pool -> Command: OpenAck
+activate Command
+Command -> Command: execute callback
+Command --> App: pool_handle
+deactivate Command
+
+note over App
+    From now on pool works
+    and requests can be sent
+end note
+
+App -> Client: indy_submit_request
+activate Client
+Client -> Command: SubmitRequest
+activate Command
+Client --> App: error code
+deactivate Client
+
+note over App
+    App waits for result
+    asynchronously if there
+    was no error before
+end note
+Command -> Command: send_tx
+Command -> Pool: _send_message
+note over Command
+    Command thread can execute
+    other commands during
+    the work of pool thread
+end note
+deactivate Command
+Pool -> Nodes: send(json)
+Nodes -> Pool: responses
+Pool --> Command: aggregated response
+activate Command
+Command -> Command: execute callback
+Command --> App: result
+deactivate Command
+
+note over App
+    When the work is over,
+    you should close the pool
+    and it will kill the thread
+end note
+
+App -> Client: indy_close_pool
+activate Client
+Client -> Command: Close
+activate Command
+Client -> App: error code
+deactivate Client
+Command -> Pool: Pool::close
+deactivate Pool
+Command -> Command: execute callback
+Command --> App: error code
+deactivate Command
+@enduml

@@ -53,9 +53,9 @@
     XCTAssertEqual(ret.code, Success, @"createWalletWithPoolName() failed!");
 
     // 4. Open My Wallet. Gets My wallet handle
-     IndyHandle myWalletHandle;
+    IndyHandle myWalletHandle;
     ret = [[WalletUtils sharedInstance] openWalletWithConfig:myWalletConfig
-                                                 outHandle:&myWalletHandle];
+                                                   outHandle:&myWalletHandle];
     XCTAssertEqual(ret.code, Success, @"openWalletWithName() failed!");
 
     // 5. Create their wallet
@@ -63,9 +63,9 @@
     XCTAssertEqual(ret.code, Success, @"createWalletWithPoolName() failed!");
 
     // 6. Open Their Wallet. Get Their wallet handle
-     IndyHandle theirWalletHandle;
+    IndyHandle theirWalletHandle;
     ret = [[WalletUtils sharedInstance] openWalletWithConfig:theirWalletConfig
-                                                 outHandle:&theirWalletHandle];
+                                                   outHandle:&theirWalletHandle];
     XCTAssertEqual(ret.code, Success, @"openWalletWithName() failed!");
 
     // 7. Create my did
@@ -112,11 +112,8 @@
                                                                 outRequest:&getNymTxnRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
 
-    NSString *getNymTxnResponseJson;
-    ret = [[LedgerUtils sharedInstance] submitRequest:getNymTxnRequest
-                                       withPoolHandle:poolHandle
-                                           resultJson:&getNymTxnResponseJson];
-    XCTAssertEqual(ret.code, Success, @"submitRequestWithPoolHandle() failed!");
+    NSString *getNymTxnResponseJson = [[LedgerUtils sharedInstance] submitRetry:getNymTxnRequest
+                                                                     poolHandle:poolHandle];
 
     NSDictionary *getNymTxnResponse = [NSDictionary fromString:getNymTxnResponseJson];
     NSString *dataStr = getNymTxnResponse[@"result"][@"data"];

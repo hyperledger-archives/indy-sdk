@@ -8,16 +8,16 @@ use super::storage::StorageIterator;
 use super::encryption::{decrypt_storage_record};
 
 pub(super) struct WalletIterator {
-    storage_iterator: Box<StorageIterator>,
+    storage_iterator: Box<dyn StorageIterator>,
     keys: Rc<Keys>,
 }
 
 
 impl WalletIterator {
-    pub fn new(storage_iter: Box<StorageIterator>, keys: Rc<Keys>) -> Self {
+    pub fn new(storage_iter: Box<dyn StorageIterator>, keys: Rc<Keys>) -> Self {
         WalletIterator {
             storage_iterator: storage_iter,
-            keys: keys,
+            keys,
         }
     }
 

@@ -27,11 +27,9 @@ impl SignatureType {
     }
 }
 
-fn default_false() -> bool { false }
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CredentialDefinitionConfig {
-    #[serde(default = "default_false")]
+    #[serde(default)]
     pub support_revocation: bool
 }
 
@@ -68,6 +66,13 @@ pub enum CredentialDefinition {
     CredentialDefinitionV1(CredentialDefinitionV1)
 }
 
+#[derive(Debug, Serialize, Deserialize, NamedType)]
+pub struct TemporaryCredentialDefinition {
+    pub cred_def: CredentialDefinition,
+    pub cred_def_priv_key: CredentialDefinitionPrivateKey,
+    pub cred_def_correctness_proof: CredentialDefinitionCorrectnessProof
+}
+
 impl CredentialDefinition {
     pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str, tag: &str) -> String {
         if ProtocolVersion::is_node_1_3(){
@@ -78,7 +83,7 @@ impl CredentialDefinition {
     }
 
     pub fn issuer_did(cred_def_id: &str) -> Option<String> {
-        cred_def_id.split(":").collect::<Vec<&str>>().get(0).and_then(|s| Some(s.to_string()))
+        cred_def_id.split(':').next().map(String::from)
     }
 }
 

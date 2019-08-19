@@ -20,7 +20,7 @@ functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-St
 
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
 
-* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
+* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/display/indy/).
 
 * You may also want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
 that explored the ecosystem via command line. That material is being
@@ -109,15 +109,16 @@ The Indy SDK release process defines the following release channels:
 
 Please refer to our [release workflow](docs/contributors/release-workflow.md) for more details.
 
-### Ubuntu based distributions (Ubuntu 16.04)
+### Ubuntu based distributions (Ubuntu 16.04 and 18.04)
 It is recommended to install the SDK packages with APT:
 
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
-    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
+    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) {release channel}"
     sudo apt-get update
     sudo apt-get install -y libindy
 
-{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+* (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
+* {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section "Release channels" above for more details.
 
 ### Windows
@@ -319,9 +320,11 @@ The documents that provide necessary information for Libindy migrations.
 * [v1.7.0 → v1.8.x](docs/migration-guides/migration-guide-1.7.0-1.8.0.md)
 * [v1.8.0 → v1.9.x](docs/migration-guides/migration-guide-1.8.0-1.9.0.md)
 * [v1.9.0 → v1.10.x](docs/migration-guides/migration-guide-1.9.0-1.10.0.md)
+* [v1.10.0 → v1.11.x](docs/migration-guides/migration-guide-1.10.0-1.11.0.md)
 
 ## How to Contribute
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
+* If you need to add a new call, read this [instruction](docs/how-tos/how-to-add-a-new-API-call.md).
 * You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
   so to get your pull requests accepted, you must certify your commits by signing off on each commit.

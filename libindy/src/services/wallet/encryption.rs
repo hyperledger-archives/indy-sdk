@@ -3,10 +3,11 @@ use std::str;
 
 use domain::wallet::{KeyDerivationMethod, Metadata};
 use errors::prelude::*;
-use utils::crypto::{base58, chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
+use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
 
 use super::{Keys, WalletRecord};
 use super::storage::{StorageRecord, Tag, TagName};
+use rust_base58::FromBase58;
 
 #[cfg(test)]
 pub(super) fn gen_master_key_salt() -> IndyResult<pwhash_argon2i13::Salt> {
@@ -78,8 +79,7 @@ fn _derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_deriv
 }
 
 fn _raw_master_key(passphrase: &str) -> IndyResult<chacha20poly1305_ietf::Key> {
-    let bytes = &base58::decode(passphrase)
-        .map_err(|err| err.extend("Invalid mastery key"))?;
+    let bytes = passphrase.from_base58()?;
 
     chacha20poly1305_ietf::Key::from_slice(&bytes)
         .map_err(|err| err.extend("Invalid mastery key"))
@@ -164,19 +164,13 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly
                     Tag::PlainText(ref ename, ref value) => {
                         let name = match decrypt_merged(&ename, tag_name_key) {
                             Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
-                            Ok(tag_name_bytes) => format!("~{}", str::from_utf8(&tag_name_bytes).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?)
+                            Ok(tag_name_bytes) => format!("~{}", str::from_utf8(&tag_name_bytes).to_indy(IndyErrorKind::WalletEncryptionError, "Plaintext Tag name is invalid utf8")?)
                         };
                         (name, value.clone())
                     }
                     Tag::Encrypted(ref ename, ref evalue) => {
-                        let name = match decrypt_merged(&ename, tag_name_key) {
-                            Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
-                            Ok(tag_name) => String::from_utf8(tag_name).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?
-                        };
-                        let value = match decrypt_merged(&evalue, tag_value_key) {
-                            Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
-                            Ok(tag_value) => String::from_utf8(tag_value).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?
-                        };
+                        let name = String::from_utf8(decrypt_merged(&ename, tag_name_key)?).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?;
+                        let value = String::from_utf8(decrypt_merged(&evalue, tag_value_key)?).to_indy(IndyErrorKind::WalletEncryptionError, "Tag value is invalid utf8")?;
                         (name, value)
                     }
                 };
