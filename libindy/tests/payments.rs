@@ -52,7 +52,7 @@ mod high_cases {
 
         #[test]
         fn register_payment_method_works() {
-            let _ = Setup::empty();
+            Setup::empty();
 
             let _res = payments::register_payment_method("register_payment_method_works",
                                                          Some(payments::mock_method::create_payment_address::handle),
@@ -691,7 +691,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_request_info_for_requester_match_to_constraint() {
-            let _ = Setup::empty();
+            Setup::empty();
 
             let req_info = payments::get_request_info(&_auth_rule(), &_requester_info(), &_fees()).unwrap();
             let req_info: serde_json::Value = serde_json::from_str(&req_info).unwrap();
@@ -710,7 +710,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_request_info_for_requester_not_match_to_constraint() {
-            let _ = Setup::empty();
+            Setup::empty();
 
             let requester_info = json!({
                 "role": "101",
@@ -724,7 +724,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_request_info_for_no_fee() {
-            let _ = Setup::empty();
+            Setup::empty();
 
             let req_info = payments::get_request_info(&_auth_rule(), &_requester_info(), "{}").unwrap();
             let req_info: serde_json::Value = serde_json::from_str(&req_info).unwrap();
@@ -786,7 +786,7 @@ mod medium_cases {
 
         #[test]
         fn register_payment_method_works_for_no_first_method() {
-            let _ = Setup::empty();
+            Setup::empty();
 
             let err = payments::register_payment_method(PAYMENT_METHOD_NAME,
                                                         None,

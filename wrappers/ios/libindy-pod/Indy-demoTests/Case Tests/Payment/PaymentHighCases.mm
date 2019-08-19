@@ -75,18 +75,6 @@ NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
-- (void)testAddRequestFeesWorksForExtra {
-    ret = [[PaymentUtils sharedInstance] addFeesToRequest:@"{}"
-                                             walletHandle:walletHandle
-                                             submitterDid:[TestUtils trusteeDid]
-                                               inputsJson:inputs
-                                              outputsJson:outputs
-                                                    extra:@"Extra data"
-                                      requestWithFeesJson:nil
-                                            paymentMethod:nil];
-    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
-}
-
 - (void)testAddRequestFeesWorksForSeveralMethods {
     ret = [[PaymentUtils sharedInstance] addFeesToRequest:@"{}"
                                              walletHandle:walletHandle

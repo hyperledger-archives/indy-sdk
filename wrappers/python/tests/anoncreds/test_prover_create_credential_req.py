@@ -1,20 +1,6 @@
 import pytest
 
-from indy.anoncreds import prover_create_credential_req
-from indy import error
-
 
 @pytest.mark.asyncio
 async def test_prover_create_credential_req_works(wallet_handle, prepopulated_wallet):
     pass
-
-
-@pytest.mark.asyncio
-async def test_prover_create_credential_req_works_for_invalid_wallet(wallet_handle, prepopulated_wallet,
-                                                                     prover_did, master_secret_id):
-    credential_def_json, credential_offer, _, _, _ = prepopulated_wallet
-    invalid_wallet_handle = wallet_handle + 100
-
-    with pytest.raises(error.WalletInvalidHandle):
-        await prover_create_credential_req(invalid_wallet_handle, prover_did, credential_offer, credential_def_json,
-                                           master_secret_id)

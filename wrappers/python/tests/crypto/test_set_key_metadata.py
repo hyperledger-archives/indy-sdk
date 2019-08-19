@@ -10,19 +10,6 @@ async def test_set_key_metadata_works(wallet_handle, metadata):
 
 
 @pytest.mark.asyncio
-async def test_set_key_metadata_works_for_replace(wallet_handle, metadata):
-    verkey = await did.create_key(wallet_handle, "{}")
-    await did.set_key_metadata(wallet_handle, verkey, metadata)
-    received_metadata = await did.get_key_metadata(wallet_handle, verkey)
-    assert metadata == received_metadata
-
-    new_metadata = 'new metadata'
-    await did.set_key_metadata(wallet_handle, verkey, new_metadata)
-    updated_metadata = await did.get_key_metadata(wallet_handle, verkey)
-    assert new_metadata == updated_metadata
-
-
-@pytest.mark.asyncio
 async def test_set_key_metadata_works_for_empty_string(wallet_handle):
     verkey = await did.create_key(wallet_handle, "{}")
     await did.set_key_metadata(wallet_handle, verkey, '')

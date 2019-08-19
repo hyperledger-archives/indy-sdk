@@ -381,17 +381,8 @@ def linuxTesting(file, env_name, network_name, full_testing) {
                         }
                 ]
                 if (full_testing) {
-                    jobs["${env_name}-nodejs-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
-                    }
-                    jobs["${env_name}-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
-                    }
-                    jobs["${env_name}-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
-                    }
-                    jobs["${env_name}-rust-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
+                    jobs["${env_name}wrappers-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxIndyWrappersTesting)
                     }
                     jobs["${env_name}-cloud-agent-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
@@ -415,18 +406,7 @@ def vcxTesting(file, env_name, network_name, full_testing) {
                     waitUntil {
                         libvcxBuildFinished[env_name]
                     }
-                    def jobs = [
-                            "${env_name}-vcx-nodejs-test": {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
-                            },
-                            "${env_name}-vcx-java-test"  : {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
-                            },
-                            "${env_name}-vcx-python-test": {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
-                            }
-                    ]
-                    parallel(jobs)
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxVcxWrappersTesting)
                 }
             },
     ])
@@ -614,6 +594,19 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
             sh "cd ${directory} && ./android.test.sh ${emu_arch}"
         }
     }
+}
+
+def linuxIndyWrappersTesting(env_name, network_name, testEnv) {
+    linuxJavaTesting(env_name, network_name, testEnv)
+    linuxPythonTesting(env_name, network_name, testEnv)
+    linuxNodejsTesting(env_name, network_name, testEnv)
+    linuxRustTesting(env_name, network_name, testEnv)
+}
+
+def linuxVcxWrappersTesting(env_name, network_name, testEnv) {
+    linuxVcxNodejsTesting(env_name, network_name, testEnv)
+    linuxVcxJavaTesting(env_name, network_name, testEnv)
+    linuxVcxPythonTesting(env_name, network_name, testEnv)
 }
 
 def linuxJavaTesting(env_name, network_name, testEnv) {
