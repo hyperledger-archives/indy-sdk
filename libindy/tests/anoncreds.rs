@@ -35,7 +35,7 @@ use indy::ErrorCode;
 use utils::constants::*;
 use utils::Setup;
 
-use utils::domain::anoncreds::schema::{Schema};
+use utils::domain::anoncreds::schema::Schema;
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
@@ -2951,39 +2951,40 @@ mod high_cases {
         fn verifier_verify_proof_works_for_wrong_revealed_attr_value() {
             let proof_json = anoncreds::proof_json().replace(r#"name":"1139481716457488690172217916278103335"#, r#"name":"1111111111111111111111111111111111111"#);
 
-            let valid = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
-                                                         &proof_json,
-                                                         &anoncreds::schemas_for_proof(),
-                                                         &anoncreds::cred_defs_for_proof(),
-                                                         "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+            let res = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
+                                                       &proof_json,
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected, res);
         }
 
         #[test]
         fn verifier_verify_proof_works_for_wrong_encoded() {
             let proof_json = anoncreds::proof_json().replace(r#"encoded":"1139481716457488690172217916278103335"#, r#"encoded":"1111111111111111111111111111111111111"#);
 
-            let valid = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
-                                                         &proof_json,
-                                                         &anoncreds::schemas_for_proof(),
-                                                         &anoncreds::cred_defs_for_proof(),
-                                                         "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+            let res = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
+                                                       &proof_json,
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected, res);
         }
 
         #[test]
+        #[ignore] // TODO: Libindy doesn't aware about algorithm used for encoding of attribute values. We can do this check only on application level.
         fn verifier_verify_proof_works_for_wrong_raw() {
-            let proof_json = anoncreds::proof_json().replace(r#"encoded":"Alex"#, r#"encoded":"Bob"#);
+            let proof_json = anoncreds::proof_json().replace(r#"raw":"Alex"#, r#"raw":"Bob"#);
 
-            let valid = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
-                                                         &proof_json,
-                                                         &anoncreds::schemas_for_proof(),
-                                                         &anoncreds::cred_defs_for_proof(),
-                                                         "{}",
-                                                         "{}").unwrap();
-            assert!(!valid);
+            let res = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
+                                                       &proof_json,
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected, res);
         }
     }
 
@@ -2999,7 +3000,6 @@ mod high_cases {
                                                          "{}",
                                                          "{}").unwrap();
             assert!(valid);
-
         }
 
         #[test]
@@ -3083,7 +3083,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_schema_id() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3108,7 +3107,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_schema_id() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3133,7 +3131,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_schema_issuer_did() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3158,7 +3155,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_schema_issuer_did() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3183,7 +3179,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_schema_name() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3208,7 +3203,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_schema_name() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3233,7 +3227,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_schema_version() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3258,7 +3251,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_schema_version() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3283,7 +3275,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_cred_def_id() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3308,7 +3299,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_cred_def_id() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3333,7 +3323,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_unknown_restriction() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3398,7 +3387,7 @@ mod high_cases {
     }
 }
 
-#[cfg(not(feature="only_high_cases"))]
+#[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
     use std::collections::HashSet;

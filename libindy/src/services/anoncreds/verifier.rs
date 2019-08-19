@@ -45,16 +45,14 @@ impl Verifier {
         let received_predicates: HashMap<String, Identifier> = Verifier::_received_predicates(&full_proof)?;
         let received_self_attested_attrs: HashSet<String> = Verifier::_received_self_attested_attrs(&full_proof);
 
-        println!("received_revealed_attrs={:?}", &received_revealed_attrs);
-        println!("received_predicates={:?}", &received_predicates);
-        println!("received_self_attested_attrs={:?}", &received_self_attested_attrs);
-
         Verifier::_compare_attr_from_proof_and_request(proof_req,
                                                        &received_revealed_attrs,
                                                        &received_unrevealed_attrs,
                                                        &received_self_attested_attrs,
                                                        &received_predicates)?;
-        println!("Requested attributes and predicates present");
+
+        Verifier::_verify_revealed_attributes(&proof_req, &full_proof)?;
+
         Verifier::_verify_requested_restrictions(&proof_req,
                                                  schemas,
                                                  cred_defs,
@@ -103,7 +101,6 @@ impl Verifier {
                 } else { (None, None) };
 
             let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
-            println!("revealed attrs_for_credential={:?}", &attrs_for_credential);
             let predicates_for_credential = Verifier::_get_predicates_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
 
             let credential_schema = build_credential_schema(&schema.attr_names)?;
@@ -303,6 +300,33 @@ impl Verifier {
             ))
     }
 
+    fn _verify_revealed_attribute_values(proof_req: &ProofRequest,
+                                         proof: &Proof) -> IndyResult<()> {
+        for (attr_referent, attr_info) in proof.requested_proof.revealed_attrs.iter() {
+            let reveal_attr_encoded = attr_info.encoded.to_string();
+            let sub_proof_index = attr_info.sub_proof_index as usize;
+
+            let attr_name = proof_req.requested_attributes.get(attr_referent.as_str())
+                .as_ref()
+                .map(|attr_info| attr_info.name.as_str())
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequest", attr_referent)))?;
+
+            let crypto_proof_encoded = proof.proof.proofs
+                .get(sub_proof_index)
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("CryptoProof not found by index \"{}\"", sub_proof_index)))?
+                .revealed_attrs()?
+                .get(attr_name)
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with name \"{}\" not found in CryptoProof", attr_name)))?
+                .to_string();
+
+            if reveal_attr_encoded != crypto_proof_encoded {
+                return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
+                                               format!("Encoded Values for \"{}\" are different in RequestedProof \"{}\" and CryptoProof \"{}\"", attr_name, reveal_attr_encoded, crypto_proof_encoded)));
+            }
+        }
+        Ok(())
+    }
+
     fn _verify_requested_restrictions(proof_req: &ProofRequest,
                                       schemas: &HashMap<String, SchemaV1>,
                                       cred_defs: &HashMap<String, CredentialDefinitionV1>,
@@ -326,7 +350,6 @@ impl Verifier {
             let op = parse_from_json(
                 &build_wql_query(&info.name, &referent, &info.restrictions, None)?
             )?;
-            println!("Operator is {:?}", &op);
 
             let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
 
