@@ -584,8 +584,6 @@ mod medium_cases {
             Setup::empty();
 
             let config = r#"{"field":"value"}"#;
-
-            wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
             let res = wallet::open_wallet(config, WALLET_CREDENTIALS);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
