@@ -80,7 +80,9 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
                         gen: &Generator) -> bool {
     for parsed_sp in parsed_sps {
         if parsed_sp.multi_signature["value"]["state_root_hash"].as_str().ne(
+            &Some(&parsed_sp.root_hash)) && parsed_sp.multi_signature["value"]["txn_root_hash"].as_str().ne(
             &Some(&parsed_sp.root_hash)) {
+            error!("Given signature is not for current root hash, aborting");
             return false;
         }
 
@@ -538,6 +540,8 @@ fn _verify_merkle_tree(proof_nodes: &[u8], root_hash: &[u8], kvs: &[(String, Opt
     trace!("_verify_merkle_tree >> hashes: {:?}", hashes);
 
     let (key, value) = &kvs[0];
+    let key = unwrap_or_return!(base64::decode(&key), false);
+    let key = unwrap_or_return!(std::str::from_utf8(&key), false);
     let seq_no = match key.parse::<u64>() {
         Ok(num) => num,
         Err(err) => {
@@ -556,14 +560,18 @@ fn _verify_merkle_tree(proof_nodes: &[u8], root_hash: &[u8], kvs: &[(String, Opt
 
     let hashes_with_turns = hashes.iter().zip(turns).collect::<Vec<(&String, bool)>>();
 
-    let _value = match value{
+    let value = match value{
         Some(val) => val,
         None => {return false;}
     };
 
-    trace!("Value to hash: {}", _value);
+    trace!("Value to hash: {}", value);
 
-    let mut hash = match Hash::hash_leaf(&_value) {
+    let value = unwrap_or_return!(serde_json::from_str::<serde_json::Value>(&value), false);
+    trace!("serde json success");
+    let value = unwrap_or_return!(rmp_serde::to_vec(&value), false);
+    trace!("rmp serde success");
+    let mut hash = match Hash::hash_leaf(&value) {
         Ok(hash) => hash,
         Err(err) => {
             error!("Error while hashing: {:?}", err);
