@@ -38,10 +38,4 @@ public class AppendAuthorAgreementAcceptanceToRequestTest extends IndyIntegratio
 		String requestWithAcceptance = Ledger.appendTxnAuthorAgreementAcceptanceToRequest(REQUEST.toString(), null, null, hash, acceptanceMechanismType, timeOfAcceptance).get();
 		checkRequestAcceptance(requestWithAcceptance);
 	}
-
-	@Test
-	public void testAppendAuthorAgreementAcceptanceToRequestForTextVersionHash() throws Exception {
-		String requestWithAcceptance = Ledger.appendTxnAuthorAgreementAcceptanceToRequest(REQUEST.toString(), text, version, hash, acceptanceMechanismType, timeOfAcceptance).get();
-		checkRequestAcceptance(requestWithAcceptance);
-	}
 }

@@ -27,9 +27,6 @@ public class IssuerRotateCredentialDefinitionTest extends AnoncredsIntegrationTe
 
 		String tempCredDef = Anoncreds.issuerRotateCredentialDefStart(localWallet, credDefId, null).get();
 
-		System.out.println(credDef);
-		System.out.println(tempCredDef);
-
 		assertFalse(JsonObjectSimilar.similar(new JSONObject(credDef), new JSONObject(tempCredDef)));
 
 		Anoncreds.issuerRotateCredentialDefApply(localWallet, credDefId).get();

@@ -15,15 +15,6 @@ public class ProverCreateCredentialRequestTest extends AnoncredsIntegrationTest 
 	}
 
 	@Test
-	public void testProverCreateAndStoreCredentialReqWorksForCredentialDefDoesNotCorrespondToCredentialOfferDifferentIssuer() throws Exception {
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer2GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
-	}
-
-	@Test
 	public void testProverCreateAndStoreCredentialReqWorksForInvalidCredentialOffer() throws Exception {
 
 		thrown.expect(ExecutionException.class);

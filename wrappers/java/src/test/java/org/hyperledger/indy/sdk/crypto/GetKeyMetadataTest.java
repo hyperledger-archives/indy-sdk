@@ -28,25 +28,10 @@ public class GetKeyMetadataTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testGetKeyMetadataWorksForEmptyString() throws Exception {
-		Crypto.setKeyMetadata(wallet, key, "").get();
-		String receivedMetadata = Crypto.getKeyMetadata(wallet, key).get();
-		assertEquals("", receivedMetadata);
-	}
-
-	@Test
 	public void testGetKeyMetadataWorksForNoKey() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Crypto.getKeyMetadata(wallet, VERKEY).get();
-	}
-
-	@Test
-	public void testGetKeyMetadataWorksForNoMetadata() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletItemNotFoundException.class));
-
-		Crypto.getKeyMetadata(wallet, key).get();
 	}
 }
