@@ -47,7 +47,6 @@ fatal_warnings = []
 [dependencies]
 int_traits = { version = "0.1.1", optional = true }
 env_logger = "0.6.2"
-errno = "0.2.4"
 etcommon-rlp = "0.2.4"
 failure = "0.1.5"
 hex = "0.3.2"
