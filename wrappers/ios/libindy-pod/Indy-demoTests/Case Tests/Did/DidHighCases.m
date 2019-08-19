@@ -60,21 +60,6 @@
     XCTAssertTrue([myVerKey isEqualToString:[TestUtils myVerkey1]], @"wrong myVerKey!");
 }
 
-- (void)testCreateMyDidWorksWithPassedDid {
-    // 1. Obtain my did
-    NSString *myDid;
-    NSString *myVerKey;
-    NSString *myDidJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"seed\":\"%@\"}", [TestUtils myDid1], [TestUtils mySeed1]];
-
-    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                       myDidJson:myDidJson
-                                                        outMyDid:&myDid
-                                                     outMyVerkey:&myVerKey];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
-    XCTAssertTrue([myDid isEqualToString:[TestUtils myDid1]], @"wrong myDid!");
-    XCTAssertTrue([myVerKey isEqualToString:[TestUtils myVerkey1]], @"wrong myVerKey!");
-}
-
 // MARK: - Replace keys Start
 
 - (void)testReplaceKeysStartWorks {
@@ -94,27 +79,6 @@
                                                walletHandle:walletHandle
                                                 outMyVerKey:&newVerkey];
     XCTAssertFalse([myVerkey isEqualToString:newVerkey], @"verkey is the same!");
-}
-
-- (void)testReplaceKeysStartWorksForSeed {
-    // 1. create my did
-    NSString *myDid;
-    NSString *myVerkey;
-    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                       myDidJson:@"{}"
-                                                        outMyDid:&myDid
-                                                     outMyVerkey:&myVerkey];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() returned wrong error code");
-
-    // 2. replace keys
-    NSString *newVerkey;
-    ret = [[DidUtils sharedInstance] replaceKeysStartForDid:myDid
-                                               identityJson:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
-                                               walletHandle:walletHandle
-                                                outMyVerKey:&newVerkey];
-
-    XCTAssertEqual(ret.code, Success, @"DidUtils:replaceKeysStartForDid failed");
-    XCTAssertTrue([newVerkey isEqualToString:[TestUtils myVerkey1]], @"wrong newVerkey");
 }
 
 - (void)testReplaceKeysStartWorksForNotExistingDid {
@@ -253,23 +217,6 @@
                                                                    theirDid:[TestUtils trusteeDid]
                                                                 theirVerkey:[TestUtils trusteeVerkey]];
     XCTAssertEqual(ret.code, Success, @"DidUtils:storeTheirDid failed");
-}
-
-- (void)testStoreTheirDidWorksWithVerkey {
-    // 1. Store their did
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", [TestUtils trusteeDid], [TestUtils trusteeVerkey]];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                      identityJson:identityJson];
-    XCTAssertEqual(ret.code, Success, @"DidUtils:storeTheirDid() failed");
-}
-
-- (void)testStoretheirDidWorksWithoutDid {
-    // 1. Store their did
-    NSString *identityJson = [NSString stringWithFormat:@"{\"verkey\":\"%@\"}", [TestUtils trusteeVerkey]];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                      identityJson:identityJson];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"DidUtils:storeTheirDidWithWalletHandle() returned wrong code");
-
 }
 
 // MARK: - Key for Did
