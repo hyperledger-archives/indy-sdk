@@ -20,7 +20,7 @@ struct DefaultReaderConfig {
 }
 
 impl ReaderType for DefaultReaderType {
-    fn open(&self, config: &str) -> IndyResult<Box<Reader>> {
+    fn open(&self, config: &str) -> IndyResult<Box<dyn Reader>> {
         let config: DefaultReaderConfig = serde_json::from_str(config)
             .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize DefaultReaderConfig")?;
 
@@ -29,7 +29,7 @@ impl ReaderType for DefaultReaderType {
 }
 
 impl Reader for DefaultReaderConfig {
-    fn open(&self, hash: &[u8], _location: &str) -> IndyResult<Box<ReadableBlob>> {
+    fn open(&self, hash: &[u8], _location: &str) -> IndyResult<Box<dyn ReadableBlob>> {
         let mut path = PathBuf::from(&self.base_dir);
         path.push(hash.to_base58());
         let file = File::open(path)?;

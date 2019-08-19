@@ -713,7 +713,7 @@ mod cbs {
         send_bool_ack(cmd_handle, Box::new(PaymentsCommand::VerifyWithAddressAck))
     }
 
-    fn send_ack_str(cmd_handle: CommandHandle, builder: Box<Fn(CommandHandle, IndyResult<String>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
+    fn send_ack_str(cmd_handle: CommandHandle, builder: Box<dyn Fn(CommandHandle, IndyResult<String>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
                                                                                                                               err: ErrorCode,
                                                                                                                               c_str: *const c_char) -> ErrorCode> {
         cbs::_closure_to_cb_str(cmd_handle, Box::new(move |err, mint_req_json| -> ErrorCode {
@@ -727,7 +727,7 @@ mod cbs {
         }))
     }
 
-    fn send_ack_str_i64(cmd_handle: CommandHandle, builder: Box<Fn(CommandHandle, IndyResult<(String, i64)>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
+    fn send_ack_str_i64(cmd_handle: CommandHandle, builder: Box<dyn Fn(CommandHandle, IndyResult<(String, i64)>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
                                                                                                                                          err: ErrorCode,
                                                                                                                                          c_str: *const c_char,
                                                                                                                                          num: i64) -> ErrorCode> {
@@ -742,7 +742,7 @@ mod cbs {
         }))
     }
 
-    fn send_array_ack(cmd_handle: CommandHandle, builder: Box<Fn(CommandHandle, IndyResult<Vec<u8>>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
+    fn send_array_ack(cmd_handle: CommandHandle, builder: Box<dyn Fn(CommandHandle, IndyResult<Vec<u8>>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
                                                                                                                                  err: ErrorCode,
                                                                                                                                  raw: *const u8,
                                                                                                                                  raw_len: u32) -> ErrorCode> {
@@ -756,7 +756,7 @@ mod cbs {
             }))
     }
 
-    fn send_bool_ack(cmd_handle: CommandHandle, builder: Box<Fn(CommandHandle, IndyResult<bool>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
+    fn send_bool_ack(cmd_handle: CommandHandle, builder: Box<dyn Fn(CommandHandle, IndyResult<bool>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: CommandHandle,
                                                                                                                            err: ErrorCode,
                                                                                                                            result: u8)-> ErrorCode> {
         cbs::_closure_to_cb_bool(cmd_handle, Box::new(move |err, v| -> ErrorCode {
@@ -769,12 +769,12 @@ mod cbs {
         }))
     }
 
-    pub fn _closure_to_cb_str(command_handle: CommandHandle, closure: Box<FnMut(ErrorCode, String) -> ErrorCode + Send>)
+    pub fn _closure_to_cb_str(command_handle: CommandHandle, closure: Box<dyn FnMut(ErrorCode, String) -> ErrorCode + Send>)
                               -> Option<extern fn(command_handle: CommandHandle,
                                                   err: ErrorCode,
                                                   c_str: *const c_char) -> ErrorCode> {
         lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < CommandHandle, Box < FnMut(ErrorCode, String) -> ErrorCode + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < CommandHandle, Box <dyn FnMut(ErrorCode, String) -> ErrorCode + Send > >> = Default::default();
         }
 
         extern "C" fn _callback(command_handle_: CommandHandle, err: ErrorCode, c_str: *const c_char) -> ErrorCode {
@@ -790,10 +790,10 @@ mod cbs {
         Some(_callback)
     }
 
-    pub fn _closure_to_cb_byte_array(command_handle: CommandHandle, closure: Box<FnMut(ErrorCode, Vec<u8>) -> ErrorCode + Send>)
+    pub fn _closure_to_cb_byte_array(command_handle: CommandHandle, closure: Box<dyn FnMut(ErrorCode, Vec<u8>) -> ErrorCode + Send>)
                                      -> Option<extern fn(command_handle: CommandHandle, err: ErrorCode, raw: *const u8, len: u32) -> ErrorCode>{
         lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap <i32, Box < FnMut(ErrorCode, Vec<u8>) -> ErrorCode + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap <i32, Box <dyn FnMut(ErrorCode, Vec<u8>) -> ErrorCode + Send > >> = Default::default();
         }
 
         extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, message_raw: *const u8, message_len: u32) -> ErrorCode {
@@ -809,10 +809,10 @@ mod cbs {
         Some(_callback)
     }
 
-    pub fn _closure_to_cb_bool(command_handle: CommandHandle, closure: Box<FnMut(ErrorCode, bool) -> ErrorCode + Send>)
+    pub fn _closure_to_cb_bool(command_handle: CommandHandle, closure: Box<dyn FnMut(ErrorCode, bool) -> ErrorCode + Send>)
                                -> Option<extern fn(command_handle: CommandHandle, err: ErrorCode, res: u8) -> ErrorCode> {
         lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap <i32, Box < FnMut(ErrorCode, bool) -> ErrorCode + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap <i32, Box <dyn FnMut(ErrorCode, bool) -> ErrorCode + Send > >> = Default::default();
         }
 
         extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, result: u8) -> ErrorCode {
@@ -828,13 +828,13 @@ mod cbs {
         Some(_callback)
     }
 
-    pub fn _closure_to_cb_str_i64(command_handle: CommandHandle, closure: Box<FnMut(ErrorCode, String, i64) -> ErrorCode + Send>)
+    pub fn _closure_to_cb_str_i64(command_handle: CommandHandle, closure: Box<dyn FnMut(ErrorCode, String, i64) -> ErrorCode + Send>)
                                   -> Option<extern fn(command_handle: CommandHandle,
                                                       err: ErrorCode,
                                                       c_str: *const c_char,
                                                       val: i64) -> ErrorCode> {
         lazy_static! {
-            static ref CALLBACKS_STR_I64: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, i64) -> ErrorCode + Send > >> = Default::default();
+            static ref CALLBACKS_STR_I64: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, i64) -> ErrorCode + Send > >> = Default::default();
         }
 
         extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, c_str: *const c_char, val: i64) -> ErrorCode {

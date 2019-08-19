@@ -354,6 +354,7 @@ mod high_cases {
     }
 }
 
+#[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     use super::*;
 
@@ -526,6 +527,30 @@ mod medium_cases {
             assert_code!(ErrorCode::PoolLedgerTimeout, res);
 
             utils::tear_down("open_pool_ledger_works_for_wrong_ips");
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works_for_config_read_nodes_count() {
+            utils::setup("open_pool_ledger_works_for_config_read_nodes_count");
+
+            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
+            let pool_name = "open_pool_ledger_works_for_config_read_nodes_count";
+            let config = json!({"read_nodes_count": 3}).to_string();
+
+            let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+            let pool_config = pool::pool_config_json(txn_file_path.as_path());
+            pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+
+            let pool_handle = pool::open_pool_ledger(pool_name, Some(&config)).unwrap();
+
+            let request = ledger::build_get_nym_request(None, DID_TRUSTEE).unwrap();
+            let _ = ledger::submit_request(pool_handle, &request).unwrap();
+
+            pool::close(pool_handle).unwrap();
+
+            utils::tear_down("open_pool_ledger_works_for_config_read_nodes_count");
         }
     }
 

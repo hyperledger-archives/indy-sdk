@@ -147,7 +147,7 @@ struct SQLiteStorageIterator {
 
 impl SQLiteStorageIterator {
     fn new(stmt: Option<OwningHandle<Rc<rusqlite::Connection>, Box<rusqlite::Statement<'static>>>>,
-           args: &[&rusqlite::types::ToSql],
+           args: &[&dyn rusqlite::types::ToSql],
            options: RecordOptions,
            tag_retriever: Option<TagRetrieverOwned>,
            total_count: Option<usize>) -> IndyResult<SQLiteStorageIterator> {
@@ -506,7 +506,7 @@ impl WalletStorage for SQLiteStorage {
         Ok(())
     }
 
-    fn get_all(&self) -> IndyResult<Box<StorageIterator>> {
+    fn get_all(&self) -> IndyResult<Box<dyn StorageIterator>> {
         let statement = self._prepare_statement("SELECT id, name, value, key, type FROM items;")?;
 
         let fetch_options = RecordOptions {
@@ -521,7 +521,7 @@ impl WalletStorage for SQLiteStorage {
         Ok(Box::new(storage_iterator))
     }
 
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> IndyResult<Box<StorageIterator>> {
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> IndyResult<Box<dyn StorageIterator>> {
         let type_ = type_.to_vec(); // FIXME
 
         let search_options = match options {
@@ -711,7 +711,7 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `IndyError::NotFound` - File with the provided id not found
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn open_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> IndyResult<Box<WalletStorage>> {
+    fn open_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> IndyResult<Box<dyn WalletStorage>> {
         let config = config
             .map(serde_json::from_str::<Config>)
             .map_or(Ok(None), |v| v.map(Some))
@@ -1333,13 +1333,13 @@ mod tests {
         test::cleanup_storage(name)
     }
 
-    fn _storage(name: &str) -> Box<WalletStorage> {
+    fn _storage(name: &str) -> Box<dyn WalletStorage> {
         let storage_type = SQLiteStorageType::new();
         storage_type.create_storage(name, None, None, &_metadata()).unwrap();
         storage_type.open_storage(name, None, None).unwrap()
     }
 
-    fn _storage_custom(name: &str) -> Box<WalletStorage> {
+    fn _storage_custom(name: &str) -> Box<dyn WalletStorage> {
         let storage_type = SQLiteStorageType::new();
 
         let config = json!({

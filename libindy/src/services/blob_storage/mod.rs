@@ -11,11 +11,11 @@ mod default_writer;
 mod default_reader;
 
 trait WriterType {
-    fn open(&self, config: &str) -> IndyResult<Box<Writer>>;
+    fn open(&self, config: &str) -> IndyResult<Box<dyn Writer>>;
 }
 
 trait Writer {
-    fn create(&self, id: i32) -> IndyResult<Box<WritableBlob>>;
+    fn create(&self, id: i32) -> IndyResult<Box<dyn WritableBlob>>;
 }
 
 trait WritableBlob {
@@ -24,11 +24,11 @@ trait WritableBlob {
 }
 
 trait ReaderType {
-    fn open(&self, config: &str) -> IndyResult<Box<Reader>>;
+    fn open(&self, config: &str) -> IndyResult<Box<dyn Reader>>;
 }
 
 trait Reader {
-    fn open(&self, hash: &[u8], location: &str) -> IndyResult<Box<ReadableBlob>>;
+    fn open(&self, hash: &[u8], location: &str) -> IndyResult<Box<dyn ReadableBlob>>;
 }
 
 trait ReadableBlob {
@@ -38,20 +38,20 @@ trait ReadableBlob {
 }
 
 pub struct BlobStorageService {
-    writer_types: RefCell<HashMap<String, Box<WriterType>>>,
-    writer_configs: RefCell<HashMap<i32, Box<Writer>>>,
-    writer_blobs: RefCell<HashMap<i32, (Box<WritableBlob>, Sha256)>>,
+    writer_types: RefCell<HashMap<String, Box<dyn WriterType>>>,
+    writer_configs: RefCell<HashMap<i32, Box<dyn Writer>>>,
+    writer_blobs: RefCell<HashMap<i32, (Box<dyn WritableBlob>, Sha256)>>,
 
-    reader_types: RefCell<HashMap<String, Box<ReaderType>>>,
-    reader_configs: RefCell<HashMap<i32, Box<Reader>>>,
-    reader_blobs: RefCell<HashMap<i32, Box<ReadableBlob>>>,
+    reader_types: RefCell<HashMap<String, Box<dyn ReaderType>>>,
+    reader_configs: RefCell<HashMap<i32, Box<dyn Reader>>>,
+    reader_blobs: RefCell<HashMap<i32, Box<dyn ReadableBlob>>>,
 }
 
 impl BlobStorageService {
     pub fn new() -> BlobStorageService {
-        let mut writer_types: HashMap<String, Box<WriterType>> = HashMap::new();
+        let mut writer_types: HashMap<String, Box<dyn WriterType>> = HashMap::new();
         writer_types.insert("default".to_owned(), Box::new(default_writer::DefaultWriterType::new()));
-        let mut reader_types: HashMap<String, Box<ReaderType>> = HashMap::new();
+        let mut reader_types: HashMap<String, Box<dyn ReaderType>> = HashMap::new();
         reader_types.insert("default".to_owned(), Box::new(default_reader::DefaultReaderType::new()));
 
         BlobStorageService {

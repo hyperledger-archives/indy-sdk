@@ -34,14 +34,12 @@ use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, ANONCREDS_WALLET_CO
 use indy::ErrorCode;
 use utils::constants::*;
 
-use utils::domain::anoncreds::schema::{Schema, AttributeNames, MAX_ATTRIBUTES_COUNT};
+use utils::domain::anoncreds::schema::{Schema};
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use utils::domain::anoncreds::proof::Proof;
-use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequest};
 
-use std::collections::HashSet;
 
 mod high_cases {
     use super::*;
@@ -3538,8 +3536,12 @@ mod high_cases {
     }
 }
 
+#[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     use super::*;
+    use std::collections::HashSet;
+    use utils::domain::anoncreds::schema::{AttributeNames, MAX_ATTRIBUTES_COUNT};
+    use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequest};
 
     mod issuer_create_schema {
         use super::*;
@@ -3688,14 +3690,12 @@ mod medium_cases {
 
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let res = anoncreds::issuer_create_credential_definition(wallet_handle,
-                                                                     ISSUER_DID,
-                                                                     &anoncreds::gvt_schema_json(),
-                                                                     TAG_1,
-                                                                     Some(SIGNATURE_TYPE),
-                                                                     Some(&anoncreds::default_cred_def_config()));
-            assert_code!(ErrorCode::AnoncredsCredDefAlreadyExistsError, res);
-
+            anoncreds::issuer_create_credential_definition(wallet_handle,
+                                                           ISSUER_DID,
+                                                           &anoncreds::gvt_schema_json(),
+                                                           TAG_1,
+                                                           Some(SIGNATURE_TYPE),
+                                                           Some(&anoncreds::default_cred_def_config())).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
         }
 

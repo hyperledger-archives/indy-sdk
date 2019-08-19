@@ -3,6 +3,8 @@ extern crate rmp_serde;
 
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
+use utils::crypto::hash::{Hash};
+use rust_base58::ToBase58;
 
 use base64;
 use rlp::UntrustedRlp;
@@ -116,6 +118,14 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
                                                 data.from,
                                                 data.next,
                                                 &kvs.kvs) {
+                            return false;
+                        }
+                    }
+                    KeyValueSimpleDataVerificationType::MerkleTree(length) => {
+                        if !_verify_merkle_tree(proof_nodes.as_slice(),
+                                                root_hash.as_slice(),
+                                                &kvs.kvs,
+                                                length){
                             return false;
                         }
                     }
@@ -246,6 +256,14 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 "3:latest".to_owned()
             }
         }
+        constants::GET_TXN => {
+            if let Some(seq_no) = json_msg["data"].as_u64() {
+                format!("{}", seq_no)
+            } else {
+                error!("parse_key_from_request_for_builtin_sp: <<< GET_TXN has no seq_no, skip AuditProof logic");
+                return None;
+            }
+        }
         _ => {
             trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< Unsupported transaction");
             return None;
@@ -364,18 +382,46 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str, key: &[u8]) -
 fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<ParsedSP, String> {
     trace!("TransactionHandler::_parse_reply_for_sp: data: {:?}, parsed_data: {:?}", data, parsed_data);
 
-    let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
-        trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", proof);
-        proof
-    } else {
-        return Err("No proof".to_string());
-    };
+    let (proof, root_hash, ver_type, multi_sig) = if xtype != constants::GET_TXN {
+        let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", proof);
+            proof.to_string()
+        } else {
+            return Err("No proof".to_string());
+        };
 
-    let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
-        trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
-        root_hash
+        let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
+            root_hash
+        } else {
+            return Err("No root hash".to_string());
+        };
+
+        (proof, root_hash, KeyValueSimpleDataVerificationType::Simple, json_msg["state_proof"]["multi_signature"].clone())
     } else {
-        return Err("No root hash".to_string());
+        let proof = if let Some(path) = parsed_data["audit_path"].as_array() {
+            let path_str = json!(path).to_string();
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", path);
+            base64::encode(&path_str)
+        } else {
+            return Err("No proof".to_string());
+        };
+
+        let root_hash = if let Some(root_hash) = parsed_data["root_hash"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
+            root_hash
+        } else {
+            return Err("No root hash".to_string());
+        };
+
+        let len = if let Some(len) = parsed_data["ledger_size"].as_u64() {
+            trace!("Ledger length: {}", len);
+            len
+        } else {
+            return Err("No ledger length for this proof".to_string())
+        };
+
+        (proof, root_hash, KeyValueSimpleDataVerificationType::MerkleTree(len), parsed_data["multi_signature"].clone())
     };
 
     let value: Option<String> = match _parse_reply_for_proof_value(json_msg, data, parsed_data, xtype, sp_key) {
@@ -390,10 +436,10 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
     Ok(ParsedSP {
         root_hash: root_hash.to_owned(),
         proof_nodes: proof.to_owned(),
-        multi_signature: json_msg["state_proof"]["multi_signature"].clone(),
+        multi_signature: multi_sig,
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
             kvs: vec![(base64::encode(sp_key), value)],
-            verification_type: KeyValueSimpleDataVerificationType::Simple,
+            verification_type: ver_type,
         }),
     })
 }
@@ -469,6 +515,100 @@ fn _parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&
         }
         _ => None
     }
+}
+
+fn _verify_merkle_tree(proof_nodes: &[u8], root_hash: &[u8], kvs: &[(String, Option<String>)], length: u64) -> bool {
+    let nodes = match std::str::from_utf8(proof_nodes) {
+        Ok(res) => res,
+        Err(err) => {
+            error!("Wrong state during mapping bytes to string: {:?}", err);
+            return false;
+        }
+    };
+    trace!("_verify_merkle_tree >> nodes: {:?}", nodes);
+    let hashes: Vec<String> = match serde_json::from_str(nodes) {
+        Ok(vec) => vec,
+        Err(err) => {
+            error!("Errors during deserialization: {:?}", err);
+            return false;
+        }
+    };
+
+    trace!("_verify_merkle_tree >> hashes: {:?}", hashes);
+
+    let (key, value) = &kvs[0];
+    let seq_no = match key.parse::<u64>() {
+        Ok(num) => num,
+        Err(err) => {
+            error!("Error while parsing seq_no: {:?}", err);
+            return false;
+        }
+    };
+
+    let turns = _calculate_turns(length, seq_no - 1);
+    trace!("_verify_merkle_tree >> turns: {:?}", turns);
+
+    if hashes.len() != turns.len() {
+        error!("Different count of hashes and turns, unable to verify");
+        return false;
+    }
+
+    let hashes_with_turns = hashes.iter().zip(turns).collect::<Vec<(&String, bool)>>();
+
+    let _value = match value{
+        Some(val) => val,
+        None => {return false;}
+    };
+
+    trace!("Value to hash: {}", _value);
+
+    let mut hash = match Hash::hash_leaf(&_value) {
+        Ok(hash) => hash,
+        Err(err) => {
+            error!("Error while hashing: {:?}", err);
+            return false;
+        }
+    };
+
+    trace!("Hashed leaf in b58: {}", hash.to_base58());
+
+    for (next_hash, turn_right) in hashes_with_turns {
+        let _next_hash = unwrap_or_return!(next_hash.from_base58(), false);
+        let turned_hash = if turn_right {
+            Hash::hash_nodes(&hash, &_next_hash)
+        } else {
+            Hash::hash_nodes(&_next_hash, &hash)
+        };
+        hash = match turned_hash {
+            Ok(hash) => hash,
+            Err(err) => {
+                error!("Error while hashing: {:?}", err);
+                return false;
+            }
+        }
+    }
+
+    let result = hash.as_slice() == root_hash;
+    trace!("_verify_merkle_tree << res: {}, hash: {:?}, root_hash: {:?}", result, hash, root_hash);
+
+    result
+}
+
+// true is right
+// false is left
+fn _calculate_turns(length: u64, idx: u64) -> Vec<bool> {
+    let mut idx = idx;
+    let mut length = length;
+    let mut result: Vec<bool> = vec![];
+    while length != 1 {
+        let middle = length.next_power_of_two()/2;
+        let right = idx < middle;
+        result.push(right);
+        idx = if right {idx} else {idx - middle};
+        length = if right {middle} else {length - middle};
+    }
+    result.reverse();
+    result
 }
 
 fn _verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
@@ -559,7 +699,7 @@ fn _verify_proof_signature(signature: &str,
                            gen: &Generator) -> IndyResult<bool> {
     trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, value);
 
-    let mut ver_keys: Vec<&VerKey> = Vec::new();
+    let mut ver_keys: Vec<&VerKey> = Vec::with_capacity(nodes.len());
 
     for (name, verkey) in nodes {
         if participants.contains(&name.as_str()) {
@@ -618,8 +758,14 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
         }
 
         match xtype {
-            //TODO constants::GET_TXN => check ledger MerkleTree proofs?
             //TODO constants::GET_DDO => support DDO
+            constants::GET_TXN => {
+                value = if !parsed_data["txn"].is_null() {
+                    parsed_data["txn"].clone()
+                } else {
+                    return Ok(None)
+                }
+            }
             constants::GET_NYM => {
                 value["identifier"] = parsed_data["identifier"].clone();
                 value["role"] = parsed_data["role"].clone();
@@ -707,6 +853,105 @@ mod tests {
 
     use hex::FromHex;
     use libc::c_char;
+
+    /// For audit proofs tree looks like this
+    ///         12345
+    ///         /  \
+    ///      1234  5
+    ///     /    \
+    ///   12     34
+    ///  /  \   /  \
+    /// 1   2  3   4
+
+    #[test]
+    fn audit_proof_verify_works() {
+        let nodes = json!(
+            [
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
+                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
+                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+            ]
+        ).to_string();
+        let kvs = vec![("3".to_string(), Some("3".to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        assert!(_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_proof() {
+        let nodes = json!(
+            [
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUa", // wrong hash in this value
+                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
+                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+            ]
+        ).to_string();
+        let kvs = vec![("3".to_string(), Some("3".to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_root_hash() {
+        let nodes = json!(
+            [
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
+                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
+                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+            ]
+        ).to_string();
+        let kvs = vec![("3".to_string(), Some("3".to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4G1".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_ledger_length() {
+        let nodes = json!(
+            [
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
+                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
+                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+            ]
+        ).to_string();
+        let kvs = vec![("3".to_string(), Some("3".to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 9));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_value() {
+        let nodes = json!(
+            [
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
+                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
+                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+            ]
+        ).to_string();
+        let kvs = vec![("3".to_string(), Some("4".to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_seqno() {
+        let nodes = json!(
+            [
+                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
+                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
+                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+            ]
+        ).to_string();
+        let kvs = vec![("4".to_string(), Some("3".to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
 
     #[test]
     fn state_proof_nodes_parse_and_get_works() {
@@ -1195,6 +1440,121 @@ mod tests {
     fn state_proof_verify_proof_works_for_corrupted_rlp_bytes_for_proofs() {
         let proofs = Vec::from_hex("f8c0f7798080a0792fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080").unwrap();
         assert_eq!(_verify_proof(proofs.as_slice(), &[0x00], "".as_bytes(), None), false);
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_get_txn() {
+        let json_msg = &json!({
+            "type": constants::GET_TXN,
+            "data": {
+                "audit_path": ["1", "2"],
+                "ledger_size": 2,
+                "root_hash": "123",
+                "txn": {"test1": "test2", "seqNo": 2},
+                "multi_signature": "ms"
+            }
+        });
+
+        let nodes_str = base64::encode(&json!(["1", "2"]).to_string());
+
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(json_msg,
+                                                                           "",
+                                                                           Some("2".as_bytes()))
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "123");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, nodes_str);
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: vec![(base64::encode("2"), Some(json!({"test1": "test2", "seqNo": 2}).to_string()))],
+                       verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
+                   }));
+    }
+
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_get_txn_no_multi_signature() {
+        let json_msg = &json!({
+            "type": constants::GET_TXN,
+            "data": {
+                "audit_path": ["1", "2"],
+                "ledger_size": 2,
+                "root_hash": "123",
+                "txn": {"test1": "test2", "seqNo": 2},
+//                "multi_signature": "ms"
+            }
+        });
+
+        let nodes_str = base64::encode(&json!(["1", "2"]).to_string());
+
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(json_msg,
+                                                                           "",
+                                                                           Some("2".as_bytes()))
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "123");
+        assert!(parsed_sp.multi_signature.is_null());
+        assert_eq!(parsed_sp.proof_nodes, nodes_str);
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: vec![(base64::encode("2"), Some(json!({"test1": "test2", "seqNo": 2}).to_string()))],
+                       verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
+                   }));
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_get_txn_no_ledger_length() {
+        let json_msg = &json!({
+            "type": constants::GET_TXN,
+            "data": {
+                "audit_path": ["1", "2"],
+//                "ledger_size": 2,
+                "root_hash": "123",
+                "txn": {"test1": "test2", "seqNo": 2},
+                "multi_signature": "ms"
+            }
+        });
+
+        assert!(super::parse_generic_reply_for_proof_checking(json_msg,
+                                                              "",
+                                                              Some("2".as_bytes())).is_none());
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_get_txn_no_txn() {
+        let json_msg = &json!({
+            "type": constants::GET_TXN,
+            "data": {
+                "audit_path": ["1", "2"],
+                "ledger_size": 2,
+                "root_hash": "123",
+//                "txn": {"test1": "test2", "seqNo": 2},
+                "multi_signature": "ms"
+            }
+        });
+
+        let nodes_str = base64::encode(&json!(["1", "2"]).to_string());
+
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(json_msg,
+                                                                           "",
+                                                                           Some("2".as_bytes()))
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "123");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, nodes_str);
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: vec![(base64::encode("2"), None)],
+                       verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
+                   }));
     }
 
     #[test]

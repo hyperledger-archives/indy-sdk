@@ -33,16 +33,16 @@ mod export_import;
 mod wallet;
 
 pub struct WalletService {
-    storage_types: RefCell<HashMap<String, Box<WalletStorageType>>>,
+    storage_types: RefCell<HashMap<String, Box<dyn WalletStorageType>>>,
     wallets: RefCell<HashMap<WalletHandle, Box<Wallet>>>,
-    pending_for_open: RefCell<HashMap<WalletHandle, (String /* id */, Box<WalletStorage>, Metadata, Option<KeyDerivationData>)>>,
+    pending_for_open: RefCell<HashMap<WalletHandle, (String /* id */, Box<dyn WalletStorage>, Metadata, Option<KeyDerivationData>)>>,
     pending_for_import: RefCell<HashMap<WalletHandle, (BufReader<::std::fs::File>, chacha20poly1305_ietf::Nonce, usize, Vec<u8>, KeyDerivationData)>>,
 }
 
 impl WalletService {
     pub fn new() -> WalletService {
         let storage_types = {
-            let mut map: HashMap<String, Box<WalletStorageType>> = HashMap::new();
+            let mut map: HashMap<String, Box<dyn WalletStorageType>> = HashMap::new();
             map.insert("default".to_string(), Box::new(SQLiteStorageType::new()));
             RefCell::new(map)
         };
@@ -218,7 +218,7 @@ impl WalletService {
         Ok(wallet_handle)
     }
 
-    fn _open_storage_and_fetch_metadata(&self, config: &Config, credentials: &Credentials) -> IndyResult<(Box<WalletStorage>, Metadata, KeyDerivationData)> {
+    fn _open_storage_and_fetch_metadata(&self, config: &Config, credentials: &Credentials) -> IndyResult<(Box<dyn WalletStorage>, Metadata, KeyDerivationData)> {
         let storage = self._open_storage(config, credentials)?;
         let metadata: Metadata = {
             let metadata = storage.get_storage_metadata()?;
@@ -339,8 +339,7 @@ impl WalletService {
         self.get_record(wallet_handle, &self.add_prefix(T::short_type_name()), name, options_json)
     }
 
-    // Dirty hack. json must live longer then result T
-    pub fn get_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<T> where T: ::serde::de::DeserializeOwned, T: NamedType {
+    pub fn get_indy_record_value<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<String> where T: NamedType {
         let type_ = T::short_type_name();
 
         let record: WalletRecord = match self.wallets.borrow().get(&wallet_handle) {
@@ -351,8 +350,15 @@ impl WalletService {
         let record_value = record.get_value()
             .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("{} not found for id: {:?}", type_, name)))?.to_string();
 
+        Ok(record_value)
+    }
+
+    // Dirty hack. json must live longer then result T
+    pub fn get_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<T> where T: ::serde::de::DeserializeOwned, T: NamedType {
+        let record_value = self.get_indy_record_value::<T>(wallet_handle, name, options_json)?;
+
         serde_json::from_str(&record_value)
-            .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize {:?}", type_))
+            .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize {:?}", T::short_type_name()))
     }
 
     // Dirty hack. json must live longer then result T
@@ -500,7 +506,7 @@ impl WalletService {
         res
     }
 
-    fn _get_config_and_cred_for_storage<'a>(config: &Config, credentials: &Credentials, storage_types: &'a HashMap<String, Box<WalletStorageType>>) -> IndyResult<(&'a Box<WalletStorageType>, Option<String>, Option<String>)> {
+    fn _get_config_and_cred_for_storage<'a>(config: &Config, credentials: &Credentials, storage_types: &'a HashMap<String, Box<dyn WalletStorageType>>) -> IndyResult<(&'a Box<dyn WalletStorageType>, Option<String>, Option<String>)> {
         let storage_type = {
             let storage_type = config.storage_type
                 .as_ref()
@@ -536,7 +542,7 @@ impl WalletService {
         wallet_id
     }
 
-    fn _open_storage(&self, config: &Config, credentials: &Credentials) -> IndyResult<Box<WalletStorage>> {
+    fn _open_storage(&self, config: &Config, credentials: &Credentials) -> IndyResult<Box<dyn WalletStorage>> {
         let storage_types = self.storage_types.borrow();
         let (storage_type, storage_config, storage_credentials) =
             WalletService::_get_config_and_cred_for_storage(config, credentials, &storage_types)?;
@@ -1819,7 +1825,7 @@ mod tests {
     }
 
     fn remove_exported_wallet(export_config: &ExportConfig) -> &Path {
-        let export_path = Path::new(&export_config.path );
+        let export_path = Path::new(&export_config.path);
         if export_path.exists() {
             fs::remove_file(export_path).unwrap();
         }
@@ -2125,8 +2131,8 @@ mod tests {
         _cleanup("wallet_service_export_import_returns_error_if_path_missing");
 
         let wallet_service = WalletService::new();
-        let config : &Config = &_config("wallet_service_export_import_returns_error_if_path_missing");
-        let export_config =_export_config_raw("wallet_service_export_import_returns_error_if_path_missing");
+        let config: &Config = &_config("wallet_service_export_import_returns_error_if_path_missing");
+        let export_config = _export_config_raw("wallet_service_export_import_returns_error_if_path_missing");
         let res = wallet_service.import_wallet(config, &RAW_CREDENTIAL, &export_config);
         assert_eq!(IndyErrorKind::IOError, res.unwrap_err().kind());
 
@@ -2395,9 +2401,9 @@ mod tests {
             .unwrap();
     }
 
-    fn _custom_path(name : &str) -> String {
+    fn _custom_path(name: &str) -> String {
         let mut path = environment::tmp_path();
-        path.push(name );
+        path.push(name);
         path.to_str().unwrap().to_owned()
     }
 }

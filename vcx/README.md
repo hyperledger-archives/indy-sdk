@@ -12,15 +12,16 @@ infrastructure.
 * VCX requires some payment plugin.
 [Here](https://github.com/hyperledger/indy-sdk/tree/master/libnullpay/README.md) is the simple plugin that can be used.
 
-### Ubuntu based distributions (Ubuntu 16.04)
+### Ubuntu based distributions (Ubuntu 16.04 and 18.04)
 It is recommended to install the VCX packages with APT:
 
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
-    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
+    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) {release channel}"
     sudo apt-get update
     sudo apt-get install -y libvcx
 
-{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+* (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
+* {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section [Release channels](../README.md/#release-channels) for more details.
 
 ### Windows
