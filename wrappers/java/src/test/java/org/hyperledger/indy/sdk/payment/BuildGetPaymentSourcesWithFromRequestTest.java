@@ -26,12 +26,4 @@ public class BuildGetPaymentSourcesWithFromRequestTest extends PaymentIntegratio
 
 		Payments.buildGetPaymentSourcesWithFromRequest(wallet, DID_TRUSTEE, "pay:null1", 1).get();
 	}
-
-	@Test
-	public void testBuildGetPaymentSourcesWithFromRequestWorksForInvalidPaymentAddressWithoutFrom() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(IncompatiblePaymentException.class));
-
-		Payments.buildGetPaymentSourcesWithFromRequest(wallet, DID_TRUSTEE, "pay:null1").get();
-	}
 }

@@ -212,12 +212,12 @@ String getSrcVersion(folder) {
     }
 }
 
-def linuxTesting(file, env_name, network_name, stashBuildResults, test_wrappers) {
+def linuxTesting(file, env_name, network_name, stashBuildResults, full_testing) {
     parallel([
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
-                    linuxLibindyBuild(file, env_name, network_name, stashBuildResults)
+                    linuxLibindyBuild(file, env_name, network_name, stashBuildResults, full_testing)
                 }
             },
             "${env_name} Test: test other components" : {
@@ -229,10 +229,10 @@ def linuxTesting(file, env_name, network_name, stashBuildResults, test_wrappers)
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting, stashBuildResults)
                         },
                         "${env_name}-vcx-test": {
-                            vcxTesting(file, env_name, network_name, stashBuildResults, test_wrappers)
+                            vcxTesting(file, env_name, network_name, stashBuildResults, full_testing)
                         }
                 ]
-                if (test_wrappers) {
+                if (full_testing) {
                     jobs["${env_name}-rust-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting, stashBuildResults)
                     }
@@ -251,7 +251,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults, test_wrappers)
     ])
 }
 
-def vcxTesting(file, env_name, network_name, stashBuildResults, test_wrappers) {
+def vcxTesting(file, env_name, network_name, stashBuildResults, full_testing) {
     parallel([
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
@@ -260,7 +260,7 @@ def vcxTesting(file, env_name, network_name, stashBuildResults, test_wrappers) {
                 }
             },
             "${env_name} Test: test other vcx components": {
-                if (test_wrappers) {
+                if (full_testing) {
                     waitUntil {
                         libvcxBuildFinished[env_name]
                     }
@@ -282,7 +282,7 @@ def vcxTesting(file, env_name, network_name, stashBuildResults, test_wrappers) {
     ])
 }
 
-def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
+def linuxLibindyBuild(file, env_name, network_name, stashBuildResults, full_testing) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -350,11 +350,13 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
 
         echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
-            sh '''
+            def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
+
+            sh """
                 cd libindy
-                RUST_BACKTRACE=1 cargo test --release -j 1 --no-run --features sodium_static
-                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release -j 1  --features sodium_static
-            '''
+                RUST_BACKTRACE=1 cargo test --release --no-run ${features_args}
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release ${features_args}
+            """
         }
 
         echo "${env_name} Libnullpay Test: Test"
@@ -416,7 +418,7 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
             echo "${env_name} Libvcx Test: Run tests"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release -j 1 --features "pool_tests agency"
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency"
             '''
         }
 
@@ -430,7 +432,7 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
             echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release -j 1 --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
             '''
         }
     }

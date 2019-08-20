@@ -1,8 +1,6 @@
-import json
-
 import pytest
 
-from indy import wallet, did, ledger, error
+from indy import ledger, error
 
 
 @pytest.mark.asyncio

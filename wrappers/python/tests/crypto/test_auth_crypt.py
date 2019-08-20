@@ -12,18 +12,6 @@ async def test_auth_crypt_works_for_created_key(wallet_handle, seed_my1, verkey_
 
 
 @pytest.mark.asyncio
-async def test_auth_crypt_works_for_created_did(wallet_handle, seed_my1, verkey_my2, message):
-    (_, verkey) = await did.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed_my1}))
-    await crypto.auth_crypt(wallet_handle, verkey, verkey_my2, message)
-
-
-@pytest.mark.asyncio
-async def test_auth_crypt_works_for_created_did_as_cid(wallet_handle, seed_my1, verkey_my2, message):
-    (_, verkey) = await did.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed_my1, 'cid': True}))
-    await crypto.auth_crypt(wallet_handle, verkey, verkey_my2, message)
-
-
-@pytest.mark.asyncio
 async def test_auth_crypt_works_for_unknown_sender_verkey(wallet_handle, verkey_my1, verkey_my2, message):
     with pytest.raises(error.WalletItemNotFound):
         await crypto.auth_crypt(wallet_handle, verkey_my1, verkey_my2, message)
