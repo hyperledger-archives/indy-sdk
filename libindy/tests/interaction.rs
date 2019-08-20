@@ -531,7 +531,7 @@ impl Verifier {
 #[cfg(feature = "revocation_tests")]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand() {
-    anoncreds_revocation_interaction_test_one_prover("anoncreds_revocation_interaction_test_issuance_by_demand", r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#);
+    anoncreds_revocation_interaction_test_one_prover(r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#);
 }
 
 #[cfg(feature = "revocation_tests")]
@@ -540,15 +540,15 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_default()
 {
-    anoncreds_revocation_interaction_test_one_prover("anoncreds_revocation_interaction_test_issuance_by_default", r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_BY_DEFAULT"}"#);
+    anoncreds_revocation_interaction_test_one_prover(r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_BY_DEFAULT"}"#);
 }
 
 // the common function for two previous tests
-fn anoncreds_revocation_interaction_test_one_prover(pool_name: &str, revocation_registry_config: &str)
+fn anoncreds_revocation_interaction_test_one_prover(revocation_registry_config: &str)
 {
-    Setup::empty();
+    let setup = Setup::empty();
 
-    let pool = Pool::new(pool_name);
+    let pool = Pool::new(&setup.name);
 
     let mut issuer = Issuer::new(&pool);
 
@@ -661,9 +661,9 @@ fn multi_steps_create_revocation_credential(pool: &Pool, issuer: &Issuer, prover
 #[cfg(not(feature="only_high_cases"))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first() {
-    Setup::empty();
+    let setup = Setup::empty();
 
-    let pool = Pool::new("anoncreds_4711");
+    let pool = Pool::new(&setup.name);
 
     let mut issuer = Issuer::new(&pool);
 
@@ -738,9 +738,9 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 #[cfg(not(feature="only_high_cases"))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all() {
-    Setup::empty();
+    let setup = Setup::empty();
 
-    let pool = Pool::new("aritibdtcpcepa");
+    let pool = Pool::new(&setup.name);
 
     let mut issuer = Issuer::new(&pool);
 

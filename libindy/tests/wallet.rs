@@ -272,7 +272,7 @@ mod high_cases {
 
         #[test]
         fn indy_import_wallet_works() {
-            let setup = Setup::wallet();
+            let setup = Setup::empty();
             let config = config(&setup.name);
 
             let path = wallet::export_wallet_path(&setup.name);
@@ -299,6 +299,7 @@ mod high_cases {
 
             assert_eq!(did_with_meta, did_with_meta_after_import);
 
+            wallet::close_and_delete_wallet(wallet_handle, &config).unwrap();
             cleanup_file(&path);
         }
     }
@@ -309,7 +310,7 @@ mod high_cases {
 
         #[test]
         fn indy_generate_wallet_key_works() {
-            let setup = Setup::wallet();
+            let setup = Setup::empty();
             let config = config(&setup.name);
 
             let key = wallet::generate_wallet_key(None).unwrap();
@@ -324,7 +325,7 @@ mod high_cases {
 
         #[test]
         fn indy_generate_wallet_key_works_for_seed() {
-            let setup = Setup::wallet();
+            let setup = Setup::empty();
             let wallet_config = config(&setup.name);
 
             let config = json!({"seed": MY1_SEED}).to_string();
@@ -390,7 +391,7 @@ mod medium_cases {
 
         #[test]
         fn indy_create_wallet_works_for_empty_type() {
-            let setup = Setup::wallet();
+            let setup = Setup::empty();
             let config = config(&setup.name);
 
             wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
@@ -398,7 +399,7 @@ mod medium_cases {
 
         #[test]
         fn indy_create_wallet_works_for_duplicate_name() {
-            let setup = Setup::wallet();
+            let setup = Setup::empty();
             let config = config(&setup.name);
 
             wallet::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
@@ -660,7 +661,7 @@ mod medium_cases {
 
         #[test]
         fn indy_import_wallet_returns_error_if_path_doesnt_exist() {
-            let setup= Setup::wallet();
+            let setup= Setup::empty();
 
             let import_config = json!({"id": &setup.name}).to_string();
 
