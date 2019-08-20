@@ -770,7 +770,12 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
             //TODO constants::GET_DDO => support DDO
             constants::GET_TXN => {
                 value = if !parsed_data["txn"].is_null() {
-                    parsed_data["txn"].clone()
+                    json!({
+                        "txn": parsed_data["txn"].clone(),
+                        "txnMetadata": parsed_data["txnMetadata"].clone(),
+                        "ver": parsed_data["ver"].clone(),
+                        "reqSignature": parsed_data["reqSignature"].clone(),
+                    })
                 } else {
                     return Ok(None)
                 }
