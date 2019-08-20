@@ -23,19 +23,6 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testDeleteWalletWorksForClosed() throws Exception {
-		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-
-		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		assertNotNull(wallet);
-
-		wallet.closeWallet().get();
-		Wallet.deleteWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		Wallet.deleteWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-	}
-
-	@Test
 	public void testDeleteWalletWorksForOpened() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStateException.class));
@@ -47,21 +34,6 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 		Wallet.createWallet(config, WALLET_CREDENTIALS).get();
 		Wallet.openWallet(config, WALLET_CREDENTIALS).get();
 		Wallet.deleteWallet(config, WALLET_CREDENTIALS).get();
-	}
-
-	@Test
-	public void testDeleteWalletWorksForTwice() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletNotFoundException.class));
-
-		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-
-		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-
-		wallet.closeWallet().get();
-
-		Wallet.deleteWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		Wallet.deleteWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 	}
 
 	@Test
