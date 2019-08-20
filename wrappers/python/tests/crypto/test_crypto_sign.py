@@ -1,6 +1,6 @@
 import pytest
 
-from indy import crypto, did, error
+from indy import crypto, error
 
 
 @pytest.mark.asyncio
@@ -18,10 +18,3 @@ async def test_crypto_sign_works(wallet_handle, key_my1, message):
 async def test_crypto_sign_works_for_unknown_signer(wallet_handle, message, verkey_my1):
     with pytest.raises(error.WalletItemNotFound):
         await crypto.crypto_sign(wallet_handle, verkey_my1, message)
-
-
-@pytest.mark.asyncio
-async def test_crypto_sign_works_for_invalid_handle(wallet_handle, message):
-    with pytest.raises(error.WalletInvalidHandle):
-        key = await did.create_key(wallet_handle, "{}")
-        await crypto.crypto_sign(wallet_handle + 1, key, message)

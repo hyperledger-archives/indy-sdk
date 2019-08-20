@@ -23,17 +23,6 @@ public class DeleteRecordTagsTest extends NonSecretsIntegrationTest {
 	}
 
 	@Test
-	public void testDeleteRecordTagsWorksForDeleteAll() throws Exception {
-		WalletRecord.add(wallet, type, id, value, tags).get();
-
-		checkRecordField(wallet, type, id, "tags", tags);
-
-		WalletRecord.deleteTags(wallet, type, id, "[\"tagName1\", \"tagName2\", \"tagName3\"]").get();
-
-		checkRecordField(wallet, type, id, "tags", tagsEmpty);
-	}
-
-	@Test
 	public void testDeleteRecordTagsWorksForNotFoundRecord() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletItemNotFoundException.class));
