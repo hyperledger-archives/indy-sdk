@@ -75,7 +75,7 @@ pub struct TemporaryCredentialDefinition {
 
 impl CredentialDefinition {
     pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str, tag: &str) -> String {
-        if ProtocolVersion::is_node_1_3(){
+        if ProtocolVersion::is_node_1_3() {
             format!("{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id)
         } else {
             format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)

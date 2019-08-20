@@ -14,7 +14,7 @@ use domain::crypto::did::Did;
 use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::auth_rule::AuthRules;
+use domain::ledger::auth_rule::{Constraint, AuthRules};
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
@@ -195,7 +195,7 @@ pub enum LedgerCommand {
         String, // field
         Option<String>, // old value
         Option<String>, // new value
-        String, // constraint
+        Constraint, // constraint
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildAuthRulesRequest(
         String, // submitter did
@@ -442,7 +442,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, constraint, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
-                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), &constraint));
+                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), constraint));
             }
             LedgerCommand::BuildAuthRulesRequest(submitter_did, rules, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRulesRequest command received");
@@ -1045,7 +1045,7 @@ impl LedgerCommandExecutor {
                                field: &str,
                                old_value: Option<&str>,
                                new_value: Option<&str>,
-                               constraint: &str) -> IndyResult<String> {
+                               constraint: Constraint) -> IndyResult<String> {
         debug!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
             old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
 

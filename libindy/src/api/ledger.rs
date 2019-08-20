@@ -8,8 +8,9 @@ use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinit
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
 use domain::ledger::node::NodeOperationData;
-use domain::ledger::auth_rule::AuthRules;
+use domain::ledger::auth_rule::{Constraint, AuthRules};
 use utils::ctypes;
+use utils::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
@@ -570,7 +571,7 @@ pub extern fn indy_build_schema_request(command_handle: CommandHandle,
     trace!("indy_build_schema_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_json!(data, ErrorCode::CommonInvalidParam3, Schema);
+    check_useful_validateable_json!(data, ErrorCode::CommonInvalidParam3, Schema);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_schema_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -1777,7 +1778,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
     check_useful_c_str!(field, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(old_value, ErrorCode::CommonInvalidParam6);
     check_useful_opt_c_str!(new_value, ErrorCode::CommonInvalidParam7);
-    check_useful_c_str!(constraint, ErrorCode::CommonInvalidParam8);
+    check_useful_json!(constraint, ErrorCode::CommonInvalidParam8, Constraint);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     trace!("indy_build_auth_rule_request: entities >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
@@ -2015,7 +2016,7 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
     trace!("indy_build_get_txn_author_agreement_request: >>> submitter_did: {:?}, data: {:?}?", submitter_did, data);
 
     check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_json!(data, ErrorCode::CommonInvalidParam3, GetTxnAuthorAgreementData);
+    check_useful_opt_validateable_json!(data, ErrorCode::CommonInvalidParam3, GetTxnAuthorAgreementData);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_txn_author_agreement_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -2072,15 +2073,10 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
            submitter_did, aml, version, aml_context);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_json!(aml, ErrorCode::CommonInvalidParam3, AcceptanceMechanisms);
+    check_useful_validateable_json!(aml, ErrorCode::CommonInvalidParam3, AcceptanceMechanisms);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(aml_context, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
-
-    //break early and error out if no acceptance mechanisms
-    if aml.is_empty() {
-        return ErrorCode::CommonInvalidParam3;
-    }
 
     trace!("indy_build_acceptance_mechanisms_request: entities >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}",
            submitter_did, aml, version, aml_context);
