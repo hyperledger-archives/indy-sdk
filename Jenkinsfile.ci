@@ -627,8 +627,8 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Libindy Test: Test python wrapper"
 
             sh '''
-                python3.5 -m pip install --user -e .[test]
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                python3 -m pip install --user -e .[test]
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3 -m pytest
             '''
         }
     }
