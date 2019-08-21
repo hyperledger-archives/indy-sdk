@@ -705,10 +705,10 @@ def ubuntuTesting() {
     stage('Ubuntu Test') {
         parallel([
                 "ubuntu:16.04": {
-                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true, true)
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true, false)
                 },
                 "ubuntu:18.04": {
-                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", true, false)
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", true, true)
                 }
         ])
     }
