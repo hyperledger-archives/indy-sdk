@@ -211,7 +211,7 @@ pub struct VcxError {
 }
 
 impl Fail for VcxError {
-    fn cause(&self) -> Option<&Fail> {
+    fn cause(&self) -> Option<&dyn Fail> {
         self.inner.cause()
     }
 

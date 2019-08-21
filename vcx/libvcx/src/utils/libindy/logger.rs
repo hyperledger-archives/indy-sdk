@@ -4,7 +4,7 @@ use indy::logger;
 use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use error::prelude::*;
 
-pub fn set_logger(logger: &'static log::Log) -> VcxResult<()> {
+pub fn set_logger(logger: &'static dyn log::Log) -> VcxResult<()> {
     logger::set_logger(logger)
        .map_err(map_rust_indy_sdk_error)
 }

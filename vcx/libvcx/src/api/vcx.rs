@@ -375,7 +375,7 @@ pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
     let seed = if !seed.is_null() {
         match CStringUtils::c_str_to_string(seed) {
             Ok(opt_val) => opt_val.map(String::from),
-            Err(_) => return ()
+            Err(_) => ()
         }
     } else {
         None
@@ -384,7 +384,7 @@ pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
     let fees = if !fees.is_null() {
         match CStringUtils::c_str_to_string(fees) {
             Ok(opt_val) => opt_val.map(String::from),
-            Err(_) => return ()
+            Err(_) => ()
         }
     } else {
         None

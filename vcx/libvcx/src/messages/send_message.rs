@@ -117,7 +117,7 @@ impl SendMessageBuilder {
                 Ok(SendResponse { uid: res.uid, uids: res.uids }),
             A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(res)) =>
                 Ok(SendResponse { uid: Some(res.id.clone()), uids: if res.sent { vec![res.id] } else { vec![] } }),
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
+            _ => Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
         }
     }
 }
@@ -226,7 +226,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
             .send_secure()?;
 
     let msg_uid = response.get_msg_uid()?;
-    return Ok(msg_uid);
+    Ok(msg_uid)
 }
 
 #[cfg(test)]

@@ -49,7 +49,7 @@ pub fn init_pool() -> VcxResult<()>  {
     match pool::create_pool_ledger_config(&pool_name, &path) {
         Err(e) => {
             warn!("Pool Config Creation Error: {}", e);
-            return Err(e);
+            Err(e)
         },
         Ok(_) => {
             debug!("Pool Config Created Successfully");
