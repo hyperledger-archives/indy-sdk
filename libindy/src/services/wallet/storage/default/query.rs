@@ -10,12 +10,17 @@ pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&st
     let mut arguments: Vec<&dyn ToSql> = Vec::new();
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments)?;
-    let mut query_string = "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = ?".to_string();
+    const BASE: &str = "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = ?";
     if !clause_string.is_empty() {
+        let mut query_string = String::with_capacity(BASE.len() + 5 + clause_string.len());
+        query_string.push_str(BASE);
         query_string.push_str(" AND ");
         query_string.push_str(&clause_string);
+        Ok((query_string, arguments))
+    } else {
+        Ok((BASE.to_string(), arguments))
     }
-    Ok((query_string, arguments))
+
 }
 
 

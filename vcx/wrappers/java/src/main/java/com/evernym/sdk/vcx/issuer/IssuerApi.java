@@ -34,8 +34,8 @@ public class IssuerApi extends VcxJava.API {
                                                                     String credentialName,
                                                                     long price) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "credentialDefId");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "SchemaId");
+        ParamGuard.notNullOrWhiteSpace(credentialData, "credentialData");
+        ParamGuard.notNullOrWhiteSpace(credentialName, "credentialName");
 
         logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefHandle = [" + credentialDefHandle + "], issuerId = [" + issuerId + "], credentialData = [" + credentialData + "], credentialName = [" + credentialName + "], price = [" + price + "]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
