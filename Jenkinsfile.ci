@@ -84,7 +84,7 @@ def windowsTesting() {
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --features fatal_warnings"
-                            bat 'cargo test --no-run --features "only_high_cases"'
+                            bat 'cargo test --no-run --features only_high_cases'
 
                             echo "Windows Libindy before Test: Deleting %TEMP\\indy_client"
                             bat "DEL /S /Q /F %TEMP%\\indy_client"
@@ -96,7 +96,7 @@ def windowsTesting() {
                                     "RUST_LOG=indy::=debug,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
-                                bat 'cargo test --features "only_high_cases"'
+                                bat 'cargo test --features only_high_cases'
                             }
 
                             echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
@@ -472,7 +472,7 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
 
         echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
-            def features_args = full_testing ? "--features sodium_static" : "--features 'sodium_static only_high_cases'"
+            def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
 
             sh """
                 cd libindy
