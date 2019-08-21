@@ -10,7 +10,9 @@ from indy import pool
 
 from src.utils import run_coroutine, PROTOCOL_VERSION
 
+
 logger = logging.getLogger(__name__)
+
 
 async def demo():
     logger.info("Anoncreds sample -> started")
@@ -97,9 +99,10 @@ async def demo():
     await anoncreds.prover_store_credential(prover['wallet'], None, prover['cred_req_metadata'], prover['cred'],
                                             prover['cred_def'], None)
 
-    # 10. Prover gets Credentials for Proof Request
+    # 10. Verifier builds Proof Request
+    nonce = await anoncreds.generate_nonce()
     verifier['proof_req'] = json.dumps({
-        'nonce': '123432421212',
+        'nonce': nonce,
         'name': 'proof_req_1',
         'version': '0.1',
         'requested_attributes': {
@@ -111,10 +114,11 @@ async def demo():
     })
     prover['proof_req'] = verifier['proof_req']
 
-    # Prover gets Credentials for attr1_referent
+    # Prover gets Credentials for Proof Request
     prover['cred_search_handle'] = \
         await anoncreds.prover_search_credentials_for_proof_req(prover['wallet'], prover['proof_req'], None)
 
+    # Prover gets Credentials for attr1_referent
     creds_for_attr1 = await anoncreds.prover_fetch_credentials_for_proof_req(prover['cred_search_handle'],
                                                                              'attr1_referent', 10)
     prover['cred_for_attr1'] = json.loads(creds_for_attr1)[0]['cred_info']

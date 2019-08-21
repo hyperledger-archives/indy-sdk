@@ -61,12 +61,7 @@ pub extern fn indy_sign_and_submit_request(command_handle: CommandHandle,
             wallet_handle,
             submitter_did,
             request_json,
-            Box::new(move |result| {
-                let (err, request_result_json) = prepare_result_1!(result, String::new());
-                trace!("indy_sign_and_submit_request: request_result_json: {:?}", request_result_json);
-                let request_result_json = ctypes::string_to_cstring(request_result_json);
-                cb(command_handle, err, request_result_json.as_ptr())
-            })
+            boxed_callback_string!("indy_sign_and_submit_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -110,12 +105,7 @@ pub extern fn indy_submit_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::SubmitRequest(
             pool_handle,
             request_json,
-            Box::new(move |result| {
-                let (err, request_result_json) = prepare_result_1!(result, String::new());
-                trace!("indy_submit_request: request_result_json: {:?}", request_result_json);
-                let request_result_json = ctypes::string_to_cstring(request_result_json);
-                cb(command_handle, err, request_result_json.as_ptr())
-            })
+            boxed_callback_string!("indy_submit_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -175,12 +165,7 @@ pub extern fn indy_submit_action(command_handle: CommandHandle,
                 request_json,
                 nodes,
                 timeout,
-                Box::new(move |result| {
-                    let (err, request_result_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_submit_action: request_result_json: {:?}", request_result_json);
-                    let request_result_json = ctypes::string_to_cstring(request_result_json);
-                    cb(command_handle, err, request_result_json.as_ptr())
-                })
+                boxed_callback_string!("indy_submit_action", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -231,12 +216,7 @@ pub extern fn indy_sign_request(command_handle: CommandHandle,
             wallet_handle,
             submitter_did,
             request_json,
-            Box::new(move |result| {
-                let (err, signed_request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_sign_request: signed_request_json: {:?}", signed_request_json);
-                let signed_request_json = ctypes::string_to_cstring(signed_request_json);
-                cb(command_handle, err, signed_request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_sign_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -286,12 +266,7 @@ pub extern fn indy_multi_sign_request(command_handle: CommandHandle,
             wallet_handle,
             submitter_did,
             request_json,
-            Box::new(move |result| {
-                let (err, signed_request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_multi_sign_request: signed_request_json: {:?}", signed_request_json);
-                let signed_request_json = ctypes::string_to_cstring(signed_request_json);
-                cb(command_handle, err, signed_request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_multi_sign_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -334,12 +309,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetDdoRequest(
             submitter_did,
             target_did,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_ddo_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_ddo_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -404,12 +374,7 @@ pub extern fn indy_build_nym_request(command_handle: CommandHandle,
             verkey,
             alias,
             role,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_nym_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_nym_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -451,12 +416,7 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetNymRequest(
             submitter_did,
             target_did,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_nym_request: >>> request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_nym_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -513,12 +473,7 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
             hash,
             raw,
             enc,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_attrib_request: >>> request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_attrib_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -574,12 +529,7 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
             raw,
             hash,
             enc,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_attrib_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_attrib_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -629,12 +579,7 @@ pub extern fn indy_build_schema_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildSchemaRequest(
             submitter_did,
             data,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_schema_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_schema_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -676,12 +621,7 @@ pub extern fn indy_build_get_schema_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetSchemaRequest(
             submitter_did,
             id,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_schema_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_schema_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -788,12 +728,7 @@ pub extern fn indy_build_cred_def_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildCredDefRequest(
             submitter_did,
             data,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_cred_def_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_cred_def_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -836,12 +771,7 @@ pub extern fn indy_build_get_cred_def_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetCredDefRequest(
             submitter_did,
             id,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_cred_def_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_cred_def_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -953,12 +883,7 @@ pub extern fn indy_build_node_request(command_handle: CommandHandle,
             submitter_did,
             target_did,
             data,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_node_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_node_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -991,11 +916,7 @@ pub extern fn indy_build_get_validator_info_request(command_handle: CommandHandl
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetValidatorInfoRequest(
             submitter_did,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_validator_info_request", cb, command_handle)
         )));
 
     prepare_result!(result)
@@ -1040,12 +961,7 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
             submitter_did,
             ledger_type,
             seq_no,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_txn_request: request_json: {:?}, cmd_handle: {}", request_json, command_handle);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_txn_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1092,12 +1008,7 @@ pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
             submitter_did,
             writes,
             force,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_pool_config_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_pool_config_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1144,12 +1055,8 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
                 submitter_did,
                 action,
                 datetime,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_pool_restart_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                }))));
+                boxed_callback_string!("indy_build_pool_restart_request", cb, command_handle)
+            )));
 
     let res = prepare_result!(result);
 
@@ -1235,12 +1142,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
                 reinstall,
                 force,
                 package,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_pool_upgrade_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_build_pool_upgrade_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -1298,12 +1200,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildRevocRegDefRequest(
             submitter_did,
             data,
-            Box::new(move |result| {
-                let (err, rev_reg_def_req) = prepare_result_1!(result, String::new());
-                trace!("indy_build_revoc_reg_def_request: rev_reg_def_req: {:?}", rev_reg_def_req);
-                let rev_reg_def_req = ctypes::string_to_cstring(rev_reg_def_req);
-                cb(command_handle, err, rev_reg_def_req.as_ptr())
-            })
+            boxed_callback_string!("indy_build_revoc_reg_def_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1346,12 +1243,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: CommandHandle
         .send(Command::Ledger(LedgerCommand::BuildGetRevocRegDefRequest(
             submitter_did,
             id,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_revoc_reg_def_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_revoc_reg_def_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1477,12 +1369,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: CommandHandle,
             revoc_reg_def_id,
             rev_def_type,
             value,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_revoc_reg_entry_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_revoc_reg_entry_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1528,12 +1415,7 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: CommandHandle,
             submitter_did,
             revoc_reg_def_id,
             timestamp,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_revoc_reg_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1641,12 +1523,7 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: CommandHand
             revoc_reg_def_id,
             from,
             to,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_revoc_reg_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1829,13 +1706,7 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::GetResponseMetadata(
             response,
-            Box::new(move |result| {
-                let (err, response_metadata) = prepare_result_1!(result, String::new());
-                trace!("indy_get_response_metadata: response_metadata: {:?}", response_metadata);
-
-                let response_metadata = ctypes::string_to_cstring(response_metadata);
-                cb(command_handle, err, response_metadata.as_ptr())
-            })
+            boxed_callback_string!("indy_get_response_metadata", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1922,12 +1793,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
             old_value,
             new_value,
             constraint,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_auth_rule_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_auth_rule_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1989,12 +1855,7 @@ pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildAuthRulesRequest(
             submitter_did,
             rules,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_auth_rules_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_auth_rules_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -2061,12 +1922,7 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
             field,
             old_value,
             new_value,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_auth_rule_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_auth_rule_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -2116,12 +1972,7 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
                 submitter_did,
                 text,
                 version,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_txn_author_agreement_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_build_txn_author_agreement_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -2174,12 +2025,7 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
             LedgerCommand::BuildGetTxnAuthorAgreementRequest(
                 submitter_did,
                 data,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_get_txn_author_agreement_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_build_get_txn_author_agreement_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -2246,12 +2092,7 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
                 aml,
                 version,
                 aml_context,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_acceptance_mechanisms_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_build_acceptance_mechanisms_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -2304,12 +2145,7 @@ pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: Comma
                 submitter_did,
                 timestamp,
                 version,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_get_acceptance_mechanisms_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_build_get_acceptance_mechanisms_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -2379,12 +2215,7 @@ pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_han
                 taa_digest,
                 mechanism,
                 time,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_append_txn_author_agreement_acceptance_to_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_append_txn_author_agreement_acceptance_to_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -2401,7 +2232,7 @@ pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_han
 ///
 /// Note: Both Transaction Author and Endorser must sign output request after that.
 ///
-/// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorder.md
+/// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
 ///                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
 ///
 /// #Params
@@ -2434,12 +2265,7 @@ pub extern fn indy_append_request_endorser(command_handle: CommandHandle,
             LedgerCommand::AppendRequestEndorser(
                 request_json,
                 endorser_did,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_append_request_endorser: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_append_request_endorser", cb, command_handle)
             )));
 
     let res = prepare_result!(result);

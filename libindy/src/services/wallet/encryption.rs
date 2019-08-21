@@ -164,19 +164,13 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly
                     Tag::PlainText(ref ename, ref value) => {
                         let name = match decrypt_merged(&ename, tag_name_key) {
                             Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
-                            Ok(tag_name_bytes) => format!("~{}", str::from_utf8(&tag_name_bytes).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?)
+                            Ok(tag_name_bytes) => format!("~{}", str::from_utf8(&tag_name_bytes).to_indy(IndyErrorKind::WalletEncryptionError, "Plaintext Tag name is invalid utf8")?)
                         };
                         (name, value.clone())
                     }
                     Tag::Encrypted(ref ename, ref evalue) => {
-                        let name = match decrypt_merged(&ename, tag_name_key) {
-                            Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
-                            Ok(tag_name) => String::from_utf8(tag_name).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?
-                        };
-                        let value = match decrypt_merged(&evalue, tag_value_key) {
-                            Err(err) => return Err(err.to_indy(IndyErrorKind::WalletEncryptionError, "Unable to decrypt tag name")),
-                            Ok(tag_value) => String::from_utf8(tag_value).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?
-                        };
+                        let name = String::from_utf8(decrypt_merged(&ename, tag_name_key)?).to_indy(IndyErrorKind::WalletEncryptionError, "Tag name is invalid utf8")?;
+                        let value = String::from_utf8(decrypt_merged(&evalue, tag_value_key)?).to_indy(IndyErrorKind::WalletEncryptionError, "Tag value is invalid utf8")?;
                         (name, value)
                     }
                 };

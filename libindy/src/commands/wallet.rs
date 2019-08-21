@@ -41,10 +41,10 @@ pub enum WalletCommand {
                        WalletGetSearchTotalCount, // get search total count
                        WalletFetchSearchNextRecord, // fetch search next record
                        WalletFreeSearch, // free search
-                       Box<Fn(IndyResult<()>) + Send>),
+                       Box<dyn Fn(IndyResult<()>) + Send>),
     Create(Config, // config
            Credentials, // credentials
-           Box<Fn(IndyResult<()>) + Send>),
+           Box<dyn Fn(IndyResult<()>) + Send>),
     CreateContinue(Config, // config
                    Credentials, // credentials
                    KeyDerivationData,
@@ -52,15 +52,15 @@ pub enum WalletCommand {
                    CallbackHandle),
     Open(Config, // config
          Credentials, // credentials
-         Box<Fn(IndyResult<WalletHandle>) + Send>),
+         Box<dyn Fn(IndyResult<WalletHandle>) + Send>),
     OpenContinue(WalletHandle,
                  DeriveKeyResult<(MasterKey, Option<MasterKey>)>, // derive_key_result
     ),
     Close(WalletHandle,
-          Box<Fn(IndyResult<()>) + Send>),
+          Box<dyn Fn(IndyResult<()>) + Send>),
     Delete(Config, // config
            Credentials, // credentials
-           Box<Fn(IndyResult<()>) + Send>),
+           Box<dyn Fn(IndyResult<()>) + Send>),
     DeleteContinue(Config, // config
                    Credentials, // credentials
                    Metadata, // credentials
@@ -68,7 +68,7 @@ pub enum WalletCommand {
                    CallbackHandle),
     Export(WalletHandle,
            ExportConfig, // export config
-           Box<Fn(IndyResult<()>) + Send>),
+           Box<dyn Fn(IndyResult<()>) + Send>),
     ExportContinue(WalletHandle,
                    ExportConfig, // export config
                    KeyDerivationData,
@@ -77,7 +77,7 @@ pub enum WalletCommand {
     Import(Config, // config
            Credentials, // credentials
            ExportConfig, // import config
-           Box<Fn(IndyResult<()>) + Send>),
+           Box<dyn Fn(IndyResult<()>) + Send>),
     ImportContinue(Config, // config
                    Credentials, // credentials
                    DeriveKeyResult<(MasterKey, MasterKey)>, // derive_key_result
@@ -85,9 +85,9 @@ pub enum WalletCommand {
                    CallbackHandle
     ),
     GenerateKey(Option<KeyConfig>, // config
-                Box<Fn(IndyResult<String>) + Send>),
+                Box<dyn Fn(IndyResult<String>) + Send>),
     DeriveKey(KeyDerivationData,
-              Box<Fn(DeriveKeyResult<MasterKey>) + Send>),
+              Box<dyn Fn(DeriveKeyResult<MasterKey>) + Send>),
 }
 
 macro_rules! get_cb {
@@ -100,8 +100,8 @@ macro_rules! get_cb {
 pub struct WalletCommandExecutor {
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
-    open_callbacks: RefCell<HashMap<WalletHandle, Box<Fn(IndyResult<WalletHandle>) + Send>>>,
-    pending_callbacks: RefCell<HashMap<CallbackHandle, Box<Fn(IndyResult<()>) + Send>>>
+    open_callbacks: RefCell<HashMap<WalletHandle, Box<dyn Fn(IndyResult<WalletHandle>) + Send>>>,
+    pending_callbacks: RefCell<HashMap<CallbackHandle, Box<dyn Fn(IndyResult<()>) + Send>>>
 }
 
 impl WalletCommandExecutor {
@@ -213,7 +213,7 @@ impl WalletCommandExecutor {
                       free_search: WalletFreeSearch) -> IndyResult<()> {
         trace!("_register_type >>> type_: {:?}", type_);
 
-        let res = self
+        self
             .wallet_service
             .register_wallet_storage(
                 type_, create, open, close, delete, add_record, update_record_value, update_record_tags,
@@ -222,14 +222,14 @@ impl WalletCommandExecutor {
                 free_storage_metadata, search_records, search_all_records,
                 get_search_total_count, fetch_search_next_record, free_search)?;
 
-        trace!("_register_type <<< res: {:?}", res);
-        Ok(res)
+        trace!("_register_type <<< res: ()");
+        Ok(())
     }
 
     fn _create(&self,
                config: &Config,
                credentials: &Credentials,
-               cb: Box<Fn(IndyResult<()>) + Send>) {
+               cb: Box<dyn Fn(IndyResult<()>) + Send>) {
         trace!("_create >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
@@ -273,7 +273,7 @@ impl WalletCommandExecutor {
     fn _open(&self,
              config: &Config,
              credentials: &Credentials,
-             cb: Box<Fn(IndyResult<WalletHandle>) + Send>) {
+             cb: Box<dyn Fn(IndyResult<WalletHandle>) + Send>) {
         trace!("_open >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let (wallet_handle, key_derivation_data, rekey_data) = try_cb!(self.wallet_service.open_wallet_prepare(config, credentials), cb);
@@ -336,16 +336,16 @@ impl WalletCommandExecutor {
               wallet_handle: WalletHandle) -> IndyResult<()> {
         trace!("_close >>> handle: {:?}", wallet_handle);
 
-        let res = self.wallet_service.close_wallet(wallet_handle)?;
+        self.wallet_service.close_wallet(wallet_handle)?;
 
-        trace!("_close <<< res: {:?}", res);
-        Ok(res)
+        trace!("_close <<< res: ()");
+        Ok(())
     }
 
     fn _delete(&self,
                config: &Config,
                credentials: &Credentials,
-               cb: Box<Fn(IndyResult<()>) + Send>) {
+               cb: Box<dyn Fn(IndyResult<()>) + Send>) {
         trace!("_delete >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let (metadata, key_derivation_data) = try_cb!(self.wallet_service.delete_wallet_prepare(&config, &credentials), cb);
@@ -390,7 +390,7 @@ impl WalletCommandExecutor {
     fn _export(&self,
                wallet_handle: WalletHandle,
                export_config: &ExportConfig,
-               cb: Box<Fn(IndyResult<()>) + Send>) {
+               cb: Box<dyn Fn(IndyResult<()>) + Send>) {
         trace!("_export >>> handle: {:?}, export_config: {:?}", wallet_handle, secret!(export_config));
 
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(&export_config.key, &export_config.key_derivation_method);
@@ -433,7 +433,7 @@ impl WalletCommandExecutor {
                config: &Config,
                credentials: &Credentials,
                import_config: &ExportConfig,
-               cb: Box<Fn(IndyResult<()>) + Send>) {
+               cb: Box<dyn Fn(IndyResult<()>) + Send>) {
         trace!("_import >>> config: {:?}, credentials: {:?}, import_config: {:?}",
                config, secret!(credentials), secret!(import_config));
 
@@ -502,7 +502,7 @@ impl WalletCommandExecutor {
         Ok(res)
     }
 
-    fn _derive_key(&self, key_data: KeyDerivationData, cb: Box<Fn(DeriveKeyResult<MasterKey>) + Send>){
+    fn _derive_key(&self, key_data: KeyDerivationData, cb: Box<dyn Fn(DeriveKeyResult<MasterKey>) + Send>){
         ::commands::THREADPOOL.lock().unwrap().execute(move || cb(key_data.calc_master_key()));
     }
 }

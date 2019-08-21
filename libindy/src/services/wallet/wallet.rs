@@ -114,12 +114,12 @@ impl EncryptedValue {
 
 pub(super) struct Wallet {
     id: String,
-    storage: Box<storage::WalletStorage>,
+    storage: Box<dyn storage::WalletStorage>,
     keys: Rc<Keys>,
 }
 
 impl Wallet {
-    pub fn new(id: String, storage: Box<storage::WalletStorage>, keys: Rc<Keys>) -> Wallet {
+    pub fn new(id: String, storage: Box<dyn storage::WalletStorage>, keys: Rc<Keys>) -> Wallet {
         Wallet { id, storage, keys }
     }
 

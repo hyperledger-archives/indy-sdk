@@ -137,6 +137,9 @@ to Indy distributed ledger.
 
 It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no to save compatibility with Ledger.
 
+Note: Use combination of `issuerRotateCredentialDefStart` and `indy_issuer_rotate_credential_def_apply` functions
+to generate new keys for an existing credential definition.
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `issuerDid`: String - a DID of the issuer signing cred\_def transaction to the Ledger
 * `schema`: Json - credential schema as a json
@@ -152,6 +155,35 @@ It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no 
     *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
 * __->__ [ `credDefId`: String, `credDef`: Json ] - cred\_def\_id: identifier of created credential definition
 cred\_def\_json: public part of created credential definition
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### issuerRotateCredentialDefStart \( wh, credDefId, config \) -&gt; credDef
+
+ Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+ 
+ Use `issuerRotateCredentialDefApply` function to set temporary keys as the main.
+ 
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+ 
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credDefId`: String - an identifier of created credential definition stored in the wallet
+* `config`: Json - \(optional\) type-specific configuration of credential definition as json:
+  *  'CL':
+    *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
+* __->__  `credDef`: Json - public part of temporary created credential definition
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### issuerRotateCredentialDefApply \( wh, credDefId \) -&gt; void
+
+ Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+ 
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+ 
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credDefId`: String - an identifier of created credential definition stored in the wallet
+* __->__  void
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
@@ -1997,7 +2029,7 @@ But it is expecting that the transaction will be sent by the specified Endorser.
 
 Note: Both Transaction Author and Endorser must sign output request after that.
 
-More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorder.md
+More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
 
 * `requestJson`: Json - original request data json.
@@ -2649,6 +2681,7 @@ if NULL, then default config will be used. Example:
     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
         Note: Not specified nodes will be placed in a random way.
+    "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
 }
 ````
 

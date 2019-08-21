@@ -12,7 +12,7 @@ use utils::crypto::ed25519_box;
 use utils::crypto::chacha20poly1305_ietf;
 use utils::crypto::chacha20poly1305_ietf::{ gen_nonce_and_encrypt_detached};
 use utils::crypto::ed25519_sign;
-use utils::crypto::verkey_builder::build_full_verkey;
+use utils::crypto::verkey_builder::{build_full_verkey, split_verkey, verkey_get_cryptoname};
 
 use self::ed25519::ED25519CryptoType;
 use self::hex::FromHex;
@@ -37,12 +37,12 @@ trait CryptoType {
 }
 
 pub struct CryptoService {
-    crypto_types: HashMap<&'static str, Box<CryptoType>>
+    crypto_types: HashMap<&'static str, Box<dyn CryptoType>>
 }
 
 impl CryptoService {
     pub fn new() -> CryptoService {
-        let mut crypto_types: HashMap<&str, Box<CryptoType>> = HashMap::new();
+        let mut crypto_types: HashMap<&str, Box<dyn CryptoType>> = HashMap::new();
         crypto_types.insert(DEFAULT_CRYPTO_TYPE, Box::new(ED25519CryptoType::new()));
 
         CryptoService {
@@ -142,12 +142,7 @@ impl CryptoService {
     pub fn sign(&self, my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
         trace!("sign >>> my_key: {:?}, doc: {:?}", my_key, doc);
 
-        let crypto_type_name = if my_key.verkey.contains(':') {
-            let splits: Vec<&str> = my_key.verkey.split(':').collect();
-            splits[1]
-        } else {
-            DEFAULT_CRYPTO_TYPE
-        };
+        let crypto_type_name = verkey_get_cryptoname(&my_key.verkey);
 
         if !self.crypto_types.contains_key(crypto_type_name) {
             return Err(err_msg(IndyErrorKind::UnknownCrypto, format!("Trying to sign message with unknown crypto: {}", crypto_type_name)));
@@ -166,12 +161,7 @@ impl CryptoService {
     pub fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> IndyResult<bool> {
         trace!("verify >>> their_vk: {:?}, msg: {:?}, signature: {:?}", their_vk, msg, signature);
 
-        let (their_vk, crypto_type_name) = if their_vk.contains(':') {
-            let splits: Vec<&str> = their_vk.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (their_vk, crypto_type_name) = split_verkey(their_vk);
 
         if !self.crypto_types.contains_key(crypto_type_name) {
             return Err(err_msg(IndyErrorKind::UnknownCrypto, format!("Trying to verify message with unknown crypto: {}", crypto_type_name)));
@@ -208,19 +198,9 @@ impl CryptoService {
     pub fn crypto_box(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> IndyResult<(Vec<u8>, Vec<u8>)> {
         trace!("crypto_box >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
 
-        let (_my_vk, crypto_type_name) = if my_key.verkey.contains(':') {
-            let splits: Vec<&str> = my_key.verkey.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
-        };
+        let crypto_type_name = verkey_get_cryptoname(&my_key.verkey);
 
-        let (their_vk, their_crypto_type_name) = if their_vk.contains(':') {
-            let splits: Vec<&str> = their_vk.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (their_vk, their_crypto_type_name) = split_verkey(their_vk);
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
             return Err(err_msg(IndyErrorKind::UnknownCrypto, format!("Trying to crypto_box message with unknown crypto: {}", crypto_type_name)));
@@ -251,19 +231,9 @@ impl CryptoService {
     pub fn crypto_box_open(&self, my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -> IndyResult<Vec<u8>> {
         trace!("crypto_box_open >>> my_key: {:?}, their_vk: {:?}, doc: {:?}, nonce: {:?}", my_key, their_vk, doc, nonce);
 
-        let (_my_vk, crypto_type_name) = if my_key.verkey.contains(':') {
-            let splits: Vec<&str> = my_key.verkey.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
-        };
+        let crypto_type_name = verkey_get_cryptoname(&my_key.verkey);
 
-        let (their_vk, their_crypto_type_name) = if their_vk.contains(':') {
-            let splits: Vec<&str> = their_vk.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (their_vk, their_crypto_type_name) = split_verkey(their_vk);
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
             return Err(err_msg(IndyErrorKind::UnknownCrypto,
@@ -294,12 +264,7 @@ impl CryptoService {
     pub fn crypto_box_seal(&self, their_vk: &str, doc: &[u8]) -> IndyResult<Vec<u8>> {
         trace!("crypto_box_seal >>> their_vk: {:?}, doc: {:?}", their_vk, doc);
 
-        let (their_vk, crypto_type_name) = if their_vk.contains(':') {
-            let splits: Vec<&str> = their_vk.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (their_vk, crypto_type_name) = split_verkey(their_vk);
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
             return Err(err_msg(IndyErrorKind::UnknownCrypto, format!("Trying to encrypt sealed message with unknown crypto: {}", crypto_type_name)));
@@ -319,12 +284,7 @@ impl CryptoService {
     pub fn crypto_box_seal_open(&self, my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
         trace!("crypto_box_seal_open >>> my_key: {:?}, doc: {:?}", my_key, doc);
 
-        let (my_vk, crypto_type_name) = if my_key.verkey.contains(':') {
-            let splits: Vec<&str> = my_key.verkey.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
-        };
+        let (my_vk, crypto_type_name) = split_verkey(&my_key.verkey);
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
             return Err(err_msg(IndyErrorKind::UnknownCrypto,
@@ -358,8 +318,15 @@ impl CryptoService {
             seed.as_bytes().to_vec()
         } else if seed.ends_with('=') {
             // is base64 string
-            base64::decode(&seed)
-                .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize Seed from Base64 string")?
+            let decoded = base64::decode(&seed)
+                .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize Seed from Base64 string")?;
+            if decoded.len() == ed25519_sign::SEEDBYTES {
+                decoded
+            } else {
+                return Err(err_msg(IndyErrorKind::InvalidStructure,
+                                   format!("Trying to use invalid base64 encoded `seed`. \
+                                   The number of bytes must be {} ", ed25519_sign::SEEDBYTES)));
+            }
         } else if seed.as_bytes().len() == ed25519_sign::SEEDBYTES * 2 {
             // is hex string
             Vec::from_hex(seed)
@@ -380,12 +347,7 @@ impl CryptoService {
     pub fn validate_key(&self, vk: &str) -> IndyResult<()> {
         trace!("validate_key >>> vk: {:?}", vk);
 
-        let (vk, crypto_type_name) = if vk.contains(':') {
-            let splits: Vec<&str> = vk.split(':').collect();
-            (splits[0], splits[1])
-        } else {
-            (vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (vk, crypto_type_name) = split_verkey(vk);
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
             return Err(err_msg(IndyErrorKind::UnknownCrypto, format!("Trying to use key with unknown crypto: {}", crypto_type_name)));
@@ -416,11 +378,9 @@ impl CryptoService {
                                The 16- or 32-byte number upon which a DID is based should be 22/23 or 44/45 bytes when encoded as base58.", did.len())));
         }
 
-        let res = ();
+        trace!("validate_did <<< res: ()");
 
-        trace!("validate_did <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 
     pub fn encrypt_plaintext(&self,

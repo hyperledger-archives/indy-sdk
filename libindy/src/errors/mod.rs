@@ -121,7 +121,7 @@ pub struct IndyError {
 }
 
 impl Fail for IndyError {
-    fn cause(&self) -> Option<&Fail> {
+    fn cause(&self) -> Option<&dyn Fail> {
         self.inner.cause()
     }
 
@@ -347,7 +347,7 @@ impl From<ErrorCode> for IndyResult<()> {
 
 impl From<ErrorCode> for IndyError {
     fn from(err: ErrorCode) -> IndyError {
-        err_msg(err.into(), format!("Plugin returned error"))
+        err_msg(err.into(), "Plugin returned error".to_string())
     }
 }
 
