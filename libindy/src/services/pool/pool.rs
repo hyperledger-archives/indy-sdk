@@ -304,8 +304,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                         PoolState::Closed(state.into())
                     }
                     PoolEvent::CatchupTargetNotFound(err) => {
-                        let pc = PoolCommand::OpenAck(state.cmd_id, id, Err(err));
-                        CommandExecutor::instance().send(Command::Pool(pc)).unwrap();
+                        _send_open_refresh_ack(state.cmd_id, id, state.refresh,Err(err));
                         PoolState::Terminated(state.into())
                     }
                     PoolEvent::CatchupRestart(merkle_tree) => {
@@ -332,7 +331,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                     PoolEvent::Synced(merkle) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-                            _send_open_refresh_ack(state.cmd_id, id, state.refresh);
+                            _send_open_refresh_ack(state.cmd_id, id, state.refresh, Ok(()));
                             PoolState::Active((state, nodes).into())
                         } else {
                             PoolState::Terminated(state.into())
@@ -440,7 +439,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                     PoolEvent::Synced(merkle) => {
                         if let Ok((nodes, remotes)) = _get_nodes_and_remotes(&merkle).map_err(map_err_err!()) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-                            _send_open_refresh_ack(state.cmd_id, id, state.refresh);
+                            _send_open_refresh_ack(state.cmd_id, id, state.refresh, Ok(()));
                             PoolState::Active((state, nodes).into())
                         } else {
                             PoolState::Terminated(state.into())
@@ -721,12 +720,12 @@ fn _send_submit_ack(cmd_id: CommandHandle, res: IndyResult<String>) {
     CommandExecutor::instance().send(Command::Ledger(lc)).unwrap();
 }
 
-fn _send_open_refresh_ack(cmd_id: CommandHandle, id: PoolHandle, is_refresh: bool) {
+fn _send_open_refresh_ack(cmd_id: CommandHandle, id: PoolHandle, is_refresh: bool, res: IndyResult<()>) {
     trace!("PoolSM: from getting catchup target to active");
     let pc = if is_refresh {
-        PoolCommand::RefreshAck(cmd_id, Ok(()))
+        PoolCommand::RefreshAck(cmd_id, res)
     } else {
-        PoolCommand::OpenAck(cmd_id, id, Ok(()))
+        PoolCommand::OpenAck(cmd_id, id, res)
     };
     CommandExecutor::instance().send(Command::Pool(pc)).unwrap();
 }

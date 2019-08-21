@@ -36,8 +36,8 @@ public class CredentialDefApi extends VcxJava.API {
                                                                  int paymentHandle
     ) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "credentialName");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "schemaId");
+        ParamGuard.notNullOrWhiteSpace(credentialName, "credentialName");
+        ParamGuard.notNullOrWhiteSpace(schemaId, "schemaId");
         logger.debug("credentialDefCreate() called with: sourceId = [" + sourceId + "], credentialName = [" + credentialName + "], schemaId = [" + schemaId + "], issuerId = [" + issuerId + "], tag = [" + tag + "], config = [" + config + "], paymentHandle = [" + paymentHandle + "]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
         CompletableFuture<Integer> future = new CompletableFuture<>();

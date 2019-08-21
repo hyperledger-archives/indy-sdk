@@ -294,7 +294,7 @@ impl WalletStorage for SQLiteStorage {
 
         let value = if options.retrieve_value
             { Some(EncryptedValue::new(item.1, item.2)) } else { None };
-        let type_ = if options.retrieve_type { Some(type_.clone()) } else { None };
+        let type_ = if options.retrieve_type { Some(type_.to_vec()) } else { None };
         let tags = if options.retrieve_tags {
             let mut tags = Vec::new();
 
@@ -316,7 +316,7 @@ impl WalletStorage for SQLiteStorage {
             Some(tags)
         } else { None };
 
-        Ok(StorageRecord::new(id.to_vec(), value, type_.map(|val| val.to_vec()), tags))
+        Ok(StorageRecord::new(id.to_vec(), value, type_, tags))
     }
 
     ///
