@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use hex::FromHex;
 use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use serde::de::DeserializeOwned;
@@ -12,14 +10,14 @@ use domain::anoncreds::DELIMITER;
 use domain::anoncreds::revocation_registry::RevocationRegistry;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::schema::{Schema, SchemaV1, MAX_ATTRIBUTES_COUNT};
+use domain::anoncreds::schema::{Schema, SchemaV1};
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
 use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, ROLES, txn_name_to_code};
 use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
 use domain::ledger::ddo::GetDdoOperation;
 use domain::ledger::node::{NodeOperation, NodeOperationData};
 use domain::ledger::nym::GetNymOperation;
-use domain::ledger::pool::{PoolConfigOperation, PoolRestartOperation, PoolUpgradeOperation};
+use domain::ledger::pool::{PoolConfigOperation, PoolRestartOperation, PoolUpgradeOperation, Schedule};
 use domain::ledger::request::{TxnAuthrAgrmtAcceptanceData, Request};
 use domain::ledger::response::{Message, Reply, ReplyType};
 use domain::ledger::rev_reg::{GetRevocRegDeltaReplyResult, GetRevocRegReplyResult, GetRevRegDeltaOperation, GetRevRegOperation, RevRegEntryOperation};
@@ -53,30 +51,31 @@ impl LedgerService {
     #[logfn(Info)]
     pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>,
                              alias: Option<&str>, role: Option<&str>) -> IndyResult<String> {
-        let mut operation: Value = Value::Object(serde_json::map::Map::new());
-        operation["type"] = Value::String(NYM.to_string());
-        operation["dest"] = Value::String(dest.to_string());
+        let mut operation = json!({
+            "type": NYM,
+            "dest": dest,
+        });
 
         if let Some(v) = verkey {
-            operation["verkey"] = Value::String(v.to_string());
+            operation["verkey"] = json!(v);
         }
 
         if let Some(a) = alias {
-            operation["alias"] = Value::String(a.to_string());
+            operation["alias"] = json!(a);
         }
 
         if let Some(r) = role {
             if r == ROLE_REMOVE {
                 operation["role"] = Value::Null
             } else {
-                operation["role"] = Value::String(match r {
+                operation["role"] = json!(match r {
                     "STEWARD" => STEWARD,
                     "TRUSTEE" => TRUSTEE,
                     "TRUST_ANCHOR" | "ENDORSER" => ENDORSER,
                     "NETWORK_MONITOR" => NETWORK_MONITOR,
                     role if ROLES.contains(&role) => role,
                     role => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
-                }.to_string())
+                })
             }
         }
 
@@ -98,41 +97,22 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_attrib_request(&self, identifier: &str, dest: &str, hash: Option<&str>,
-                                raw: Option<&str>, enc: Option<&str>) -> IndyResult<String> {
-        if raw.is_none() && hash.is_none() && enc.is_none() {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "Either raw or hash or enc must be specified"));
-        }
-
-        if let Some(ref raw) = raw {
-            serde_json::from_str::<serde_json::Value>(raw)
-                .to_indy(IndyErrorKind::InvalidStructure, "Can not deserialize Raw Attribute")?;
-        }
-
+                                raw: Option<&serde_json::Value>, enc: Option<&str>) -> IndyResult<String> {
         build_result!(AttribOperation, Some(identifier), dest.to_string(),
                                                          hash.map(String::from),
-                                                         raw.map(String::from),
+                                                         raw.map(serde_json::Value::to_string),
                                                          enc.map(String::from))
     }
 
     #[logfn(Info)]
     pub fn build_get_attrib_request(&self, identifier: Option<&str>, dest: &str, raw: Option<&str>, hash: Option<&str>,
                                     enc: Option<&str>) -> IndyResult<String> {
-        if raw.is_none() && hash.is_none() && enc.is_none() {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "Either raw or hash or enc must be specified"));
-        }
-
         build_result!(GetAttribOperation, identifier, dest.to_string(), raw, hash, enc)
     }
 
     #[logfn(Info)]
     pub fn build_schema_request(&self, identifier: &str, schema: SchemaV1) -> IndyResult<String> {
-        if schema.attr_names.len() > MAX_ATTRIBUTES_COUNT {
-            return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("The number of Schema attributes {} cannot be greater than {}", schema.attr_names.len(), MAX_ATTRIBUTES_COUNT)));
-        }
-
         let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
-
         build_result!(SchemaOperation, Some(identifier), schema_data)
     }
 
@@ -213,31 +193,13 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_pool_restart(&self, identifier: &str, action: &str, datetime: Option<&str>) -> IndyResult<String> {
-        if action != "start" && action != "cancel" {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid action: {}", action)));
-        }
-
         build_result!(PoolRestartOperation, Some(identifier),action, datetime.map(String::from))
     }
 
     #[logfn(Info)]
     pub fn build_pool_upgrade(&self, identifier: &str, name: &str, version: &str, action: &str,
-                              sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
+                              sha256: &str, timeout: Option<u32>, schedule: Option<Schedule>,
                               justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> IndyResult<String> {
-        let schedule = match schedule {
-            Some(schedule) => Some(serde_json::from_str::<HashMap<String, String>>(schedule)
-                .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize schedule")?),
-            None => None
-        };
-
-        if action != "start" && action != "cancel" {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid action: {}", action)));
-        }
-
-        if action == "start" && schedule.is_none() {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Schedule is required for `{}` action", action)));
-        }
-
         build_result!(PoolUpgradeOperation, Some(identifier), name, version, action, sha256, timeout, schedule, justification, reinstall, force, package)
     }
 
@@ -475,7 +437,7 @@ impl LedgerService {
     #[logfn(Info)]
     pub fn validate_action(&self, request: &str) -> IndyResult<()> {
         let request: Request<serde_json::Value> = serde_json::from_str(request)
-            .to_indy(IndyErrorKind::InvalidStructure, "Request is invalid json")?;
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Request is invalid json: {:?}", err)))?;
 
         match request.operation["type"].as_str() {
             Some(POOL_RESTART) | Some(GET_VALIDATOR_INFO) => Ok(()),
@@ -635,14 +597,6 @@ mod tests {
     }
 
     #[test]
-    fn build_attrib_request_works_for_miss_attrib_field() {
-        let ledger_service = LedgerService::new();
-
-        let res = ledger_service.build_attrib_request(IDENTIFIER, DEST, None, None, None);
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
-
-    #[test]
     fn build_attrib_request_works_for_hash_field() {
         let ledger_service = LedgerService::new();
 
@@ -724,24 +678,6 @@ mod tests {
 
         let request = ledger_service.build_schema_request(IDENTIFIER, data).unwrap();
         check_request(&request, expected_result);
-    }
-
-    #[test]
-    fn build_schema_request_works_for_attrs_count_more_than_acceptable() {
-        let ledger_service = LedgerService::new();
-
-        let attr_names: AttributeNames = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
-
-        let data = SchemaV1 {
-            id: Schema::schema_id(IDENTIFIER, "name", "1.0"),
-            name: "name".to_string(),
-            version: "1.0".to_string(),
-            attr_names,
-            seq_no: None,
-        };
-
-        let res = ledger_service.build_schema_request(IDENTIFIER, data);
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
     }
 
     #[test]

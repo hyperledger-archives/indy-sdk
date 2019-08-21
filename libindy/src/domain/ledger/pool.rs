@@ -79,3 +79,5 @@ impl PoolUpgradeOperation {
         }
     }
 }
+
+pub type Schedule = HashMap<String, String>;

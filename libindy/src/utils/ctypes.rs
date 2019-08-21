@@ -75,20 +75,20 @@ macro_rules! check_useful_json {
     }
 }
 
-macro_rules! check_useful_validateable_json {
+macro_rules! check_useful_validatable_json {
     ($x:ident, $e:expr, $t:ty) => {
         check_useful_json!($x, $e, $t);
 
         match $x.validate() {
             Ok(ok) => ok,
             Err(err) => {
-                return err_msg($e.into(), err).into()
+                return err_msg(IndyErrorKind::InvalidStructure, err).into()
             }
         };
     }
 }
 
-macro_rules! check_useful_opt_validateable_json {
+macro_rules! check_useful_opt_validatable_json {
     ($x:ident, $e:expr, $t:ty) => {
         let $x = match ctypes::c_str_to_string($x) {
             Ok(Some(val)) => Some(val),
