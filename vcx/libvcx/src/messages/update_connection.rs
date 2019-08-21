@@ -97,7 +97,7 @@ impl DeleteConnectionBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(res)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateConnectionResponse(res)) => Ok(()),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
         }
     }
 

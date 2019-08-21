@@ -103,7 +103,7 @@ impl CreateKeyBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),
             A2AMessage::Version2(A2AMessageV2::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
+            _ => Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
         }
     }
 }
