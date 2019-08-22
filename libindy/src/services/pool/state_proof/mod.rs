@@ -80,7 +80,9 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
                         gen: &Generator) -> bool {
     for parsed_sp in parsed_sps {
         if parsed_sp.multi_signature["value"]["state_root_hash"].as_str().ne(
+            &Some(&parsed_sp.root_hash)) && parsed_sp.multi_signature["value"]["txn_root_hash"].as_str().ne(
             &Some(&parsed_sp.root_hash)) {
+            error!("Given signature is not for current root hash, aborting");
             return false;
         }
 
@@ -292,6 +294,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 return None;
             }
         }
+        constants::GET_TXN => vec![],
         _ => {
             if let Some(dest) = dest {
                 dest.as_bytes().to_vec()
@@ -399,7 +402,7 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
 
         (proof, root_hash, KeyValueSimpleDataVerificationType::Simple, json_msg["state_proof"]["multi_signature"].clone())
     } else {
-        let proof = if let Some(path) = parsed_data["audit_path"].as_array() {
+        let proof = if let Some(path) = parsed_data["auditPath"].as_array() {
             let path_str = json!(path).to_string();
             trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", path);
             base64::encode(&path_str)
@@ -407,14 +410,14 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
             return Err("No proof".to_string());
         };
 
-        let root_hash = if let Some(root_hash) = parsed_data["root_hash"].as_str() {
+        let root_hash = if let Some(root_hash) = parsed_data["rootHash"].as_str() {
             trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
             root_hash
         } else {
             return Err("No root hash".to_string());
         };
 
-        let len = if let Some(len) = parsed_data["ledger_size"].as_u64() {
+        let len = if let Some(len) = parsed_data["ledgerSize"].as_u64() {
             trace!("Ledger length: {}", len);
             len
         } else {
@@ -537,6 +540,8 @@ fn _verify_merkle_tree(proof_nodes: &[u8], root_hash: &[u8], kvs: &[(String, Opt
     trace!("_verify_merkle_tree >> hashes: {:?}", hashes);
 
     let (key, value) = &kvs[0];
+    let key = unwrap_or_return!(base64::decode(&key), false);
+    let key = unwrap_or_return!(std::str::from_utf8(&key), false);
     let seq_no = match key.parse::<u64>() {
         Ok(num) => num,
         Err(err) => {
@@ -555,14 +560,18 @@ fn _verify_merkle_tree(proof_nodes: &[u8], root_hash: &[u8], kvs: &[(String, Opt
 
     let hashes_with_turns = hashes.iter().zip(turns).collect::<Vec<(&String, bool)>>();
 
-    let _value = match value{
+    let value = match value{
         Some(val) => val,
         None => {return false;}
     };
 
-    trace!("Value to hash: {}", _value);
+    trace!("Value to hash: {}", value);
 
-    let mut hash = match Hash::hash_leaf(&_value) {
+    let value = unwrap_or_return!(serde_json::from_str::<serde_json::Value>(&value), false);
+    trace!("serde json success: {:?}", value);
+    let value = unwrap_or_return!(rmp_serde::to_vec(&value), false);
+    trace!("rmp serde success: {:?}", value);
+    let mut hash = match Hash::hash_leaf(&value) {
         Ok(hash) => hash,
         Err(err) => {
             error!("Error while hashing: {:?}", err);
@@ -760,10 +769,22 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
         match xtype {
             //TODO constants::GET_DDO => support DDO
             constants::GET_TXN => {
-                value = if !parsed_data["txn"].is_null() {
-                    parsed_data["txn"].clone()
-                } else {
-                    return Ok(None)
+                value = json!({});
+                if parsed_data["txn"].is_null() && parsed_data["txnMetadata"].is_null() &&
+                    parsed_data["ver"].is_null() && parsed_data["reqSignature"].is_null() {
+                    return Ok(None);
+                }
+                if !parsed_data["txn"].is_null() {
+                    value["txn"] = parsed_data["txn"].clone();
+                }
+                if !parsed_data["txnMetadata"].is_null() {
+                    value["txnMetadata"] = parsed_data["txnMetadata"].clone();
+                }
+                if !parsed_data["ver"].is_null() {
+                    value["ver"] = parsed_data["ver"].clone();
+                }
+                if !parsed_data["reqSignature"].is_null() {
+                    value["reqSignature"] = parsed_data["reqSignature"].clone();
                 }
             }
             constants::GET_NYM => {
@@ -867,14 +888,14 @@ mod tests {
     fn audit_proof_verify_works() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
-                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
-                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![("3".to_string(), Some("3".to_string()))];
+        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
-        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
     }
 
@@ -882,14 +903,14 @@ mod tests {
     fn audit_proof_verify_works_for_invalid_proof() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUa", // wrong hash in this value
-                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
-                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgM3", //wrong hash here
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![("3".to_string(), Some("3".to_string()))];
+        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
-        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
     }
 
@@ -897,12 +918,12 @@ mod tests {
     fn audit_proof_verify_works_for_invalid_root_hash() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
-                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
-                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![("3".to_string(), Some("3".to_string()))];
+        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
         let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4G1".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
@@ -912,14 +933,14 @@ mod tests {
     fn audit_proof_verify_works_for_invalid_ledger_length() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
-                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
-                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![("3".to_string(), Some("3".to_string()))];
+        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
-        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 9));
     }
 
@@ -927,14 +948,14 @@ mod tests {
     fn audit_proof_verify_works_for_invalid_value() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
-                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
-                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![("3".to_string(), Some("4".to_string()))];
+        let kvs = vec![(base64::encode("3"), Some(r#"{"4":"4"}"#.to_string()))];
         let node_bytes = &nodes;
-        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
     }
 
@@ -942,14 +963,14 @@ mod tests {
     fn audit_proof_verify_works_for_invalid_seqno() {
         let nodes = json!(
             [
-                "2ComdvG2GQbsGh6DntnUoxRFDCuWz6iSQdKfdd35jrUj",
-                "GfWc7bRJj7S4HpwCAzGCLXCftvyJzZkjFDS1cmrPnQFE",
-                "6bjZk9jK6G368qqpVog8A9JNj48EYZTrNszMzMkwRUho"
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![("4".to_string(), Some("3".to_string()))];
+        let kvs = vec![(base64::encode("4"), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
-        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4GS".from_base58().unwrap();
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
     }
 
@@ -1447,9 +1468,9 @@ mod tests {
         let json_msg = &json!({
             "type": constants::GET_TXN,
             "data": {
-                "audit_path": ["1", "2"],
-                "ledger_size": 2,
-                "root_hash": "123",
+                "auditPath": ["1", "2"],
+                "ledgerSize": 2,
+                "rootHash": "123",
                 "txn": {"test1": "test2", "seqNo": 2},
                 "multi_signature": "ms"
             }
@@ -1469,7 +1490,7 @@ mod tests {
         assert_eq!(parsed_sp.proof_nodes, nodes_str);
         assert_eq!(parsed_sp.kvs_to_verify,
                    KeyValuesInSP::Simple(KeyValueSimpleData {
-                       kvs: vec![(base64::encode("2"), Some(json!({"test1": "test2", "seqNo": 2}).to_string()))],
+                       kvs: vec![(base64::encode("2"), Some(json!({"txn":{"test1": "test2", "seqNo": 2}}).to_string()))],
                        verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
                    }));
     }
@@ -1480,9 +1501,9 @@ mod tests {
         let json_msg = &json!({
             "type": constants::GET_TXN,
             "data": {
-                "audit_path": ["1", "2"],
-                "ledger_size": 2,
-                "root_hash": "123",
+                "auditPath": ["1", "2"],
+                "ledgerSize": 2,
+                "rootHash": "123",
                 "txn": {"test1": "test2", "seqNo": 2},
 //                "multi_signature": "ms"
             }
@@ -1502,7 +1523,7 @@ mod tests {
         assert_eq!(parsed_sp.proof_nodes, nodes_str);
         assert_eq!(parsed_sp.kvs_to_verify,
                    KeyValuesInSP::Simple(KeyValueSimpleData {
-                       kvs: vec![(base64::encode("2"), Some(json!({"test1": "test2", "seqNo": 2}).to_string()))],
+                       kvs: vec![(base64::encode("2"), Some(json!({"txn":{"test1": "test2", "seqNo": 2}}).to_string()))],
                        verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
                    }));
     }
@@ -1512,9 +1533,9 @@ mod tests {
         let json_msg = &json!({
             "type": constants::GET_TXN,
             "data": {
-                "audit_path": ["1", "2"],
-//                "ledger_size": 2,
-                "root_hash": "123",
+                "auditPath": ["1", "2"],
+//                "ledgerSize": 2,
+                "rootHash": "123",
                 "txn": {"test1": "test2", "seqNo": 2},
                 "multi_signature": "ms"
             }
@@ -1530,9 +1551,9 @@ mod tests {
         let json_msg = &json!({
             "type": constants::GET_TXN,
             "data": {
-                "audit_path": ["1", "2"],
-                "ledger_size": 2,
-                "root_hash": "123",
+                "auditPath": ["1", "2"],
+                "ledgerSize": 2,
+                "rootHash": "123",
 //                "txn": {"test1": "test2", "seqNo": 2},
                 "multi_signature": "ms"
             }
