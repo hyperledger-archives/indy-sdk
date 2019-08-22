@@ -27,11 +27,12 @@ const REQUEST_FOR_FULL: [&str; 2] = [
 ];
 
 
-pub const REQUESTS_FOR_STATE_PROOFS_IN_THE_PAST: [&str; 4] = [
+pub const REQUESTS_FOR_STATE_PROOFS_IN_THE_PAST: [&str; 5] = [
     constants::GET_REVOC_REG,
     constants::GET_REVOC_REG_DELTA,
     constants::GET_TXN_AUTHR_AGRMT,
     constants::GET_TXN_AUTHR_AGRMT_AML,
+    constants::GET_TXN,
 ];
 
 pub const REQUESTS_FOR_MULTI_STATE_PROOFS: [&str; 1] = [
@@ -263,6 +264,10 @@ impl Into<Option<RequestEvent>> for PoolEvent {
 fn _parse_timestamp_from_req_for_builtin_sp(req: &SJsonValue, op: &str) -> (Option<u64>, Option<u64>) {
     if !REQUESTS_FOR_STATE_PROOFS_IN_THE_PAST.contains(&op) {
         return (None, None);
+    }
+
+    if op == constants::GET_TXN {
+        return (None, Some(0));
     }
 
     match op {
