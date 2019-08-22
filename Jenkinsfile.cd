@@ -212,7 +212,9 @@ String getSrcVersion(folder) {
     }
 }
 
-def linuxTesting(file, env_name, network_name, stashBuildResults, full_testing) {
+def linuxTesting(file, env_name, network_name, stashBuildResults) {
+    def full_testing = runAllTests(env_name)
+
     parallel([
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
@@ -701,14 +703,21 @@ def windowsTesting() {
     }
 }
 
+def runAllTests(env_name) {
+    if (env_name == Ubuntu16) {
+        return true
+    }
+    return (env.BRANCH_NAME == 'rc')
+}
+
 def ubuntuTesting() {
     stage('Ubuntu Test') {
         parallel([
                 "ubuntu:16.04": {
-                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true, true)
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true)
                 },
                 "ubuntu:18.04": {
-                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", true, false)
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", true)
                 }
         ])
     }
@@ -841,7 +850,7 @@ def buildIOSPod(packageName, targets) {
 
 def rhelTesting() {
     stage('RedHat Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false, false)
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
     }
 }
 
