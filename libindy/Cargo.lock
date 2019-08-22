@@ -640,7 +640,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libindy"
-version = "1.11.0"
+version = "1.11.1"
 dependencies = [
  "android_logger 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "backtrace 0.3.11 (registry+https://github.com/rust-lang/crates.io-index)",

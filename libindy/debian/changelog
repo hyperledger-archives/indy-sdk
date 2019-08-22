@@ -1,6 +1,14 @@
-libindy (1.11.0) unstable; urgency=medium
+libindy (1.11.1) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.11.1
+* Added new functions to Anoncreds API to rotate credential definition:
+    `indy_issuer_rotate_credential_def_start` - to generate temporary keys for an existing Credential Definition.
+    `indy_issuer_rotate_credential_def_apply` - to apply temporary keys as the main for an existing Credential Definition in the wallet.
+* Supported state proof verification for GET_TXN request.
+* Extended `config` parameter of `indy_open_pool_ledger` function to accept `number_read_nodes` value. This value set the number of nodes to send read requests.
+* Bugfixes
 
 ## 1.11.0
 * Updated `indy_append_txn_author_agreement_acceptance_to_request` function to discard the time portion of `acceptance time` on appending TAA metadata into request.

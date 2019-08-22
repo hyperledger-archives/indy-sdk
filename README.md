@@ -180,6 +180,17 @@ that may be need for your applications.
 
  * `libindy.a` - This is a static library, which is compiled with NDK.
 
+### Centos
+
+1. Go to https://repo.sovrin.org/rpm/{library}/{release-channel}.
+2. Download the last version of library.
+3. Install with `rpm -i library-version.rpm`.
+
+{library} must be replaced with libindy, libnullpay, libvcx, indy-cli to define corresponded library.
+
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+See section "Release channels" for more details.
+
  [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/android-build.md#usage)  
 
 {release channel} must be replaced with rc or stable to define corresponded release channel.
