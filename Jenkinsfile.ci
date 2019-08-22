@@ -20,7 +20,7 @@ def testing() {
                 'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
+                // 'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -345,10 +345,10 @@ def ubuntuTesting() {
     stage('Ubuntu Test') {
         parallel([
                 "ubuntu:16.04": {
-                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true)
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", false)
                 },
                 "ubuntu:18.04": {
-                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", false)
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", true)
                 }
         ])
     }
@@ -627,8 +627,8 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Libindy Test: Test python wrapper"
 
             sh '''
-                python3.5 -m pip install --user -e .[test]
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                python3 -m pip install --user -e .[test]
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3 -m pytest
             '''
         }
     }
@@ -685,8 +685,8 @@ def linuxVcxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Vcx Test: Test python wrapper"
 
             sh '''
-                    python3.5 -m pip install --user pytest==3.6.4 pytest-asyncio
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest -s
+                    python3 -m pip install --user pytest==3.6.4 pytest-asyncio
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3 -m pytest -s
             '''
         }
     }
