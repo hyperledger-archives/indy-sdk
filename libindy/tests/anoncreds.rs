@@ -35,8 +35,6 @@ use indy::ErrorCode;
 use utils::constants::*;
 use utils::Setup;
 
-use utils::domain::anoncreds::schema::{Schema};
-use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use utils::domain::anoncreds::proof::Proof;
@@ -464,6 +462,8 @@ mod high_cases {
     // {"issuer_did": DID, "schema_id": gvt_schema_id}
     mod prover_get_credentials_for_proof_req {
         use super::*;
+        use utils::domain::anoncreds::schema::SchemaId;
+        use utils::domain::anoncreds::credential_definition::CredentialDefinitionId;
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_empty_req() {
@@ -954,7 +954,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": [json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
+                           "restrictions": [json!({ "schema_id": SchemaId::new(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
                        })
                    }),
                    "requested_predicates": json!({
@@ -985,7 +985,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": [json!({ "cred_def_id": CredentialDefinition::cred_def_id(DID_TRUSTEE, &anoncreds::gvt_schema_id(), "CL", TAG_1) })]
+                           "restrictions": [json!({ "cred_def_id": CredentialDefinitionId::new(DID_TRUSTEE, &SchemaId(anoncreds::gvt_schema_id()), "CL", TAG_1) })]
                        })
                    }),
                    "requested_predicates": json!({
@@ -1477,7 +1477,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })
+                           "restrictions": json!({ "schema_id": SchemaId::new(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })
                        })
                    }),
                    "requested_predicates": json!({
@@ -1508,7 +1508,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": json!({ "cred_def_id": CredentialDefinition::cred_def_id(DID_TRUSTEE, &anoncreds::gvt_schema_id(), "CL", TAG_1) })
+                           "restrictions": json!({ "cred_def_id": CredentialDefinitionId::new(DID_TRUSTEE, &SchemaId(anoncreds::gvt_schema_id()), "CL", TAG_1) })
                        })
                    }),
                    "requested_predicates": json!({
@@ -1820,7 +1820,7 @@ mod high_cases {
                    "requested_attributes": json!({}),
                    "requested_predicates": json!({
                        "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                       "restrictions": [ json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })] })
+                       "restrictions": [ json!({ "schema_id": SchemaId::new(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })] })
                    }),
                 }).to_string();
 
@@ -2153,7 +2153,7 @@ mod high_cases {
                             "name":"age",
                             "p_type":">=",
                             "p_value":18,
-                            "restrictions": json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })
+                            "restrictions": json!({ "schema_id": SchemaId::new(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })
                          })
                    }),
                 }).to_string();

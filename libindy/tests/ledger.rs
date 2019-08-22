@@ -3090,6 +3090,7 @@ mod medium_cases {
 
     mod schemas_requests {
         use super::*;
+        use utils::domain::anoncreds::schema::SchemaId;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -3180,7 +3181,7 @@ mod medium_cases {
         fn indy_get_schema_request_works_for_unknown_schema() {
             let setup = Setup::pool();
 
-            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &Schema::schema_id(DID, "other_schema", "1.0")).unwrap();
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(DID, "other_schema", "1.0").0).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
@@ -3206,7 +3207,7 @@ mod medium_cases {
         fn indy_get_parse_returns_error_for_wrong_type_and_unknown_schema() {
             let setup = Setup::pool();
 
-            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &Schema::schema_id(DID, "other_schema", "1.0")).unwrap();
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(DID, "other_schema", "1.0").0).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_cred_def_response(&get_schema_response);

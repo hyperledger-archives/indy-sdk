@@ -6,10 +6,10 @@ use serde_json;
 use serde_json::Value;
 
 use api::ledger::{CustomFree, CustomTransactionParser};
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
+use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId};
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::schema::{Schema, SchemaV1};
+use domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
 use domain::crypto::did::Did;
 use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
@@ -96,7 +96,7 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetSchemaRequest(
         Option<String>, // submitter did
-        String, // id
+        SchemaId, // id
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetSchemaResponse(
         String, // get schema response json
@@ -107,7 +107,7 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetCredDefRequest(
         Option<String>, // submitter did
-        String, // id
+        CredentialDefinitionId, // id
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetCredDefResponse(
         String, // get cred definition response
@@ -154,20 +154,20 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetRevocRegDefRequest(
         Option<String>, // submitter did
-        String, // revocation registry definition id
+        RevocationRegistryId, // revocation registry definition id
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetRevocRegDefResponse(
         String, // get revocation registry definition response
         Box<dyn Fn(IndyResult<(String, String)>) + Send>),
     BuildRevocRegEntryRequest(
         String, // submitter did
-        String, // revocation registry definition id
+        RevocationRegistryId, // revocation registry definition id
         String, // revocation registry definition type
         RevocationRegistryDelta, // value
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetRevocRegRequest(
         Option<String>, // submitter did
-        String, // revocation registry definition id
+        RevocationRegistryId, // revocation registry definition id
         i64, // timestamp
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetRevocRegResponse(
@@ -175,7 +175,7 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<(String, String, u64)>) + Send>),
     BuildGetRevocRegDeltaRequest(
         Option<String>, // submitter did
-        String, // revocation registry definition id
+        RevocationRegistryId, // revocation registry definition id
         Option<i64>, // from
         i64, // to
         Box<dyn Fn(IndyResult<String>) + Send>),
@@ -214,7 +214,7 @@ pub enum LedgerCommand {
     GetSchema(
         PoolHandle,
         Option<String>,
-        String,
+        SchemaId,
         Box<dyn Fn(IndyResult<(String, String)>) + Send>,
     ),
     GetSchemaContinue(
@@ -224,7 +224,7 @@ pub enum LedgerCommand {
     GetCredDef(
         PoolHandle,
         Option<String>,
-        String,
+        CredentialDefinitionId,
         Box<dyn Fn(IndyResult<(String, String)>) + Send>,
     ),
     GetCredDefContinue(
@@ -758,7 +758,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_schema_request(&self,
                                 submitter_did: Option<&str>,
-                                id: &str) -> IndyResult<String> {
+                                id: &SchemaId) -> IndyResult<String> {
         debug!("build_get_schema_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
         self.validate_opt_did(submitter_did)?;
@@ -798,7 +798,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_cred_def_request(&self,
                                   submitter_did: Option<&str>,
-                                  id: &str) -> IndyResult<String> {
+                                  id: &CredentialDefinitionId) -> IndyResult<String> {
         debug!("build_get_cred_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
         self.validate_opt_did(submitter_did)?;
@@ -937,7 +937,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_revoc_reg_def_request(&self,
                                        submitter_did: Option<&str>,
-                                       id: &str) -> IndyResult<String> {
+                                       id: &RevocationRegistryId) -> IndyResult<String> {
         debug!("build_get_revoc_reg_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
         self.validate_opt_did(submitter_did)?;
@@ -962,7 +962,7 @@ impl LedgerCommandExecutor {
 
     fn build_revoc_reg_entry_request(&self,
                                      submitter_did: &str,
-                                     revoc_reg_def_id: &str,
+                                     revoc_reg_def_id: &RevocationRegistryId,
                                      revoc_def_type: &str,
                                      value: RevocationRegistryDeltaV1) -> IndyResult<String> {
         debug!("build_revoc_reg_entry_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, revoc_def_type: {:?}, value: {:?}",
@@ -979,7 +979,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_revoc_reg_request(&self,
                                    submitter_did: Option<&str>,
-                                   revoc_reg_def_id: &str,
+                                   revoc_reg_def_id: &RevocationRegistryId,
                                    timestamp: i64) -> IndyResult<String> {
         debug!("build_get_revoc_reg_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
 
@@ -1005,7 +1005,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_revoc_reg_delta_request(&self,
                                          submitter_did: Option<&str>,
-                                         revoc_reg_def_id: &str,
+                                         revoc_reg_def_id: &RevocationRegistryId,
                                          from: Option<i64>,
                                          to: i64) -> IndyResult<String> {
         debug!("build_get_revoc_reg_delta_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}", submitter_did, revoc_reg_def_id, from, to);
@@ -1207,7 +1207,7 @@ impl LedgerCommandExecutor {
         }
     }
 
-    fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &SchemaId, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
         let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb);
 
         let cb_id = next_command_handle();
@@ -1231,7 +1231,7 @@ impl LedgerCommandExecutor {
         cb(self.parse_get_schema_response(&pool_response));
     }
 
-    fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &CredentialDefinitionId, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
         let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb);
 
         let cb_id = next_command_handle();

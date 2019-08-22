@@ -15,16 +15,16 @@ use ursa::cl::verifier::Verifier as CryptoVerifier;
 
 use domain::anoncreds::credential::{AttributeValues, Credential};
 use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
-use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
+use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionId};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequestMetadata;
 use domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
 use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestExtraQuery, RequestedAttributeInfo, RequestedPredicateInfo};
 use domain::anoncreds::requested_credential::ProvingCredentialKey;
 use domain::anoncreds::requested_credential::RequestedCredentials;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
 use domain::anoncreds::revocation_state::RevocationState;
-use domain::anoncreds::schema::SchemaV1;
+use domain::anoncreds::schema::{SchemaV1, SchemaId};
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
@@ -117,9 +117,9 @@ impl Prover {
                         proof_req: &ProofRequest,
                         requested_credentials: &RequestedCredentials,
                         master_secret: &MasterSecret,
-                        schemas: &HashMap<String, SchemaV1>,
-                        cred_defs: &HashMap<String, CredentialDefinition>,
-                        rev_states: &HashMap<String, HashMap<u64, RevocationState>>) -> IndyResult<Proof> {
+                        schemas: &HashMap<SchemaId, SchemaV1>,
+                        cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinition>,
+                        rev_states: &HashMap<RevocationRegistryId, HashMap<u64, RevocationState>>) -> IndyResult<Proof> {
         trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret: {:?}, schemas: {:?}, cred_defs: {:?}, rev_states: {:?}",
                credentials, proof_req, requested_credentials, secret!(&master_secret), schemas, cred_defs, rev_states);
 
@@ -278,7 +278,7 @@ impl Prover {
         res.insert("schema_version".to_string(), credential.schema_version());
         res.insert("issuer_did".to_string(), credential.issuer_did());
         res.insert("cred_def_id".to_string(), credential.cred_def_id());
-        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.clone().unwrap_or_else(|| "None".to_string()));
+        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.as_ref().map(|rev_reg_id|rev_reg_id.0.clone()).unwrap_or_else(|| "None".to_string()));
 
         credential.values
             .iter()
@@ -389,7 +389,7 @@ impl Prover {
                                req_predicates_for_credential: Vec<RequestedPredicateInfo>,
                                proof_req: &ProofRequest,
                                credential: &Credential,
-                               sub_proof_index: i32,
+                               sub_proof_index: u32,
                                requested_proof: &mut RequestedProof) -> IndyResult<()> {
         trace!("_update_requested_proof >>> req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}, proof_req: {:?}, credential: {:?}, \
                sub_proof_index: {:?}, requested_proof: {:?}",
@@ -545,7 +545,7 @@ mod tests {
         fn build_credential_tags_works_for_rev_reg_id() {
             let ps = Prover::new();
             let mut credential = _credential();
-            credential.rev_reg_id = Some(REV_REG_ID.to_string());
+            credential.rev_reg_id = Some(RevocationRegistryId(REV_REG_ID.to_string()));
             let tags = ps.build_credential_tags(&credential, None);
 
             let expected_tags: HashMap<String, String> = hashmap!(
