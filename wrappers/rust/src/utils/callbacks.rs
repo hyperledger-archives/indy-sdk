@@ -110,7 +110,7 @@ macro_rules! result_handler {
     ($name:ident($res_type:ty), $map:ident) => (
     pub fn $name(command_handle: CommandHandle,
                  err: ErrorCode,
-                 rx: sync::oneshot::Receiver<Result<$res_type, IndyError>>) -> Box<Future<Item=$res_type, Error= IndyError>> {
+                 rx: sync::oneshot::Receiver<Result<$res_type, IndyError>>) -> Box<dyn Future<Item=$res_type, Error= IndyError>> {
         if err != ErrorCode::Success {
             let mut callbacks = $map.lock().unwrap();
             callbacks.remove(&command_handle).unwrap();
