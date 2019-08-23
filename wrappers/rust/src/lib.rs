@@ -338,7 +338,7 @@ pub struct IndyError {
 }
 
 impl Fail for IndyError {
-    fn cause(&self) -> Option<&Fail> {
+    fn cause(&self) -> Option<&dyn Fail> {
         self.error_code.cause()
     }
 
