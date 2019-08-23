@@ -136,7 +136,7 @@ describe('Wallet:', () => {
 
   describe('import:', () => {
     it('throws: libindy error', async () => {
-      let config = '{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}'
+      let config = '{"wallet_name":"name","wallet_key":"","exported_wallet_path":"","backup_key":""}'
       let error = await shouldThrow(async () => Wallet.import(config))
       assert.equal(error.vcxCode, VCXCode.IO_ERROR)
       shutdownVcx(false)

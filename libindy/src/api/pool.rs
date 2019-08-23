@@ -5,6 +5,7 @@ use commands::pool::PoolCommand;
 use domain::pool::{PoolConfig, PoolOpenConfig};
 use errors::prelude::*;
 use utils::ctypes;
+use utils::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
@@ -91,7 +92,7 @@ pub extern fn indy_open_pool_ledger(command_handle: CommandHandle,
     trace!("indy_open_pool_ledger: >>> config_name: {:?}, config: {:?}", config_name, config);
 
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_json!(config, ErrorCode::CommonInvalidParam3, PoolOpenConfig);
+    check_useful_opt_validatable_json!(config, ErrorCode::CommonInvalidParam3, PoolOpenConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_open_pool_ledger: entities >>> config_name: {:?}, config: {:?}", config_name, config);

@@ -39,6 +39,9 @@ pub mod sequence;
 #[path = "../../src/utils/ctypes.rs"]
 pub mod ctypes;
 
+#[path = "../../src/utils/validation.rs"]
+pub mod validation;
+
 #[path = "../../src/utils/inmem_wallet.rs"]
 pub mod inmem_wallet;
 

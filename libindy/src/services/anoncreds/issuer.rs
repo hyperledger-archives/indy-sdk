@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
-
 use ursa::cl::{
     CredentialKeyCorrectnessProof,
     CredentialPrivateKey,
@@ -16,7 +13,8 @@ use ursa::cl::{
 };
 use ursa::cl::issuer::Issuer as CryptoIssuer;
 
-use domain::anoncreds::credential::AttributeValues;
+use domain::anoncreds::schema::AttributeNames;
+use domain::anoncreds::credential::CredentialValues;
 use domain::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1 as CredentialDefinition};
 use domain::anoncreds::credential_request::CredentialRequest;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
@@ -30,7 +28,7 @@ impl Issuer {
         Issuer {}
     }
 
-    pub fn new_credential_definition(attr_names: &HashSet<String>,
+    pub fn new_credential_definition(attr_names: &AttributeNames,
                                      support_revocation: bool) -> IndyResult<(CredentialDefinitionData,
                                                                               CredentialPrivateKey,
                                                                               CredentialKeyCorrectnessProof)> {
@@ -85,7 +83,7 @@ impl Issuer {
                                cred_priv_key: &CredentialPrivateKey,
                                cred_issuance_blinding_nonce: &Nonce,
                                cred_request: &CredentialRequest,
-                               cred_values: &HashMap<String, AttributeValues>,
+                               cred_values: &CredentialValues,
                                rev_idx: Option<u32>,
                                rev_reg_def: Option<&RevocationRegistryDefinitionV1>,
                                rev_reg: Option<&mut RevocationRegistry>,
