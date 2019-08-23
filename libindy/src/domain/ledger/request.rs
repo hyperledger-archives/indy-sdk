@@ -1,6 +1,7 @@
 use serde;
 use serde_json;
 use time;
+use std::collections::HashMap;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -44,6 +45,8 @@ pub struct Request<T: serde::Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub signatures: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub taa_acceptance: Option<TxnAuthrAgrmtAcceptanceData>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub endorser: Option<String>
@@ -57,6 +60,7 @@ impl<T: serde::Serialize> Request<T> {
             operation,
             protocol_version: Some(protocol_version),
             signature: None,
+            signatures: None,
             taa_acceptance: None,
             endorser: None,
         }

@@ -5,12 +5,14 @@ use super::DELIMITER;
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
+use utils::validation::Validatable;
+
 pub const CL_ACCUM: &str = "CL_ACCUM";
 pub const REV_REG_DEG_MARKER: &str = "4";
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct RevocationRegistryConfig {
-    pub issuance_type: Option<String>,
+    pub issuance_type: Option<IssuanceType>,
     pub max_cred_num: Option<u32>
 }
 
@@ -108,4 +110,16 @@ pub struct RevocationRegistryInfo {
     pub id: String,
     pub curr_id: u32,
     pub used_ids: HashSet<u32>
+}
+
+
+impl Validatable for RevocationRegistryConfig {
+    fn validate(&self) -> Result<(), String> {
+        if let Some(num_) = self.max_cred_num {
+            if num_ == 0 {
+                return Err(String::from("`max_cred_num` must be greater than 0"));
+            }
+        }
+        Ok(())
+    }
 }
