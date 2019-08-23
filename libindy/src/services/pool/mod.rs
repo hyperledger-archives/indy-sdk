@@ -149,10 +149,6 @@ impl PoolService {
 
         let config = config.unwrap_or_default();
 
-        if config.number_read_nodes == 0 {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "The value of `number_read_nodes` must be greater than 0"))
-        }
-
         let pool_handle: PoolHandle = next_pool_handle();
         let mut new_pool = Pool::new(name, pool_handle, config);
 

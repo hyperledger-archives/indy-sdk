@@ -8,8 +8,10 @@ use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinit
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
 use domain::ledger::node::NodeOperationData;
-use domain::ledger::auth_rule::AuthRules;
+use domain::ledger::auth_rule::{Constraint, AuthRules};
+use domain::ledger::pool::Schedule;
 use utils::ctypes;
+use utils::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
@@ -428,6 +430,8 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
 
 /// Builds an ATTRIB request. Request to add attribute to a NYM record.
 ///
+/// Note: one of the fields `hash`, `raw`, `enc` must be specified.
+///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
@@ -459,12 +463,16 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(hash, ErrorCode::CommonInvalidParam4);
-    check_useful_opt_c_str!(raw, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_json!(raw, ErrorCode::CommonInvalidParam5, serde_json::Value);
     check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     trace!("indy_build_attrib_request: entities >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
            submitter_did, target_did, hash, raw, enc);
+
+    if raw.is_none() && hash.is_none() && enc.is_none() {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, "Either raw or hash or enc must be specified").into();
+    }
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildAttribRequest(
@@ -484,6 +492,8 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
 }
 
 /// Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
+///
+/// Note: one of the fields `hash`, `raw`, `enc` must be specified.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -521,6 +531,10 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
 
     trace!("indy_build_get_attrib_request: entities >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
            submitter_did, target_did, hash, raw, enc);
+
+    if raw.is_none() && hash.is_none() && enc.is_none() {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, "Either raw or hash or enc must be specified").into();
+    }
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetAttribRequest(
@@ -570,7 +584,7 @@ pub extern fn indy_build_schema_request(command_handle: CommandHandle,
     trace!("indy_build_schema_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_json!(data, ErrorCode::CommonInvalidParam3, Schema);
+    check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, Schema);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_schema_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -1023,7 +1037,7 @@ pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
-/// action:        Action that pool has to do after received transaction.
+/// action:        Action that pool has to do after received transaction. Either `start` or `cancel`.
 /// datetime:      <Optional> Restart time in datetime format. Skip to restart as early as possible.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1048,6 +1062,10 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_build_pool_restart_request: entities >>> submitter_did: {:?}, action: {:?}, datetime: {:?}", submitter_did, action, datetime);
+
+    if action != "start" && action != "cancel" {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported action: {}. Must be either `start` or `cancel`", action)).into();
+    }
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
@@ -1117,7 +1135,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(action, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(sha256, ErrorCode::CommonInvalidParam6);
-    check_useful_opt_c_str!(schedule, ErrorCode::CommonInvalidParam8);
+    check_useful_opt_json!(schedule, ErrorCode::CommonInvalidParam8, Schedule);
     check_useful_opt_c_str!(justification, ErrorCode::CommonInvalidParam9);
     check_useful_opt_c_str!(package, ErrorCode::CommonInvalidParam12);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam13);
@@ -1127,6 +1145,14 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
     trace!("indy_build_pool_upgrade_request: entities >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?}, timeout: {:?}, \
     schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
            submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
+
+    if action != "start" && action != "cancel" {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Invalid action: {}", action)).into();
+    }
+
+    if action == "start" && schedule.is_none() {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Schedule is required for `{}` action", action)).into();
+    }
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
@@ -1333,7 +1359,6 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandl
 ///         revoked: array<number> an array of revoked indices.
 ///     },
 ///     ver: string - version revocation registry entry json
-///
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1777,7 +1802,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
     check_useful_c_str!(field, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(old_value, ErrorCode::CommonInvalidParam6);
     check_useful_opt_c_str!(new_value, ErrorCode::CommonInvalidParam7);
-    check_useful_c_str!(constraint, ErrorCode::CommonInvalidParam8);
+    check_useful_json!(constraint, ErrorCode::CommonInvalidParam8, Constraint);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     trace!("indy_build_auth_rule_request: entities >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
@@ -2015,7 +2040,7 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
     trace!("indy_build_get_txn_author_agreement_request: >>> submitter_did: {:?}, data: {:?}?", submitter_did, data);
 
     check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_json!(data, ErrorCode::CommonInvalidParam3, GetTxnAuthorAgreementData);
+    check_useful_opt_validatable_json!(data, ErrorCode::CommonInvalidParam3, GetTxnAuthorAgreementData);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_txn_author_agreement_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -2072,15 +2097,10 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
            submitter_did, aml, version, aml_context);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_json!(aml, ErrorCode::CommonInvalidParam3, AcceptanceMechanisms);
+    check_useful_validatable_json!(aml, ErrorCode::CommonInvalidParam3, AcceptanceMechanisms);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(aml_context, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
-
-    //break early and error out if no acceptance mechanisms
-    if aml.is_empty() {
-        return ErrorCode::CommonInvalidParam3;
-    }
 
     trace!("indy_build_acceptance_mechanisms_request: entities >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}",
            submitter_did, aml, version, aml_context);

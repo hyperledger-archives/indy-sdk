@@ -3138,6 +3138,20 @@ mod medium_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_schema_request_works_for_attrs_count_more_than_acceptable() {
+            use utils::domain::anoncreds::schema::MAX_ATTRIBUTES_COUNT;
+
+            let mut schema = utils::anoncreds::gvt_schema();
+            schema.attr_names = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
+            let schema = Schema::SchemaV1(schema);
+            let schema_json = serde_json::to_string(&schema).unwrap();
+
+            let res = ledger::build_schema_request(DID_TRUSTEE, &schema_json);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_schema_requests_works_for_invalid_id() {
             let res = ledger::build_get_schema_request(Some(IDENTIFIER), "invalid_schema_id");
             assert_code!(ErrorCode::CommonInvalidStructure, res);
