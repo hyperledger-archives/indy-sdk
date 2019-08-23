@@ -428,6 +428,8 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
 
 /// Builds an ATTRIB request. Request to add attribute to a NYM record.
 ///
+/// Note: one of the fields `hash`, `raw`, `enc` must be specified.
+///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
@@ -484,6 +486,8 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
 }
 
 /// Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
+///
+/// Note: one of the fields `hash`, `raw`, `enc` must be specified.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -1333,7 +1337,6 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandl
 ///         revoked: array<number> an array of revoked indices.
 ///     },
 ///     ver: string - version revocation registry entry json
-///
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
