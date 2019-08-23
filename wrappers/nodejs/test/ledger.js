@@ -162,7 +162,6 @@ test('ledger', async function (t) {
     'role': '0',
     'constraint_id': 'ROLE',
     'need_to_be_owner': false,
-    'off_ledger_signature': false
   }
   req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', constraint)
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
