@@ -543,7 +543,7 @@ pub fn add_new_did(role: Option<&str>) -> (String, String) {
     let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
     let (did, verkey) = ::utils::libindy::signus::create_and_store_my_did(None).unwrap();
-    let mut req_nym = ledger::build_nym_request(&institution_did, &did, Some(&verkey), None, Some("TRUSTEE")).wait().unwrap();
+    let mut req_nym = ledger::build_nym_request(&institution_did, &did, Some(&verkey), None, role).wait().unwrap();
 
     req_nym = append_txn_author_agreement_to_request(&req_nym).unwrap();
 
