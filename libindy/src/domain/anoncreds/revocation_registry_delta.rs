@@ -1,4 +1,4 @@
-use ursa::cl::{RevocationRegistryDelta as RegistryDelta};
+use ursa::cl::RevocationRegistryDelta as RegistryDelta;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

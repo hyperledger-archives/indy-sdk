@@ -16,7 +16,7 @@ use std::collections::{HashSet, HashMap};
 
 use utils::domain::anoncreds::schema::{Schema, SchemaV1};
 use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
-use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryConfig;
+use utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType};
 use utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
 use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
 
@@ -189,7 +189,7 @@ pub fn issuance_on_demand_rev_reg_config() -> String {
 }
 
 pub fn issuance_by_default_rev_reg_config() -> String {
-    serde_json::to_string(&RevocationRegistryConfig { max_cred_num: Some(5), issuance_type: Some("ISSUANCE_BY_DEFAULT".to_string()) }).unwrap()
+    serde_json::to_string(&RevocationRegistryConfig { max_cred_num: Some(5), issuance_type: Some(IssuanceType::ISSUANCE_BY_DEFAULT) }).unwrap()
 }
 
 pub fn gvt_schema_id() -> String {

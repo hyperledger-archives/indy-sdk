@@ -7,6 +7,7 @@ use std::rc::Rc;
 
 use named_type::NamedType;
 use serde_json;
+use serde_json::Value as SValue;
 
 use api::wallet::*;
 
@@ -117,10 +118,6 @@ impl WalletService {
                       credentials: &Credentials,
                       (key_data, master_key): (&KeyDerivationData, &MasterKey)) -> IndyResult<Keys> {
         trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
-
-        if config.id.is_empty() {
-            Err(err_msg(IndyErrorKind::InvalidStructure, "Wallet id is empty"))?
-        }
 
         let storage_types = self.storage_types.borrow();
 
@@ -348,7 +345,7 @@ impl WalletService {
         }?;
 
         let record_value = record.get_value()
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("{} not found for id: {:?}", type_, name)))?.to_string();
+            .ok_or(err_msg(IndyErrorKind::InvalidState, format!("{} not found for id: {:?}", type_, name)))?.to_string();
 
         Ok(record_value)
     }
@@ -518,17 +515,13 @@ impl WalletService {
                 .ok_or(err_msg(IndyErrorKind::UnknownWalletStorageType, "Unknown wallet storage type"))?
         };
 
-        let storage_config = config.storage_config.as_ref().map(|value| value.to_string());
-        let storage_credentials = credentials.storage_credentials.as_ref().map(|value| value.to_string());
+        let storage_config = config.storage_config.as_ref().map(SValue::to_string);
+        let storage_credentials = credentials.storage_credentials.as_ref().map(SValue::to_string);
 
         Ok((storage_type, storage_config, storage_credentials))
     }
 
     fn _is_id_from_config_not_used(&self, config: &Config) -> IndyResult<()> {
-        if config.id.is_empty() {
-            Err(err_msg(IndyErrorKind::InvalidStructure, "Wallet id is empty"))?
-        }
-
         if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
             Err(err_msg(IndyErrorKind::WalletAlreadyOpened, format!("Wallet {} already opened", WalletService::_get_wallet_id(config))))?
         }

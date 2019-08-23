@@ -11,7 +11,7 @@ use ursa::cl::{CredentialKeyCorrectnessProof, CredentialPrivateKey};
 
 use commands::{Command, CommandExecutor};
 use commands::anoncreds::AnoncredsCommand;
-use domain::anoncreds::credential::{AttributeValues, Credential};
+use domain::anoncreds::credential::{CredentialValues, Credential};
 use domain::anoncreds::credential_definition::{
     CredentialDefinition,
     CredentialDefinitionConfig,
@@ -42,7 +42,7 @@ use domain::anoncreds::revocation_registry_delta::{
     RevocationRegistryDelta,
     RevocationRegistryDeltaV1,
 };
-use domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1, MAX_ATTRIBUTES_COUNT};
+use domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1};
 use domain::wallet::Tags;
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
@@ -117,7 +117,7 @@ pub enum IssuerCommand {
         WalletHandle,
         CredentialOffer, // credential offer
         CredentialRequest, // credential request
-        HashMap<String, AttributeValues>, // credential values
+        CredentialValues, // credential values
         Option<String>, // revocation registry id
         Option<i32>, // blob storage reader config handle
         Box<dyn Fn(IndyResult<(String, Option<String>, Option<String>)>) + Send>),
@@ -236,11 +236,6 @@ impl IssuerCommandExecutor {
         debug!("create_schema >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
         self.crypto_service.validate_did(issuer_did)?;
-
-        if attrs.len() > MAX_ATTRIBUTES_COUNT {
-            return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("The number of Schema attributes {} cannot be greater than {}", attrs.len(), MAX_ATTRIBUTES_COUNT)));
-        }
 
         let schema_id = Schema::schema_id(issuer_did, name, version);
 
@@ -552,13 +547,7 @@ impl IssuerCommandExecutor {
             RegistryType::CL_ACCUM
         };
 
-        let issuance_type = if let Some(ref type_) = config.issuance_type {
-            serde_json::from_str::<IssuanceType>(&format!("\"{}\"", type_))
-                .to_indy(IndyErrorKind::InvalidStructure, "Invalid Issuance Type format")?
-        } else {
-            IssuanceType::ISSUANCE_ON_DEMAND
-        };
-
+        let issuance_type = config.issuance_type.clone().unwrap_or(IssuanceType::ISSUANCE_ON_DEMAND);
         let max_cred_num = config.max_cred_num.unwrap_or(100000);
 
         let rev_reg_id = RevocationRegistryDefinition::rev_reg_id(issuer_did, cred_def_id, &rev_reg_type, tag);
@@ -581,7 +570,7 @@ impl IssuerCommandExecutor {
 
         let revoc_reg_def_value = RevocationRegistryDefinitionValue {
             max_cred_num,
-            issuance_type: issuance_type.clone(),
+            issuance_type,
             public_keys: revoc_public_keys,
             tails_location,
             tails_hash,
@@ -659,7 +648,7 @@ impl IssuerCommandExecutor {
                       wallet_handle: WalletHandle,
                       cred_offer: &CredentialOffer,
                       cred_request: &CredentialRequest,
-                      cred_values: &HashMap<String, AttributeValues>,
+                      cred_values: &CredentialValues,
                       rev_reg_id: Option<&str>,
                       blob_storage_reader_handle: Option<i32>) -> IndyResult<(String, Option<String>, Option<String>)> {
         debug!("new_credential >>> wallet_handle: {:?}, cred_offer: {:?}, cred_req: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, blob_storage_reader_handle: {:?}",
