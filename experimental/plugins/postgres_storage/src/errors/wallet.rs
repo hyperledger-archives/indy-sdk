@@ -78,7 +78,7 @@ impl error::Error for WalletError {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             WalletError::InvalidHandle(_) => None,
             WalletError::UnknownType(_) => None,

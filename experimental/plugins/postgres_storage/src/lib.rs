@@ -911,7 +911,7 @@ fn _storagerecord_to_postgresrecord(in_rec: &StorageRecord) -> Result<PostgresWa
     Ok(out_rec)
 }
 
-fn _iterator_to_record_set(mut iter: Box<StorageIterator>) -> Result<Vec<PostgresWalletRecord>, ErrorCode> {
+fn _iterator_to_record_set(mut iter: Box<dyn StorageIterator>) -> Result<Vec<PostgresWalletRecord>, ErrorCode> {
     let mut search_continue: bool = true;
     let mut search_records = Vec::new();
     while search_continue {

@@ -81,7 +81,7 @@ impl Error for CommonError {
         }
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match *self {
             CommonError::InvalidParam1(_) |
             CommonError::InvalidParam2(_) |

@@ -292,7 +292,7 @@ struct PostgresStorageIterator {
 
 impl PostgresStorageIterator {
     fn new(stmt: Option<OwningHandle<Rc<r2d2::PooledConnection<PostgresConnectionManager>>, Box<postgres::stmt::Statement<'static>>>>,
-           args: &[&postgres::types::ToSql],
+           args: &[&dyn postgres::types::ToSql],
            options: RecordOptions,
            tag_retriever: Option<TagRetrieverOwned>,
            total_count: Option<usize>) -> Result<PostgresStorageIterator, WalletStorageError> {
@@ -789,7 +789,7 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
     }
 }
 
-static mut SELECTED_STRATEGY: &WalletStrategy = &DatabasePerWalletStrategy{};
+static mut SELECTED_STRATEGY: &dyn WalletStrategy = &DatabasePerWalletStrategy{};
 
 impl PostgresStorageType {
     pub fn new() -> PostgresStorageType {
@@ -1409,7 +1409,7 @@ impl WalletStorage for PostgresStorage {
         }
     }
 
-    fn get_all(&self) -> Result<Box<StorageIterator>, WalletStorageError> {
+    fn get_all(&self) -> Result<Box<dyn StorageIterator>, WalletStorageError> {
         let query_qualifier = unsafe {
             SELECTED_STRATEGY.query_qualifier()
         };
@@ -1435,7 +1435,7 @@ impl WalletStorage for PostgresStorage {
         Ok(Box::new(storage_iterator))
     }
 
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<dyn StorageIterator>, WalletStorageError> {
         let type_ = type_.to_vec(); // FIXME
 
         let search_options = match options {
