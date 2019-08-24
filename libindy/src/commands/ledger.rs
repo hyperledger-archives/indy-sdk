@@ -27,7 +27,7 @@ use services::pool::{
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::signature_serializer::serialize_signature;
 use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
-use commands::{Command, CommandExecutor};
+use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use rust_base58::ToBase58;
 
 pub enum LedgerCommand {
@@ -100,7 +100,7 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetSchemaResponse(
         String, // get schema response json
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildCredDefRequest(
         String, // submitter did
         CredentialDefinition, // data
@@ -111,7 +111,7 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetCredDefResponse(
         String, // get cred definition response
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildNodeRequest(
         String, // submitter did
         String, // target_did
@@ -158,7 +158,7 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetRevocRegDefResponse(
         String, // get revocation registry definition response
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildRevocRegEntryRequest(
         String, // submitter did
         String, // revocation registry definition id
@@ -215,7 +215,7 @@ pub enum LedgerCommand {
         PoolHandle,
         Option<String>,
         String,
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>,
+        BoxedCallbackStringStringSend,
     ),
     GetSchemaContinue(
         IndyResult<String>,
@@ -225,7 +225,7 @@ pub enum LedgerCommand {
         PoolHandle,
         Option<String>,
         String,
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>,
+        BoxedCallbackStringStringSend,
     ),
     GetCredDefContinue(
         IndyResult<String>,
@@ -1207,7 +1207,7 @@ impl LedgerCommandExecutor {
         }
     }
 
-    fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: BoxedCallbackStringStringSend) {
         let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb);
 
         let cb_id = next_command_handle();
@@ -1231,7 +1231,7 @@ impl LedgerCommandExecutor {
         cb(self.parse_get_schema_response(&pool_response));
     }
 
-    fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: BoxedCallbackStringStringSend) {
         let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb);
 
         let cb_id = next_command_handle();

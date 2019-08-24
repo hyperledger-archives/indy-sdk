@@ -290,12 +290,12 @@ fn _parse_req_id_and_op(msg: &str) -> IndyResult<(SJsonValue, String, String)> {
 
     let req_id = req_json["reqId"]
         .as_u64()
-        .ok_or(err_msg(IndyErrorKind::InvalidStructure, "No reqId in request"))?
+        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "No reqId in request"))?
         .to_string();
 
     let op = req_json["operation"]["type"]
         .as_str()
-        .ok_or(err_msg(IndyErrorKind::InvalidStructure, "No operation type in request"))?
+        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "No operation type in request"))?
         .to_string();
 
     Ok((req_json, req_id, op))
