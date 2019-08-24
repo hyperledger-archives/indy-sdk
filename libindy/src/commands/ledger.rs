@@ -14,7 +14,9 @@ use domain::crypto::did::Did;
 use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::auth_rule::AuthRules;
+use domain::ledger::auth_rule::{Constraint, AuthRules};
+use domain::ledger::request::Request;
+use domain::ledger::pool::Schedule;
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
@@ -74,7 +76,7 @@ pub enum LedgerCommand {
         String, // submitter did
         String, // target did
         Option<String>, // hash
-        Option<String>, // raw
+        Option<serde_json::Value>, // raw
         Option<String>, // enc
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetAttribRequest(
@@ -140,7 +142,7 @@ pub enum LedgerCommand {
         String, // action
         String, // sha256
         Option<u32>, // timeout
-        Option<String>, // schedule
+        Option<Schedule>, // schedule
         Option<String>, // justification
         bool, // reinstall
         bool, // force
@@ -195,7 +197,7 @@ pub enum LedgerCommand {
         String, // field
         Option<String>, // old value
         Option<String>, // new value
-        String, // constraint
+        Constraint, // constraint
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildAuthRulesRequest(
         String, // submitter did
@@ -339,7 +341,7 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildAttribRequest command received");
                 cb(self.build_attrib_request(&submitter_did, &target_did,
                                              hash.as_ref().map(String::as_str),
-                                             raw.as_ref().map(String::as_str),
+                                             raw.as_ref(),
                                              enc.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, raw, hash, enc, cb) => {
@@ -400,7 +402,7 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package, cb) => {
                 info!(target: "ledger_command_executor", "BuildPoolUpgradeRequest command received");
                 cb(self.build_pool_upgrade_request(&submitter_did, &name, &version, &action, &sha256, timeout,
-                                                   schedule.as_ref().map(String::as_str),
+                                                   schedule,
                                                    justification.as_ref().map(String::as_str),
                                                    reinstall, force, package.as_ref().map(String::as_str)));
             }
@@ -442,7 +444,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, constraint, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
-                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), &constraint));
+                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), constraint));
             }
             LedgerCommand::BuildAuthRulesRequest(submitter_did, rules, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRulesRequest command received");
@@ -585,6 +587,10 @@ impl LedgerCommandExecutor {
                       cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         debug!("submit_request >>> handle: {:?}, request_json: {:?}", handle, request_json);
 
+        if let Err(err) = serde_json::from_str::<Request<serde_json::Value>>(&request_json){
+            return cb(Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Request is invalid json: {:?}", err))));
+        }
+
         let x: IndyResult<CommandHandle> = self.pool_service.send_tx(handle, request_json);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
@@ -678,7 +684,7 @@ impl LedgerCommandExecutor {
                             submitter_did: &str,
                             target_did: &str,
                             hash: Option<&str>,
-                            raw: Option<&str>,
+                            raw: Option<&serde_json::Value>,
                             enc: Option<&str>) -> IndyResult<String> {
         debug!("build_attrib_request >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
                submitter_did, target_did, hash, raw, enc);
@@ -896,7 +902,7 @@ impl LedgerCommandExecutor {
                                   action: &str,
                                   sha256: &str,
                                   timeout: Option<u32>,
-                                  schedule: Option<&str>,
+                                  schedule: Option<Schedule>,
                                   justification: Option<&str>,
                                   reinstall: bool,
                                   force: bool,
@@ -1045,7 +1051,7 @@ impl LedgerCommandExecutor {
                                field: &str,
                                old_value: Option<&str>,
                                new_value: Option<&str>,
-                               constraint: &str) -> IndyResult<String> {
+                               constraint: Constraint) -> IndyResult<String> {
         debug!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
             old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
 

@@ -3,6 +3,7 @@ use commands::{Command, CommandExecutor};
 use commands::cache::CacheCommand;
 use errors::prelude::*;
 use utils::ctypes;
+use domain::cache::{GetCacheOptions, PurgeOptions};
 
 use
 libc::c_char;
@@ -40,7 +41,7 @@ pub extern fn indy_get_cred_def(command_handle: CommandHandle,
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(options_json, ErrorCode::CommonInvalidParam6);
+    check_useful_json!(options_json, ErrorCode::CommonInvalidParam6, GetCacheOptions);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     trace!("indy_get_cred_def: entities >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, id: {:?}, options_json: {:?}",
@@ -98,7 +99,7 @@ pub extern fn indy_get_schema(command_handle: CommandHandle,
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(options_json, ErrorCode::CommonInvalidParam6);
+    check_useful_json!(options_json, ErrorCode::CommonInvalidParam6, GetCacheOptions);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     trace!("indy_get_schema: entities >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, id: {:?}, options_json: {:?}",
@@ -142,7 +143,7 @@ pub extern fn indy_purge_cred_def_cache(command_handle: CommandHandle,
     trace!("indy_purge_cred_def_cache: >>> wallet_handle: {:?}, options_json: {:?}",
            wallet_handle, options_json);
 
-    check_useful_c_str!(options_json, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(options_json, ErrorCode::CommonInvalidParam3, PurgeOptions);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_purge_cred_def_cache: entities >>> wallet_handle: {:?}, options_json: {:?}",
@@ -175,7 +176,7 @@ pub extern fn indy_purge_cred_def_cache(command_handle: CommandHandle,
 /// wallet_handle: wallet handle (created by open_wallet).
 /// options_json:
 ///  {
-///    maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
+///    minFresh: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
 ///  }
 /// cb: Callback that takes command result as parameter.
 #[no_mangle]
@@ -187,7 +188,7 @@ pub extern fn indy_purge_schema_cache(command_handle: CommandHandle,
     trace!("indy_purge_schema_cache: >>> wallet_handle: {:?}, options_json: {:?}",
            wallet_handle, options_json);
 
-    check_useful_c_str!(options_json, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(options_json, ErrorCode::CommonInvalidParam3, PurgeOptions);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_purge_schema_cache: entities >>> wallet_handle: {:?}, options_json: {:?}",
