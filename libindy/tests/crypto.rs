@@ -648,7 +648,7 @@ mod load {
         let operations_cnt = std::env::var("OPERATIONS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(OPERATIONS_CNT);
 
         let mut agents = Vec::new();
-        let mut os_rng = OsRng::new().unwrap();
+        let mut os_rng = OsRng;
         for i in 0..agent_cnt {
             let (wallet, wallet_config) = wallet::create_and_open_default_wallet(&format!("parallel_auth_encrypt-{}", i)).unwrap();
             let (_did, verkey) = did::create_and_store_my_did(wallet, None).unwrap();
