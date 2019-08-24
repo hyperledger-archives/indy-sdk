@@ -10,6 +10,8 @@ use super::DELIMITER;
 use std::collections::HashMap;
 use named_type::NamedType;
 
+use utils::validation::Validatable;
+
 #[derive(Debug, Deserialize, Serialize, NamedType)]
 pub struct Credential {
     pub schema_id: String,
@@ -30,15 +32,15 @@ impl Credential {
     pub fn schema_id(&self) -> String { self.schema_id.to_string() }
 
     pub fn schema_issuer_did(&self) -> String {
-        self.schema_parts().get(0).map(|s| s.to_string()).unwrap_or(String::new())
+        self.schema_parts().get(0).map(|s| s.to_string()).unwrap_or_default()
     }
 
     pub fn schema_name(&self) -> String {
-        self.schema_parts().get(2).map(|s| s.to_string()).unwrap_or(String::new())
+        self.schema_parts().get(2).map(|s| s.to_string()).unwrap_or_default()
     }
 
     pub fn schema_version(&self) -> String {
-        self.schema_parts().get(3).map(|s| s.to_string()).unwrap_or(String::new())
+        self.schema_parts().get(3).map(|s| s.to_string()).unwrap_or_default()
     }
 
     pub fn issuer_did(&self) -> String {
@@ -58,8 +60,20 @@ pub struct CredentialInfo {
     pub cred_rev_id: Option<String>
 }
 
+pub type CredentialValues = HashMap<String, AttributeValues>;
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct AttributeValues {
     pub raw: String,
     pub encoded: String
+}
+
+impl Validatable for CredentialValues {
+    fn validate(&self) -> Result<(), String> {
+        if self.is_empty() {
+            return Err(String::from("Empty list of Credential Values has been passed"));
+        }
+
+        Ok(())
+    }
 }

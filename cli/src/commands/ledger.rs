@@ -1873,7 +1873,7 @@ pub mod aml_command {
 pub mod endorse_transaction_command {
     use super::*;
 
-    command!(CommandMetadata::build("endorse", "Endorse transaction to the ledger with preserving an original author.")
+    command!(CommandMetadata::build("endorse", "Endorse transaction to the ledger preserving an original author.")
                 .add_optional_param("txn","Transaction to endorse. Skip to use a transaction stored into CLI context.")
                 .add_example(r#"ledger endorse txn={"reqId":123456789,"type":"100"}"#)
                 .add_example(r#"ledger endorse"#)
@@ -2117,6 +2117,10 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
         Some("0") => "NODE",
         Some("1") => "NYM",
         Some("3") => "GET_TXN",
+        Some("4") => "TXN_AUTHR_AGRMT",
+        Some("5") => "TXN_AUTHR_AGRMT_AML",
+        Some("6") => "GET_TXN_AUTHR_AGRMT",
+        Some("7") => "GET_TXN_AUTHR_AGRMT_AML",
         Some("100") => "ATTRIB",
         Some("101") => "SCHEMA",
         Some("104") => "GET_ATTR",
@@ -2134,6 +2138,8 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
         Some("118") => "POOL_RESTART",
         Some("119") => "GET_VALIDATOR_INFO",
         Some("120") => "AUTH_RULE",
+        Some("121") => "GET_AUTH_RULE",
+        Some("122") => "AUTH_RULES",
         Some(val) => val,
         _ => "-"
     }.to_string())

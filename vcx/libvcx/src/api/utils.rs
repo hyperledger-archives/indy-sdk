@@ -413,6 +413,49 @@ pub extern fn vcx_get_request_price(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Endorse transaction to the ledger preserving an original author
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// transaction: transaction to endorse
+///
+/// cb: Callback that provides success or failure of command
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_endorse_transaction(command_handle: u32,
+                                      transaction: *const c_char,
+                                      cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_endorse_transaction >>>");
+
+    check_useful_c_str!(transaction, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    trace!("vcx_endorse_transaction(command_handle: {}, transaction: {})",
+           command_handle, transaction);
+
+    spawn(move || {
+        match ::utils::libindy::ledger::endorse_transaction(&transaction) {
+            Ok(x) => {
+                trace!("vcx_endorse_transaction(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_endorse_transaction(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

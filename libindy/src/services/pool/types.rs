@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 
 use errors::prelude::*;
 use utils::crypto::verkey_builder::build_full_verkey;
+use api::CommandHandle;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeData {
@@ -252,7 +253,7 @@ impl CatchupRep {
             }
         }
 
-        min.ok_or(err_msg(IndyErrorKind::InvalidStructure, "Empty map"))
+        min.ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Empty map"))
     }
 }
 
@@ -444,7 +445,9 @@ pub enum KeyValueSimpleDataVerificationType {
     /* key should be base64-encoded string */
     Simple,
     /* key should be plain string */
-    NumericalSuffixAscendingNoGaps(NumericalSuffixAscendingNoGapsData)
+    NumericalSuffixAscendingNoGaps(NumericalSuffixAscendingNoGapsData),
+    /* nodes are from a simple merkle tree */
+    MerkleTree(u64)
 }
 
 impl Default for KeyValueSimpleDataVerificationType {
@@ -498,7 +501,7 @@ impl MinValue for Vec<(CatchupRep, usize)> {
             }
         }
 
-        Ok(res.ok_or(err_msg(IndyErrorKind::InvalidStructure, "Element not Found"))?.1)
+        Ok(res.ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Element not Found"))?.1)
     }
 }
 
@@ -535,7 +538,7 @@ pub struct CommandProcess {
     pub nack_cnt: usize,
     pub replies: HashMap<HashableValue, usize>,
     pub accum_replies: Option<HashableValue>,
-    pub parent_cmd_ids: Vec<i32>,
+    pub parent_cmd_ids: Vec<CommandHandle>,
     pub resendable_request: Option<ResendableRequest>,
     pub full_cmd_timeout: Option<time::Tm>,
 }

@@ -30,6 +30,24 @@ extern "C" {
                                                                                          const char*   cred_def_id,
                                                                                          const char*   cred_def_json)
                                                                     );
+
+    extern indy_error_t indy_issuer_rotate_credential_def_start(indy_handle_t command_handle,
+                                                                indy_handle_t wallet_handle,
+                                                                const char *  cred_def_id,
+                                                                const char *  config_json,
+
+                                                                void           (*cb)(indy_handle_t command_handle_,
+                                                                                     indy_error_t  err,
+                                                                                     const char*   cred_def_json)
+                                                                );
+
+    extern indy_error_t indy_issuer_rotate_credential_def_apply(indy_handle_t command_handle,
+                                                                indy_handle_t wallet_handle,
+                                                                const char *  cred_def_id,
+
+                                                                void           (*cb)(indy_handle_t command_handle_,
+                                                                                     indy_error_t  err)
+                                                                );
     
     extern indy_error_t indy_issuer_create_and_store_revoc_reg(indy_handle_t command_handle,
                                                                indy_handle_t wallet_handle,

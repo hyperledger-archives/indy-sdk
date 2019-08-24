@@ -36,8 +36,8 @@ public class CredentialDefApi extends VcxJava.API {
                                                                  int paymentHandle
     ) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "credentialName");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "schemaId");
+        ParamGuard.notNullOrWhiteSpace(credentialName, "credentialName");
+        ParamGuard.notNullOrWhiteSpace(schemaId, "schemaId");
         logger.debug("credentialDefCreate() called with: sourceId = [" + sourceId + "], credentialName = [" + credentialName + "], schemaId = [" + schemaId + "], issuerId = [" + issuerId + "], tag = [" + tag + "], config = [" + config + "], paymentHandle = [" + paymentHandle + "]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
         CompletableFuture<Integer> future = new CompletableFuture<>();
@@ -155,4 +155,85 @@ public class CredentialDefApi extends VcxJava.API {
 
         return future;
     }
+
+    private static Callback credentialDefPrepareForEndorserCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int command_handle, int err, int handle, String credentialDefTxn, String revocRegDefTxn, String revocRegEntryTxn) {
+	        System.out.println("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], handle = [" + handle + "], credentialDefTxn = [" + credentialDefTxn + "], revocRegDefTxn = [" + revocRegDefTxn + "], revocRegEntryTxn = [" + revocRegEntryTxn + "]");
+            CompletableFuture<CredentialDefPrepareForEndorserResult> future = (CompletableFuture<CredentialDefPrepareForEndorserResult>) removeFuture(command_handle);
+            if (!checkCallback(future, err)) return;
+	        CredentialDefPrepareForEndorserResult result = new CredentialDefPrepareForEndorserResult(handle, credentialDefTxn, revocRegDefTxn, revocRegEntryTxn);
+            future.complete(result);
+        }
+    };
+
+	public static CompletableFuture<CredentialDefPrepareForEndorserResult> credentialDefPrepareForEndorser(String sourceId,
+	                                                                                                       String credentialName,
+	                                                                                                       String schemaId,
+	                                                                                                       String issuerId,
+	                                                                                                       String tag,
+	                                                                                                       String config,
+	                                                                                                       String endorser
+	) throws VcxException {
+		ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
+		ParamGuard.notNull(credentialName, "credentialName");
+		ParamGuard.notNull(schemaId, "schemaId");
+		ParamGuard.notNull(endorser, "endorser");
+		logger.debug("credentialDefCreate() called with: sourceId = [" + sourceId + "], credentialName = [" + credentialName + "], schemaId = [" + schemaId + "], issuerId = [" + issuerId + "], tag = [" + tag + "], config = [" + config + "], endorser = [" + endorser + "]");
+		CompletableFuture<CredentialDefPrepareForEndorserResult> future = new CompletableFuture<CredentialDefPrepareForEndorserResult>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_credentialdef_prepare_for_endorser(
+				commandHandle,
+				sourceId,
+				credentialName,
+				schemaId,
+				issuerId,
+				tag,
+				config,
+				endorser,
+				credentialDefPrepareForEndorserCB);
+		checkResult(result);
+
+		return future;
+	}
+
+	private static Callback vcxIntegerCB = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int commandHandle, int err, int s) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], s = [" + s + "]");
+			CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+			if (! checkCallback(future, err)) return;
+			Integer result = s;
+			future.complete(result);
+		}
+	};
+
+	public static CompletableFuture<Integer> credentialDefUpdateState(int handle) throws VcxException {
+		logger.debug("vcxSchemaUpdateState() called with: handle = [" + handle + "]");
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_credentialdef_update_state(
+				commandHandle,
+				handle,
+				vcxIntegerCB
+		);
+		checkResult(result);
+		return future;
+	}
+
+	public static CompletableFuture<Integer> credentialDefGetState(int handle) throws VcxException {
+		logger.debug("schemaGetState() called with: handle = [" + handle + "]");
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_credentialdef_get_state(
+				commandHandle,
+				handle,
+				vcxIntegerCB
+		);
+		checkResult(result);
+		return future;
+	}
 }

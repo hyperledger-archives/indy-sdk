@@ -6,44 +6,45 @@ use domain::ledger::request::ProtocolVersion;
 use domain::pool::{PoolConfig, PoolOpenConfig};
 use errors::prelude::*;
 use services::pool::PoolService;
+use api::{PoolHandle, CommandHandle};
 
 pub enum PoolCommand {
     Create(
         String, // name
         Option<PoolConfig>, // config
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     Delete(
         String, // name
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     Open(
         String, // name
         Option<PoolOpenConfig>, // config
-        Box<Fn(IndyResult<i32>) + Send>),
+        Box<dyn Fn(IndyResult<PoolHandle>) + Send>),
     OpenAck(
-        i32, // cmd id
-        i32, // pool handle
+        CommandHandle, // cmd id
+        PoolHandle, // pool handle
         IndyResult<()>),
-    List(Box<Fn(IndyResult<String>) + Send>),
+    List(Box<dyn Fn(IndyResult<String>) + Send>),
     Close(
-        i32, // pool handle
-        Box<Fn(IndyResult<()>) + Send>),
-    CloseAck(i32,
+        PoolHandle, // pool handle
+        Box<dyn Fn(IndyResult<()>) + Send>),
+    CloseAck(CommandHandle,
              IndyResult<()>),
     Refresh(
-        i32, // pool handle
-        Box<Fn(IndyResult<()>) + Send>),
-    RefreshAck(i32,
+        PoolHandle, // pool handle
+        Box<dyn Fn(IndyResult<()>) + Send>),
+    RefreshAck(CommandHandle,
                IndyResult<()>),
     SetProtocolVersion(
         usize, // protocol version
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
 }
 
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
-    close_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<()>)>>>,
-    refresh_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<()>)>>>,
-    open_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<i32>)>>>,
+    close_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
+    refresh_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
+    open_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<PoolHandle>)>>>,
 }
 
 impl PoolCommandExecutor {
@@ -79,7 +80,7 @@ impl PoolCommandExecutor {
                                 cb(result.and_then(|_| self.pool_service.add_open_pool(pool_id)))
                             }
                             None => {
-                                error!("Can't process PoolCommand::OpenAck for handle {} with result {:?} - appropriate callback not found!", handle, result);
+                                error!("Can't process PoolCommand::OpenAck for handle {:?} with result {:?} - appropriate callback not found!", handle, result);
                             }
                         }
                     }
@@ -101,7 +102,7 @@ impl PoolCommandExecutor {
                         match cbs.remove(&handle) {
                             Some(cb) => cb(result.map_err(IndyError::from)),
                             None => {
-                                error!("Can't process PoolCommand::CloseAck for handle {} with result {:?} - appropriate callback not found!", handle, result);
+                                error!("Can't process PoolCommand::CloseAck for handle {:?} with result {:?} - appropriate callback not found!", handle, result);
                             }
                         }
                     }
@@ -119,7 +120,7 @@ impl PoolCommandExecutor {
                         match cbs.remove(&handle) {
                             Some(cb) => cb(result),
                             None => {
-                                error!("Can't process PoolCommand::RefreshAck for handle {} with result {:?} - appropriate callback not found!",
+                                error!("Can't process PoolCommand::RefreshAck for handle {:?} with result {:?} - appropriate callback not found!",
                                        handle, result);
                             }
                         }
@@ -137,24 +138,24 @@ impl PoolCommandExecutor {
     fn create(&self, name: &str, config: Option<PoolConfig>) -> IndyResult<()> {
         debug!("create >>> name: {:?}, config: {:?}", name, config);
 
-        let res = self.pool_service.create(name, config)?;
+        self.pool_service.create(name, config)?;
 
-        debug!("create << res: {:?}", res);
+        debug!("create << res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn delete(&self, name: &str) -> IndyResult<()> {
         debug!("delete >>> name: {:?}", name);
 
-        let res = self.pool_service.delete(name)?;
+        self.pool_service.delete(name)?;
 
-        debug!("delete << res: {:?}", res);
+        debug!("delete << res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
-    fn open(&self, name: &str, config: Option<PoolOpenConfig>, cb: Box<Fn(IndyResult<i32>) + Send>) {
+    fn open(&self, name: &str, config: Option<PoolOpenConfig>, cb: Box<dyn Fn(IndyResult<PoolHandle>) + Send>) {
         debug!("open >>> name: {:?}, config: {:?}", name, config);
 
         let result = self.pool_service.open(name, config)
@@ -184,25 +185,25 @@ impl PoolCommandExecutor {
         Ok(res)
     }
 
-    fn close(&self, handle: i32, cb: Box<Fn(IndyResult<()>) + Send>) {
-        debug!("close >>> handle: {:?}", handle);
+    fn close(&self, pool_handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
+        debug!("close >>> handle: {:?}", pool_handle);
 
-        let result = self.pool_service.close(handle)
-            .and_then(|handle| {
+        let result = self.pool_service.close(pool_handle)
+            .and_then(|cmd_id| {
                 match self.close_callbacks.try_borrow_mut() {
-                    Ok(cbs) => Ok((cbs, handle)),
+                    Ok(cbs) => Ok((cbs, cmd_id)),
                     Err(err) => Err(err.into())
                 }
             });
         match result {
             Err(err) => { cb(Err(err)); }
-            Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
+            Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
         };
 
         debug!("close <<<");
     }
 
-    fn refresh(&self, handle: i32, cb: Box<Fn(IndyResult<()>) + Send>) {
+    fn refresh(&self, handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
         debug!("refresh >>> handle: {:?}", handle);
 
         let result = self.pool_service.refresh(handle)

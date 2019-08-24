@@ -33,8 +33,9 @@ public class SchemaApi extends VcxJava.API {
                                                           String data,
                                                           int paymentHandle) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "schemaName");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "version");
+        ParamGuard.notNullOrWhiteSpace(schemaName, "schemaName");
+        ParamGuard.notNullOrWhiteSpace(version, "version");
+        ParamGuard.notNullOrWhiteSpace(data, "data");
         logger.debug("schemaCreate() called with: sourceId = [" + sourceId + "], schemaName = [" + schemaName + "], version = [" + version + "]" + " data = <" + data + ">" + " payment_handle = <" + paymentHandle + ">");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
@@ -164,4 +165,81 @@ public class SchemaApi extends VcxJava.API {
 
         return LibVcx.api.vcx_schema_release(schemaHandle);
     }
+
+    private static Callback schemaPrepareForEndorserCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int command_handle, int err, int handle, String transaction) {
+            logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], handle = [" + handle + "], transaction = [" + transaction + "]");
+            CompletableFuture<SchemaPrepareForEndorserResult> future = (CompletableFuture<SchemaPrepareForEndorserResult>) removeFuture(command_handle);
+            if (!checkCallback(future, err)) return;
+            SchemaPrepareForEndorserResult result = new SchemaPrepareForEndorserResult(handle, transaction);
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<SchemaPrepareForEndorserResult> schemaPrepareForEndorser(String sourceId,
+                                                                                             String schemaName,
+                                                                                             String version,
+                                                                                             String data,
+                                                                                             String endorser) throws VcxException {
+        ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
+        ParamGuard.notNull(schemaName, "schemaName");
+        ParamGuard.notNull(version, "version");
+        ParamGuard.notNull(data, "data");
+        ParamGuard.notNull(endorser, "endorserendorser");
+	    logger.debug("schemaCreate() called with: sourceId = [" + sourceId + "], schemaName = [" + schemaName + "], version = [" + version + "]" + " data = <" + data + ">" + " endorser = <" + endorser + ">");
+        CompletableFuture<SchemaPrepareForEndorserResult> future = new CompletableFuture<SchemaPrepareForEndorserResult>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_schema_prepare_for_endorser(
+                commandHandle,
+		        sourceId,
+		        schemaName,
+		        version,
+		        data,
+		        endorser,
+		        schemaPrepareForEndorserCB);
+        checkResult(result);
+
+        return future;
+    }
+
+	private static Callback vcxIntegerCB = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int commandHandle, int err, int s) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], s = [" + s + "]");
+			CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+			if (!checkCallback(future, err)) return;
+			Integer result = s;
+			future.complete(result);
+		}
+	};
+
+	public static CompletableFuture<Integer> schemaUpdateState(int schemaHandle) throws VcxException {
+		logger.debug("vcxSchemaUpdateState() called with: schemaHandle = [" + schemaHandle + "]");
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_schema_update_state(
+				commandHandle,
+				schemaHandle,
+				vcxIntegerCB
+		);
+		checkResult(result);
+		return future;
+	}
+
+	public static CompletableFuture<Integer> schemaGetState(int schemaHandle) throws VcxException {
+		logger.debug("schemaGetState() called with: schemaHandle = [" + schemaHandle + "]");
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_schema_get_state(
+				commandHandle,
+				schemaHandle,
+				vcxIntegerCB
+		);
+		checkResult(result);
+		return future;
+	}
 }

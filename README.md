@@ -20,7 +20,7 @@ functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-St
 
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
 
-* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
+* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/display/indy/).
 
 * You may also want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
 that explored the ecosystem via command line. That material is being
@@ -109,15 +109,16 @@ The Indy SDK release process defines the following release channels:
 
 Please refer to our [release workflow](docs/contributors/release-workflow.md) for more details.
 
-### Ubuntu based distributions (Ubuntu 16.04)
+### Ubuntu based distributions (Ubuntu 16.04 and 18.04)
 It is recommended to install the SDK packages with APT:
 
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
-    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
+    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) {release channel}"
     sudo apt-get update
     sudo apt-get install -y libindy
 
-{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+* (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
+* {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section "Release channels" above for more details.
 
 ### Windows

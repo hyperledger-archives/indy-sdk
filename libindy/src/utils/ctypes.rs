@@ -75,6 +75,45 @@ macro_rules! check_useful_json {
     }
 }
 
+macro_rules! check_useful_validatable_json {
+    ($x:ident, $e:expr, $t:ty) => {
+        check_useful_json!($x, $e, $t);
+
+        match $x.validate() {
+            Ok(ok) => ok,
+            Err(err) => {
+                return err_msg(IndyErrorKind::InvalidStructure, err).into()
+            }
+        };
+    }
+}
+
+macro_rules! check_useful_opt_validatable_json {
+    ($x:ident, $e:expr, $t:ty) => {
+        let $x = match ctypes::c_str_to_string($x) {
+            Ok(Some(val)) => Some(val),
+            Ok(None) => None,
+            _ => {
+                return err_msg($e.into(), "Invalid pointer has been passed").into()
+            },
+        };
+
+        let $x: Option<$t>  = match $x {
+            Some(val) => {
+                parse_json!(val, $e, $t);
+                match val.validate() {
+                    Ok(ok) => ok,
+                    Err(err) => {
+                        return err_msg($e.into(), err).into()
+                    }
+                };
+                Some(val)
+            },
+            None => None
+        };
+    }
+}
+
 macro_rules! parse_json {
     ($x:ident, $e:expr, $t:ty) => {
         if $x.is_empty() {
@@ -136,4 +175,15 @@ macro_rules! check_useful_c_byte_array {
 pub fn vec_to_pointer(v: &Vec<u8>) -> (*const u8, u32) {
     let len = v.len() as u32;
     (v.as_ptr() as *const u8, len)
+}
+
+macro_rules! boxed_callback_string {
+    ($method_name: expr, $cb: ident, $command_handle: ident) => {
+        Box::new(move |result| {
+            let (err, result_string) = prepare_result_1!(result, String::new());
+            trace!("{}: result: {:?}", $method_name, result_string);
+            let result_string = ctypes::string_to_cstring(result_string);
+            $cb($command_handle, err, result_string.as_ptr())
+        })
+    }
 }

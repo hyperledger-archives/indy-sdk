@@ -146,7 +146,7 @@ impl<W: Write> Write for Writer<W> {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        if self.buffer.len() > 0 {
+        if !self.buffer.is_empty() {
             self.inner.write_all(&encrypt(&self.buffer, &self.key, &self.nonce))?;
             self.nonce.increment();
         }
@@ -187,7 +187,7 @@ impl<R: Read> Reader<R> {
                 Ok(0) => break,
                 Ok(n) => read += n,
                 Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
-                Err(e) => Err(e)?
+                Err(e) => return Err(e)
             }
         }
 
@@ -204,7 +204,7 @@ impl<R: Read> Read for Reader<R> {
         let mut pos = 0;
 
         // Consume from rest buffer
-        if self.rest_buffer.len() > 0 {
+        if !self.rest_buffer.is_empty() {
             let to_copy = cmp::min(self.rest_buffer.len(), buf.len() - pos);
             buf[pos..pos + to_copy].copy_from_slice(&self.rest_buffer[..to_copy]);
             pos += to_copy;

@@ -5,6 +5,7 @@ use commands::wallet::WalletCommand;
 use domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
 use errors::prelude::*;
 use utils::ctypes;
+use utils::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
@@ -189,7 +190,7 @@ pub extern fn indy_create_wallet(command_handle: CommandHandle,
     trace!("indy_create_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
 
-    check_useful_json!(config, ErrorCode::CommonInvalidParam2, Config);
+    check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam2, Config);
     check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -271,7 +272,7 @@ pub extern fn indy_open_wallet(command_handle: CommandHandle,
     trace!("indy_open_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
 
-    check_useful_json!(config, ErrorCode::CommonInvalidParam2, Config);
+    check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam2, Config);
     check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -403,7 +404,7 @@ pub extern fn indy_import_wallet(command_handle: CommandHandle,
     trace!("indy_import_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, import_config: {:?}, cb: {:?}",
            command_handle, config, credentials, import_config, cb);
 
-    check_useful_json!(config, ErrorCode::CommonInvalidParam2, Config);
+    check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam2, Config);
     check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_json!(import_config, ErrorCode::CommonInvalidParam4, ExportConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
@@ -515,7 +516,7 @@ pub extern fn indy_delete_wallet(command_handle: CommandHandle,
     trace!("indy_delete_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
 
-    check_useful_json!(config, ErrorCode::CommonInvalidParam2, Config);
+    check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam2, Config);
     check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -571,12 +572,7 @@ pub extern fn indy_generate_wallet_key(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::GenerateKey(
             config,
-            Box::new(move |result| {
-                let (err, key) = prepare_result_1!(result, String::new());
-                trace!("indy_generate_wallet_key: key: {:?}", key);
-                let key = ctypes::string_to_cstring(key);
-                cb(command_handle, err, key.as_ptr())
-            })
+            boxed_callback_string!("indy_generate_wallet_key", cb, command_handle)
         )));
 
     let res = prepare_result!(result);

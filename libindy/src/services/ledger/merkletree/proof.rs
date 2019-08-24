@@ -21,9 +21,9 @@ impl Proof {
     /// Constructs a new `Proof`
     pub fn new(root_hash: Vec<u8>, lemma: Lemma, value: TreeLeafData) -> Self {
         Proof {
-            root_hash: root_hash,
-            lemma: lemma,
-            value: value
+            root_hash,
+            lemma,
+            value
         }
     }
 
@@ -123,7 +123,7 @@ impl Lemma {
             .map(|(sub_lemma, sibling_hash)| {
                 Lemma {
                     node_hash: hash.into(),
-                    sibling_hash: sibling_hash,
+                    sibling_hash,
                     sub_lemma: Some(Box::new(sub_lemma))
                 }
             })

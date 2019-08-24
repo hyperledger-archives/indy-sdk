@@ -16,7 +16,7 @@ use std::collections::{HashSet, HashMap};
 
 use utils::domain::anoncreds::schema::{Schema, SchemaV1};
 use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
-use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryConfig;
+use utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType};
 use utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
 use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
 
@@ -52,6 +52,14 @@ pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_na
 pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str,
                                            signature_type: Option<&str>, config: Option<&str>) -> Result<(String, String), IndyError> {
     anoncreds::issuer_create_and_store_credential_def(wallet_handle, issuer_did, schema, tag, signature_type, config.unwrap_or("{}")).wait() // TODO: FIXME OPTIONAL CONFIG
+}
+
+pub fn issuer_rotate_credential_def_start(wallet_handle: i32, cred_def_id: &str, config_json: Option<&str>) -> Result<String, IndyError> {
+    anoncreds::issuer_rotate_credential_def_start(wallet_handle, cred_def_id, config_json).wait()
+}
+
+pub fn issuer_rotate_credential_def_apply(wallet_handle: i32, cred_def_id: &str) -> Result<(), IndyError> {
+    anoncreds::issuer_rotate_credential_def_apply(wallet_handle, cred_def_id).wait()
 }
 
 pub fn issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
@@ -181,7 +189,7 @@ pub fn issuance_on_demand_rev_reg_config() -> String {
 }
 
 pub fn issuance_by_default_rev_reg_config() -> String {
-    serde_json::to_string(&RevocationRegistryConfig { max_cred_num: Some(5), issuance_type: Some("ISSUANCE_BY_DEFAULT".to_string()) }).unwrap()
+    serde_json::to_string(&RevocationRegistryConfig { max_cred_num: Some(5), issuance_type: Some(IssuanceType::ISSUANCE_BY_DEFAULT) }).unwrap()
 }
 
 pub fn gvt_schema_id() -> String {

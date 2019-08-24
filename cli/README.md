@@ -15,7 +15,7 @@ Pre-Built binaries can be downloaded from https://repo.sovrin.org/:
 On Ubuntu it is recommended to install packages with APT (change stable to `master` or `rc` if needed):
 ```
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
-sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable"
+sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) stable"
 sudo apt-get update
 sudo apt-get install -y indy-cli
 ```
@@ -63,3 +63,12 @@ By default, this file creates in current folder and has the following name:
     ```
     did import <path to the file created on first step>
     ```
+
+
+### Notes
+Indy-CLI depends on `term` rust library that has a system dependency on terminfo database. 
+That is why CLI Debian package additionally installs `libncursesw5-dev` library.
+More about it read [here](https://crates.io/crates/term) at `Packaging and Distributing` section.
+
+
+

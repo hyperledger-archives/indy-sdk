@@ -54,7 +54,7 @@ fn encrypt_operator(op: Operator, keys: &Keys) -> Result<Operator, IndyError> {
                     TagName::PlainTagName(encrypted_name)
                 }
             };
-            let mut encrypted_values: Vec<TargetValue> = Vec::new();
+            let mut encrypted_values: Vec<TargetValue> = Vec::with_capacity(values.len());
 
             for value in values {
                 encrypted_values.push(encrypt_name_value(&name, value, keys)?.1);

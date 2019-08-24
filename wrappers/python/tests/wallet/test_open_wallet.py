@@ -24,13 +24,3 @@ async def test_open_wallet_works_for_twice(wallet_handle, wallet_config, credent
 async def test_open_wallet_works_for_missed_key(xwallet, wallet_config):
     with pytest.raises(error.CommonInvalidStructure):
         await wallet.open_wallet(wallet_config, "{}")
-
-
-@pytest.mark.asyncio
-async def test_open_wallet_works_for_changing_credentials(wallet_config):
-    await wallet.create_wallet(wallet_config, '{"key":"key"}')
-    handle = await wallet.open_wallet(wallet_config, '{"key":"key", "rekey":"other_key"}')
-    await wallet.close_wallet(handle)
-
-    handle = await wallet.open_wallet(wallet_config, '{"key":"other_key"}')
-    await wallet.close_wallet(handle)

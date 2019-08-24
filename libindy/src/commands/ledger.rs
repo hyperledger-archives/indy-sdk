@@ -14,8 +14,9 @@ use domain::crypto::did::Did;
 use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::auth_rule::AuthRules;
+use domain::ledger::auth_rule::{Constraint, AuthRules};
 use domain::ledger::request::Request;
+use domain::ledger::pool::Schedule;
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
@@ -25,115 +26,115 @@ use services::pool::{
 };
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::signature_serializer::serialize_signature;
-use api::WalletHandle;
-use commands::{Command, CommandExecutor};
+use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
+use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use rust_base58::ToBase58;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
-        i32, // pool handle
+        PoolHandle, // pool handle
         WalletHandle,
         String, // submitter did
         String, // request json
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     SubmitRequest(
-        i32, // pool handle
+        PoolHandle, // pool handle
         String, // request json
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     SubmitAck(
-        i32, // cmd_id
+        CommandHandle,
         IndyResult<String>, // result json or error
     ),
     SubmitAction(
-        i32, // pool handle
+        PoolHandle, // pool handle
         String, // request json
         Option<String>, // nodes
         Option<i32>, // timeout
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     SignRequest(
         WalletHandle,
         String, // submitter did
         String, // request json
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     MultiSignRequest(
         WalletHandle,
         String, // submitter did
         String, // request json
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetDdoRequest(
         Option<String>, // submitter did
         String, // target did
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildNymRequest(
         String, // submitter did
         String, // target did
         Option<String>, // verkey
         Option<String>, // alias
         Option<String>, // role
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildAttribRequest(
         String, // submitter did
         String, // target did
         Option<String>, // hash
-        Option<String>, // raw
+        Option<serde_json::Value>, // raw
         Option<String>, // enc
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetAttribRequest(
         Option<String>, // submitter did
         String, // target did
         Option<String>, // raw
         Option<String>, // hash
         Option<String>, // enc
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetNymRequest(
         Option<String>, // submitter did
         String, // target did
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildSchemaRequest(
         String, // submitter did
         Schema, // data
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetSchemaRequest(
         Option<String>, // submitter did
         String, // id
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetSchemaResponse(
         String, // get schema response json
-        Box<Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildCredDefRequest(
         String, // submitter did
         CredentialDefinition, // data
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetCredDefRequest(
         Option<String>, // submitter did
         String, // id
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetCredDefResponse(
         String, // get cred definition response
-        Box<Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildNodeRequest(
         String, // submitter did
         String, // target_did
         NodeOperationData, // data
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetValidatorInfoRequest(
         String, // submitter did
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetTxnRequest(
         Option<String>, // submitter did
         Option<String>, // ledger type
         i32, // data
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildPoolConfigRequest(
         String, // submitter did
         bool, // writes
         bool, // force
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildPoolRestartRequest(
         String, //submitter did
         String, //action
         Option<String>, //datetime
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildPoolUpgradeRequest(
         String, // submitter did
         String, // name
@@ -141,54 +142,54 @@ pub enum LedgerCommand {
         String, // action
         String, // sha256
         Option<u32>, // timeout
-        Option<String>, // schedule
+        Option<Schedule>, // schedule
         Option<String>, // justification
         bool, // reinstall
         bool, // force
         Option<String>, // package
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildRevocRegDefRequest(
         String, // submitter did
         RevocationRegistryDefinition, // data
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetRevocRegDefRequest(
         Option<String>, // submitter did
         String, // revocation registry definition id
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetRevocRegDefResponse(
         String, // get revocation registry definition response
-        Box<Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildRevocRegEntryRequest(
         String, // submitter did
         String, // revocation registry definition id
         String, // revocation registry definition type
         RevocationRegistryDelta, // value
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetRevocRegRequest(
         Option<String>, // submitter did
         String, // revocation registry definition id
         i64, // timestamp
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetRevocRegResponse(
         String, // get revocation registry response
-        Box<Fn(IndyResult<(String, String, u64)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String, u64)>) + Send>),
     BuildGetRevocRegDeltaRequest(
         Option<String>, // submitter did
         String, // revocation registry definition id
         Option<i64>, // from
         i64, // to
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetRevocRegDeltaResponse(
         String, // get revocation registry delta response
-        Box<Fn(IndyResult<(String, String, u64)>) + Send>),
+        Box<dyn Fn(IndyResult<(String, String, u64)>) + Send>),
     RegisterSPParser(
         String, // txn type
         CustomTransactionParser,
         CustomFree,
-        Box<Fn(IndyResult<()>) + Send>),
+        Box<dyn Fn(IndyResult<()>) + Send>),
     GetResponseMetadata(
         String, // response
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildAuthRuleRequest(
         String, // submitter did
         String, // auth type
@@ -196,12 +197,12 @@ pub enum LedgerCommand {
         String, // field
         Option<String>, // old value
         Option<String>, // new value
-        String, // constraint
-        Box<Fn(IndyResult<String>) + Send>),
+        Constraint, // constraint
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildAuthRulesRequest(
         String, // submitter did
         AuthRules, // auth rules
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetAuthRuleRequest(
         Option<String>, // submitter did
         Option<String>, // auth type
@@ -209,47 +210,47 @@ pub enum LedgerCommand {
         Option<String>, // field
         Option<String>, // old value
         Option<String>, // new value
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     GetSchema(
-        i32,
+        PoolHandle,
         Option<String>,
         String,
-        Box<Fn(IndyResult<(String, String)>) + Send>,
+        BoxedCallbackStringStringSend,
     ),
     GetSchemaContinue(
         IndyResult<String>,
-        i32,
+        CommandHandle,
     ),
     GetCredDef(
-        i32,
+        PoolHandle,
         Option<String>,
         String,
-        Box<Fn(IndyResult<(String, String)>) + Send>,
+        BoxedCallbackStringStringSend,
     ),
     GetCredDefContinue(
         IndyResult<String>,
-        i32,
+        CommandHandle,
     ),
     BuildTxnAuthorAgreementRequest(
         String, // submitter did
         String, // text
         String, // version
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetTxnAuthorAgreementRequest(
         Option<String>, // submitter did
         Option<GetTxnAuthorAgreementData>, // data
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildAcceptanceMechanismRequests(
         String, // submitter did
         AcceptanceMechanisms, // aml
         String, // version
         Option<String>, // aml context
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetAcceptanceMechanismsRequest(
         Option<String>, // submitter did
         Option<u64>, // timestamp
         Option<String>, // version
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     AppendTxnAuthorAgreementAcceptanceToRequest(
         String, // request json
         Option<String>, // text
@@ -257,11 +258,11 @@ pub enum LedgerCommand {
         Option<String>, // hash
         String, // acceptance mechanism type
         u64, // time of acceptance
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
     AppendRequestEndorser(
         String, // request json
         String, // endorser did
-        Box<Fn(IndyResult<String>) + Send>),
+        Box<dyn Fn(IndyResult<String>) + Send>),
 }
 
 pub struct LedgerCommandExecutor {
@@ -270,8 +271,8 @@ pub struct LedgerCommandExecutor {
     wallet_service: Rc<WalletService>,
     ledger_service: Rc<LedgerService>,
 
-    send_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<String>)>>>,
-    pending_callbacks: RefCell<HashMap<i32, Box<Fn(IndyResult<(String, String)>)>>>,
+    send_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>)>>>,
+    pending_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<(String, String)>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -304,7 +305,7 @@ impl LedgerCommandExecutor {
                 match self.send_callbacks.borrow_mut().remove(&handle) {
                     Some(cb) => cb(result.map_err(IndyError::from)),
                     None => {
-                        error!("Can't process LedgerCommand::SubmitAck for handle {} with result {:?} - appropriate callback not found!",
+                        error!("Can't process LedgerCommand::SubmitAck for handle {:?} with result {:?} - appropriate callback not found!",
                                handle, result);
                     }
                 }
@@ -340,7 +341,7 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildAttribRequest command received");
                 cb(self.build_attrib_request(&submitter_did, &target_did,
                                              hash.as_ref().map(String::as_str),
-                                             raw.as_ref().map(String::as_str),
+                                             raw.as_ref(),
                                              enc.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, raw, hash, enc, cb) => {
@@ -401,7 +402,7 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package, cb) => {
                 info!(target: "ledger_command_executor", "BuildPoolUpgradeRequest command received");
                 cb(self.build_pool_upgrade_request(&submitter_did, &name, &version, &action, &sha256, timeout,
-                                                   schedule.as_ref().map(String::as_str),
+                                                   schedule,
                                                    justification.as_ref().map(String::as_str),
                                                    reinstall, force, package.as_ref().map(String::as_str)));
             }
@@ -443,7 +444,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, constraint, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
-                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), &constraint));
+                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), constraint));
             }
             LedgerCommand::BuildAuthRulesRequest(submitter_did, rules, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRulesRequest command received");
@@ -519,11 +520,11 @@ impl LedgerCommandExecutor {
     }
 
     fn sign_and_submit_request(&self,
-                               pool_handle: i32,
+                               pool_handle: PoolHandle,
                                wallet_handle: WalletHandle,
                                submitter_did: &str,
                                request_json: &str,
-                               cb: Box<Fn(IndyResult<String>) + Send>) {
+                               cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         debug!("sign_and_submit_request >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
                pool_handle, wallet_handle, submitter_did, request_json);
 
@@ -581,12 +582,16 @@ impl LedgerCommandExecutor {
     }
 
     fn submit_request(&self,
-                      handle: i32,
+                      handle: PoolHandle,
                       request_json: &str,
-                      cb: Box<Fn(IndyResult<String>) + Send>) {
+                      cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         debug!("submit_request >>> handle: {:?}, request_json: {:?}", handle, request_json);
 
-        let x: IndyResult<i32> = self.pool_service.send_tx(handle, request_json);
+        if let Err(err) = serde_json::from_str::<Request<serde_json::Value>>(&request_json){
+            return cb(Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Request is invalid json: {:?}", err))));
+        }
+
+        let x: IndyResult<CommandHandle> = self.pool_service.send_tx(handle, request_json);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
             Err(err) => { cb(Err(err)); }
@@ -594,18 +599,18 @@ impl LedgerCommandExecutor {
     }
 
     fn submit_action(&self,
-                     handle: i32,
+                     handle: PoolHandle,
                      request_json: &str,
                      nodes: Option<&str>,
                      timeout: Option<i32>,
-                     cb: Box<Fn(IndyResult<String>) + Send>) {
+                     cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         debug!("submit_action >>> handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", handle, request_json, nodes, timeout);
 
         if let Err(err) = self.ledger_service.validate_action(request_json) {
             return cb(Err(err));
         }
 
-        let x: IndyResult<i32> = self.pool_service.send_action(handle, request_json, nodes, timeout);
+        let x: IndyResult<CommandHandle> = self.pool_service.send_action(handle, request_json, nodes, timeout);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
             Err(err) => { cb(Err(err)); }
@@ -679,7 +684,7 @@ impl LedgerCommandExecutor {
                             submitter_did: &str,
                             target_did: &str,
                             hash: Option<&str>,
-                            raw: Option<&str>,
+                            raw: Option<&serde_json::Value>,
                             enc: Option<&str>) -> IndyResult<String> {
         debug!("build_attrib_request >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
                submitter_did, target_did, hash, raw, enc);
@@ -897,7 +902,7 @@ impl LedgerCommandExecutor {
                                   action: &str,
                                   sha256: &str,
                                   timeout: Option<u32>,
-                                  schedule: Option<&str>,
+                                  schedule: Option<Schedule>,
                                   justification: Option<&str>,
                                   reinstall: bool,
                                   force: bool,
@@ -1046,7 +1051,7 @@ impl LedgerCommandExecutor {
                                field: &str,
                                old_value: Option<&str>,
                                new_value: Option<&str>,
-                               constraint: &str) -> IndyResult<String> {
+                               constraint: Constraint) -> IndyResult<String> {
         debug!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
             old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
 
@@ -1162,10 +1167,10 @@ impl LedgerCommandExecutor {
         debug!("append_txn_author_agreement_acceptance_to_request >>> request_json: {:?}, text: {:?}, version: {:?}, taa_digest: {:?}, acc_mech_type: {:?}, time: {:?}",
                request_json, text, version, taa_digest, acc_mech_type, time);
 
-        let mut request: Request<serde_json::Value> = serde_json::from_str(request_json)
+        let mut request: serde_json::Value = serde_json::from_str(request_json)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize request: {:?}", err)))?;
 
-        request.taa_acceptance = Some(self.ledger_service.prepare_acceptance_data(text, version, taa_digest, acc_mech_type, time)?);
+        request["taaAcceptance"] = json!(self.ledger_service.prepare_acceptance_data(text, version, taa_digest, acc_mech_type, time)?);
 
         let res: String = serde_json::to_string(&request)
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding author agreement acceptance data")?;
@@ -1182,10 +1187,10 @@ impl LedgerCommandExecutor {
 
         self.crypto_service.validate_did(endorser_did)?;
 
-        let mut request: Request<serde_json::Value> = serde_json::from_str(request_json)
+        let mut request: serde_json::Value = serde_json::from_str(request_json)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize request: {:?}", err)))?;
 
-        request.endorser = Some(endorser_did.to_string());
+        request["endorser"] = json!(endorser_did);
 
         let res: String = serde_json::to_string(&request)
             .to_indy(IndyErrorKind::InvalidState, "Can't serialize request after adding endorser")?;
@@ -1202,10 +1207,10 @@ impl LedgerCommandExecutor {
         }
     }
 
-    fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
+    fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: BoxedCallbackStringStringSend) {
         let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb);
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         self.submit_request(pool_handle, &request_json, Box::new(move |response| {
@@ -1220,16 +1225,16 @@ impl LedgerCommandExecutor {
         }));
     }
 
-    fn _get_schema_continue(&self, pool_response: IndyResult<String>, cb_id: i32) {
+    fn _get_schema_continue(&self, pool_response: IndyResult<String>, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
         let pool_response = try_cb!(pool_response, cb);
         cb(self.parse_get_schema_response(&pool_response));
     }
 
-    fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<Fn(IndyResult<(String, String)>) + Send>) {
+    fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: BoxedCallbackStringStringSend) {
         let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb);
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         self.submit_request(pool_handle, &request_json, Box::new(move |response| {
@@ -1244,7 +1249,7 @@ impl LedgerCommandExecutor {
         }));
     }
 
-    fn _get_cred_def_continue(&self, pool_response: IndyResult<String>, cb_id: i32) {
+    fn _get_cred_def_continue(&self, pool_response: IndyResult<String>, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
         let pool_response = try_cb!(pool_response, cb);
         cb(self.parse_get_cred_def_response(&pool_response));
