@@ -121,13 +121,13 @@ impl LedgerService {
         let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
         let dest = parts.get(0)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema issuer DID not found in: {}", id)))?.to_string();
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Schema issuer DID not found in: {}", id)))?.to_string();
 
         let name = parts.get(2)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema name not found in: {}", id)))?.to_string();
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Schema name not found in: {}", id)))?.to_string();
 
         let version = parts.get(3)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema version not found in: {}", id)))?.to_string();
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Schema version not found in: {}", id)))?.to_string();
 
         let data = GetSchemaOperationData::new(name, version);
 
@@ -144,15 +144,15 @@ impl LedgerService {
         let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
         let origin = parts.get(0)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Origin not found in: {}", id)))?.to_string();
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Origin not found in: {}", id)))?.to_string();
 
         let ref_ = parts.get(3)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema ID not found in: {}", id)))?
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Schema ID not found in: {}", id)))?
             .parse::<i32>()
             .to_indy(IndyErrorKind::InvalidStructure, format!("Schema ID is invalid number in: {}", id))?;
 
         let signature_type = parts.get(2)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Signature type not found in: {}", id)))?.to_string();
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Signature type not found in: {}", id)))?.to_string();
 
         let tag = parts.get(4).map(|tag| tag.to_string());
 
@@ -349,7 +349,7 @@ impl LedgerService {
     pub fn build_auth_rule_request(&self, submitter_did: &str, txn_type: &str, action: &str, field: &str,
                                    old_value: Option<&str>, new_value: Option<&str>, constraint: Constraint) -> IndyResult<String> {
         let txn_type = txn_name_to_code(&txn_type)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
 
         let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", action))
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
@@ -370,7 +370,7 @@ impl LedgerService {
             (None, None, None) => GetAuthRuleOperation::get_all(),
             (Some(auth_type), Some(auth_action), Some(field)) => {
                 let type_ = txn_name_to_code(&auth_type)
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", auth_type)))?;
+                    .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", auth_type)))?;
 
                 let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", auth_action))
                     .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;

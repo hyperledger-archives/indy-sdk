@@ -9,7 +9,7 @@ use ursa::cl::{
 };
 use ursa::cl::{CredentialKeyCorrectnessProof, CredentialPrivateKey};
 
-use commands::{Command, CommandExecutor};
+use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use commands::anoncreds::AnoncredsCommand;
 use domain::anoncreds::credential::{CredentialValues, Credential};
 use domain::anoncreds::credential_definition::{
@@ -61,7 +61,7 @@ pub enum IssuerCommand {
         String, // name
         String, // version
         AttributeNames, // attribute names
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     CreateAndStoreCredentialDefinition(
         WalletHandle,
         String, // issuer did
@@ -69,7 +69,7 @@ pub enum IssuerCommand {
         String, // tag
         Option<String>, // type
         Option<CredentialDefinitionConfig>, // config
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     CreateAndStoreCredentialDefinitionContinue(
         WalletHandle,
         SchemaV1, // credentials
@@ -145,7 +145,7 @@ pub struct IssuerCommandExecutor {
     pub pool_service: Rc<PoolService>,
     pub wallet_service: Rc<WalletService>,
     pub crypto_service: Rc<CryptoService>,
-    pending_str_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<(String, String)>) + Send>>>,
+    pending_str_str_callbacks: RefCell<HashMap<CommandHandle, BoxedCallbackStringStringSend>>,
     pending_str_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<String>) + Send>>>,
 }
 
@@ -262,7 +262,7 @@ impl IssuerCommandExecutor {
                                               tag: &str,
                                               type_: Option<&str>,
                                               config: Option<&CredentialDefinitionConfig>,
-                                              cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+                                              cb: BoxedCallbackStringStringSend) {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema: {:?}, tag: {:?}, \
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 
@@ -691,7 +691,7 @@ impl IssuerCommandExecutor {
 
                 // TODO: FIXME: Review error kind!
                 let blob_storage_reader_handle = blob_storage_reader_handle
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "TailsReaderHandle not found"))?;
+                    .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "TailsReaderHandle not found"))?;
 
                 let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                                blob_storage_reader_handle,
@@ -909,7 +909,7 @@ impl IssuerCommandExecutor {
     fn _wallet_get_schema_id(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<String> {
         let schema_id_record = self.wallet_service.get_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), &key, &RecordOptions::id_value())?;
         Ok(schema_id_record.get_value()
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("SchemaId not found for id: {}", key)))?.to_string())
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidStructure, format!("SchemaId not found for id: {}", key)))?.to_string())
     }
 
     fn _wallet_get_rev_reg_def(&self, wallet_handle: WalletHandle, key: &str) -> IndyResult<RevocationRegistryDefinition> {

@@ -42,6 +42,8 @@ pub mod non_secrets;
 pub mod payments;
 pub mod cache;
 
+type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + Send>;
+
 pub enum Command {
     Exit,
     Anoncreds(AnoncredsCommand),

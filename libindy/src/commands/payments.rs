@@ -17,6 +17,7 @@ use api::{WalletHandle, CommandHandle};
 use domain::ledger::auth_rule::AuthRule;
 
 use api::next_command_handle;
+use commands::BoxedCallbackStringStringSend;
 
 pub enum PaymentsCommand {
     RegisterMethod(
@@ -42,7 +43,7 @@ pub enum PaymentsCommand {
         String, //inputs
         String, //outputs
         Option<String>, //extra
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     AddRequestFeesAck(
         CommandHandle, //handle
         IndyResult<String>),
@@ -58,7 +59,7 @@ pub enum PaymentsCommand {
         Option<String>, //submitter did
         String, //payment address
         Option<i64>, //from
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildGetPaymentSourcesRequestAck(
         CommandHandle,
         IndyResult<String>),
@@ -75,7 +76,7 @@ pub enum PaymentsCommand {
         String, //inputs
         String, //outputs
         Option<String>, //extra
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildPaymentReqAck(
         CommandHandle,
         IndyResult<String>),
@@ -99,7 +100,7 @@ pub enum PaymentsCommand {
         Option<String>, //submitter did
         String, //outputs
         Option<String>, //extra
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildMintReqAck(
         CommandHandle,
         IndyResult<String>),
@@ -131,7 +132,7 @@ pub enum PaymentsCommand {
         WalletHandle,
         Option<String>, //submitter_did
         String, //receipt
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildVerifyPaymentReqAck(
         CommandHandle,
         IndyResult<String>),
@@ -397,7 +398,7 @@ impl PaymentsCommandExecutor {
         trace!("list_addresses <<<");
     }
 
-    fn add_request_fees(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, req: &str, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn add_request_fees(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, req: &str, inputs: &str, outputs: &str, extra: Option<&str>, cb: BoxedCallbackStringStringSend) {
         trace!("add_request_fees >>> wallet_handle: {:?}, submitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}",
                wallet_handle, submitter_did, req, inputs, outputs, extra);
         if let Some(did) = submitter_did {
@@ -449,7 +450,7 @@ impl PaymentsCommandExecutor {
         trace!("parse_response_with_fees_ack <<<");
     }
 
-    fn build_get_payment_sources_request(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, next: Option<i64>, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn build_get_payment_sources_request(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, payment_address: &str, next: Option<i64>, cb: BoxedCallbackStringStringSend) {
         trace!("build_get_payment_sources_request >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
@@ -461,7 +462,7 @@ impl PaymentsCommandExecutor {
         let method = match self.payments_service.parse_method_from_payment_address(payment_address) {
             Ok(method) => method,
             Err(err) => {
-                cb(Err(IndyError::from(err)));
+                cb(Err(err));
                 return;
             }
         };
@@ -492,7 +493,7 @@ impl PaymentsCommandExecutor {
         trace!("parse_get_payment_sources_response_ack <<<");
     }
 
-    fn build_payment_req(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn build_payment_req(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, cb: BoxedCallbackStringStringSend) {
         trace!("build_payment_req >>> wallet_handle: {:?}, submitter_did: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, inputs, outputs, extra);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
@@ -563,7 +564,7 @@ impl PaymentsCommandExecutor {
         trace!("parse_payment_response_ack <<<");
     }
 
-    fn build_mint_req(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, outputs: &str, extra: Option<&str>, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn build_mint_req(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, outputs: &str, extra: Option<&str>, cb: BoxedCallbackStringStringSend) {
         trace!("build_mint_req >>> wallet_handle: {:?}, submitter_did: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs, extra);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
@@ -620,7 +621,7 @@ impl PaymentsCommandExecutor {
         trace!("build_get_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}", wallet_handle, submitter_did, type_);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(IndyError::from(err))),
+                Err(err) => return cb(Err(err)),
                 _ => ()
             }
         }
@@ -647,7 +648,7 @@ impl PaymentsCommandExecutor {
         trace!("parse_get_txn_fees_response_ack <<<");
     }
 
-    fn build_verify_payment_request(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, receipt: &str, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn build_verify_payment_request(&self, wallet_handle: WalletHandle, submitter_did: Option<&str>, receipt: &str, cb: BoxedCallbackStringStringSend) {
         trace!("build_verify_payment_request >>> wallet_handle: {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
         if let Some(did) = submitter_did {
             match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
