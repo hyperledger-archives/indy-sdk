@@ -149,10 +149,6 @@ impl PoolService {
 
         let config = config.unwrap_or_default();
 
-        if config.number_read_nodes == 0 {
-            return Err(err_msg(IndyErrorKind::InvalidStructure, "The value of `number_read_nodes` must be greater than 0"))
-        }
-
         let pool_handle: PoolHandle = next_pool_handle();
         let mut new_pool = Pool::new(name, pool_handle, config);
 
@@ -176,7 +172,7 @@ impl PoolService {
     pub fn add_open_pool(&self, pool_id: PoolHandle) -> IndyResult<PoolHandle> {
         let pool = self.pending_pools.try_borrow_mut()?
             .remove(&pool_id)
-            .ok_or(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", pool_id)))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", pool_id)))?;
 
         self.open_pools.try_borrow_mut()?.insert(pool_id, pool);
 

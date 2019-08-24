@@ -29,6 +29,7 @@ use utils::sequence;
 
 use super::tails::SDKTailsAccessor;
 use api::WalletHandle;
+use commands::BoxedCallbackStringStringSend;
 
 pub enum ProverCommand {
     CreateMasterSecret(
@@ -41,7 +42,7 @@ pub enum ProverCommand {
         CredentialOffer, // credential offer
         CredentialDefinition, // credential def
         String, // master secret name
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     SetCredentialAttrTagPolicy(
         WalletHandle,
         String, // credential definition id
@@ -483,7 +484,7 @@ impl ProverCommandExecutor {
 
         let mut searches = self.searches.borrow_mut();
         let search = searches.get_mut(&search_handle)
-            .ok_or(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))?;
 
         let mut credentials_info: Vec<CredentialInfo> = Vec::new();
 
@@ -611,9 +612,9 @@ impl ProverCommandExecutor {
 
         let mut searches = self.searches_for_proof_requests.borrow_mut();
         let search: &mut SearchForProofRequest = searches.get_mut(&search_handle)
-            .ok_or(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))?
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))?
             .get_mut(item_referent)
-            .ok_or(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown item referent {} for CredentialsSearch handle: {}", item_referent, search_handle)))?;
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown item referent {} for CredentialsSearch handle: {}", item_referent, search_handle)))?;
 
         let requested_credentials: Vec<RequestedCredential> =
             self._get_requested_credentials(&mut search.search, search.predicate_info.as_ref(), &search.interval, Some(count))?;
@@ -794,7 +795,7 @@ impl ProverCommandExecutor {
         let referent = record.get_id();
 
         let value = record.get_value()
-            .ok_or(err_msg(IndyErrorKind::InvalidState, format!("Credential not found for id: {}", referent)))?;
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidState, format!("Credential not found for id: {}", referent)))?;
 
         let credential: Credential = serde_json::from_str(value)
             .to_indy(IndyErrorKind::InvalidState, "Cannot deserialize Credential")?;
@@ -836,7 +837,7 @@ impl ProverCommandExecutor {
 
             if let Some(predicate) = predicate_info {
                 let values = self.anoncreds_service.prover.get_credential_values_for_attribute(&credential.values, &predicate.name)
-                    .ok_or(err_msg(IndyErrorKind::InvalidState, "Credential values not found"))?;
+                    .ok_or_else(||err_msg(IndyErrorKind::InvalidState, "Credential values not found"))?;
 
                 let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate, &values.encoded)?;
                 if !satisfy { continue; }

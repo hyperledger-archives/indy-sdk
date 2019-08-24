@@ -253,7 +253,7 @@ impl CatchupRep {
             }
         }
 
-        min.ok_or(err_msg(IndyErrorKind::InvalidStructure, "Empty map"))
+        min.ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Empty map"))
     }
 }
 
@@ -501,7 +501,7 @@ impl MinValue for Vec<(CatchupRep, usize)> {
             }
         }
 
-        Ok(res.ok_or(err_msg(IndyErrorKind::InvalidStructure, "Element not Found"))?.1)
+        Ok(res.ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Element not Found"))?.1)
     }
 }
 

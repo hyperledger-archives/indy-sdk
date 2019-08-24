@@ -33,8 +33,9 @@ public class SchemaApi extends VcxJava.API {
                                                           String data,
                                                           int paymentHandle) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "schemaName");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "version");
+        ParamGuard.notNullOrWhiteSpace(schemaName, "schemaName");
+        ParamGuard.notNullOrWhiteSpace(version, "version");
+        ParamGuard.notNullOrWhiteSpace(data, "data");
         logger.debug("schemaCreate() called with: sourceId = [" + sourceId + "], schemaName = [" + schemaName + "], version = [" + version + "]" + " data = <" + data + ">" + " payment_handle = <" + paymentHandle + ">");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
