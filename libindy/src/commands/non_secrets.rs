@@ -268,7 +268,7 @@ impl NonSecretsCommandExecutor {
 
         let mut searches = self.searches.borrow_mut();
         let search = searches.get_mut(&wallet_search_handle)
-            .ok_or(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown WalletSearch handle: {}", wallet_search_handle)))?;
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown WalletSearch handle: {}", wallet_search_handle)))?;
 
         let mut records: Vec<WalletRecord> = Vec::new();
         for _ in 0..count {

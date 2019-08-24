@@ -172,7 +172,7 @@ impl PoolService {
     pub fn add_open_pool(&self, pool_id: PoolHandle) -> IndyResult<PoolHandle> {
         let pool = self.pending_pools.try_borrow_mut()?
             .remove(&pool_id)
-            .ok_or(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", pool_id)))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", pool_id)))?;
 
         self.open_pools.try_borrow_mut()?.insert(pool_id, pool);
 
