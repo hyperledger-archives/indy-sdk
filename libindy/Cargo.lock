@@ -695,7 +695,7 @@ dependencies = [
  "ursa 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "zeroize 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "zmq 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zmq 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1699,17 +1699,18 @@ dependencies = [
 
 [[package]]
 name = "zmq"
-version = "0.8.3"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
+ "bitflags 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.60 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "zmq-sys 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zmq-sys 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "zmq-sys"
-version = "0.8.3"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.2.60 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1913,5 +1914,5 @@ dependencies = [
 "checksum zeroize 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "8ddfeb6eee2fb3b262ef6e0898a52b7563bb8e0d5955a313b3cf2f808246ea14"
 "checksum zeroize 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)" = "45af6a010d13e4cf5b54c94ba5a2b2eba5596b9e46bf5875612d332a1f2b3f86"
 "checksum zeroize_derive 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)" = "080616bd0e31f36095288bb0acdf1f78ef02c2fa15527d7e993f2a6c7591643e"
-"checksum zmq 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)" = "8ff1c5e9ff4ac9c2847b2e72ada1c1eb3e188adb49fe3f1dd3bbcdc47f414d17"
-"checksum zmq-sys 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)" = "4b770cf495ad41e920ab25c465f35b7eec09d0ce8d7c892a7c8334a5e0de037c"
+"checksum zmq 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1bcd76da382c5297efdaac2afa2525bdcdcf2898a7eb8f2b6ddddf2b8be6bfcb"
+"checksum zmq-sys 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "efcfb0bbd805a8a88f1625e601ea445e33dab4fa7a58c4a19b00b225700bea25"
