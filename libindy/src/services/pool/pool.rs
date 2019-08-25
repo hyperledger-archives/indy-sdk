@@ -18,7 +18,7 @@ use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::commander::Commander;
 use services::pool::events::*;
-use services::pool::merkle_tree_factory;
+use services::pool::{merkle_tree_factory, Nodes};
 use services::pool::networker::{Networker, ZMQNetworker};
 use services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
 use rust_base58::{FromBase58, ToBase58};
@@ -68,7 +68,7 @@ struct GettingCatchupTargetState<T: Networker, R: RequestHandler<T>> {
 struct ActiveState<T: Networker, R: RequestHandler<T>> {
     networker: Rc<RefCell<T>>,
     request_handlers: HashMap<String, R>,
-    nodes: HashMap<String, Option<VerKey>>,
+    nodes: Nodes,
 }
 
 struct SyncCatchupState<T: Networker, R: RequestHandler<T>> {
@@ -132,8 +132,8 @@ impl<T: Networker> From<InitializationState<T>> for TerminatedState<T> {
     }
 }
 
-impl<T: Networker, R: RequestHandler<T>> From<(InitializationState<T>, HashMap<String, Option<VerKey>>)> for ActiveState<T, R> {
-    fn from((state, nodes): (InitializationState<T>, HashMap<String, Option<VerKey>>)) -> ActiveState<T, R> {
+impl<T: Networker, R: RequestHandler<T>> From<(InitializationState<T>, Nodes)> for ActiveState<T, R> {
+    fn from((state, nodes): (InitializationState<T>, Nodes)) -> ActiveState<T, R> {
         trace!("PoolSM: from init to active");
         ActiveState {
             networker: state.networker,
@@ -157,8 +157,8 @@ impl<T: Networker, R: RequestHandler<T>> From<(R, GettingCatchupTargetState<T, R
     }
 }
 
-impl<T: Networker, R: RequestHandler<T>> From<(GettingCatchupTargetState<T, R>, HashMap<String, Option<VerKey>>)> for ActiveState<T, R> {
-    fn from((state, nodes): (GettingCatchupTargetState<T, R>, HashMap<String, Option<VerKey>>)) -> Self {
+impl<T: Networker, R: RequestHandler<T>> From<(GettingCatchupTargetState<T, R>, Nodes)> for ActiveState<T, R> {
+    fn from((state, nodes): (GettingCatchupTargetState<T, R>, Nodes)) -> Self {
         ActiveState {
             networker: state.networker,
             request_handlers: HashMap::new(),
@@ -219,8 +219,8 @@ impl<T: Networker, R: RequestHandler<T>> From<ActiveState<T, R>> for ClosedState
 
 // transitions from SyncCatchup
 
-impl<T: Networker, R: RequestHandler<T>> From<(SyncCatchupState<T, R>, HashMap<String, Option<VerKey>>)> for ActiveState<T, R> {
-    fn from((state, nodes): (SyncCatchupState<T, R>, HashMap<String, Option<VerKey>>)) -> Self {
+impl<T: Networker, R: RequestHandler<T>> From<(SyncCatchupState<T, R>, Nodes)> for ActiveState<T, R> {
+    fn from((state, nodes): (SyncCatchupState<T, R>, Nodes)) -> Self {
         trace!("PoolSM: from sync catchup to active");
         ActiveState {
             networker: state.networker,
@@ -646,7 +646,7 @@ fn _ledger_status(merkle: &MerkleTree) -> LedgerStatus {
     }
 }
 
-fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(HashMap<String, Option<VerKey>>, Vec<RemoteNode>)> {
+fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(Nodes, Vec<RemoteNode>)> {
     let nodes = merkle_tree_factory::build_node_state(merkle)?;
 
     Ok(nodes.iter().map(|(_, txn)| {
