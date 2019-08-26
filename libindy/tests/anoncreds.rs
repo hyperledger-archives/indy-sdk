@@ -479,11 +479,8 @@ mod high_cases {
                "requested_predicates": json!({}),
             }).to_string();
 
-            let credentials_json = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 0);
-            assert_eq!(credentials.predicates.len(), 0);
+            let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }

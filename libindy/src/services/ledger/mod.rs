@@ -120,6 +120,10 @@ impl LedgerService {
     pub fn build_get_schema_request(&self, identifier: Option<&str>, id: &SchemaId) -> IndyResult<String> {
         let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
+        if parts.len() != 4 {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Schema ID `{}` cannot be used to build request: invalid number of parts", id.0)));
+        }
+
         let dest = parts[0].to_string();
         let name = parts[2].to_string();
         let version = parts[3].to_string();

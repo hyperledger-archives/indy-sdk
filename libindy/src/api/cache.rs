@@ -43,7 +43,7 @@ pub extern fn indy_get_cred_def(command_handle: CommandHandle,
            pool_handle, wallet_handle, submitter_did, id, options_json);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam4);
-    check_useful_validatable_json!(id, ErrorCode::CommonInvalidParam5, CredentialDefinitionId);
+    check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam5, CredentialDefinitionId);
     check_useful_json!(options_json, ErrorCode::CommonInvalidParam6, GetCacheOptions);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
@@ -101,7 +101,7 @@ pub extern fn indy_get_schema(command_handle: CommandHandle,
            pool_handle, wallet_handle, submitter_did, id, options_json);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam4);
-    check_useful_validatable_json!(id, ErrorCode::CommonInvalidParam5, SchemaId);
+    check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam5, SchemaId);
     check_useful_json!(options_json, ErrorCode::CommonInvalidParam6, GetCacheOptions);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 

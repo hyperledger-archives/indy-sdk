@@ -267,7 +267,7 @@ pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHan
     trace!("indy_issuer_rotate_credential_def_start: >>> wallet_handle: {:?}, cred_def_id: {:?}, config_json: {:?}",
            wallet_handle, cred_def_id, config_json);
 
-    check_useful_validatable_json!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_opt_validatable_json!(config_json, ErrorCode::CommonInvalidParam4, CredentialDefinitionConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -320,7 +320,7 @@ pub extern fn indy_issuer_rotate_credential_def_apply(command_handle: CommandHan
     trace!("indy_issuer_rotate_credential_def_apply: >>> wallet_handle: {:?}, cred_def_id: {:?}",
            wallet_handle, cred_def_id);
 
-    check_useful_validatable_json!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_issuer_rotate_credential_def_apply: entities >>> wallet_handle: {:?}, cred_def_id: {:?}",
@@ -441,7 +441,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHand
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(revoc_def_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
-    check_useful_validatable_json!(cred_def_id, ErrorCode::CommonInvalidParam6, CredentialDefinitionId);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam6, CredentialDefinitionId);
     check_useful_validatable_json!(config_json, ErrorCode::CommonInvalidParam7, RevocationRegistryConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
@@ -511,7 +511,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
                                                                        cred_offer_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_credential_offer: >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
 
-    check_useful_validatable_json!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_issuer_create_credential_offer: entities >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
@@ -604,7 +604,7 @@ pub extern fn indy_issuer_create_credential(command_handle: CommandHandle,
     check_useful_validatable_json!(cred_offer_json, ErrorCode::CommonInvalidParam3, CredentialOffer);
     check_useful_validatable_json!(cred_req_json, ErrorCode::CommonInvalidParam4, CredentialRequest);
     check_useful_validatable_json!(cred_values_json, ErrorCode::CommonInvalidParam5, CredentialValues);
-    check_useful_opt_validatable_json!(rev_reg_id, ErrorCode::CommonInvalidParam6, RevocationRegistryId);
+    check_useful_validatable_opt_string!(rev_reg_id, ErrorCode::CommonInvalidParam6, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let blob_storage_reader_handle = if blob_storage_reader_handle != -1 { Some(blob_storage_reader_handle) } else { None };
@@ -684,7 +684,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: CommandHandle,
     trace!("indy_issuer_revoke_credential: >>> wallet_handle: {:?}, blob_storage_reader_cfg_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
            wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id, cred_revoc_id);
 
-    check_useful_validatable_json!(rev_reg_id, ErrorCode::CommonInvalidParam4, RevocationRegistryId);
+    check_useful_validatable_string!(rev_reg_id, ErrorCode::CommonInvalidParam4, RevocationRegistryId);
     check_useful_c_str!(cred_revoc_id, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
@@ -1018,7 +1018,7 @@ pub extern fn indy_prover_set_credential_attr_tag_policy(command_handle: Command
                                                          cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_prover_set_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}, tag_attrs_json: {:?}, retroactive: {:?}", wallet_handle, cred_def_id, tag_attrs_json, retroactive);
 
-    check_useful_validatable_json!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_opt_json!(tag_attrs_json, ErrorCode::CommonInvalidParam4, CredentialAttrTagPolicy);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
@@ -1074,7 +1074,7 @@ pub extern fn indy_prover_get_credential_attr_tag_policy(command_handle: Command
                                                                               catpol_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_get_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
 
-    check_useful_validatable_json!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_prover_get_credential_attr_tag_policy: entities >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);

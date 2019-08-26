@@ -71,7 +71,7 @@ impl Validatable for AttributeNames {
 }
 
 impl SchemaId {
-    pub fn new(did: &str, name: &str, version: &str) -> SchemaId{
+    pub fn new(did: &str, name: &str, version: &str) -> SchemaId {
         SchemaId(format!("{}{}{}{}{}{}{}", did, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version))
     }
 
@@ -83,14 +83,10 @@ impl SchemaId {
 impl Validatable for SchemaId {
     fn validate(&self) -> Result<(), String> {
         let parts: Vec<&str> = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
-        if parts.len() > 4 {
-            return Err("SchemaId validation failed: too much parts".to_string());
-        }
 
-        parts.get(0).ok_or_else(||format!("Schema Id validation failed: issuer DID not found in: {}", self.0))?;
-        parts.get(1).ok_or_else(||format!("Schema Id validation failed: marker not found in: {}", self.0))?;
-        parts.get(2).ok_or_else(||format!("Schema Id validation failed: name not found in: {}", self.0))?;
-        parts.get(3).ok_or_else(||format!("Schema Id validation failed: version not found in: {}", self.0))?;
+        if parts.len() != 1 && parts.len() != 4 {
+            return Err("SchemaId validation failed: invalid number of parts".to_string());
+        }
 
         Ok(())
     }
