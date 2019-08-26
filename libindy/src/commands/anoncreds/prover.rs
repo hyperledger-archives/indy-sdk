@@ -785,7 +785,7 @@ impl ProverCommandExecutor {
             attrs: credential_values,
             schema_id: credential.schema_id,
             cred_def_id: credential.cred_def_id,
-            rev_reg_id: credential.rev_reg_id.clone(),
+            rev_reg_id: credential.rev_reg_id,
             cred_rev_id: credential.signature.extract_index().map(|idx| idx.to_string())
         }
     }

@@ -20,10 +20,10 @@ impl RevRegDefOperation {
     pub fn new(rev_reg_def: RevocationRegistryDefinitionV1) -> RevRegDefOperation {
         RevRegDefOperation {
             _type: REVOC_REG_DEF.to_string(),
-            id: rev_reg_def.id.clone(),
+            id: rev_reg_def.id,
             type_: rev_reg_def.revoc_def_type.to_str().to_string(),
-            tag: rev_reg_def.tag.to_string(),
-            cred_def_id: rev_reg_def.cred_def_id.clone(),
+            tag: rev_reg_def.tag,
+            cred_def_id: rev_reg_def.cred_def_id,
             value: rev_reg_def.value
         }
     }
