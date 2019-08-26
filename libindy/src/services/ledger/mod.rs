@@ -342,7 +342,7 @@ impl LedgerService {
     pub fn build_auth_rule_request(&self, submitter_did: &str, txn_type: &str, action: &str, field: &str,
                                    old_value: Option<&str>, new_value: Option<&str>, constraint: Constraint) -> IndyResult<String> {
         let txn_type = txn_name_to_code(&txn_type)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
 
         let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", action))
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
@@ -363,7 +363,7 @@ impl LedgerService {
             (None, None, None) => GetAuthRuleOperation::get_all(),
             (Some(auth_type), Some(auth_action), Some(field)) => {
                 let type_ = txn_name_to_code(&auth_type)
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", auth_type)))?;
+                    .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", auth_type)))?;
 
                 let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", auth_action))
                     .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;

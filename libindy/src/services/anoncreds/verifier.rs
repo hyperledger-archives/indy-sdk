@@ -72,28 +72,28 @@ impl Verifier {
             let identifier = full_proof.identifiers[sub_proof_index].clone();
 
             let schema: &SchemaV1 = schemas.get(&identifier.schema_id)
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema not found for id: {:?}", identifier.schema_id)))?;
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Schema not found for id: {:?}", identifier.schema_id)))?;
 
             let cred_def: &CredentialDefinitionV1 = cred_defs.get(&identifier.cred_def_id)
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found for id: {:?}", identifier.cred_def_id)))?;
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found for id: {:?}", identifier.cred_def_id)))?;
 
             let (rev_reg_def, rev_reg) =
                 if let Some(timestamp) = identifier.timestamp {
                     let rev_reg_id = identifier.rev_reg_id
                         .clone()
-                        .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
 
                     let rev_reg_def = Some(rev_reg_defs
                         .get(&rev_reg_id)
-                        .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistryDefinition not found for id: {:?}", identifier.rev_reg_id)))?);
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistryDefinition not found for id: {:?}", identifier.rev_reg_id)))?);
 
                     let rev_regs_for_cred = rev_regs
                         .get(&rev_reg_id)
-                        .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for id: {:?}", rev_reg_id)))?;
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for id: {:?}", rev_reg_id)))?;
 
                     let rev_reg = Some(rev_regs_for_cred
                         .get(&timestamp)
-                        .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for timestamp: {:?}", timestamp)))?);
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationRegistry not found for timestamp: {:?}", timestamp)))?);
 
                     (rev_reg_def, rev_reg)
                 } else { (None, None) };
@@ -219,7 +219,7 @@ impl Verifier {
             .map(|(referent, info)|
                 Verifier::_validate_timestamp(&received_revealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked)
                     .or_else(|_| Verifier::_validate_timestamp(&received_unrevealed_attrs, referent, &proof_req.non_revoked, &info.non_revoked))
-                    .or_else(|_| received_self_attested_attrs.get(referent).map(|_| ()).ok_or(IndyError::from(IndyErrorKind::InvalidStructure)))
+                    .or_else(|_| received_self_attested_attrs.get(referent).map(|_| ()).ok_or_else(|| IndyError::from(IndyErrorKind::InvalidStructure)))
             )
             .collect::<IndyResult<Vec<()>>>()?;
 
@@ -292,7 +292,7 @@ impl Verifier {
         proof.identifiers
             .get(index as usize)
             .cloned()
-            .ok_or(err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("Identifier not found for index: {}", index)
             ))
@@ -357,33 +357,33 @@ impl Verifier {
                            cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>) -> IndyResult<Filter> {
         let identifier = identifiers
             .get(referent)
-            .ok_or_else(||err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidState,
                 format!("Identifier not found for referent: {}", referent))
             )?;
 
         let schema: &SchemaV1 = schemas
             .get(&identifier.schema_id)
-            .ok_or_else(||err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("Schema not found for id: {:?}", identifier.schema_id))
             )?;
 
         let cred_def: &CredentialDefinitionV1 = cred_defs
             .get(&identifier.cred_def_id)
-            .ok_or_else(||err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("CredentialDefinitionV1 not found for id: {:?}", identifier.cred_def_id))
             )?;
 
         let schema_issuer_did = cred_def.schema_id.issuer_did()
-            .ok_or_else(||err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("schema_id has invalid format: {:?}", schema.id))
             )?;
 
         let issuer_did = cred_def.id.issuer_did()
-            .ok_or_else(||err_msg(
+            .ok_or_else(|| err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("cred_def_id has invalid format: {:?}", cred_def.id))
             )?;

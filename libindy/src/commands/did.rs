@@ -5,7 +5,7 @@ use std::str;
 
 use serde_json;
 
-use commands::{Command, CommandExecutor};
+use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use commands::ledger::LedgerCommand;
 use domain::crypto::did::{Did, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo};
 use domain::crypto::key::KeyInfo;
@@ -23,7 +23,7 @@ pub enum DidCommand {
     CreateAndStoreMyDid(
         WalletHandle,
         MyDidInfo, // my did info
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     ReplaceKeysStart(
         WalletHandle,
         KeyInfo, // key info
@@ -303,7 +303,7 @@ impl DidCommandExecutor {
             let did_id = did_record.get_id();
 
             let did: Did = did_record.get_value()
-                .ok_or(err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
+                .ok_or_else(||err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
                 .and_then(|tags_json| serde_json::from_str(&tags_json)
                     .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
 

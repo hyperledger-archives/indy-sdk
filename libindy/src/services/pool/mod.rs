@@ -31,6 +31,7 @@ use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
 use services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
 use api::{CommandHandle, next_command_handle, PoolHandle, next_pool_handle};
+use ursa::bls::VerKey;
 
 mod catchup;
 mod commander;
@@ -45,6 +46,8 @@ mod types;
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
 }
+
+type Nodes = HashMap<String, Option<VerKey>>;
 
 pub struct PoolService {
     open_pools: RefCell<HashMap<PoolHandle, ZMQPool>>,
@@ -172,7 +175,7 @@ impl PoolService {
     pub fn add_open_pool(&self, pool_id: PoolHandle) -> IndyResult<PoolHandle> {
         let pool = self.pending_pools.try_borrow_mut()?
             .remove(&pool_id)
-            .ok_or(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", pool_id)))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", pool_id)))?;
 
         self.open_pools.try_borrow_mut()?.insert(pool_id, pool);
 
