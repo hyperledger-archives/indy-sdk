@@ -10,7 +10,7 @@ use ffi::ResponseI32CB;
 use utils::callbacks::{ClosureHandler, ResultHandler};
 use {IndyHandle, CommandHandle};
 
-pub fn open_reader(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=IndyError>> {
+pub fn open_reader(xtype: &str, config_json: &str) -> Box<dyn Future<Item=IndyHandle, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
     let err = _open_reader(command_handle, xtype, config_json, cb);
@@ -25,7 +25,7 @@ fn _open_reader(command_handle: CommandHandle, xtype: &str, config_json: &str, c
     ErrorCode::from(unsafe { blob_storage::indy_open_blob_storage_reader(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
 }
 
-pub fn open_writer(xtype: &str, config_json: &str) -> Box<Future<Item=CommandHandle, Error=IndyError>> {
+pub fn open_writer(xtype: &str, config_json: &str) -> Box<dyn Future<Item=CommandHandle, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
     let err = _open_writer(command_handle, xtype, config_json, cb);

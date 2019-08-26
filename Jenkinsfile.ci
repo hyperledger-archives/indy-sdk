@@ -1,8 +1,12 @@
 #!groovy
 
 
-libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
-libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
+Ubuntu16 = "Ubuntu 16.04"
+Ubuntu18 = "Ubuntu 18.04"
+RedHat = "RedHat"
+
+libindyBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
+libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
 
 testing()
 
@@ -16,7 +20,7 @@ def testing() {
                 'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
-                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
+                // 'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -24,10 +28,10 @@ def testing() {
 
 def staticValidation() {
     parallel([
-        'libindy'    : { runValdiationRust('libindy') },
-        'libnullpay' : { runValdiationRust('libnullpay') },
-        'libvcx'     : { runValdiationRust('vcx/libvcx') },
-        'cli'        : { runValdiationRust('cli') }
+            'libindy'   : { runValdiationRust('libindy') },
+            'libnullpay': { runValdiationRust('libnullpay') },
+            'libvcx'    : { runValdiationRust('vcx/libvcx') },
+            'cli'       : { runValdiationRust('cli') }
     ])
 }
 
@@ -80,7 +84,7 @@ def windowsTesting() {
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --features fatal_warnings"
-                            bat "cargo test --no-run"
+                            bat 'cargo test --no-run --features only_high_cases'
 
                             echo "Windows Libindy before Test: Deleting %TEMP\\indy_client"
                             bat "DEL /S /Q /F %TEMP%\\indy_client"
@@ -92,7 +96,7 @@ def windowsTesting() {
                                     "RUST_LOG=indy::=debug,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
-                                bat "cargo test"
+                                bat 'cargo test --features only_high_cases'
                             }
 
                             echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
@@ -248,7 +252,7 @@ def androidTesting() {
 
 def iosTesting() {
 
-    def setupRustIOS ={
+    def setupRustIOS = {
         sh "rustup target add x86_64-apple-ios"
     }
 
@@ -339,22 +343,29 @@ def iosTesting() {
 
 def ubuntuTesting() {
     stage('Ubuntu Test') {
-        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network")
+        parallel([
+                "ubuntu:16.04": {
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", false)
+                },
+                "ubuntu:18.04": {
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", true)
+                }
+        ])
     }
 }
 
 def rhelTesting() {
     stage('RedHat Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
     }
 }
 
-def linuxTesting(file, env_name, network_name) {
+def linuxTesting(file, env_name, network_name, full_testing) {
     parallel([
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
-                    linuxLibindyBuild(file, env_name, network_name)
+                    linuxLibindyBuild(file, env_name, network_name, full_testing)
                 }
             },
             "${env_name} Test: test other components" : {
@@ -362,28 +373,19 @@ def linuxTesting(file, env_name, network_name) {
                     libindyBuildFinished[env_name]
                 }
                 def jobs = [
-                        "${env_name}-nodejs-test"     : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
-                        },
                         "${env_name}-cli-test"        : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
-                        "${env_name}-rust-test"       : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
-                        },
                         "${env_name}-vcx-test"        : {
-                            vcxTesting(file, env_name, network_name)
-                        },
-                        "${env_name}-cloud-agent-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
+                            vcxTesting(file, env_name, network_name, full_testing)
                         }
                 ]
-                if (env_name == "Ubuntu") {
-                    jobs["${env_name}-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+                if (full_testing) {
+                    jobs["${env_name}wrappers-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxIndyWrappersTesting)
                     }
-                    jobs["${env_name}-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                    jobs["${env_name}-cloud-agent-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
                     }
                 }
                 parallel(jobs)
@@ -391,7 +393,7 @@ def linuxTesting(file, env_name, network_name) {
     ])
 }
 
-def vcxTesting(file, env_name, network_name) {
+def vcxTesting(file, env_name, network_name, full_testing) {
     parallel([
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
@@ -400,28 +402,17 @@ def vcxTesting(file, env_name, network_name) {
                 }
             },
             "${env_name} Test: test other vcx components": {
-                waitUntil {
-                    libvcxBuildFinished[env_name]
-                }
-                def jobs = [
-                        "${env_name}-vcx-nodejs-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
-                        }
-                ]
-                if (env_name == "Ubuntu") {
-                    jobs["${env_name}-vcx-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                if (full_testing) {
+                    waitUntil {
+                        libvcxBuildFinished[env_name]
                     }
-                    jobs["${env_name}-vcx-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
-                    }
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxVcxWrappersTesting)
                 }
-                parallel(jobs)
             },
     ])
 }
 
-def linuxLibindyBuild(file, env_name, network_name) {
+def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -481,11 +472,13 @@ def linuxLibindyBuild(file, env_name, network_name) {
 
         echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
-            sh '''
+            def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
+
+            sh """
                 cd libindy
-                RUST_BACKTRACE=1 cargo test --no-run --features sodium_static
-                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features sodium_static
-            '''
+                RUST_BACKTRACE=1 cargo test --no-run ${features_args}
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test ${features_args}
+            """
         }
 
         echo "${env_name} Libnullpay Test: Test"
@@ -595,10 +588,25 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
     def emu_arch = "x86"
 
-    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
     testEnv.inside("--network=${network_name}") {
-        sh "cd libindy && ./android.test.sh ${emu_arch} --release"
+        for (directory in ["libindy", "libnullpay", "vcx/libvcx"]) {
+            echo "${env_name} ${directory} Test: Test on ${emu_arch} emulator"
+            sh "cd ${directory} && ./android.test.sh ${emu_arch}"
+        }
     }
+}
+
+def linuxIndyWrappersTesting(env_name, network_name, testEnv) {
+    linuxJavaTesting(env_name, network_name, testEnv)
+    linuxPythonTesting(env_name, network_name, testEnv)
+    linuxNodejsTesting(env_name, network_name, testEnv)
+    linuxRustTesting(env_name, network_name, testEnv)
+}
+
+def linuxVcxWrappersTesting(env_name, network_name, testEnv) {
+    linuxVcxNodejsTesting(env_name, network_name, testEnv)
+    linuxVcxJavaTesting(env_name, network_name, testEnv)
+    linuxVcxPythonTesting(env_name, network_name, testEnv)
 }
 
 def linuxJavaTesting(env_name, network_name, testEnv) {
@@ -619,8 +627,8 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Libindy Test: Test python wrapper"
 
             sh '''
-                python3.5 -m pip install --user -e .[test]
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                python3 -m pip install --user -e .[test]
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3 -m pytest
             '''
         }
     }
@@ -677,8 +685,8 @@ def linuxVcxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Vcx Test: Test python wrapper"
 
             sh '''
-                    python3.5 -m pip install --user pytest==3.6.4 pytest-asyncio
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest -s
+                    python3 -m pip install --user pytest==3.6.4 pytest-asyncio
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3 -m pytest -s
             '''
         }
     }
@@ -752,13 +760,13 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
 def dockerClean(env_name, network_name) {
     try {
         try {
-            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true"//TODO: FIXME
+            sh returnStatus: true, script: "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
         } catch (error) {
             echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
         }
         try {
             echo "${env_name} Test: remove pool network ${network_name}"
-            sh "docker network rm ${network_name} || true" //TODO: FIXME
+            sh returnStatus: true, script: "docker network rm ${network_name}"
         } catch (error) {
             echo "${env_name} Test: error while delete ${network_name} - ${error}"
         }

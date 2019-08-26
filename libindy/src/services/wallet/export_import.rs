@@ -16,7 +16,7 @@ use super::{Wallet, WalletRecord};
 
 const CHUNK_SIZE: usize = 1024;
 
-pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> IndyResult<()> {
+pub(super) fn export_continue(wallet: &Wallet, writer: &mut dyn Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> IndyResult<()> {
     let nonce = chacha20poly1305_ietf::gen_nonce();
     let chunk_size = CHUNK_SIZE;
 
@@ -63,10 +63,10 @@ pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32,
 
     while let Some(WalletRecord { type_, id, value, tags }) = records.next()? {
         let record = Record {
-            type_: type_.ok_or(err_msg(IndyErrorKind::InvalidState, "No type fetched for exported record"))?,
+            type_: type_.ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "No type fetched for exported record"))?,
             id,
-            value: value.ok_or(err_msg(IndyErrorKind::InvalidState, "No value fetched for exported record"))?,
-            tags: tags.ok_or(err_msg(IndyErrorKind::InvalidState, "No tags fetched for exported record"))?,
+            value: value.ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "No value fetched for exported record"))?,
+            tags: tags.ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "No tags fetched for exported record"))?,
         };
 
         let record = rmp_serde::to_vec(&record)
@@ -95,7 +95,7 @@ pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> IndyRes
     let header_len = reader.read_u32::<LittleEndian>().map_err(_map_io_err)? as usize;
 
     if header_len == 0 {
-        Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header length"))?;
+        return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header length"));
     }
 
     let mut header_bytes = vec![0u8; header_len];
@@ -105,7 +105,7 @@ pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> IndyRes
         .to_indy(IndyErrorKind::InvalidStructure, "Header is malformed json")?;
 
     if header.version != 0 {
-        Err(err_msg(IndyErrorKind::InvalidStructure, "Unsupported version"))?;
+        return Err(err_msg(IndyErrorKind::InvalidStructure, "Unsupported version"));
     }
 
     let key_derivation_method = match header.encryption_method {
@@ -155,7 +155,7 @@ pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chach
     reader.read_exact(&mut header_hash).map_err(_map_io_err)?;
 
     if hash(&header_bytes)? != header_hash {
-        Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header hash"))?;
+        return Err(err_msg(IndyErrorKind::InvalidStructure, "Invalid header hash"));
     }
 
     loop {
@@ -202,7 +202,7 @@ mod tests {
 
     use super::*;
 
-    fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> IndyResult<()> {
+    fn export(wallet: &Wallet, writer: &mut dyn Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> IndyResult<()> {
         if version != 0 {
             Err(err_msg(IndyErrorKind::InvalidState, "Unsupported version"))?;
         }

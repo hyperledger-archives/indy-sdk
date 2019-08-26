@@ -253,7 +253,7 @@ indy> ledger <subcommand>
 #### NYM transaction
 Send NYM transaction
 ```
-ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>] [send=<true or false>] [endorser=<endorser did>]
 ```
 
 #### GET_NYM transaction
@@ -265,7 +265,7 @@ ledger get-nym did=<did-value> [send=<true or false>]
 #### ATTRIB transaction
 Send ATTRIB transaction
 ```
-ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>] [endorser=<endorser did>]
 ```
 
 #### GET_ATTRIB transaction
@@ -277,7 +277,7 @@ ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<en
 #### SCHEMA transaction
 Send SCHEMA transaction
 ```
-ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value> [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value> [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>] [endorser=<endorser did>]
 ```
 
 #### GET_SCHEMA transaction
@@ -288,7 +288,7 @@ ledger get-schema did=<did-value> name=<name-value> version=<version-value> [sen
 #### CRED_DEF transaction
 Send CRED_DEF transaction
 ```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>] [endorser=<endorser did>]
 ```
 
 #### GET_CRED_DEF transaction
@@ -300,7 +300,7 @@ ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-v
 #### NODE transaction
 Send NODE transaction
 ```
-ledger node target=<target-value> alias=<alias-value> [node_ip=<node_ip-value>] [node_port=<node_port-value>] [client_ip=<client_ip-value>] [client_port=<client_port-value>] [blskey=<blskey-value>] [blskey_pop=<blskey-proof-of-possession>] [services=<services-value>] [send=<true or false>]
+ledger node target=<target-value> alias=<alias-value> [node_ip=<node_ip-value>] [node_port=<node_port-value>] [client_ip=<client_ip-value>] [client_port=<client_port-value>] [blskey=<blskey-value>] [blskey_pop=<blskey-proof-of-possession>] [services=<services-value>] [sign=<true or false>]  [send=<true or false>]
 ```
 
 #### GET_VALIDATOR_INFO transaction
@@ -312,13 +312,13 @@ ledger get-validator-info [nodes=<node names>] [timeout=<timeout>]
 #### POOL_UPGRADE transaction
 Send POOL_UPGRADE transaction
 ```
-ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>] [package=<package>] [send=<true or false>]
+ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>] [package=<package>] [sign=<true or false>]  [send=<true or false>]
 ```
 
 #### POOL_CONFIG transaction
 Send POOL_CONFIG transaction
 ```
-ledger pool-config writes=<true or false (default false)> [force=<true or false (default false)>] [send=<true or false>]
+ledger pool-config writes=<true or false (default false)> [force=<true or false (default false)>] [sign=<true or false>]  [send=<true or false>]
 ```
 
 #### POOL_RESTART transaction
@@ -336,7 +336,7 @@ ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 #### AUTH_RULE transaction
 Send AUTH_RULE transaction
 ```
-ledger auth-rule txn_type=<txn type> action=<add or edit> field=<txn field> [old_value=<value>] [new_value=<new_value>] constraint=<{constraint json}> [send=<true or false>]
+ledger auth-rule txn_type=<txn type> action=<add or edit> field=<txn field> [old_value=<value>] [new_value=<new_value>] constraint=<{constraint json}> [sign=<true or false>]  [send=<true or false>]
 ```
 
 #### GET_AUTH_RULE transaction
@@ -354,7 +354,7 @@ ledger get-payment-sources payment_address=<payment_address> [send=<true or fals
 #### PAYMENT transaction
 Send PAYMENT transaction
 ```
-ledger payment [source_payment_address=<payment address>] [target_payment_address=<payment address>] [amount=<number>] [fee=<transaction fee amount>] [inputs=<source-1>,..,<source-n>] [outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger payment [source_payment_address=<payment address>] [target_payment_address=<payment address>] [amount=<number>] [fee=<transaction fee amount>] [inputs=<source-1>,..,<source-n>] [outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
 ```
 
 #### GET_FEES transaction
@@ -402,13 +402,13 @@ ledger load-transaction file=<path to file>
 #### TXN_AUTHR_AGRMT transaction.
 Request to add a new version of Transaction Author Agreement to the ledger.
 ```
-ledger ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
 ```
 
 #### SET_TXN_AUTHR_AGRMT_AML transaction.
 Request to add new acceptance mechanisms for transaction author agreement.
 ```
-ledger txn-acceptance-mechanisms [aml=<acceptance mechanisms>] [file=<file with acceptance mechanisms>] version=<version> [context=<some context>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [send=<true or false>]
+ledger txn-acceptance-mechanisms [aml=<acceptance mechanisms>] [file=<file with acceptance mechanisms>] version=<version> [context=<some context>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
 ```
 
 ### Payment Address commands
@@ -426,6 +426,18 @@ payment-address create payment_method=<payment_method> [seed=<seed-value>]
 Lists all payment addresses. Requires opened wallet.
 ```
 payment-address list
+```
+
+#### Sign
+Create a proof of payment address control by signing an input and producing a signature.
+```
+payment-address sign address=<payment_address> input=<string to sign>
+```
+
+#### Verify
+Verify a proof of payment address control by verifying a signature.
+```
+payment-address verify address=<payment_address> input=<signed string> signature=<signature>
 ```
 
 ## Examples

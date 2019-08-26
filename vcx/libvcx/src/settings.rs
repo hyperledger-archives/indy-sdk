@@ -22,6 +22,7 @@ pub static CONFIG_REMOTE_TO_SDK_DID: &'static str = "remote_to_sdk_did";
 pub static CONFIG_REMOTE_TO_SDK_VERKEY: &'static str = "remote_to_sdk_verkey";
 pub static CONFIG_SDK_TO_REMOTE_DID: &'static str = "sdk_to_remote_did"; // functionally not used
 pub static CONFIG_SDK_TO_REMOTE_VERKEY: &'static str = "sdk_to_remote_verkey";
+pub static CONFIG_SDK_TO_REMOTE_ROLE: &'static str = "sdk_to_remote_role";
 pub static CONFIG_INSTITUTION_DID: &'static str = "institution_did";
 pub static CONFIG_INSTITUTION_VERKEY: &'static str = "institution_verkey"; // functionally not used
 pub static CONFIG_INSTITUTION_NAME: &'static str = "institution_name";
@@ -43,6 +44,7 @@ pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
 pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
 pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
 pub static CONFIG_TXN_AUTHOR_AGREEMENT: &'static str = "author_agreement";
+pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -56,6 +58,7 @@ pub static DEFAULT_DEFAULT: &str = "default";
 pub static DEFAULT_URL: &str = "http://127.0.0.1:8080";
 pub static DEFAULT_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
 pub static DEFAULT_VERKEY: &str = "FuN98eH2eZybECWkofW6A9BKJxxnTatBCopfUiNxo6ZB";
+pub static DEFAULT_ROLE: &str = "0";
 pub static DEFAULT_ENABLE_TEST_MODE: &str = "false";
 pub static DEFAULT_WALLET_BACKUP_KEY: &str = "backup_wallet_key";
 pub static DEFAULT_WALLET_KEY: &str = "8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY";
@@ -103,6 +106,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(), DEFAULT_URL.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(), DEFAULT_DID.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(), DEFAULT_VERKEY.to_string());
+    settings.insert(CONFIG_SDK_TO_REMOTE_ROLE.to_string(), DEFAULT_ROLE.to_string());
     settings.insert(CONFIG_WALLET_KEY.to_string(), DEFAULT_WALLET_KEY.to_string());
     settings.insert(CONFIG_WALLET_KEY_DERIVATION.to_string(), DEFAULT_WALLET_KEY_DERIVATION.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
@@ -460,6 +464,17 @@ pub mod tests {
         }).to_string();
 
         assert_eq!(process_config_string(&content, true).unwrap(), error::SUCCESS.code_num);
+    }
+
+    #[test]
+    fn test_process_for_pool_config() {
+        let pool_config = r#"{"timeout":40}"#;
+        let config = json!({
+            "pool_config" : pool_config,
+        }).to_string();
+
+        assert_eq!(process_config_string(&config, false).unwrap(), error::SUCCESS.code_num);
+        assert_eq!(get_config_value("pool_config").unwrap(), pool_config.to_string());
     }
 
     #[test]

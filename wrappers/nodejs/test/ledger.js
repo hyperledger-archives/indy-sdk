@@ -174,7 +174,7 @@ test('ledger', async function (t) {
   t.deepEqual(res['result']['data'][0]['constraint'], constraint)
 
   var expectedAuthRule = {
-    'auth_type': 'NYM',
+    'auth_type': '1',
     'auth_action': 'ADD',
     'field': 'role',
     'new_value': '101',
@@ -183,8 +183,8 @@ test('ledger', async function (t) {
 
   var authRulesData = [expectedAuthRule]
   req = await indy.buildAuthRulesRequest(trusteeDid, authRulesData)
-  res = await indy.submitRequest(pool.handle, req)
-  t.deepEqual(req['operation'], { 'type': '122', 'rules': authRulesData })
+  res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
+  t.is(res.op, 'REPLY')
 
   // author agreement
   req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
@@ -214,6 +214,11 @@ test('ledger', async function (t) {
   req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', defaultConstraint)
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.op, 'REPLY')
+
+  // endorser
+  req = await indy.buildSchemaRequest(myDid, schema)
+  req = await indy.appendRequestEndorser(req, trusteeDid)
+  t.is(req['endorser'], trusteeDid)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)

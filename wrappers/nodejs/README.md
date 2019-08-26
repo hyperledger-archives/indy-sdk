@@ -52,7 +52,7 @@ First, make sure you have the latest libindy for your platform. Also make sure y
 Second, make sure it's in the linker search path. The easiest way is to use the system library path.
 * ubuntu `/usr/lib/libindy.so`
 * osx `/usr/local/lib/libindy.dylib`
-* windows `c:\windows\system32\indy.dll`
+* windows use LD_LIBRARY_PATH to indicate the location of dll as specified below
 
 If you want to put the library in a custom folder i.e. `/foo/bar/libindy.so` then you can do this:
 ```sh
@@ -137,6 +137,9 @@ to Indy distributed ledger.
 
 It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no to save compatibility with Ledger.
 
+Note: Use combination of `issuerRotateCredentialDefStart` and `indy_issuer_rotate_credential_def_apply` functions
+to generate new keys for an existing credential definition.
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `issuerDid`: String - a DID of the issuer signing cred\_def transaction to the Ledger
 * `schema`: Json - credential schema as a json
@@ -152,6 +155,35 @@ It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no 
     *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
 * __->__ [ `credDefId`: String, `credDef`: Json ] - cred\_def\_id: identifier of created credential definition
 cred\_def\_json: public part of created credential definition
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### issuerRotateCredentialDefStart \( wh, credDefId, config \) -&gt; credDef
+
+ Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+ 
+ Use `issuerRotateCredentialDefApply` function to set temporary keys as the main.
+ 
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+ 
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credDefId`: String - an identifier of created credential definition stored in the wallet
+* `config`: Json - \(optional\) type-specific configuration of credential definition as json:
+  *  'CL':
+    *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
+* __->__  `credDef`: Json - public part of temporary created credential definition
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### issuerRotateCredentialDefApply \( wh, credDefId \) -&gt; void
+
+ Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+ 
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+ 
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credDefId`: String - an identifier of created credential definition stored in the wallet
+* __->__  void
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
@@ -193,7 +225,13 @@ This call requires access to pre-configured blob storage writer instance handle 
     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 }
 ````
-* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails
+* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails 
+
+NOTE:
+Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
+in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+
 * __->__ [ `revocRegId`: String, `revocRegDef`: Json, `revocRegEntry`: Json ] - revoc\_reg\_id: identifier of created revocation registry definition
 revoc\_reg\_def\_json: public part of revocation registry definition
 revoc\_reg\_entry\_json: revocation registry entry that defines initial state of revocation registry
@@ -1375,7 +1413,8 @@ Errors: `Common*`
 
 Builds a NYM request. Request to create a new NYM record for a specific user.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+    Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * `verkey`: String - Target identity verification key as base58-encoded string.
 * `alias`: String - NYM's alias.
@@ -1394,7 +1433,8 @@ Errors: `Common*`
 
 Builds an ATTRIB request. Request to add attribute to a NYM record.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * `hash`: String - \(Optional\) Hash of attribute data.
 * `raw`: Json - \(Optional\) Json, where key is attribute name and value is attribute value.
@@ -1430,7 +1470,8 @@ Errors: `Common*`
 
 Builds a SCHEMA request. Request to add Credential's schema.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `data`: Json - Credential schema.
 ```
 {
@@ -1478,7 +1519,8 @@ Errors: `Common*`
 Builds an CRED\_DEF request. Request to add a Credential Definition \(in particular, public key\),
 that Issuer creates for a particular Credential Schema.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `data`: Json - credential definition json
 ```
 {
@@ -1535,7 +1577,8 @@ Errors: `Common*`
 
 Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `targetDid`: String - Target Node's DID.  It differs from submitter\_did field.
 * `data`: Json - Data associated with the Node:
 ```
@@ -1582,7 +1625,8 @@ Errors: `Common*`
 
 Builds a POOL\_CONFIG request. Request to change Pool's configuration.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `writes`: Boolean - Whether any write requests can be processed by the pool
 \(if false, then pool goes to read-only state\). True by default.
 * `force`: Boolean - Whether we should apply transaction \(for example, move pool to read-only state\)
@@ -1595,7 +1639,8 @@ Errors: `Common*`
 
 Builds a POOL\_RESTART request.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `action`: String - Action that pool has to do after received transaction.
 * `datetime`: String - &lt;Optional&gt; Restart time in datetime format. Skip to restart as early as possible.
 * __->__ `request`: Json
@@ -1607,7 +1652,8 @@ Errors: `Common*`
 Builds a POOL\_UPGRADE request. Request to upgrade the Pool \(sent by Trustee\).
 It upgrades the specified Nodes \(either all nodes in the Pool, or some specific ones\).
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `name`: String - Human-readable name for the upgrade.
 * `version`: String - The version of indy-node package we perform upgrade to.
 Must be greater than existing one \(or equal if reinstall flag is True\).
@@ -1629,7 +1675,8 @@ Errors: `Common*`
 Builds a REVOC\_REG\_DEF request. Request to add the definition of revocation registry
 to an exists credential definition.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `data`: Json - Revocation Registry data:
 ```
     {
@@ -1695,7 +1742,8 @@ the new accumulator value and issued\/revoked indices.
 This is just a delta of indices, not the whole list.
 So, it can be sent each time a new credential is issued\/revoked.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `revocRegDefId`: String - ID of the corresponding RevocRegDef.
 * `revDefType`: String - Revocation Registry type \(only CL\_ACCUM is supported for now\).
 * `value`: Json - Registry-specific data:
@@ -1782,7 +1830,8 @@ Errors: `Common*`
 
 Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 
-* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `txnType`: String - ledger transaction alias or associated value.
 * `action`: String - type of an action.
     * "ADD" - to add a new rule
@@ -1795,10 +1844,11 @@ Builds a AUTH_RULE request. Request to change authentication rules for a ledger 
  {
      constraint_id - <string> type of a constraint.
          Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-     role - <string> role of a user which satisfy to constrain.
+     role - <string> (optional) role of a user which satisfy to constrain.
      sig_count - <u32> the number of signatures required to execution action.
-     need_to_be_owner - <bool> if user must be an owner of transaction.
-     metadata - <object> additional parameters of the constraint.
+     need_to_be_owner - <bool> (optional) if user must be an owner of transaction (false by default).
+     off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default). 
+     metadata - <object> (optional) additional parameters of the constraint.
  }
 can be combined by
  {
@@ -1819,7 +1869,8 @@ Errors: `Common*`
 
 Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
 
-* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `constraint`: Json - a list of auth rules:
 ```
 [
@@ -1870,7 +1921,8 @@ Request to add a new version of Transaction Author Agreement to the ledger.
 
 EXPERIMENTAL
 
-* `submitterDid`: String - DID of the request sender.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `text`: String - a content of the TTA.
 * `version`: String - a version of the TTA (unique UTF-8 string).
 
@@ -1910,7 +1962,8 @@ Acceptance Mechanism is a description of the ways how the user may accept a tran
 
 EXPERIMENTAL
 
-* `submitterDid`: String - DID of the request sender.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `aml`: Json - a set of new acceptance mechanisms:
 ```
 {
@@ -1962,6 +2015,26 @@ If all text, version and taaDigest parameters are specified, a check integrity o
 * `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
 * `accMechType`: String - mechanism how user has accepted the TAA.
 * `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk. 
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### appendRequestEndorser \( requestJson, endorserDid \) -&gt; request
+
+Append Endorser to an existing request.
+
+An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+But it is expecting that the transaction will be sent by the specified Endorser.
+
+Note: Both Transaction Author and Endorser must sign output request after that.
+
+More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
+                                 https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+
+* `requestJson`: Json - original request data json.
+* `endorser_did`: String - DID of the Endorser that will submit the transaction.
+                           The Endorser's DID must be present on the ledger.
 
 * __->__ `request`: Json
 
@@ -2527,9 +2600,10 @@ If the requester does not match to the request constraints `TransactionNotAllowe
 * `requesterInfo`: Json:
 ```
 {
-    "role": string - role of a user which can sign a transaction.
+    "role": string (optional) - role of a user which can sign a transaction.
     "sig_count": u64 - number of signers.
-    "is_owner": bool - if user is an owner of transaction.
+    "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+    "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
 }
 ```
 * `fees`: Json - fees set on the ledger (result of `parseGetTxnFeesResponse`).
@@ -2538,14 +2612,37 @@ If the requester does not match to the request constraints `TransactionNotAllowe
 {
     "price": u64 - fee required for the action performing,
     "requirements": [{
-        "role": string - role of users who should sign,
+        "role": string (optional) - role of users who should sign,
         "sig_count": u64 - number of signers,
-        "need_to_be_owner": bool - if requester need to be owner
+        "need_to_be_owner": bool - if requester need to be owner,
+        "off_ledger_signature": bool - allow signature of unknow for ledger did (false by default).
     }]
 }
 ```
 
 Errors: `Common*`, `Ledger*`
+
+#### signWithAddress \( wh, address, message \) -&gt; signature
+
+Signs a message with a payment address.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `address`: String - payment address of message signer. The key must be created by calling createPaymentAddress
+* `message`: Buffer - a pointer to first byte of message to be signed
+* __->__ `signature`: Buffer - a signature string
+
+Errors: `Common*`, `Wallet*`, `Payment*`
+
+#### verifyWithAddress \( address, message, signature \) -&gt; valid
+
+Verify a signature with a payment address.
+
+* `address`: String - payment address of the message signer
+* `message`: Buffer - a pointer to first byte of message that has been signed
+* `signature`: Buffer - a pointer to first byte of signature to be verified
+* __->__ `valid`: Boolean - valid: true - if signature is valid, false - otherwise
+
+Errors: `Common*`, `Wallet*`, `Payment*`
 
 
 ### pool
@@ -2584,6 +2681,7 @@ if NULL, then default config will be used. Example:
     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
         Note: Not specified nodes will be placed in a random way.
+    "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
 }
 ````
 

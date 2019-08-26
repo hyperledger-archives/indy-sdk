@@ -13,15 +13,6 @@ public class IssuerCreateCredentialTest extends AnoncredsIntegrationTest {
 	public void testIssuerCreateCredentialWorks() throws Exception {}
 
 	@Test
-	public void testIssuerCreateCredentialWorksForCredentialValuesDoesNotCorrespondToCredentialRequest() throws Exception {
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, xyzCredentialValuesJson, null, - 1).get();
-	}
-
-	@Test
 	public void testIssuerCreateCredentialWorksForInvalidCredentialValues() throws Exception {
 
 		thrown.expect(ExecutionException.class);

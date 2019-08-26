@@ -100,6 +100,7 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: CommandHandle,
 /// wallet_handle: wallet handle
 /// submitter_did: (Optional) DID of request sender
 /// payment_address: target payment address
+/// from: shift to the next slice of payment sources
 ///
 /// #Returns
 /// get_sources_txn_json - Indy request for getting sources list for payment address
@@ -107,6 +108,7 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: CommandHand
                                                      wallet_handle: WalletHandle,
                                                      submitter_did: *const c_char,
                                                      payment_address: *const c_char,
+                                                     from: i64,
                                                      cb: Option<extern fn(command_handle_: CommandHandle,
                                                                           err: ErrorCode,
                                                                           get_sources_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
@@ -118,6 +120,7 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: CommandHand
 /// resp_json: response for Indy request for getting sources list
 ///
 /// #Returns
+/// next - pointer to the next slice of payment sources
 /// sources_json - parsed (payment method and node version agnostic) sources info as json:
 ///   [{
 ///      source: <str>, // source input
@@ -129,7 +132,8 @@ pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: CommandHan
                                                       resp_json: *const c_char,
                                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                                            err: ErrorCode,
-                                                                           sources_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                           sources_json: *const c_char,
+                                                                           next: i64) -> ErrorCode>) -> ErrorCode;
 
 /// Builds Indy request for doing payment
 /// according to this payment method.
@@ -305,8 +309,43 @@ pub type BuildVerifyPaymentReqCB = extern fn(command_handle: CommandHandle,
 pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: CommandHandle,
                                                   resp_json: *const c_char,
                                                   cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                       err: ErrorCode,
-                                                                       txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                err: ErrorCode,
+                                                                txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
+/// Sign a message using the private key from a public payment address
+///
+/// # Params
+/// command_handle: command handle to map callback to context
+/// wallet_handle: wallet handle
+/// address: the public payment address to use to sign a message
+/// message_raw: a pointer to first byte of message to be signed
+/// message_len: a message length
+/// cb: Callback that takes command result as parameter.
+///
+/// # Return
+/// a signature byte array
+pub type SignWithAddressCB = extern fn (command_handle: i32, wallet_handle: i32,
+                                        address: *const c_char,
+                                        message_raw: *const u8, message_len: u32,
+                                        cb: Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32) -> ErrorCode>) -> ErrorCode;
+
+/// Verify a signature with a public payment address.
+///
+/// # Params
+/// command_handle: command handle to map callback to user context.
+/// address: public payment address of the message signer
+/// message_raw: a pointer to first byte of message that has been signed
+/// message_len: a message length
+/// signature_raw: a pointer to first byte of signature to be verified
+/// signature_len: a signature length
+/// cb: Callback that takes command result as parameter.
+///
+/// # Returns
+/// valid: true - if signature is valid, false - otherwise
+pub type VerifyWithAddressCB = extern fn (command_handle: i32, address: *const c_char,
+                                          message_raw: *const u8, message_len: u32,
+                                          signature_raw: *const u8, signature_len: u32,
+                                          cb: Option<extern fn(command_handle: i32, err: ErrorCode, result: u8) -> ErrorCode>) -> ErrorCode;
 
 /// Register custom payment implementation.
 ///
@@ -347,6 +386,8 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
                                            parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
                                            build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
                                            parse_verify_payment_response: Option<ParseVerifyPaymentResponseCB>,
+                                           sign_with_address: Option<SignWithAddressCB>,
+                                           verify_with_address: Option<VerifyWithAddressCB>,
                                            cb: Option<extern fn(command_handle_: CommandHandle,
                                                                 err: ErrorCode)>) -> ErrorCode {
     trace!("indy_register_payment_method: >>> payment_method: {:?}", payment_method);
@@ -365,6 +406,8 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
     check_useful_c_callback!(parse_get_txn_fees_response, ErrorCode::CommonInvalidParam13);
     check_useful_c_callback!(build_verify_payment_req, ErrorCode::CommonInvalidParam14);
     check_useful_c_callback!(parse_verify_payment_response, ErrorCode::CommonInvalidParam15);
+    check_useful_c_callback!(sign_with_address, ErrorCode::CommonInvalidParam16);
+    check_useful_c_callback!(verify_with_address, ErrorCode::CommonInvalidParam17);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam16);
 
     trace!("indy_register_payment_method: entities >>> payment_method: {:?}", payment_method);
@@ -383,6 +426,8 @@ pub extern fn indy_register_payment_method(command_handle: CommandHandle,
         parse_get_txn_fees_response,
         build_verify_payment_req,
         parse_verify_payment_response,
+        sign_with_address,
+        verify_with_address
     );
     let result =
         CommandExecutor::instance().send(
@@ -446,12 +491,8 @@ pub extern fn indy_create_payment_address(command_handle: CommandHandle,
                     wallet_handle,
                     payment_method,
                     config,
-                    Box::new(move |result| {
-                        let (err, address) = prepare_result_1!(result, String::new());
-                        trace!("indy_create_payment_address: address: {:?}", address);
-                        let address = ctypes::string_to_cstring(address);
-                        cb(command_handle, err, address.as_ptr());
-                    }))
+                    boxed_callback_string!("indy_create_payment_address", cb, command_handle)
+                )
             ));
 
     let res = prepare_result!(result);
@@ -486,13 +527,10 @@ pub extern fn indy_list_payment_addresses(command_handle: CommandHandle,
             Command::Payments(
                 PaymentsCommand::ListAddresses(
                     wallet_handle,
-                    Box::new(move |result| {
-                        let (err, addresses_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_list_payment_address: addresses_json: {:?}", addresses_json);
-                        let addresses_json = ctypes::string_to_cstring(addresses_json);
-                        cb(command_handle, err, addresses_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_list_payment_address", cb, command_handle)
+                )
+            )
+        );
 
     let res = prepare_result!(result);
 
@@ -614,13 +652,9 @@ pub extern fn indy_parse_response_with_fees(command_handle: CommandHandle,
         CommandExecutor::instance().send(
             Command::Payments(
                 PaymentsCommand::ParseResponseWithFees(
-                    payment_method, resp_json, Box::new(move |result| {
-                        let (err, receipts_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_parse_response_with_fees: receipts_json: {:?}", receipts_json);
-                        let receipts_json = ctypes::string_to_cstring(receipts_json);
-                        cb(command_handle, err, receipts_json.as_ptr());
-                    }))
-            ));
+                    payment_method,
+                    resp_json,
+                    boxed_callback_string!("indy_parse_response_with_fees", cb, command_handle))));
     let res = prepare_result!(result);
 
     trace!("indy_parse_response_with_fees: <<< res: {:?}", res);
@@ -630,6 +664,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: CommandHandle,
 
 /// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
+/// Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
@@ -663,6 +698,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
                     wallet_handle,
                     submitter_did,
                     payment_address,
+                    None,
                     Box::new(move |result| {
                         let (err, get_sources_txn_json, payment_method) = prepare_result_2!(result, String::new(), String::new());
                         trace!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
@@ -680,6 +716,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
 }
 
 /// Parses response for Indy request for getting sources list.
+/// Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
@@ -715,7 +752,7 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: CommandHan
                     payment_method,
                     resp_json,
                     Box::new(move |result| {
-                        let (err, sources_json) = prepare_result_1!(result, String::new());
+                        let (err, sources_json, _) = prepare_result_2!(result, String::new(), -1);
                         trace!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
                         let sources_json = ctypes::string_to_cstring(sources_json);
                         cb(command_handle, err, sources_json.as_ptr());
@@ -836,13 +873,7 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
                 PaymentsCommand::ParsePaymentResponse(
                     payment_method,
                     resp_json,
-                    Box::new(move |result| {
-                        let (err, receipts_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_parse_payment_response: receipts_json: {:?}", receipts_json);
-                        let receipts_json = ctypes::string_to_cstring(receipts_json);
-                        cb(command_handle, err, receipts_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_parse_payment_response", cb, command_handle))));
 
     let res = prepare_result!(result);
 
@@ -909,12 +940,7 @@ pub extern fn indy_prepare_payment_extra_with_acceptance_data(command_handle: Co
                 taa_digest,
                 mechanism,
                 time,
-                Box::new(move |result| {
-                    let (err, extra_with_acceptance) = prepare_result_1!(result, String::new());
-                    trace!("indy_prepare_payment_extra_with_acceptance_data: extra_with_acceptance: {:?}", extra_with_acceptance);
-                    let extra_with_acceptance = ctypes::string_to_cstring(extra_with_acceptance);
-                    cb(command_handle, err, extra_with_acceptance.as_ptr())
-                })
+                boxed_callback_string!("indy_prepare_payment_extra_with_acceptance_data", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -1023,13 +1049,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: CommandHandle,
                     submitter_did,
                     payment_method,
                     fees_json,
-                    Box::new(move |result| {
-                        let (err, set_txn_fees_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_build_set_txn_fees_req: set_txn_fees_json: {:?}", set_txn_fees_json);
-                        let set_txn_fees_json = ctypes::string_to_cstring(set_txn_fees_json);
-                        cb(command_handle, err, set_txn_fees_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_build_set_txn_fees_req", cb, command_handle))));
 
     let res = prepare_result!(result);
 
@@ -1070,13 +1090,7 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: CommandHandle,
                     wallet_handle,
                     submitter_did,
                     payment_method,
-                    Box::new(move |result| {
-                        let (err, get_txn_fees_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_build_get_txn_fees_req: entities >>> get_txn_fees_json: {:?}", get_txn_fees_json);
-                        let get_txn_fees_json = ctypes::string_to_cstring(get_txn_fees_json);
-                        cb(command_handle, err, get_txn_fees_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_build_get_txn_fees_req", cb, command_handle))));
 
     let res = prepare_result!(result);
 
@@ -1119,13 +1133,7 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: CommandHandle,
                 PaymentsCommand::ParseGetTxnFeesResponse(
                     payment_method,
                     resp_json,
-                    Box::new(move |result| {
-                        let (err, fees_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_parse_get_txn_fees_response: fees_json: {:?}", fees_json);
-                        let fees_json = ctypes::string_to_cstring(fees_json);
-                        cb(command_handle, err, fees_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_parse_get_txn_fees_response", cb, command_handle))));
 
     let res = prepare_result!(result);
 
@@ -1219,12 +1227,7 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
             PaymentsCommand::ParseVerifyPaymentResponse(
                 payment_method,
                 resp_json,
-                Box::new(move |result| {
-                    let (err, txn_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_parse_verify_payment_response: txn_json: {:?}", txn_json);
-                    let txn_json = ctypes::string_to_cstring(txn_json);
-                    cb(command_handle, err, txn_json.as_ptr());
-                })
+                boxed_callback_string!("indy_parse_verify_payment_response", cb, command_handle)
             )));
 
     let result = prepare_result!(result);
@@ -1245,9 +1248,10 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
 /// command_handle: Command handle to map callback to caller context.
 /// get_auth_rule_response_json: response on GET_AUTH_RULE request returning action constraints set on the ledger.
 /// requester_info_json: {
-///     "role": string - role of a user which can sign a transaction.
+///     "role": string (optional) - role of a user which can sign a transaction.
 ///     "sig_count": u64 - number of signers.
-///     "is_owner": bool - if user is an owner of transaction.
+///     "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+///     "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
 /// }
 /// fees_json: fees set on the ledger (result of `indy_parse_get_txn_fees_response`).
 ///
@@ -1256,9 +1260,10 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
 /// {
 ///     "price": u64 - fee required for the action performing,
 ///     "requirements": [{
-///         "role": string - role of users who should sign,
+///         "role": string (optional) - role of users who should sign,
 ///         "sig_count": u64 - number of signers,
-///         "need_to_be_owner": bool - if requester need to be owner
+///         "need_to_be_owner": bool - if requester need to be owner,
+///         "off_ledger_signature": bool - allow signature of unknow for ledger did (false by default).
 ///     }]
 /// }
 ///
@@ -1287,12 +1292,7 @@ pub extern fn indy_get_request_info(command_handle: CommandHandle,
                 get_auth_rule_response_json,
                 requester_info_json,
                 fees_json,
-                Box::new(move |result| {
-                    let (err, request_info_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_get_request_info: request_info_json: {:?}", request_info_json);
-                    let request_info_json = ctypes::string_to_cstring(request_info_json);
-                    cb(command_handle, err, request_info_json.as_ptr());
-                })
+                boxed_callback_string!("indy_get_request_info", cb, command_handle)
             )));
 
     let result = prepare_result!(result);
@@ -1300,4 +1300,120 @@ pub extern fn indy_get_request_info(command_handle: CommandHandle,
     trace!("indy_get_request_info: <<< result: {:?}", result);
 
     result
+}
+
+/// Signs a message with a payment address.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// address: payment address of message signer. The key must be created by calling indy_create_address
+/// message_raw: a pointer to first byte of message to be signed
+/// message_len: a message length
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// a signature string
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+pub extern fn indy_sign_with_address(command_handle: CommandHandle,
+                                     wallet_handle: WalletHandle,
+                                     address: *const c_char,
+                                     message_raw: *const u8,
+                                     message_len: u32,
+                                     cb: Option<extern fn(command_handle_: CommandHandle,
+                                                          err: ErrorCode,
+                                                          signature_raw: *const u8,
+                                                          signature_len: u32)>) -> ErrorCode {
+    trace!("indy_sign_with_address: >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
+           wallet_handle, address, message_raw, message_len);
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_sign_with_address: entities >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
+           wallet_handle, address, message_raw, message_len);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Payments(
+            PaymentsCommand::SignWithAddressReq(wallet_handle,
+                                                address,
+                                                message_raw,
+                                                Box::new(move |result| {
+                                                    let (err, signature) = prepare_result_1!(result, Vec::new());
+                                                    trace!("indy_sign_with_address: signature: {:?}", signature);
+                                                    let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
+                                                    cb(command_handle, err, signature_raw, signature_len)
+                                        }))
+        ));
+
+
+    let res = prepare_result!(result);
+
+    trace!("indy_sign_with_address: <<< res: {:?}", res);
+
+    res
+}
+
+/// Verify a signature with a payment address.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// address: payment address of the message signer
+/// message_raw: a pointer to first byte of message that has been signed
+/// message_len: a message length
+/// signature_raw: a pointer to first byte of signature to be verified
+/// signature_len: a signature length
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// valid: true - if signature is valid, false - otherwise
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
+#[no_mangle]
+pub extern fn indy_verify_with_address(command_handle: CommandHandle,
+                                       address: *const c_char,
+                                       message_raw: *const u8,
+                                       message_len: u32,
+                                       signature_raw: *const u8,
+                                       signature_len: u32,
+                                       cb: Option<extern fn(command_handle_: CommandHandle,
+                                                            err: ErrorCode,
+                                                            result: bool)>) -> ErrorCode {
+    trace!("indy_verify_with_address: >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+           address, message_raw, message_len, signature_raw, signature_len);
+
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam2);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
+    check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+
+    trace!("indy_verify_with_address: entities >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+           address, message_raw, message_len, signature_raw, signature_len);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Payments(PaymentsCommand::VerifyWithAddressReq(
+            address,
+            message_raw,
+            signature_raw,
+            Box::new(move |result| {
+                let (err, valid) = prepare_result_1!(result, false);
+                trace!("indy_verify_with_address: valid: {:?}", valid);
+                cb(command_handle, err, valid)
+            })
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_verify_with_address: <<< res: {:?}", res);
+
+    res
 }

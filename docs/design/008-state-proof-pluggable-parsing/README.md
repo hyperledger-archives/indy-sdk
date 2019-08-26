@@ -75,9 +75,33 @@ enum KeyValuesInSP {
 
  All required data already present in parent SP Trie (built from `proof_nodes`).
  `kvs` can be verified directly in parent trie
+
+ Encoding of `key` in `kvs` is defined by verification type
 */
-struct KeyValueSimpleData {
-    kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct KeyValueSimpleData {
+    pub kvs: Vec<(String /* key */, Option<String /* val */>)>,
+    #[serde(default)]
+    pub verification_type: KeyValueSimpleDataVerificationType
+}
+
+/**
+ Options of common state proof check process
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[serde(tag = "type")]
+pub enum KeyValueSimpleDataVerificationType {
+    /* key should be base64-encoded string */
+    Simple,
+    /* key should be plain string */
+    NumericalSuffixAscendingNoGaps(NumericalSuffixAscendingNoGapsData)
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct NumericalSuffixAscendingNoGapsData {
+    pub from: Option<u64>,
+    pub next: Option<u64>,
+    pub prefix: String
 }
 
 /**

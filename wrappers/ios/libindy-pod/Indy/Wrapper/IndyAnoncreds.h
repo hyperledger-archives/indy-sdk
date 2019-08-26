@@ -67,7 +67,11 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  - 'CL':
    - revocationSupport: whether to request non-revocation credential (optional, default false)
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Callback that takes command result as parameter. 
+ @param completion Callback that takes command result as parameter.
+
+ Note: Use combination of `issuerRotateCredentialDefStartForId` and `issuerRotateCredentialDefApplyForId` functions
+ to generate new keys for an existing credential definition
+
  Returns:
     credDefId: identifier of created credential definition.
     credDefJson: public part of created credential definition
@@ -93,6 +97,41 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                                         configJSON:(NSString *)configJSON
                                       walletHandle:(IndyHandle)walletHandle
                                         completion:(void (^)(NSError *error, NSString *credDefId, NSString *credDefJSON))completion;
+
+/**
+ Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+
+ Use `issuerRotateCredentialDefApplyForId` function to set temporary keys as the main.
+
+ WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+ @param credDefId an identifier of created credential definition stored in the wallet
+ @param configJSON: type-specific configuration of credential definition as json:
+ - 'CL':
+   - revocationSupport: whether to request non-revocation credential (optional, default false)
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns:
+    credDefJson: public part of temporary created credential definition
+*/
++ (void)issuerRotateCredentialDefStartForId:(NSString *)credDefId
+                                 configJSON:(NSString *)configJSON
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error, NSString *credDefJSON))completion;
+
+/**
+ Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+
+ WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+ @param credDefId an identifier of created credential definition stored in the wallet
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns: void
+*/
++ (void)issuerRotateCredentialDefApplyForId:(NSString *)credDefId
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error))completion;
 
 /**
  Create a new revocation registry for the given credential definition as tuple of entities:
@@ -130,6 +169,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      }
  @param tailsWriterHandle: handle of blob storage to store tails
  @param completion Callback that takes command result as parameter.
+ 
+ NOTE:
+     Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
+     in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+     In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+ 
  Returns 
     revocRegID: identifier of created revocation registry definition
     revocRegDefJSON: public part of revocation registry definition

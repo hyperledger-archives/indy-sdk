@@ -75,18 +75,6 @@ NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
-- (void)testAddRequestFeesWorksForExtra {
-    ret = [[PaymentUtils sharedInstance] addFeesToRequest:@"{}"
-                                             walletHandle:walletHandle
-                                             submitterDid:[TestUtils trusteeDid]
-                                               inputsJson:inputs
-                                              outputsJson:outputs
-                                                    extra:@"Extra data"
-                                      requestWithFeesJson:nil
-                                            paymentMethod:nil];
-    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
-}
-
 - (void)testAddRequestFeesWorksForSeveralMethods {
     ret = [[PaymentUtils sharedInstance] addFeesToRequest:@"{}"
                                              walletHandle:walletHandle
@@ -239,6 +227,25 @@ NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
     ret = [[PaymentUtils sharedInstance] parseVerifyPaymentResponse:@"{}"
                                                       paymentMethod:paymentMethod
                                                     receiptInfoJson:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+// MARK: - Sign / Verify with Address
+
+- (void)testSignWithAddressWorks {
+    ret = [[PaymentUtils sharedInstance] signWithAddress:paymentAddress
+                                                 message:[TestUtils message]
+                                            walletHandle: walletHandle
+                                               outSignature:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+- (void)testVerifyWithAddressWorks {
+    BOOL isValid = NO;
+    ret = [[PaymentUtils sharedInstance] verifyWithAddress:paymentAddress
+                                                   message:[TestUtils message]
+                                                 signature: [TestUtils signature]
+                                                outIsValid:&isValid];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
