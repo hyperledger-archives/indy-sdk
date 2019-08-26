@@ -448,7 +448,7 @@ pub fn issuer_1_gvt_cred_def_json() -> String {
 // This uses gvt schema issued by ISSUER_2
 pub fn issuer_2_gvt_cred_def_json() -> String {
     json!({
-        "id":"CAaNhFVW:3:CL:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0:TAG_1",
+        "id":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:3:CL:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0:TAG_1",
         "schemaId":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0",
         "tag":"TAG_1",
         "type":"CL",
