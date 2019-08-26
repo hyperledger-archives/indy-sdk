@@ -1,6 +1,6 @@
 extern crate zmq;
 extern crate serde_json;
-extern crate indy_crypto;
+extern crate ursa;
 
 use std::{error, fmt, io};
 
@@ -91,8 +91,8 @@ impl ToErrorCode for PoolError {
     }
 }
 
-impl From<indy_crypto::errors::IndyCryptoError> for PoolError {
-    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
+impl From<ursa::errors::UrsaCryptoError> for PoolError {
+    fn from(err: ursa::errors::UrsaCryptoError) -> Self {
         PoolError::CommonError(CommonError::from(err))
     }
 }

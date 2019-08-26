@@ -1,5 +1,5 @@
 extern crate serde_json;
-extern crate indy_crypto;
+extern crate ursa;
 
 use std::error;
 use std::fmt;
@@ -9,7 +9,7 @@ use errors::prelude::*;
 use api::ErrorCode;
 use errors::ToErrorCode;
 
-use self::indy_crypto::errors::IndyCryptoError;
+use self::ursa::errors::UrsaCryptoError;
 
 #[derive(Debug)]
 pub enum AnoncredsError {
@@ -82,13 +82,13 @@ impl From<CommonError> for AnoncredsError {
     }
 }
 
-impl From<indy_crypto::errors::IndyCryptoError> for AnoncredsError {
-    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
+impl From<ursa::errors::UrsaCryptoError> for AnoncredsError {
+    fn from(err: ursa::errors::UrsaCryptoError) -> Self {
         match err {
-            IndyCryptoError::AnoncredsRevocationAccumulatorIsFull(err) => AnoncredsError::RevocationRegistryFull(err),
-            IndyCryptoError::AnoncredsProofRejected(err) => AnoncredsError::ProofRejected(err),
-            IndyCryptoError::AnoncredsInvalidRevocationAccumulatorIndex(err) => AnoncredsError::InvalidUserRevocId(err),
-            IndyCryptoError::AnoncredsCredentialRevoked(err) => AnoncredsError::CredentialRevoked(err),
+            UrsaCryptoError::AnoncredsRevocationAccumulatorIsFull(err) => AnoncredsError::RevocationRegistryFull(err),
+            UrsaCryptoError::AnoncredsProofRejected(err) => AnoncredsError::ProofRejected(err),
+            UrsaCryptoError::AnoncredsInvalidRevocationAccumulatorIndex(err) => AnoncredsError::InvalidUserRevocId(err),
+            UrsaCryptoError::AnoncredsCredentialRevoked(err) => AnoncredsError::CredentialRevoked(err),
             err => AnoncredsError::CommonError(CommonError::from(err))
         }
     }
