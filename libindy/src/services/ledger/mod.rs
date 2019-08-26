@@ -674,14 +674,6 @@ mod tests {
     }
 
     #[test]
-    fn build_get_schema_request_works_for_invalid_id() {
-        let ledger_service = LedgerService::new();
-
-        let res = ledger_service.build_get_schema_request(Some(IDENTIFIER), &SchemaId("wrong_schema_id".to_string()));
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
-
-    #[test]
     fn build_get_schema_request_works_for_valid_id() {
         let ledger_service = LedgerService::new();
 
