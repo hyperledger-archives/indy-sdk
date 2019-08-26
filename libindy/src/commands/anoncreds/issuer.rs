@@ -913,7 +913,7 @@ impl IssuerCommandExecutor {
         schema_id_record
             .get_value()
             .map(|id| SchemaId(id.to_string()))
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("SchemaId not found for id: {}", key)))
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidStructure, format!("SchemaId not found for id: {}", key)))
     }
 
     fn _wallet_get_rev_reg_def(&self, wallet_handle: WalletHandle, key: &RevocationRegistryId) -> IndyResult<RevocationRegistryDefinition> {

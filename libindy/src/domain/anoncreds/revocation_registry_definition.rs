@@ -130,9 +130,9 @@ impl Validatable for RevocationRegistryId {
     fn validate(&self) -> Result<(), String> {
         let parts: Vec<&str> = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
-        parts.get(0).ok_or(format!("Revocation Registry Id validation failed: issuer DID not found in: {}", self.0))?;
-        parts.get(1).ok_or(format!("Revocation Registry Id validation failed: marker not found in: {}", self.0))?;
-        parts.get(2).ok_or(format!("Revocation Registry Id validation failed: signature type not found in: {}", self.0))?;
+        parts.get(0).ok_or_else(||format!("Revocation Registry Id validation failed: issuer DID not found in: {}", self.0))?;
+        parts.get(1).ok_or_else(||format!("Revocation Registry Id validation failed: marker not found in: {}", self.0))?;
+        parts.get(2).ok_or_else(||format!("Revocation Registry Id validation failed: signature type not found in: {}", self.0))?;
 
         if parts.len() != 8 && parts.len() != 9 && parts.len() != 11 && parts.len() != 12 {
             return Err("Revocation Registry Id validation failed: invalid number of parts".to_string());

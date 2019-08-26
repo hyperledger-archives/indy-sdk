@@ -357,33 +357,33 @@ impl Verifier {
                            cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>) -> IndyResult<Filter> {
         let identifier = identifiers
             .get(referent)
-            .ok_or(err_msg(
+            .ok_or_else(||err_msg(
                 IndyErrorKind::InvalidState,
                 format!("Identifier not found for referent: {}", referent))
             )?;
 
         let schema: &SchemaV1 = schemas
             .get(&identifier.schema_id)
-            .ok_or(err_msg(
+            .ok_or_else(||err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("Schema not found for id: {:?}", identifier.schema_id))
             )?;
 
         let cred_def: &CredentialDefinitionV1 = cred_defs
             .get(&identifier.cred_def_id)
-            .ok_or(err_msg(
+            .ok_or_else(||err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("CredentialDefinitionV1 not found for id: {:?}", identifier.cred_def_id))
             )?;
 
         let schema_issuer_did = cred_def.schema_id.issuer_did()
-            .ok_or(err_msg(
+            .ok_or_else(||err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("schema_id has invalid format: {:?}", schema.id))
             )?;
 
         let issuer_did = cred_def.id.issuer_did()
-            .ok_or(err_msg(
+            .ok_or_else(||err_msg(
                 IndyErrorKind::InvalidStructure,
                 format!("cred_def_id has invalid format: {:?}", cred_def.id))
             )?;
