@@ -20,8 +20,8 @@ path = "src/lib.rs"
 crate-type = ["staticlib", "rlib", "cdylib"]
 
 [features]
-default = ["bn_openssl", "ed25519_sign_sodium", "ed25519_box_sodium", "sealedbox_sodium", "base58_rust_base58", "base64_rust_base64", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_sodium", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium", "hmacsha256_sodium", "memzero_sodium", "randombytes_sodium"]
-bn_openssl = ["openssl", "int_traits"]
+default = ["bn", "ed25519_sign_sodium", "ed25519_box_sodium", "sealedbox_sodium", "base58_rust_base58", "base64_rust_base64", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_sodium", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium", "hmacsha256_sodium", "memzero_sodium", "randombytes_sodium"]
+bn = ["int_traits"]
 ed25519_sign_sodium = ["sodiumoxide"]
 ed25519_box_sodium = ["sodiumoxide"]
 sealedbox_sodium = ["sodiumoxide"]
@@ -56,7 +56,6 @@ log = "0.4.8"
 log-derive = "0.3.0"
 derivative = "1.0.2"
 dirs = "2.0.2"
-openssl = { version = "0.10", optional = true }
 backtrace = "=0.3.11"
 owning_ref = "0.4"
 rand = "0.7.0"
