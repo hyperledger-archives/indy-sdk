@@ -23,8 +23,7 @@ import pprint
 from indy import pool, ledger, wallet, did
 from indy.error import IndyError
 
-from src.utils import get_pool_genesis_txn_path, PROTOCOL_VERSION
-
+from utils import get_pool_genesis_txn_path, PROTOCOL_VERSION
 
 pool_name = 'pool'
 genesis_file_path = get_pool_genesis_txn_path(pool_name)
