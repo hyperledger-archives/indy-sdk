@@ -31,6 +31,7 @@ use services::pool::pool::{Pool, ZMQPool};
 use utils::environment;
 use services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
 use api::{CommandHandle, next_command_handle, PoolHandle, next_pool_handle};
+use ursa::bls::VerKey;
 
 mod catchup;
 mod commander;
@@ -45,6 +46,8 @@ mod types;
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
 }
+
+type Nodes = HashMap<String, Option<VerKey>>;
 
 pub struct PoolService {
     open_pools: RefCell<HashMap<PoolHandle, ZMQPool>>,
