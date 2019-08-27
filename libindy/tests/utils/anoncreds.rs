@@ -14,8 +14,8 @@ use utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
 
-use utils::domain::anoncreds::schema::{Schema, SchemaV1};
-use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
+use utils::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
+use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId};
 use utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType};
 use utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
 use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
@@ -193,12 +193,12 @@ pub fn issuance_by_default_rev_reg_config() -> String {
 }
 
 pub fn gvt_schema_id() -> String {
-    Schema::schema_id(ISSUER_DID, GVT_SCHEMA_NAME, SCHEMA_VERSION)
+    SchemaId::new(ISSUER_DID, GVT_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn gvt_schema() -> SchemaV1 {
     SchemaV1 {
-        id: gvt_schema_id().to_string(),
+        id: SchemaId(gvt_schema_id()),
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
         attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
@@ -211,12 +211,12 @@ pub fn gvt_schema_json() -> String {
 }
 
 pub fn gvt_schema_id_issuer2() -> String {
-    Schema::schema_id(ISSUER_DID_2, GVT_SCHEMA_NAME, SCHEMA_VERSION)
+    SchemaId::new(ISSUER_DID_2, GVT_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn gvt_schema_issuer2() -> SchemaV1 {
     SchemaV1 {
-        id: gvt_schema_id_issuer2().to_string(),
+        id: SchemaId(gvt_schema_id_issuer2()),
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
         attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
@@ -230,12 +230,12 @@ pub fn gvt_schema_issuer2_json() -> String {
 
 
 pub fn xyz_schema_id() -> String {
-    Schema::schema_id(ISSUER_DID, XYZ_SCHEMA_NAME, SCHEMA_VERSION)
+    SchemaId::new(ISSUER_DID, XYZ_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn xyz_schema() -> SchemaV1 {
     SchemaV1 {
-        id: xyz_schema_id().to_string(),
+        id: SchemaId(xyz_schema_id()),
         version: SCHEMA_VERSION.to_string(),
         name: XYZ_SCHEMA_NAME.to_string(),
         attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
@@ -248,12 +248,12 @@ pub fn xyz_schema_json() -> String {
 }
 
 pub fn xyz_schema_id_tag2() -> String {
-    Schema::schema_id(ISSUER_DID, &format!("{}{}", XYZ_SCHEMA_NAME, TAG_2), SCHEMA_VERSION)
+    SchemaId::new(ISSUER_DID, &format!("{}{}", XYZ_SCHEMA_NAME, TAG_2), SCHEMA_VERSION).0
 }
 
 pub fn xyz_schema_tag2() -> SchemaV1 {
     SchemaV1 {
-        id: xyz_schema_id_tag2().to_string(),
+        id: SchemaId(xyz_schema_id_tag2()),
         version: SCHEMA_VERSION.to_string(),
         name: format!("{}{}", XYZ_SCHEMA_NAME, TAG_2),
         attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
@@ -350,8 +350,8 @@ pub fn gvt3_credential_values_json() -> String {
 
 pub fn issuer_1_gvt_credential() -> CredentialInfo {
     CredentialInfo {
-        schema_id: gvt_schema_id(),
-        cred_def_id: issuer_1_gvt_cred_def_id(),
+        schema_id: SchemaId(gvt_schema_id()),
+        cred_def_id: CredentialDefinitionId(issuer_1_gvt_cred_def_id()),
         referent: CREDENTIAL1_ID.to_string(),
         rev_reg_id: None,
         cred_rev_id: None,
@@ -366,8 +366,8 @@ pub fn issuer_1_gvt_credential() -> CredentialInfo {
 
 pub fn issuer_1_xyz_credential() -> CredentialInfo {
     CredentialInfo {
-        schema_id: xyz_schema_id(),
-        cred_def_id: issuer_1_xyz_cred_def_id(),
+        schema_id: SchemaId(xyz_schema_id()),
+        cred_def_id: CredentialDefinitionId(issuer_1_xyz_cred_def_id()),
         referent: CREDENTIAL2_ID.to_string(),
         rev_reg_id: None,
         cred_rev_id: None,
@@ -380,8 +380,8 @@ pub fn issuer_1_xyz_credential() -> CredentialInfo {
 
 pub fn issuer_2_gvt_credential() -> CredentialInfo {
     CredentialInfo {
-        schema_id: gvt_schema_id(),
-        cred_def_id: issuer_2_gvt_cred_def_id(),
+        schema_id: SchemaId(gvt_schema_id()),
+        cred_def_id: CredentialDefinitionId(issuer_2_gvt_cred_def_id()),
         referent: CREDENTIAL3_ID.to_string(),
         rev_reg_id: None,
         cred_rev_id: None,

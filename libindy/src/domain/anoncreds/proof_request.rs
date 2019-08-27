@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::fmt;
 use ursa::cl::Nonce;
 
+use utils::validation::Validatable;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequest {
     pub nonce: Nonce,
@@ -50,14 +52,14 @@ pub enum PredicateTypes {
 }
 
 impl fmt::Display for PredicateTypes {
-     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-         match *self {
-             PredicateTypes::GE => write!(f, "GE"),
-             PredicateTypes::GT => write!(f, "GT"),
-             PredicateTypes::LE => write!(f, "LE"),
-             PredicateTypes::LT => write!(f, "LT")
-         }
-     }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            PredicateTypes::GE => write!(f, "GE"),
+            PredicateTypes::GT => write!(f, "GT"),
+            PredicateTypes::LE => write!(f, "LE"),
+            PredicateTypes::LT => write!(f, "LT")
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -71,4 +73,26 @@ pub struct RequestedAttributeInfo {
 pub struct RequestedPredicateInfo {
     pub predicate_referent: String,
     pub predicate_info: PredicateInfo
+}
+
+impl Validatable for ProofRequest {
+    fn validate(&self) -> Result<(), String> {
+        if self.requested_attributes.is_empty() && self.requested_predicates.is_empty() {
+            return Err(String::from("Proof Request validation failed: both `requested_attributes` and `requested_predicates` are empty"));
+        }
+
+        for (_, requested_attribute) in self.requested_attributes.iter() {
+            if requested_attribute.name.is_empty() {
+                return Err(format!("Proof Request validation failed: there is empty requested attribute: {:?}", requested_attribute));
+            }
+        }
+
+        for (_, requested_predicate) in self.requested_predicates.iter() {
+            if requested_predicate.name.is_empty() {
+                return Err(format!("Proof Request validation failed: there is empty requested attribute: {:?}", requested_predicate));
+            }
+        }
+
+        Ok(())
+    }
 }

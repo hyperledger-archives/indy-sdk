@@ -52,3 +52,6 @@ pub const DEFAULT_WALLET_CONFIG: &'static str = r#"{"id":"default_wallet_1","sto
 pub const INMEM_WALLET_CONFIG: &'static str = r#"{"id":"inmem_wallet_1","storage_type":"inmem"}"#;  // FIXME never use global names
 pub const UNKNOWN_WALLET_CONFIG: &'static str = r#"{"id":"unknown_wallet_1","storage_type":"unknown"}"#;  // FIXME never use global names
 pub const AGENT_MESSAGE: &'static str = r#"{ "@id": "123456780","@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message","sent_time": "2019-01-15 18:42:01Z","content": "Your hovercraft is full of eels."}"#;
+pub const SCHEMA_ID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+pub const CRED_DEF_ID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e:3:CL:1";
+pub const REV_REG_ID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:CL_ACCUM:TAG_1";
