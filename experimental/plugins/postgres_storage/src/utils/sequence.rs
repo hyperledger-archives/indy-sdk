@@ -1,9 +1,9 @@
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 pub struct SequenceUtils {}
 
 lazy_static! {
-    static ref IDS_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT; //TODO use AtomicI32
+    static ref IDS_COUNTER: AtomicUsize = AtomicUsize::new(0); //TODO use AtomicI32
 }
 
 impl SequenceUtils {

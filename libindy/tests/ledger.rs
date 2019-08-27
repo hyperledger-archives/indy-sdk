@@ -1283,8 +1283,7 @@ mod high_cases {
             "metadata": {},
             "role": "0",
             "constraint_id": "ROLE",
-            "need_to_be_owner": false,
-            "off_ledger_signature": false
+            "need_to_be_owner": false
         }"#;
 
         #[test]
@@ -3133,6 +3132,20 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_invalid_submitter_identifier() {
             let res = ledger::build_schema_request(INVALID_IDENTIFIER, SCHEMA_DATA);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_schema_request_works_for_attrs_count_more_than_acceptable() {
+            use utils::domain::anoncreds::schema::MAX_ATTRIBUTES_COUNT;
+
+            let mut schema = utils::anoncreds::gvt_schema();
+            schema.attr_names = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
+            let schema = Schema::SchemaV1(schema);
+            let schema_json = serde_json::to_string(&schema).unwrap();
+
+            let res = ledger::build_schema_request(DID_TRUSTEE, &schema_json);
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
 

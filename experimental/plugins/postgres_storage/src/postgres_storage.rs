@@ -114,7 +114,7 @@ const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where it
 const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = $1";
 const _PLAIN_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_plaintext where item_id = $1 and wallet_id = $2";
 const _ENCRYPTED_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_encrypted where item_id = $1 and wallet_id = $2";
-const _CREATE_WALLET_DATABASE: &str = "CREATE DATABASE $1";
+const _CREATE_WALLET_DATABASE: &str = "CREATE DATABASE \"$1\"";
 const _CREATE_WALLETS_DATABASE: &str = "CREATE DATABASE wallets";
 // Note: wallet id length was constrained before by postgres database name length to 64 characters, keeping the same restrictions
 const _CREATE_SCHEMA: [&str; 12] = [
@@ -206,7 +206,7 @@ const _CREATE_SCHEMA_MULTI: [&str; 14] = [
     "CREATE INDEX IF NOT EXISTS ix_tags_plaintext_value ON tags_plaintext(wallet_id, value)",
     "CREATE INDEX IF NOT EXISTS ix_tags_plaintext_wallet_id_item_id ON tags_plaintext(wallet_id, item_id)"
     ];
-const _DROP_WALLET_DATABASE: &str = "DROP DATABASE $1";
+const _DROP_WALLET_DATABASE: &str = "DROP DATABASE \"$1\"";
 const _DROP_SCHEMA: [&str; 4] = [
     "DROP TABLE tags_plaintext",
     "DROP TABLE tags_encrypted",
@@ -292,7 +292,7 @@ struct PostgresStorageIterator {
 
 impl PostgresStorageIterator {
     fn new(stmt: Option<OwningHandle<Rc<r2d2::PooledConnection<PostgresConnectionManager>>, Box<postgres::stmt::Statement<'static>>>>,
-           args: &[&postgres::types::ToSql],
+           args: &[&dyn postgres::types::ToSql],
            options: RecordOptions,
            tag_retriever: Option<TagRetrieverOwned>,
            total_count: Option<usize>) -> Result<PostgresStorageIterator, WalletStorageError> {
@@ -789,7 +789,7 @@ impl WalletStrategy for MultiWalletMultiTableStrategy {
     }
 }
 
-static mut SELECTED_STRATEGY: &WalletStrategy = &DatabasePerWalletStrategy{};
+static mut SELECTED_STRATEGY: &dyn WalletStrategy = &DatabasePerWalletStrategy{};
 
 impl PostgresStorageType {
     pub fn new() -> PostgresStorageType {
@@ -897,13 +897,13 @@ impl WalletStorage for PostgresStorage {
             let mut tags = Vec::new();
 
             // get all encrypted.
-            let mut rows = match query_qualifier {
+            let rows = match query_qualifier {
                 Some(_) => {
-                    let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1 AND wallet_id = $2")?;
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1 AND wallet_id = $2")?;
                     stmt.query(&[&item.0, &self.wallet_id])?
                 },
                 None => {
-                    let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1")?;
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1")?;
                     stmt.query(&[&item.0])?
                 }
             };
@@ -917,13 +917,13 @@ impl WalletStorage for PostgresStorage {
             }
 
             // get all plain
-            let mut rows = match query_qualifier {
+            let rows = match query_qualifier {
                 Some(_) => {
-                    let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1 AND wallet_id = $2")?;
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1 AND wallet_id = $2")?;
                     stmt.query(&[&item.0, &self.wallet_id])?
                 },
                 None => {
-                    let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1")?;
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1")?;
                     stmt.query(&[&item.0])?
                 }
             };
@@ -1409,7 +1409,7 @@ impl WalletStorage for PostgresStorage {
         }
     }
 
-    fn get_all(&self) -> Result<Box<StorageIterator>, WalletStorageError> {
+    fn get_all(&self) -> Result<Box<dyn StorageIterator>, WalletStorageError> {
         let query_qualifier = unsafe {
             SELECTED_STRATEGY.query_qualifier()
         };
@@ -1435,7 +1435,7 @@ impl WalletStorage for PostgresStorage {
         Ok(Box::new(storage_iterator))
     }
 
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<dyn StorageIterator>, WalletStorageError> {
         let type_ = type_.to_vec(); // FIXME
 
         let search_options = match options {

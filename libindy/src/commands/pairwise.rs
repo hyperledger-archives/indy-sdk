@@ -117,7 +117,7 @@ impl PairwiseCommandExecutor {
             let pairwise_id = pairwise_record.get_id();
 
             let pairwise_value = pairwise_record.get_value()
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Pairwise not found for id: {}", pairwise_id)))?.to_string();
+                .ok_or_else(||err_msg(IndyErrorKind::InvalidStructure, format!("Pairwise not found for id: {}", pairwise_id)))?.to_string();
 
             list_pairwise.push(pairwise_value);
         }

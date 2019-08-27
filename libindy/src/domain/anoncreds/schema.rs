@@ -3,6 +3,8 @@ use super::DELIMITER;
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
+use utils::validation::Validatable;
+
 pub const SCHEMA_MARKER: &str = "2";
 pub const MAX_ATTRIBUTES_COUNT: usize = 125;
 
@@ -43,7 +45,28 @@ impl From<Schema> for SchemaV1 {
 }
 
 pub fn schemas_map_to_schemas_v1_map(schemas: HashMap<String, Schema>) -> HashMap<String, SchemaV1> {
-    schemas.into_iter().map( |(schema_id, schema)| { (schema_id, SchemaV1::from(schema))}).collect()
+    schemas.into_iter().map(|(schema_id, schema)| { (schema_id, SchemaV1::from(schema)) }).collect()
 }
 
 pub type AttributeNames = HashSet<String>;
+
+impl Validatable for Schema {
+    fn validate(&self) -> Result<(), String> {
+        match self {
+            Schema::SchemaV1(schema) => schema.attr_names.validate()
+        }
+    }
+}
+
+impl Validatable for AttributeNames {
+    fn validate(&self) -> Result<(), String> {
+        if self.is_empty() {
+            return Err(String::from("Empty list of Schema attributes has been passed"));
+        }
+
+        if self.len() > MAX_ATTRIBUTES_COUNT {
+            return Err(format!("The number of Schema attributes {} cannot be greater than {}", self.len(), MAX_ATTRIBUTES_COUNT));
+        }
+        Ok(())
+    }
+}

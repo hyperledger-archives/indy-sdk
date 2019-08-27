@@ -10,6 +10,8 @@ use super::DELIMITER;
 use std::collections::HashMap;
 use named_type::NamedType;
 
+use utils::validation::Validatable;
+
 #[derive(Debug, Deserialize, Serialize, NamedType)]
 pub struct Credential {
     pub schema_id: String,
@@ -58,8 +60,20 @@ pub struct CredentialInfo {
     pub cred_rev_id: Option<String>
 }
 
+pub type CredentialValues = HashMap<String, AttributeValues>;
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct AttributeValues {
     pub raw: String,
     pub encoded: String
+}
+
+impl Validatable for CredentialValues {
+    fn validate(&self) -> Result<(), String> {
+        if self.is_empty() {
+            return Err(String::from("Empty list of Credential Values has been passed"));
+        }
+
+        Ok(())
+    }
 }
