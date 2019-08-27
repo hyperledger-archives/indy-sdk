@@ -23,7 +23,7 @@ mkdir -p /usr/src/rpm/SOURCES/
 sed \
 	-e "s|@version@|$version|g" \
 	-e "s|@dir@|$dir|g" \
-    ci/${package}.spec.in > ${package}.spec
+    rpm/${package}.spec.in > ${package}.spec
 
 mkdir rpms
 
