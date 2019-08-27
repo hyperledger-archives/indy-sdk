@@ -1,4 +1,3 @@
-extern crate errno;
 extern crate serde;
 extern crate sodiumoxide;
 
