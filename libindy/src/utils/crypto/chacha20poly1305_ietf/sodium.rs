@@ -187,7 +187,7 @@ impl<R: Read> Reader<R> {
                 Ok(0) => break,
                 Ok(n) => read += n,
                 Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
-                Err(e) => Err(e)?
+                Err(e) => return Err(e)
             }
         }
 

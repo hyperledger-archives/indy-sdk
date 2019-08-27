@@ -15,16 +15,16 @@ use ursa::cl::verifier::Verifier as CryptoVerifier;
 
 use domain::anoncreds::credential::{AttributeValues, Credential};
 use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
-use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
+use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionId};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequestMetadata;
 use domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
 use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestExtraQuery, RequestedAttributeInfo, RequestedPredicateInfo};
 use domain::anoncreds::requested_credential::ProvingCredentialKey;
 use domain::anoncreds::requested_credential::RequestedCredentials;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
 use domain::anoncreds::revocation_state::RevocationState;
-use domain::anoncreds::schema::SchemaV1;
+use domain::anoncreds::schema::{SchemaV1, SchemaId};
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
@@ -117,9 +117,9 @@ impl Prover {
                         proof_req: &ProofRequest,
                         requested_credentials: &RequestedCredentials,
                         master_secret: &MasterSecret,
-                        schemas: &HashMap<String, SchemaV1>,
-                        cred_defs: &HashMap<String, CredentialDefinition>,
-                        rev_states: &HashMap<String, HashMap<u64, RevocationState>>) -> IndyResult<Proof> {
+                        schemas: &HashMap<SchemaId, SchemaV1>,
+                        cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinition>,
+                        rev_states: &HashMap<RevocationRegistryId, HashMap<u64, RevocationState>>) -> IndyResult<Proof> {
         trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret: {:?}, schemas: {:?}, cred_defs: {:?}, rev_states: {:?}",
                credentials, proof_req, requested_credentials, secret!(&master_secret), schemas, cred_defs, rev_states);
 
@@ -137,24 +137,24 @@ impl Prover {
         let mut identifiers: Vec<Identifier> = Vec::with_capacity(credentials_for_proving.len());
         for (cred_key, (req_attrs_for_cred, req_predicates_for_cred)) in credentials_for_proving {
             let credential: &Credential = credentials.get(cred_key.cred_id.as_str())
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Credential not found by id: {:?}", cred_key.cred_id)))?;
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential not found by id: {:?}", cred_key.cred_id)))?;
 
             let schema: &SchemaV1 = schemas.get(&credential.schema_id)
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema not found by id: {:?}", credential.schema_id)))?;
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Schema not found by id: {:?}", credential.schema_id)))?;
 
             let cred_def: &CredentialDefinition = cred_defs.get(&credential.cred_def_id)
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
 
             let rev_state = if let Some(timestamp) = cred_key.timestamp {
                 let rev_reg_id = credential.rev_reg_id
                     .clone()
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
+                    .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
 
                 let rev_states_for_timestamp = rev_states.get(&rev_reg_id)
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationState not found by id: {:?}", rev_reg_id)))?;
+                    .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationState not found by id: {:?}", rev_reg_id)))?;
 
                 Some(rev_states_for_timestamp.get(&timestamp)
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("RevocationInfo not found by timestamp: {:?}", timestamp)))?)
+                    .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationInfo not found by timestamp: {:?}", timestamp)))?)
             } else { None };
 
             let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
@@ -210,7 +210,7 @@ impl Prover {
         for (attr_referent, requested_attr) in requested_credentials.requested_attributes.iter() {
             let attr_info = proof_req.requested_attributes
                 .get(attr_referent.as_str())
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("AttributeInfo not found in ProofRequest for referent \"{}\"", attr_referent.as_str())))?;
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("AttributeInfo not found in ProofRequest for referent \"{}\"", attr_referent.as_str())))?;
 
             let req_attr_info = RequestedAttributeInfo {
                 attr_referent: attr_referent.clone(),
@@ -232,7 +232,7 @@ impl Prover {
         for (predicate_referent, proving_cred_key) in requested_credentials.requested_predicates.iter() {
             let predicate_info = proof_req.requested_predicates
                 .get(predicate_referent.as_str())
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("PredicateInfo not found in ProofRequest for referent \"{}\"", predicate_referent.as_str())))?;
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("PredicateInfo not found in ProofRequest for referent \"{}\"", predicate_referent.as_str())))?;
 
             let req_predicate_info = RequestedPredicateInfo {
                 predicate_referent: predicate_referent.clone(),
@@ -278,7 +278,7 @@ impl Prover {
         res.insert("schema_version".to_string(), credential.schema_version());
         res.insert("issuer_did".to_string(), credential.issuer_did());
         res.insert("cred_def_id".to_string(), credential.cred_def_id());
-        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.clone().unwrap_or_else(|| "None".to_string()));
+        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.as_ref().map(|rev_reg_id|rev_reg_id.0.clone()).unwrap_or_else(|| "None".to_string()));
 
         credential.values
             .iter()
@@ -315,7 +315,7 @@ impl Prover {
                 let mut res: Vec<serde_json::Value> = Vec::new();
                 for sub_query in array {
                     let sub_query = sub_query.as_object()
-                        .ok_or(err_msg(IndyErrorKind::InvalidStructure, "Restriction is invalid"))?
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Restriction is invalid"))?
                         .clone()
                         .into_iter()
                         .filter(|&(_, ref v)| !v.is_null())
@@ -389,7 +389,7 @@ impl Prover {
                                req_predicates_for_credential: Vec<RequestedPredicateInfo>,
                                proof_req: &ProofRequest,
                                credential: &Credential,
-                               sub_proof_index: i32,
+                               sub_proof_index: u32,
                                requested_proof: &mut RequestedProof) -> IndyResult<()> {
         trace!("_update_requested_proof >>> req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}, proof_req: {:?}, credential: {:?}, \
                sub_proof_index: {:?}, requested_proof: {:?}",
@@ -400,7 +400,7 @@ impl Prover {
                 let attribute = &proof_req.requested_attributes[&attr_info.attr_referent];
                 let attribute_values =
                     self.get_credential_values_for_attribute(&credential.values, &attribute.name)
-                        .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", attribute.name)))?;
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", attribute.name)))?;
 
                 requested_proof.revealed_attrs.insert(attr_info.attr_referent,
                                                       RevealedAttributeInfo {
@@ -545,7 +545,7 @@ mod tests {
         fn build_credential_tags_works_for_rev_reg_id() {
             let ps = Prover::new();
             let mut credential = _credential();
-            credential.rev_reg_id = Some(REV_REG_ID.to_string());
+            credential.rev_reg_id = Some(RevocationRegistryId(REV_REG_ID.to_string()));
             let tags = ps.build_credential_tags(&credential, None);
 
             let expected_tags: HashMap<String, String> = hashmap!(

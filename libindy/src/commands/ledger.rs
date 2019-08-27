@@ -6,15 +6,17 @@ use serde_json;
 use serde_json::Value;
 
 use api::ledger::{CustomFree, CustomTransactionParser};
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
+use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId};
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::schema::{Schema, SchemaV1};
+use domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
 use domain::crypto::did::Did;
 use domain::crypto::key::Key;
 use domain::ledger::node::NodeOperationData;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::auth_rule::AuthRules;
+use domain::ledger::auth_rule::{Constraint, AuthRules};
+use domain::ledger::request::Request;
+use domain::ledger::pool::Schedule;
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
@@ -25,7 +27,7 @@ use services::pool::{
 use services::wallet::{RecordOptions, WalletService};
 use utils::crypto::signature_serializer::serialize_signature;
 use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
-use commands::{Command, CommandExecutor};
+use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use rust_base58::ToBase58;
 
 pub enum LedgerCommand {
@@ -74,7 +76,7 @@ pub enum LedgerCommand {
         String, // submitter did
         String, // target did
         Option<String>, // hash
-        Option<String>, // raw
+        Option<serde_json::Value>, // raw
         Option<String>, // enc
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetAttribRequest(
@@ -94,22 +96,22 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetSchemaRequest(
         Option<String>, // submitter did
-        String, // id
+        SchemaId, // id
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetSchemaResponse(
         String, // get schema response json
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildCredDefRequest(
         String, // submitter did
         CredentialDefinition, // data
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetCredDefRequest(
         Option<String>, // submitter did
-        String, // id
+        CredentialDefinitionId, // id
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetCredDefResponse(
         String, // get cred definition response
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildNodeRequest(
         String, // submitter did
         String, // target_did
@@ -140,7 +142,7 @@ pub enum LedgerCommand {
         String, // action
         String, // sha256
         Option<u32>, // timeout
-        Option<String>, // schedule
+        Option<Schedule>, // schedule
         Option<String>, // justification
         bool, // reinstall
         bool, // force
@@ -152,20 +154,20 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetRevocRegDefRequest(
         Option<String>, // submitter did
-        String, // revocation registry definition id
+        RevocationRegistryId, // revocation registry definition id
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetRevocRegDefResponse(
         String, // get revocation registry definition response
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     BuildRevocRegEntryRequest(
         String, // submitter did
-        String, // revocation registry definition id
+        RevocationRegistryId, // revocation registry definition id
         String, // revocation registry definition type
         RevocationRegistryDelta, // value
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetRevocRegRequest(
         Option<String>, // submitter did
-        String, // revocation registry definition id
+        RevocationRegistryId, // revocation registry definition id
         i64, // timestamp
         Box<dyn Fn(IndyResult<String>) + Send>),
     ParseGetRevocRegResponse(
@@ -173,7 +175,7 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<(String, String, u64)>) + Send>),
     BuildGetRevocRegDeltaRequest(
         Option<String>, // submitter did
-        String, // revocation registry definition id
+        RevocationRegistryId, // revocation registry definition id
         Option<i64>, // from
         i64, // to
         Box<dyn Fn(IndyResult<String>) + Send>),
@@ -195,7 +197,7 @@ pub enum LedgerCommand {
         String, // field
         Option<String>, // old value
         Option<String>, // new value
-        String, // constraint
+        Constraint, // constraint
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildAuthRulesRequest(
         String, // submitter did
@@ -212,8 +214,8 @@ pub enum LedgerCommand {
     GetSchema(
         PoolHandle,
         Option<String>,
-        String,
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>,
+        SchemaId,
+        BoxedCallbackStringStringSend,
     ),
     GetSchemaContinue(
         IndyResult<String>,
@@ -222,8 +224,8 @@ pub enum LedgerCommand {
     GetCredDef(
         PoolHandle,
         Option<String>,
-        String,
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>,
+        CredentialDefinitionId,
+        BoxedCallbackStringStringSend,
     ),
     GetCredDefContinue(
         IndyResult<String>,
@@ -339,7 +341,7 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildAttribRequest command received");
                 cb(self.build_attrib_request(&submitter_did, &target_did,
                                              hash.as_ref().map(String::as_str),
-                                             raw.as_ref().map(String::as_str),
+                                             raw.as_ref(),
                                              enc.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, raw, hash, enc, cb) => {
@@ -400,7 +402,7 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package, cb) => {
                 info!(target: "ledger_command_executor", "BuildPoolUpgradeRequest command received");
                 cb(self.build_pool_upgrade_request(&submitter_did, &name, &version, &action, &sha256, timeout,
-                                                   schedule.as_ref().map(String::as_str),
+                                                   schedule,
                                                    justification.as_ref().map(String::as_str),
                                                    reinstall, force, package.as_ref().map(String::as_str)));
             }
@@ -442,7 +444,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, constraint, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
-                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), &constraint));
+                cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), constraint));
             }
             LedgerCommand::BuildAuthRulesRequest(submitter_did, rules, cb) => {
                 info!(target: "ledger_command_executor", "BuildAuthRulesRequest command received");
@@ -585,6 +587,10 @@ impl LedgerCommandExecutor {
                       cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         debug!("submit_request >>> handle: {:?}, request_json: {:?}", handle, request_json);
 
+        if let Err(err) = serde_json::from_str::<Request<serde_json::Value>>(&request_json){
+            return cb(Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Request is invalid json: {:?}", err))));
+        }
+
         let x: IndyResult<CommandHandle> = self.pool_service.send_tx(handle, request_json);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
@@ -678,7 +684,7 @@ impl LedgerCommandExecutor {
                             submitter_did: &str,
                             target_did: &str,
                             hash: Option<&str>,
-                            raw: Option<&str>,
+                            raw: Option<&serde_json::Value>,
                             enc: Option<&str>) -> IndyResult<String> {
         debug!("build_attrib_request >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
                submitter_did, target_did, hash, raw, enc);
@@ -752,7 +758,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_schema_request(&self,
                                 submitter_did: Option<&str>,
-                                id: &str) -> IndyResult<String> {
+                                id: &SchemaId) -> IndyResult<String> {
         debug!("build_get_schema_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
         self.validate_opt_did(submitter_did)?;
@@ -792,7 +798,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_cred_def_request(&self,
                                   submitter_did: Option<&str>,
-                                  id: &str) -> IndyResult<String> {
+                                  id: &CredentialDefinitionId) -> IndyResult<String> {
         debug!("build_get_cred_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
         self.validate_opt_did(submitter_did)?;
@@ -896,7 +902,7 @@ impl LedgerCommandExecutor {
                                   action: &str,
                                   sha256: &str,
                                   timeout: Option<u32>,
-                                  schedule: Option<&str>,
+                                  schedule: Option<Schedule>,
                                   justification: Option<&str>,
                                   reinstall: bool,
                                   force: bool,
@@ -931,7 +937,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_revoc_reg_def_request(&self,
                                        submitter_did: Option<&str>,
-                                       id: &str) -> IndyResult<String> {
+                                       id: &RevocationRegistryId) -> IndyResult<String> {
         debug!("build_get_revoc_reg_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
         self.validate_opt_did(submitter_did)?;
@@ -956,7 +962,7 @@ impl LedgerCommandExecutor {
 
     fn build_revoc_reg_entry_request(&self,
                                      submitter_did: &str,
-                                     revoc_reg_def_id: &str,
+                                     revoc_reg_def_id: &RevocationRegistryId,
                                      revoc_def_type: &str,
                                      value: RevocationRegistryDeltaV1) -> IndyResult<String> {
         debug!("build_revoc_reg_entry_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, revoc_def_type: {:?}, value: {:?}",
@@ -973,7 +979,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_revoc_reg_request(&self,
                                    submitter_did: Option<&str>,
-                                   revoc_reg_def_id: &str,
+                                   revoc_reg_def_id: &RevocationRegistryId,
                                    timestamp: i64) -> IndyResult<String> {
         debug!("build_get_revoc_reg_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
 
@@ -999,7 +1005,7 @@ impl LedgerCommandExecutor {
 
     fn build_get_revoc_reg_delta_request(&self,
                                          submitter_did: Option<&str>,
-                                         revoc_reg_def_id: &str,
+                                         revoc_reg_def_id: &RevocationRegistryId,
                                          from: Option<i64>,
                                          to: i64) -> IndyResult<String> {
         debug!("build_get_revoc_reg_delta_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}", submitter_did, revoc_reg_def_id, from, to);
@@ -1045,7 +1051,7 @@ impl LedgerCommandExecutor {
                                field: &str,
                                old_value: Option<&str>,
                                new_value: Option<&str>,
-                               constraint: &str) -> IndyResult<String> {
+                               constraint: Constraint) -> IndyResult<String> {
         debug!("build_auth_rule_request >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
             old_value: {:?}, new_value: {:?}, constraint: {:?}", submitter_did, txn_type, action, field, old_value, new_value, constraint);
 
@@ -1201,7 +1207,7 @@ impl LedgerCommandExecutor {
         }
     }
 
-    fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn get_schema(&self, pool_handle: i32, submitter_did: Option<&str>, id: &SchemaId, cb: BoxedCallbackStringStringSend) {
         let request_json = try_cb!(self.build_get_schema_request(submitter_did, id), cb);
 
         let cb_id = next_command_handle();
@@ -1225,7 +1231,7 @@ impl LedgerCommandExecutor {
         cb(self.parse_get_schema_response(&pool_response));
     }
 
-    fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &str, cb: Box<dyn Fn(IndyResult<(String, String)>) + Send>) {
+    fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&str>, id: &CredentialDefinitionId, cb: BoxedCallbackStringStringSend) {
         let request_json = try_cb!(self.build_get_cred_def_request(submitter_did, id), cb);
 
         let cb_id = next_command_handle();

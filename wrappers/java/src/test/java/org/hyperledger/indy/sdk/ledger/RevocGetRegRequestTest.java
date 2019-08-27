@@ -6,22 +6,22 @@ import org.junit.Test;
 
 import java.util.Date;
 
-import static org.junit.Assert.assertTrue;
-
 public class RevocGetRegRequestTest extends LedgerIntegrationTest {
 
 	@Test
 	public void testBuildGetRevocRegRequestWorks() throws Exception {
-		String expectedResult =
-				"\"operation\": {\n" +
-						"            \"type\": \"116\",\n" +
-						"            \"revocRegDefId\": \"RevocRegID\",\n" +
-						"            \"timestamp\": 100\n" +
-						"        }";
+		JSONObject expectedResult = new JSONObject()
+				.put("operation", new JSONObject()
+						.put("type", "116")
+						.put("revocRegDefId", revRegDefId)
+						.put("timestamp", 100)
+				);
 
-		String request = Ledger.buildGetRevocRegRequest(DID, "RevocRegID", 100).get();
+		String request = Ledger.buildGetRevocRegRequest(DID, revRegDefId, 100).get();
 
-		assertTrue(request.replaceAll("\\s+", "").contains(expectedResult.replaceAll("\\s+", "")));
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
 	}
 
 	@Test

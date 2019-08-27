@@ -7,6 +7,7 @@ use std::rc::Rc;
 
 use named_type::NamedType;
 use serde_json;
+use serde_json::Value as SValue;
 
 use api::wallet::*;
 
@@ -118,10 +119,6 @@ impl WalletService {
                       (key_data, master_key): (&KeyDerivationData, &MasterKey)) -> IndyResult<Keys> {
         trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        if config.id.is_empty() {
-            Err(err_msg(IndyErrorKind::InvalidStructure, "Wallet id is empty"))?
-        }
-
         let storage_types = self.storage_types.borrow();
 
         let (storage_type, storage_config, storage_credentials) = WalletService::_get_config_and_cred_for_storage(config, credentials, &storage_types)?;
@@ -145,7 +142,7 @@ impl WalletService {
         trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
-            Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", WalletService::_get_wallet_id(config))))?
+            return Err(err_msg(IndyErrorKind::InvalidState, format!("Wallet has to be closed before deleting: {:?}", WalletService::_get_wallet_id(config))));
         }
 
         // check credentials and close connection before deleting wallet
@@ -198,7 +195,7 @@ impl WalletService {
 
     pub fn open_wallet_continue(&self, wallet_handle: WalletHandle, master_key: (&MasterKey, Option<&MasterKey>)) -> IndyResult<WalletHandle> {
         let (id, storage, metadata, rekey_data) = self.pending_for_open.borrow_mut().remove(&wallet_handle)
-            .ok_or(err_msg(IndyErrorKind::InvalidState, "Open data not found"))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "Open data not found"))?;
 
         let (master_key, rekey) = master_key;
         let keys = self._restore_keys(&metadata, &master_key)?;
@@ -258,7 +255,7 @@ impl WalletService {
     }
 
     pub fn add_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T, tags: &Tags)
-                              -> IndyResult<String> where T: ::serde::Serialize + Sized, T: NamedType {
+                              -> IndyResult<String> where T: ::serde::Serialize + Sized + NamedType {
         let type_ = T::short_type_name();
 
         let object_json = serde_json::to_string(object)
@@ -277,7 +274,7 @@ impl WalletService {
         }
     }
 
-    pub fn update_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T) -> IndyResult<String> where T: ::serde::Serialize + Sized, T: NamedType {
+    pub fn update_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T) -> IndyResult<String> where T: ::serde::Serialize + Sized + NamedType {
         let type_ = T::short_type_name();
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
@@ -348,13 +345,13 @@ impl WalletService {
         }?;
 
         let record_value = record.get_value()
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("{} not found for id: {:?}", type_, name)))?.to_string();
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidState, format!("{} not found for id: {:?}", type_, name)))?.to_string();
 
         Ok(record_value)
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<T> where T: ::serde::de::DeserializeOwned, T: NamedType {
+    pub fn get_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<T> where T: ::serde::de::DeserializeOwned + NamedType {
         let record_value = self.get_indy_record_value::<T>(wallet_handle, name, options_json)?;
 
         serde_json::from_str(&record_value)
@@ -362,7 +359,7 @@ impl WalletService {
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_opt_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<Option<T>> where T: ::serde::de::DeserializeOwned, T: NamedType {
+    pub fn get_indy_opt_object<T>(&self, wallet_handle: WalletHandle, name: &str, options_json: &str) -> IndyResult<Option<T>> where T: ::serde::de::DeserializeOwned + NamedType {
         match self.get_indy_object::<T>(wallet_handle, name, options_json) {
             Ok(res) => Ok(Some(res)),
             Err(ref err) if err.kind() == IndyErrorKind::WalletItemNotFound => Ok(None),
@@ -391,7 +388,7 @@ impl WalletService {
     }
 
     pub fn upsert_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T) -> IndyResult<String>
-        where T: ::serde::Serialize + Sized, T: NamedType {
+        where T: ::serde::Serialize + Sized + NamedType {
         if self.record_exists::<T>(wallet_handle, name)? {
             self.update_indy_object::<T>(wallet_handle, name, object)
         } else {
@@ -422,7 +419,7 @@ impl WalletService {
         trace!("export_wallet >>> wallet_handle: {:?}, export_config: {:?}, version: {:?}", wallet_handle, secret!(export_config), version);
 
         if version != 0 {
-            Err(err_msg(IndyErrorKind::InvalidState, "Unsupported version"))?;
+            return Err(err_msg(IndyErrorKind::InvalidState, "Unsupported version"));
         }
 
         let (key_data, key) = key;
@@ -430,7 +427,7 @@ impl WalletService {
         let wallets = self.wallets.borrow();
         let wallet = wallets
             .get(&wallet_handle)
-            .ok_or(err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, "Unknown wallet handle"))?;
 
         let path = PathBuf::from(&export_config.path);
 
@@ -515,22 +512,18 @@ impl WalletService {
 
             storage_types
                 .get(storage_type)
-                .ok_or(err_msg(IndyErrorKind::UnknownWalletStorageType, "Unknown wallet storage type"))?
+                .ok_or_else(|| err_msg(IndyErrorKind::UnknownWalletStorageType, "Unknown wallet storage type"))?
         };
 
-        let storage_config = config.storage_config.as_ref().map(|value| value.to_string());
-        let storage_credentials = credentials.storage_credentials.as_ref().map(|value| value.to_string());
+        let storage_config = config.storage_config.as_ref().map(SValue::to_string);
+        let storage_credentials = credentials.storage_credentials.as_ref().map(SValue::to_string);
 
         Ok((storage_type, storage_config, storage_credentials))
     }
 
     fn _is_id_from_config_not_used(&self, config: &Config) -> IndyResult<()> {
-        if config.id.is_empty() {
-            Err(err_msg(IndyErrorKind::InvalidStructure, "Wallet id is empty"))?
-        }
-
         if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == WalletService::_get_wallet_id(config)) {
-            Err(err_msg(IndyErrorKind::WalletAlreadyOpened, format!("Wallet {} already opened", WalletService::_get_wallet_id(config))))?
+            return Err(err_msg(IndyErrorKind::WalletAlreadyOpened, format!("Wallet {} already opened", WalletService::_get_wallet_id(config))));
         }
 
         Ok(())

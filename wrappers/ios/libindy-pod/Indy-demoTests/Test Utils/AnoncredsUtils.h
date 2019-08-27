@@ -15,6 +15,10 @@
 
 - (NSString *)getGvtSchemaId;
 
+- (NSString *)credDefId;
+
+- (NSString *)revRegId;
+
 - (NSString *)getGvtSchemaJson;
 
 - (NSString *)getIssuer1GvtCredDefId;
