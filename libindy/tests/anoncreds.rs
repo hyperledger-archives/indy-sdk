@@ -3539,7 +3539,7 @@ mod medium_cases {
 
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let res = anoncreds::issuer_create_credential_offer(wallet_handle, "unknown_cred_def_id");
+            let res = anoncreds::issuer_create_credential_offer(wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e:3:CL:100");
             assert_code!(ErrorCode::WalletItemNotFound, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
