@@ -315,9 +315,10 @@ impl Verifier {
                 .get(sub_proof_index)
                 .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("CryptoProof not found by index \"{}\"", sub_proof_index)))?
                 .revealed_attrs()?
-                .get(attr_name)
-                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with name \"{}\" not found in CryptoProof", attr_name)))?
-                .to_string();
+                .iter()
+                .find(|(key, _)|attr_common_view(&attr_name) == attr_common_view(&key))
+                .map(|(_, val)| val.to_string())
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with name \"{}\" not found in CryptoProof", attr_name)))?;
 
             if reveal_attr_encoded != crypto_proof_encoded {
                 return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,

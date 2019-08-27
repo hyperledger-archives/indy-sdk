@@ -2986,6 +2986,19 @@ mod high_cases {
                                                        "{}");
             assert_code!(ErrorCode::AnoncredsProofRejected, res);
         }
+
+        #[test]
+        fn verifier_verify_proof_works_for_revealed_attr_case_insensitive() {
+            let proof_req_json = anoncreds::proof_request_attr().replace(r#""name":"name""#, r#""name":"NAME""#);
+
+            let valid = anoncreds::verifier_verify_proof(&proof_req_json,
+                                                       &anoncreds::proof_json(),
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}").unwrap();
+            assert!(valid);
+        }
     }
 
     mod verifier_verify_proof_with_proof_req_restrictions {
