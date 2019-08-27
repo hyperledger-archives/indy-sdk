@@ -20,7 +20,7 @@ def testing() {
                 'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
-                // 'redhat-test' : { rhelTesting() },
+                // 'centos-test' : { centosTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -354,9 +354,9 @@ def ubuntuTesting() {
     }
 }
 
-def rhelTesting() {
+def centosTesting() {
     stage('RedHat Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
+        linuxTesting("ci/centos.dockerfile ci", "RedHat", "pool_network", false)
     }
 }
 

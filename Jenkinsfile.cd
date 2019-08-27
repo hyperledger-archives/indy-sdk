@@ -849,7 +849,7 @@ def buildIOSPod(packageName, targets) {
 
 def centosTesting() {
     stage('Centos Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "Centos", "pool_network")
+        linuxTesting("ci/centos.dockerfile ci", "Centos", "pool_network")
     }
 }
 
@@ -919,7 +919,7 @@ def centosPublishing() {
                 libindyVersion = getSrcVersion("libindy")
 
                 echo "Publish ${env_name}: Build docker image"
-                def testEnv = dockerHelpers.build('indy-sdk', 'ci/amazon.dockerfile ci')
+                def testEnv = dockerHelpers.build('indy-sdk', 'ci/centos.dockerfile ci')
 
                 libindyRpmPublishing(testEnv, libindyVersion, env_name)
                 libnullpayRpmPublishing(testEnv, env_name)

@@ -31,8 +31,14 @@ spectool -R ${package}.spec || exit 6
 rpmbuild -ba ${package}.spec || exit 7
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@$SOVRIN_REPO_HOST
-mkdir /var/repository/repos/centos/$package/$type/$version-$number
-cd /var/repository/repos/centos/$package/$type/$version-$number
+mkdir /var/repository/repos/rpm
+mkdir /var/repository/repos/rpm/$package
+mkdir /var/repository/repos/rpm/$package/$type
+mkdir /var/repository/repos/rpm/$package/master
+mkdir /var/repository/repos/rpm/$package/rc
+mkdir /var/repository/repos/rpm/$package/stable
+mkdir /var/repository/repos/rpm/$package/$type/$version-$number
+cd /var/repository/repos/rpm/$package/$type/$version-$number
 put -r /rpms/x86_64/
-ls -l /var/repository/repos/centos/$package/$type/$version-$number
+ls -l /var/repository/repos/rpm/$package/$type/$version-$number
 EOF
