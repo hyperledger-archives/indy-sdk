@@ -6,9 +6,9 @@ use std::collections::HashMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
 
-type EcClosure = Box<FnMut(ErrorCode) + Send>;
+type EcClosure = Box<dyn FnMut(ErrorCode) + Send>;
 type EcCallback = Option<extern fn(command_handle: i32, err: ErrorCode)>;
-type EcStringClosure = Box<FnMut(ErrorCode, String) + Send>;
+type EcStringClosure = Box<dyn FnMut(ErrorCode, String) + Send>;
 type EcStringCallback = Option<extern fn(command_handle: i32, err: ErrorCode, c_str: *const c_char)>;
 
 pub fn closure_to_cb_ec(closure: EcClosure) -> (i32, EcCallback) {

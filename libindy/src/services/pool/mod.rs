@@ -722,8 +722,8 @@ mod tests {
 
             gt.txn.data.dest = (&vk[..]).to_base58();
 
-            s.set_curve_publickey(&zmq::z85_encode(&pkc[..]).unwrap()).expect("set public key");
-            s.set_curve_secretkey(&zmq::z85_encode(&skc[..]).unwrap()).expect("set secret key");
+            s.set_curve_publickey(&zmq::z85_encode(&pkc[..]).unwrap().as_bytes()).expect("set public key");
+            s.set_curve_secretkey(&zmq::z85_encode(&skc[..]).unwrap().as_bytes()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
 
             s.bind("tcp://127.0.0.1:*").expect("bind");

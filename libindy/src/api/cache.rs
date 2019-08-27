@@ -4,6 +4,9 @@ use commands::cache::CacheCommand;
 use errors::prelude::*;
 use utils::ctypes;
 use domain::cache::{GetCacheOptions, PurgeOptions};
+use domain::anoncreds::schema::SchemaId;
+use domain::anoncreds::credential_definition::CredentialDefinitionId;
+use utils::validation::Validatable;
 
 use
 libc::c_char;
@@ -40,7 +43,7 @@ pub extern fn indy_get_cred_def(command_handle: CommandHandle,
            pool_handle, wallet_handle, submitter_did, id, options_json);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(id, ErrorCode::CommonInvalidParam5);
+    check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam5, CredentialDefinitionId);
     check_useful_json!(options_json, ErrorCode::CommonInvalidParam6, GetCacheOptions);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
@@ -98,7 +101,7 @@ pub extern fn indy_get_schema(command_handle: CommandHandle,
            pool_handle, wallet_handle, submitter_did, id, options_json);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(id, ErrorCode::CommonInvalidParam5);
+    check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam5, SchemaId);
     check_useful_json!(options_json, ErrorCode::CommonInvalidParam6, GetCacheOptions);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 

@@ -114,6 +114,42 @@ macro_rules! check_useful_opt_validatable_json {
     }
 }
 
+macro_rules! check_useful_validatable_string {
+    ($x:ident, $e:expr, $t:ident) => {
+        check_useful_c_str!($x, $e);
+
+        let $x: $t = $t($x.to_string());
+
+        match $x.validate() {
+            Ok(ok) => ok,
+            Err(err) => {
+                return err_msg(IndyErrorKind::InvalidStructure, err).into()
+            }
+        };
+    }
+}
+
+macro_rules! check_useful_validatable_opt_string {
+    ($x:ident, $e:expr, $t:ident) => {
+        check_useful_opt_c_str!($x, $e);
+
+        let $x: Option<$t>  = match $x {
+            Some(val) => {
+                let $x: $t = $t(val.to_string());
+
+                match $x.validate() {
+                    Ok(ok) => ok,
+                    Err(err) => {
+                        return err_msg($e.into(), err).into()
+                    }
+                };
+                Some($x)
+            },
+            None => None
+        };
+    }
+}
+
 macro_rules! parse_json {
     ($x:ident, $e:expr, $t:ty) => {
         if $x.is_empty() {
