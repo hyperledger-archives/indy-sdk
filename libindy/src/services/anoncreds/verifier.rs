@@ -51,7 +51,7 @@ impl Verifier {
                                                        &received_self_attested_attrs,
                                                        &received_predicates)?;
 
-        Verifier::_verify_revealed_attributes(&proof_req, &full_proof)?;
+        Verifier::_verify_revealed_attribute_values(&proof_req, &full_proof)?;
 
         Verifier::_verify_requested_restrictions(&proof_req,
                                                  schemas,

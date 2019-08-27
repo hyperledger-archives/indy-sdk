@@ -69,9 +69,10 @@ impl Proof {
         let proof: Value = serde_json::from_str(proof_json)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
 
-        let revealed_attrs = proof["requested_proof"]["revealed_attrs"]
-            .as_object()
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidProof, "Cannot get Proof revealed attribute"))?;
+        let revealed_attrs = match  proof["requested_proof"]["revealed_attrs"].as_object() {
+            Some(revealed_attrs) => revealed_attrs,
+            None => return Ok(())
+        };
 
         for (attr1_referent, info) in revealed_attrs.iter() {
             let raw = info["raw"].as_str().ok_or(VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Cannot get raw value for \"{}\" attribute", attr1_referent)))?;
