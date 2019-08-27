@@ -1,4 +1,4 @@
-FROM amazonlinux:2017.03
+FROM centos:7
 
 ARG uid=1000
 

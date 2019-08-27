@@ -9,6 +9,7 @@ version="$1"
 key="$2"
 type="$3"
 number="$4"
+dir=$LIBINDY_DIR
 
 [ -z $version ] && exit 1
 [ -z $key ] && exit 2
@@ -20,6 +21,7 @@ mkdir -p /usr/src/rpm/SOURCES/
 sed \
 	-e "s|@commit@|$commit|g" \
 	-e "s|@version@|$version.$commit|g" \
+	-e "s|@dir@|$dir|g" \
 	ci/indy-sdk.spec.in >indy-sdk.spec
 
 chown root.root indy-sdk.spec

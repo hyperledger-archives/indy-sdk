@@ -1,12 +1,12 @@
-%global commit @commit@
+%global __os_install_post %{nil}
 
 Summary: Official SDK for Hyperledger Indy
 Name: libindy
-Version: @version@.%{commit}
+Version: @version@
 Release: 1%{?dist}
 License: Apache License 2.0
 Group: System Environment/Libraries
-Source: https://github.com/hyperledger/indy-sdk/archive/%{commit}.tar.gz
+Source: https://github.com/hyperledger/indy-sdk/
 URL: https://github.com/hyperledger/indy-sdk/
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: sqlite openssl libsodium
@@ -40,20 +40,17 @@ in the INDY project instead...). Also, join us on Jira's Rocket.Chat
 at #indy-sdk to discuss.
 
 %prep
-%autosetup -n %{name}-%{commit}
 
 %build
-cd libindy
-cargo build --release
 
 %install
 rm -rf ${RPM_BUILD_ROOT}
 
 install -dm0755 $RPM_BUILD_ROOT/%{_includedir}/indy
 install -dm0755 $RPM_BUILD_ROOT/%{_libdir}
-cp -a libindy/include/*.h $RPM_BUILD_ROOT/%{_includedir}/indy/
-install -Dm0644 libindy/target/release/libindy.a $RPM_BUILD_ROOT/%{_libdir}/libindy.a
-install -Dm0644 libindy/target/release/libindy.so $RPM_BUILD_ROOT/%{_libdir}/libindy.so
+cp -a @dir@/include/*.h $RPM_BUILD_ROOT/%{_includedir}/indy/
+install -Dm0644 @dir@/target/release/libindy.a $RPM_BUILD_ROOT/%{_libdir}/libindy.a
+install -Dm0644 @dir@/target/release/libindy.so $RPM_BUILD_ROOT/%{_libdir}/libindy.so
 
 %clean
 rm -rf ${RPM_BUILD_ROOT}
