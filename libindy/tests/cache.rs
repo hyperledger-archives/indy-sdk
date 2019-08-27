@@ -39,7 +39,7 @@ mod high_cases {
 
     mod schema_cache {
         use super::*;
-        use utils::domain::anoncreds::schema::{Schema, SchemaV1};
+        use utils::domain::anoncreds::schema::{SchemaV1, SchemaId};
         use utils::constants::*;
         use std::thread::sleep;
 
@@ -71,7 +71,7 @@ mod high_cases {
                 setup.pool_handle,
                 setup.wallet_handle,
                 DID_MY1,
-                &Schema::schema_id(DID, "other_schema", "1.0"),
+                &SchemaId::new(DID, "other_schema", "1.0").0,
                 &options_json);
 
             assert_code!(ErrorCode::LedgerNotFound, res);

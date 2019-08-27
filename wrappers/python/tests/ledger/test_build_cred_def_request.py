@@ -8,7 +8,7 @@ import pytest
 async def test_build_cred_def_request_works_for_correct_data_json(did_trustee):
     data = {
         "ver": "1.0",
-        "id": "cred_def_id",
+        "id": "NcYxiDXkpYi6ov5FcYDi1e:3:CL:1",
         "schemaId": "1",
         "type": "CL",
         "tag": "TAG_1",
