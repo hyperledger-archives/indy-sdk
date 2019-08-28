@@ -12,12 +12,14 @@ use domain::crypto::key::KeyInfo;
 use domain::ledger::attrib::{AttribData, Endpoint, GetAttrReplyResult};
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
 use domain::ledger::response::Reply;
+use domain::pairwise::Pairwise;
 use errors::prelude::*;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 use services::wallet::{RecordOptions, SearchOptions, WalletService};
 use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
 use rust_base58::{FromBase58, ToBase58};
+use named_type::NamedType;
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
@@ -504,9 +506,9 @@ impl DidCommandExecutor {
                    wallet_handle: WalletHandle,
                    did: &str,
                    prefix: &str) -> IndyResult<String> {
-        info!("qualify_did >>> wallet_handle: {:?}, curr_did: {:?}, prefix: {:?}", wallet_handle,did, prefix);
+        info!("qualify_did >>> wallet_handle: {:?}, curr_did: {:?}, prefix: {:?}", wallet_handle, did, prefix);
 
-//        self.crypto_service.validate_did(&curr_did)?;
+        self.crypto_service.validate_did(did)?;
 
         let mut curr_did: Did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &did, &RecordOptions::id_value())?;
 
@@ -518,16 +520,53 @@ impl DidCommandExecutor {
             p => return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported DID format: invalid number of parts: {}", p)))
         };
 
-        curr_did.did = format!("{}:{}", prefix, did_value);
+        let new_did_val = format!("{}:{}", prefix, did_value);
+        curr_did.did = new_did_val.clone();
 
         self.wallet_service.delete_indy_record::<Did>(wallet_handle, &did)?;
-        self.wallet_service.add_indy_object(wallet_handle, &curr_did.did, &curr_did, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &new_did_val, &curr_did, &HashMap::new())?;
 
-        let res = curr_did.did.clone();
+        // move temporary Did
+        if let Ok(mut temp_did) = self.wallet_service.get_indy_object::<TemporaryDid>(wallet_handle, &did, &RecordOptions::id_value()) {
+            temp_did.did = new_did_val.clone();
+            self.wallet_service.delete_indy_record::<TemporaryDid>(wallet_handle, &did)?;
+            self.wallet_service.add_indy_object(wallet_handle, &new_did_val, &temp_did, &HashMap::new())?;
+        }
 
-        debug!("qualify_did <<< res: {:?}", res);
+        // move metadata
+        self.update_dependent_entity::<DidMetadata>(wallet_handle, &did, &new_did_val)?;
 
-        Ok(res)
+        // move endpoint
+        self.update_dependent_entity::<Endpoint>(wallet_handle, &did, &new_did_val)?;
+
+        // move all pairwise
+        let mut pairwise_search =
+            self.wallet_service.search_indy_records::<Pairwise>(wallet_handle, "{}", &RecordOptions::id_value())?;
+
+        while let Some(pairwise_record) = pairwise_search.fetch_next_record()? {
+            let mut pairwise: Pairwise = pairwise_record.get_value()
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "No value for Pairwise record"))
+                .and_then(|pairwise_json| serde_json::from_str(&pairwise_json)
+                    .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot deserialize Pairwise: {:?}", err))))?;
+
+            if pairwise.my_did == did {
+                pairwise.my_did = new_did_val.clone();
+                self.wallet_service.update_indy_object(wallet_handle, &pairwise.their_did, &pairwise)?;
+            }
+        }
+
+        debug!("qualify_did <<< res: {:?}", new_did_val);
+
+        Ok(new_did_val)
+    }
+
+    fn update_dependent_entity<T>(&self, wallet_handle: WalletHandle, id: &str, new_id: &str) -> IndyResult<()>
+        where T: ::serde::Serialize + ::serde::de::DeserializeOwned + NamedType {
+        if let Ok(entity) = self.wallet_service.get_indy_object::<T>(wallet_handle, id, &RecordOptions::id_value()) {
+            self.wallet_service.delete_indy_record::<T>(wallet_handle, id)?;
+            self.wallet_service.add_indy_object(wallet_handle, new_id, &entity, &HashMap::new())?;
+        }
+        Ok(())
     }
 
     fn get_nym_ack(&self,
