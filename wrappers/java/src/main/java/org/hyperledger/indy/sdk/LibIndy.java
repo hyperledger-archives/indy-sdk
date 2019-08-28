@@ -97,6 +97,7 @@ public abstract class LibIndy {
 		public int indy_get_my_did_with_meta(int command_handle, int wallet_handle, String did, Callback cb);
 		public int indy_list_my_dids_with_meta(int command_handle, int wallet_handle, Callback cb);
 		public int indy_abbreviate_verkey(int command_handle, String did, String full_verkey, Callback cb);
+		public int indy_qualify_did(int command_handle, int wallet_handle, String did, String prefix, Callback cb);
 
 		// crypto.rs
 

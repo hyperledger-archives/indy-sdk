@@ -168,6 +168,7 @@ async def store_their_did(wallet_handle: int,
     logger.debug("store_their_did: <<< res: %r", res)
     return res
 
+
 async def create_key(wallet_handle: int,
                      key_json: str) -> str:
     """
@@ -564,8 +565,8 @@ async def list_my_dids_with_meta(wallet_handle: int) -> str:
     c_wallet_handle = c_int32(wallet_handle)
 
     dids_with_meta = await do_call('indy_list_my_dids_with_meta',
-                                    c_wallet_handle,
-                                    list_my_dids_with_meta.cb)
+                                   c_wallet_handle,
+                                   list_my_dids_with_meta.cb)
 
     res = dids_with_meta.decode()
 
@@ -574,7 +575,7 @@ async def list_my_dids_with_meta(wallet_handle: int) -> str:
 
 
 async def abbreviate_verkey(did: str,
-                          full_verkey: str) -> str:
+                            full_verkey: str) -> str:
     """
     Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 
@@ -602,4 +603,42 @@ async def abbreviate_verkey(did: str,
     res = metadata.decode()
 
     logger.debug("abbreviate_verkey: <<< res: %r", res)
+    return res
+
+
+async def qualify_did(wallet_handle: int,
+                      did: str,
+                      prefix: str) -> str:
+    """
+    Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+        - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
+        - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param did: target DID stored in the wallet.
+    :param prefix: prefix to apply to the DID.
+    :return: fully qualified did
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("qualify_did: >>> wallet_handle: %r, did: %r, prefix: %r",
+                 wallet_handle, did, prefix)
+
+    if not hasattr(qualify_did, "cb"):
+        logger.debug("qualify_did: Creating callback")
+        qualify_did.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did.encode('utf-8'))
+    c_prefix = c_char_p(prefix.encode('utf-8'))
+
+    full_qualified_did = await do_call('indy_qualify_did',
+                                       c_wallet_handle,
+                                       c_did,
+                                       c_prefix,
+                                       qualify_did.cb)
+
+    res = full_qualified_did.decode()
+
+    logger.debug("qualify_did: <<< res: %r", res)
     return res

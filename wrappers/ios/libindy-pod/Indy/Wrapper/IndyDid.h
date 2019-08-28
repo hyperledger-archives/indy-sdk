@@ -219,4 +219,23 @@
  */
 + (void)listMyDidsWithMeta:(IndyHandle)walletHandle
                 completion:(void (^)(NSError *error, NSString *metadata))completion;
+                
+
+/**
+ Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+     - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
+     - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
+
+ @param  walletHandle: Wallet handle (created by open_wallet).
+ @param  did: target DID stored in the wallet.
+ @param  prefix: prefix to apply to the DID.
+
+ @param completion Callback that takes command result as parameter.
+ Returns did: fully qualified did
+ */
++ (void)qualifyDid:(NSString *)did
+            prefix:(NSString *)prefix
+      walletHandle:(IndyHandle)walletHandle
+        completion:(void (^)(NSError *error, NSString *fullQualifiedDid))completion;
+       
 @end

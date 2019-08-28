@@ -89,4 +89,12 @@
 
 - (NSError *)listMyDidsWithMeta:(IndyHandle)walletHandle
                        metadata:(NSString **)metadata;
+
+
+
+- (NSError *)qualifyDid:(NSString)did
+                 prefix:(NSString *)prefix
+           walletHandle:(IndyHandle)walletHandle
+       fullQualifiedDid:(NSString **)fullQualifiedDid;
+
 @end

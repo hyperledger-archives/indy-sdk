@@ -726,7 +726,7 @@ pub  extern fn indy_abbreviate_verkey(command_handle: CommandHandle,
     res
 }
 
-/// Update the prefix of DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+/// Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
 ///     - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
 ///     - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
 ///

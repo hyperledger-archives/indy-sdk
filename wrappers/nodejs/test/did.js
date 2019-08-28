@@ -56,6 +56,11 @@ test('did', async function (t) {
   })
   t.deepEqual(await indy.listMyDidsWithMeta(wh), [data])
 
+  // Qualify DID
+  var prefix = 'did:peer'
+  var fullQualifiedDid = await indy.qualifyDid(wh, did, prefix)
+  t.is(prefix + ':' + did, fullQualifiedDid)
+
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
   pool.cleanup()
