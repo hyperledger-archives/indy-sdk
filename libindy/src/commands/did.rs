@@ -510,6 +510,12 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(did)?;
 
+        let prefix_parts = prefix.split_terminator(DELIMITER).collect::<Vec<&str>>().len();
+
+        if prefix_parts != 2 {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported Prefix format: invalid number of parts: {}. Expected: 2", prefix_parts)));
+        }
+
         let mut curr_did: Did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &did, &RecordOptions::id_value())?;
 
         let parts: Vec<&str> = curr_did.parts();
