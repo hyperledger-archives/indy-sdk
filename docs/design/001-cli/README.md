@@ -245,6 +245,13 @@ Rotate keys for used DID. Sends NYM to the ledger with updated keys. Requires op
 indy> did rotate-key [seed=<UTF-8, base64 or hex string>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
+
+#### Qualify DID
+Update DID stored in the wallet to make fully qualified, or to do other DID maintenance:
+```
+indy> did qualify did=<did> prefix=<prefix>
+```
+
 ### Ledger transactions/messages
 ```
 indy> ledger <subcommand>

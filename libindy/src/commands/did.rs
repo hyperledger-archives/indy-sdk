@@ -510,13 +510,19 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(did)?;
 
+        let prefix_parts = prefix.split_terminator(":").collect::<Vec<&str>>().len();
+
+        if prefix_parts != 2 {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported Prefix format: invalid number of parts: {}. Expected: 2 (did:example)", prefix_parts)));
+        }
+
         let mut curr_did: Did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &did, &RecordOptions::id_value())?;
 
         let parts: Vec<&str> = curr_did.parts();
 
         let did_value = match parts.len() {
-            1 => parts[0], // curr_did is not full qualified - append prefix
-            3 => parts[2], // curr_did is full qualified - change prefix
+            1 => parts[0], // curr_did is not full qualified - take whole - append prefix
+            3 => parts[2], // curr_did is full qualified - take the last part - change prefix
             p => return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported DID format: invalid number of parts: {}", p)))
         };
 
@@ -534,10 +540,10 @@ impl DidCommandExecutor {
         }
 
         // move metadata
-        self.update_dependent_entity::<DidMetadata>(wallet_handle, &did, &new_did_val)?;
+        self.update_dependent_entity_reference::<DidMetadata>(wallet_handle, &did, &new_did_val)?;
 
         // move endpoint
-        self.update_dependent_entity::<Endpoint>(wallet_handle, &did, &new_did_val)?;
+        self.update_dependent_entity_reference::<Endpoint>(wallet_handle, &did, &new_did_val)?;
 
         // move all pairwise
         let mut pairwise_search =
@@ -560,11 +566,11 @@ impl DidCommandExecutor {
         Ok(new_did_val)
     }
 
-    fn update_dependent_entity<T>(&self, wallet_handle: WalletHandle, id: &str, new_id: &str) -> IndyResult<()>
+    fn update_dependent_entity_reference<T>(&self, wallet_handle: WalletHandle, id: &str, new_id: &str) -> IndyResult<()>
         where T: ::serde::Serialize + ::serde::de::DeserializeOwned + NamedType {
-        if let Ok(entity) = self.wallet_service.get_indy_object::<T>(wallet_handle, id, &RecordOptions::id_value()) {
+        if let Ok(record) = self.wallet_service.get_indy_record_value::<T>(wallet_handle, id, "{}") {
             self.wallet_service.delete_indy_record::<T>(wallet_handle, id)?;
-            self.wallet_service.add_indy_object(wallet_handle, new_id, &entity, &HashMap::new())?;
+            self.wallet_service.add_indy_record::<T>(wallet_handle, new_id, &record, &HashMap::new())?;
         }
         Ok(())
     }
