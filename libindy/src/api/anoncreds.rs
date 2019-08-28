@@ -1639,6 +1639,8 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 ///                        // (applies to every attribute and predicate but can be overridden on attribute level)
 ///                        // (can be overridden on attribute level)
 ///     }
+///
+/// where
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
