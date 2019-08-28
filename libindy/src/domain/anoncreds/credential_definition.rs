@@ -1,5 +1,8 @@
 use super::DELIMITER;
+use super::schema::SchemaId;
 use super::super::ledger::request::ProtocolVersion;
+
+use utils::validation::Validatable;
 
 use ursa::cl::{
     CredentialPrimaryPublicKey,
@@ -51,8 +54,8 @@ pub struct CredentialDefinitionData {
 #[derive(Deserialize, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialDefinitionV1 {
-    pub id: String,
-    pub schema_id: String,
+    pub id: CredentialDefinitionId,
+    pub schema_id: SchemaId,
     #[serde(rename = "type")]
     pub signature_type: SignatureType,
     pub tag: String,
@@ -73,20 +76,6 @@ pub struct TemporaryCredentialDefinition {
     pub cred_def_correctness_proof: CredentialDefinitionCorrectnessProof
 }
 
-impl CredentialDefinition {
-    pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str, tag: &str) -> String {
-        if ProtocolVersion::is_node_1_3() {
-            format!("{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id)
-        } else {
-            format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)
-        }
-    }
-
-    pub fn issuer_did(cred_def_id: &str) -> Option<String> {
-        cred_def_id.split(':').next().map(String::from)
-    }
-}
-
 impl From<CredentialDefinition> for CredentialDefinitionV1 {
     fn from(cred_def: CredentialDefinition) -> Self {
         match cred_def {
@@ -95,14 +84,13 @@ impl From<CredentialDefinition> for CredentialDefinitionV1 {
     }
 }
 
-pub fn cred_defs_map_to_cred_defs_v1_map(cred_defs: HashMap<String, CredentialDefinition>) -> HashMap<String, CredentialDefinitionV1> {
-    let mut cred_defs_v1: HashMap<String, CredentialDefinitionV1> = HashMap::new();
+pub type CredentialDefinitions = HashMap<CredentialDefinitionId, CredentialDefinition>;
 
-    for (cred_def_id, cred_def) in cred_defs {
-        cred_defs_v1.insert(cred_def_id, CredentialDefinitionV1::from(cred_def));
-    }
-
-    cred_defs_v1
+pub fn cred_defs_map_to_cred_defs_v1_map(cred_defs: CredentialDefinitions) -> HashMap<CredentialDefinitionId, CredentialDefinitionV1> {
+    cred_defs
+        .into_iter()
+        .map(|(cred_def_id, cred_def)| (cred_def_id, CredentialDefinitionV1::from(cred_def)))
+        .collect()
 }
 
 #[derive(Debug, Serialize, Deserialize, NamedType)]
@@ -114,3 +102,68 @@ pub struct CredentialDefinitionPrivateKey {
 pub struct CredentialDefinitionCorrectnessProof {
     pub value: CredentialKeyCorrectnessProof
 }
+
+impl Validatable for CredentialDefinition {
+    fn validate(&self) -> Result<(), String> {
+        match self {
+            CredentialDefinition::CredentialDefinitionV1(cred_def) => {
+                cred_def.id.validate()?;
+                cred_def.schema_id.validate()?;
+                Ok(())
+            }
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct CredentialDefinitionId(pub String);
+
+impl CredentialDefinitionId {
+    pub fn new(did: &str, schema_id: &SchemaId, signature_type: &str, tag: &str) -> CredentialDefinitionId {
+        if ProtocolVersion::is_node_1_3() {
+            CredentialDefinitionId(format!("{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id.0))
+        } else {
+            CredentialDefinitionId(format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id.0, DELIMITER, tag))
+        }
+    }
+
+    pub fn issuer_did(&self) -> Option<String> {
+        self.0.split(DELIMITER).next().map(String::from)
+    }
+}
+
+impl Validatable for CredentialDefinitionId {
+    fn validate(&self) -> Result<(), String> {
+        let parts: Vec<&str> = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
+
+        parts.get(0).ok_or_else(||format!("Credential Definition Id validation failed: issuer DID not found in: {}", self.0))?;
+        parts.get(1).ok_or_else(||format!("Credential Definition Id validation failed: marker not found in: {}", self.0))?;
+        parts.get(2).ok_or_else(||format!("Credential Definition Id validation failed: signature type not found in: {}", self.0))?;
+
+        if parts.len() == 4 {
+            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:1
+            parts.get(3)
+                .ok_or_else(||format!("Credential Definition Id validation failed: schema id not found in: {}", self.0))?
+                .parse::<i32>()
+                .map_err(|_| format!("Credential Definition Id validation failed: schema id is invalid number: {}", self.0))?;
+        } else if parts.len() == 5 {
+            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:tag
+            parts.get(3)
+                .ok_or_else(||format!("Credential Definition Id validation failed: schema id not found in: {}", self.0))?
+                .parse::<i32>()
+                .map_err(|_| format!("Credential Definition Id validation failed: schema id is invalid number: {}", self.0))?;
+        } else if parts.len() == 7 {
+            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0
+            // nothing to do
+        } else if parts.len() == 8 {
+            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG_1
+            // nothing to do
+        } else {
+            return Err("Credential Definition Id validation failed: too much parts".to_string());
+        }
+
+        Ok(())
+    }
+}
+
+impl Validatable for CredentialDefinitionConfig {}

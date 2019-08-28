@@ -1,6 +1,7 @@
 use ursa::cl::{RevocationKeyPublic, RevocationKeyPrivate};
 
 use super::DELIMITER;
+use super::credential_definition::CredentialDefinitionId;
 
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
@@ -62,10 +63,10 @@ pub struct RevocationRegistryDefinitionValuePublicKeys {
 #[derive(Deserialize, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryDefinitionV1 {
-    pub id: String,
+    pub id: RevocationRegistryId,
     pub revoc_def_type: RegistryType,
     pub tag: String,
-    pub cred_def_id: String,
+    pub cred_def_id: CredentialDefinitionId,
     pub value: RevocationRegistryDefinitionValue
 }
 
@@ -76,12 +77,6 @@ pub enum RevocationRegistryDefinition {
     RevocationRegistryDefinitionV1(RevocationRegistryDefinitionV1)
 }
 
-impl RevocationRegistryDefinition {
-    pub fn rev_reg_id(did: &str, cred_def_id: &str, rev_reg_type: &RegistryType, tag: &str) -> String {
-        format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, REV_REG_DEG_MARKER, DELIMITER, cred_def_id, DELIMITER, rev_reg_type.to_str(), DELIMITER, tag)
-    }
-}
-
 impl From<RevocationRegistryDefinition> for RevocationRegistryDefinitionV1 {
     fn from(rev_reg_def: RevocationRegistryDefinition) -> Self {
         match rev_reg_def {
@@ -90,14 +85,13 @@ impl From<RevocationRegistryDefinition> for RevocationRegistryDefinitionV1 {
     }
 }
 
-pub fn rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs: HashMap<String, RevocationRegistryDefinition>) -> HashMap<String, RevocationRegistryDefinitionV1> {
-    let mut rev_reg_defs_v1: HashMap<String, RevocationRegistryDefinitionV1> = HashMap::new();
+pub type RevocationRegistryDefinitions = HashMap<RevocationRegistryId, RevocationRegistryDefinition>;
 
-    for (rev_reg_id, rev_reg_def) in rev_reg_defs {
-        rev_reg_defs_v1.insert(rev_reg_id, RevocationRegistryDefinitionV1::from(rev_reg_def));
-    }
-
-    rev_reg_defs_v1
+pub fn rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs: RevocationRegistryDefinitions) -> HashMap<RevocationRegistryId, RevocationRegistryDefinitionV1> {
+    rev_reg_defs
+        .into_iter()
+        .map(|(rev_reg_id, rev_reg_def)| (rev_reg_id, RevocationRegistryDefinitionV1::from(rev_reg_def)))
+        .collect()
 }
 
 #[derive(Debug, Serialize, Deserialize, NamedType)]
@@ -107,17 +101,52 @@ pub struct RevocationRegistryDefinitionPrivate {
 
 #[derive(Debug, Deserialize, Serialize, Clone, NamedType)]
 pub struct RevocationRegistryInfo {
-    pub id: String,
+    pub id: RevocationRegistryId,
     pub curr_id: u32,
     pub used_ids: HashSet<u32>
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RevocationRegistryId(pub String);
+
+impl RevocationRegistryId {
+    pub fn new(did: &str, cred_def_id: &str, rev_reg_type: &RegistryType, tag: &str) -> RevocationRegistryId {
+        RevocationRegistryId(format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, REV_REG_DEG_MARKER, DELIMITER, cred_def_id, DELIMITER, rev_reg_type.to_str(), DELIMITER, tag))
+    }
+}
 
 impl Validatable for RevocationRegistryConfig {
     fn validate(&self) -> Result<(), String> {
         if let Some(num_) = self.max_cred_num {
             if num_ == 0 {
-                return Err(String::from("`max_cred_num` must be greater than 0"));
+                return Err(String::from("RevocationRegistryConfig validation failed: `max_cred_num` must be greater than 0"));
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Validatable for RevocationRegistryId {
+    fn validate(&self) -> Result<(), String> {
+        let parts: Vec<&str> = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
+
+        parts.get(0).ok_or_else(||format!("Revocation Registry Id validation failed: issuer DID not found in: {}", self.0))?;
+        parts.get(1).ok_or_else(||format!("Revocation Registry Id validation failed: marker not found in: {}", self.0))?;
+        parts.get(2).ok_or_else(||format!("Revocation Registry Id validation failed: signature type not found in: {}", self.0))?;
+
+        if parts.len() != 8 && parts.len() != 9 && parts.len() != 11 && parts.len() != 12 {
+            return Err("Revocation Registry Id validation failed: invalid number of parts".to_string());
+        }
+
+        Ok(())
+    }
+}
+
+impl Validatable for RevocationRegistryDefinition {
+    fn validate(&self) -> Result<(), String> {
+        match self {
+            RevocationRegistryDefinition::RevocationRegistryDefinitionV1(revoc_reg_def) => {
+                revoc_reg_def.id.validate()?;
             }
         }
         Ok(())
