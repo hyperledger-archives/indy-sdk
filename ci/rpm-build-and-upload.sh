@@ -11,6 +11,7 @@ type="$3"
 number="$4"
 package="$5"
 dir=$(pwd)
+result_dir=$(pwd)/rpms
 
 [ -z $version ] && exit 1
 [ -z $key ] && exit 2
@@ -18,27 +19,21 @@ dir=$(pwd)
 [ -z $number ] && exit 4
 [ -z $package ] && exit 5
 
-mkdir -p /usr/src/rpm/SOURCES/
-
 sed \
 	-e "s|@version@|$version|g" \
 	-e "s|@dir@|$dir|g" \
+	-e "s|@result_dir@|$result_dir|g" \
     rpm/${package}.spec.in > ${package}.spec
 
-mkdir rpms
+chown root.root ${package}.spec
 
-spectool -R ${package}.spec || exit 6
-rpmbuild -ba ${package}.spec || exit 7
+mkdir ${result_dir}
+
+rpmbuild -ba ${package}.spec --nodeps || exit 7
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@$SOVRIN_REPO_HOST
-mkdir /var/repository/repos/rpm
-mkdir /var/repository/repos/rpm/$package
-mkdir /var/repository/repos/rpm/$package/$type
-mkdir /var/repository/repos/rpm/$package/master
-mkdir /var/repository/repos/rpm/$package/rc
-mkdir /var/repository/repos/rpm/$package/stable
 mkdir /var/repository/repos/rpm/$package/$type/$version-$number
 cd /var/repository/repos/rpm/$package/$type/$version-$number
-put -r /rpms/x86_64/
+put -r ${result_dir}/x86_64/*
 ls -l /var/repository/repos/rpm/$package/$type/$version-$number
 EOF

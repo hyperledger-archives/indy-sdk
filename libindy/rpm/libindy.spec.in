@@ -1,5 +1,5 @@
 %global __os_install_post %{nil}
-%define _rpmdir @dir@/rpms
+%define _rpmdir @result_dir@
 
 Summary: Official SDK for Hyperledger Indy
 Name: libindy
@@ -8,8 +8,6 @@ Release: 1%{?dist}
 License: Apache License 2.0
 Group: System Environment/Libraries
 Source: https://github.com/hyperledger/indy-sdk/
-URL: https://github.com/hyperledger/indy-sdk/
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: sqlite openssl libsodium
 BuildRequires: sqlite-devel openssl-devel libsodium-devel
 
@@ -60,11 +58,11 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun -p /sbin/ldconfig
 
 %files
-%defattr(-,root,root)
-%{_libdir}/libindy.so*
+%defattr(755,root,root)
+%{_libdir}/libindy.so
 
 %files devel
-%defattr(-,root,root)
+%defattr(755,root,root)
 %{_libdir}/libindy.a
 %{_includedir}/indy/*.h
 

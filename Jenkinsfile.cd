@@ -255,8 +255,8 @@ def linuxTesting(file, env_name, network_name) {
 
 def vcxTesting(file, env_name, network_name, full_testing) {
     parallel([
-            failFast                                     : true,
-            "${env_name} Test: build and test libvcx"    : {
+            failFast                                 : true,
+            "${env_name} Test: build and test libvcx": {
                 node('ubuntu') {
                     linuxVcxBuild(file, env_name, network_name)
                 }
@@ -919,11 +919,12 @@ def centosPublishing() {
                 libindyVersion = getSrcVersion("libindy")
 
                 echo "Publish ${env_name}: Build docker image"
-                def testEnv = dockerHelpers.build('indy-sdk', 'ci/centos.dockerfile ci')
+                def testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/centos.dockerfile ci')
 
                 libindyRpmPublishing(testEnv, libindyVersion, env_name)
                 libnullpayRpmPublishing(testEnv, env_name)
                 libvcxRpmPublishing(testEnv, env_name)
+                indyCliRpmPublishing(testEnv, env_name)
             }
             finally {
                 echo "Publish  ${env_name} files: Cleanup"
@@ -942,25 +943,33 @@ def libindyRpmPublishing(testEnv, version, env_name) {
 
 def libnullpayRpmPublishing(testEnv, env_name) {
     echo 'Publish Libnullpay rpm files'
-    def libnullpayVersion = getSrcVersion("vcx/libvcx")
+    def libnullpayVersion = getSrcVersion("libnullpay")
 
-    rpmPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibindyBuildResult${env_name}")
+    rpmPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibnullpayBuildResult${env_name}")
 }
 
 def libvcxRpmPublishing(testEnv, env_name) {
     echo 'Publish Libvcx rpm files'
     def libvcxVersion = getSrcVersion("vcx/libvcx")
 
-    rpmPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibindyBuildResult${env_name}")
+    rpmPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibvcxBuildResult${env_name}")
 }
 
-def rpmPublishing(testEnv, directory, packageName, version, inStashName){
-    testEnv.inside('-u 0:0') { // TODO: AVOID ROOT
+def indyCliRpmPublishing(testEnv, env_name) {
+    echo 'Publish Indy Cli rpm files'
+    def indyCliVersion = getSrcVersion("cli")
+
+    rpmPublishing(testEnv, "cli", "indy-cli", indyCliVersion, "IndyCliBuildResult${env_name}")
+}
+
+def rpmPublishing(testEnv, directory, packageName, version, inStashName) {
+    echo 'Publish rpm files'
+    testEnv.inside("-u 0:0") {
         sh "cp ci/rpm-build-and-upload.sh $directory && chmod -R 755 $directory/*.sh"
 
         unstash name: inStashName
 
-        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'repo_key')]) {
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
             sh "cd $directory && ./rpm-build-and-upload.sh $version $repo_key $env.BRANCH_NAME $env.BUILD_NUMBER $packageName"
         }
     }
@@ -1484,14 +1493,19 @@ def publishingRCtoStable() {
                 echo "Moving ${env_name} RC artifacts to Stable: libvcx"
                 publishLibvcxDebRCtoStable(testEnv, env_name)
 
-                echo 'Moving Centos RC artifacts to Stable: libindy'
+                env_name = Centos
+
+                echo 'Moving ${env_name} RC artifacts to Stable: libindy'
                 publishLibindyCentosFilesRCtoStable(libindyVersion)
 
-                echo 'Moving Centos RC artifacts to Stable: libnullapy'
+                echo 'Moving ${env_name} RC artifacts to Stable: libnullapy'
                 publishLibnullapyCentosFilesRCtoStable(libnullpayVersion)
 
-                echo 'Moving Centos RC artifacts to Stable: libvcx'
+                echo 'Moving ${env_name} RC artifacts to Stable: libvcx'
                 publishLibvcxCentosFilesRCtoStable(libvcxVersion)
+
+                echo 'Moving ${env_name} RC artifacts to Stable: indy-cli'
+                publishIndyCliCentosFilesRCtoStable(libindyVersion)
 
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
@@ -1513,8 +1527,12 @@ def publishLibvcxCentosFilesRCtoStable(version) {
     publishCentosFilesRCtoStable("libvcx", version)
 }
 
+def publishIndyCliCentosFilesRCtoStable(version) {
+    publishCentosFilesRCtoStable("indy-cli", version)
+}
+
 def publishCentosFilesRCtoStable(packageName, version) {
-    copyRcFilesToStable("centos", packageName, version)
+    copyRcFilesToStable("rpm", packageName, version)
 }
 
 def publishLibindyWindowsFilesRCtoStable(version) {

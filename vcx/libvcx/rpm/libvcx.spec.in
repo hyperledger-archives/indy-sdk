@@ -1,5 +1,5 @@
 %global __os_install_post %{nil}
-%define _rpmdir @dir@/rpms
+%define _rpmdir @result_dir@
 
 Summary: Verifiable credential exchange
 Name: libvcx
@@ -8,8 +8,6 @@ Release: 1%{?dist}
 License: Apache License 2.0
 Group: System Environment/Libraries
 Source: https://github.com/hyperledger/indy-sdk/
-URL: https://github.com/hyperledger/indy-sdk/
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: libindy
 BuildRequires: libindy
 
@@ -33,7 +31,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun -p /sbin/ldconfig
 
 %files
-%defattr(-,root,root)
+%defattr(755,root,root)
 %{_libdir}/libvcx.so*
 
 %changelog
