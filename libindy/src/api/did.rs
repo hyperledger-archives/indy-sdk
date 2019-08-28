@@ -1,4 +1,3 @@
-
 use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
 use commands::{Command, CommandExecutor};
 use commands::did::DidCommand;
@@ -723,6 +722,57 @@ pub  extern fn indy_abbreviate_verkey(command_handle: CommandHandle,
     let res = prepare_result!(result);
 
     trace!("indy_abbreviate_verkey: <<< res: {:?}", res);
+
+    res
+}
+
+/// Update the prefix of DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+///     - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
+///     - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// did: target DID stored in the wallet.
+/// prefix: prefix to apply to the DID.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - did: fully qualified did
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+pub extern fn indy_qualify_did(command_handle: CommandHandle,
+                               wallet_handle: WalletHandle,
+                               did: *const c_char,
+                               prefix: *const c_char,
+                               cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                 err: ErrorCode,
+                                                                 full_qualified_did: *const c_char)>) -> ErrorCode {
+    trace!("indy_qualify_did: >>> wallet_handle: {:?}, did: {:?}, prefix: {:?}", wallet_handle, did, prefix);
+
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(prefix, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_qualify_did: entities >>> wallet_handle: {:?}, did: {:?}, prefix: {:?}", wallet_handle, did, prefix);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Did(DidCommand::QualifyDid(
+            wallet_handle,
+            did,
+            prefix,
+            boxed_callback_string!("indy_qualify_did", cb, command_handle)
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_qualify_did: <<< res: {:?}", res);
 
     res
 }

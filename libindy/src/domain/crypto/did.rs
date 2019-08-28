@@ -1,5 +1,7 @@
 use named_type::NamedType;
 
+const DELIMITER: &str = ":";
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MyDidInfo {
     pub did: Option<String>,
@@ -35,6 +37,10 @@ impl Did {
             did,
             verkey
         }
+    }
+
+    pub fn parts(&self) -> Vec<&str> {
+        self.did.split_terminator(DELIMITER).collect::<Vec<&str>>()
     }
 }
 

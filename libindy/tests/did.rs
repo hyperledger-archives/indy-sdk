@@ -514,6 +514,47 @@ mod high_cases {
             assert_eq!(verkey, full_verkey);
         }
     }
+
+    mod build_full_qualified_did {
+        use super::*;
+
+        const PREFIX: &str = "did:peer";
+
+        #[test]
+        fn qualify_did_for_appending_prefix() {
+            let setup = Setup::did();
+
+            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, PREFIX).unwrap();
+            assert_eq!(full_qualified_did, format!("{}:{}", PREFIX, setup.did));
+
+//            let verkey = did::key_for_local_did(setup.wallet_handle, &full_qualified_did).unwrap();
+//            assert_eq!(setup.verkey, verkey);
+//
+//            let res = did::key_for_local_did(setup.wallet_handle, &setup.did);
+//            assert_code!(ErrorCode::WalletItemNotFound, res);
+        }
+
+        #[test]
+        fn qualify_did_for_updating_prefix() {
+            let setup = Setup::did();
+
+            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, PREFIX).unwrap();
+
+            let new_prefix = "did:peer-new";
+
+            let new_full_qualified_did = did::qualify_did(setup.wallet_handle, &full_qualified_did, new_prefix).unwrap();
+            assert_eq!(new_full_qualified_did, format!("{}:{}", new_prefix, setup.did));
+
+//            let verkey = did::key_for_local_did(setup.wallet_handle, &new_full_qualified_did).unwrap();
+//            assert_eq!(setup.verkey, verkey);
+//
+//            let res = did::key_for_local_did(setup.wallet_handle, &setup.did);
+//            assert_code!(ErrorCode::WalletItemNotFound, res);
+//
+//            let res = did::key_for_local_did(setup.wallet_handle, &full_qualified_did);
+//            assert_code!(ErrorCode::WalletItemNotFound, res);
+        }
+    }
 }
 
 #[cfg(not(feature = "only_high_cases"))]
@@ -554,6 +595,7 @@ mod medium_cases {
 
     mod set_endpoint_for_did {
         use super::*;
+
         #[test]
         fn indy_set_endpoint_for_did_works_for_replace() {
             let setup = Setup::wallet_and_pool();
@@ -789,5 +831,4 @@ mod medium_cases {
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
-
 }

@@ -88,6 +88,12 @@ pub enum DidCommand {
         IndyResult<String>, // GetAttrib Result
         CommandHandle, // deferred cmd id
     ),
+    QualifyDid(
+        WalletHandle,
+        String, // did
+        String, // prefix
+        Box<dyn Fn(IndyResult<String /*full qualified did*/>) + Send>,
+    ),
 }
 
 macro_rules! ensure_their_did {
@@ -179,6 +185,10 @@ impl DidCommandExecutor {
             DidCommand::GetAttribAck(wallet_handle, result, deferred_cmd_id) => {
                 info!("GetAttribAck command received");
                 self.get_attrib_ack(wallet_handle, result, deferred_cmd_id);
+            }
+            DidCommand::QualifyDid(wallet_handle, did, prefix, cb) => {
+                info!("QualifyDid command received");
+                cb(self.qualify_did(wallet_handle, &did, &prefix));
             }
         };
     }
@@ -303,7 +313,7 @@ impl DidCommandExecutor {
             let did_id = did_record.get_id();
 
             let did: Did = did_record.get_value()
-                .ok_or_else(||err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
+                .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
                 .and_then(|tags_json| serde_json::from_str(&tags_json)
                     .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
 
@@ -486,6 +496,36 @@ impl DidCommandExecutor {
         };
 
         debug!("abbreviate_verkey <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn qualify_did(&self,
+                   wallet_handle: WalletHandle,
+                   did: &str,
+                   prefix: &str) -> IndyResult<String> {
+        info!("qualify_did >>> wallet_handle: {:?}, curr_did: {:?}, prefix: {:?}", wallet_handle,did, prefix);
+
+//        self.crypto_service.validate_did(&curr_did)?;
+
+        let mut curr_did: Did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &did, &RecordOptions::id_value())?;
+
+        let parts: Vec<&str> = curr_did.parts();
+
+        let did_value = match parts.len() {
+            1 => parts[0], // curr_did is not full qualified - append prefix
+            3 => parts[2], // curr_did is full qualified - change prefix
+            p => return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported DID format: invalid number of parts: {}", p)))
+        };
+
+        curr_did.did = format!("{}:{}", prefix, did_value);
+
+        self.wallet_service.delete_indy_record::<Did>(wallet_handle, &did)?;
+        self.wallet_service.add_indy_object(wallet_handle, &curr_did.did, &curr_did, &HashMap::new())?;
+
+        let res = curr_did.did.clone();
+
+        debug!("qualify_did <<< res: {:?}", res);
 
         Ok(res)
     }
