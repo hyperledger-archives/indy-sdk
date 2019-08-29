@@ -22,18 +22,17 @@ result_dir=$(pwd)/rpms
 sed \
 	-e "s|@version@|$version|g" \
 	-e "s|@dir@|$dir|g" \
+	-e "s|@release@|$number|g" \
 	-e "s|@result_dir@|$result_dir|g" \
     rpm/${package}.spec.in > ${package}.spec
 
-chown root.root ${package}.spec
-
 mkdir ${result_dir}
 
-rpmbuild -ba ${package}.spec --nodeps || exit 7
+fakeroot rpmbuild -ba ${package}.spec --nodeps || exit 7
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@$SOVRIN_REPO_HOST
 mkdir /var/repository/repos/rpm/$package/$type/$version-$number
 cd /var/repository/repos/rpm/$package/$type/$version-$number
-put -r ${result_dir}/x86_64/*
+put -r ${result_dir}/*
 ls -l /var/repository/repos/rpm/$package/$type/$version-$number
 EOF

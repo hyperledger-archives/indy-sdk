@@ -964,7 +964,7 @@ def indyCliRpmPublishing(testEnv, env_name) {
 
 def rpmPublishing(testEnv, directory, packageName, version, inStashName) {
     echo 'Publish rpm files'
-    testEnv.inside("-u 0:0") {
+    testEnv.inside {
         sh "cp ci/rpm-build-and-upload.sh $directory && chmod -R 755 $directory/*.sh"
 
         unstash name: inStashName

@@ -1,10 +1,11 @@
 %global __os_install_post %{nil}
 %define _rpmdir @result_dir@
+%define _rpmfilename %%{NAME}.%%{VERSION}.rpm
 
 Summary: Official SDK for Hyperledger Indy
 Name: libindy
 Version: @version@
-Release: 1%{?dist}
+Release: @release@
 License: Apache License 2.0
 Group: System Environment/Libraries
 Source: https://github.com/hyperledger/indy-sdk/

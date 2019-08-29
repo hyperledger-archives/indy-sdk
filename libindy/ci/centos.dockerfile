@@ -71,6 +71,8 @@ RUN cd /tmp && \
     make install && \
     rm -rf /tmp/zeromq-4.2.2
 
+RUN yum install fakeroot -y
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
