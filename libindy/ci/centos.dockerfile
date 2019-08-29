@@ -1,4 +1,4 @@
-FROM amazonlinux:2017.03
+FROM centos:7
 
 ARG uid=1000
 
@@ -70,6 +70,8 @@ RUN cd /tmp && \
     make && \
     make install && \
     rm -rf /tmp/zeromq-4.2.2
+
+RUN yum install fakeroot -y
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
