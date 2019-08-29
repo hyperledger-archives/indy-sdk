@@ -354,9 +354,7 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
             sh """
                 cd libindy
                 RUST_BACKTRACE=1 cargo test --release --no-run ${features_args}
-                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release ${
-                features_args
-            }
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release ${features_args}
             """
         }
 
