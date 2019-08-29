@@ -167,6 +167,12 @@ test('anoncreds', async function (t) {
 
   await indy.issuerMergeRevocationRegistryDeltas(revDelta, revocedDelta)
 
+  // Rotate credential definition
+  var tempCredDef = await indy.issuerRotateCredentialDefStart(wh, credDefId, null)
+  t.not(cred, tempCredDef)
+
+  await indy.issuerRotateCredentialDefApply(wh, credDefId)
+
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
   pool.cleanup()

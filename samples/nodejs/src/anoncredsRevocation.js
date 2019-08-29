@@ -94,8 +94,9 @@ async function run() {
     await indy.proverStoreCredential(proverWallet, undefined, credReqMetadata, cred, credDef, revRegDef)
 
     // 11. Prover gets Credentials for Proof Request
+    const nonce = await indy.generateNonce()
     const proofReq = {
-        'nonce': '123432421212',
+        'nonce': nonce,
         'name': 'proof_req_1',
         'version': '0.1',
         'requested_attributes': {

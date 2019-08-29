@@ -15,13 +15,6 @@ async def test_crypto_verify_works(verkey_my1, message):
 
 
 @pytest.mark.asyncio
-async def test_crypto_verify_works_for_verkey_with_correct_crypto_type(verkey_my1, message):
-    verkey = verkey_my1 + ':ed25519'
-    valid = await crypto.crypto_verify(verkey, message, signature)
-    assert valid
-
-
-@pytest.mark.asyncio
 async def test_crypto_verify_works_for_other_signer(verkey_my2, message):
     valid = await crypto.crypto_verify(verkey_my2, message, signature)
     assert not valid

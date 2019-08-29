@@ -1,7 +1,7 @@
 # Documentation README
-Check out the docs at http://hyperledger-indy.readthedocs.io/projects/sdk
+Check out the docs at https://hyperledger-indy.readthedocs.io/projects/sdk
 
-Learn more about how our docs are built and maintained at http://hyperledger-indy.readthedocs.io/en/latest/docs.html
+Learn more about how our docs are built and maintained at https://hyperledger-indy.readthedocs.io/en/latest/docs.html
 
 This `docs/` directory should contain all of the documents associated with the repository, with the exception of README files that describe technical details with the directories of code. 
 
@@ -47,7 +47,8 @@ make html
 This will generate all the html files in `docs/_build/html` which you can then browse locally in your browser. Every time you make a change to the documentation you will need to rerun `make html`.
 
 ## Additional Instructions
-This section is to be used for repo maintainers to add additional documentation guidelines or instructions. 
+This section is to be used for repo maintainers to add additional documentation guidelines or instructions.
+
 **TODO: Build the respective code API's into the readthedocs website**
 
 **TODO: Add table support for markdown files** 

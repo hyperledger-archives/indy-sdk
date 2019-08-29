@@ -20,9 +20,9 @@ use utils::file::{read_file, write_file};
 use self::regex::Regex;
 use self::chrono::prelude::*;
 
-pub const DELIMITER: &'static str = ":";
-pub const SCHEMA_MARKER: &'static str = "2";
-pub const CRED_DEF_MARKER: &'static str = "3";
+pub const DELIMITER: &str = ":";
+pub const SCHEMA_MARKER: &str = "2";
+pub const CRED_DEF_MARKER: &str = "3";
 pub const SIGN_REQUEST: bool = true;
 pub const SEND_REQUEST: bool = true;
 
@@ -43,27 +43,37 @@ pub mod group {
 macro_rules! send_write_request {
     ($ctx:expr, $params:expr, $request:expr, $wallet_handle:expr, $wallet_name:expr, $submitter_did:expr) => ({
         let sign = get_opt_bool_param("sign", $params).map_err(error_err!())?.unwrap_or(SIGN_REQUEST);
+        let endorser = get_opt_str_param("endorser", $params).map_err(error_err!())?;
+        let mut send = get_opt_bool_param("send", $params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
+
+        let request = match endorser {
+            Some(endorser_did) => {
+                send = false;
+                Ledger::append_request_endorser($request, endorser_did)
+                    .map_err(|err| handle_indy_error(err, Some($submitter_did), None, Some($wallet_name)))?
+            },
+            None => $request.to_string()
+        };
 
         let request = if sign {
-            Ledger::sign_request($wallet_handle, $submitter_did, $request)
+            Ledger::sign_request($wallet_handle, $submitter_did, &request)
                 .map_err(|err| handle_indy_error(err, Some($submitter_did), None, Some($wallet_name)))?
         } else {$request.to_string()};
 
-        send_request!($ctx, $params, &request, Some($wallet_name), Some($submitter_did))
+        send_request!($ctx, $params, request.as_str(), Some($wallet_name), Some($submitter_did), send)
     })
 }
 
 macro_rules! send_read_request {
     ($ctx:expr, $params:expr, $request:expr, $submitter_did:expr) => ({
-        send_request!($ctx, $params, $request, None, $submitter_did)
+        let send = get_opt_bool_param("send", $params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
+        send_request!($ctx, $params, $request, None, $submitter_did, send)
     })
 }
 
 macro_rules! send_request {
-    ($ctx:expr, $params:expr, $request:expr, $wallet_name:expr, $submitter_did:expr) => ({
-        let send = get_opt_bool_param("send", $params).map_err(error_err!())?.unwrap_or(SEND_REQUEST);
-
-        if send {
+    ($ctx:expr, $params:expr, $request:expr, $wallet_name:expr, $submitter_did:expr, $send:expr) => ({
+        if $send {
             let (pool_handle, pool_name) = ensure_connected_pool($ctx)?;
             let response_json = Ledger::submit_request(pool_handle, $request)
                 .map_err(|err| handle_indy_error(err, $submitter_did, Some(&pool_name), $wallet_name))?;
@@ -78,6 +88,33 @@ macro_rules! send_request {
             set_transaction($ctx, Some($request.to_string()));
             return Ok(());
         }
+    })
+}
+
+macro_rules! get_transaction_to_use {
+    ($ctx:expr, $param_txn:expr) => ({
+        let request = if let Some(txn_) = $param_txn {
+            txn_.to_string()
+        } else if let Some(txn_) = get_transaction($ctx) {
+            println!("Transaction stored into context: {:?}.", txn_);
+            println!("Would you like to use it? (y/n)");
+
+            let use_transaction = ::command_executor::wait_for_user_reply($ctx);
+
+            if !use_transaction {
+                println!("No transaction has been used.");
+                return Ok(());
+            }
+
+            txn_.to_string()
+        } else {
+            println_err!("There is not a transaction to use.");
+            println!("You either need to explicitly pass transaction as a parameter, or \
+                    load transaction using `ledger load-transaction`, or \
+                    build a transaction (with passing either `send=false` or `endorser` parameter).");
+            return Err(());
+        };
+        request
     })
 }
 
@@ -98,6 +135,9 @@ pub mod nym_command {
                 .add_optional_param("extra","Optional information for fees payment operation")
                 .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_optional_param("endorser","DID of the Endorser that will submit the transaction to the ledger. \
+                    Note that specifying of this parameter implies send=false so the transaction will be prepared to pass to the endorser instead of sending to the ledger.\
+                    The created request will be printed and stored into CLI context.")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
@@ -128,7 +168,8 @@ pub mod nym_command {
                     let change_nym = ::command_executor::wait_for_user_reply(ctx);
 
                     if !change_nym {
-                        return Ok(println!("The transaction has not been sent."));
+                        println!("The transaction has not been sent.");
+                        return Ok(());
                     }
                 }
             }
@@ -153,9 +194,9 @@ pub mod nym_command {
             .map(|result| print_transaction_response(result,
                                                      "Nym request has been sent to Ledger.",
                                                      None,
-                                                     &mut vec![("dest", "Did"),
-                                                               ("verkey", "Verkey"),
-                                                               ("role", "Role")],
+                                                     &[("dest", "Did"),
+                                                         ("verkey", "Verkey"),
+                                                         ("role", "Role")],
                                                      true))?;
 
         let receipts = parse_response_with_fees(&response_json, payment_method)?;
@@ -196,7 +237,10 @@ pub mod get_nym_command {
                     data["role"] = get_role_title(&data["role"]);
                     result["data"] = data;
                 }
-                Err(_) => return Err(println_err!("NYM not found"))
+                Err(_) => {
+                    println_err!("NYM not found");
+                    return Err(())
+                }
             };
         };
 
@@ -232,6 +276,9 @@ pub mod attrib_command {
                 .add_optional_param("extra","Optional information for fees payment operation")
                 .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_optional_param("endorser","DID of the Endorser that will submit the transaction to the ledger later. \
+                    Note that specifying of this parameter implies send=false so the transaction will be prepared to pass to the endorser instead of sending to the ledger.\
+                    The created request will be printed and stored into CLI context.")
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d"#)
@@ -318,7 +365,10 @@ pub mod get_attrib_command {
             let data = result["data"].as_str().map(|data| serde_json::Value::String(data.to_string()));
             match data {
                 Some(data) => { result["data"] = data; }
-                None => return Err(println_err!("Attribute not found"))
+                None => {
+                    println_err!("Attribute not found");
+                    return Err(())
+                }
             };
         };
 
@@ -350,6 +400,9 @@ pub mod schema_command {
                 .add_optional_param("extra","Optional information for fees payment operation")
                 .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_optional_param("endorser","DID of the Endorser that will submit the transaction to the ledger later. \
+                    Note that specifying of this parameter implies send=false so the transaction will be prepared to pass to the endorser instead of sending to the ledger.\
+                    The created request will be printed and stored into CLI context.")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age send=false")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
@@ -511,7 +564,8 @@ pub mod get_schema_command {
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
-                return Err(println_err!("Schema not found"));
+                println_err!("Schema not found");
+                return Err(());
             }
         };
 
@@ -547,6 +601,9 @@ pub mod cred_def_command {
                 .add_optional_param("extra","Optional information for fees payment operation")
                 .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_optional_param("endorser","DID of the Endorser that will submit the transaction to the ledger later. \
+                    Note that specifying of this parameter implies send=false so the transaction will be prepared to pass to the endorser instead of sending to the ledger.\
+                    The created request will be printed and stored into CLI context.")
                 .add_example(r#"ledger cred-def schema_id=1 signature_type=CL tag=1 primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
     );
@@ -579,7 +636,7 @@ pub mod cred_def_command {
             json.insert("schemaId".to_string(), JSONValue::from(schema_id));
             json.insert("type".to_string(), JSONValue::from(signature_type));
             json.insert("tag".to_string(), JSONValue::from(tag));
-            json.insert("value".to_string(), JSONValue::from(cred_def_value));
+            json.insert("value".to_string(), cred_def_value);
             JSONValue::from(json).to_string()
         };
 
@@ -642,7 +699,8 @@ pub mod get_cred_def_command {
 
         if let Some(result) = response.result.as_ref() {
             if !result["seqNo"].is_i64() {
-                return Err(println_err!("Credential Definition not found"));
+                println_err!("Credential Definition not found");
+                return Err(());
             }
         };
 
@@ -978,7 +1036,8 @@ pub mod custom_command {
                     let use_transaction = ::command_executor::wait_for_user_reply(ctx);
 
                     if !use_transaction {
-                        return Ok(println!("No transaction has been send."));
+                        println!("No transaction has been send.");
+                        return Ok(());
                     }
 
                     transaction = txn_.to_string();
@@ -1013,11 +1072,20 @@ pub mod custom_command {
 
         let res = match response {
             Response { op: ResponseType::REPLY, result: Some(_), reason: None } =>
-                Ok(println!("Response: \n{}", response_json)),
+                {
+                    println!("Response: \n{}", response_json);
+                    Ok(())
+                },
             Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
             Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
-            _ => Err(println_err!("Invalid data has been received"))
+                {
+                    println_err!("Transaction has been rejected: {}", extract_error_message(&reason));
+                    Err(())
+                },
+            _ => {
+                println_err!("Invalid data has been received");
+                Err(())
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -1054,14 +1122,17 @@ pub mod get_payment_sources_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&sources,
-                                 &vec![("source", "Source"),
-                                       ("paymentAddress", "Payment Address"),
-                                       ("amount", "Amount"),
-                                       ("extra", "Extra")],
+                                 &[("source", "Source"),
+                                     ("paymentAddress", "Payment Address"),
+                                     ("amount", "Amount"),
+                                     ("extra", "Extra")],
                                  "There are no source's");
                 Ok(())
             }
-            Err(err) => Err(println_err!("Invalid data has been received: {:?}", err)),
+            Err(err) => {
+                println_err!("Invalid data has been received: {:?}", err);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -1085,7 +1156,6 @@ pub mod payment_command {
                 recipient - payment address of recipient
                 amount- payment amount"#)
                 .add_optional_param("extra","Optional information for payment operation")
-                .add_optional_param("sign","Sign the request (True by default)")
                 .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
                 .add_example("ledger payment source_payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa target_payment_address=pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4 amount=100")
                 .add_example("ledger payment source_payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa target_payment_address=pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4 amount=100 fee=2")
@@ -1129,14 +1199,17 @@ pub mod payment_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&receipts,
-                                 &vec![("receipt", "Receipt"),
-                                       ("recipient", "Recipient Payment Address"),
-                                       ("amount", "Amount"),
-                                       ("extra", "Extra")],
+                                 &[("receipt", "Receipt"),
+                                     ("recipient", "Recipient Payment Address"),
+                                     ("amount", "Amount"),
+                                     ("extra", "Extra")],
                                  "There are no receipts's");
                 Ok(())
             }
-            Err(err) => Err(handle_payment_error(err, None)),
+            Err(err) => {
+                handle_payment_error(err, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -1183,13 +1256,16 @@ pub mod get_fees_command {
                         .collect::<Vec<serde_json::Value>>();
 
                 print_list_table(&fees,
-                                 &vec![("type", "Transaction"),
-                                       ("amount", "Amount")],
+                                 &[("type", "Transaction"),
+                                     ("amount", "Amount")],
                                  "There are no fees");
 
                 Ok(())
             }
-            Err(err) => Err(handle_payment_error(err, None)),
+            Err(err) => {
+                handle_payment_error(err, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -1301,7 +1377,10 @@ pub mod verify_payment_receipt_command {
                 println!("{}", info_json);
                 Ok(())
             }
-            Err(err) => Err(handle_payment_error(err, None)),
+            Err(err) => {
+                handle_payment_error(err, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -1326,26 +1405,7 @@ pub mod sign_multi_command {
 
         let param_txn = get_opt_str_param("txn", params).map_err(error_err!())?;
 
-        let txn = if let Some(txn_) = param_txn {
-            txn_.to_string()
-        } else if let Some(txn_) = get_transaction(ctx) {
-            println!("Transaction stored into context: {:?}.", txn_);
-            println!("Would you like to use it? (y/n)");
-
-            let use_transaction = ::command_executor::wait_for_user_reply(ctx);
-
-            if !use_transaction {
-                return Ok(println!("No transaction has been signed."));
-            }
-
-            txn_.to_string()
-        } else {
-            println_err!("There is not a transaction to sign.");
-            println!("You either need to explicitly pass transaction as a parameter, or \
-                load transaction using `ledger load-transaction`, or \
-                build a transaction (with passing a `send=false`).");
-            return Err(());
-        };
+        let txn = get_transaction_to_use!(ctx, param_txn);
 
         let res = match Ledger::multi_sign_request(wallet_handle, &submitter_did, &txn) {
             Ok(request) => {
@@ -1356,8 +1416,14 @@ pub mod sign_multi_command {
             }
             Err(err) => {
                 match err.error_code {
-                    ErrorCode::WalletItemNotFound => Err(println_err!("Signer DID: \"{}\" not found", submitter_did)),
-                    _ => Err(handle_indy_error(err, Some(&submitter_did), None, None)),
+                    ErrorCode::WalletItemNotFound => {
+                        println_err!("Signer DID: \"{}\" not found", submitter_did);
+                        Err(())
+                    },
+                    _ => {
+                        handle_indy_error(err, Some(&submitter_did), None, None);
+                        Err(())
+                    },
                 }
             }
         };
@@ -1424,20 +1490,20 @@ pub mod auth_rule_command {
             result["txn"]["data"]["constraint"] = serde_json::Value::String(::serde_json::to_string_pretty(&result["txn"]["data"]["constraint"]).unwrap());
         }
 
-        let res = handle_transaction_response(response)
+        handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
                                                      "Auth Rule request has been sent to Ledger.",
                                                      None,
-                                                     &mut vec![("auth_type", "Txn Type"),
-                                                               ("auth_action", "Action"),
-                                                               ("field", "Field"),
-                                                               ("old_value", "Old Value"),
-                                                               ("new_value", "New Value"),
-                                                               ("constraint", "Constraint")],
+                                                     &[("auth_type", "Txn Type"),
+                                                         ("auth_action", "Action"),
+                                                         ("field", "Field"),
+                                                         ("old_value", "Old Value"),
+                                                         ("new_value", "New Value"),
+                                                         ("constraint", "Constraint")],
                                                      false))?;
 
-        trace!("execute << {:?}", res);
-        Ok(res)
+        trace!("execute << ");
+        Ok(())
     }
 }
 
@@ -1471,10 +1537,10 @@ pub mod auth_rules_command {
 
         let rules: AuthRulesData = serde_json::from_value(result["txn"]["data"]["rules"].clone())
             .map_err(|_| println_err!("Wrong data has been received"))?;
-        let res = print_auth_rules(rules);
+        print_auth_rules(rules);
 
-        trace!("execute << {:?}", res);
-        Ok(res)
+        trace!("execute << ");
+        Ok(())
     }
 }
 
@@ -1528,10 +1594,10 @@ pub mod get_auth_rule_command {
         let rules: AuthRulesData = serde_json::from_value(result["data"].clone())
             .map_err(|_| println_err!("Wrong data has been received"))?;
 
-        let res = print_auth_rules(rules);
+        print_auth_rules(rules);
 
-        trace!("execute << {:?}", res);
-        Ok(res)
+        trace!("execute << ");
+        Ok(())
     }
 }
 
@@ -1557,12 +1623,12 @@ fn print_auth_rules(rules: AuthRulesData) {
         .collect::<Vec<serde_json::Value>>();
 
     print_list_table(&constraints,
-                     &vec![("auth_type", "Type"),
-                           ("auth_action", "Action"),
-                           ("field", "Field"),
-                           ("old_value", "Old Value"),
-                           ("new_value", "New Value"),
-                           ("constraint", "Constraint")],
+                     &[("auth_type", "Type"),
+                         ("auth_action", "Action"),
+                         ("field", "Field"),
+                         ("old_value", "Old Value"),
+                         ("new_value", "New Value"),
+                         ("constraint", "Constraint")],
                      "There are no rules set");
 }
 
@@ -1588,7 +1654,8 @@ pub mod save_transaction_command {
         let save_transaction = ::command_executor::wait_for_user_reply(ctx);
 
         if !save_transaction {
-            return Ok(println!("The transaction has not been saved."));
+            println!("The transaction has not been saved.");
+            return Ok(());
         }
 
         write_file(file, &transaction)
@@ -1682,8 +1749,14 @@ pub mod taa_command {
                 read_file(file_)
                     .map_err(|err| println_err!("{}", err))?
             }
-            (Some(_), Some(_)) => return Err(println_err!("Only one of the parameters `text` and `file` can be specified")),
-            (None, None) => return Err(println_err!("Either `text` or `file` parameter must be specified"))
+            (Some(_), Some(_)) => {
+                println_err!("Only one of the parameters `text` and `file` can be specified");
+                return Err(())
+            },
+            (None, None) => {
+                println_err!("Either `text` or `file` parameter must be specified");
+                return Err(())
+            }
         };
 
         let mut request = Ledger::build_txn_author_agreement_request(&submitter_did, &text, &version)
@@ -1761,8 +1834,14 @@ pub mod aml_command {
                 read_file(file_)
                     .map_err(|err| println_err!("{}", err))?
             }
-            (Some(_), Some(_)) => return Err(println_err!("Only one of the parameters `aml` and `file` can be specified")),
-            (None, None) => return Err(println_err!("Either `aml` or `file` parameter must be specified"))
+            (Some(_), Some(_)) => {
+                println_err!("Only one of the parameters `aml` and `file` can be specified");
+                return Err(())
+            },
+            (None, None) => {
+                println_err!("Either `aml` or `file` parameter must be specified");
+                return Err(())
+            }
         };
 
         let mut request = Ledger::build_acceptance_mechanisms_request(&submitter_did, &aml, &version, context)
@@ -1791,10 +1870,53 @@ pub mod aml_command {
     }
 }
 
+pub mod endorse_transaction_command {
+    use super::*;
+
+    command!(CommandMetadata::build("endorse", "Endorse transaction to the ledger preserving an original author.")
+                .add_optional_param("txn","Transaction to endorse. Skip to use a transaction stored into CLI context.")
+                .add_example(r#"ledger endorse txn={"reqId":123456789,"type":"100"}"#)
+                .add_example(r#"ledger endorse"#)
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+
+        let param_txn = get_opt_str_param("txn", params).map_err(error_err!())?;
+
+        let request = get_transaction_to_use!(ctx, param_txn);
+
+        let request = Ledger::multi_sign_request(wallet_handle, &submitter_did, &request)
+            .map_err(|err| handle_indy_error(err, None, None, Some(&wallet_name)))?;
+
+        let (_, response) = send_request!(&ctx, params, &request, None, Some(&submitter_did), true);
+
+        handle_transaction_response(response)
+            .and_then(|result| parse_transaction_response(result))
+            .map(|(metadata_headers, metadata, data)| {
+                println_succ!("Transaction has been sent to Ledger.");
+
+                println_succ!("Metadata:");
+                print_table(&metadata, &metadata_headers);
+
+                println_succ!("Data:");
+                print_table(&json!({"data": data}), &[("data", "Data")]);
+            })?;
+
+        trace!("execute <<");
+        Ok(())
+    }
+}
+
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
         if acc_mech_type.is_empty() {
-            return Err(println_err!("Transaction author agreement Acceptance Mechanism isn't set."));
+            println_err!("Transaction author agreement Acceptance Mechanism isn't set.");
+            return Err(());
         }
 
         *request = Ledger::append_txn_author_agreement_acceptance_to_request(&request, Some(&text), Some(&version), None, &acc_mech_type, time_of_acceptance)
@@ -1807,11 +1929,12 @@ fn serialize<T>(obj: &T) -> Result<String, ()> where T: ::serde::Serialize {
     serde_json::to_string(obj).map_err(|err| println_err!("Invalid data: {:?}", err))
 }
 
-fn parse_payment_outputs(outputs: &Vec<String>) -> Result<Vec<Output>, ()> {
-    const OUTPUTS_DELIMITER: &'static str = ",";
+fn parse_payment_outputs(outputs: &[String]) -> Result<Vec<Output>, ()> {
+    const OUTPUTS_DELIMITER: &str = ",";
 
     if outputs.is_empty() {
-        return Err(println_err!("Outputs list is empty"));
+        println_err!("Outputs list is empty");
+        return Err(());
     }
 
     let mut output_objects: Vec<Output> = Vec::new();
@@ -1849,21 +1972,21 @@ pub fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Resu
         if !receipt.is_empty() {
             println_succ!("Following Receipts has been received.");
             print_list_table(&receipt,
-                             &vec![("receipt", "Receipt"),
-                                   ("recipient", "Payment Address of recipient"),
-                                   ("amount", "Amount"),
-                                   ("extra", "Extra")],
+                             &[("receipt", "Receipt"),
+                                 ("recipient", "Payment Address of recipient"),
+                                 ("amount", "Amount"),
+                                 ("extra", "Extra")],
                              "");
         }
     });
     Ok(())
 }
 
-fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
+fn parse_payment_fees(fees: &[&str]) -> Result<String, ()> {
     let mut fees_map: HashMap<String, u64> = HashMap::new();
 
     for fee in fees {
-        let parts = fee.split(":").collect::<Vec<&str>>();
+        let parts = fee.split(':').collect::<Vec<&str>>();
 
         let type_ = parts.get(0)
             .ok_or(())
@@ -1882,16 +2005,23 @@ fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
     serialize(&fees_map)
 }
 
-fn print_transaction_response(mut result: serde_json::Value, title: &str,
+fn parse_transaction_response(mut result: serde_json::Value) -> Result<(Vec<(&'static str, &'static str)>, serde_json::Value, serde_json::Value), ()> {
+    match result["ver"].clone().as_str() {
+        None => Ok(parse_transaction_response_v0(&mut result)),
+        Some("1") => Ok(parse_transaction_response_v1(&mut result)),
+        ver => Err(println_err!("Unsupported transaction response format: {:?}", ver))
+    }
+}
+
+fn print_transaction_response(result: serde_json::Value, title: &str,
                               data_sub_field: Option<&str>,
                               data_headers: &[(&str, &str)],
                               skip_empty: bool) {
     println_succ!("{}", title);
 
-    let (metadata_headers, metadata, data) = match result["ver"].clone().as_str() {
-        None => parse_transaction_response_v0(&mut result),
-        Some("1") => parse_transaction_response_v1(&mut result),
-        ver @ _ => return println_err!("Unsupported transaction response format: {:?}", ver)
+    let (metadata_headers, metadata, data) = match parse_transaction_response(result) {
+        Ok(val) => val,
+        Err(_) => return
     };
 
     println_succ!("Metadata:");
@@ -1907,12 +2037,12 @@ fn print_transaction_response(mut result: serde_json::Value, title: &str,
     print_table(data, &data_headers);
 }
 
-fn parse_transaction_response_v0(result: &mut serde_json::Value) -> ([(&'static str, &'static str); 4], serde_json::Value, serde_json::Value) {
+fn parse_transaction_response_v0(result: &mut serde_json::Value) -> (Vec<(&'static str, &'static str)>, serde_json::Value, serde_json::Value) {
     if let Some(txn_time) = result["txnTime"].as_i64() {
         result["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
     }
 
-    let metadata_headers = [
+    let metadata_headers = vec![
         ("identifier", "Identifier"),
         ("seqNo", "Sequence Number"),
         ("reqId", "Request ID"),
@@ -1921,12 +2051,12 @@ fn parse_transaction_response_v0(result: &mut serde_json::Value) -> ([(&'static 
     (metadata_headers, result.clone(), result.clone())
 }
 
-fn parse_transaction_response_v1(result: &mut serde_json::Value) -> ([(&'static str, &'static str); 4], serde_json::Value, serde_json::Value) {
+fn parse_transaction_response_v1(result: &mut serde_json::Value) -> (Vec<(&'static str, &'static str)>, serde_json::Value, serde_json::Value) {
     if let Some(txn_time) = result["txnMetadata"]["txnTime"].as_i64() {
         result["txnMetadata"]["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
     }
 
-    let metadata_headers = [
+    let mut metadata_headers = vec![
         ("from", "From"),
         ("seqNo", "Sequence Number"),
         ("reqId", "Request ID"),
@@ -1936,6 +2066,11 @@ fn parse_transaction_response_v1(result: &mut serde_json::Value) -> ([(&'static 
 
     metadata_obj.insert("reqId".to_string(), result["txn"]["metadata"]["reqId"].clone());
     metadata_obj.insert("from".to_string(), result["txn"]["metadata"]["from"].clone());
+
+    if result["txn"]["metadata"]["endorser"].is_string() {
+        metadata_headers.push(("endorser", "Endorser"));
+        metadata_obj.insert("endorser".to_string(), result["txn"]["metadata"]["endorser"].clone());
+    }
 
     let metadata = serde_json::Value::Object(metadata_obj);
     let data = result["txn"]["data"].clone();
@@ -1948,8 +2083,14 @@ pub fn handle_transaction_response(response: Response<serde_json::Value>) -> Res
         Response { op: ResponseType::REPLY, result: Some(result), reason: None } => Ok(result),
         Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
         Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-            Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
-        _ => Err(println_err!("Invalid data has been received"))
+            {
+                println_err!("Transaction has been rejected: {}", extract_error_message(&reason));
+                Err(())
+            },
+        _ => {
+            println_err!("Invalid data has been received");
+            Err(())
+        }
     }
 }
 
@@ -1976,6 +2117,10 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
         Some("0") => "NODE",
         Some("1") => "NYM",
         Some("3") => "GET_TXN",
+        Some("4") => "TXN_AUTHR_AGRMT",
+        Some("5") => "TXN_AUTHR_AGRMT_AML",
+        Some("6") => "GET_TXN_AUTHR_AGRMT",
+        Some("7") => "GET_TXN_AUTHR_AGRMT_AML",
         Some("100") => "ATTRIB",
         Some("101") => "SCHEMA",
         Some("104") => "GET_ATTR",
@@ -1993,6 +2138,8 @@ fn get_txn_title(role: &serde_json::Value) -> serde_json::Value {
         Some("118") => "POOL_RESTART",
         Some("119") => "GET_VALIDATOR_INFO",
         Some("120") => "AUTH_RULE",
+        Some("121") => "GET_AUTH_RULE",
+        Some("122") => "AUTH_RULES",
         Some(val) => val,
         _ => "-"
     }.to_string())
@@ -2072,14 +2219,17 @@ pub fn set_request_fees(ctx: &CommandContext,
     }
 
     if source_payment_address.is_some() && fees_inputs.is_some() {
-        return Err(println_err!("Only one of `source_payment_address`, `fees_inputs` can be specified."));
+        println_err!("Only one of `source_payment_address`, `fees_inputs` can be specified.");
+        return Err(());
     }
 
     let (inputs, outputs) = match (source_payment_address, fee) {
         (Some(source_), Some(fee_)) => {
             build_payment_sources_for_addresses(ctx, source_, None, None, Some(fee_))?
         }
-        (Some(_), None) => { return Err(println_err!("Fee value must be specified together with `source_payment_address`.")); }
+        (Some(_), None) => {
+            println_err!("Fee value must be specified together with `source_payment_address`.");
+            return Err(()); }
         (None, None) => {
             match fees_inputs {
                 Some(inputs_) => {
@@ -2096,7 +2246,8 @@ pub fn set_request_fees(ctx: &CommandContext,
             }
         }
         _ => {
-            return Err(println_err!("(source_payment_address, fee) - all or none parameters must be specified"));
+            println_err!("(source_payment_address, fee) - all or none parameters must be specified");
+            return Err(());
         }
     };
 
@@ -2120,8 +2271,9 @@ fn prepare_sources_for_payment_cmd(ctx: &CommandContext,
                                    outputs: Option<Vec<String>>) -> Result<(String, String), ()> {
     let (inputs, outputs) = match (source_payment_address, target_payment_address, amount) {
         (Some(source_address), Some(target_address), Some(amount_)) => {
-            if amount_ <= 0{
-                return Err(println_err!("Payment amount must be greater than 0"))
+            if amount_ <= 0 {
+                println_err!("Payment amount must be greater than 0");
+                return Err(())
             }
 
             build_payment_sources_for_addresses(&ctx, &source_address, Some(&target_address), Some(amount_), fee)?
@@ -2133,16 +2285,21 @@ fn prepare_sources_for_payment_cmd(ctx: &CommandContext,
                     let outputs = parse_payment_outputs(&outputs_).map_err(error_err!())?;
                     (inputs, outputs)
                 }
-                (None, None) => return Err(println_err!("One of the next parameter combinations must be specified:\n\
+                (None, None) => {
+                    println_err!("One of the next parameter combinations must be specified:\n\
                         (source_payment_address, target_payment_address, amount, Optional(fee)) - CLI builds payment data according to payment addresses\n\
-                        (inputs, outputs) - explicit specification of payment sources")),
+                        (inputs, outputs) - explicit specification of payment sources");
+                    return Err(())
+                },
                 _ => {
-                    return Err(println_err!("(inputs, outputs) - all or none parameters must be specified"));
+                    println_err!("(inputs, outputs) - all or none parameters must be specified");
+                    return Err(());
                 }
             }
         }
         _ => {
-            return Err(println_err!("(source_payment_address, target_payment_address, amount) - all or none parameters must be specified"));
+            println_err!("(source_payment_address, target_payment_address, amount) - all or none parameters must be specified");
+            return Err(());
         }
     };
 
@@ -2178,7 +2335,8 @@ fn inputs(sources: Vec<Source>, amount: Option<u64>, fee: Option<u64>) -> Result
     }
 
     if balance < required {
-        return Err(println_err!("Not enough payment sources: balance: {}, required: {}", balance, required));
+        println_err!("Not enough payment sources: balance: {}, required: {}", balance, required);
+        return Err(());
     }
 
     let refund = balance - required;
@@ -2241,32 +2399,32 @@ pub mod tests {
 
     const TRANSACTION: &str = r#"{"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":2}"#;
 
-    pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
-    pub const ATTRIB_HASH_DATA: &'static str = r#"83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#;
-    pub const ATTRIB_ENC_DATA: &'static str = r#"aa3f41f619aa7e5e6b6d0d"#;
+    pub const ATTRIB_RAW_DATA: &str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
+    pub const ATTRIB_HASH_DATA: &str = r#"83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#;
+    pub const ATTRIB_ENC_DATA: &str = r#"aa3f41f619aa7e5e6b6d0d"#;
 
-    pub const CRED_DEF_DATA: &'static str = r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#;
+    pub const CRED_DEF_DATA: &str = r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#;
 
     #[cfg(feature = "nullpay_plugin")]
-    pub const UNKNOWN_PAYMENT_METHOD: &'static str = "UNKNOWN_PAYMENT_METHOD";
+    pub const UNKNOWN_PAYMENT_METHOD: &str = "UNKNOWN_PAYMENT_METHOD";
     #[cfg(feature = "nullpay_plugin")]
-    pub const PAYMENT_ADDRESS: &'static str = "pay:null:BBQr7K6CP1tslXd";
+    pub const PAYMENT_ADDRESS: &str = "pay:null:BBQr7K6CP1tslXd";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INVALID_PAYMENT_ADDRESS: &'static str = "null";
+    pub const INVALID_PAYMENT_ADDRESS: &str = "null";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INPUT: &'static str = "pay:null:111_rBuQo2A1sc9jrJg";
+    pub const INPUT: &str = "pay:null:111_rBuQo2A1sc9jrJg";
     #[cfg(feature = "nullpay_plugin")]
-    pub const OUTPUT: &'static str = "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,10)";
+    pub const OUTPUT: &str = "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,10)";
     #[cfg(feature = "nullpay_plugin")]
-    pub const OUTPUT_2: &'static str = "(pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa,25)";
+    pub const OUTPUT_2: &str = "(pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa,25)";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INVALID_INPUT: &'static str = "pay:null";
+    pub const INVALID_INPUT: &str = "pay:null";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INVALID_OUTPUT: &'static str = "pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100";
+    pub const INVALID_OUTPUT: &str = "pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100";
     #[cfg(feature = "nullpay_plugin")]
-    pub const FEES: &'static str = "1:1,100:1,101:1";
+    pub const FEES: &str = "1:1,100:1,101:1";
     #[cfg(feature = "nullpay_plugin")]
-    pub const EXTRA: &'static str = "extra";
+    pub const EXTRA: &str = "extra";
     #[cfg(feature = "nullpay_plugin")]
     pub const AMOUNT: i32 = 100;
 
@@ -2742,6 +2900,34 @@ pub mod tests {
             assert!(transaction["signature"].is_null());
             tear_down_with_wallet_and_pool(&ctx);
         }
+
+        #[test]
+        pub fn attrib_works_for_endorser() {
+            let ctx = setup_with_wallet_and_pool();
+            let (endorser_did, _) = use_new_identity(&ctx);
+
+            // Publish new NYM without any role
+            let (did, verkey) = create_new_did(&ctx);
+            send_nym(&ctx, &did, &verkey, None);
+            use_did(&ctx, &did);
+
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did.clone());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
+                params.insert("endorser", endorser_did.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            use_did(&ctx, &endorser_did);
+            {
+                let cmd = endorse_transaction_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(_ensure_attrib_added(&ctx, &did, Some(ATTRIB_RAW_DATA), None, None).is_ok());
+            tear_down_with_wallet_and_pool(&ctx);
+        }
     }
 
     mod get_attrib {
@@ -2982,6 +3168,35 @@ pub mod tests {
             let transaction = get_transaction(&ctx).unwrap();
             let transaction: serde_json::Value = serde_json::from_str(&transaction).unwrap();
             assert!(transaction["signature"].is_null());
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn schema_works_for_endorser() {
+            let ctx = setup_with_wallet_and_pool();
+            let (endorser_did, _) = use_new_identity(&ctx);
+
+            // Publish new NYM without any role
+            let (did, verkey) = create_new_did(&ctx);
+            send_nym(&ctx, &did, &verkey, None);
+            use_did(&ctx, &did);
+
+            {
+                let cmd = schema_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", "gvt".to_string());
+                params.insert("version", "1.0".to_string());
+                params.insert("attr_names", "name,age".to_string());
+                params.insert("endorser", endorser_did.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            use_did(&ctx, &endorser_did);
+            {
+                let cmd = endorse_transaction_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert!(_ensure_schema_added(&ctx, &did).is_ok());
             tear_down_with_wallet_and_pool(&ctx);
         }
     }
@@ -3494,7 +3709,7 @@ pub mod tests {
     mod custom {
         use super::*;
 
-        pub const TXN_FOR_SIGN: &'static str = r#"{
+        pub const TXN_FOR_SIGN: &str = r#"{
                                                     "reqId":1513241300414292814,
                                                     "identifier":"V4SGRU86Z58d6TV7PBUe6f",
                                                     "operation":{

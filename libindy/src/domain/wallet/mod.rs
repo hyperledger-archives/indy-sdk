@@ -3,6 +3,8 @@ pub mod export_import;
 use serde_json::value::Value;
 use std::collections::HashMap;
 
+use utils::validation::Validatable;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub id: String,
@@ -74,3 +76,12 @@ pub struct KeyConfig {
 }
 
 pub type Tags = HashMap<String, String>;
+
+impl Validatable for Config {
+    fn validate(&self) -> Result<(), String> {
+        if self.id.is_empty() {
+            return Err("Wallet id is empty".to_string());
+        }
+        Ok(())
+    }
+}

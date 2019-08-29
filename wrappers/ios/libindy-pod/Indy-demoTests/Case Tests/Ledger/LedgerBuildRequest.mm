@@ -215,7 +215,7 @@
 - (void)testBuildCredDefRequestWorksForCorrectDataJson {
     NSDictionary *data = @{
             @"ver": @"1.0",
-            @"id": @"id",
+            @"id": [[AnoncredsUtils sharedInstance] credDefId],
             @"schemaId": @"1",
             @"type": @"CL",
             @"tag": @"TAG1",
@@ -255,7 +255,7 @@
 }
 
 - (void)testBuildGetCredDefRequestWorks {
-    NSString *id = @"NcYxiDXkpYi6ov5FcYDi1e:03:CL:1:TAG";
+    NSString *id = [[AnoncredsUtils sharedInstance] credDefId];
 
     NSDictionary *expectedResult = @{
             @"identifier": [TestUtils issuerDid],
@@ -285,10 +285,10 @@
 - (void)testBuildRevocRegDefRequestWorks {
     NSDictionary *data = @{
             @"ver": @"1.0",
-            @"id": @"RevocRegID",
+            @"id": [[AnoncredsUtils sharedInstance] revRegId],
             @"revocDefType": @"CL_ACCUM",
             @"tag": @"TAG_1",
-            @"credDefId": @"CredDefID",
+            @"credDefId": [[AnoncredsUtils sharedInstance] credDefId],
             @"value": @{
                     @"issuanceType": @"ISSUANCE_ON_DEMAND",
                     @"maxCredNum": @(5),
@@ -305,10 +305,10 @@
     NSDictionary *expectedResult = @{
             @"operation": @{
                     @"type": @"113",
-                    @"id": @"RevocRegID",
+                    @"id": [[AnoncredsUtils sharedInstance] revRegId],
                     @"revocDefType": @"CL_ACCUM",
                     @"tag": @"TAG_1",
-                    @"credDefId": @"CredDefID",
+                    @"credDefId": [[AnoncredsUtils sharedInstance] credDefId],
                     @"value": data[@"value"]
             }
     };
@@ -328,13 +328,13 @@
     NSDictionary *expectedResult = @{
             @"operation": @{
                     @"type": @"115",
-                    @"revocRegDefId": @"RevocRegID"
+                    @"revocRegDefId": [[AnoncredsUtils sharedInstance] revRegId]
             }
     };
 
     NSString *requestJson;
     ret = [[LedgerUtils sharedInstance] buildGetRevocRegDefRequestWithSubmitterDid:[TestUtils issuerDid]
-                                                                                id:@"RevocRegID"
+                                                                                id:[[AnoncredsUtils sharedInstance] revRegId]
                                                                         resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetTxnRequestWithSubmitterDid() failed");
 
@@ -356,7 +356,7 @@
     NSDictionary *expectedResult = @{
             @"operation": @{
                     @"type": @"114",
-                    @"revocRegDefId": @"RevocRegID",
+                    @"revocRegDefId": [[AnoncredsUtils sharedInstance] revRegId],
                     @"revocDefType": @"CL_ACCUM",
                     @"value": @{
                             @"accum": @"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"
@@ -367,7 +367,7 @@
     NSString *requestJson;
     ret = [[LedgerUtils sharedInstance] buildRevocRegEntryRequestWithSubmitterDid:[TestUtils issuerDid]
                                                                              type:@"CL_ACCUM"
-                                                                    revocRegDefId:@"RevocRegID"
+                                                                    revocRegDefId:[[AnoncredsUtils sharedInstance] revRegId]
                                                                             value:[[AnoncredsUtils sharedInstance] toJson:data]
                                                                        resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildRevocRegEntrtyRequestWithSubmitterDid() failed");
@@ -383,14 +383,14 @@
     NSDictionary *expectedResult = @{
             @"operation": @{
                     @"type": @"116",
-                    @"revocRegDefId": @"RevRegId",
+                    @"revocRegDefId": [[AnoncredsUtils sharedInstance] revRegId],
                     @"timestamp": @(100)
             }
     };
 
     NSString *requestJson;
     ret = [[LedgerUtils sharedInstance] buildGetRevocRegRequestWithSubmitterDid:[TestUtils issuerDid]
-                                                                  revocRegDefId:@"RevRegId"
+                                                                  revocRegDefId:[[AnoncredsUtils sharedInstance] revRegId]
                                                                       timestamp:@(100)
                                                                      resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetRevocRegRequestWithSubmitterDid() failed");
@@ -406,7 +406,7 @@
     NSDictionary *expectedResult = @{
             @"operation": @{
                     @"type": @"117",
-                    @"revocRegDefId": @"RevRegId",
+                    @"revocRegDefId": [[AnoncredsUtils sharedInstance] revRegId],
                     @"from": @(0),
                     @"to": @(100)
             }
@@ -414,7 +414,7 @@
 
     NSString *requestJson;
     ret = [[LedgerUtils sharedInstance] buildGetRevocRegDeltaRequestWithSubmitterDid:[TestUtils issuerDid]
-                                                                       revocRegDefId:@"RevRegId"
+                                                                       revocRegDefId:[[AnoncredsUtils sharedInstance] revRegId]
                                                                                 from:@(0)
                                                                                   to:@(100)
                                                                           resultJson:&requestJson];

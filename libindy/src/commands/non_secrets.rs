@@ -15,47 +15,47 @@ pub enum NonSecretsCommand {
               String, // id
               String, // value
               Option<Tags>, //tags
-              Box<Fn(IndyResult<()>) + Send>),
+              Box<dyn Fn(IndyResult<()>) + Send>),
     UpdateRecordValue(WalletHandle,
                       String, // type
                       String, // id
                       String, // value
-                      Box<Fn(IndyResult<()>) + Send>),
+                      Box<dyn Fn(IndyResult<()>) + Send>),
     UpdateRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      Tags, //tags
-                     Box<Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send>),
     AddRecordTags(WalletHandle,
                   String, // type
                   String, // id
                   Tags, //tags
-                  Box<Fn(IndyResult<()>) + Send>),
+                  Box<dyn Fn(IndyResult<()>) + Send>),
     DeleteRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      String, //tag names json
-                     Box<Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send>),
     DeleteRecord(WalletHandle,
                  String, // type
                  String, // id
-                 Box<Fn(IndyResult<()>) + Send>),
+                 Box<dyn Fn(IndyResult<()>) + Send>),
     GetRecord(WalletHandle,
               String, // type
               String, // id
               String, // options json
-              Box<Fn(IndyResult<String>) + Send>),
+              Box<dyn Fn(IndyResult<String>) + Send>),
     OpenSearch(WalletHandle,
                String, // type
                String, // query json
                String, // options json
-               Box<Fn(IndyResult<i32>) + Send>),
+               Box<dyn Fn(IndyResult<i32>) + Send>),
     FetchSearchNextRecords(WalletHandle,
                            i32, // wallet search handle
                            usize, // count
-                           Box<Fn(IndyResult<String>) + Send>),
+                           Box<dyn Fn(IndyResult<String>) + Send>),
     CloseSearch(i32, // wallet search handle
-                Box<Fn(IndyResult<()>) + Send>),
+                Box<dyn Fn(IndyResult<()>) + Send>),
 }
 
 pub struct NonSecretsCommandExecutor {
@@ -126,11 +126,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, tags.unwrap_or(&Tags::new()))?;
+        self.wallet_service.add_record(wallet_handle, type_, id, value, tags.unwrap_or(&Tags::new()))?;
 
-        trace!("add_record <<< res: {:?}", res);
+        trace!("add_record <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn update_record_value(&self,
@@ -142,11 +142,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.update_record_value(wallet_handle, type_, id, value)?;
+        self.wallet_service.update_record_value(wallet_handle, type_, id, value)?;
 
-        trace!("update_record_value <<< res: {:?}", res);
+        trace!("update_record_value <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn update_record_tags(&self,
@@ -158,11 +158,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.update_record_tags(wallet_handle, type_, id, &tags)?;
+        self.wallet_service.update_record_tags(wallet_handle, type_, id, &tags)?;
 
-        trace!("update_record_tags <<< res: {:?}", res);
+        trace!("update_record_tags <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn add_record_tags(&self,
@@ -174,11 +174,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record_tags(wallet_handle, type_, id, &tags)?;
+        self.wallet_service.add_record_tags(wallet_handle, type_, id, &tags)?;
 
-        trace!("add_record_tags <<< res: {:?}", res);
+        trace!("add_record_tags <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn delete_record_tags(&self,
@@ -193,11 +193,11 @@ impl NonSecretsCommandExecutor {
         let tag_names: Vec<&str> = serde_json::from_str(tag_names_json)
             .to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize tag names")?;
 
-        let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, &tag_names)?;
+        self.wallet_service.delete_record_tags(wallet_handle, type_, id, &tag_names)?;
 
-        trace!("delete_record_tags <<< res: {:?}", res);
+        trace!("delete_record_tags <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn delete_record(&self,
@@ -208,11 +208,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.delete_record(wallet_handle, type_, id)?;
+        self.wallet_service.delete_record(wallet_handle, type_, id)?;
 
-        trace!("delete_record <<< res: {:?}", res);
+        trace!("delete_record <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn get_record(&self,
@@ -268,7 +268,7 @@ impl NonSecretsCommandExecutor {
 
         let mut searches = self.searches.borrow_mut();
         let search = searches.get_mut(&wallet_search_handle)
-            .ok_or(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown WalletSearch handle: {}", wallet_search_handle)))?;
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown WalletSearch handle: {}", wallet_search_handle)))?;
 
         let mut records: Vec<WalletRecord> = Vec::new();
         for _ in 0..count {
@@ -294,14 +294,14 @@ impl NonSecretsCommandExecutor {
                     wallet_search_handle: i32) -> IndyResult<()> {
         trace!("close_search >>> wallet_search_handle: {:?}", wallet_search_handle);
 
-        let res = match self.searches.borrow_mut().remove(&wallet_search_handle) {
+        match self.searches.borrow_mut().remove(&wallet_search_handle) {
             Some(_) => Ok(()),
             None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Wallet Search Handle is invalid: {}", wallet_search_handle)))
         }?;
 
-        trace!("close_search <<< res: {:?}", res);
+        trace!("close_search <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn _check_type(&self, type_: &str) -> IndyResult<()> {

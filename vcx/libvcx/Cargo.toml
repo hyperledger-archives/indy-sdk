@@ -1,7 +1,7 @@
 [package]
 
 name = "libvcx"
-version = "0.4.0"
+version = "0.4.1"
 authors = [ "Evernym Inc." ]
 publish = false
 description = "This is the official SDK for Evernym's VCX"
@@ -29,7 +29,7 @@ log = "0.4"
 log4rs = "0.8.0"
 chrono = "0.4"
 time = "0.1.36"
-lazy_static = "0.2"
+lazy_static = "1.3"
 libc = "=0.2.60"
 rand = "0.3"
 serde = "1.0.97"
@@ -46,8 +46,8 @@ rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
-indy = { version = "1.11.0", path = "../../wrappers/rust/" }
-indy-sys = { version = "1.11.0", path = "../../wrappers/rust/indy-sys/" }
+indy = { version = "1.11.1", path = "../../wrappers/rust/" }
+indy-sys = { version = "1.11.1", path = "../../wrappers/rust/indy-sys/" }
 log-panics = "2.0.0"
 tokio-threadpool = "0.1.6"
 futures = "0.1.23"

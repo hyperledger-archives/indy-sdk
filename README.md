@@ -2,7 +2,7 @@
 ![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
 This is the official SDK for [Hyperledger Indy](https://www.hyperledger.org/projects),
 which provides a distributed-ledger-based foundation for [self-sovereign identity](https://sovrin.org). Indy provides a software ecosystem for private, secure, and powerful identity, and the Indy SDK enables clients for it.
-The major artifact of the SDK is a c-callable
+The major artifact of the SDK is a C-callable
 library; there are also convenience wrappers for various programming languages and Indy CLI tool.
 
 All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa)
@@ -20,7 +20,7 @@ functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-St
 
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
 
-* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
+* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/display/indy/).
 
 * You may also want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
 that explored the ecosystem via command line. That material is being
@@ -109,15 +109,16 @@ The Indy SDK release process defines the following release channels:
 
 Please refer to our [release workflow](docs/contributors/release-workflow.md) for more details.
 
-### Ubuntu based distributions (Ubuntu 16.04)
+### Ubuntu based distributions (Ubuntu 16.04 and 18.04)
 It is recommended to install the SDK packages with APT:
 
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
-    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
+    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) {release channel}"
     sudo apt-get update
     sudo apt-get install -y libindy
 
-{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+* (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
+* {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section "Release channels" above for more details.
 
 ### Windows
@@ -178,6 +179,17 @@ that may be need for your applications.
     * Rename this library to `libindy.so` before loading it into the app. This will help you in having the compatibility with existing wrappers.
 
  * `libindy.a` - This is a static library, which is compiled with NDK.
+
+### Centos
+
+1. Go to https://repo.sovrin.org/rpm/{library}/{release-channel}.
+2. Download the last version of library.
+3. Install with `rpm -i library-version.rpm`.
+
+{library} must be replaced with libindy, libnullpay, libvcx, indy-cli to define corresponded library.
+
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+See section "Release channels" for more details.
 
  [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/android-build.md#usage)  
 
@@ -323,6 +335,7 @@ The documents that provide necessary information for Libindy migrations.
 
 ## How to Contribute
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
+* If you need to add a new call, read this [instruction](docs/how-tos/how-to-add-a-new-API-call.md).
 * You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
   so to get your pull requests accepted, you must certify your commits by signing off on each commit.

@@ -1,15 +1,12 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
 import org.junit.rules.Timeout;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
 import org.hyperledger.indy.sdk.JsonObjectSimilar;
@@ -23,7 +20,7 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 	public void testBuildCredDefRequestWorks() throws Exception {
 		String data = "{\n" +
 				"        \"ver\": \"1.0\",\n" +
-				"        \"id\": \"cred_def_id\",\n" +
+				"        \"id\": \"NcYxiDXkpYi6ov5FcYDi1e:3:CL:1\",\n" +
 				"        \"schemaId\": \"1\",\n" +
 				"        \"type\": \"CL\",\n" +
 				"        \"tag\": \"TAG_1\",\n" +
@@ -69,16 +66,6 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 		String getCredDefRequest = Ledger.buildGetCredDefRequest(DID, id).get();
 
 		assertTrue(getCredDefRequest.replace("\\", "").contains(expectedResult));
-	}
-
-	@Test
-	public void testBuildCredDefRequestWorksForInvalidJson() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"}}}";
-
-		Ledger.buildCredDefRequest(DID, data).get();
 	}
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)

@@ -56,7 +56,7 @@ impl Networker for ZMQNetworker {
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         match pe.clone() {
             Some(NetworkerEvent::SendAllRequest(_, req_id, _, _)) | Some(NetworkerEvent::SendOneRequest(_, req_id, _)) | Some(NetworkerEvent::Resend(req_id, _)) => {
-                let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
+                let num = self.req_id_mappings.get(&req_id).copied().or_else(|| {
                     trace!("sending new request");
                     self.pool_connections.iter().next_back().and_then(|(pc_idx, pc)| {
                         if pc.is_active() && pc.req_cnt < self.conn_limit
@@ -190,7 +190,7 @@ impl PoolConnection {
             });
         }
 
-        let mut sockets: Vec<Option<ZSocket>> = Vec::new();
+        let mut sockets: Vec<Option<ZSocket>> = Vec::with_capacity(nodes.len());
 
         for _ in 0..nodes.len() { sockets.push(None); }
 
@@ -320,7 +320,7 @@ impl PoolConnection {
         trace!("_send_msg_to_one_node >> idx {}, req_id {}, req {}", idx, req_id, req);
         {
             let s = self._get_socket(idx)?;
-            s.send_str(&req, zmq::DONTWAIT)?;
+            s.send(&req, zmq::DONTWAIT)?;
         }
         self.timeouts.borrow_mut().insert((req_id, self.nodes[idx].name.clone()), time::now() + Duration::seconds(timeout));
         trace!("_send_msg_to_one_node <<");
@@ -340,13 +340,12 @@ impl PoolConnection {
 impl RemoteNode {
     fn connect(&self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> IndyResult<ZSocket> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
-        s.set_identity(key_pair.public_key.as_bytes())?;
+        s.set_identity(base64::encode(&key_pair.public_key).as_bytes())?;
         s.set_curve_secretkey(&key_pair.secret_key)?;
         s.set_curve_publickey(&key_pair.public_key)?;
-        s.set_curve_serverkey(
-            zmq::z85_encode(self.public_key.as_slice())
-                .to_indy(IndyErrorKind::InvalidStructure, "Can't encode server key as z85")? // FIXME: review kind
-                .as_str())?;
+        s.set_curve_serverkey(zmq::z85_encode(self.public_key.as_slice())
+            .to_indy(IndyErrorKind::InvalidStructure, "Can't encode server key as z85")? // FIXME: review kind
+            .as_bytes())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(&self.zaddr)?;
         Ok(s)

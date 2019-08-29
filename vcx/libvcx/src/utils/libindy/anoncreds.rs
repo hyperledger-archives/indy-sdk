@@ -9,7 +9,7 @@ use utils::constants::{LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, PROOF_REQUESTED
 use utils::libindy::{error_codes::map_rust_indy_sdk_error, mock_libindy_rc, wallet::get_wallet_handle};
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
 use utils::libindy::ledger::*;
-use utils::constants::{SCHEMA_ID, SCHEMA_JSON, CREATE_SCHEMA_ACTION, CRED_DEF_ID, CRED_DEF_JSON, CREATE_CRED_DEF_ACTION, CREATE_REV_REG_DEF_ACTION, CREATE_REV_REG_DELTA_ACTION, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
+use utils::constants::{SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN, CREATE_SCHEMA_ACTION, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_REQ, CREATE_CRED_DEF_ACTION, CREATE_REV_REG_DEF_ACTION, CREATE_REV_REG_DELTA_ACTION, REVOC_REG_TYPE, rev_def_json, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
 use error::prelude::*;
 
 const BLOB_STORAGE_TYPE: &str = "default";
@@ -277,6 +277,8 @@ pub fn libindy_issuer_revoke_credential(tails_file: &str, rev_reg_id: &str, cred
 
 pub fn libindy_build_revoc_reg_def_request(submitter_did: &str,
                                            rev_reg_def_json: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() { return Ok("".to_string()); }
+
     ledger::build_revoc_reg_def_request(submitter_did, rev_reg_def_json)
         .wait()
         .map_err(map_rust_indy_sdk_error)
@@ -286,6 +288,8 @@ pub fn libindy_build_revoc_reg_entry_request(submitter_did: &str,
                                              rev_reg_id: &str,
                                              rev_def_type: &str,
                                              value: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() { return Ok("".to_string()); }
+
     ledger::build_revoc_reg_entry_request(submitter_did, rev_reg_id, rev_def_type, value)
         .wait()
         .map_err(map_rust_indy_sdk_error)
@@ -336,26 +340,46 @@ pub fn libindy_parse_get_revoc_reg_delta_response(get_rev_reg_delta_response: &s
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn create_schema(name: &str, version: &str, data: &str) -> VcxResult<(String, Option<PaymentTxn>)> {
+pub fn create_schema(name: &str, version: &str, data: &str) -> VcxResult<(String, String)> {
     if settings::test_indy_mode_enabled() {
-        let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
-        let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
-        return Ok((SCHEMA_ID.to_string(), Some(PaymentTxn::from_parts(inputs, outputs, 1, false))));
+        return Ok((SCHEMA_ID.to_string(), SCHEMA_JSON.to_string()));
     }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let (id, create_schema) = libindy_issuer_create_schema(&submitter_did, name, version, data)?;
 
-    let mut request = libindy_build_schema_request(&submitter_did, &create_schema)?;
+    Ok((id, create_schema))
+}
 
-    request = append_txn_author_agreement_to_request(&request)?;
+pub fn build_schema_request(id: &str, schema: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() {
+        return Ok(SCHEMA_TXN.to_string());
+    }
+
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    let request = libindy_build_schema_request(&submitter_did, schema)?;
+
+    let request = append_txn_author_agreement_to_request(&request)?;
+
+    Ok(request)
+}
+
+pub fn publish_schema(id: &str, schema: &str) -> VcxResult<Option<PaymentTxn>> {
+    if settings::test_indy_mode_enabled() {
+        let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
+        let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
+        return Ok(Some(PaymentTxn::from_parts(inputs, outputs, 1, false)));
+    }
+
+    let request = build_schema_request(id, schema)?;
 
     let (payment, response) = pay_for_txn(&request, CREATE_SCHEMA_ACTION)?;
 
     _check_schema_response(&response)?;
 
-    Ok((id, payment))
+    Ok(payment)
 }
 
 pub fn get_schema_json(schema_id: &str) -> VcxResult<(String, String)> {
@@ -368,32 +392,48 @@ pub fn get_schema_json(schema_id: &str) -> VcxResult<(String, String)> {
     Ok((schema_id.to_string(), schema_json))
 }
 
-pub fn create_cred_def(issuer_did: &str,
-                       schema_json: &str,
-                       tag: &str,
-                       sig_type: Option<&str>,
-                       support_revocation: Option<bool>) -> VcxResult<(String, Option<PaymentTxn>)> {
+pub fn generate_cred_def(issuer_did: &str,
+                         schema_json: &str,
+                         tag: &str,
+                         sig_type: Option<&str>,
+                         support_revocation: Option<bool>) -> VcxResult<(String, String)> {
     if settings::test_indy_mode_enabled() {
-        let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
-        let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
-        return Ok((CRED_DEF_ID.to_string(), Some(PaymentTxn::from_parts(inputs, outputs, 1, false))));
+        return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string()));
     }
 
     let config_json = json!({"support_revocation": support_revocation.unwrap_or(false)}).to_string();
 
-    let (id, cred_def_json) = libindy_create_and_store_credential_def(issuer_did,
-                                                                      schema_json,
-                                                                      tag,
-                                                                      sig_type,
-                                                                      &config_json)?;
+    libindy_create_and_store_credential_def(issuer_did,
+                                            schema_json,
+                                            tag,
+                                            sig_type,
+                                            &config_json)
+}
 
-    let mut cred_def_req = libindy_build_create_credential_def_txn(issuer_did, &cred_def_json)?;
+pub fn build_cred_def_request(issuer_did: &str, cred_def_json: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() {
+        return Ok(CRED_DEF_REQ.to_string());
+    }
 
-    cred_def_req = append_txn_author_agreement_to_request(&cred_def_req)?;
+    let cred_def_req = libindy_build_create_credential_def_txn(issuer_did, &cred_def_json)?;
 
-    let (payment, response) = pay_for_txn(&cred_def_req, CREATE_CRED_DEF_ACTION)?;
+    let cred_def_req = append_txn_author_agreement_to_request(&cred_def_req)?;
 
-    Ok((id, payment))
+    Ok(cred_def_req)
+}
+
+pub fn publish_cred_def(issuer_did: &str, cred_def_json: &str) -> VcxResult<Option<PaymentTxn>> {
+    if settings::test_indy_mode_enabled() {
+        let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
+        let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
+        return Ok(Some(PaymentTxn::from_parts(inputs, outputs, 1, false)));
+    }
+
+    let cred_def_req = build_cred_def_request(issuer_did, &cred_def_json)?;
+
+    let (payment, _) = pay_for_txn(&cred_def_req, CREATE_CRED_DEF_ACTION)?;
+
+    Ok(payment)
 }
 
 pub fn get_cred_def_json(cred_def_id: &str) -> VcxResult<(String, String)> {
@@ -404,11 +444,9 @@ pub fn get_cred_def_json(cred_def_id: &str) -> VcxResult<(String, String)> {
     Ok((cred_def_id.to_string(), cred_def_json))
 }
 
-pub fn create_rev_reg_def(issuer_did: &str, cred_def_id: &str, tails_file: &str, max_creds: u32)
-                          -> VcxResult<(String, String, String, Option<PaymentTxn>)> {
-    debug!("creating revocation registry definition with issuer_did: {}, cred_def_id: {}, tails_file_path: {}, max_creds: {}",
-           issuer_did, cred_def_id, tails_file, max_creds);
-    if settings::test_indy_mode_enabled() { return Ok((REV_REG_ID.to_string(), rev_def_json(), "".to_string(), None)); }
+pub fn generate_rev_reg(issuer_did: &str, cred_def_id: &str, tails_file: &str, max_creds: u32)
+                        -> VcxResult<(String, String, String)> {
+    if settings::test_indy_mode_enabled() { return Ok((REV_REG_ID.to_string(), rev_def_json(), "".to_string())); }
 
     let (rev_reg_id, rev_reg_def_json, rev_reg_entry_json) =
         libindy_create_and_store_revoc_reg(issuer_did,
@@ -416,13 +454,23 @@ pub fn create_rev_reg_def(issuer_did: &str, cred_def_id: &str, tails_file: &str,
                                            tails_file,
                                            max_creds)?;
 
-    let mut rev_reg_def_req = libindy_build_revoc_reg_def_request(issuer_did, &rev_reg_def_json)?;
+    Ok((rev_reg_id, rev_reg_def_json, rev_reg_entry_json))
+}
 
-    rev_reg_def_req = append_txn_author_agreement_to_request(&rev_reg_def_req)?;
+pub fn build_rev_reg_request(issuer_did: &str, rev_reg_def_json: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() { return Ok("".to_string()); }
 
+    let rev_reg_def_req = libindy_build_revoc_reg_def_request(issuer_did, &rev_reg_def_json)?;
+    let rev_reg_def_req = append_txn_author_agreement_to_request(&rev_reg_def_req)?;
+    Ok(rev_reg_def_req)
+}
+
+pub fn publish_rev_reg_def(issuer_did: &str, rev_reg_def_json: &str) -> VcxResult<Option<PaymentTxn>> {
+    if settings::test_indy_mode_enabled() { return Ok(None); }
+
+    let rev_reg_def_req = build_rev_reg_request(issuer_did, &rev_reg_def_json)?;
     let (payment, _) = pay_for_txn(&rev_reg_def_req, CREATE_REV_REG_DEF_ACTION)?;
-
-    Ok((rev_reg_id, rev_reg_def_json, rev_reg_entry_json, payment))
+    Ok(payment)
 }
 
 pub fn get_rev_reg_def_json(rev_reg_id: &str) -> VcxResult<(String, String)> {
@@ -435,12 +483,16 @@ pub fn get_rev_reg_def_json(rev_reg_id: &str) -> VcxResult<(String, String)> {
         .and_then(|response| libindy_parse_get_revoc_reg_def_response(&response))
 }
 
-pub fn post_rev_reg_delta(issuer_did: &str, rev_reg_id: &str, rev_reg_entry_json: &str)
-                          -> VcxResult<(Option<PaymentTxn>, String)> {
-    let mut request = libindy_build_revoc_reg_entry_request(issuer_did, rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_json)?;
+pub fn build_rev_reg_delta_request(issuer_did: &str, rev_reg_id: &str, rev_reg_entry_json: &str)
+                                   -> VcxResult<String> {
+    let request = libindy_build_revoc_reg_entry_request(issuer_did, rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_json)?;
+    let request = append_txn_author_agreement_to_request(&request)?;
+    Ok(request)
+}
 
-    request = append_txn_author_agreement_to_request(&request)?;
-
+pub fn publish_rev_reg_delta(issuer_did: &str, rev_reg_id: &str, rev_reg_entry_json: &str)
+                             -> VcxResult<(Option<PaymentTxn>, String)> {
+    let request = build_rev_reg_delta_request(issuer_did, rev_reg_id, rev_reg_entry_json)?;
     pay_for_txn(&request, CREATE_REV_REG_DELTA_ACTION)
 }
 
@@ -476,7 +528,7 @@ pub fn revoke_credential(tails_file: &str, rev_reg_id: &str, cred_rev_id: &str) 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let delta = libindy_issuer_revoke_credential(tails_file, rev_reg_id, cred_rev_id)?;
-    let (payment, _) = post_rev_reg_delta(&submitter_did, rev_reg_id, &delta)?;
+    let (payment, _) = publish_rev_reg_delta(&submitter_did, rev_reg_id, &delta)?;
 
     Ok((payment, delta))
 }
@@ -521,7 +573,6 @@ pub mod tests {
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let request = ::utils::libindy::ledger::libindy_build_schema_request(&institution_did, schema_json).unwrap();
         append_txn_author_agreement_to_request(&request).unwrap()
-
     }
 
     pub fn write_schema(request: &str) {
@@ -549,12 +600,12 @@ pub mod tests {
             revocation_details["tails_file"] = json!(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string());
             revocation_details["max_creds"] = json!(10);
         }
-        let handle = ::credential_def::create_new_credentialdef("1".to_string(),
-                                                                name,
-                                                                institution_did.clone(),
-                                                                schema_id.clone(),
-                                                                "tag1".to_string(),
-                                                                revocation_details.to_string()).unwrap();
+        let handle = ::credential_def::create_and_publish_credentialdef("1".to_string(),
+                                                                        name,
+                                                                        institution_did.clone(),
+                                                                        schema_id.clone(),
+                                                                        "tag1".to_string(),
+                                                                        revocation_details.to_string()).unwrap();
 
         thread::sleep(Duration::from_millis(1000));
         let cred_def_id = ::credential_def::get_cred_def_id(handle).unwrap();
@@ -870,7 +921,7 @@ pub mod tests {
     #[test]
     fn test_create_cred_def() {
         init!("true");
-        let (id, _) = create_cred_def("did", SCHEMAS_JSON, "tag_1", None, Some(false)).unwrap();
+        let (id, _) = generate_cred_def("did", SCHEMAS_JSON, "tag_1", None, Some(false)).unwrap();
         assert_eq!(id, CRED_DEF_ID);
     }
 
@@ -889,7 +940,8 @@ pub mod tests {
             "tails_file": get_temp_dir_path(Some("tails.txt")).to_str().unwrap(),
             "max_creds": 2
         }).to_string();
-        create_cred_def(&did, &schema_json, "tag_1", None, Some(true)).unwrap();
+        let (_, cred_def_json) = generate_cred_def(&did, &schema_json, "tag_1", None, Some(true)).unwrap();
+        publish_cred_def(&did, &cred_def_json).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -903,7 +955,7 @@ pub mod tests {
         // revoc_reg_def will fail in libindy because cred_Def doesn't have revocation keys
         let (_, _, cred_def_id, _, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let rc = create_rev_reg_def(&did, &cred_def_id, get_temp_dir_path(Some("path.txt")).to_str().unwrap(), 2);
+        let rc = generate_rev_reg(&did, &cred_def_id, get_temp_dir_path(Some("path.txt")).to_str().unwrap(), 2);
 
         assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::LibindyInvalidStructure);
     }
@@ -918,9 +970,11 @@ pub mod tests {
         let (_, schema_json) = get_schema_json(&schema_id).unwrap();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-        let revocation_details = json!({"support_revocation": true, "tails_file": get_temp_dir_path(Some("tails.txt")).to_str().unwrap(), "max_creds": 2}).to_string();
-        let (id, payment) = create_cred_def(&did, &schema_json, "tag_1", None, Some(true)).unwrap();
-        create_rev_reg_def(&did, &id, "tails.txt", 2).unwrap();
+        let (cred_def_id, cred_def_json) = generate_cred_def(&did, &schema_json, "tag_1", None, Some(true)).unwrap();
+        publish_cred_def(&did, &cred_def_json).unwrap();
+        let (rev_reg_def_id, rev_reg_def_json, rev_reg_entry_json) = generate_rev_reg(&did, &cred_def_id, "tails.txt", 2).unwrap();
+        publish_rev_reg_def(&did, &rev_reg_def_json).unwrap();
+        publish_rev_reg_delta(&did, &rev_reg_def_id, &rev_reg_entry_json).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]

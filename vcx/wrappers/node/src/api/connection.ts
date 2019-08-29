@@ -50,7 +50,7 @@ export interface ISignatureData {
   signature: Buffer
 }
 
-function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
+export function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
   /**
    * Read the contents of the pointer and copy it into a new Buffer
    */

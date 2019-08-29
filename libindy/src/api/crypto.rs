@@ -2,6 +2,7 @@
 use api::{ErrorCode, CommandHandle, WalletHandle};
 use commands::{Command, CommandExecutor};
 use commands::crypto::CryptoCommand;
+use domain::crypto::pack::JWE;
 use domain::crypto::key::KeyInfo;
 use errors::prelude::*;
 use utils::ctypes;
@@ -52,12 +53,7 @@ pub extern fn indy_create_key(command_handle: CommandHandle,
         .send(Command::Crypto(CryptoCommand::CreateKey(
             wallet_handle,
             key_json,
-            Box::new(move |result| {
-                let (err, verkey) = prepare_result_1!(result, String::new());
-                trace!("indy_create_key: verkey: {:?}", verkey);
-                let verkey = ctypes::string_to_cstring(verkey);
-                cb(command_handle, err, verkey.as_ptr())
-            })
+            boxed_callback_string!("indy_create_key", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -157,12 +153,7 @@ pub  extern fn indy_get_key_metadata(command_handle: CommandHandle,
         .send(Command::Crypto(CryptoCommand::GetKeyMetadata(
             wallet_handle,
             verkey,
-            Box::new(move |result| {
-                let (err, metadata) = prepare_result_1!(result, String::new());
-                trace!("indy_get_key_metadata: metadata: {:?}", metadata);
-                let metadata = ctypes::string_to_cstring(metadata);
-                cb(command_handle, err, metadata.as_ptr())
-            })
+            boxed_callback_string!("indy_get_key_metadata", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -637,7 +628,7 @@ pub extern fn indy_pack_message(
     message_len: u32,
     receiver_keys: *const c_char,
     sender: *const c_char,
-    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
+    cb: Option<extern fn(xcommand_handle: CommandHandle, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
 ) -> ErrorCode {
     trace!("indy_pack_message: >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
             receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
@@ -718,13 +709,13 @@ pub extern fn indy_pack_message(
 /// Crypto*
 #[no_mangle]
 pub extern fn indy_unpack_message(
-    command_handle: i32,
+    command_handle: CommandHandle,
     wallet_handle: WalletHandle,
     jwe_data: *const u8,
     jwe_len: u32,
     cb: Option<
         extern fn(
-            xcommand_handle: i32,
+            xcommand_handle: CommandHandle,
             err: ErrorCode,
             res_json_data : *const u8,
             res_json_len : u32
@@ -748,8 +739,14 @@ pub extern fn indy_unpack_message(
         jwe_len
     );
 
+    //serialize JWE to struct
+    let jwe_struct: JWE = match serde_json::from_slice(jwe_data.as_slice()) {
+        Ok(x) => x,
+        Err(_) => return ErrorCode::CommonInvalidParam3
+    };
+
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::UnpackMessage(
-        jwe_data,
+        jwe_struct,
         wallet_handle,
         Box::new(move |result| {
             let (err, res_json) = prepare_result_1!(result, Vec::new());

@@ -52,7 +52,7 @@ impl Keys {
         let mut decrypted = decrypt_merged(bytes, master_key)?;
 
         let keys: Keys = rmp_serde::from_slice(&decrypted)
-                .to_indy(IndyErrorKind::InvalidStructure, "Invalid bytes for Key")?;
+                .to_indy(IndyErrorKind::InvalidState, "Invalid bytes for Key")?;
 
         decrypted.zeroize();
         Ok(keys)
@@ -89,7 +89,7 @@ impl EncryptedValue {
         value_key_bytes.zeroize();
 
         let res = String::from_utf8(decrypt_merged(&self.data, &value_key)?)
-            .to_indy(IndyErrorKind::InvalidStructure, "Invalid UTF8 string inside of value")?; // FIXME: review kind
+            .to_indy(IndyErrorKind::InvalidState, "Invalid UTF8 string inside of value")?;
 
         Ok(res)
     }
@@ -114,12 +114,12 @@ impl EncryptedValue {
 
 pub(super) struct Wallet {
     id: String,
-    storage: Box<storage::WalletStorage>,
+    storage: Box<dyn storage::WalletStorage>,
     keys: Rc<Keys>,
 }
 
 impl Wallet {
-    pub fn new(id: String, storage: Box<storage::WalletStorage>, keys: Rc<Keys>) -> Wallet {
+    pub fn new(id: String, storage: Box<dyn storage::WalletStorage>, keys: Rc<Keys>) -> Wallet {
         Wallet { id, storage, keys }
     }
 

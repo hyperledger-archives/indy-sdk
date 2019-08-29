@@ -1,5 +1,3 @@
-use sha2::Sha256;
-use sha2::digest::{FixedOutput, Input};
 use rust_base58::ToBase58;
 
 use super::{ReadableBlob, Reader, ReaderType};
@@ -9,6 +7,7 @@ use serde_json;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
+use utils::crypto::hash::Hash;
 
 pub struct DefaultReader {
     file: File,
@@ -21,7 +20,7 @@ struct DefaultReaderConfig {
 }
 
 impl ReaderType for DefaultReaderType {
-    fn open(&self, config: &str) -> IndyResult<Box<Reader>> {
+    fn open(&self, config: &str) -> IndyResult<Box<dyn Reader>> {
         let config: DefaultReaderConfig = serde_json::from_str(config)
             .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize DefaultReaderConfig")?;
 
@@ -30,7 +29,7 @@ impl ReaderType for DefaultReaderType {
 }
 
 impl Reader for DefaultReaderConfig {
-    fn open(&self, hash: &[u8], _location: &str) -> IndyResult<Box<ReadableBlob>> {
+    fn open(&self, hash: &[u8], _location: &str) -> IndyResult<Box<dyn ReadableBlob>> {
         let mut path = PathBuf::from(&self.base_dir);
         path.push(hash.to_base58());
         let file = File::open(path)?;
@@ -45,17 +44,17 @@ impl ReadableBlob for DefaultReader {
 
     fn verify(&mut self) -> IndyResult<bool> {
         self.file.seek(SeekFrom::Start(0))?;
-        let mut hasher = Sha256::default();
+        let mut hasher = Hash::new_context()?;
         let mut buf = [0u8; 1024];
 
         loop {
             let sz = self.file.read(&mut buf)?;
 
             if sz == 0 {
-                return Ok(hasher.fixed_result().as_slice().eq(self.hash.as_slice()));
+                return Ok(hasher.finish()?.to_vec().eq(&self.hash));
             }
 
-            hasher.input(&buf[0..sz])
+            hasher.update(&buf[0..sz])?;
         }
     }
 
