@@ -51,6 +51,8 @@ impl Verifier {
                                                        &received_self_attested_attrs,
                                                        &received_predicates)?;
 
+        Verifier::_verify_revealed_attribute_values(&proof_req, &full_proof)?;
+
         Verifier::_verify_requested_restrictions(&proof_req,
                                                  schemas,
                                                  cred_defs,
@@ -296,6 +298,34 @@ impl Verifier {
                 IndyErrorKind::InvalidStructure,
                 format!("Identifier not found for index: {}", index)
             ))
+    }
+
+    fn _verify_revealed_attribute_values(proof_req: &ProofRequest,
+                                         proof: &Proof) -> IndyResult<()> {
+        for (attr_referent, attr_info) in proof.requested_proof.revealed_attrs.iter() {
+            let reveal_attr_encoded = attr_info.encoded.to_string();
+            let sub_proof_index = attr_info.sub_proof_index as usize;
+
+            let attr_name = proof_req.requested_attributes.get(attr_referent.as_str())
+                .as_ref()
+                .map(|attr_info| attr_info.name.as_str())
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequest", attr_referent)))?;
+
+            let crypto_proof_encoded = proof.proof.proofs
+                .get(sub_proof_index)
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("CryptoProof not found by index \"{}\"", sub_proof_index)))?
+                .revealed_attrs()?
+                .iter()
+                .find(|(key, _)|attr_common_view(&attr_name) == attr_common_view(&key))
+                .map(|(_, val)| val.to_string())
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with name \"{}\" not found in CryptoProof", attr_name)))?;
+
+            if reveal_attr_encoded != crypto_proof_encoded {
+                return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
+                                               format!("Encoded Values for \"{}\" are different in RequestedProof \"{}\" and CryptoProof \"{}\"", attr_name, reveal_attr_encoded, crypto_proof_encoded)));
+            }
+        }
+        Ok(())
     }
 
     fn _verify_requested_restrictions(proof_req: &ProofRequest,
