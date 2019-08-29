@@ -458,8 +458,8 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Libindy Test: Test python wrapper"
 
             sh '''
-                    python3.5 -m pip install --user -e .[test]
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                    python3 -m pip install --user -e .[test]
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 python3 -m pytest
                 '''
         }
     }
@@ -548,8 +548,8 @@ def linuxVcxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Vcx Test: Test python wrapper"
 
             sh '''
-                    python3.5 -m pip install --user pytest==3.6.4 pytest-asyncio
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest -s
+                    python3 -m pip install --user pytest==3.6.4 pytest-asyncio
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3 -m pytest -s
             '''
         }
     }
@@ -701,10 +701,11 @@ def windowsTesting() {
 }
 
 def runAllTests(env_name) {
-    if (env_name == Ubuntu18) {
-        return true
-    }
-    return (env.BRANCH_NAME == 'rc')
+    return env_name == Ubuntu18
+//    if (env_name == Ubuntu18) {  TODO: FIXME install python in Ubuntu 16.04?
+//        return true
+//    }
+//    return (env.BRANCH_NAME == 'rc')
 }
 
 def ubuntuTesting() {
@@ -721,7 +722,7 @@ def ubuntuTesting() {
 }
 
 
-def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv, stashBuildResult) {
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     sh 'chmod -R 755 libindy/ci/*.sh'
     sh 'chmod -R 755 libindy/*.sh'
 
@@ -1300,8 +1301,8 @@ def pythonWrapperPublishing(testEnv, isRelease, directory, base_library) {
             withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                 sh 'cp $credentialsFile ./'
 
-                sh "PACKAGE_VERSION=$version$suffix python3.5 setup.py sdist"
-                sh "python3.5 -m twine upload dist/* --config-file .pypirc"
+                sh "PACKAGE_VERSION=$version$suffix python3 setup.py sdist"
+                sh "python3 -m twine upload dist/* --config-file .pypirc"
 
             }
         }
@@ -1828,7 +1829,7 @@ def androidTesting() {
     network_name = "pool_network"
     parallel([
             "${env_name}-android-test"    : {
-                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false, 'android')
+                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, 'android')
             },
             "${env_name}-android-building": { androidBuildAsTesting() }
     ])
