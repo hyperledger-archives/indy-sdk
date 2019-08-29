@@ -1,0 +1,66 @@
+@startuml
+
+package "Libindy API" as la {
+    [Anoncreds API] as anoncreds_api
+    [Crypto API] as crypto_api
+    [Cache API] as cache_api
+    [DID API] as did_api
+    [Ledger API] as ledger_api
+    [Payment API] as payment_api
+    [Wallet API] as wallet_api
+}
+
+package "Libindy Commands Executors" as lce {
+
+     [Anoncreds CE] as anoncreds_ce
+     [Crypto CE] as crypto_ce
+     [Cache CE] as cache_ce
+     [DID CE] as did_ce
+     [Ledger CE] as ledger_ce
+     [Payment CE] as payment_ce
+     [Wallet CE] as wallet_ce
+
+}
+
+package "Libindy Services" as ls {
+    [Anoncreds Service] as anoncreds_s
+    [Crypto Service] as crypto_s
+    [Ledger Service] as ledger_s
+    [Payment Service] as payment_s
+    [Wallet Service] as wallet_s
+
+}
+
+
+anoncreds_api ~~> anoncreds_ce
+wallet_api ~~> wallet_ce
+crypto_api ~~> crypto_ce
+cache_api ~~> cache_ce
+did_api ~~> did_ce
+ledger_api ~~> ledger_ce
+payment_api ~~> payment_ce
+
+anoncreds_ce ~~> anoncreds_s
+anoncreds_ce ~~> wallet_s
+anoncreds_ce ~~> crypto_s
+anoncreds_ce ~~> ledger_s
+
+crypto_ce ~~> crypto_s
+crypto_ce ~~> wallet_s
+
+cache_ce ~~> wallet_s
+
+did_ce ~~> crypto_s
+did_ce ~~> ledger_s
+did_ce ~~> wallet_s
+
+ledger_ce ~~> crypto_s
+ledger_ce ~~> ledger_s
+
+payment_ce ~~> payment_s
+payment_ce ~~> wallet_s
+
+wallet_ce ~~> wallet_s
+wallet_ce ~~> crypto_s
+
+@enduml
