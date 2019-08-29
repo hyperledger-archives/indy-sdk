@@ -701,7 +701,7 @@ def windowsTesting() {
 }
 
 def runAllTests(env_name) {
-    if (env_name == Ubuntu16) {
+    if (env_name == Ubuntu18) {
         return true
     }
     return (env.BRANCH_NAME == 'rc')
