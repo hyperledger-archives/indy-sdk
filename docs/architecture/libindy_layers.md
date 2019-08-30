@@ -63,7 +63,7 @@ For async responses "Ack" commands are used.
 ### Service -> Service
 Services are completely isolated against each other, so no direct interaction between them is allowed. 
 
-## Special units
+## Miscellaneous 
 
 ### Threads Pool
 It is used by Command Executors for CPU-heavy operations. The Command Executor prepare isolated data to be computed and pass a closure to pool thread.
@@ -72,3 +72,9 @@ While execution this closure Command Executors thread are free to process other 
 
 ### Domain
 A set of structures definitions used while parsing incoming JSON from API of the library.
+
+### Secure Enclave
+Secrets from libindy wallet are never escape from it.
+Private keys are available only at wallet service and for Command Executors which are consuming wallet service directly.
+Anoncreds and Crypto services consume some secrets as input for their API.
+As a result no secrets are available above Commands Executor layer.
