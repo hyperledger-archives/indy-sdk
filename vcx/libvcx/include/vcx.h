@@ -276,6 +276,28 @@ vcx_error_t vcx_connection_send_discovery_features(vcx_u32_t command_handle,
                                                    const char* comment,
                                                    void (*cb)(vcx_command_handle_t, vcx_error_t));
 
+// Takes the Connection object and returns callers pw_did associated with this connection
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+//
+// connection_handle: Connection handle that identifies pairwise connection
+//
+// #Returns
+// Error code as a u32
+vcx_error_t vcx_connection_get_pw_did(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+// Takes the Connection object and returns callers their_pw_did associated with this connection
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+//
+// connection_handle: Connection handle that identifies pairwise connection
+//
+// #Returns
+// Error code as a u32
+vcx_error_t vcx_connection_get_their_pw_did(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Create a Credential object that requests and receives a credential for an institution
 //
 // #Params
@@ -426,6 +448,28 @@ vcx_error_t vcx_credential_send_request(vcx_command_handle_t command_handle,
                                      vcx_connection_handle_t connection_handle,
                                      vcx_payment_handle_t payment_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+// Get the credential request message that can be sent to the specified connection
+//
+// #params
+// command_handle: command handle to map callback to user context
+//
+// credential_handle: credential handle that was provided during creation. Used to identify credential object
+//
+// my_pw_did: my pw did associated with person I'm sending credential to
+//
+// their_pw_did: their pw did associated with person I'm sending credential to
+//
+// cb: Callback that provides error status of credential request
+//
+// #Returns
+// Error code as a u32
+vcx_error_t vcx_credential_get_request_msg(vcx_command_handle_t command_handle,
+                                           vcx_credential_handle_t credential_handle,
+                                           const char *my_pw_did,
+                                           const char *their_pw_did,
+                                           vcx_payment_handle_t payment_handle,
+                                           void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
 // Takes the credential object and returns a json string of all its attributes
 //
@@ -1111,6 +1155,39 @@ vcx_error_t vcx_issuer_send_credential_offer(vcx_command_handle_t command_handle
                                           vcx_connection_handle_t connection_handle,
                                           void (*cb)(vcx_command_handle_t, vcx_error_t));
 
+
+// Takes the credential object and returns a credential offer
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+//
+// credential_handle: Credential handle that was provided during creation. Used to identify credential object
+//
+// cb: Callback that provides json string of the credential offer
+//
+// #Returns
+// Error code as a u32
+vcx_error_t vcx_issuer_get_credential_offer_msg(vcx_command_handle_t command_handle,
+                                                vcx_issuer_credential_handle_t credential_handle,
+                                                void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+// Takes the credential object and returns a credential (For sending purposes)
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+//
+// credential_handle: Credential handle that was provided during creation. Used to identify credential object
+//
+// cb: Callback that provides json string of the credential
+//
+// #Returns
+// Error code as a u32
+vcx_error_t vcx_issuer_get_credential_msg(vcx_command_handle_t command_handle,
+                                          vcx_issuer_credential_handle_t credential_handle,
+                                          const char *my_pw_did,
+                                          void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+
 // Get ledger fees from the sovrin network
 //
 // #Params
@@ -1259,6 +1336,22 @@ vcx_error_t vcx_proof_send_request(vcx_command_handle_t command_handle,
 vcx_error_t vcx_proof_serialize(vcx_command_handle_t command_handle,
                              vcx_proof_handle_t proof_handle,
                              void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+// Takes the Proof object and returns a proof
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+//
+// proof_handle: Proof handle that was provided during creation. Used to identify proof object
+//
+// cb: Callback that provides json string of the credential offer
+//
+// #Returns
+// Error code as a u32
+vcx_error_t vcx_get_proof_msg(vcx_command_handle_t command_handle,
+                              vcx_proof_handle_t proof_handle,
+                              void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 
 // Checks for any state change and updates the proof state attribute
 //

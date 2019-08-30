@@ -91,11 +91,10 @@ impl Credential {
             return Err(VcxError::from_msg(VcxErrorKind::NotReady, format!("credential {} has invalid state {} for sending credential request", self.source_id, self.state as u32)));
         }
 
-        let prover_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidDid))?;
         let credential_offer = self.credential_offer.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredential))?;
 
         let (req, req_meta, cred_def_id, _) = Credential::create_credential_request(&credential_offer.cred_def_id,
-                                                                                    &prover_did,
+                                                                                    &my_did,
                                                                                     &credential_offer.libindy_offer)?;
 
         Ok(CredentialRequest {
@@ -125,19 +124,9 @@ impl Credential {
             .map_err(|err| err.extend("Cannot create credential request")).map(|(s1, s2)| (s1, s2, cred_def_id, cred_def_json))
     }
 
-    fn generate_request_msg(&mut self, connection_handle: u32) -> VcxResult<String> {
-        self.my_did = Some(connection::get_pw_did(connection_handle)?);
-        self.my_vk = Some(connection::get_pw_verkey(connection_handle)?);
-        self.agent_did = Some(connection::get_agent_did(connection_handle)?);
-        self.agent_vk = Some(connection::get_agent_verkey(connection_handle)?);
-        self.their_did = Some(connection::get_their_pw_did(connection_handle)?);
-        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle)?);
-
-        let my_did = connection::get_pw_did(connection_handle)?;
-        let their_did = connection::get_their_pw_did(connection_handle)?;
-
+    fn generate_request_msg(&mut self, my_pw_did: &str, their_pw_did: &str) -> VcxResult<String> {
         // if test mode, just get this.
-        let cred_req: CredentialRequest = self.build_request(&my_did, &their_did)?;
+        let cred_req: CredentialRequest = self.build_request(my_pw_did, their_pw_did)?;
         let cred_req_json = serde_json::to_string(&cred_req)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot serialize CredentialRequest: {}", err)))?;
 
@@ -154,9 +143,19 @@ impl Credential {
     fn send_request(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("Credential::send_request >>> connection_handle: {}", connection_handle);
 
+        self.my_did = Some(connection::get_pw_did(connection_handle)?);
+        self.my_vk = Some(connection::get_pw_verkey(connection_handle)?);
+        self.agent_did = Some(connection::get_agent_did(connection_handle)?);
+        self.agent_vk = Some(connection::get_agent_verkey(connection_handle)?);
+        self.their_did = Some(connection::get_their_pw_did(connection_handle)?);
+        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle)?);
+
+        let my_did = connection::get_pw_did(connection_handle)?;
+        let their_did = connection::get_their_pw_did(connection_handle)?;
+
         debug!("sending credential request {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
 
-        let cred_req_json = self.generate_request_msg(connection_handle)?;
+        let cred_req_json = self.generate_request_msg(&my_did, &their_did)?;
 
         debug!("verifier_did: {:?} -- verifier_vk: {:?} -- agent_did: {:?} -- agent_vk: {:?} -- remote_vk: {:?}",
                self.my_did,
@@ -488,11 +487,11 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
     }).map_err(handle_err)
 }
 
-pub fn generate_credential_request_msg(handle: u32, connection_handle: u32) -> VcxResult<String> {
+pub fn generate_credential_request_msg(handle: u32, my_pw_did: &str, their_pw_did: &str) -> VcxResult<String> {
     HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
             Credentials::V1(ref mut obj) => {
-                let req = obj.generate_request_msg(connection_handle);
+                let req = obj.generate_request_msg(my_pw_did, their_pw_did);
                 obj.set_state(VcxStateType::VcxStateOfferSent);
                 req
             }
@@ -822,6 +821,8 @@ pub mod tests {
         init!("true");
 
         let connection_h = connection::tests::build_test_connection();
+        let my_pw_did = ::connection::get_pw_did(connection_h).unwrap();
+        let their_pw_did = ::connection::get_their_pw_did(connection_h).unwrap();
         let offers = get_credential_offer_messages(connection_h).unwrap();
         let offers: Value = serde_json::from_str(&offers).unwrap();
         let offers = serde_json::to_string(&offers[0]).unwrap();
@@ -829,7 +830,7 @@ pub mod tests {
         let c_h = credential_create_with_offer("TEST_CREDENTIAL", &offers).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(c_h).unwrap());
 
-        let msg = generate_credential_request_msg(c_h, connection_h).unwrap();
+        let msg = generate_credential_request_msg(c_h, &my_pw_did, &their_pw_did).unwrap();
         assert!(msg.len() > 0);
     }
 

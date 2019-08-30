@@ -110,6 +110,15 @@ export interface ICredentialSendData {
   payment: number
 }
 
+export interface ICredentialGetRequestMessageData {
+  // Use Connection api (vcx_connection_get_pw_did) with specified connection_handle to retrieve your pw_did
+  myPwDid: string,
+  // Use Connection api (vcx_connection_get_their_pw_did) with specified connection_handle to retrieve their pw_did
+  theirPwDid?: string,
+  // Fee amount
+  payment: number
+}
+
 // tslint:disable max-classes-per-file
 export class CredentialPaymentManager extends PaymentManager {
   protected _getPaymentTxnFn = rustAPI().vcx_credential_get_payment_txn
@@ -311,15 +320,15 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
    * connection = await Connection.create({id: 'foobar'})
    * inviteDetails = await connection.connect()
    * credential = Credential.create(data)
-   * await credential.sendRequest({ connection, 1000 })
+   * await credential.getRequestMessage({ '44x8p4HubxzUK1dwxcc5FU', 1000 })
    * ```
    *
    */
-  public async getRequestMessage ({ connection, payment }: ICredentialSendData): Promise<string> {
+  public async getRequestMessage ({ myPwDid, theirPwDid, payment }: ICredentialGetRequestMessageData): Promise<string> {
     try {
       return await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credential_get_request_msg(0, this.handle, connection.handle, payment, cb)
+            const rc = rustAPI().vcx_credential_get_request_msg(0, this.handle, myPwDid, theirPwDid, payment, cb)
             if (rc) {
               reject(rc)
             }

@@ -1111,14 +1111,16 @@ mod tests {
 
         let cred_handle = ::issuer_credential::from_string(::utils::constants::DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
         let connection_handle = ::connection::from_string(::utils::constants::DEFAULT_CONNECTION).unwrap();
+        let my_pw_did = ::connection::get_pw_did(connection_handle).unwrap();
+        let their_pw_did = ::connection::get_their_pw_did(connection_handle).unwrap();
 
-        let (offer, _) = ::issuer_credential::generate_credential_offer_msg(cred_handle, connection_handle).unwrap();
+        let (offer, _) = ::issuer_credential::generate_credential_offer_msg(cred_handle).unwrap();
         let mycred = ::credential::credential_create_with_offer("test1", &offer).unwrap();
-        let request = ::credential::generate_credential_request_msg(mycred, connection_handle).unwrap();
+        let request = ::credential::generate_credential_request_msg(mycred, &my_pw_did, &their_pw_did).unwrap();
         ::issuer_credential::update_state(cred_handle, Some(request)).unwrap();
-        let cred = ::issuer_credential::generate_credential_msg(cred_handle, connection_handle).unwrap();
+        let cred = ::issuer_credential::generate_credential_msg(cred_handle, &my_pw_did).unwrap();
         ::credential::update_state(mycred, Some(cred)).unwrap();
-        assert!(::credential::get_state(mycred).unwrap() == VcxStateType::VcxStateAccepted as u32);
+        assert_eq!(::credential::get_state(mycred).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]
