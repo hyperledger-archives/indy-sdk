@@ -2,12 +2,10 @@
 
 package "Libindy API" as la {
     [Anoncreds API] as anoncreds_api
-    [Blob Storage API] as bs_api
     [Cache API] as cache_api
     [Crypto API] as crypto_api
     [DID API] as did_api
     [Ledger API] as ledger_api
-    [Logger API] as logger_api
     [Non Secrets API] as nonsecrets_api
     [Pairwise API] as pairwise_api
     [Payment API] as payment_api
@@ -17,12 +15,10 @@ package "Libindy API" as la {
 
 package "Libindy Commands Executors" as lce {
     [Anoncreds CE] as anoncreds_ce
-    [Blob Storage CE] as bs_ce
     [Cache CE] as cache_ce
     [Crypto CE] as crypto_ce
     [DID CE] as did_ce
     [Ledger CE] as ledger_ce
-    [Logger Helpers] as logger_ce
     [Non Secrets CE] as nonsecrets_ce
     [Pairwise CE] as pairwise_ce
     [Payment CE] as payment_ce
@@ -32,7 +28,6 @@ package "Libindy Commands Executors" as lce {
 
 package "Libindy Services" as ls {
     [Anoncreds Service] as anoncreds_s
-    [Blob Storage Serice] as bs_s
     [Crypto Service] as crypto_s
     [Ledger Service] as ledger_s
     [Payment Service] as payment_s
@@ -41,12 +36,10 @@ package "Libindy Services" as ls {
 }
 
 anoncreds_api ~~> anoncreds_ce
-bs_api ~~> bs_ce
 cache_api ~~> cache_ce
 crypto_api ~~> crypto_ce
 did_api ~~> did_ce
 ledger_api ~~> ledger_ce
-logger_api ~~> logger_ce
 nonsecrets_api ~~> nonsecrets_ce
 pairwise_api ~~> pairwise_ce
 payment_api ~~> payment_ce
@@ -54,12 +47,9 @@ pool_api ~~> pool_ce
 wallet_api ~~> wallet_ce
 
 anoncreds_ce ~~> anoncreds_s
-anoncreds_ce ~~> bs_s
 anoncreds_ce ~~> wallet_s
 anoncreds_ce ~~> crypto_s
 anoncreds_ce ~~> pool_s
-
-bs_ce ~~> bs_s
 
 cache_ce ~~> wallet_s
 
