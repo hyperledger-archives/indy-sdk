@@ -35,7 +35,7 @@ use indy::ErrorCode;
 use utils::constants::*;
 use utils::Setup;
 
-use utils::domain::anoncreds::schema::{Schema};
+use utils::domain::anoncreds::schema::Schema;
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
@@ -464,6 +464,8 @@ mod high_cases {
     // {"issuer_did": DID, "schema_id": gvt_schema_id}
     mod prover_get_credentials_for_proof_req {
         use super::*;
+        use utils::domain::anoncreds::schema::SchemaId;
+        use utils::domain::anoncreds::credential_definition::CredentialDefinitionId;
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_empty_req() {
@@ -479,11 +481,8 @@ mod high_cases {
                "requested_predicates": json!({}),
             }).to_string();
 
-            let credentials_json = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 0);
-            assert_eq!(credentials.predicates.len(), 0);
+            let res = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -954,7 +953,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": [json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
+                           "restrictions": [json!({ "schema_id": SchemaId::new(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
                        })
                    }),
                    "requested_predicates": json!({
@@ -985,7 +984,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": [json!({ "cred_def_id": CredentialDefinition::cred_def_id(DID_TRUSTEE, &anoncreds::gvt_schema_id(), "CL", TAG_1) })]
+                           "restrictions": [json!({ "cred_def_id": CredentialDefinitionId::new(DID_TRUSTEE, &SchemaId(anoncreds::gvt_schema_id()), "CL", TAG_1) })]
                        })
                    }),
                    "requested_predicates": json!({
@@ -1477,7 +1476,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })
+                           "restrictions": json!({ "schema_id": SchemaId::new(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })
                        })
                    }),
                    "requested_predicates": json!({
@@ -1508,7 +1507,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": json!({ "cred_def_id": CredentialDefinition::cred_def_id(DID_TRUSTEE, &anoncreds::gvt_schema_id(), "CL", TAG_1) })
+                           "restrictions": json!({ "cred_def_id": CredentialDefinitionId::new(DID_TRUSTEE, &SchemaId(anoncreds::gvt_schema_id()), "CL", TAG_1) })
                        })
                    }),
                    "requested_predicates": json!({
@@ -1820,7 +1819,7 @@ mod high_cases {
                    "requested_attributes": json!({}),
                    "requested_predicates": json!({
                        "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                       "restrictions": [ json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })] })
+                       "restrictions": [ json!({ "schema_id": SchemaId::new(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })] })
                    }),
                 }).to_string();
 
@@ -2153,7 +2152,7 @@ mod high_cases {
                             "name":"age",
                             "p_type":">=",
                             "p_value":18,
-                            "restrictions": json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })
+                            "restrictions": json!({ "schema_id": SchemaId::new(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })
                          })
                    }),
                 }).to_string();
@@ -2924,6 +2923,81 @@ mod high_cases {
                                                        "{}");
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
+
+        #[test]
+        fn verifier_verify_proof_works_for_proof_does_not_correspond_to_request_attribute() {
+            let other_proof_req_json = json!({
+               "nonce":"123432421212",
+               "name":"proof_req_1",
+               "version":"0.1",
+               "requested_attributes": json!({
+                   "attr1_referent": json!({
+                       "name":"sex"
+                   })
+               }),
+               "requested_predicates": json!({}),
+            }).to_string();
+            let res = anoncreds::verifier_verify_proof(&other_proof_req_json,
+                                                       &anoncreds::proof_json(),
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected, res);
+        }
+
+        #[test]
+        fn verifier_verify_proof_works_for_wrong_revealed_attr_value() {
+            let proof_json = anoncreds::proof_json().replace(r#"name":"1139481716457488690172217916278103335"#, r#"name":"1111111111111111111111111111111111111"#);
+
+            let res = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
+                                                       &proof_json,
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected, res);
+        }
+
+        #[test]
+        fn verifier_verify_proof_works_for_wrong_encoded() {
+            let proof_json = anoncreds::proof_json().replace(r#"encoded":"1139481716457488690172217916278103335"#, r#"encoded":"1111111111111111111111111111111111111"#);
+
+            let res = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
+                                                       &proof_json,
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected, res);
+        }
+
+        #[test]
+        #[ignore] // TODO: Libindy doesn't aware about algorithm used for encoding of attribute values. We can do this check only on application level.
+        fn verifier_verify_proof_works_for_wrong_raw() {
+            let proof_json = anoncreds::proof_json().replace(r#"raw":"Alex"#, r#"raw":"Bob"#);
+
+            let res = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr(),
+                                                       &proof_json,
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}");
+            assert_code!(ErrorCode::AnoncredsProofRejected, res);
+        }
+
+        #[test]
+        fn verifier_verify_proof_works_for_revealed_attr_case_insensitive() {
+            let proof_req_json = anoncreds::proof_request_attr().replace(r#""name":"name""#, r#""name":"NAME""#);
+
+            let valid = anoncreds::verifier_verify_proof(&proof_req_json,
+                                                       &anoncreds::proof_json(),
+                                                       &anoncreds::schemas_for_proof(),
+                                                       &anoncreds::cred_defs_for_proof(),
+                                                       "{}",
+                                                       "{}").unwrap();
+            assert!(valid);
+        }
     }
 
     mod verifier_verify_proof_with_proof_req_restrictions {
@@ -2938,7 +3012,6 @@ mod high_cases {
                                                          "{}",
                                                          "{}").unwrap();
             assert!(valid);
-
         }
 
         #[test]
@@ -3022,7 +3095,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_schema_id() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3047,7 +3119,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_schema_id() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3072,7 +3143,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_schema_issuer_did() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3097,7 +3167,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_schema_issuer_did() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3122,7 +3191,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_schema_name() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3147,7 +3215,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_schema_name() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3172,7 +3239,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_schema_version() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3197,7 +3263,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_schema_version() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3222,7 +3287,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_success_for_valid_cred_def_id() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3247,7 +3311,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_missing_cred_def_id() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3272,7 +3335,6 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_fails_for_unknown_restriction() {
-
             let proof_req = json!({
                    "nonce":"123432421212",
                    "name":"proof_req_1",
@@ -3337,7 +3399,7 @@ mod high_cases {
     }
 }
 
-#[cfg(not(feature="only_high_cases"))]
+#[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
     use std::collections::HashSet;
@@ -3542,7 +3604,7 @@ mod medium_cases {
 
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let res = anoncreds::issuer_create_credential_offer(wallet_handle, "unknown_cred_def_id");
+            let res = anoncreds::issuer_create_credential_offer(wallet_handle, "NcYxiDXkpYi6ov5FcYDi1e:3:CL:100");
             assert_code!(ErrorCode::WalletItemNotFound, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
