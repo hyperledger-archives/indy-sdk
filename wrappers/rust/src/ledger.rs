@@ -245,21 +245,20 @@ fn _build_get_nym_request(command_handle: CommandHandle, submitter_did: Option<&
 /// Parse a GET_NYM response to get NYM data.
 ///
 /// # Arguments
-/// * `get_nym_response`: response of GET_NYM request.
+/// * `get_nym_response`: response on GET_NYM request.
 ///
 /// # Returns
 /// NYM data
 /// {
 ///     did: DID as base58-encoded string for 16 or 32 bit DID value.
 ///     verkey: verification key as base58-encoded string.
-///     alias: NYM's alias.
-///     role: Role of a user NYM record:
+///     role: Role associated number
 ///                             null (common USER)
-///                             TRUSTEE
-///                             STEWARD
-///                             TRUST_ANCHOR
-///                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
-///                             NETWORK_MONITOR
+///                             0 - TRUSTEE
+///                             2 - STEWARD
+///                             101 - TRUST_ANCHOR
+///                             101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+///                             201 - NETWORK_MONITOR
 /// }
 pub fn parse_get_nym_response(get_nym_response: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();

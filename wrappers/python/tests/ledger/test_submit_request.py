@@ -62,8 +62,10 @@ async def test_nym_requests_works(pool_handle, wallet_handle, identity_trustee1,
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
     get_nym_response = await ensure_previous_request_applied(pool_handle, get_nym_request,
                                                              lambda response: response['result']['data'] is not None)
+    get_nym_response = json.loads(await ledger.parse_get_nym_response(get_nym_response))
 
-    assert get_nym_response
+    assert my_did == get_nym_response['did']
+    assert my_ver_key == get_nym_response['verkey']
 
 
 @pytest.mark.asyncio

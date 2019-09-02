@@ -428,6 +428,44 @@ async def build_get_nym_request(submitter_did: Optional[str],
     return res
 
 
+async def parse_get_nym_response(response: str) -> str:
+    """
+    Parse a GET_NYM response to get NYM data.
+
+    :param response: response on GET_NYM request.
+    :return: NYM data
+    {
+        did: DID as base58-encoded string for 16 or 32 bit DID value.
+        verkey: verification key as base58-encoded string.
+        role: Role associated number
+                                null (common USER)
+                                0 - TRUSTEE
+                                2 - STEWARD
+                                101 - TRUST_ANCHOR
+                                101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+                                201 - NETWORK_MONITOR
+    }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("parse_get_nym_response: >>> response: %r",
+                 response)
+
+    if not hasattr(parse_get_nym_response, "cb"):
+        logger.debug("parse_get_nym_response: Creating callback")
+        parse_get_nym_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_response = c_char_p(response.encode('utf-8'))
+
+    request_json = await do_call('indy_parse_get_nym_response',
+                                 c_response,
+                                 parse_get_nym_response.cb)
+
+    res = request_json.decode()
+    logger.debug("parse_get_nym_response: <<< res: %r", res)
+    return res
+
+
 async def build_schema_request(submitter_did: str,
                                data: str) -> str:
     """

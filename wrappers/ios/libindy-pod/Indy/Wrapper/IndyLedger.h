@@ -132,6 +132,27 @@
                                  targetDID:(NSString *)targetDid
                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
+/**
+ Parse a GET_NYM response to get NYM data.
+ 
+ @param response Response on GET_NYM request.
+ @param completion Callback that takes command result as parameter. 
+ Returns NYM data as JSON
+    {
+        did: DID as base58-encoded string for 16 or 32 bit DID value.
+        verkey: verification key as base58-encoded string.
+        role: Role associated number
+                                null (common USER)
+                                0 - TRUSTEE
+                                2 - STEWARD
+                                101 - TRUST_ANCHOR
+                                101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+                                201 - NETWORK_MONITOR
+    }
+ */
++ (void)parseGetNymResponse:(NSString *)response
+                 completion:(void (^)(NSError *error, NSString *nymDataJson))completion;
+
 // MARK: - Attribute request
 
 /**

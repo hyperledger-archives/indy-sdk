@@ -312,7 +312,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// get_nym_response: response of GET_NYM request.
+    /// get_nym_response: response on GET_NYM request.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -320,19 +320,14 @@ extern "C" {
     /// {
     ///     did: DID as base58-encoded string for 16 or 32 bit DID value.
     ///     verkey: verification key as base58-encoded string.
-    ///     alias: NYM's alias.
-    ///     role: Role of a user NYM record:
+    ///     role: Role associated number
     ///                             null (common USER)
-    ///                             TRUSTEE
-    ///                             STEWARD
-    ///                             TRUST_ANCHOR
-    ///                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
-    ///                             NETWORK_MONITOR
+    ///                             0 - TRUSTEE
+    ///                             2 - STEWARD
+    ///                             101 - TRUST_ANCHOR
+    ///                             101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+    ///                             201 - NETWORK_MONITOR
     /// }
-    ///
-    ///
-    /// #Errors
-    /// Common*
 
     extern indy_error_t indy_parse_get_nym_response(indy_handle_t command_handle,
                                                     const char *  get_nym_response,
