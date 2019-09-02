@@ -23,9 +23,14 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate regex;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 mod utils;
+
+use indy::set_runtime_config;
 
 use utils::{did, pool, ledger};
 use utils::constants::*;
@@ -340,6 +345,42 @@ mod high_cases {
 
             let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, "{}").unwrap();
             assert_eq!(my_did.from_base58().unwrap().len(), 16);
+            assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
+        }
+
+        #[test]
+        fn indy_create_my_did_works_for_first_did_version() {
+            set_runtime_config(r#"{"did_protocol_version": 1}"#);
+            let setup = Setup::wallet();
+
+            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, "{}").unwrap();
+
+            assert!(my_did.starts_with("did:sov:"));
+            assert_eq!(my_did.replace("did:sov:", "").from_base58().unwrap().len(), 16);
+            assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
+        }
+
+        #[test]
+        fn indy_create_my_did_works_for_first_did_version_with_custom_prefix() {
+            set_runtime_config(r#"{"did_protocol_version": 1}"#);
+            let setup = Setup::wallet();
+
+            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, r#"{"method_name": "indy"}"#).unwrap();
+
+            assert!(my_did.starts_with("did:indy:"));
+            assert_eq!(my_did.replace("did:indy:", "").from_base58().unwrap().len(), 16);
+            assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
+        }
+
+        #[test]
+        fn indy_create_my_did_works_for_first_did_version_with_default_prefix() {
+            set_runtime_config(r#"{"did_protocol_version": 1, "did_default_method_name": "indy"}"#);
+            let setup = Setup::wallet();
+
+            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, "{}").unwrap();
+
+            assert!(my_did.starts_with("did:indy:"));
+            assert_eq!(my_did.replace("did:indy:", "").from_base58().unwrap().len(), 16);
             assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
         }
 

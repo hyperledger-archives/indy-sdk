@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::str;
 
 use domain::crypto::combo_box::ComboBox;
-use domain::crypto::did::{Did, MyDidInfo, TheirDid, TheirDidInfo};
+use domain::crypto::did::{Did, MyDidInfo, TheirDid, TheirDidInfo, DidProtocolVersion};
 use domain::crypto::key::{Key, KeyInfo};
 use errors::prelude::*;
 use utils::crypto::base64;
@@ -17,6 +17,7 @@ use utils::crypto::verkey_builder::{build_full_verkey, split_verkey, verkey_get_
 use self::ed25519::ED25519CryptoType;
 use self::hex::FromHex;
 use rust_base58::{FromBase58, ToBase58};
+use regex::Regex;
 
 mod ed25519;
 
@@ -105,13 +106,22 @@ impl CryptoService {
             _ => vk[0..16].to_vec()
         };
 
-        let did = did.to_base58();
+        let mut did = did.to_base58();
         let mut vk = vk[..].to_base58();
         let sk = sk[..].to_base58();
 
         if !crypto_type_name.eq(DEFAULT_CRYPTO_TYPE) {
             // Use suffix with crypto type name to store crypto type inside of vk
             vk = format!("{}:{}", vk, crypto_type_name);
+        }
+
+        if DidProtocolVersion::get() == 1 {
+            let method_name = if let Some(ref str) = my_did_info.method_name {
+                str.to_string()
+            } else {
+                DidProtocolVersion::get_default_method_name()
+            };
+            did = format!("did:{}:{}", method_name, did);
         }
 
         let did = (Did::new(did, vk.clone()), Key::new(vk, sk));
@@ -370,12 +380,14 @@ impl CryptoService {
     pub fn validate_did(&self, did: &str) -> IndyResult<()> {
         trace!("validate_did >>> did: {:?}", did);
 
-        let did = did.from_base58()?;
+        if DidProtocolVersion::get() == 0 {
+            let did = did.from_base58()?;
 
-        if did.len() != 16 && did.len() != 32 {
-            return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("Trying to use DID with unexpected length: {}. \
+            if did.len() != 16 && did.len() != 32 {
+                return Err(err_msg(IndyErrorKind::InvalidStructure,
+                                   format!("Trying to use DID with unexpected length: {}. \
                                The 16- or 32-byte number upon which a DID is based should be 22/23 or 44/45 bytes when encoded as base58.", did.len())));
+            }
         }
 
         trace!("validate_did <<< res: ()");
@@ -464,7 +476,7 @@ mod tests {
     #[test]
     fn create_my_did_with_works_for_empty_info() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None};
         let my_did = service.create_my_did(&did_info);
         assert!(my_did.is_ok());
     }
@@ -474,7 +486,7 @@ mod tests {
         let service = CryptoService::new();
 
         let did = "NcYxiDXkpYi6ov5FcYDi1e";
-        let did_info = MyDidInfo { did: Some(did.to_string()), cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: Some(did.to_string()), cid: None, seed: None, crypto_type: None, method_name: None };
 
         let (my_did, _) = service.create_my_did(&did_info).unwrap();
         assert_eq!(did, my_did.did);
@@ -487,7 +499,7 @@ mod tests {
         let did = Some("NcYxiDXkpYi6ov5FcYDi1e".to_string());
         let crypto_type = Some("type".to_string());
 
-        let did_info = MyDidInfo { did: did.clone(), cid: None, seed: None, crypto_type };
+        let did_info = MyDidInfo { did: did.clone(), cid: None, seed: None, crypto_type, method_name: None };
 
         assert!(service.create_my_did(&did_info).is_err());
     }
@@ -499,8 +511,8 @@ mod tests {
         let did = Some("NcYxiDXkpYi6ov5FcYDi1e".to_string());
         let seed = Some("00000000000000000000000000000My1".to_string());
 
-        let did_info_with_seed = MyDidInfo { did: did.clone(), cid: None, seed, crypto_type: None };
-        let did_info_without_seed = MyDidInfo { did: did.clone(), cid: None, seed: None, crypto_type: None };
+        let did_info_with_seed = MyDidInfo { did: did.clone(), cid: None, seed, crypto_type: None, method_name: None };
+        let did_info_without_seed = MyDidInfo { did: did.clone(), cid: None, seed: None, crypto_type: None, method_name: None };
 
         let (did_with_seed, _) = service.create_my_did(&did_info_with_seed).unwrap();
         let (did_without_seed, _) = service.create_my_did(&did_info_without_seed).unwrap();
@@ -547,7 +559,7 @@ mod tests {
     #[test]
     fn sign_works() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
 
         let message = r#"message"#;
         let (_, my_key) = service.create_my_did(&did_info).unwrap();
@@ -566,7 +578,7 @@ mod tests {
     #[test]
     fn sign_verify_works() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
         let message = r#"message"#;
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
         let signature = service.sign(&my_key, message.as_bytes()).unwrap();
@@ -577,7 +589,7 @@ mod tests {
     #[test]
     fn sign_verify_works_for_verkey_contained_crypto_type() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
         let message = r#"message"#;
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
         let signature = service.sign(&my_key, message.as_bytes()).unwrap();
@@ -590,7 +602,7 @@ mod tests {
     #[test]
     fn sign_verify_works_for_verkey_contained_invalid_crypto_type() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
         let message = r#"message"#;
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
         let signature = service.sign(&my_key, message.as_bytes()).unwrap();
@@ -601,7 +613,7 @@ mod tests {
     #[test]
     fn verify_not_works_for_invalid_verkey() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
         let message = r#"message"#;
         let (_, my_key) = service.create_my_did(&did_info).unwrap();
         let signature = service.sign(&my_key, message.as_bytes()).unwrap();
@@ -614,7 +626,7 @@ mod tests {
     fn crypto_box_works() {
         let service = CryptoService::new();
         let msg = "some message";
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
         let (_, my_key) = service.create_my_did(&did_info).unwrap();
         let (their_did, _) = service.create_my_did(&did_info.clone()).unwrap();
         let their_did = Did::new(their_did.did, their_did.verkey);
@@ -628,7 +640,7 @@ mod tests {
 
         let msg = "some message";
 
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
 
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
 
@@ -656,7 +668,7 @@ mod tests {
 
         let msg = "some message";
 
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
 
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
 
@@ -682,7 +694,7 @@ mod tests {
     fn crypto_box_seal_works() {
         let service = CryptoService::new();
         let msg = "some message";
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
         let (did, _) = service.create_my_did(&did_info.clone()).unwrap();
         let did = Did::new(did.did, did.verkey);
         let encrypted_message = service.crypto_box_seal(&did.verkey, msg.as_bytes());
@@ -693,7 +705,7 @@ mod tests {
     fn crypto_box_seal_and_crypto_box_seal_open_works() {
         let service = CryptoService::new();
         let msg = "some message".as_bytes();
-        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None, method_name: None };
         let (did, key) = service.create_my_did(&did_info.clone()).unwrap();
         let encrypt_did = Did::new(did.did.clone(), did.verkey.clone());
         let encrypted_message = service.crypto_box_seal(&encrypt_did.verkey, msg).unwrap();

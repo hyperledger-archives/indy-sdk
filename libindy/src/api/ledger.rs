@@ -6,6 +6,7 @@ use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialD
 use domain::anoncreds::schema::{Schema, SchemaId};
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryId};
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
+use domain::crypto::did::Did;
 use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
 use domain::ledger::node::NodeOperationData;
 use domain::ledger::auth_rule::{Constraint, AuthRules};
@@ -15,6 +16,7 @@ use utils::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
+use std::convert::TryFrom;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -301,16 +303,16 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_ddo_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
+    check_useful_convertable_string!(target_did, ErrorCode::CommonInvalidParam3, Did);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_ddo_request: entities >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetDdoRequest(
-            submitter_did,
-            target_did,
+            submitter_did.map(|d| d.did),
+            target_did.did,
             boxed_callback_string!("indy_build_get_ddo_request", cb, command_handle)
         )));
 
@@ -359,8 +361,8 @@ pub extern fn indy_build_nym_request(command_handle: CommandHandle,
     trace!("indy_build_nym_request: >>> submitter_did: {:?}, target_did: {:?}, verkey: {:?}, alias: {:?}, role: {:?}",
            submitter_did, target_did, verkey, alias, role);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
+    check_useful_convertable_string!(target_did, ErrorCode::CommonInvalidParam3, Did);
     check_useful_opt_c_str!(verkey, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(alias, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(role, ErrorCode::CommonInvalidParam6);
@@ -371,8 +373,8 @@ pub extern fn indy_build_nym_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildNymRequest(
-            submitter_did,
-            target_did,
+            submitter_did.did,
+            target_did.did,
             verkey,
             alias,
             role,
@@ -408,16 +410,16 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_nym_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
+    check_useful_convertable_string!(target_did, ErrorCode::CommonInvalidParam3, Did);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_nym_request: entities >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetNymRequest(
-            submitter_did,
-            target_did,
+            submitter_did.map(|d| d.did),
+            target_did.did,
             boxed_callback_string!("indy_build_get_nym_request", cb, command_handle)
         )));
 
@@ -460,8 +462,8 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
     trace!("indy_build_attrib_request: >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
            submitter_did, target_did, hash, raw, enc);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
+    check_useful_convertable_string!(target_did, ErrorCode::CommonInvalidParam3, Did);
     check_useful_opt_c_str!(hash, ErrorCode::CommonInvalidParam4);
     check_useful_opt_json!(raw, ErrorCode::CommonInvalidParam5, serde_json::Value);
     check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
@@ -476,8 +478,8 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildAttribRequest(
-            submitter_did,
-            target_did,
+            submitter_did.did,
+            target_did.did,
             hash,
             raw,
             enc,
@@ -522,8 +524,8 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
     trace!("indy_build_get_attrib_request: >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
            submitter_did, target_did, hash, raw, enc);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
+    check_useful_convertable_string!(target_did, ErrorCode::CommonInvalidParam3, Did);
     check_useful_opt_c_str!(raw, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(hash, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
@@ -538,8 +540,8 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetAttribRequest(
-            submitter_did,
-            target_did,
+            submitter_did.map(|d| d.did),
+            target_did.did,
             raw,
             hash,
             enc,
@@ -583,7 +585,7 @@ pub extern fn indy_build_schema_request(command_handle: CommandHandle,
                                                              request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_schema_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, Schema);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -591,7 +593,7 @@ pub extern fn indy_build_schema_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildSchemaRequest(
-            submitter_did,
+            submitter_did.did,
             data,
             boxed_callback_string!("indy_build_schema_request", cb, command_handle)
         )));
@@ -625,7 +627,7 @@ pub extern fn indy_build_get_schema_request(command_handle: CommandHandle,
                                                                  request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_schema_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, SchemaId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -633,7 +635,7 @@ pub extern fn indy_build_get_schema_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetSchemaRequest(
-            submitter_did,
+            submitter_did.map(|d| d.did),
             id,
             boxed_callback_string!("indy_build_get_schema_request", cb, command_handle)
         )));
@@ -732,7 +734,7 @@ pub extern fn indy_build_cred_def_request(command_handle: CommandHandle,
                                                                request_result_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_cred_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, CredentialDefinition);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -740,7 +742,7 @@ pub extern fn indy_build_cred_def_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildCredDefRequest(
-            submitter_did,
+            submitter_did.did,
             data,
             boxed_callback_string!("indy_build_cred_def_request", cb, command_handle)
         )));
@@ -775,7 +777,7 @@ pub extern fn indy_build_get_cred_def_request(command_handle: CommandHandle,
                                                                    request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_cred_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -783,7 +785,7 @@ pub extern fn indy_build_get_cred_def_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetCredDefRequest(
-            submitter_did,
+            submitter_did.map(|d| d.did),
             id,
             boxed_callback_string!("indy_build_get_cred_def_request", cb, command_handle)
         )));
@@ -885,8 +887,8 @@ pub extern fn indy_build_node_request(command_handle: CommandHandle,
                                                            request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_node_request: >>> submitter_did: {:?}, target_did: {:?}, data: {:?}", submitter_did, target_did, data);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
+    check_useful_convertable_string!(target_did, ErrorCode::CommonInvalidParam3, Did);
     check_useful_json!(data, ErrorCode::CommonInvalidParam4, NodeOperationData);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -894,8 +896,8 @@ pub extern fn indy_build_node_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildNodeRequest(
-            submitter_did,
-            target_did,
+            submitter_did.did,
+            target_did.did,
             data,
             boxed_callback_string!("indy_build_node_request", cb, command_handle)
         )));
@@ -924,12 +926,12 @@ pub extern fn indy_build_get_validator_info_request(command_handle: CommandHandl
                                                     submitter_did: *const c_char,
                                                     cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                          request_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetValidatorInfoRequest(
-            submitter_did,
+            submitter_did.did,
             boxed_callback_string!("indy_build_get_validator_info_request", cb, command_handle)
         )));
 
@@ -964,7 +966,7 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_request: >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}", submitter_did, ledger_type, seq_no);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_opt_c_str!(ledger_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -972,7 +974,7 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetTxnRequest(
-            submitter_did,
+            submitter_did.map(|d| d.did),
             ledger_type,
             seq_no,
             boxed_callback_string!("indy_build_get_txn_request", cb, command_handle)
@@ -1012,14 +1014,14 @@ pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
                                                                   request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_pool_config_request: >>> submitter_did: {:?}, writes: {:?}, force: {:?}", submitter_did, writes, force);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_build_pool_config_request: entities >>> submitter_did: {:?}, writes: {:?}, force: {:?}", submitter_did, writes, force);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildPoolConfigRequest(
-            submitter_did,
+            submitter_did.did,
             writes,
             force,
             boxed_callback_string!("indy_build_pool_config_request", cb, command_handle)
@@ -1056,7 +1058,7 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
                                                                    request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_pool_restart_request: >>> submitter_did: {:?}, action: {:?}, datetime: {:?}", submitter_did, action, datetime);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_c_str!(action, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(datetime, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
@@ -1070,7 +1072,7 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
             LedgerCommand::BuildPoolRestartRequest(
-                submitter_did,
+                submitter_did.did,
                 action,
                 datetime,
                 boxed_callback_string!("indy_build_pool_restart_request", cb, command_handle)
@@ -1130,7 +1132,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
     schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
            submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(action, ErrorCode::CommonInvalidParam5);
@@ -1157,7 +1159,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
             LedgerCommand::BuildPoolUpgradeRequest(
-                submitter_did,
+                submitter_did.did,
                 name,
                 version,
                 action,
@@ -1216,7 +1218,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: CommandHandle,
                                                                     rev_reg_def_req: *const c_char)>) -> ErrorCode {
     trace!("indy_build_revoc_reg_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, RevocationRegistryDefinition);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -1224,7 +1226,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildRevocRegDefRequest(
-            submitter_did,
+            submitter_did.did,
             data,
             boxed_callback_string!("indy_build_revoc_reg_def_request", cb, command_handle)
         )));
@@ -1259,7 +1261,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: CommandHandle
                                                                         request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_revoc_reg_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -1267,7 +1269,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: CommandHandle
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetRevocRegDefRequest(
-            submitter_did,
+            submitter_did.map(|d| d.did),
             id,
             boxed_callback_string!("indy_build_get_revoc_reg_def_request", cb, command_handle)
         )));
@@ -1379,7 +1381,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: CommandHandle,
     trace!("indy_build_revoc_reg_entry_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, rev_def_type: {:?}, value: {:?}",
            submitter_did, revoc_reg_def_id, rev_def_type, value);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_validatable_string!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_str!(rev_def_type, ErrorCode::CommonInvalidParam4);
     check_useful_json!(value, ErrorCode::CommonInvalidParam5, RevocationRegistryDelta);
@@ -1390,7 +1392,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildRevocRegEntryRequest(
-            submitter_did,
+            submitter_did.did,
             revoc_reg_def_id,
             rev_def_type,
             value,
@@ -1429,7 +1431,7 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: CommandHandle,
                                                                     request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_validatable_string!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1437,7 +1439,7 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetRevocRegRequest(
-            submitter_did,
+            submitter_did.map(|d| d.did),
             revoc_reg_def_id,
             timestamp,
             boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle)
@@ -1533,7 +1535,7 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: CommandHand
     trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}",
            submitter_did, revoc_reg_def_id, from, to);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_validatable_string!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1544,7 +1546,7 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: CommandHand
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetRevocRegDeltaRequest(
-            submitter_did,
+            submitter_did.map(|d| d.did),
             revoc_reg_def_id,
             from,
             to,
@@ -1796,7 +1798,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
     old_value: {:?}, new_value: {:?}, constraint: {:?}",
            submitter_did, txn_type, action, field, old_value, new_value, constraint);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(submitter_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(action, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(field, ErrorCode::CommonInvalidParam5);
@@ -1811,7 +1813,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildAuthRuleRequest(
-            submitter_did,
+            submitter_did.did,
             txn_type,
             action,
             field,

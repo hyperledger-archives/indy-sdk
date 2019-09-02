@@ -24,6 +24,9 @@ extern crate named_type;
 extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
+extern crate regex;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 mod utils;

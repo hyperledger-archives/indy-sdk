@@ -17,6 +17,7 @@ use libc::c_char;
 use domain::IndyConfig;
 use errors::prelude::*;
 
+use utils::validation::Validatable;
 use utils::{ctypes, sequence};
 
 pub type IndyHandle = i32;
@@ -271,6 +272,8 @@ pub enum ErrorCode
 ///     "collect_backtrace": Optional<bool> - whether errors backtrace should be collected.
 ///         Capturing of backtrace can affect library performance.
 ///         NOTE: must be set before invocation of any other API functions.
+///     "did_default_method_name": Optional<String> - default method name for fully qualified did
+///     "did_protocol_version": Optional<usize> -- version of fully-qualified did support -- 0 - old way, 1 -- with fully qualified did support
 /// }
 ///
 /// #Errors
@@ -279,7 +282,7 @@ pub enum ErrorCode
 pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
     trace!("indy_set_runtime_config >>> config: {:?}", config);
 
-    check_useful_json!(config, ErrorCode::CommonInvalidParam1, IndyConfig);
+    check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam1, IndyConfig);
 
     ::commands::indy_set_runtime_config(config);
 

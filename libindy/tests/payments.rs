@@ -24,6 +24,9 @@ extern crate rust_base58;
 extern crate time;
 extern crate serde;
 extern crate sha2;
+extern crate regex;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 mod utils;

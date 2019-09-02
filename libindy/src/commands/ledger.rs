@@ -29,6 +29,8 @@ use utils::crypto::signature_serializer::serialize_signature;
 use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
 use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use rust_base58::ToBase58;
+use std::string::ToString;
+use std::convert::TryFrom;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -554,6 +556,7 @@ impl LedgerCommandExecutor {
 
         let serialized_request = serialize_signature(request.clone())?;
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
+        let did = Did::try_from(submitter_did.to_string()).map_err(|s| err_msg(IndyErrorKind::InvalidStructure, s))?;
 
         match signature_type {
             SignatureType::Single => { request["signature"] = Value::String(signature.to_base58()); }
@@ -563,7 +566,7 @@ impl LedgerCommandExecutor {
                         if !request.contains_key("signatures") {
                             request.insert("signatures".to_string(), Value::Object(serde_json::Map::new()));
                         }
-                        request["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(signature.to_base58()));
+                        request["signatures"].as_object_mut().unwrap().insert(did.did, Value::String(signature.to_base58()));
 
                         if let (Some(identifier), Some(signature)) = (request.get("identifier").and_then(Value::as_str).map(str::to_owned),
                                                                       request.remove("signature")) {

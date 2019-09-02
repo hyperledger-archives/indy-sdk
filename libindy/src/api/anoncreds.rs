@@ -6,6 +6,7 @@ use commands::anoncreds::issuer::IssuerCommand;
 use commands::anoncreds::prover::ProverCommand;
 use commands::anoncreds::verifier::VerifierCommand;
 use domain::anoncreds::schema::{Schema, AttributeNames, Schemas};
+use domain::crypto::did::Did;
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId, CredentialDefinitions};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
@@ -22,6 +23,7 @@ use utils::ctypes;
 
 use libc::c_char;
 use std::ptr;
+use std::convert::TryFrom;
 
 use utils::validation::Validatable;
 
@@ -77,7 +79,7 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
                                                              schema_id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_schema: >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
+    check_useful_convertable_string!(issuer_did, ErrorCode::CommonInvalidParam2, Did);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_validatable_json!(attrs, ErrorCode::CommonInvalidParam5, AttributeNames);
@@ -89,7 +91,7 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
         .send(Command::Anoncreds(
             AnoncredsCommand::Issuer(
                 IssuerCommand::CreateSchema(
-                    issuer_did,
+                    issuer_did.did,
                     name,
                     version,
                     attrs,
@@ -183,7 +185,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
     trace!("indy_issuer_create_and_store_credential_def: >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, tag: {:?}, \
     signature_type: {:?}, config_json: {:?}", wallet_handle, issuer_did, schema_json, tag, signature_type, config_json);
 
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_convertable_string!(issuer_did, ErrorCode::CommonInvalidParam3, Did);
     check_useful_validatable_json!(schema_json, ErrorCode::CommonInvalidParam4, Schema);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam6);
@@ -198,7 +200,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
             AnoncredsCommand::Issuer(
                 IssuerCommand::CreateAndStoreCredentialDefinition(
                     wallet_handle,
-                    issuer_did,
+                    issuer_did.did,
                     schema_json,
                     tag,
                     signature_type,
@@ -438,7 +440,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHand
     trace!("indy_issuer_create_and_store_credential_def: >>> wallet_handle: {:?}, issuer_did: {:?}, revoc_def_type: {:?}, tag: {:?}, \
     cred_def_id: {:?}, config_json: {:?}, tails_writer_handle: {:?}", wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle);
 
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_convertable_string!(issuer_did, ErrorCode::CommonInvalidParam3, Did);
     check_useful_opt_c_str!(revoc_def_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
     check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam6, CredentialDefinitionId);
@@ -453,7 +455,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHand
             AnoncredsCommand::Issuer(
                 IssuerCommand::CreateAndStoreRevocationRegistry(
                     wallet_handle,
-                    issuer_did,
+                    issuer_did.did,
                     revoc_def_type,
                     tag,
                     cred_def_id,
@@ -939,7 +941,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
     trace!("indy_prover_create_credential_req: >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer_json: {:?}, cred_def_json: {:?}, master_secret_id: {:?}",
            wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id);
 
-    check_useful_c_str!(prover_did, ErrorCode::CommonInvalidParam3);
+    check_useful_convertable_string!(prover_did, ErrorCode::CommonInvalidParam3, Did);
     check_useful_validatable_json!(cred_offer_json, ErrorCode::CommonInvalidParam4, CredentialOffer);
     check_useful_validatable_json!(cred_def_json, ErrorCode::CommonInvalidParam5, CredentialDefinition);
     check_useful_c_str!(master_secret_id, ErrorCode::CommonInvalidParam6);
@@ -953,7 +955,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
             AnoncredsCommand::Prover(
                 ProverCommand::CreateCredentialRequest(
                     wallet_handle,
-                    prover_did,
+                    prover_did.did,
                     cred_offer_json,
                     cred_def_json,
                     master_secret_id,

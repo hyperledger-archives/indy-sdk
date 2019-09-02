@@ -129,6 +129,39 @@ macro_rules! check_useful_validatable_string {
     }
 }
 
+macro_rules! check_useful_convertable_string {
+    ($x:ident, $e:expr, $t:ident) => {
+        check_useful_c_str!($x, $e);
+
+        let $x: Result<$t, &'static str> = $t::try_from($x);
+
+        let $x: $t = match $x {
+            Ok(ok) => ok,
+            Err(err) => {
+                return err_msg(IndyErrorKind::InvalidStructure, err.to_string()).into()
+            }
+        };
+    }
+}
+
+macro_rules! check_useful_opt_convertable_string {
+    ($x:ident, $e:expr, $t:ident) => {
+        check_useful_opt_c_str!($x, $e);
+
+        let $x: Option<$t> = match $x {
+            None => None,
+            Some(str) => {
+                match $t::try_from(str) {
+                    Ok(ok) => Some(ok),
+                    Err(err) => {
+                        return err_msg(IndyErrorKind::InvalidStructure, err.to_string()).into()
+                    }
+                }
+            }
+        };
+    }
+}
+
 macro_rules! check_useful_validatable_opt_string {
     ($x:ident, $e:expr, $t:ident) => {
         check_useful_opt_c_str!($x, $e);

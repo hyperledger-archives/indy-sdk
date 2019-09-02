@@ -18,6 +18,7 @@ use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::cache::{CacheCommand, CacheCommandExecutor};
+use domain::crypto::did::DidProtocolVersion;
 use domain::IndyConfig;
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
@@ -74,6 +75,14 @@ pub fn indy_set_runtime_config(config: IndyConfig) {
     }
     if let Some(threshold) = config.freshness_threshold {
         set_freshness_threshold(threshold);
+    }
+
+    if let Some(version) = config.did_protocol_version {
+        DidProtocolVersion::set(version);
+    }
+
+    if let Some(name) = config.did_default_method_name {
+        DidProtocolVersion::set_default_method_name(&name);
     }
 }
 
