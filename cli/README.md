@@ -7,19 +7,62 @@ foundation for self-sovereign identity. It provides the commands to:
 * Manage DIDs
 * Sending transactions to distributed ledger
 
-### Binaries
-Pre-Built binaries can be downloaded from https://repo.sovrin.org/:
-* sdk/lib/apt/xenial/{master,stable,rc} - Ubuntu deb packages. Note that it depends on [libindy](../README.md) package
-* windows/indy-cli/{master,stable,rc} - Windows zip-archive with executable file and all required DLLs
+### Installing the Indy-CLI
 
-On Ubuntu it is recommended to install packages with APT (change stable to `master` or `rc` if needed):
-```
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
-sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) stable"
-sudo apt-get update
-sudo apt-get install -y indy-cli
-```
+#### Release channels
+The Indy SDK release process defines the following release channels:
 
+* `master` - development builds for each push to master branch.
+* `rc` - release candidates.
+* `stable` - stable releases.
+
+Please refer to our [release workflow](../docs/contributors/release-workflow.md) for more details.
+
+#### Ubuntu based distributions (Ubuntu 16.04 and 18.04)
+
+It is recommended to install the Indy-CLI with APT:
+
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
+    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) {release channel}"
+    sudo apt-get update
+    sudo apt-get install -y indy-cli
+    indy-cli
+
+* (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
+* {release channel} must be replaced with master, rc or stable to define corresponded release channel.
+
+#### Windows
+
+1. Go to https://repo.sovrin.org/windows/indy-cli/{release-channel}.
+2. Download last version of indy-cli.
+3. Unzip archives to the directory where you want to save working library.
+4. After unzip you will get next structure of files:
+
+* `Your working directory`
+    * `indy-cli.exe`
+    * `indy.dll`
+    * `libeay32md.dll`
+    * `libsodium.dll`
+    * `libzmq.dll`
+    * `ssleay32md.dll`
+
+5. Add path to the dir to PATH environment variable. It's necessary for dynamic linkage with cli.
+6. Run `indy-cli` to start Indy-CLI.
+ 
+#### MacOS
+
+Pre-built libraries are not provided for MacOS.
+
+1. Install Libindy
+    1. Go to https://repo.sovrin.org/macos/libindy/{release-channel}.
+    2. Download last version of libindy.
+    3. Unzip archives to the directory where you want to save working library.
+    4. After unzip you will get `lib` folder which contains libindy binary.
+    5. Either add path to `libindy.dylib` to `LIBRARY_PATH` env variable or move to `/usr/lib` folder.
+2. Clone the repo and go to `cli` folder.
+3. Run `cargo run` to start Indy-CLI.
+
+ 
 ### Execution modes
 CLI supports 2 execution modes:
 * Interactive. In this mode CLI reads commands from terminal interactively. To start this mode just run `indy-cli`

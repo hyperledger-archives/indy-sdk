@@ -149,6 +149,7 @@ that may be need for your applications.
 See section "Release channels" for more details.
 
 ### iOS
+
 See [wrapper iOS install documentation](wrappers/ios/README.md "How to install").
 
 ### Android
@@ -195,11 +196,28 @@ See section "Release channels" for more details.
 
 ### MacOS
 
-Pre-built libraries are not provided for MacOS.
+Pre-built libraries for MacOS are available for libindy/libnullpay/libvcx.
 
-Clone the repo and run `mac.build.sh` in the `libindy` folder.
+1. Go to `https://repo.sovrin.org/macos/{library}/{release-channel}`.
+2. Download latest version of library.
+3. Unzip archives to the directory where you want to save working library.
+4. After unzip you will get next structure of files:
 
-Please see [here](docs/build-guides/mac-build.md) for manual build steps.
+* `Your working directory`
+    * `include`
+        * `...`
+    * `lib`
+        * `library.a`
+        * `library.dylib`
+
+`include` contains c-header files which contains all necessary declarations
+that may be need for your applications.
+
+`lib` contains library binaries.
+
+See [here](cli/README.md) for indy-cli build steps.
+
+See [here](docs/build-guides/mac-build.md) for manual build steps.
 
 ### RHEL-based distributions (Amazon Linux 2017.03)
 Pre-built libraries are not provided for RHEL-based distributions. Please look [here](docs/build-guides/rhel-build.md)
