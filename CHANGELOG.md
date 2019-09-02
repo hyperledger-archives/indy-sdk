@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.11.1 - 2019-08-30
+* Supported endorsing of transactions in Indy-CLI and Libvcx.
+    * CLI:
+        * added `endorser` parameter into `nym`, `attrib`, `ledger`, `cred def` commands to set endorser for transaction.
+        * added `ledger endorse` command to endorse a transaction to the ledger.
+    * Libvcx:
+        * added `vcx_*_prepare_for_endorser` - functions for `schema` and `credentialdef` which build transaction and crete internal object in differed state.
+        * added `vcx_*_update_state` - functions to update state of `schema`/`credentialdef` internal object (checks if it is published on the ledger).
+        * added  `vcx_*_get_state` - functions to get state of `schema`/`credentialdef` internal object.
+        * added `vcx_endorse_transaction` - function to endorse a transaction to the ledger.
+* Added new functions to Anoncreds API to rotate credential definition:
+    `indy_issuer_rotate_credential_def_start` - to generate temporary keys for an existing Credential Definition.
+    `indy_issuer_rotate_credential_def_apply` - to apply temporary keys as the main for an existing Credential Definition in the wallet.
+* Added sign/verify with payment address functions to Libvcx.
+* Supported state proof verification for GET_TXN request. 
+* Extended `config` parameter of `indy_open_pool_ledger` function to accept `number_read_nodes` value. This value set the number of nodes to send read requests.
+* Extended Libvcx initialization config to accept pool configuration.
+* Supported new platforms Ubuntu 18.04 and Centos:
+    * Updated CI pipeline to run tests.
+    * Updated CD pipeline to build and to publish artifacts.
+* Bugfixes
+
 ## 1.11.0 - 2019-08-2
 * Updated `indy_append_txn_author_agreement_acceptance_to_request` Libindy function to discard the time portion of `acceptance time` on appending TAA metadata into request. 
 It was done cause too much time precision can lead to privacy risk.
