@@ -40,17 +40,6 @@ RUN pip3 install -U \
 	plumbum \
 	deb-pkg-tools
 
-ARG LIBSODIUM_VERSION=1.0.18
-
-RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/libsodium-$LIBSODIUM_VERSION.tar.gz | tar -xz && \
-    cd /tmp/libsodium-$LIBSODIUM_VERSION && \
-    ./configure && \
-    make && \
-    make install && \
-    rm -rf /tmp/libsodium-$LIBSODIUM_VERSION && \
-    ldconfig -n /usr/local/lib
-
 ARG LIBZEROMQ_VERSION=4.3.1
 
 RUN cd /tmp && \
