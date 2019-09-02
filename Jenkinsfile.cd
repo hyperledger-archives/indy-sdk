@@ -881,6 +881,10 @@ def macosTesting() {
 
                 macosModuleTesting('vcx/libvcx')
 
+                macosModuleBuilding('cli') // TODO: testing
+
+                stash includes: 'cli/target/release/indy-cli', name: 'IndyCliMacosBuildResult'
+
                 //TODO wrappers testing
             } finally {
                 step([$class: 'WsCleanup'])
@@ -1177,15 +1181,19 @@ def macOsPublishing() {
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy MacOS Library'
-                publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", libindyVersion)
+                publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", libindyVersion, "lib")
 
                 echo 'Publish Libnullpay MacOS Library'
                 def libnullpayVersion = getSrcVersion("libnullpay")
-                publishMacOsArtifact(testEnv, "libnullpay", "libnullpay", "LibnullpayMacosBuildResult", libnullpayVersion)
+                publishMacOsArtifact(testEnv, "libnullpay", "libnullpay", "LibnullpayMacosBuildResult", libnullpayVersion, "lib")
 
                 echo 'Publish Libvcx MacOS Library'
                 def libvcxVersion = getSrcVersion("vcx/libvcx")
-                publishMacOsArtifact(testEnv, "libvcx", "vcx/libvcx", "LibvcxMacosBuildResult", libvcxVersion)
+                publishMacOsArtifact(testEnv, "libvcx", "vcx/libvcx", "LibvcxMacosBuildResult", libvcxVersion, "lib")
+
+                echo 'Publish Libvcx MacOS Library'
+                def cliVersion = getSrcVersion("cli")
+                publishMacOsArtifact(testEnv, "indy-cli", "cli", "IndyCliMacosBuildResult", cliVersion, "executable")
             }
             finally {
                 echo 'Publish iOS files: Cleanup'
@@ -1195,7 +1203,7 @@ def macOsPublishing() {
     }
 }
 
-def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, packageVersion) {
+def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, packageVersion, packageType) {
     testEnv.inside {
         sh 'chmod -R 777 ci'
 
@@ -1205,7 +1213,7 @@ def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, packageVe
             withEnv([
                     "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
             ]) {
-                sh "ci/macos-zip-and-upload.sh $packagePath $packageName $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+                sh "ci/macos-zip-and-upload.sh $packagePath $packageName $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $packageType"
             }
         }
     }
@@ -1475,6 +1483,9 @@ def publishingRCtoStable() {
                 echo 'Moving MacOS RC artifacts to Stable: libvcx'
                 publishLibvcxMacOSFilesRCtoStable(libvcxVersion)
 
+                echo 'Moving MacOS RC artifacts to Stable: indy cli'
+                publishIndyCliMacOSFilesRCtoStable(libindyVersion)
+
                 echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu18.dockerfile libindy/ci')
 
@@ -1622,6 +1633,15 @@ def publishLibvcxMacOSFilesRCtoStable(version) {
 
     src = "/var/repository/repos/macos/libvcx/rc/$rcFullVersion/"
     target = "/var/repository/repos/macos/libvcx/stable/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def publishIndyCliMacOSFilesRCtoStable(version) {
+    rcFullVersion = fullVersion(version)
+
+    src = "/var/repository/repos/macos/indy-cli/rc/$rcFullVersion/"
+    target = "/var/repository/repos/macos/indy-cli/stable/$version/"
 
     copyFilesFromRcToStable(src, target)
 }

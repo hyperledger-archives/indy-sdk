@@ -196,30 +196,34 @@ See section "Release channels" for more details.
 
 ### MacOS
 
-Pre-built libraries for MacOS are available for libindy/libnullpay/libvcx.
+Pre-built libraries for MacOS are available at repo.sovrin.org.
 
 1. Go to `https://repo.sovrin.org/macos/{library}/{release-channel}`.
-2. Download latest version of library.
+
+    {library} must be replaced with libindy, libnullpay, libvcx or indy-cli to define corresponded library.
+    
+    {release channel} must be replaced with master, rc or stable to define corresponded release channel.
+
+2. Download the latest version of library.
 3. Unzip archives to the directory where you want to save working library.
 4. After unzip you will get next structure of files:
 
-* `Your working directory`
-    * `include`
-        * `...`
-    * `lib`
-        * `library.a`
-        * `library.dylib`
-
-`include` contains c-header files which contains all necessary declarations
-that may be need for your applications.
-
-`lib` contains library binaries.
-
-See [here](cli/README.md) for indy-cli build steps.
-
-See [here](docs/build-guides/mac-build.md) for manual build steps.
-
+    Libindy, Libnullpay, Libvcx: 
+    * `Your working directory`
+        * `include` - contains c-header files which contains all necessary declarations that may be need for your applications.
+            * `...`
+        * `lib` - contains library binaries (static and dynamic).
+            * `library.a`
+            * `library.dylib`
+    
+    You need add the path to lib folder to LIBRARY_PATH environment variable. 
+            
+    Indy-CLI:
+    * `Your working directory`
+        * `indy-cli` executable file
+    
 ### RHEL-based distributions (Amazon Linux 2017.03)
+
 Pre-built libraries are not provided for RHEL-based distributions. Please look [here](docs/build-guides/rhel-build.md)
 for details on building from source for RHEL-based distributions.
 
