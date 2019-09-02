@@ -6,13 +6,6 @@ fn main() {
     let target = env::var("TARGET").unwrap();
     println!("target={}", target);
 
-    let sodium_static = env::var("CARGO_FEATURE_SODIUM_STATIC").ok();
-    println!("sodium_static={:?}", sodium_static);
-
-    if sodium_static.is_some() {
-        println!("cargo:rustc-link-lib=static=sodium");
-    }
-
     if target.find("-windows-").is_some() {
         // do not build c-code on windows, use binaries
         let output_dir = env::var("OUT_DIR").unwrap();

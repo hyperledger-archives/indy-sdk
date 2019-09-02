@@ -298,7 +298,7 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
             echo "${env_name} Libindy Test: Build"
             sh '''
                 cd libindy
-                cargo build --release --features "fatal_warnings sodium_static"
+                cargo build --release --features "fatal_warnings"
             '''
 
             stash includes: 'libindy/target/release/libindy.so,libindy/target/release/libindy.a', name: "LibindyBuildResult${env_name}"
@@ -349,7 +349,7 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
 
         echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
-            def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
+            def features_args = full_testing ? "" : "--features \"only_high_cases\""
 
             sh """
                 cd libindy

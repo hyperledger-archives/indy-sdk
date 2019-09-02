@@ -35,7 +35,6 @@ hash_openssl = ["openssl"]
 local_nodes_pool = []
 revocation_tests = []
 force_full_interaction_tests = []
-sodium_static = []
 hmacsha256_sodium = ["sodiumoxide"]
 memzero_sodium = ["sodiumoxide"]
 randombytes_sodium = ["sodiumoxide"]
@@ -68,7 +67,7 @@ serde_derive = "1.0.99"
 sha2 = "0.8"
 sha3 = "0.8"
 rmp-serde = "0.13.7"
-sodiumoxide = {version = "0.0.16", optional = true}
+sodiumoxide = {version = "0.2.2", optional = true }
 time = "0.1.42"
 threadpool = "1.7.1"
 zmq = "0.9.1"

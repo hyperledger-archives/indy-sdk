@@ -36,10 +36,6 @@ cd /tmp && \
    cd ..
    ```
    
-**Note:** `libindy` debian package, installed from the apt repository, is statically linked with `libsodium`. 
-For manually building this can be achieved by passing `--features sodium_static` into `cargo build` command.
-   
-   
 1. Run integration tests:
     [Start local nodes pool with Docker](https://github.com/hyperledger/indy-sdk/blob/master/README.md#how-to-start-local-nodes-pool-with-docker)
 
