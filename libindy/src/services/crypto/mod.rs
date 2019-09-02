@@ -17,7 +17,6 @@ use utils::crypto::verkey_builder::{build_full_verkey, split_verkey, verkey_get_
 use self::ed25519::ED25519CryptoType;
 use self::hex::FromHex;
 use rust_base58::{FromBase58, ToBase58};
-use regex::Regex;
 
 mod ed25519;
 
