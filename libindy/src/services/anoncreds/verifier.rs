@@ -316,7 +316,7 @@ impl Verifier {
                 .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("CryptoProof not found by index \"{}\"", sub_proof_index)))?
                 .revealed_attrs()?
                 .iter()
-                .find(|(key, _)|attr_common_view(&attr_name) == attr_common_view(&key))
+                .find(|(key, _)| attr_common_view(&attr_name) == attr_common_view(&key))
                 .map(|(_, val)| val.to_string())
                 .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with name \"{}\" not found in CryptoProof", attr_name)))?;
 
@@ -434,12 +434,12 @@ impl Verifier {
         match restriction_op {
             Operator::Eq(ref tag_name, ref tag_value) => {
                 let tag_name = tag_name.from_utf8()?;
-                Verifier::_process_filter(&tag_name, &tag_value.value(), filter)
+                Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter)
                     .map_err(|err| err.extend(format!("$eq operator validation failed for tag: \"{}\", value: \"{}\"", tag_name, tag_value.value())))
             }
             Operator::Neq(ref tag_name, ref tag_value) => {
                 let tag_name = tag_name.from_utf8()?;
-                if Verifier::_process_filter(&tag_name, &tag_value.value(), filter).is_err() {
+                if Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
@@ -450,7 +450,7 @@ impl Verifier {
                 let tag_name = tag_name.from_utf8()?;
                 let res = tag_values
                     .iter()
-                    .any(|val| Verifier::_process_filter(&tag_name, &val.value(), filter).is_ok());
+                    .any(|val| Verifier::_process_filter(attr, &tag_name, &val.value(), filter).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -487,7 +487,8 @@ impl Verifier {
         }
     }
 
-    fn _process_filter(tag: &str,
+    fn _process_filter(attr: &str,
+                       tag: &str,
                        tag_value: &str,
                        filter: &Filter) -> IndyResult<()> {
         match tag {
@@ -497,6 +498,7 @@ impl Verifier {
             tag_ @ "schema_version" => Verifier::_precess_filed(tag_, &filter.schema_version, tag_value),
             tag_ @ "cred_def_id" => Verifier::_precess_filed(tag_, &filter.cred_def_id, tag_value),
             tag_ @ "issuer_did" => Verifier::_precess_filed(tag_, &filter.issuer_did, tag_value),
+            x if Verifier::_is_attr_internal_tag(x, attr) => Ok(()),
             x if Verifier::_is_attr_operator(x) => Ok(()),
             _ => Err(err_msg(IndyErrorKind::InvalidStructure, "Unknown Filter Type"))
         }
@@ -508,6 +510,10 @@ impl Verifier {
         } else {
             Err(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("\"{}\" values are different: expected: \"{}\", actual: \"{}\"", filed, tag_value, filter_value)))
         }
+    }
+
+    fn _is_attr_internal_tag(key: &str, attr: &str) -> bool {
+        key == format!("attr::{}::value", attr) || key == format!("attr::{}::marker", attr)
     }
 
     fn _is_attr_operator(key: &str) -> bool { key.starts_with("attr::") && key.ends_with("::marker") }
