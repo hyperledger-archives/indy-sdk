@@ -1,5 +1,5 @@
 use super::constants::GET_NYM;
-use super::response::{GetReplyResultV0, GetReplyResultV1};
+use super::response::{GetReplyResultV0, GetReplyResultV1, ReplyType};
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetNymOperation {
@@ -24,6 +24,12 @@ pub enum GetNymReplyResult {
     GetNymReplyResultV1(GetReplyResultV1<GetNymResultDataV1>)
 }
 
+impl ReplyType for GetNymReplyResult {
+    fn get_type<'a>() -> &'a str {
+        GET_NYM
+    }
+}
+
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct GetNymResultDataV0 {
     pub identifier: Option<String>,
@@ -39,4 +45,11 @@ pub struct GetNymResultDataV1 {
     pub did: String,
     pub verkey: Option<String>,
     pub role: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+pub struct NymData {
+    pub did: String,
+    pub verkey: Option<String>,
+    pub role: Option<String>,
 }

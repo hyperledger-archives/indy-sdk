@@ -428,6 +428,57 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
     res
 }
 
+/// Parse a GET_NYM response to get NYM data.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// get_nym_response: response of GET_NYM request.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// NYM data
+/// {
+///     did: DID as base58-encoded string for 16 or 32 bit DID value.
+///     verkey: verification key as base58-encoded string.
+///     alias: NYM's alias.
+///     role: Role of a user NYM record:
+///                             null (common USER)
+///                             TRUSTEE
+///                             STEWARD
+///                             TRUST_ANCHOR
+///                             ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+///                             NETWORK_MONITOR
+/// }
+///
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_parse_get_nym_response(command_handle: CommandHandle,
+                                          get_nym_response: *const c_char,
+                                          cb: Option<extern fn(command_handle_: CommandHandle,
+                                                               err: ErrorCode,
+                                                               nym_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_parse_get_nym_response: >>> get_nym_response: {:?}", get_nym_response);
+
+    check_useful_c_str!(get_nym_response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_parse_get_nym_response: entities >>> get_nym_response: {:?}", get_nym_response);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::ParseGetNymResponse(
+            get_nym_response,
+            boxed_callback_string!("indy_parse_get_nym_response", cb, command_handle)
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_parse_get_nym_response: <<< res: {:?}", res);
+
+    res
+}
+
 /// Builds an ATTRIB request. Request to add attribute to a NYM record.
 ///
 /// Note: one of the fields `hash`, `raw`, `enc` must be specified.

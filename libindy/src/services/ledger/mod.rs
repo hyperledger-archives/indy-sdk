@@ -16,7 +16,7 @@ use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMO
 use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
 use domain::ledger::ddo::GetDdoOperation;
 use domain::ledger::node::{NodeOperation, NodeOperationData};
-use domain::ledger::nym::GetNymOperation;
+use domain::ledger::nym::{GetNymOperation, GetNymReplyResult, GetNymResultDataV0, NymData};
 use domain::ledger::pool::{PoolConfigOperation, PoolRestartOperation, PoolUpgradeOperation, Schedule};
 use domain::ledger::request::{TxnAuthrAgrmtAcceptanceData, Request};
 use domain::ledger::response::{Message, Reply, ReplyType};
@@ -88,6 +88,39 @@ impl LedgerService {
     #[logfn(Info)]
     pub fn build_get_nym_request(&self, identifier: Option<&str>, dest: &str) -> IndyResult<String> {
         build_result!(GetNymOperation, identifier, dest.to_string())
+    }
+
+    #[logfn(Info)]
+    pub fn parse_get_nym_response(&self, get_nym_response: &str) -> IndyResult<String> {
+        let reply: Reply<GetNymReplyResult> = LedgerService::parse_response(get_nym_response)?;
+
+        let nym_data = match reply.result() {
+            GetNymReplyResult::GetNymReplyResultV0(res) => {
+                let data: GetNymResultDataV0 = res.data
+                    .ok_or(IndyError::from_msg(IndyErrorKind::LedgerItemNotFound, format!("Nym not found")))
+                    .and_then(|data| serde_json::from_str(&data)
+                        .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot parse GET_NYM response: {}", err)))
+                    )?;
+
+                NymData {
+                    did: data.dest,
+                    verkey: data.verkey,
+                    role: data.role,
+                }
+            }
+            GetNymReplyResult::GetNymReplyResultV1(res) => {
+                NymData {
+                    did: res.txn.data.did,
+                    verkey: res.txn.data.verkey,
+                    role: res.txn.data.role
+                }
+            }
+        };
+
+        let res = serde_json::to_string(&nym_data)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize NYM data: {}", err)))?;
+
+        Ok(res)
     }
 
     #[logfn(Info)]
@@ -272,7 +305,7 @@ impl LedgerService {
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
                 id: CredentialDefinitionId(res.txn.data.id),
-                schema_id:SchemaId(res.txn.data.schema_ref.to_string()),
+                schema_id: SchemaId(res.txn.data.schema_ref.to_string()),
                 signature_type: res.txn.data.type_,
                 tag: res.txn.data.tag,
                 value: res.txn.data.public_keys,
