@@ -856,8 +856,7 @@ def macosTesting() {
 
                 macosRunPool(pool_name)
 
-                macosModuleBuilding('libindy')
-                macosModuleTesting('libindy')
+                macosModuleBuildingAndTest('libindy')
 
                 stash includes: 'libindy/target/release/libindy.dylib,libindy/target/release/libindy.a', name: 'LibindyMacosBuildResult'
 
@@ -865,19 +864,18 @@ def macosTesting() {
                 sh "cp libindy/target/release/libindy.dylib vcx/libvcx"
                 sh "cp libindy/target/release/libindy.dylib cli"
 
-                macosModuleBuilding('libnullpay')
-                macosModuleTesting('libnullpay')
+                macosModuleBuildingAndTest('libnullpay')
 
                 stash includes: 'libnullpay/target/release/libnullpay.dylib,libnullpay/target/release/libnullpay.a', name: 'LibnullpayMacosBuildResult'
 
                 sh "cp libnullpay/target/release/libnullpay.dylib vcx/libvcx"
 
-                macosModuleBuilding('vcx/libvcx')
-                macosModuleTesting('vcx/libvcx')
+                macosModuleBuildingAndTest('vcx/libvcx')
 
                 stash includes: 'vcx/libvcx/target/release/libvcx.dylib,vcx/libvcx/target/release/libvcx.a', name: 'LibvcxMacosBuildResult'
 
-                macosModuleBuilding('cli') // TODO: testing
+                sh "sed -i'.original' -e 's/10.0.0.2/127.0.0.1/g' cli/docker_pool_transactions_genesis"
+                macosModuleBuildingAndTest('cli')
 
                 stash includes: 'cli/target/release/indy-cli', name: 'IndyCliMacosBuildResult'
 
@@ -906,17 +904,13 @@ def macosStopPool(pool_name){
     }
 }
 
-def macosModuleBuilding(library) {
+def macosModuleBuildingAndTest(library) {
     dir(library) {
         echo "MacOS ${library} Testing: Build"
         sh "LIBRARY_PATH=./ cargo build --release --features fatal_warnings"
-        sh "LIBRARY_PATH=./ cargo test --release --no-run"
-    }
-}
 
-def macosModuleTesting(library) {
-    dir(library) {
         echo "MacOS ${library} Testing: Run Tests"
+        sh "LIBRARY_PATH=./ cargo test --release --no-run"
         sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test --release"
     }
 }
@@ -1623,40 +1617,24 @@ def publishLibnullpayIOSFilesRCtoStable(version) {
     copyFilesFromRcToStable(src, target)
 }
 
+def publishMacosFilesRCtoStable(packageName, version) {
+    copyRcFilesToStable("macos", packageName, version)
+}
+
 def publishLibindyMacOSFilesRCtoStable(version) {
-    rcFullVersion = fullVersion(version)
-
-    src = "/var/repository/repos/macos/libindy/rc/$rcFullVersion/"
-    target = "/var/repository/repos/macos/libindy/stable/$version/"
-
-    copyFilesFromRcToStable(src, target)
+    publishMacosFilesRCtoStable("libindy", version)
 }
 
 def publishLibnullpayMacOSFilesRCtoStable(version) {
-    rcFullVersion = fullVersion(version)
-
-    src = "/var/repository/repos/macos/libnullpay/rc/$rcFullVersion/"
-    target = "/var/repository/repos/macos/libnullpay/stable/$version/"
-
-    copyFilesFromRcToStable(src, target)
+    publishMacosFilesRCtoStable("libnullpay", version)
 }
 
 def publishLibvcxMacOSFilesRCtoStable(version) {
-    rcFullVersion = fullVersion(version)
-
-    src = "/var/repository/repos/macos/libvcx/rc/$rcFullVersion/"
-    target = "/var/repository/repos/macos/libvcx/stable/$version/"
-
-    copyFilesFromRcToStable(src, target)
+    publishMacosFilesRCtoStable("libvcx", version)
 }
 
 def publishIndyCliMacOSFilesRCtoStable(version) {
-    rcFullVersion = fullVersion(version)
-
-    src = "/var/repository/repos/macos/indy-cli/rc/$rcFullVersion/"
-    target = "/var/repository/repos/macos/indy-cli/stable/$version/"
-
-    copyFilesFromRcToStable(src, target)
+    publishMacosFilesRCtoStable("indy-cli", version)
 }
 
 def fullVersion(version) {

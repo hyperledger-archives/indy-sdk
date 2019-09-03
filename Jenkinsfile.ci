@@ -213,22 +213,20 @@ def macosTesting() {
                 macosRunPool(pool_name)
                 macosCleanIndyDir()
 
-                macosModuleBuilding('libindy')
-                macosModuleTesting('libindy', "--features only_high_cases")
+                macosModuleBuildingAndTest('libindy', "--features only_high_cases")
 
                 sh "cp libindy/target/debug/libindy.dylib libnullpay"
                 sh "cp libindy/target/debug/libindy.dylib vcx/libvcx"
                 sh "cp libindy/target/debug/libindy.dylib cli"
 
-                macosModuleBuilding('libnullpay')
-                macosModuleTesting('libnullpay')
+                macosModuleBuildingAndTest('libnullpay')
 
                 sh "cp libnullpay/target/debug/libnullpay.dylib vcx/libvcx"
 
-                macosModuleBuilding('vcx/libvcx')
-                macosModuleTesting('vcx/libvcx')
+                macosModuleBuildingAndTest('vcx/libvcx')
 
-                macosModuleBuilding('cli')
+                sh "sed -i'.original' -e 's/10.0.0.2/127.0.0.1/g' cli/docker_pool_transactions_genesis"
+                macosModuleBuildingAndTest('cli')
 
                 //TODO wrappers testing
             } finally {
@@ -244,18 +242,14 @@ def macosCleanIndyDir() {
     sh "rm -rf ~/.indy_client || true"
 }
 
-def macosModuleBuilding(library) {
+def macosModuleBuildingAndTest(library, testFeatures = "") {
     dir(library) {
         echo "MacOS ${library} Testing: Build"
         sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
-        sh "LIBRARY_PATH=./ cargo test --no-run"
-    }
-}
 
-def macosModuleTesting(library, featureArgs = "") {
-    dir(library) {
         echo "MacOS ${library} Testing: Run Tests"
-        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test ${featureArgs}"
+        sh "LIBRARY_PATH=./ cargo test --no-run ${testFeatures}"
+        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test ${testFeatures}"
     }
 }
 
