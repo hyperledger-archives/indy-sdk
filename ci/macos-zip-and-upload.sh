@@ -43,12 +43,6 @@ cd ${TEMP_ARCH_DIR} && zip -r ${package}_${version}.zip ./* && mv ${package}_${v
 rm -rf ${TEMP_ARCH_DIR}
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@$SOVRIN_REPO_HOST
-mkdir /var/repository/repos/macos/$package
-mkdir /var/repository/repos/macos/$package/master
-mkdir /var/repository/repos/macos/$package/stable
-mkdir /var/repository/repos/macos/$package/rc
-mkdir /var/repository/repos/macos/$package/test
-mkdir /var/repository/repos/macos/$package/stable-test
 mkdir /var/repository/repos/macos/$package/$type/$version-$number
 cd /var/repository/repos/macos/$package/$type/$version-$number
 put -r ${package}_"${version}".zip

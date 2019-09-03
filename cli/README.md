@@ -44,7 +44,7 @@ It is recommended to install the Indy-CLI with APT:
     * `libzmq.dll`
     * `ssleay32md.dll`
 
-5. Add path to the dir to PATH environment variable.
+5. Add path to the directory to PATH environment variable.
 6. Run `indy-cli.exe` to start Indy-CLI.
  
 #### MacOS
@@ -57,7 +57,7 @@ It is recommended to install the Indy-CLI with APT:
 5. Install Libindy
    1. Download and unzip libindy from https://repo.sovrin.org/macos/libindy/{release-channel}.
    2. After unzip you will get `lib` folder which contains libindy binary.
-   3. Either add path to `libindy.dylib` to `LIBRARY_PATH` env variable or move to `/usr/lib` folder.
+   3. Either add directory path to `LIBRARY_PATH` env variable or move `libindy.dylib` to `/usr/lib` folder.
 6. Run `indy-cli` to start Indy-CLI.
 
 ### Execution modes

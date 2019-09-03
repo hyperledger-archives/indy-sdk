@@ -255,8 +255,8 @@ def linuxTesting(file, env_name, network_name) {
 
 def vcxTesting(file, env_name, network_name, full_testing) {
     parallel([
-            failFast                                 : true,
-            "${env_name} Test: build and test libvcx": {
+            failFast                                     : true,
+            "${env_name} Test: build and test libvcx"    : {
                 node('ubuntu') {
                     linuxVcxBuild(file, env_name, network_name)
                 }
@@ -792,9 +792,7 @@ def iosTesting() {
                     buildIOSPod("libindy", "")
 
                     echo "iOS Test: Running pool"
-                    sh "docker rm -f indy_pool || true"
-                    sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
-                    sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+                    macosRunPool("indy_pool")
 
                     // FIXME replace this hack (manually rewrite installed pod)
                     sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
@@ -825,14 +823,7 @@ def iosTesting() {
                     cleanSimulators()
                 } catch (ignore) {
                 }
-                try {
-                    sh "docker stop indy_pool"
-                } catch (ignore) {
-                }
-                try {
-                    sh "docker rm indy_pool"
-                } catch (ignore) {
-                }
+                macosStopPool("indy_pool")
                 step([$class: 'WsCleanup'])
             }
         }
@@ -855,6 +846,7 @@ def centosTesting() {
 def macosTesting() {
     node('macos') {
         stage('MacOS Test') {
+            def pool_name = "indy_pool"
             try {
                 echo "MacOS Test: Checkout scm"
                 checkout scm
@@ -862,24 +854,28 @@ def macosTesting() {
                 setupRust()
                 setupBrewPackages()
 
-                macosModuleBuilding('libindy') // TODO: testing
+                macosRunPool(pool_name)
+
+                macosModuleBuilding('libindy')
+                macosModuleTesting('libindy')
 
                 stash includes: 'libindy/target/release/libindy.dylib,libindy/target/release/libindy.a', name: 'LibindyMacosBuildResult'
 
                 sh "cp libindy/target/release/libindy.dylib libnullpay"
                 sh "cp libindy/target/release/libindy.dylib vcx/libvcx"
+                sh "cp libindy/target/release/libindy.dylib cli"
 
-                macosModuleBuilding('libnullpay') // TODO: testing
+                macosModuleBuilding('libnullpay')
+                macosModuleTesting('libnullpay')
 
                 stash includes: 'libnullpay/target/release/libnullpay.dylib,libnullpay/target/release/libnullpay.a', name: 'LibnullpayMacosBuildResult'
 
                 sh "cp libnullpay/target/release/libnullpay.dylib vcx/libvcx"
 
                 macosModuleBuilding('vcx/libvcx')
+                macosModuleTesting('vcx/libvcx')
 
                 stash includes: 'vcx/libvcx/target/release/libvcx.dylib,vcx/libvcx/target/release/libvcx.a', name: 'LibvcxMacosBuildResult'
-
-                macosModuleTesting('vcx/libvcx')
 
                 macosModuleBuilding('cli') // TODO: testing
 
@@ -890,6 +886,23 @@ def macosTesting() {
                 step([$class: 'WsCleanup'])
             }
         }
+    }
+}
+
+def macosRunPool(pool_name){
+    sh "docker rm -f ${pool_name} || true"
+    sh "docker build -f ci/indy-pool.dockerfile -t ${pool_name} ci"
+    sh "docker run -d --name ${pool_name} -p 9701-9708:9701-9708 ${pool_name}"
+}
+
+def macosStopPool(pool_name){
+    try {
+        sh "docker stop ${pool_name}"
+    } catch (ignore) {
+    }
+    try {
+        sh "docker rm ${pool_name}"
+    } catch (ignore) {
     }
 }
 
@@ -1191,7 +1204,7 @@ def macOsPublishing() {
                 def libvcxVersion = getSrcVersion("vcx/libvcx")
                 publishMacOsArtifact(testEnv, "libvcx", "vcx/libvcx", "LibvcxMacosBuildResult", libvcxVersion, "lib")
 
-                echo 'Publish Libvcx MacOS Library'
+                echo 'Publish Indy CLI MacOS Library'
                 def cliVersion = getSrcVersion("cli")
                 publishMacOsArtifact(testEnv, "indy-cli", "cli", "IndyCliMacosBuildResult", cliVersion, "executable")
             }
@@ -1505,16 +1518,16 @@ def publishingRCtoStable() {
 
                 env_name = Centos
 
-                echo 'Moving ${env_name} RC artifacts to Stable: libindy'
+                echo "Moving ${env_name} RC artifacts to Stable: libindy"
                 publishLibindyCentosFilesRCtoStable(libindyVersion)
 
-                echo 'Moving ${env_name} RC artifacts to Stable: libnullapy'
+                echo "Moving ${env_name} RC artifacts to Stable: libnullapy"
                 publishLibnullapyCentosFilesRCtoStable(libnullpayVersion)
 
-                echo 'Moving ${env_name} RC artifacts to Stable: libvcx'
+                echo "Moving ${env_name} RC artifacts to Stable: libvcx"
                 publishLibvcxCentosFilesRCtoStable(libvcxVersion)
 
-                echo 'Moving ${env_name} RC artifacts to Stable: indy-cli'
+                echo "Moving ${env_name} RC artifacts to Stable: indy-cli"
                 publishIndyCliCentosFilesRCtoStable(libindyVersion)
 
             } finally {

@@ -4,12 +4,31 @@ A wrapper is a private pod, so private podspec must be set. Put at the top of th
     source 'https://github.com/hyperledger/indy-sdk.git'
     
 Cocoapod will search for spec files in the root Specs folder.
+           
+# Binaries
 
-Add pod to target:
+* There are 2 types of automatically built archives containing libindy core library which can be used for your iOS application.
+    * library built for aarch64-apple-ios and armv7-apple-ios targets.
+    * universal libindy built for all architectures.
     
-    pod 'libindy-objc'                
+    Add pod to target:
+    
+        pod 'libindy'
+       
+    These archives are located at `https://repo.sovrin.org/ios/libindy/{release-channel}/libindy-core/`.
+    
+* There is manually built and published archive containing libindy objective C wrapper.
+   This archive is located at `https://repo.sovrin.org/ios/libindy/{release-channel}/indy-objc/`.
 
-# How to build
+    Add pod to target:
+        
+        pod 'libindy-objc'    
+  
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+
+# How to manually build
+
+## Core library
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 1. Install toolchains using command:
@@ -73,10 +92,9 @@ Add pod to target:
    
 ## Wrapper Cocoapod
 
-# Creation 
 Run Archive process for `Indy` target. Custom post-action shell script `universal_framework.sh` will be triggered and you get universal framework. Then put it to folder: `libindy-objc/Indy.framework` and upload to repo.
 
-# Usage
+# Wrapper usage 
 
 Import header starting from 0.1.3:
 
@@ -91,7 +109,7 @@ For 0.1.1 and 0.1.2 versions:
 
 All wrapper types and classes have prefix `Indy`.
 
-#### Troubleshooting
+## Troubleshooting
 * Enable Logging - Use `setLogger` to pass a callback that will be used by Libindy to log a record.
 * [IS-1058](https://jira.hyperledger.org/browse/IS-1058) 
     * OpenSSL cp: file.tgz: No such file or directory - 
