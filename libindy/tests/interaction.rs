@@ -27,6 +27,7 @@ extern crate core;
 extern crate regex;
 #[macro_use]
 extern crate log;
+extern crate indyrs;
 
 #[macro_use]
 mod utils;

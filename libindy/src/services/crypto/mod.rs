@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::str;
 
 use domain::crypto::combo_box::ComboBox;
-use domain::crypto::did::{Did, MyDidInfo, TheirDid, TheirDidInfo, DidProtocolVersion};
+use domain::crypto::did::{Did, DidValue, MyDidInfo, TheirDid, TheirDidInfo, DidProtocolVersion};
 use domain::crypto::key::{Key, KeyInfo};
 use errors::prelude::*;
 use utils::crypto::base64;
@@ -16,6 +16,7 @@ use utils::crypto::verkey_builder::{build_full_verkey, split_verkey, verkey_get_
 
 use self::ed25519::ED25519CryptoType;
 use self::hex::FromHex;
+use std::convert::TryFrom;
 use rust_base58::{FromBase58, ToBase58};
 
 mod ed25519;
@@ -98,8 +99,9 @@ impl CryptoService {
         let (vk, sk) = crypto_type.create_key(seed.as_ref())?;
         let did = match my_did_info.did {
             Some(ref did) => {
-                self.validate_did(did)?;
-                did.from_base58()?
+                let did = DidValue::try_from(did.clone())?;
+                self.validate_did(&did)?;
+                did.0.from_base58()?
             }
             _ if my_did_info.cid == Some(true) => vk[..].to_vec(),
             _ => vk[0..16].to_vec()
@@ -376,19 +378,10 @@ impl CryptoService {
         Ok(())
     }
 
-    pub fn validate_did(&self, did: &str) -> IndyResult<()> {
+    pub fn validate_did(&self, did: &DidValue) -> IndyResult<()> {
         trace!("validate_did >>> did: {:?}", did);
-
-        if DidProtocolVersion::get() == 0 {
-            let did = did.from_base58()?;
-
-            if did.len() != 16 && did.len() != 32 {
-                return Err(err_msg(IndyErrorKind::InvalidStructure,
-                                   format!("Trying to use DID with unexpected length: {}. \
-                               The 16- or 32-byte number upon which a DID is based should be 22/23 or 44/45 bytes when encoded as base58.", did.len())));
-            }
-        }
-
+        // Useful method, huh?
+        // Soon some state did validation will be put here
         trace!("validate_did <<< res: ()");
 
         Ok(())

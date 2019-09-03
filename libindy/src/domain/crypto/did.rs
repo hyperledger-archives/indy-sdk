@@ -1,11 +1,13 @@
 use named_type::NamedType;
 
+use errors::{IndyError, IndyErrorKind};
 use regex::Regex;
+use rust_base58::FromBase58;
+use std::convert::TryFrom;
 use std::sync::{
     Mutex,
     atomic::{AtomicUsize, Ordering}
 };
-use std::convert::TryFrom;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MyDidInfo {
@@ -46,24 +48,27 @@ impl Did {
     }
 }
 
-impl TryFrom<String> for Did {
-    type Error = &'static str;
+#[derive(Serialize, Deserialize, Clone, Debug, NamedType, PartialEq)]
+pub struct DidValue(pub String);
+
+impl TryFrom<String> for DidValue {
+    type Error = IndyError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         if DidProtocolVersion::get() == 1 {
             if let Some(s) = DidProtocolVersion::unqualify_did(&value) {
-                Ok(Did{
-                    did: s,
-                    verkey: "".to_string()
-                })
+                Ok(DidValue(s))
             } else {
-                Err("Did does not match mask")
+                Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Did does not match mask"))
             }
         } else {
-            Ok(Did {
-                did: value.to_string(),
-                verkey: "".to_string()
-            })
+            let did = value.from_base58()?;
+
+            if did.len() != 16 && did.len() != 32 {
+                return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, &format!("Trying to use DID with unexpected length: {}. \
+                               The 16- or 32-byte number upon which a DID is based should be 22/23 or 44/45 bytes when encoded as base58.", did.len())));
+            }
+            Ok(DidValue(value.to_string()))
         }
     }
 }
@@ -103,11 +108,14 @@ impl From<TemporaryDid> for Did {
     }
 }
 
+pub const DEFAULT_METHOD: &'static str = "sov";
+pub const DEFAULT_VERSION: usize = 1;
+
 pub struct DidProtocolVersion {}
 
 lazy_static!{
-    pub static ref DID_PROTOCOL_VERSION: AtomicUsize = AtomicUsize::new(0);
-    pub static ref DID_DEFAULT_METHOD_NAME: Mutex<String> = Mutex::new("sov".to_string());
+    pub static ref DID_PROTOCOL_VERSION: AtomicUsize = AtomicUsize::new(DEFAULT_VERSION);
+    pub static ref DID_DEFAULT_METHOD_NAME: Mutex<String> = Mutex::new(DEFAULT_METHOD.to_string());
     pub static ref REGEX: Regex = Regex::new("did:[a-z0-9]+:([a-zA-Z0-9:.-_]*)").unwrap();
 }
 

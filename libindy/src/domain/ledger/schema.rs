@@ -1,5 +1,6 @@
 use super::constants::{SCHEMA, GET_SCHEMA};
 use super::response::{GetReplyResultV1, ReplyType};
+use domain::crypto::did::DidValue;
 
 use std::collections::HashSet;
 
@@ -87,7 +88,7 @@ impl ReplyType for GetSchemaReplyResult {
 pub struct GetSchemaResultV0 {
     pub seq_no: u32,
     pub data: SchemaOperationData,
-    pub dest: String
+    pub dest: DidValue
 }
 
 #[derive(Deserialize, Debug)]

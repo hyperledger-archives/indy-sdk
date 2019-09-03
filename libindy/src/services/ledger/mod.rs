@@ -11,6 +11,7 @@ use domain::anoncreds::revocation_registry::RevocationRegistry;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
+use domain::crypto::did::DidValue;
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
 use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, ROLES, txn_name_to_code};
 use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
@@ -49,7 +50,7 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>,
+    pub fn build_nym_request(&self, identifier: &DidValue, dest: &DidValue, verkey: Option<&str>,
                              alias: Option<&str>, role: Option<&str>) -> IndyResult<String> {
         let mut operation = json!({
             "type": NYM,
@@ -86,38 +87,38 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_get_nym_request(&self, identifier: Option<&str>, dest: &str) -> IndyResult<String> {
-        build_result!(GetNymOperation, identifier, dest.to_string())
+    pub fn build_get_nym_request(&self, identifier: Option<&DidValue>, dest: &DidValue) -> IndyResult<String> {
+        build_result!(GetNymOperation, identifier, dest.clone())
     }
 
     #[logfn(Info)]
-    pub fn build_get_ddo_request(&self, identifier: Option<&str>, dest: &str) -> IndyResult<String> {
-        build_result!(GetDdoOperation, identifier, dest.to_string())
+    pub fn build_get_ddo_request(&self, identifier: Option<&DidValue>, dest: &DidValue) -> IndyResult<String> {
+        build_result!(GetDdoOperation, identifier, dest.clone())
     }
 
     #[logfn(Info)]
-    pub fn build_attrib_request(&self, identifier: &str, dest: &str, hash: Option<&str>,
+    pub fn build_attrib_request(&self, identifier: &DidValue, dest: &DidValue, hash: Option<&str>,
                                 raw: Option<&serde_json::Value>, enc: Option<&str>) -> IndyResult<String> {
-        build_result!(AttribOperation, Some(identifier), dest.to_string(),
+        build_result!(AttribOperation, Some(identifier), dest.clone(),
                                                          hash.map(String::from),
                                                          raw.map(serde_json::Value::to_string),
                                                          enc.map(String::from))
     }
 
     #[logfn(Info)]
-    pub fn build_get_attrib_request(&self, identifier: Option<&str>, dest: &str, raw: Option<&str>, hash: Option<&str>,
+    pub fn build_get_attrib_request(&self, identifier: Option<&DidValue>, dest: &DidValue, raw: Option<&str>, hash: Option<&str>,
                                     enc: Option<&str>) -> IndyResult<String> {
-        build_result!(GetAttribOperation, identifier, dest.to_string(), raw, hash, enc)
+        build_result!(GetAttribOperation, identifier, dest.clone(), raw, hash, enc)
     }
 
     #[logfn(Info)]
-    pub fn build_schema_request(&self, identifier: &str, schema: SchemaV1) -> IndyResult<String> {
+    pub fn build_schema_request(&self, identifier: &DidValue, schema: SchemaV1) -> IndyResult<String> {
         let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
         build_result!(SchemaOperation, Some(identifier), schema_data)
     }
 
     #[logfn(Info)]
-    pub fn build_get_schema_request(&self, identifier: Option<&str>, id: &SchemaId) -> IndyResult<String> {
+    pub fn build_get_schema_request(&self, identifier: Option<&DidValue>, id: &SchemaId) -> IndyResult<String> {
         let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
         if parts.len() != 4 {
@@ -134,12 +135,12 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_cred_def_request(&self, identifier: &str, cred_def: CredentialDefinitionV1) -> IndyResult<String> {
+    pub fn build_cred_def_request(&self, identifier: &DidValue, cred_def: CredentialDefinitionV1) -> IndyResult<String> {
         build_result!(CredDefOperation, Some(identifier), cred_def)
     }
 
     #[logfn(Info)]
-    pub fn build_get_cred_def_request(&self, identifier: Option<&str>, id: &CredentialDefinitionId) -> IndyResult<String> {
+    pub fn build_get_cred_def_request(&self, identifier: Option<&DidValue>, id: &CredentialDefinitionId) -> IndyResult<String> {
         let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
         let origin = parts[0].to_string();
@@ -155,12 +156,12 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_node_request(&self, identifier: &str, dest: &str, data: NodeOperationData) -> IndyResult<String> {
-        build_result!(NodeOperation, Some(identifier), dest.to_string(), data)
+    pub fn build_node_request(&self, identifier: &DidValue, dest: &DidValue, data: NodeOperationData) -> IndyResult<String> {
+        build_result!(NodeOperation, Some(identifier), dest.clone(), data)
     }
 
     #[logfn(Info)]
-    pub fn build_get_validator_info_request(&self, identifier: &str) -> IndyResult<String> {
+    pub fn build_get_validator_info_request(&self, identifier: &DidValue) -> IndyResult<String> {
         let operation = GetValidatorInfoOperation::new();
 
         Request::build_request(Some(identifier), operation)
@@ -168,7 +169,7 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_get_txn_request(&self, identifier: Option<&str>, ledger_type: Option<&str>, seq_no: i32) -> IndyResult<String> {
+    pub fn build_get_txn_request(&self, identifier: Option<&DidValue>, ledger_type: Option<&str>, seq_no: i32) -> IndyResult<String> {
         let ledger_id = match ledger_type {
             Some(type_) =>
                 serde_json::from_str::<LedgerType>(&format!(r#""{}""#, type_))
@@ -182,45 +183,45 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_pool_config(&self, identifier: &str, writes: bool, force: bool) -> IndyResult<String> {
+    pub fn build_pool_config(&self, identifier: &DidValue, writes: bool, force: bool) -> IndyResult<String> {
         build_result!(PoolConfigOperation, Some(identifier), writes, force)
     }
 
     #[logfn(Info)]
-    pub fn build_pool_restart(&self, identifier: &str, action: &str, datetime: Option<&str>) -> IndyResult<String> {
+    pub fn build_pool_restart(&self, identifier: &DidValue, action: &str, datetime: Option<&str>) -> IndyResult<String> {
         build_result!(PoolRestartOperation, Some(identifier),action, datetime.map(String::from))
     }
 
     #[logfn(Info)]
-    pub fn build_pool_upgrade(&self, identifier: &str, name: &str, version: &str, action: &str,
+    pub fn build_pool_upgrade(&self, identifier: &DidValue, name: &str, version: &str, action: &str,
                               sha256: &str, timeout: Option<u32>, schedule: Option<Schedule>,
                               justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> IndyResult<String> {
         build_result!(PoolUpgradeOperation, Some(identifier), name, version, action, sha256, timeout, schedule, justification, reinstall, force, package)
     }
 
     #[logfn(Info)]
-    pub fn build_revoc_reg_def_request(&self, identifier: &str, rev_reg_def: RevocationRegistryDefinitionV1) -> IndyResult<String> {
+    pub fn build_revoc_reg_def_request(&self, identifier: &DidValue, rev_reg_def: RevocationRegistryDefinitionV1) -> IndyResult<String> {
         build_result!(RevRegDefOperation, Some(identifier), rev_reg_def)
     }
 
     #[logfn(Info)]
-    pub fn build_get_revoc_reg_def_request(&self, identifier: Option<&str>, id: &RevocationRegistryId) -> IndyResult<String> {
+    pub fn build_get_revoc_reg_def_request(&self, identifier: Option<&DidValue>, id: &RevocationRegistryId) -> IndyResult<String> {
         build_result!(GetRevRegDefOperation, identifier, id)
     }
 
     #[logfn(Info)]
-    pub fn build_revoc_reg_entry_request(&self, identifier: &str, revoc_reg_def_id: &RevocationRegistryId,
+    pub fn build_revoc_reg_entry_request(&self, identifier: &DidValue, revoc_reg_def_id: &RevocationRegistryId,
                                          revoc_def_type: &str, rev_reg_entry: RevocationRegistryDeltaV1) -> IndyResult<String> {
         build_result!(RevRegEntryOperation, Some(identifier), revoc_def_type, revoc_reg_def_id, rev_reg_entry)
     }
 
     #[logfn(Info)]
-    pub fn build_get_revoc_reg_request(&self, identifier: Option<&str>, revoc_reg_def_id: &RevocationRegistryId, timestamp: i64) -> IndyResult<String> {
+    pub fn build_get_revoc_reg_request(&self, identifier: Option<&DidValue>, revoc_reg_def_id: &RevocationRegistryId, timestamp: i64) -> IndyResult<String> {
         build_result!(GetRevRegOperation, identifier, revoc_reg_def_id, timestamp)
     }
 
     #[logfn(Info)]
-    pub fn build_get_revoc_reg_delta_request(&self, identifier: Option<&str>, revoc_reg_def_id: &RevocationRegistryId, from: Option<i64>, to: i64) -> IndyResult<String> {
+    pub fn build_get_revoc_reg_delta_request(&self, identifier: Option<&DidValue>, revoc_reg_def_id: &RevocationRegistryId, from: Option<i64>, to: i64) -> IndyResult<String> {
         build_result!(GetRevRegDeltaOperation, identifier, revoc_reg_def_id, from, to)
     }
 
@@ -343,7 +344,7 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_auth_rule_request(&self, submitter_did: &str, txn_type: &str, action: &str, field: &str,
+    pub fn build_auth_rule_request(&self, submitter_did: &DidValue, txn_type: &str, action: &str, field: &str,
                                    old_value: Option<&str>, new_value: Option<&str>, constraint: Constraint) -> IndyResult<String> {
         let txn_type = txn_name_to_code(&txn_type)
             .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
@@ -356,12 +357,12 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_auth_rules_request(&self, submitter_did: &str, rules: AuthRules) -> IndyResult<String> {
+    pub fn build_auth_rules_request(&self, submitter_did: &DidValue, rules: AuthRules) -> IndyResult<String> {
         build_result!(AuthRulesOperation, Some(submitter_did), rules)
     }
 
     #[logfn(Info)]
-    pub fn build_get_auth_rule_request(&self, submitter_did: Option<&str>, auth_type: Option<&str>, auth_action: Option<&str>,
+    pub fn build_get_auth_rule_request(&self, submitter_did: Option<&DidValue>, auth_type: Option<&str>, auth_action: Option<&str>,
                                        field: Option<&str>, old_value: Option<&str>, new_value: Option<&str>) -> IndyResult<String> {
         let operation = match (auth_type, auth_action, field) {
             (None, None, None) => GetAuthRuleOperation::get_all(),
@@ -388,22 +389,22 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_txn_author_agreement_request(&self, identifier: &str, text: &str, version: &str) -> IndyResult<String> {
+    pub fn build_txn_author_agreement_request(&self, identifier: &DidValue, text: &str, version: &str) -> IndyResult<String> {
         build_result!(TxnAuthorAgreementOperation, Some(identifier), text.to_string(), version.to_string())
     }
 
     #[logfn(Info)]
-    pub fn build_get_txn_author_agreement_request(&self, identifier: Option<&str>, data: Option<&GetTxnAuthorAgreementData>) -> IndyResult<String> {
+    pub fn build_get_txn_author_agreement_request(&self, identifier: Option<&DidValue>, data: Option<&GetTxnAuthorAgreementData>) -> IndyResult<String> {
         build_result!(GetTxnAuthorAgreementOperation, identifier, data)
     }
 
     #[logfn(Info)]
-    pub fn build_acceptance_mechanisms_request(&self, identifier: &str, aml: AcceptanceMechanisms, version: &str, aml_context: Option<&str>) -> IndyResult<String> {
+    pub fn build_acceptance_mechanisms_request(&self, identifier: &DidValue, aml: AcceptanceMechanisms, version: &str, aml_context: Option<&str>) -> IndyResult<String> {
         build_result!(SetAcceptanceMechanismOperation, Some(identifier), aml, version.to_string(), aml_context.map(String::from))
     }
 
     #[logfn(Info)]
-    pub fn build_get_acceptance_mechanisms_request(&self, identifier: Option<&str>, timestamp: Option<u64>, version: Option<&str>) -> IndyResult<String> {
+    pub fn build_get_acceptance_mechanisms_request(&self, identifier: Option<&DidValue>, timestamp: Option<u64>, version: Option<&str>) -> IndyResult<String> {
         if timestamp.is_some() && version.is_some() {
             return Err(err_msg(IndyErrorKind::InvalidStructure, "timestamp and version cannot be specified together."));
         }

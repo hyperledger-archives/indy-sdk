@@ -2,7 +2,7 @@
 use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
 use commands::{Command, CommandExecutor};
 use commands::did::DidCommand;
-use domain::crypto::did::{MyDidInfo, TheirDidInfo};
+use domain::crypto::did::{MyDidInfo, TheirDidInfo, DidProtocolVersion, DidValue};
 use domain::crypto::key::KeyInfo;
 use errors::prelude::*;
 use utils::ctypes;
@@ -10,6 +10,7 @@ use utils::ctypes;
 use serde_json;
 use libc::c_char;
 
+use std::convert::TryFrom;
 use std::ptr;
 use domain::ledger::attrib::Endpoint;
 
@@ -707,7 +708,11 @@ pub  extern fn indy_abbreviate_verkey(command_handle: CommandHandle,
                                                            verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_abbreviate_verkey: >>> did: {:?}, full_verkey: {:?}", did, full_verkey);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    if DidProtocolVersion::get() == 1 {
+        return IndyError::from_msg(IndyErrorKind::InvalidState, "You can't abbreviate fully-qualified dids").into();
+    }
+
+    check_useful_convertable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(full_verkey, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 

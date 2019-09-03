@@ -133,12 +133,12 @@ macro_rules! check_useful_convertable_string {
     ($x:ident, $e:expr, $t:ident) => {
         check_useful_c_str!($x, $e);
 
-        let $x: Result<$t, &'static str> = $t::try_from($x);
+        let $x: Result<$t, IndyError> = $t::try_from($x);
 
         let $x: $t = match $x {
             Ok(ok) => ok,
             Err(err) => {
-                return err_msg(IndyErrorKind::InvalidStructure, err.to_string()).into()
+                return err.into()
             }
         };
     }

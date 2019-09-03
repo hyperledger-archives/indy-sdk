@@ -1,6 +1,7 @@
 #![allow(dead_code, unused_macros)]
 
 extern crate libc;
+extern crate indyrs as indy;
 
 pub mod callback;
 
@@ -47,6 +48,7 @@ pub mod inmem_wallet;
 
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;
+use indy::set_runtime_config;
 
 fn setup() -> String {
     let name = ::utils::rand_utils::get_rand_string(10);
@@ -57,6 +59,7 @@ fn setup() -> String {
 
 fn tear_down(name: &str) {
     test::cleanup_storage(name);
+    set_runtime_config(r#"{}"#);
 }
 
 pub struct Setup {
@@ -105,6 +108,18 @@ impl Setup {
         let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
         let (did, verkey) = did::create_and_store_my_did(wallet_handle, Some(constants::TRUSTEE_SEED)).unwrap();
         Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
+    }
+
+    pub fn first_did_version() -> Setup {
+        let setup = Setup::new_identity();
+        set_runtime_config(r#"{"did_protocol_version": 1}"#);
+        setup
+    }
+
+    pub fn first_did_version_wallet_only() -> Setup {
+        let setup = Setup::wallet();
+        set_runtime_config(r#"{"did_protocol_version": 1}"#);
+        setup
     }
 
     pub fn steward() -> Setup {
@@ -167,6 +182,7 @@ impl Drop for Setup {
         if self.pool_handle != 0 {
             pool::close(self.pool_handle).unwrap();
         }
-        tear_down(&self.name)
+        tear_down(&self.name);
+        set_runtime_config(r#"{}"#);
     }
 }

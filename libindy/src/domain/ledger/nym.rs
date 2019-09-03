@@ -1,15 +1,16 @@
 use super::constants::GET_NYM;
 use super::response::{GetReplyResultV0, GetReplyResultV1};
+use domain::crypto::did::DidValue;
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetNymOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub dest: String
+    pub dest: DidValue
 }
 
 impl GetNymOperation {
-    pub fn new(dest: String) -> GetNymOperation {
+    pub fn new(dest: DidValue) -> GetNymOperation {
         GetNymOperation {
             _type: GET_NYM.to_string(),
             dest

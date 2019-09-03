@@ -30,6 +30,7 @@ extern crate rand;
 extern crate regex;
 #[macro_use]
 extern crate log;
+extern crate indyrs;
 
 #[macro_use]
 mod utils;
@@ -139,8 +140,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::trustee();
+            let setup = Setup::first_did_version();
 
             let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -207,8 +207,7 @@ mod high_cases {
 
         #[test]
         fn indy_sign_request_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::wallet();
+            let setup = Setup::first_did_version();
 
             let (did, _) = did::create_and_store_my_did(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
@@ -248,9 +247,7 @@ mod high_cases {
 
         #[test]
         fn indy_multi_sign_request_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-
-            let setup = Setup::wallet();
+            let setup = Setup::first_did_version_wallet_only();
 
             let (did1, _) = did::create_and_store_my_did(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
             let (did2, _) = did::create_and_store_my_did(setup.wallet_handle, Some(MY1_SEED)).unwrap();
@@ -371,8 +368,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_get_nym_request_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::trustee();
+            let setup = Setup::first_did_version();
 
             let get_nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
             let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
@@ -401,8 +397,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_requests_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::trustee();
+            let setup = Setup::first_did_version();
 
             let (my_did, my_verkey) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -538,7 +533,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
             let setup = Setup::new_identity();
 
             let attrib_request = ledger::build_attrib_request(&setup.did,
@@ -616,8 +610,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_schema_requests_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::trustee();
+            let setup = Setup::first_did_version();
 
             let (schema_id, _, _) = ledger::post_entities();
 
@@ -756,8 +749,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_cred_def_requests_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::trustee();
+            let setup = Setup::first_did_version();
 
             let (_, cred_def_id, _) = ledger::post_entities();
 
@@ -870,8 +862,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_txn_request_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::new_identity();
+            let setup = Setup::first_did_version();
 
             let schema_request = ledger::build_schema_request(&setup.did, &anoncreds::gvt_schema_json()).unwrap();
             let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
@@ -1206,8 +1197,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_revoc_reg_def_requests_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::new_identity();
+            let setup = Setup::first_did_version();
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 
@@ -1248,7 +1238,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_revoc_reg_entry_requests_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
             ledger::post_entities();
         }
     }
@@ -1295,8 +1284,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_revoc_reg_request_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::new_identity();
+            let setup = Setup::first_did_version();
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 
@@ -1352,8 +1340,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_revoc_reg_delta_request_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::new_identity();
+            let setup = Setup::first_did_version();
 
             let (_, _, rev_reg_id) = ledger::post_entities();
 

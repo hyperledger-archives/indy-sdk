@@ -1,17 +1,18 @@
 use super::constants::NODE;
 
 use utils::validation::Validatable;
+use domain::crypto::did::DidValue;
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct NodeOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub dest: String,
+    pub dest: DidValue,
     pub data: NodeOperationData
 }
 
 impl NodeOperation {
-    pub fn new(dest: String, data: NodeOperationData) -> NodeOperation {
+    pub fn new(dest: DidValue, data: NodeOperationData) -> NodeOperation {
         NodeOperation {
             _type: NODE.to_string(),
             dest,

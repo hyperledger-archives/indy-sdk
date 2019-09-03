@@ -45,6 +45,7 @@ use domain::anoncreds::revocation_registry_delta::{
     RevocationRegistryDeltaV1,
 };
 use domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1, SchemaId};
+use domain::crypto::did::DidValue;
 use domain::wallet::Tags;
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
@@ -59,14 +60,14 @@ use api::{WalletHandle, CommandHandle, next_command_handle};
 
 pub enum IssuerCommand {
     CreateSchema(
-        String, // issuer did
+        DidValue, // issuer did
         String, // name
         String, // version
         AttributeNames, // attribute names
         BoxedCallbackStringStringSend),
     CreateAndStoreCredentialDefinition(
         WalletHandle,
-        String, // issuer did
+        DidValue, // issuer did
         Schema, // schema
         String, // tag
         Option<String>, // type
@@ -104,7 +105,7 @@ pub enum IssuerCommand {
         Box<dyn Fn(IndyResult<()>) + Send>),
     CreateAndStoreRevocationRegistry(
         WalletHandle,
-        String, // issuer did
+        DidValue, // issuer did
         Option<String>, // type
         String, // tag
         CredentialDefinitionId, // credential definition id
@@ -231,7 +232,7 @@ impl IssuerCommandExecutor {
     }
 
     fn create_schema(&self,
-                     issuer_did: &str,
+                     issuer_did: &DidValue,
                      name: &str,
                      version: &str,
                      attrs: AttributeNames) -> IndyResult<(String, String)> {
@@ -259,7 +260,7 @@ impl IssuerCommandExecutor {
 
     fn create_and_store_credential_definition(&self,
                                               wallet_handle: WalletHandle,
-                                              issuer_did: &str,
+                                              issuer_did: &DidValue,
                                               schema: &SchemaV1,
                                               tag: &str,
                                               type_: Option<&str>,
@@ -330,7 +331,7 @@ impl IssuerCommandExecutor {
     }
 
     fn _prepare_create_and_store_credential_definition(&self,
-                                                       issuer_did: &str,
+                                                       issuer_did: &DidValue,
                                                        schema: &SchemaV1,
                                                        tag: &str,
                                                        type_: Option<&str>,
@@ -533,7 +534,7 @@ impl IssuerCommandExecutor {
 
     fn create_and_store_revocation_registry(&self,
                                             wallet_handle: WalletHandle,
-                                            issuer_did: &str,
+                                            issuer_did: &DidValue,
                                             type_: Option<&str>,
                                             tag: &str,
                                             cred_def_id: &CredentialDefinitionId,

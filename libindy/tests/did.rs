@@ -350,8 +350,7 @@ mod high_cases {
 
         #[test]
         fn indy_create_my_did_works_for_first_did_version() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::wallet();
+            let setup = Setup::first_did_version_wallet_only();
 
             let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, "{}").unwrap();
 
@@ -362,8 +361,7 @@ mod high_cases {
 
         #[test]
         fn indy_create_my_did_works_for_first_did_version_with_custom_prefix() {
-            set_runtime_config(r#"{"did_protocol_version": 1}"#);
-            let setup = Setup::wallet();
+            let setup = Setup::first_did_version_wallet_only();
 
             let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, r#"{"method_name": "indy"}"#).unwrap();
 

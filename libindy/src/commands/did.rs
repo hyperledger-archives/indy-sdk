@@ -7,7 +7,7 @@ use serde_json;
 
 use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use commands::ledger::LedgerCommand;
-use domain::crypto::did::{Did, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo};
+use domain::crypto::did::{Did, DidValue, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo};
 use domain::crypto::key::KeyInfo;
 use domain::ledger::attrib::{AttribData, Endpoint, GetAttrReplyResult};
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
@@ -73,7 +73,7 @@ pub enum DidCommand {
         String, // did
         Box<dyn Fn(IndyResult<String>) + Send>),
     AbbreviateVerkey(
-        String, // did
+        DidValue, // did
         String, // verkey
         Box<dyn Fn(IndyResult<String>) + Send>),
     // Internal commands
@@ -270,8 +270,6 @@ impl DidCommandExecutor {
     fn get_my_did_with_meta(&self, wallet_handle: WalletHandle, my_did: &str) -> IndyResult<String> {
         debug!("get_my_did_with_meta >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
-        self.crypto_service.validate_did(&my_did)?;
-
         let did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &my_did, &RecordOptions::id_value())?;
         let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value())?;
         let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did, &RecordOptions::id_value())?;
@@ -439,8 +437,6 @@ impl DidCommandExecutor {
                         metadata: String) -> IndyResult<()> {
         debug!("set_did_metadata >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
-        self.crypto_service.validate_did(did)?;
-
         let metadata = DidMetadata { value: metadata };
 
         self.wallet_service.upsert_indy_object(wallet_handle, &did, &metadata)?;
@@ -455,8 +451,6 @@ impl DidCommandExecutor {
                         did: &str) -> IndyResult<String> {
         debug!("get_did_metadata >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-        self.crypto_service.validate_did(did)?;
-
         let metadata = self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, did, &RecordOptions::id_value())?;
 
         let res = metadata.value;
@@ -467,14 +461,14 @@ impl DidCommandExecutor {
     }
 
     fn abbreviate_verkey(&self,
-                         did: &str,
+                         did: &DidValue,
                          verkey: String) -> IndyResult<String> {
         info!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
 
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&verkey)?;
 
-        let did = &did.from_base58()?;
+        let did = &did.0.from_base58()?;
         let dverkey = &verkey.from_base58()?;
 
         let (first_part, second_part) = dverkey.split_at(16);
@@ -606,7 +600,7 @@ impl DidCommandExecutor {
 
     fn _fetch_their_did_from_ledger(&self,
                                     wallet_handle: WalletHandle, pool_handle: PoolHandle,
-                                    did: &str, deferred_cmd: DidCommand) {
+                                    did: &DidValue, deferred_cmd: DidCommand) {
         // Defer this command until their did is fetched from ledger.
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
@@ -631,7 +625,7 @@ impl DidCommandExecutor {
 
     fn _fetch_attrib_from_ledger(&self,
                                  wallet_handle: WalletHandle, pool_handle: PoolHandle,
-                                 did: &str, deferred_cmd: DidCommand) {
+                                 did: &DidValue, deferred_cmd: DidCommand) {
         // Defer this command until their did is fetched from ledger.
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 

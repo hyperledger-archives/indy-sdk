@@ -19,6 +19,7 @@ use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefini
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
 use domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
+use domain::crypto::did::DidValue;
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
 use services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
@@ -38,7 +39,7 @@ pub enum ProverCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     CreateCredentialRequest(
         WalletHandle,
-        String, // prover did
+        DidValue, // prover did
         CredentialOffer, // credential offer
         CredentialDefinition, // credential def
         String, // master secret name
@@ -281,7 +282,7 @@ impl ProverCommandExecutor {
 
     fn create_credential_request(&self,
                                  wallet_handle: WalletHandle,
-                                 prover_did: &str,
+                                 prover_did: &DidValue,
                                  cred_offer: &CredentialOffer,
                                  cred_def: &CredentialDefinitionV1,
                                  master_secret_id: &str) -> IndyResult<(String, String)> {
@@ -300,7 +301,7 @@ impl ProverCommandExecutor {
         let nonce = new_nonce()?;
 
         let credential_request = CredentialRequest {
-            prover_did: prover_did.to_string(),
+            prover_did: prover_did.0,
             cred_def_id: cred_offer.cred_def_id.clone(),
             blinded_ms,
             blinded_ms_correctness_proof,
