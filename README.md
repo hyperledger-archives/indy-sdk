@@ -186,17 +186,6 @@ that may be need for your applications.
 
 {library} must be replaced with libindy, libnullpay or libvcx.
 
-### Centos
-
-1. Go to https://repo.sovrin.org/rpm/{library}/{release-channel}.
-2. Download the last version of library.
-3. Install with `rpm -i library-version.rpm`.
-
-{library} must be replaced with libindy, libnullpay, libvcx, indy-cli to define corresponded library.
-
-{release channel} must be replaced with master, rc or stable to define corresponded release channel.
-See section "Release channels" for more details.
-
  [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/android-build.md#usage)  
 
 {release channel} must be replaced with rc or stable to define corresponded release channel.
@@ -209,6 +198,16 @@ See section "Release channels" for more details.
  - We are using the [NDK16b](https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip) because it is the last NDK to have support for `gnustl_shared` stl.
  gnustl_shared is deprecated in latest NDK. gnustal_shared is needed because the dependencies are compiled using gnustal_shared and you will get build errors if more than one type of stl while compiling.
 
+### Centos
+
+1. Go to https://repo.sovrin.org/rpm/{library}/{release-channel}.
+2. Download and unzip the last version of library.
+3. Install with `rpm -i library-version.rpm`.
+
+{library} must be replaced with libindy, libnullpay, libvcx, indy-cli to define corresponded library.
+
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+See section "Release channels" for more details.
 
 ### MacOS
 
@@ -230,19 +229,10 @@ You need add the path to lib folder to LIBRARY_PATH environment variable.
 
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
     
-### RHEL-based distributions (Amazon Linux 2017.03)
-
-Pre-built libraries are not provided for RHEL-based distributions. Please look [here](docs/build-guides/rhel-build.md)
-for details on building from source for RHEL-based distributions.
-
-After successfully compiling `libindy`, you will need to add the path containing `libindy.so` to the
-`LD_LIBRARY_PATH` environment variable. This is required for your application to link to
-`libindy`.
-
 ## How to build Indy SDK from source
 
 * [Ubuntu based distributions (Ubuntu 16.04)](docs/build-guides/ubuntu-build.md)
-* [RHEL based distributions (Amazon Linux 2017.03)](docs/build-guides/rhel-build.md)
+* [RHEL based distributions (Centos)](docs/build-guides/rhel-build.md)
 * [Windows](docs/build-guides/windows-build.md)
 * [MacOS](docs/build-guides/mac-build.md)
 * [Android](docs/build-guides/android-build.md)

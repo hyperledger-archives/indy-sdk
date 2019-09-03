@@ -60,6 +60,12 @@ It is recommended to install the Indy-CLI with APT:
    3. Either add directory path to `LIBRARY_PATH` env variable or move `libindy.dylib` to `/usr/lib` folder.
 6. Run `indy-cli` to start Indy-CLI.
 
+#### Centos
+1. Go to https://repo.sovrin.org/rpm/indy-cli/{release-channel}.
+2. Download and unzip the last version of library.
+3. Install with `rpm -i indy-cli-version.rpm`.
+4. Run `indy-cli` to start Indy-CLI.
+
 ### Execution modes
 CLI supports 2 execution modes:
 * Interactive. In this mode CLI reads commands from terminal interactively. To start this mode just run `indy-cli`

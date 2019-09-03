@@ -52,6 +52,11 @@ that may be need for your applications.
 
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 
+#### Centos
+1. Go to https://repo.sovrin.org/rpm/libvcx/{release-channel}.
+2. Download and unzip the last version of library.
+3. Install with `rpm -i libvcx-version.rpm`.
+
 ### MacOS
 
 1. Go to `https://repo.sovrin.org/macos/libvcx/{release-channel}`.
