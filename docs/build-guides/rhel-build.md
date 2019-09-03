@@ -2,6 +2,7 @@
 These instructions have been tested on:
 - Amazon Linux 2017.03
 - Fedora 27
+- Centos
 
 Please follow the instructions appropriate for your distribution.
 
