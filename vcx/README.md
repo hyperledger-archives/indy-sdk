@@ -52,6 +52,29 @@ that may be need for your applications.
 
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 
+#### Centos
+1. Go to https://repo.sovrin.org/rpm/libvcx/{release-channel}.
+2. Download and unzip the last version of library.
+3. Install with `rpm -i libvcx-version.rpm`.
+
+### MacOS
+
+1. Go to `https://repo.sovrin.org/macos/libvcx/{release-channel}`.
+2. Download the latest version of libvcx.
+3. Unzip archives to the directory where you want to save working library.
+4. After unzip you will get next structure of files:
+
+* `Your working directory`
+    * `include` - contains c-header files which contains all necessary declarations that may be need for your applications.
+        * `...`
+    * `lib` - contains library binaries (static and dynamic).
+        * `libvcx.a`
+        * `libvcx.dylib`
+    
+You need add the path to lib folder to LIBRARY_PATH environment variable. 
+    
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+
 ### OSX
 
 To build libvcx for OSX and iOS using scripts do the following steps --
