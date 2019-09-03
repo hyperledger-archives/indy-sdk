@@ -130,10 +130,6 @@ impl DidProtocolVersion {
         *val = method_name.to_string();
     }
 
-    pub fn is_fully_qualified_did(did: &str) -> bool {
-        REGEX.is_match(did)
-    }
-
     pub fn unqualify_did(did: &str) -> Option<String> {
         trace!("unqualify_did: did: {}", did);
         let s = REGEX.captures(did);
