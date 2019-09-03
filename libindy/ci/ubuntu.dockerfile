@@ -9,9 +9,6 @@ RUN apt-get update && \
       libgmp3-dev \
       curl \
       build-essential \
-      autoconf \
-      automake \
-      libtool \
       libsqlite3-dev \
       cmake \
       git \
@@ -24,6 +21,7 @@ RUN apt-get update && \
       wget \
       devscripts \
       libncursesw5-dev \
+      libzmq3-dev \
       zip \
       unzip \
       jq
@@ -40,27 +38,13 @@ RUN pip3 install -U \
 	plumbum \
 	deb-pkg-tools
 
-ARG LIBSODIUM_VERSION=1.0.18
-
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/libsodium-$LIBSODIUM_VERSION.tar.gz | tar -xz && \
-    cd /tmp/libsodium-$LIBSODIUM_VERSION && \
-    ./configure && \
+   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz && \
+    cd /tmp/libsodium-1.0.14 && \
+    ./configure --disable-shared && \
     make && \
     make install && \
-    rm -rf /tmp/libsodium-$LIBSODIUM_VERSION && \
-    ldconfig -n /usr/local/lib
-
-ARG LIBZEROMQ_VERSION=4.3.1
-
-RUN cd /tmp && \
-   curl https://codeload.github.com/zeromq/libzmq/tar.gz/v$LIBZEROMQ_VERSION | tar -xz && \
-    cd /tmp/libzmq-$LIBZEROMQ_VERSION && \
-    ./autogen.sh && ./configure && \
-    make && \
-    make install && \
-    rm -rf /tmp/libzmq-$LIBZEROMQ_VERSION && \
-    ldconfig -n /usr/local/lib
+    rm -rf /tmp/libsodium-1.0.14
 
 RUN apt-get update && apt-get install openjdk-8-jdk -y
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
