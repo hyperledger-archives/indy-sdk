@@ -459,8 +459,8 @@ mod tests {
         }
 
         #[test]
-        fn pool_send_tx_fails_for_closed_socket() {
-            test::cleanup_storage("pool_send_tx_fails_for_closed_socket");
+        fn pool_send_tx_works_for_closed_socket() {
+            test::cleanup_storage("pool_send_tx_works_for_closed_socket");
 
             let name = "test";
             let zmq_ctx = zmq::Context::new();
