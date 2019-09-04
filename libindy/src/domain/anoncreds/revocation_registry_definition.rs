@@ -6,7 +6,7 @@ use super::credential_definition::CredentialDefinitionId;
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 pub const CL_ACCUM: &str = "CL_ACCUM";
 pub const REV_REG_DEG_MARKER: &str = "4";

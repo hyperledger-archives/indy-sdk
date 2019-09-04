@@ -1,8 +1,8 @@
-use api::{ErrorCode, CommandHandle, WalletHandle};
-use commands::{Command, CommandExecutor};
-use commands::pairwise::PairwiseCommand;
-use errors::prelude::*;
-use utils::ctypes;
+use crate::api::{ErrorCode, CommandHandle, WalletHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::pairwise::PairwiseCommand;
+use crate::errors::prelude::*;
+use crate::utils::ctypes;
 
 use libc::c_char;
 

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use ursa::cl::Nonce;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequest {

@@ -1,17 +1,17 @@
 use std::collections::{HashMap, HashSet};
 
-use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinitionId};
-use domain::anoncreds::proof::{Proof, RequestedProof, Identifier};
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequest, NonRevocedInterval};
-use domain::anoncreds::revocation_registry::RevocationRegistryV1;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
-use domain::anoncreds::schema::{SchemaV1, SchemaId};
-use errors::prelude::*;
-use services::anoncreds::helpers::*;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinitionId};
+use crate::domain::anoncreds::proof::{Proof, RequestedProof, Identifier};
+use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequest, NonRevocedInterval};
+use crate::domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
+use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
+use crate::errors::prelude::*;
+use crate::services::anoncreds::helpers::*;
 
 use ursa::cl::{CredentialPublicKey, new_nonce, Nonce};
 use ursa::cl::verifier::Verifier as CryptoVerifier;
-use services::wallet::language::{parse_from_json, Operator};
+use crate::services::wallet::language::{parse_from_json, Operator};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Filter {
@@ -516,7 +516,7 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::wallet::language::{TagName, TargetValue};
+    use crate::services::wallet::language::{TagName, TargetValue};
 
     pub const SCHEMA_ID: &str = "123";
     pub const SCHEMA_NAME: &str = "Schema Name";

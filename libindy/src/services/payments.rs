@@ -8,12 +8,12 @@ use std::ops::Not;
 use serde_json;
 
 use hex;
-use api::{ErrorCode, WalletHandle, CommandHandle};
-use api::payments::*;
-use errors::prelude::*;
-use utils::ctypes;
+use crate::api::{ErrorCode, WalletHandle, CommandHandle};
+use crate::api::payments::*;
+use crate::errors::prelude::*;
+use crate::utils::ctypes;
 
-use domain::ledger::auth_rule::{Constraint, RoleConstraint, CombinationConstraint};
+use crate::domain::ledger::auth_rule::{Constraint, RoleConstraint, CombinationConstraint};
 
 pub struct PaymentsService {
     methods: RefCell<HashMap<String, PaymentsMethod>>
@@ -619,8 +619,8 @@ mod cbs {
     use std::ffi::CStr;
     use std::sync::Mutex;
 
-    use commands::{Command, CommandExecutor};
-    use commands::payments::PaymentsCommand;
+    use crate::commands::{Command, CommandExecutor};
+    use crate::commands::payments::PaymentsCommand;
 
     use super::*;
 

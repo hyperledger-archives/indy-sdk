@@ -1,8 +1,8 @@
-use errors::prelude::*;
+use crate::errors::prelude::*;
 
-use domain::anoncreds::credential::AttributeValues;
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestExtraQuery, NonRevocedInterval};
-use services::anoncreds::prover::Prover;
+use crate::domain::anoncreds::credential::AttributeValues;
+use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestExtraQuery, NonRevocedInterval};
+use crate::services::anoncreds::prover::Prover;
 use ursa::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
 
 

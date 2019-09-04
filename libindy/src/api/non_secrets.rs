@@ -1,10 +1,10 @@
 
-use api::{ErrorCode, CommandHandle, WalletHandle, SearchHandle};
-use commands::{Command, CommandExecutor};
-use commands::non_secrets::NonSecretsCommand;
-use domain::wallet::Tags;
-use errors::prelude::*;
-use utils::ctypes;
+use crate::api::{ErrorCode, CommandHandle, WalletHandle, SearchHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::non_secrets::NonSecretsCommand;
+use crate::domain::wallet::Tags;
+use crate::errors::prelude::*;
+use crate::utils::ctypes;
 
 use serde_json;
 use libc::c_char;

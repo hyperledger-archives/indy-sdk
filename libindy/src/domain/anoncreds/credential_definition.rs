@@ -2,7 +2,7 @@ use super::DELIMITER;
 use super::schema::SchemaId;
 use super::super::ledger::request::ProtocolVersion;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 use ursa::cl::{
     CredentialPrimaryPublicKey,

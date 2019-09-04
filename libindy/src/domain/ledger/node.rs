@@ -1,6 +1,6 @@
 use super::constants::NODE;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct NodeOperation {

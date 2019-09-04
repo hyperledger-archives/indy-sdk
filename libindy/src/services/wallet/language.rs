@@ -2,8 +2,8 @@ use std::string;
 
 use serde_json;
 
-use errors::prelude::*;
-use utils::crypto::base64;
+use crate::errors::prelude::*;
+use crate::utils::crypto::base64;
 
 #[derive(Debug, PartialEq, Hash, Clone)]
 pub enum TagName {

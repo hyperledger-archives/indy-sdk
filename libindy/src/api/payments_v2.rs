@@ -1,12 +1,12 @@
-use api::CommandHandle;
-use api::WalletHandle;
-use api::ErrorCode;
+use crate::api::CommandHandle;
+use crate::api::WalletHandle;
+use crate::api::ErrorCode;
 use libc::c_char;
-use commands::CommandExecutor;
-use commands::Command;
-use commands::payments::PaymentsCommand;
-use utils::ctypes;
-use errors::prelude::*;
+use crate::commands::CommandExecutor;
+use crate::commands::Command;
+use crate::commands::payments::PaymentsCommand;
+use crate::utils::ctypes;
+use crate::errors::prelude::*;
 
 /// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
