@@ -1,34 +1,10 @@
 #[macro_use]
-extern crate lazy_static;
+mod utils;
 
-#[macro_use]
-extern crate named_type_derive;
+inject_indy_dependencies!();
 
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
-extern crate regex;
-#[macro_use]
-extern crate log;
-
-#[macro_use]
-mod utils;
 
 use indy::set_runtime_config;
 
@@ -350,18 +326,18 @@ mod high_cases {
 
         #[test]
         fn indy_create_my_did_works_for_first_did_version() {
-            let setup = Setup::first_did_version_wallet_only();
+            let setup = Setup::wallet_first_did_version();
 
             let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, "{}").unwrap();
 
-            assert!(my_did.starts_with("did:sov:"));
-            assert_eq!(my_did.replace("did:sov:", "").from_base58().unwrap().len(), 16);
+            assert!(my_did.starts_with(DEFAULT_PREFIX));
+            assert_eq!(my_did.replace(DEFAULT_PREFIX, "").from_base58().unwrap().len(), 16);
             assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
         }
 
         #[test]
         fn indy_create_my_did_works_for_first_did_version_with_custom_prefix() {
-            let setup = Setup::first_did_version_wallet_only();
+            let setup = Setup::wallet_first_did_version();
 
             let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, r#"{"method_name": "indy"}"#).unwrap();
 

@@ -2,12 +2,12 @@ use ursa::cl::{RevocationKeyPublic, RevocationKeyPrivate};
 
 use super::DELIMITER;
 use super::credential_definition::CredentialDefinitionId;
+use super::super::crypto::did::ShortDidValue;
 
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
 use utils::validation::Validatable;
-use domain::crypto::did::DidValue;
 
 pub const CL_ACCUM: &str = "CL_ACCUM";
 pub const REV_REG_DEG_MARKER: &str = "4";
@@ -111,7 +111,7 @@ pub struct RevocationRegistryInfo {
 pub struct RevocationRegistryId(pub String);
 
 impl RevocationRegistryId {
-    pub fn new(did: &DidValue, cred_def_id: &str, rev_reg_type: &RegistryType, tag: &str) -> RevocationRegistryId {
+    pub fn new(did: &ShortDidValue, cred_def_id: &str, rev_reg_type: &RegistryType, tag: &str) -> RevocationRegistryId {
         RevocationRegistryId(format!("{}{}{}{}{}{}{}{}{}", did.0, DELIMITER, REV_REG_DEG_MARKER, DELIMITER, cred_def_id, DELIMITER, rev_reg_type.to_str(), DELIMITER, tag))
     }
 }

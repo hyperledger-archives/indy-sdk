@@ -1,36 +1,11 @@
 #[macro_use]
-extern crate lazy_static;
+mod utils;
 
-#[macro_use]
-extern crate named_type_derive;
+inject_indy_dependencies!();
 
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
 extern crate core;
-extern crate regex;
-#[macro_use]
-extern crate log;
-extern crate indyrs;
-
-#[macro_use]
-mod utils;
 
 use utils::{wallet, anoncreds, blob_storage, pool, ledger, did};
 use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID};
@@ -50,7 +25,6 @@ use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistry
 use utils::domain::anoncreds::proof::Proof;
 use utils::domain::anoncreds::revocation_state::RevocationState;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
-
 
 use std::thread;
 

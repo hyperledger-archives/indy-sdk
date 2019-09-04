@@ -45,7 +45,7 @@ use domain::anoncreds::revocation_registry_delta::{
     RevocationRegistryDeltaV1,
 };
 use domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1, SchemaId};
-use domain::crypto::did::DidValue;
+use domain::crypto::did::{DidValue, ShortDidValue};
 use domain::wallet::Tags;
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
@@ -240,7 +240,9 @@ impl IssuerCommandExecutor {
 
         self.crypto_service.validate_did(issuer_did)?;
 
-        let schema_id = SchemaId::new(issuer_did, name, version);
+        let issuer_did = issuer_did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, err))?;
+
+        let schema_id = SchemaId::new(&issuer_did, name, version);
 
         let schema = Schema::SchemaV1(SchemaV1 {
             id: schema_id.clone(),
@@ -269,9 +271,10 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema: {:?}, tag: {:?}, \
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 
+        let issuer_did = try_cb!(issuer_did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, err)), cb);
 
         let (cred_def_config, schema_id, cred_def_id, signature_type) =
-            try_cb!(self._prepare_create_and_store_credential_definition(issuer_did, schema, tag, type_, config), cb);
+            try_cb!(self._prepare_create_and_store_credential_definition(&issuer_did, schema, tag, type_, config), cb);
 
         if let Ok(cred_def) = self.wallet_service.get_indy_record_value::<CredentialDefinition>(wallet_handle, &cred_def_id.0, &RecordOptions::id_value()) {
             return cb(Ok((cred_def_id.0, cred_def)));
@@ -331,13 +334,11 @@ impl IssuerCommandExecutor {
     }
 
     fn _prepare_create_and_store_credential_definition(&self,
-                                                       issuer_did: &DidValue,
+                                                       issuer_did: &ShortDidValue,
                                                        schema: &SchemaV1,
                                                        tag: &str,
                                                        type_: Option<&str>,
                                                        config: Option<&CredentialDefinitionConfig>) -> IndyResult<(CredentialDefinitionConfig, SchemaId, CredentialDefinitionId, SignatureType)> {
-        self.crypto_service.validate_did(issuer_did)?;
-
         let default_cred_def_config = CredentialDefinitionConfig::default();
         let cred_def_config = config.unwrap_or(&default_cred_def_config);
 
@@ -543,6 +544,8 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, type_: {:?}, tag: {:?}, cred_def_id: {:?}, config: {:?}, \
                tails_handle: {:?}", wallet_handle, issuer_did, type_, tag, cred_def_id, config, tails_writer_handle);
 
+        let issuer_did = issuer_did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, err))?;
+
         let rev_reg_type = if let Some(type_) = type_ {
             serde_json::from_str::<RegistryType>(&format!("\"{}\"", type_))
                 .to_indy(IndyErrorKind::InvalidStructure, "Invalid Registry Type format")?
@@ -553,7 +556,7 @@ impl IssuerCommandExecutor {
         let issuance_type = config.issuance_type.clone().unwrap_or(IssuanceType::ISSUANCE_ON_DEMAND);
         let max_cred_num = config.max_cred_num.unwrap_or(100000);
 
-        let rev_reg_id = RevocationRegistryId::new(issuer_did, &cred_def_id.0, &rev_reg_type, tag);
+        let rev_reg_id = RevocationRegistryId::new(&issuer_did, &cred_def_id.0, &rev_reg_type, tag);
 
         if let (Ok(rev_reg_def), Ok(rev_reg)) = (self.wallet_service.get_indy_record_value::<RevocationRegistryDefinition>(wallet_handle, &rev_reg_id.0, &RecordOptions::id_value()),
                                                  self.wallet_service.get_indy_record_value::<RevocationRegistry>(wallet_handle, &rev_reg_id.0, &RecordOptions::id_value())) {
@@ -566,7 +569,7 @@ impl IssuerCommandExecutor {
             self.anoncreds_service.issuer.new_revocation_registry(&CredentialDefinitionV1::from(cred_def),
                                                                   max_cred_num,
                                                                   issuance_type.to_bool(),
-                                                                  issuer_did)?;
+                                                                  &issuer_did)?;
 
         let (tails_location, tails_hash) =
             store_tails_from_generator(self.blob_storage_service.clone(), tails_writer_handle, &mut revoc_tails_generator)?;

@@ -1,6 +1,7 @@
 use super::DELIMITER;
 use super::schema::SchemaId;
 use super::super::ledger::request::ProtocolVersion;
+use super::super::crypto::did::ShortDidValue;
 
 use utils::validation::Validatable;
 
@@ -13,7 +14,6 @@ use ursa::cl::{
 
 use std::collections::HashMap;
 use named_type::NamedType;
-use domain::crypto::did::DidValue;
 
 pub const CL_SIGNATURE_TYPE: &str = "CL";
 pub const CRED_DEF_MARKER: &str = "3";
@@ -120,7 +120,7 @@ impl Validatable for CredentialDefinition {
 pub struct CredentialDefinitionId(pub String);
 
 impl CredentialDefinitionId {
-    pub fn new(did: &DidValue, schema_id: &SchemaId, signature_type: &str, tag: &str) -> CredentialDefinitionId {
+    pub fn new(did: &ShortDidValue, schema_id: &SchemaId, signature_type: &str, tag: &str) -> CredentialDefinitionId {
         if ProtocolVersion::is_node_1_3() {
             CredentialDefinitionId(format!("{}{}{}{}{}{}{}", did.0, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id.0))
         } else {

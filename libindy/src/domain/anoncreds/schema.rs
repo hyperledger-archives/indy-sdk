@@ -1,6 +1,6 @@
 use super::DELIMITER;
 
-use domain::crypto::did::DidValue;
+use super::super::crypto::did::ShortDidValue;
 
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
@@ -73,7 +73,7 @@ impl Validatable for AttributeNames {
 }
 
 impl SchemaId {
-    pub fn new(did: &DidValue, name: &str, version: &str) -> SchemaId {
+    pub fn new(did: &ShortDidValue, name: &str, version: &str) -> SchemaId {
         SchemaId(format!("{}{}{}{}{}{}{}", did.0, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version))
     }
 

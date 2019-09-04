@@ -2,7 +2,7 @@ use super::constants::{CRED_DEF, GET_CRED_DEF};
 use super::response::{GetReplyResultV1, ReplyType};
 use super::super::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
 use super::super::ledger::request::ProtocolVersion;
-use domain::crypto::did::DidValue;
+use super::super::crypto::did::ShortDidValue;
 
 #[derive(Serialize, Debug)]
 pub struct CredDefOperation {
@@ -73,7 +73,7 @@ pub struct GetCredDefResultV0 {
     #[serde(rename = "seqNo")]
     pub seq_no: i32,
     pub signature_type: SignatureType,
-    pub origin: DidValue,
+    pub origin: ShortDidValue,
     pub tag: Option<String>,
     pub data: CredentialDefinitionData
 }

@@ -13,11 +13,11 @@ use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, Revo
 use domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
 use domain::crypto::did::DidValue;
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
-use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, ROLES, txn_name_to_code};
+use domain::ledger::constants::{GET_VALIDATOR_INFO, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, ROLES, txn_name_to_code};
 use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
 use domain::ledger::ddo::GetDdoOperation;
 use domain::ledger::node::{NodeOperation, NodeOperationData};
-use domain::ledger::nym::GetNymOperation;
+use domain::ledger::nym::{NymOperation, GetNymOperation};
 use domain::ledger::pool::{PoolConfigOperation, PoolRestartOperation, PoolUpgradeOperation, Schedule};
 use domain::ledger::request::{TxnAuthrAgrmtAcceptanceData, Request};
 use domain::ledger::response::{Message, Reply, ReplyType};
@@ -38,9 +38,15 @@ macro_rules! build_result {
             let operation = $operation::new($($params)*);
 
             Request::build_request($submitter_did, operation)
-                .map_err(|err_| err_msg(IndyErrorKind::InvalidState, format!("Cannot serialize request json: {:?}", err_)))
+                .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, err))
         })
     }
+
+macro_rules! short_did {
+    ($did:expr) => ({
+        $did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, err))?
+    })
+}
 
 pub struct LedgerService {}
 
@@ -52,54 +58,45 @@ impl LedgerService {
     #[logfn(Info)]
     pub fn build_nym_request(&self, identifier: &DidValue, dest: &DidValue, verkey: Option<&str>,
                              alias: Option<&str>, role: Option<&str>) -> IndyResult<String> {
-        let mut operation = json!({
-            "type": NYM,
-            "dest": dest,
-        });
+        let role = if let Some(r) = role {
+            Some(
+                if r == ROLE_REMOVE {
+                    Value::Null
+                } else {
+                    json!(
+                    match r {
+                        "STEWARD" => STEWARD,
+                        "TRUSTEE" => TRUSTEE,
+                        "TRUST_ANCHOR" | "ENDORSER" => ENDORSER,
+                        "NETWORK_MONITOR" => NETWORK_MONITOR,
+                        role if ROLES.contains(&role) => role,
+                        role => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
+                    }
+                )
+                }
+            )
+        } else { None };
 
-        if let Some(v) = verkey {
-            operation["verkey"] = json!(v);
-        }
-
-        if let Some(a) = alias {
-            operation["alias"] = json!(a);
-        }
-
-        if let Some(r) = role {
-            if r == ROLE_REMOVE {
-                operation["role"] = Value::Null
-            } else {
-                operation["role"] = json!(match r {
-                    "STEWARD" => STEWARD,
-                    "TRUSTEE" => TRUSTEE,
-                    "TRUST_ANCHOR" | "ENDORSER" => ENDORSER,
-                    "NETWORK_MONITOR" => NETWORK_MONITOR,
-                    role if ROLES.contains(&role) => role,
-                    role => return Err(err_msg(IndyErrorKind::InvalidStructure, format!("Invalid role: {}", role)))
-                })
-            }
-        }
-
-        let request = Request::build_request(Some(identifier), operation)
-            .to_indy(IndyErrorKind::InvalidState, "NYM request json is invalid")?;
-
-        Ok(request)
+        build_result!(NymOperation, Some(identifier), short_did!(dest),
+                                                      verkey.map(String::from),
+                                                      alias.map(String::from),
+                                                      role)
     }
 
     #[logfn(Info)]
     pub fn build_get_nym_request(&self, identifier: Option<&DidValue>, dest: &DidValue) -> IndyResult<String> {
-        build_result!(GetNymOperation, identifier, dest.clone())
+        build_result!(GetNymOperation, identifier, short_did!(dest))
     }
 
     #[logfn(Info)]
     pub fn build_get_ddo_request(&self, identifier: Option<&DidValue>, dest: &DidValue) -> IndyResult<String> {
-        build_result!(GetDdoOperation, identifier, dest.clone())
+        build_result!(GetDdoOperation, identifier, short_did!(dest))
     }
 
     #[logfn(Info)]
     pub fn build_attrib_request(&self, identifier: &DidValue, dest: &DidValue, hash: Option<&str>,
                                 raw: Option<&serde_json::Value>, enc: Option<&str>) -> IndyResult<String> {
-        build_result!(AttribOperation, Some(identifier), dest.clone(),
+        build_result!(AttribOperation, Some(identifier), short_did!(dest),
                                                          hash.map(String::from),
                                                          raw.map(serde_json::Value::to_string),
                                                          enc.map(String::from))
@@ -108,7 +105,7 @@ impl LedgerService {
     #[logfn(Info)]
     pub fn build_get_attrib_request(&self, identifier: Option<&DidValue>, dest: &DidValue, raw: Option<&str>, hash: Option<&str>,
                                     enc: Option<&str>) -> IndyResult<String> {
-        build_result!(GetAttribOperation, identifier, dest.clone(), raw, hash, enc)
+        build_result!(GetAttribOperation, identifier, short_did!(dest), raw, hash, enc)
     }
 
     #[logfn(Info)]
@@ -157,7 +154,7 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_node_request(&self, identifier: &DidValue, dest: &DidValue, data: NodeOperationData) -> IndyResult<String> {
-        build_result!(NodeOperation, Some(identifier), dest.clone(), data)
+        build_result!(NodeOperation, Some(identifier), short_did!(dest), data)
     }
 
     #[logfn(Info)]
@@ -165,7 +162,7 @@ impl LedgerService {
         let operation = GetValidatorInfoOperation::new();
 
         Request::build_request(Some(identifier), operation)
-            .to_indy(IndyErrorKind::InvalidState, "GET_TXN request json is invalid")
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, err))
     }
 
     #[logfn(Info)]
@@ -273,7 +270,7 @@ impl LedgerService {
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
                 id: CredentialDefinitionId(res.txn.data.id),
-                schema_id:SchemaId(res.txn.data.schema_ref.to_string()),
+                schema_id: SchemaId(res.txn.data.schema_ref.to_string()),
                 signature_type: res.txn.data.type_,
                 tag: res.txn.data.tag,
                 value: res.txn.data.public_keys,
@@ -383,7 +380,7 @@ impl LedgerService {
         };
 
         let request = Request::build_request(submitter_did, operation)
-            .to_indy(IndyErrorKind::InvalidState, "GET_AUTH_RULE request json is invalid")?;
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, err))?;
 
         Ok(request)
     }
@@ -525,6 +522,14 @@ mod tests {
     const DEST: &str = "VsKV7grR1BUE29mG2Fm2kX";
     const VERKEY: &str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 
+    fn identifier() -> DidValue {
+        DidValue(IDENTIFIER.to_string())
+    }
+
+    fn dest() -> DidValue {
+        DidValue(DEST.to_string())
+    }
+
     #[test]
     fn build_nym_request_works_for_only_required_fields() {
         let ledger_service = LedgerService::new();
@@ -534,7 +539,7 @@ mod tests {
             "dest": DEST
         });
 
-        let request = ledger_service.build_nym_request(IDENTIFIER, DEST, None, None, None).unwrap();
+        let request = ledger_service.build_nym_request(&identifier(), &dest(), None, None, None).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -548,7 +553,7 @@ mod tests {
             "role": serde_json::Value::Null,
         });
 
-        let request = ledger_service.build_nym_request(IDENTIFIER, DEST, None, None, Some("")).unwrap();
+        let request = ledger_service.build_nym_request(&identifier(), &dest(), None, None, Some("")).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -564,7 +569,7 @@ mod tests {
             "verkey": VERKEY,
         });
 
-        let request = ledger_service.build_nym_request(IDENTIFIER, DEST, Some(VERKEY), Some("some_alias"), Some("")).unwrap();
+        let request = ledger_service.build_nym_request(&identifier(), &dest(), Some(VERKEY), Some("some_alias"), Some("")).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -577,7 +582,7 @@ mod tests {
             "dest": DEST
         });
 
-        let request = ledger_service.build_get_nym_request(Some(IDENTIFIER), DEST).unwrap();
+        let request = ledger_service.build_get_nym_request(Some(&identifier()), &dest()).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -590,7 +595,7 @@ mod tests {
             "dest": DEST
         });
 
-        let request = ledger_service.build_get_ddo_request(Some(IDENTIFIER), DEST).unwrap();
+        let request = ledger_service.build_get_ddo_request(Some(&identifier()), &dest()).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -604,7 +609,7 @@ mod tests {
             "hash": "hash"
         });
 
-        let request = ledger_service.build_attrib_request(IDENTIFIER, DEST, Some("hash"), None, None).unwrap();
+        let request = ledger_service.build_attrib_request(&identifier(), &dest(), Some("hash"), None, None).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -618,7 +623,7 @@ mod tests {
             "raw": "raw"
         });
 
-        let request = ledger_service.build_get_attrib_request(Some(IDENTIFIER), DEST, Some("raw"), None, None).unwrap();
+        let request = ledger_service.build_get_attrib_request(Some(&identifier()), &dest(), Some("raw"), None, None).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -632,7 +637,7 @@ mod tests {
             "hash": "hash"
         });
 
-        let request = ledger_service.build_get_attrib_request(Some(IDENTIFIER), DEST, None, Some("hash"), None).unwrap();
+        let request = ledger_service.build_get_attrib_request(Some(&identifier()), &dest(), None, Some("hash"), None).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -646,7 +651,7 @@ mod tests {
             "enc": "enc"
         });
 
-        let request = ledger_service.build_get_attrib_request(Some(IDENTIFIER), DEST, None, None, Some("enc")).unwrap();
+        let request = ledger_service.build_get_attrib_request(Some(&identifier()), &dest(), None, None, Some("enc")).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -658,7 +663,7 @@ mod tests {
         attr_names.insert("male".to_string());
 
         let data = SchemaV1 {
-            id: SchemaId::new(IDENTIFIER, "name", "1.0"),
+            id: SchemaId::new(&identifier().to_short().unwrap(), "name", "1.0"),
             name: "name".to_string(),
             version: "1.0".to_string(),
             attr_names,
@@ -674,7 +679,7 @@ mod tests {
             }
         });
 
-        let request = ledger_service.build_schema_request(IDENTIFIER, data).unwrap();
+        let request = ledger_service.build_schema_request(&identifier(), data).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -682,7 +687,7 @@ mod tests {
     fn build_get_schema_request_works_for_valid_id() {
         let ledger_service = LedgerService::new();
 
-        let id = SchemaId::new(IDENTIFIER, "name", "1.0");
+        let id = SchemaId::new(&identifier().to_short().unwrap(), "name", "1.0");
 
         let expected_result = json!({
             "type": GET_SCHEMA,
@@ -693,7 +698,7 @@ mod tests {
             }
         });
 
-        let request = ledger_service.build_get_schema_request(Some(IDENTIFIER), &id).unwrap();
+        let request = ledger_service.build_get_schema_request(Some(&identifier()), &id).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -703,7 +708,7 @@ mod tests {
 
         let ledger_service = LedgerService::new();
 
-        let id = CredentialDefinitionId::new(IDENTIFIER, &SchemaId("1".to_string()), "signature_type", "tag");
+        let id = CredentialDefinitionId::new(&identifier().to_short().unwrap(), &SchemaId("1".to_string()), "signature_type", "tag");
 
         let expected_result = json!({
             "type": GET_CRED_DEF,
@@ -713,7 +718,7 @@ mod tests {
             "tag":"tag"
         });
 
-        let request = ledger_service.build_get_cred_def_request(Some(IDENTIFIER), &id).unwrap();
+        let request = ledger_service.build_get_cred_def_request(Some(&identifier()), &id).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -747,7 +752,7 @@ mod tests {
             }
         });
 
-        let request = ledger_service.build_node_request(IDENTIFIER, DEST, data).unwrap();
+        let request = ledger_service.build_node_request(&identifier(), &dest(), data).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -761,7 +766,7 @@ mod tests {
             "ledgerId": 1
         });
 
-        let request = ledger_service.build_get_txn_request(Some(IDENTIFIER), None, 1).unwrap();
+        let request = ledger_service.build_get_txn_request(Some(&identifier()), None, 1).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -775,14 +780,13 @@ mod tests {
             "ledgerId": 0
         });
 
-        let request = ledger_service.build_get_txn_request(Some(IDENTIFIER), Some("POOL"), 1).unwrap();
+        let request = ledger_service.build_get_txn_request(Some(&identifier()), Some("POOL"), 1).unwrap();
         check_request(&request, expected_result);
     }
 
     #[test]
     fn build_get_txn_request_works_for_ledger_type_as_number() {
         let ledger_service = LedgerService::new();
-        let identifier = "identifier";
 
         let expected_result = json!({
             "type": GET_TXN,
@@ -790,7 +794,7 @@ mod tests {
             "ledgerId": 10
         });
 
-        let request = ledger_service.build_get_txn_request(Some(identifier), Some("10"), 1).unwrap();
+        let request = ledger_service.build_get_txn_request(Some(&identifier()), Some("10"), 1).unwrap();
         check_request(&request, expected_result);
     }
 
@@ -798,21 +802,21 @@ mod tests {
     fn build_get_txn_request_works_for_invalid_type() {
         let ledger_service = LedgerService::new();
 
-        let res = ledger_service.build_get_txn_request(Some(IDENTIFIER), Some("type"), 1);
+        let res = ledger_service.build_get_txn_request(Some(&identifier()), Some("type"), 1);
         assert_kind!(IndyErrorKind::InvalidStructure, res);
     }
 
     #[test]
     fn validate_action_works_for_pool_restart() {
         let ledger_service = LedgerService::new();
-        let request = ledger_service.build_pool_restart(IDENTIFIER, "start", None).unwrap();
+        let request = ledger_service.build_pool_restart(&identifier(), "start", None).unwrap();
         ledger_service.validate_action(&request).unwrap();
     }
 
     #[test]
     fn validate_action_works_for_get_validator_info() {
         let ledger_service = LedgerService::new();
-        let request = ledger_service.build_get_validator_info_request(IDENTIFIER).unwrap();
+        let request = ledger_service.build_get_validator_info_request(&identifier()).unwrap();
         ledger_service.validate_action(&request).unwrap();
     }
 
@@ -852,7 +856,7 @@ mod tests {
                 "constraint": _role_constraint(),
             });
 
-            let request = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, ADD_AUTH_ACTION, FIELD,
+            let request = ledger_service.build_auth_rule_request(&identifier(), NYM, ADD_AUTH_ACTION, FIELD,
                                                                  None, Some(NEW_VALUE),
                                                                  _role_constraint()).unwrap();
             check_request(&request, expected_result);
@@ -884,7 +888,7 @@ mod tests {
                 "constraint": constraint,
             });
 
-            let request = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, ADD_AUTH_ACTION, FIELD,
+            let request = ledger_service.build_auth_rule_request(&identifier(), NYM, ADD_AUTH_ACTION, FIELD,
                                                                  None, Some(NEW_VALUE),
                                                                  constraint).unwrap();
 
@@ -905,7 +909,7 @@ mod tests {
                 "constraint": _role_constraint(),
             });
 
-            let request = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, EDIT_AUTH_ACTION, FIELD,
+            let request = ledger_service.build_auth_rule_request(&identifier(), NYM, EDIT_AUTH_ACTION, FIELD,
                                                                  Some(OLD_VALUE), Some(NEW_VALUE),
                                                                  _role_constraint()).unwrap();
             check_request(&request, expected_result);
@@ -915,7 +919,7 @@ mod tests {
         fn build_auth_rule_request_works_for_invalid_auth_action() {
             let ledger_service = LedgerService::new();
 
-            let res = ledger_service.build_auth_rule_request(IDENTIFIER, NYM, "WRONG", FIELD, None, Some(NEW_VALUE), _role_constraint());
+            let res = ledger_service.build_auth_rule_request(&identifier(), NYM, "WRONG", FIELD, None, Some(NEW_VALUE), _role_constraint());
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
 
@@ -931,7 +935,7 @@ mod tests {
                 "auth_action": AuthAction::ADD,
             });
 
-            let request = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some(NYM),
+            let request = ledger_service.build_get_auth_rule_request(Some(&identifier()), Some(NYM),
                                                                      Some(ADD_AUTH_ACTION), Some(FIELD),
                                                                      None, Some(NEW_VALUE)).unwrap();
             check_request(&request, expected_result);
@@ -950,7 +954,7 @@ mod tests {
                 "auth_action": AuthAction::EDIT,
             });
 
-            let request = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some(NYM),
+            let request = ledger_service.build_get_auth_rule_request(Some(&identifier()), Some(NYM),
                                                                      Some(EDIT_AUTH_ACTION), Some(FIELD),
                                                                      Some(OLD_VALUE), Some(NEW_VALUE)).unwrap();
             check_request(&request, expected_result);
@@ -964,7 +968,7 @@ mod tests {
                 "type": GET_AUTH_RULE,
             });
 
-            let request = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), None,
+            let request = ledger_service.build_get_auth_rule_request(Some(&identifier()), None,
                                                                      None, None,
                                                                      None, None).unwrap();
             check_request(&request, expected_result);
@@ -974,7 +978,7 @@ mod tests {
         fn build_get_auth_rule_request_works_for_some_fields_are_specified() {
             let ledger_service = LedgerService::new();
 
-            let res = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some(NYM),
+            let res = ledger_service.build_get_auth_rule_request(Some(&identifier()), Some(NYM),
                                                                  None, Some(FIELD),
                                                                  None, None);
             assert_kind!(IndyErrorKind::InvalidStructure, res);
@@ -984,7 +988,7 @@ mod tests {
         fn build_get_auth_rule_request_works_for_invalid_auth_action() {
             let ledger_service = LedgerService::new();
 
-            let res = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), None, Some("WRONG"), None, None, None);
+            let res = ledger_service.build_get_auth_rule_request(Some(&identifier()), None, Some("WRONG"), None, None, None);
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
 
@@ -992,7 +996,7 @@ mod tests {
         fn build_get_auth_rule_request_works_for_invalid_auth_type() {
             let ledger_service = LedgerService::new();
 
-            let res = ledger_service.build_get_auth_rule_request(Some(IDENTIFIER), Some("WRONG"), None, None, None, None);
+            let res = ledger_service.build_get_auth_rule_request(Some(&identifier()), Some("WRONG"), None, None, None, None);
             assert_kind!(IndyErrorKind::InvalidStructure, res);
         }
 
@@ -1021,7 +1025,7 @@ mod tests {
                 "rules": data.clone(),
             });
 
-            let request = ledger_service.build_auth_rules_request(IDENTIFIER, data).unwrap();
+            let request = ledger_service.build_auth_rules_request(&identifier(), data).unwrap();
             check_request(&request, expected_result);
         }
     }
@@ -1042,7 +1046,7 @@ mod tests {
                 "version": VERSION
             });
 
-            let request = ledger_service.build_txn_author_agreement_request(IDENTIFIER, TEXT, VERSION).unwrap();
+            let request = ledger_service.build_txn_author_agreement_request(&identifier(), TEXT, VERSION).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1054,7 +1058,7 @@ mod tests {
                 "type": GET_TXN_AUTHR_AGRMT
             });
 
-            let request = ledger_service.build_get_txn_author_agreement_request(Some(IDENTIFIER), None).unwrap();
+            let request = ledger_service.build_get_txn_author_agreement_request(Some(&identifier()), None).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1073,7 +1077,7 @@ mod tests {
                 timestamp: None,
             };
 
-            let request = ledger_service.build_get_txn_author_agreement_request(Some(IDENTIFIER), Some(&data)).unwrap();
+            let request = ledger_service.build_get_txn_author_agreement_request(Some(&identifier()), Some(&data)).unwrap();
             check_request(&request, expected_result);
         }
     }
@@ -1102,7 +1106,7 @@ mod tests {
                 "version":  VERSION,
             });
 
-            let request = ledger_service.build_acceptance_mechanisms_request(IDENTIFIER, _aml(), VERSION, None).unwrap();
+            let request = ledger_service.build_acceptance_mechanisms_request(&identifier(), _aml(), VERSION, None).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1117,7 +1121,7 @@ mod tests {
                 "amlContext": CONTEXT.to_string(),
             });
 
-            let request = ledger_service.build_acceptance_mechanisms_request(IDENTIFIER, _aml(), VERSION, Some(CONTEXT)).unwrap();
+            let request = ledger_service.build_acceptance_mechanisms_request(&identifier(), _aml(), VERSION, Some(CONTEXT)).unwrap();
             check_request(&request, expected_result);
         }
 

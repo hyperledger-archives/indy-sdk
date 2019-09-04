@@ -1,37 +1,14 @@
 #[macro_use]
-extern crate lazy_static;
+mod utils;
 
-#[macro_use]
-extern crate named_type_derive;
+inject_indy_dependencies!();
 
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
-extern crate regex;
-#[macro_use]
-extern crate log;
-
-#[macro_use]
-mod utils;
 
 use utils::cache::*;
 use utils::Setup;
+use utils::domain::crypto::did::ShortDidValue;
 
 use self::indy::ErrorCode;
 
@@ -74,7 +51,7 @@ mod high_cases {
                 setup.pool_handle,
                 setup.wallet_handle,
                 DID_MY1,
-                &SchemaId::new(DID, "other_schema", "1.0").0,
+                &SchemaId::new(&ShortDidValue(DID.to_string()), "other_schema", "1.0").0,
                 &options_json);
 
             assert_code!(ErrorCode::LedgerNotFound, res);

@@ -2,15 +2,15 @@
 use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
 use commands::{Command, CommandExecutor};
 use commands::did::DidCommand;
-use domain::crypto::did::{MyDidInfo, TheirDidInfo, DidProtocolVersion, DidValue};
+use domain::crypto::did::{TheirDidInfo, DidValue, MyDidInfo};
 use domain::crypto::key::KeyInfo;
 use errors::prelude::*;
 use utils::ctypes;
+use utils::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
 
-use std::convert::TryFrom;
 use std::ptr;
 use domain::ledger::attrib::Endpoint;
 
@@ -61,7 +61,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: CommandHandle,
                                                                  verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_info);
 
-    check_useful_json!(did_info, ErrorCode::CommonInvalidParam3, MyDidInfo); // redefine to MyDidInfo if valid
+    check_useful_validatable_json!(did_info, ErrorCode::CommonInvalidParam3, MyDidInfo); // redefine to MyDidInfo if valid
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(&did_info));
@@ -124,7 +124,7 @@ pub  extern fn indy_replace_keys_start(command_handle: CommandHandle,
                                                             verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_replace_keys_start: >>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, key_info);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_json!(key_info, ErrorCode::CommonInvalidParam4, KeyInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -171,7 +171,7 @@ pub  extern fn indy_replace_keys_apply(command_handle: CommandHandle,
                                                             err: ErrorCode)>) -> ErrorCode {
     trace!("indy_replace_keys_apply: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_replace_keys_apply: entities >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
@@ -225,7 +225,7 @@ pub  extern fn indy_store_their_did(command_handle: CommandHandle,
                                                          err: ErrorCode)>) -> ErrorCode {
     trace!("indy_store_their_did: >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
 
-    check_useful_json!(identity_json, ErrorCode::CommonInvalidParam3, TheirDidInfo);
+    check_useful_validatable_json!(identity_json, ErrorCode::CommonInvalidParam3, TheirDidInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_store_their_did: entities >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
@@ -289,7 +289,7 @@ pub extern fn indy_key_for_did(command_handle: CommandHandle,
                                                     key: *const c_char)>) -> ErrorCode {
     trace!("indy_key_for_did: >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam4, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_key_for_did: entities >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
@@ -346,7 +346,7 @@ pub extern fn indy_key_for_local_did(command_handle: CommandHandle,
                                                           key: *const c_char)>) -> ErrorCode {
     trace!("indy_key_for_local_did: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_key_for_local_did: entities >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
@@ -395,7 +395,7 @@ pub extern fn indy_set_endpoint_for_did(command_handle: CommandHandle,
                                                              err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_endpoint_for_did: >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}", wallet_handle, did, address, transport_key);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(address, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(transport_key, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -455,7 +455,7 @@ pub extern fn indy_get_endpoint_for_did(command_handle: CommandHandle,
                                                              transport_vk: *const c_char)>) -> ErrorCode {
     trace!("indy_get_endpoint_for_did: >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_get_endpoint_for_did: entities >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
@@ -510,7 +510,7 @@ pub extern fn indy_set_did_metadata(command_handle: CommandHandle,
                                                          err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_did_metadata: >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str_empty_accepted!(metadata, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -563,7 +563,7 @@ pub extern fn indy_get_did_metadata(command_handle: CommandHandle,
                                                          metadata: *const c_char)>) -> ErrorCode {
     trace!("indy_get_did_metadata: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_get_did_metadata: entities >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
@@ -615,7 +615,7 @@ pub extern fn indy_get_my_did_with_meta(command_handle: CommandHandle,
                                                              did_with_meta: *const c_char)>) -> ErrorCode {
     trace!("indy_get_my_did_with_meta: >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
-    check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(my_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_get_my_did_with_meta: entities >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
@@ -708,11 +708,7 @@ pub  extern fn indy_abbreviate_verkey(command_handle: CommandHandle,
                                                            verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_abbreviate_verkey: >>> did: {:?}, full_verkey: {:?}", did, full_verkey);
 
-    if DidProtocolVersion::get() == 1 {
-        return IndyError::from_msg(IndyErrorKind::InvalidState, "You can't abbreviate fully-qualified dids").into();
-    }
-
-    check_useful_convertable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(full_verkey, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 

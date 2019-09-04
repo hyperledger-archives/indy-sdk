@@ -291,6 +291,8 @@ impl ProverCommandExecutor {
 
         self.crypto_service.validate_did(&prover_did)?;
 
+        let prover_did = prover_did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, err))?;
+
         let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &master_secret_id)?;
 
         let (blinded_ms, ms_blinding_data, blinded_ms_correctness_proof) =
@@ -301,7 +303,7 @@ impl ProverCommandExecutor {
         let nonce = new_nonce()?;
 
         let credential_request = CredentialRequest {
-            prover_did: prover_did.0,
+            prover_did: prover_did.clone(),
             cred_def_id: cred_offer.cred_def_id.clone(),
             blinded_ms,
             blinded_ms_correctness_proof,

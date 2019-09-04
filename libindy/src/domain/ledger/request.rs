@@ -4,7 +4,7 @@ use time;
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use domain::crypto::did::DidValue;
+use super::super::crypto::did::{DidValue, ShortDidValue};
 
 pub const DEFAULT_LIBIDY_DID: &str = "LibindyDid111111111111";
 
@@ -40,7 +40,7 @@ pub struct TxnAuthrAgrmtAcceptanceData {
 #[serde(rename_all = "camelCase")]
 pub struct Request<T: serde::Serialize> {
     pub req_id: u64,
-    pub identifier: DidValue,
+    pub identifier: ShortDidValue,
     pub operation: T,
     pub protocol_version: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -50,11 +50,11 @@ pub struct Request<T: serde::Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub taa_acceptance: Option<TxnAuthrAgrmtAcceptanceData>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub endorser: Option<String>
+    pub endorser: Option<ShortDidValue>
 }
 
 impl<T: serde::Serialize> Request<T> {
-    pub fn new(req_id: u64, identifier: DidValue, operation: T, protocol_version: usize) -> Request<T> {
+    pub fn new(req_id: u64, identifier: ShortDidValue, operation: T, protocol_version: usize) -> Request<T> {
         Request {
             req_id,
             identifier,
@@ -67,9 +67,15 @@ impl<T: serde::Serialize> Request<T> {
         }
     }
 
-    pub fn build_request(identifier: Option<&DidValue>, operation: T) -> Result<String, serde_json::Error> {
+    pub fn build_request(identifier: Option<&DidValue>, operation: T) -> Result<String, String> {
         let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
-        let identifier = identifier.unwrap_or(&DidValue(DEFAULT_LIBIDY_DID.to_string()));
-        serde_json::to_string(&Request::new(req_id, identifier.clone(), operation, ProtocolVersion::get()))
+
+        let identifier = match identifier {
+            Some(identifier_) => identifier_.clone().to_short()?,
+            None => ShortDidValue(DEFAULT_LIBIDY_DID.to_string())
+        };
+
+        serde_json::to_string(&Request::new(req_id, identifier, operation, ProtocolVersion::get()))
+            .map_err(|err| format!("Cannot serialize Request: {:?}", err))
     }
 }

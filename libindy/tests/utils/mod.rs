@@ -48,6 +48,45 @@ pub mod inmem_wallet;
 
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;
+
+macro_rules! inject_indy_dependencies {
+    () => {
+        extern crate serde;
+
+        #[macro_use]
+        extern crate lazy_static;
+
+        #[macro_use]
+        extern crate named_type_derive;
+
+        #[macro_use]
+        extern crate derivative;
+
+        #[macro_use]
+        extern crate serde_derive;
+
+        #[macro_use]
+        extern crate serde_json;
+
+        #[macro_use]
+        extern crate log;
+
+        extern crate byteorder;
+        extern crate hex;
+        extern crate ursa;
+        extern crate uuid;
+        extern crate named_type;
+        extern crate openssl;
+        extern crate rmp_serde;
+        extern crate rust_base58;
+        extern crate sodiumoxide;
+        extern crate rand;
+        extern crate regex;
+        extern crate time;
+        extern crate libc;
+    }
+}
+
 use indy::set_runtime_config;
 
 fn setup() -> String {
@@ -110,13 +149,19 @@ impl Setup {
         Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
     }
 
-    pub fn first_did_version() -> Setup {
-        let setup = Setup::new_identity();
+    pub fn trustee_first_did_versions() -> Setup {
+        set_runtime_config(r#"{"did_protocol_version": 1}"#);
+        let setup = Setup::trustee();
+        setup
+    }
+
+    pub fn empty_first_did_version() -> Setup {
+        let setup = Setup::empty();
         set_runtime_config(r#"{"did_protocol_version": 1}"#);
         setup
     }
 
-    pub fn first_did_version_wallet_only() -> Setup {
+    pub fn wallet_first_did_version() -> Setup {
         let setup = Setup::wallet();
         set_runtime_config(r#"{"did_protocol_version": 1}"#);
         setup
@@ -183,6 +228,5 @@ impl Drop for Setup {
             pool::close(self.pool_handle).unwrap();
         }
         tear_down(&self.name);
-        set_runtime_config(r#"{}"#);
     }
 }

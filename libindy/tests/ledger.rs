@@ -1,39 +1,10 @@
 #[macro_use]
-extern crate lazy_static;
+mod utils;
 
-#[macro_use]
-extern crate named_type_derive;
+inject_indy_dependencies!();
 
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
-extern crate hex;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate openssl;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
-extern crate sodiumoxide;
-extern crate rand;
-extern crate regex;
-#[macro_use]
-extern crate log;
-extern crate indyrs;
-
-#[macro_use]
-mod utils;
 
 use self::indy::ErrorCode;
 #[cfg(feature = "local_nodes_pool")]
@@ -51,8 +22,7 @@ use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
-
-use indy::set_runtime_config;
+use utils::domain::crypto::did::ShortDidValue;
 
 use std::collections::HashMap;
 use std::thread;
@@ -139,10 +109,13 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_sign_and_submit_request_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
+        fn indy_sign_and_submit_request_works_for_did_first_versions() {
+            let setup = Setup::trustee_first_did_versions();
 
             let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+
+            ensure_did_first_version(&setup.did);
+            ensure_did_first_version(&did);
 
             let nym_request = ledger::build_nym_request(&setup.did, &did, None, None, None).unwrap();
             let nym_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
@@ -207,9 +180,10 @@ mod high_cases {
 
         #[test]
         fn indy_sign_request_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
+            let setup = Setup::wallet_first_did_version();
 
             let (did, _) = did::create_and_store_my_did(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            ensure_did_first_version(&did);
 
             let request = ledger::sign_request(setup.wallet_handle, &did, REQUEST).unwrap();
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
@@ -247,10 +221,13 @@ mod high_cases {
 
         #[test]
         fn indy_multi_sign_request_works_for_first_did_version() {
-            let setup = Setup::first_did_version_wallet_only();
+            let setup = Setup::wallet_first_did_version();
 
             let (did1, _) = did::create_and_store_my_did(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
             let (did2, _) = did::create_and_store_my_did(setup.wallet_handle, Some(MY1_SEED)).unwrap();
+
+            ensure_did_first_version(&did1);
+            ensure_did_first_version(&did2);
 
             let message = ledger::multi_sign_request(setup.wallet_handle, &did1, REQUEST).unwrap();
             let message = ledger::multi_sign_request(setup.wallet_handle, &did2, &message).unwrap();
@@ -301,7 +278,7 @@ mod high_cases {
             });
 
             let request = ledger::build_nym_request(&IDENTIFIER, &DEST, None, None, None).unwrap();
-            check_request(&request, expected_result);
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -319,7 +296,7 @@ mod high_cases {
             });
 
             let request = ledger::build_nym_request(&IDENTIFIER, &DEST, Some(VERKEY_TRUSTEE), Some(alias), Some(role)).unwrap();
-            check_request(&request, expected_result);
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -332,7 +309,21 @@ mod high_cases {
             });
 
             let request = ledger::build_nym_request(&IDENTIFIER, &DEST, None, None, Some("")).unwrap();
-            check_request(&request, expected_result);
+            check_request(&request, expected_result, IDENTIFIER);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_nym_requests_works_for_first_did_version() {
+            let _setup = Setup::empty_first_did_version();
+
+            let expected_result = json!({
+                "type": constants::NYM,
+                "dest": DEST,
+            });
+
+            let request = ledger::build_nym_request(&IDENTIFIER_V1, &DEST_V1, None, None, None).unwrap();
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -344,7 +335,21 @@ mod high_cases {
             });
 
             let request = ledger::build_get_nym_request(Some(IDENTIFIER), &DEST).unwrap();
-            check_request(&request, expected_result);
+            check_request(&request, expected_result, IDENTIFIER);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_get_nym_requests_works_for_first_did_version() {
+            let _setup = Setup::empty_first_did_version();
+
+            let expected_result = json!({
+                "type": constants::GET_NYM,
+                "dest": DEST
+            });
+
+            let request = ledger::build_get_nym_request(Some(IDENTIFIER_V1), &DEST_V1).unwrap();
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -367,37 +372,8 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_send_get_nym_request_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
-
-            let get_nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
-            let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_requests_works() {
             let setup = Setup::trustee();
-
-            let (my_did, my_verkey) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
-
-            let nym_request = ledger::build_nym_request(&setup.did, &my_did, Some(&my_verkey), None, None).unwrap();
-            let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
-            pool::check_response_type(&nym_resp, ResponseType::REPLY);
-
-            let get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
-            let get_nym_response = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_resp).unwrap();
-
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_nym_requests_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
 
             let (my_did, my_verkey) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -426,7 +402,7 @@ mod high_cases {
             });
 
             let request = ledger::build_attrib_request(&IDENTIFIER, &DEST, None, Some(ATTRIB_RAW_DATA), None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -439,7 +415,7 @@ mod high_cases {
             });
 
             let request = ledger::build_attrib_request(&IDENTIFIER, &DEST, Some(ATTRIB_HASH_DATA), None, None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -452,7 +428,22 @@ mod high_cases {
             });
 
             let request = ledger::build_attrib_request(&IDENTIFIER, &DEST, None, None, Some(ATTRIB_ENC_DATA)).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_attrib_requests_works_for_first_did_version() {
+            let _setup = Setup::empty_first_did_version();
+
+            let expected_result = json!({
+                "type": constants::ATTRIB,
+                "dest": DEST,
+                "raw": ATTRIB_RAW_DATA
+            });
+
+            let request = ledger::build_attrib_request(&IDENTIFIER_V1, &DEST_V1, None, Some(ATTRIB_RAW_DATA), None).unwrap();
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -474,7 +465,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_attrib_request(Some(IDENTIFIER), &DEST, Some(raw), None, None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -487,7 +478,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_attrib_request(Some(IDENTIFIER), &DEST, None, Some(ATTRIB_HASH_DATA), None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -500,7 +491,24 @@ mod high_cases {
             });
 
             let request = ledger::build_get_attrib_request(Some(IDENTIFIER), &DEST, None, None, Some(ATTRIB_ENC_DATA)).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_get_attrib_requests_works_for_first_did_versions() {
+            let _setup = Setup::empty_first_did_version();
+
+            let raw = "endpoint";
+
+            let expected_result = json!({
+                "type": constants::GET_ATTR,
+                "dest": DEST,
+                "raw": raw
+            });
+
+            let request = ledger::build_get_attrib_request(Some(IDENTIFIER_V1), &DEST_V1, Some(raw), None, None).unwrap();
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -513,26 +521,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_raw_value() {
-            let setup = Setup::new_identity();
-
-            let attrib_request = ledger::build_attrib_request(&setup.did,
-                                                              &setup.did,
-                                                              None,
-                                                              Some(ATTRIB_RAW_DATA),
-                                                              None).unwrap();
-            let attrib_req_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &attrib_request).unwrap();
-            pool::check_response_type(&attrib_req_resp, ResponseType::REPLY);
-
-            let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, Some("endpoint"), None, None).unwrap();
-            let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-
-            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
-            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_requests_works_for_first_did_version() {
             let setup = Setup::new_identity();
 
             let attrib_request = ledger::build_attrib_request(&setup.did,
@@ -567,7 +555,25 @@ mod high_cases {
             });
 
             let request = ledger::build_schema_request(IDENTIFIER, SCHEMA_DATA).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_schema_requests_works_for_first_did_version() {
+            let _setup = Setup::empty_first_did_version();
+
+            let expected_result = json!({
+                "type": constants::SCHEMA,
+                "data": {
+                    "name": GVT_SCHEMA_NAME,
+                    "version": SCHEMA_VERSION,
+                    "attr_names": ["name"]
+                },
+            });
+
+            let request = ledger::build_schema_request(IDENTIFIER_V1, SCHEMA_DATA).unwrap();
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -583,7 +589,25 @@ mod high_cases {
             });
 
             let request = ledger::build_get_schema_request(Some(IDENTIFIER), &anoncreds::gvt_schema_id()).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_get_schema_requests_works_for_first_did_version() {
+            let _setup = Setup::empty_first_did_version();
+
+            let expected_result = json!({
+                "type": constants::GET_SCHEMA,
+                "dest": ISSUER_DID,
+                "data": {
+                    "name": GVT_SCHEMA_NAME,
+                    "version": SCHEMA_VERSION
+                },
+            });
+
+            let request = ledger::build_get_schema_request(Some(IDENTIFIER_V1), &anoncreds::gvt_schema_id()).unwrap();
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -601,20 +625,6 @@ mod high_cases {
             let (schema_id, _, _) = ledger::post_entities();
 
             let get_schema_request = ledger::build_get_schema_request(Some(DID_MY1), &schema_id).unwrap();
-            let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
-            let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
-
-            let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_schema_requests_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
-
-            let (schema_id, _, _) = ledger::post_entities();
-
-            let get_schema_request = ledger::build_get_schema_request(Some(&setup.did), &schema_id).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
             let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
 
@@ -643,7 +653,30 @@ mod high_cases {
             });
 
             let request = ledger::build_node_request(IDENTIFIER, DEST, NODE_DATA).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_node_request_works_for_first_did_version() {
+            let _setup = Setup::empty_first_did_version();
+
+            let expected_result = json!({
+                "type": constants::NODE,
+                "dest": DEST,
+                "data": {
+                    "node_ip": "10.0.0.100",
+                    "node_port": 2,
+                    "client_ip": "10.0.0.100",
+                    "client_port": 1,
+                    "alias": "Node5",
+                    "services": ["VALIDATOR"],
+                    "blskey": "4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba",
+                    "blskey_pop": "RahHYiCvoNCtPTrVtP7nMC5eTYrsUA8WjXbdhNc8debh1agE9bGiJxWBXYNFbnJXoXhWFMvyqhqhRoq737YQemH5ik9oL7R4NTTCz2LEZhkgLJzB3QRQqJyBNyv7acbdHrAT8nQ9UkLbaVL9NBpnWXBTw4LEMePaSHEw66RzPNdAX1",
+                },
+            });
+
+            let request = ledger::build_node_request(IDENTIFIER_V1, DEST_V1, NODE_DATA).unwrap();
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -703,7 +736,7 @@ mod high_cases {
             });
 
             let request = ledger::build_cred_def_txn(IDENTIFIER, &cred_def_json).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -720,7 +753,7 @@ mod high_cases {
 
             let id = anoncreds::cred_def_id(IDENTIFIER, &SEQ_NO.to_string(), SIGNATURE_TYPE, TAG_1);
             let request = ledger::build_get_cred_def_request(Some(IDENTIFIER), &id).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -745,20 +778,6 @@ mod high_cases {
 
             let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
         }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_cred_def_requests_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
-
-            let (_, cred_def_id, _) = ledger::post_entities();
-
-            let get_cred_def_request = ledger::build_get_cred_def_request(Some(&setup.did), &cred_def_id).unwrap();
-            let get_cred_def_response = ledger::submit_request(setup.pool_handle, &get_cred_def_request).unwrap();
-            let (_, cred_def_json) = ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap();
-
-            let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
-        }
     }
 
     mod get_validator_info {
@@ -771,7 +790,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_validator_info_request(IDENTIFIER).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -801,7 +820,21 @@ mod high_cases {
             });
 
             let request = ledger::build_get_txn_request(Some(IDENTIFIER), SEQ_NO, None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_get_txn_request_for_first_did_version() {
+            let _setup = Setup::empty_first_did_version();
+
+            let expected_result = json!({
+                "type": constants::GET_TXN,
+                "data": SEQ_NO,
+                "ledgerId": 1
+            });
+
+            let request = ledger::build_get_txn_request(Some(IDENTIFIER_V1), SEQ_NO, None).unwrap();
+            check_request(&request, expected_result, IDENTIFIER);
         }
 
         #[test]
@@ -819,7 +852,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_txn_request(Some(IDENTIFIER), SEQ_NO, Some("10")).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -831,38 +864,13 @@ mod high_cases {
             });
 
             let request = ledger::build_get_txn_request(Some(IDENTIFIER), SEQ_NO, Some("POOL")).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_txn_request_works() {
             let setup = Setup::new_identity();
-
-            let schema_request = ledger::build_schema_request(&setup.did, &anoncreds::gvt_schema_json()).unwrap();
-            let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
-            pool::check_response_type(&schema_response, ResponseType::REPLY);
-
-            let seq_no = ledger::extract_seq_no_from_reply(&schema_response).unwrap() as i32;
-
-            thread::sleep(std::time::Duration::from_secs(1));
-
-            let get_txn_request = ledger::build_get_txn_request(Some(&setup.did), seq_no, None).unwrap();
-            let get_txn_response = ledger::submit_request(setup.pool_handle, &get_txn_request).unwrap();
-
-            let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-            let get_txn_schema_data: SchemaData = serde_json::from_value(
-                serde_json::Value::Object(get_txn_response.result.data.unwrap()["txn"]["data"]["data"].as_object().unwrap().clone())
-            ).unwrap();
-
-            let expected_schema_data: SchemaData = serde_json::from_str(r#"{"name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#).unwrap();
-            assert_eq!(expected_schema_data, get_txn_schema_data);
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_txn_request_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
 
             let schema_request = ledger::build_schema_request(&setup.did, &anoncreds::gvt_schema_json()).unwrap();
             let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
@@ -898,7 +906,7 @@ mod high_cases {
             });
 
             let request = ledger::build_pool_config_request(DID_TRUSTEE, true, false).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -943,7 +951,7 @@ mod high_cases {
             });
 
             let request = ledger::build_pool_restart_request(DID_TRUSTEE, "start", Some("0")).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -955,7 +963,7 @@ mod high_cases {
             });
 
             let request = ledger::build_pool_restart_request(DID_TRUSTEE, "cancel", None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         lazy_static! {
@@ -1008,7 +1016,7 @@ mod high_cases {
                                                              false,
                                                              false,
                                                              None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1035,7 +1043,7 @@ mod high_cases {
                                                              false,
                                                              false,
                                                              None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1064,7 +1072,7 @@ mod high_cases {
                                                              false,
                                                              false,
                                                              Some("some_package")).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         lazy_static! {
@@ -1158,7 +1166,7 @@ mod high_cases {
             });
 
             let request = ledger::build_revoc_reg_def_request(DID, &data).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1170,7 +1178,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_revoc_reg_def_request(Some(DID), REV_REG_ID).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1188,20 +1196,6 @@ mod high_cases {
             let (_, _, rev_reg_id) = ledger::post_entities();
 
             let get_rev_reg_def_request = ledger::build_get_revoc_reg_def_request(Some(DID_MY1), &rev_reg_id).unwrap();
-            let get_rev_reg_def_response = ledger::submit_request(setup.pool_handle, &get_rev_reg_def_request).unwrap();
-
-            let (_, revoc_reg_def_json) = ledger::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
-            let _revoc_reg_def: RevocationRegistryDefinitionV1 = serde_json::from_str(&revoc_reg_def_json).unwrap();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_revoc_reg_def_requests_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
-
-            let (_, _, rev_reg_id) = ledger::post_entities();
-
-            let get_rev_reg_def_request = ledger::build_get_revoc_reg_def_request(Some(&setup.did), &rev_reg_id).unwrap();
             let get_rev_reg_def_response = ledger::submit_request(setup.pool_handle, &get_rev_reg_def_request).unwrap();
 
             let (_, revoc_reg_def_json) = ledger::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
@@ -1226,18 +1220,12 @@ mod high_cases {
             let rev_reg_entry_value = r#"{"value":{"accum":"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"}, "ver":"1.0"}"#;
 
             let request = ledger::build_revoc_reg_entry_request(DID, REV_REG_ID, REVOC_REG_TYPE, rev_reg_entry_value).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_revoc_reg_entry_requests_works() {
-            ledger::post_entities();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_revoc_reg_entry_requests_works_for_first_did_version() {
             ledger::post_entities();
         }
     }
@@ -1255,7 +1243,22 @@ mod high_cases {
             });
 
             let request = ledger::build_get_revoc_reg_request(Some(DID), REV_REG_ID, 100).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_get_revoc_reg_request_for_first_did_version() {
+            let _setup = Setup::empty_first_did_version();
+
+            let expected_result = json!({
+                "type": constants::GET_REVOC_REG,
+                "revocRegDefId": REV_REG_ID,
+                "timestamp": 100
+            });
+
+            let request = ledger::build_get_revoc_reg_request(Some(DID_V1), REV_REG_ID, 100).unwrap();
+            check_request(&request, expected_result, DID);
         }
 
         #[test]
@@ -1280,22 +1283,6 @@ mod high_cases {
             let (_, revoc_reg_json, _) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
             let _revoc_reg: RevocationRegistryV1 = serde_json::from_str(&revoc_reg_json).unwrap();
         }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_revoc_reg_request_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
-
-            let (_, _, rev_reg_id) = ledger::post_entities();
-
-            let timestamp = time::get_time().sec as u64 + 1000;
-
-            let get_rev_reg_req = ledger::build_get_revoc_reg_request(Some(&setup.did), &rev_reg_id, timestamp).unwrap();
-            let get_rev_reg_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_req).unwrap();
-
-            let (_, revoc_reg_json, _) = ledger::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
-            let _revoc_reg: RevocationRegistryV1 = serde_json::from_str(&revoc_reg_json).unwrap();
-        }
     }
 
     mod get_revoc_reg_delta_request {
@@ -1311,7 +1298,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_revoc_reg_delta_request(Some(DID), REV_REG_ID, None, 100).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1330,22 +1317,6 @@ mod high_cases {
 
             let to = time::get_time().sec as u64 + 300;
             let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(Some(DID_MY1), &rev_reg_id, None, to).unwrap();
-            let get_rev_reg_delta_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_delta_req).unwrap();
-
-            let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
-
-            let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn indy_get_revoc_reg_delta_request_works_for_first_did_version() {
-            let setup = Setup::first_did_version();
-
-            let (_, _, rev_reg_id) = ledger::post_entities();
-
-            let to = time::get_time().sec as u64 + 300;
-            let get_rev_reg_delta_req = ledger::build_get_revoc_reg_delta_request(Some(&setup.did), &rev_reg_id, None, to).unwrap();
             let get_rev_reg_delta_resp = ledger::submit_request(setup.pool_handle, &get_rev_reg_delta_req).unwrap();
 
             let (_, revoc_reg_delta_json, _) = ledger::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
@@ -1528,7 +1499,7 @@ mod high_cases {
                                                           None,
                                                           Some(VALUE),
                                                           ROLE_CONSTRAINT).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
 
             // read
             let expected_result = json!({
@@ -1545,7 +1516,7 @@ mod high_cases {
                                                               Some(FIELD),
                                                               None,
                                                               Some(VALUE)).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1573,7 +1544,7 @@ mod high_cases {
                                                           None,
                                                           None,
                                                           ROLE_CONSTRAINT).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
 
             // read
             let expected_result = json!({
@@ -1590,7 +1561,7 @@ mod high_cases {
                                                               Some(FIELD),
                                                               None,
                                                               None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1619,7 +1590,7 @@ mod high_cases {
                                                           Some(VALUE),
                                                           None,
                                                           ROLE_CONSTRAINT).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
 
             // read
             let expected_result = json!({
@@ -1637,7 +1608,7 @@ mod high_cases {
                                                               Some(FIELD),
                                                               Some(VALUE),
                                                               None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1666,7 +1637,7 @@ mod high_cases {
                                                           None,
                                                           Some(VALUE),
                                                           ROLE_CONSTRAINT).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
 
             // read
             let expected_result = json!({
@@ -1684,7 +1655,7 @@ mod high_cases {
                                                               Some(FIELD),
                                                               None,
                                                               Some(VALUE)).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1713,7 +1684,7 @@ mod high_cases {
                                                           Some("0"),
                                                           Some("2"),
                                                           ROLE_CONSTRAINT).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
 
             // read
             let expected_result = json!({
@@ -1731,7 +1702,7 @@ mod high_cases {
                                                               Some(FIELD),
                                                               Some("0"),
                                                               Some("2")).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1783,7 +1754,7 @@ mod high_cases {
                                                           None,
                                                           Some(NEW_VALUE),
                                                           constraint).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1825,7 +1796,7 @@ mod high_cases {
                                                           None,
                                                           None,
                                                           ROLE_CONSTRAINT).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
 
             // read
             let expected_result = json!({
@@ -1842,7 +1813,7 @@ mod high_cases {
                                                               Some(FIELD),
                                                               None,
                                                               None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1883,7 +1854,7 @@ mod high_cases {
             });
 
             let request = ledger::build_auth_rules_request(DID_TRUSTEE, &data.to_string()).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -1914,7 +1885,7 @@ mod high_cases {
                                                           None,
                                                           Some(VALUE),
                                                           &constraint.to_string()).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
 
@@ -1930,7 +1901,7 @@ mod high_cases {
                                                               None,
                                                               None,
                                                               None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2243,7 +2214,7 @@ mod high_cases {
             let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
                                                                      TEXT,
                                                                      VERSION).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2257,7 +2228,7 @@ mod high_cases {
             let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
                                                                      "",
                                                                      VERSION).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2267,7 +2238,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_txn_author_agreement_request(None, None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2282,7 +2253,7 @@ mod high_cases {
             }).to_string();
 
             let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2297,7 +2268,7 @@ mod high_cases {
             }).to_string();
 
             let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2313,7 +2284,7 @@ mod high_cases {
             }).to_string();
 
             let request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
     }
 
@@ -2338,7 +2309,7 @@ mod high_cases {
                                                                       &aml.to_string(),
                                                                       VERSION,
                                                                       None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2359,7 +2330,7 @@ mod high_cases {
                                                                       &aml.to_string(),
                                                                       VERSION,
                                                                       Some(context)).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2369,7 +2340,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_acceptance_mechanisms_request(None, None, None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2382,7 +2353,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_acceptance_mechanisms_request(None, Some(timestamp), None).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -2393,7 +2364,7 @@ mod high_cases {
             });
 
             let request = ledger::build_get_acceptance_mechanisms_request(None, None, Some(VERSION)).unwrap();
-            check_request(&request, expected_result);
+            check_request_operation(&request, expected_result);
         }
 
         #[test]
@@ -3397,7 +3368,7 @@ mod medium_cases {
         fn indy_get_schema_request_works_for_unknown_schema() {
             let setup = Setup::pool();
 
-            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(DID, "other_schema", "1.0").0).unwrap();
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(&ShortDidValue(DID.to_string()), "other_schema", "1.0").0).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
@@ -3423,7 +3394,7 @@ mod medium_cases {
         fn indy_get_parse_returns_error_for_wrong_type_and_unknown_schema() {
             let setup = Setup::pool();
 
-            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(DID, "other_schema", "1.0").0).unwrap();
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(&ShortDidValue(DID.to_string()), "other_schema", "1.0").0).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_cred_def_response(&get_schema_response);
@@ -3703,12 +3674,22 @@ mod medium_cases {
     }
 }
 
-fn check_request(request: &str, expected_result: serde_json::Value) {
+fn check_request(request: &str, expected_operation: serde_json::Value, expected_identifier: &str) {
     let request: serde_json::Value = serde_json::from_str(request).unwrap();
-    assert_eq!(request["operation"], expected_result);
+    assert_eq!(request["operation"], expected_operation);
+    assert_eq!(request["identifier"].as_str().unwrap(), expected_identifier);
+}
+
+fn check_request_operation(request: &str, expected_operation: serde_json::Value) {
+    let request: serde_json::Value = serde_json::from_str(request).unwrap();
+    assert_eq!(request["operation"], expected_operation);
 }
 
 fn check_default_identifier(request: &str) {
-    let request: serde_json::Value = serde_json::from_str(&request).unwrap();
-    assert_eq!(request["identifier"], DEFAULT_LIBIDY_DID);
+    let request: serde_json::Value = serde_json::from_str(request).unwrap();
+    assert_eq!(request["identifier"].as_str().unwrap(), DEFAULT_LIBIDY_DID);
+}
+
+fn ensure_did_first_version(did: &str) {
+    assert!(did.starts_with(DEFAULT_PREFIX));
 }

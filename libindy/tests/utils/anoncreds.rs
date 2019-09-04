@@ -19,6 +19,7 @@ use utils::domain::anoncreds::credential_definition::{CredentialDefinition, Cred
 use utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType};
 use utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
 use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use utils::domain::crypto::did::ShortDidValue;
 
 pub static mut WALLET_HANDLE: i32 = 0;
 pub static mut CREDENTIAL_DEF_JSON: &'static str = "";
@@ -193,7 +194,7 @@ pub fn issuance_by_default_rev_reg_config() -> String {
 }
 
 pub fn gvt_schema_id() -> String {
-    SchemaId::new(ISSUER_DID, GVT_SCHEMA_NAME, SCHEMA_VERSION).0
+    SchemaId::new(&ShortDidValue(ISSUER_DID.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn gvt_schema() -> SchemaV1 {
@@ -211,7 +212,7 @@ pub fn gvt_schema_json() -> String {
 }
 
 pub fn gvt_schema_id_issuer2() -> String {
-    SchemaId::new(ISSUER_DID_2, GVT_SCHEMA_NAME, SCHEMA_VERSION).0
+    SchemaId::new(&ShortDidValue(ISSUER_DID_2.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn gvt_schema_issuer2() -> SchemaV1 {
@@ -230,7 +231,7 @@ pub fn gvt_schema_issuer2_json() -> String {
 
 
 pub fn xyz_schema_id() -> String {
-    SchemaId::new(ISSUER_DID, XYZ_SCHEMA_NAME, SCHEMA_VERSION).0
+    SchemaId::new(&ShortDidValue(ISSUER_DID.to_string()), XYZ_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn xyz_schema() -> SchemaV1 {
@@ -248,7 +249,7 @@ pub fn xyz_schema_json() -> String {
 }
 
 pub fn xyz_schema_id_tag2() -> String {
-    SchemaId::new(ISSUER_DID, &format!("{}{}", XYZ_SCHEMA_NAME, TAG_2), SCHEMA_VERSION).0
+    SchemaId::new(&ShortDidValue(ISSUER_DID.to_string()), &format!("{}{}", XYZ_SCHEMA_NAME, TAG_2), SCHEMA_VERSION).0
 }
 
 pub fn xyz_schema_tag2() -> SchemaV1 {
