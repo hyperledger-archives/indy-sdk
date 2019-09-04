@@ -27,9 +27,9 @@ extern crate serde;
 #[macro_use]
 mod utils;
 
-use utils::{did, pairwise};
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::{did, pairwise};
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 

@@ -4,13 +4,13 @@ use indy::did;
 use indy::IndyError;
 use self::futures::Future;
 
-use utils::{ledger, pool};
-use utils::types::ResponseType;
+use crate::utils::{ledger, pool};
+use crate::utils::types::ResponseType;
 use api::PoolHandle;
 
 
 pub fn create_store_and_publish_did(wallet_handle: i32, pool_handle: PoolHandle, role: &str) -> Result<(String, String), IndyError> {
-    let (trustee_did, _) = create_and_store_my_did(wallet_handle, Some(::utils::constants::TRUSTEE_SEED))?;
+    let (trustee_did, _) = create_and_store_my_did(wallet_handle, Some(crate::utils::constants::TRUSTEE_SEED))?;
     let (did, vk) = create_and_store_my_did(wallet_handle, None)?;
     let nym = ledger::build_nym_request(&trustee_did, &did, Some(&vk), None, Some(role))?;
     let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym)?;

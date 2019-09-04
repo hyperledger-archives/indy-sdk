@@ -5,20 +5,20 @@ use indy::anoncreds;
 use self::futures::Future;
 use serde_json;
 
-use utils::{environment, wallet, blob_storage, test, pool};
-use utils::types::CredentialOfferInfo;
+use crate::utils::{environment, wallet, blob_storage, test, pool};
+use crate::utils::types::CredentialOfferInfo;
 
 use std::sync::{Once, ONCE_INIT};
 use std::mem;
-use utils::constants::*;
+use crate::utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
 
-use utils::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
-use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId};
-use utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType};
-use utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
-use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use crate::utils::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
+use crate::utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId};
+use crate::utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType};
+use crate::utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
+use crate::utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
 
 pub static mut WALLET_HANDLE: i32 = 0;
 pub static mut CREDENTIAL_DEF_JSON: &'static str = "";

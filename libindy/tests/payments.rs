@@ -29,9 +29,9 @@ extern crate sha2;
 mod utils;
 
 use self::indy::ErrorCode;
-use utils::payments;
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::payments;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 static EMPTY_OBJECT: &str = "{}";
 static EMPTY_ARRAY: &str = "[]";

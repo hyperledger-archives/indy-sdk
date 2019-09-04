@@ -27,10 +27,10 @@ extern crate serde;
 #[macro_use]
 mod utils;
 
-use utils::{did, pool, ledger};
-use utils::constants::*;
-use utils::types::ResponseType;
-use utils::Setup;
+use crate::utils::{did, pool, ledger};
+use crate::utils::constants::*;
+use crate::utils::types::ResponseType;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 

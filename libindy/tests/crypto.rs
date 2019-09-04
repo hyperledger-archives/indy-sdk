@@ -30,9 +30,9 @@ extern crate serde;
 #[macro_use]
 mod utils;
 
-use utils::crypto;
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::crypto;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 
@@ -355,7 +355,7 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use utils::did;
+    use crate::utils::did;
     use api::INVALID_WALLET_HANDLE;
 
     mod create_key {
@@ -627,7 +627,7 @@ mod load {
     use std::thread;
     use std::time::{Duration, SystemTime};
 
-    use utils::{wallet, did};
+    use crate::utils::{wallet, did};
 
     const AGENT_CNT: usize = 10;
     const DATA_SZ: usize = 10 * 1024;

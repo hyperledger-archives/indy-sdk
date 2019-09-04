@@ -49,7 +49,7 @@ pub mod inmem_wallet;
 pub mod domain;
 
 fn setup() -> String {
-    let name = ::utils::rand_utils::get_rand_string(10);
+    let name = crate::utils::rand_utils::get_rand_string(10);
     test::cleanup_storage(&name);
     logger::set_default_logger();
     name

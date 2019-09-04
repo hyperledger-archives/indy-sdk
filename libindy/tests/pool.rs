@@ -30,9 +30,9 @@ mod utils;
 
 use self::indy::ErrorCode;
 
-use utils::{environment, pool};
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::{environment, pool};
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 mod high_cases {
     use super::*;
@@ -209,7 +209,7 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use utils::ledger;
+    use crate::utils::ledger;
 
     mod create {
         use super::*;

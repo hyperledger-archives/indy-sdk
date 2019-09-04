@@ -28,18 +28,18 @@ extern crate indy_sys;
 #[macro_use]
 mod utils;
 
-use utils::{wallet, anoncreds};
-use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, ANONCREDS_WALLET_CONFIG};
+use crate::utils::{wallet, anoncreds};
+use crate::utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, ANONCREDS_WALLET_CONFIG};
 
 use indy::ErrorCode;
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
-use utils::domain::anoncreds::schema::Schema;
-use utils::domain::anoncreds::credential_definition::CredentialDefinition;
-use utils::domain::anoncreds::credential::CredentialInfo;
-use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
-use utils::domain::anoncreds::proof::Proof;
+use crate::utils::domain::anoncreds::schema::Schema;
+use crate::utils::domain::anoncreds::credential_definition::CredentialDefinition;
+use crate::utils::domain::anoncreds::credential::CredentialInfo;
+use crate::utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
+use crate::utils::domain::anoncreds::proof::Proof;
 
 
 mod high_cases {
@@ -464,8 +464,8 @@ mod high_cases {
     // {"issuer_did": DID, "schema_id": gvt_schema_id}
     mod prover_get_credentials_for_proof_req {
         use super::*;
-        use utils::domain::anoncreds::schema::SchemaId;
-        use utils::domain::anoncreds::credential_definition::CredentialDefinitionId;
+        use crate::utils::domain::anoncreds::schema::SchemaId;
+        use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionId;
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_empty_req() {
@@ -3403,8 +3403,8 @@ mod high_cases {
 mod medium_cases {
     use super::*;
     use std::collections::HashSet;
-    use utils::domain::anoncreds::schema::{AttributeNames, MAX_ATTRIBUTES_COUNT};
-    use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequest};
+    use crate::utils::domain::anoncreds::schema::{AttributeNames, MAX_ATTRIBUTES_COUNT};
+    use crate::utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequest};
 
     mod issuer_create_schema {
         use super::*;
