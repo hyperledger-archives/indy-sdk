@@ -331,7 +331,7 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use utils::did;
+    use crate::utils::did;
     use crate::api::INVALID_WALLET_HANDLE;
 
     mod create_key {
@@ -603,7 +603,7 @@ mod load {
     use std::thread;
     use std::time::{Duration, SystemTime};
 
-    use utils::{wallet, did};
+    use crate::utils::{wallet, did};
 
     const AGENT_CNT: usize = 10;
     const DATA_SZ: usize = 10 * 1024;

@@ -19,8 +19,8 @@ mod high_cases {
 
     mod schema_cache {
         use super::*;
-        use utils::domain::anoncreds::schema::{SchemaV1, SchemaId};
-        use utils::constants::*;
+        use crate::utils::domain::anoncreds::schema::{SchemaV1, SchemaId};
+        use crate::utils::constants::*;
         use std::thread::sleep;
 
         #[test]
@@ -231,8 +231,8 @@ mod high_cases {
 
     mod cred_def_cache {
         use super::*;
-        use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
-        use utils::constants::*;
+        use crate::utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+        use crate::utils::constants::*;
         use std::thread::sleep;
 
 

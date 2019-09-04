@@ -178,7 +178,7 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use utils::ledger;
+    use crate::utils::ledger;
 
     mod create {
         use super::*;

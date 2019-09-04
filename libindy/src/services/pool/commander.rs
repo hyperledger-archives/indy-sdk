@@ -64,7 +64,7 @@ impl Commander {
 mod commander_tests {
     use super::*;
     use crate::api::{CommandHandle, next_command_handle};
-    use services::pool::{COMMAND_REFRESH, COMMAND_EXIT, pool_create_pair_of_sockets};
+    use crate::services::pool::{COMMAND_REFRESH, COMMAND_EXIT, pool_create_pair_of_sockets};
 
     fn new_commander() -> Commander {
         let zmq_ctx = zmq::Context::new();

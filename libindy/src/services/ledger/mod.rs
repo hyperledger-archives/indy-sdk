@@ -513,10 +513,10 @@ impl LedgerService {
 
 #[cfg(test)]
 mod tests {
-    use domain::anoncreds::schema::AttributeNames;
-    use domain::ledger::constants::*;
-    use domain::ledger::node::Services;
-    use domain::ledger::request::ProtocolVersion;
+    use crate::domain::anoncreds::schema::AttributeNames;
+    use crate::domain::ledger::constants::*;
+    use crate::domain::ledger::node::Services;
+    use crate::domain::ledger::request::ProtocolVersion;
 
     use super::*;
 

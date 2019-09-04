@@ -445,8 +445,8 @@ impl CryptoService {
 
 #[cfg(test)]
 mod tests {
-    use domain::crypto::did::MyDidInfo;
-    use utils::crypto::chacha20poly1305_ietf::gen_key;
+    use crate::domain::crypto::did::MyDidInfo;
+    use crate::utils::crypto::chacha20poly1305_ietf::gen_key;
 
     use super::*;
 

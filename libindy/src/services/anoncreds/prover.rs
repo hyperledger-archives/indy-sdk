@@ -679,8 +679,8 @@ mod tests {
     }
 
     mod prepare_credentials_for_proving {
-        use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo};
-        use domain::anoncreds::requested_credential::RequestedAttribute;
+        use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo};
+        use crate::domain::anoncreds::requested_credential::RequestedAttribute;
 
         use super::*;
 

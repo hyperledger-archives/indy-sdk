@@ -329,7 +329,7 @@ mod medium_cases {
     use std::ffi::CString;
 
     use crate::api::INVALID_WALLET_HANDLE;
-    use utils::test::cleanup_wallet;
+    use crate::utils::test::cleanup_wallet;
 
     mod register_wallet_type {
         use super::*;

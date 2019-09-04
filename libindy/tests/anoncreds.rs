@@ -24,7 +24,7 @@ mod high_cases {
 
     mod issuer_create_schema {
         use super::*;
-        use utils::domain::anoncreds::schema::SchemaId;
+        use crate::utils::domain::anoncreds::schema::SchemaId;
 
         #[test]
         fn issuer_create_schema_works() {
@@ -451,8 +451,8 @@ mod high_cases {
     // {"issuer_did": DID, "schema_id": gvt_schema_id}
     mod prover_get_credentials_for_proof_req {
         use super::*;
-        use utils::domain::anoncreds::schema::SchemaId;
-        use utils::domain::anoncreds::credential_definition::CredentialDefinitionId;
+        use crate::utils::domain::anoncreds::schema::SchemaId;
+        use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionId;
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_empty_req() {
@@ -3468,8 +3468,8 @@ mod high_cases {
 mod medium_cases {
     use super::*;
     use std::collections::HashSet;
-    use utils::domain::anoncreds::schema::{AttributeNames, MAX_ATTRIBUTES_COUNT};
-    use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequestPayload};
+    use crate::utils::domain::anoncreds::schema::{AttributeNames, MAX_ATTRIBUTES_COUNT};
+    use crate::utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequestPayload};
 
     mod issuer_create_schema {
         use super::*;
