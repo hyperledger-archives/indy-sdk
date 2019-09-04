@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use utils::crypto::{hmacsha256, chacha20poly1305_ietf};
-use utils::wql::Query;
+use crate::utils::crypto::{hmacsha256, chacha20poly1305_ietf};
+use crate::utils::wql::Query;
 
-use errors::prelude::*;
+use crate::errors::prelude::*;
 
 use zeroize::Zeroize;
 

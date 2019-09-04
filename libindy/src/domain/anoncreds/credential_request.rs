@@ -8,7 +8,7 @@ use super::super::crypto::did::DidValue;
 
 use super::credential_definition::CredentialDefinitionId;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialRequest {

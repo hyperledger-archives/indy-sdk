@@ -6,32 +6,32 @@ use ursa::cl::{new_nonce, RevocationRegistry, Witness};
 
 use serde_json::Value;
 
-use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
-use domain::anoncreds::credential::{Credential, CredentialInfo};
-use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
-use domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
-use domain::anoncreds::credential_offer::CredentialOffer;
-use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
-use domain::anoncreds::master_secret::MasterSecret;
-use domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, ProofRequest, ProofRequestExtraQuery};
-use domain::anoncreds::requested_credential::RequestedCredentials;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
-use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
-use domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
-use domain::crypto::did::DidValue;
-use errors::prelude::*;
-use services::anoncreds::AnoncredsService;
-use services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
-use services::blob_storage::BlobStorageService;
-use services::crypto::CryptoService;
-use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use utils::sequence;
-use utils::wql::Query;
+use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
+use crate::domain::anoncreds::credential::{Credential, CredentialInfo};
+use crate::domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
+use crate::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
+use crate::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
+use crate::domain::anoncreds::master_secret::MasterSecret;
+use crate::domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, ProofRequest, ProofRequestExtraQuery};
+use crate::domain::anoncreds::requested_credential::RequestedCredentials;
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
+use crate::domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
+use crate::domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
+use crate::domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
+use crate::domain::crypto::did::DidValue;
+use crate::errors::prelude::*;
+use crate::services::anoncreds::AnoncredsService;
+use crate::services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
+use crate::services::blob_storage::BlobStorageService;
+use crate::services::crypto::CryptoService;
+use crate::services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use crate::utils::sequence;
+use crate::utils::wql::Query;
 
 use super::tails::SDKTailsAccessor;
-use api::WalletHandle;
-use commands::BoxedCallbackStringStringSend;
+use crate::api::WalletHandle;
+use crate::commands::BoxedCallbackStringStringSend;
 
 pub enum ProverCommand {
     CreateMasterSecret(

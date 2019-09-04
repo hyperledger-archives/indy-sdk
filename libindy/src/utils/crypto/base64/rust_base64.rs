@@ -1,4 +1,4 @@
-use errors::prelude::*;
+use crate::errors::prelude::*;
 use failure::ResultExt;
 
 pub fn encode(doc: &[u8]) -> String {

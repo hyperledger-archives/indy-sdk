@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use named_type::NamedType;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 use super::revocation_registry_definition::RevocationRegistryId;
 

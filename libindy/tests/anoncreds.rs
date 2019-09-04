@@ -7,17 +7,17 @@ extern crate indyrs as indy;
 extern crate indyrs as api;
 extern crate indy_sys;
 
-use utils::{wallet, anoncreds};
-use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, ANONCREDS_WALLET_CONFIG};
+use crate::utils::{wallet, anoncreds};
+use crate::utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, ANONCREDS_WALLET_CONFIG};
 
 use indy::ErrorCode;
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
-use utils::domain::anoncreds::credential::CredentialInfo;
-use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
-use utils::domain::anoncreds::proof::Proof;
-use utils::domain::crypto::did::DidValue;
+use crate::utils::domain::anoncreds::credential::CredentialInfo;
+use crate::utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
+use crate::utils::domain::anoncreds::proof::Proof;
+use crate::utils::domain::crypto::did::DidValue;
 
 mod high_cases {
     use super::*;

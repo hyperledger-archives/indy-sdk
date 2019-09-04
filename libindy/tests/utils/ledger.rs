@@ -6,8 +6,8 @@ use indy::ledger;
 use self::futures::Future;
 use self::indy_sys::ledger::{CustomTransactionParser, CustomFree, indy_register_transaction_parser_for_sp};
 
-use utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
-use utils::constants::*;
+use crate::utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
+use crate::utils::constants::*;
 
 use std::sync::{Once};
 use std::mem;

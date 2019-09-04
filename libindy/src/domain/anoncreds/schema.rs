@@ -5,8 +5,8 @@ use super::super::crypto::did::DidValue;
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
-use utils::validation::Validatable;
-use utils::qualifier;
+use crate::utils::validation::Validatable;
+use crate::utils::qualifier;
 
 pub const MAX_ATTRIBUTES_COUNT: usize = 125;
 

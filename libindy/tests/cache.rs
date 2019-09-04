@@ -6,9 +6,9 @@ inject_indy_dependencies!();
 extern crate indyrs as indy;
 extern crate indyrs as api;
 
-use utils::cache::*;
-use utils::Setup;
-use utils::domain::crypto::did::DidValue;
+use crate::utils::cache::*;
+use crate::utils::Setup;
+use crate::utils::domain::crypto::did::DidValue;
 
 use self::indy::ErrorCode;
 

@@ -4,10 +4,10 @@ use indy::did;
 use indy::IndyError;
 use self::futures::Future;
 
-use utils::{ledger, pool};
-use utils::types::ResponseType;
-use api::PoolHandle;
-use utils::constants::DEFAULT_METHOD_NAME;
+use crate::utils::{ledger, pool};
+use crate::utils::types::ResponseType;
+use crate::api::PoolHandle;
+use crate::utils::constants::DEFAULT_METHOD_NAME;
 
 
 pub fn create_store_and_publish_did(wallet_handle: i32, pool_handle: PoolHandle, role: &str, method_name: Option<&str>) -> Result<(String, String), IndyError> {

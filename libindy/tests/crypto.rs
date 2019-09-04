@@ -6,9 +6,9 @@ inject_indy_dependencies!();
 extern crate indyrs as indy;
 extern crate indyrs as api;
 
-use utils::crypto;
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::crypto;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 
@@ -332,7 +332,7 @@ mod high_cases {
 mod medium_cases {
     use super::*;
     use utils::did;
-    use api::INVALID_WALLET_HANDLE;
+    use crate::api::INVALID_WALLET_HANDLE;
 
     mod create_key {
         use super::*;

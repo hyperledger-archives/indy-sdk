@@ -13,21 +13,21 @@ use ursa::cl::issuer::Issuer as CryptoIssuer;
 use ursa::cl::prover::Prover as CryptoProver;
 use ursa::cl::verifier::Verifier as CryptoVerifier;
 
-use domain::anoncreds::credential::{AttributeValues, Credential};
-use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
-use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionId};
-use domain::anoncreds::credential_offer::CredentialOffer;
-use domain::anoncreds::credential_request::CredentialRequestMetadata;
-use domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
-use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestPayload, ProofRequestsVersion, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
-use domain::anoncreds::requested_credential::ProvingCredentialKey;
-use domain::anoncreds::requested_credential::RequestedCredentials;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
-use domain::anoncreds::revocation_state::RevocationState;
-use domain::anoncreds::schema::{SchemaV1, SchemaId};
-use errors::prelude::*;
-use services::anoncreds::helpers::*;
-use utils::wql::Query;
+use crate::domain::anoncreds::credential::{AttributeValues, Credential};
+use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionId};
+use crate::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::domain::anoncreds::credential_request::CredentialRequestMetadata;
+use crate::domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
+use crate::domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestPayload, ProofRequestsVersion, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
+use crate::domain::anoncreds::requested_credential::ProvingCredentialKey;
+use crate::domain::anoncreds::requested_credential::RequestedCredentials;
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
+use crate::domain::anoncreds::revocation_state::RevocationState;
+use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
+use crate::errors::prelude::*;
+use crate::services::anoncreds::helpers::*;
+use crate::utils::wql::Query;
 
 const ATTRIBUTE_EXISTENCE_MARKER: &str = "1";
 

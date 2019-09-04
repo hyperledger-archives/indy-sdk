@@ -8,9 +8,9 @@ extern crate indyrs as api;
 
 use self::indy::ErrorCode;
 
-use utils::{environment, pool};
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::{environment, pool};
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 mod high_cases {
     use super::*;
