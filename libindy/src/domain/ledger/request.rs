@@ -35,6 +35,10 @@ pub struct TxnAuthrAgrmtAcceptanceData {
     pub time: u64
 }
 
+fn get_req_id() -> u64 {
+    time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Request<T: serde::Serialize> {
@@ -67,7 +71,7 @@ impl<T: serde::Serialize> Request<T> {
     }
 
     pub fn build_request(identifier: Option<&str>, operation: T) -> Result<String, serde_json::Error> {
-        let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
+        let req_id = get_req_id();
         let identifier = identifier.unwrap_or(DEFAULT_LIBIDY_DID);
         serde_json::to_string(&Request::new(req_id, identifier, operation, ProtocolVersion::get()))
     }
