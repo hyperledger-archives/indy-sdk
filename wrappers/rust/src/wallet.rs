@@ -10,7 +10,8 @@ use utils::callbacks::{ClosureHandler, ResultHandler};
 use ffi::{wallet, non_secrets};
 use ffi::{ResponseEmptyCB,
           ResponseStringCB,
-          ResponseI32CB};
+          ResponseI32CB,
+          ResponseWalletHandleCB};
 use {CommandHandle, WalletHandle, SearchHandle};
 
 /// Registers custom wallet implementation.
@@ -188,14 +189,14 @@ fn _create_wallet(command_handle: CommandHandle, config: &str, credentials: &str
 /// # Returns
 /// Handle to opened wallet to use in methods that require wallet access.
 pub fn open_wallet(config: &str, credentials: &str) -> Box<dyn Future<Item=WalletHandle, Error=IndyError>> {
-    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_wallethandle();
 
     let err = _open_wallet(command_handle, config, credentials, cb);
 
-    ResultHandler::handle(command_handle, err, receiver)
+    ResultHandler::wallethandle(command_handle, err, receiver)
 }
 
-fn _open_wallet(command_handle: CommandHandle, config: &str, credentials: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
+fn _open_wallet(command_handle: CommandHandle, config: &str, credentials: &str, cb: Option<ResponseWalletHandleCB>) -> ErrorCode {
     let config = c_str!(config);
     let credentials = c_str!(credentials);
 

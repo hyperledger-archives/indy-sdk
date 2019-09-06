@@ -43,7 +43,7 @@ extern {
     pub fn indy_open_wallet(command_handle: CommandHandle,
                             config: CString,
                             credentials: CString,
-                            cb: Option<ResponseI32CB>) -> Error;
+                            cb: Option<ResponseWalletHandleCB>) -> Error;
 
     #[no_mangle]
     pub fn indy_export_wallet(command_handle: CommandHandle,

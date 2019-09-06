@@ -631,7 +631,7 @@ fn _get_request_info(command_handle: CommandHandle, get_auth_rule_resp_json: &st
     })
 }
 
-pub fn sign_with_address(wallet_handle: i32, address: &str, message: &[u8]) -> Box<dyn Future<Item=Vec<u8>, Error=IndyError>> {
+pub fn sign_with_address(wallet_handle: WalletHandle, address: &str, message: &[u8]) -> Box<dyn Future<Item=Vec<u8>, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
     let err = _sign_with_address(command_handle, wallet_handle, address, message, cb);

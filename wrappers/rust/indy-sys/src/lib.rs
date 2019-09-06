@@ -19,11 +19,10 @@ pub type CVoid = c_void;
 pub type BString = *const u8;
 pub type CString = *const c_char;
 
-pub type WalletHandle = i32;
-//#[repr(transparent)]
-//#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
-//pub struct WalletHandle(pub i32);
-//pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
+#[repr(transparent)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+pub struct WalletHandle(pub i32);
+pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
 
 //pub type Handle = i32;
 pub type IndyHandle = i32;
@@ -42,11 +41,11 @@ pub type TailsWriterHandle = i32;
 pub type Error = i32;
 
 pub const INVALID_POOL_HANDLE: PoolHandle = 0;
-pub const INVALID_WALLET_HANDLE: WalletHandle = 0;
 
 pub type ResponseEmptyCB = extern fn(xcommand_handle: CommandHandle, err: Error);
 pub type ResponseBoolCB = extern fn(xcommand_handle: CommandHandle, err: Error, bool1: bool);
 pub type ResponseI32CB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle);
+pub type ResponseWalletHandleCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: WalletHandle);
 pub type ResponseI32UsizeCB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle, total_count: usize);
 pub type ResponseStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString);
 pub type ResponseStringStringCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString, str2: CString);
