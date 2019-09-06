@@ -439,7 +439,7 @@ mod tests {
     use api::VcxStateType;
     use api::return_types_u32;
     use api::connection::vcx_connection_create;
-    use indy_sys::{WalletHandle};
+    use indy_sys::{WalletHandle, INVALID_POOL_HANDLE};
 
     fn create_config_util(logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
@@ -552,7 +552,7 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
         assert!(rc.is_err());
         assert_eq!(get_pool_handle().unwrap_err().kind(), VcxErrorKind::NoPoolOpen);
-        assert_eq!(wallet::get_wallet_handle(), 0);
+        assert_eq!(wallet::get_wallet_handle(), INVALID_WALLET_HANDLE);
         wallet::delete_wallet(wallet_name, None, None, None).unwrap();
     }
 
@@ -871,7 +871,7 @@ mod tests {
         assert_eq!(::credential_def::release(credentialdef).unwrap_err().kind(), VcxErrorKind::InvalidCredDefHandle);
         assert_eq!(::credential::release(credential).unwrap_err().kind(), VcxErrorKind::InvalidCredentialHandle);
         assert_eq!(::disclosed_proof::release(disclosed_proof).unwrap_err().kind(), VcxErrorKind::InvalidDisclosedProofHandle);
-        assert_eq!(wallet::get_wallet_handle(), INVALID_WALLET_HANDLE   );
+        assert_eq!(wallet::get_wallet_handle(), INVALID_WALLET_HANDLE);
     }
 
     #[test]
@@ -1037,8 +1037,8 @@ mod tests {
         assert_ne!(wallet_handle, INVALID_WALLET_HANDLE);
         assert_ne!(pool_handle, INVALID_POOL_HANDLE);
         // Reset handles to 0
-        assert_eq!(::api::utils::vcx_pool_set_handle(INVALID_POOL_HANDLE), 0);
-        assert_eq!(::api::wallet::vcx_wallet_set_handle(INVALID_WALLET_HANDLE), 0);
+        assert_eq!(::api::utils::vcx_pool_set_handle(INVALID_POOL_HANDLE), INVALID_POOL_HANDLE);
+        assert_eq!(::api::wallet::vcx_wallet_set_handle(INVALID_WALLET_HANDLE), INVALID_WALLET_HANDLE);
         // Test for errors when handles not set
         assert_ne!(error::SUCCESS.code_num, vcx_init_minimal(config));
         ::api::wallet::vcx_wallet_set_handle(wallet_handle);
