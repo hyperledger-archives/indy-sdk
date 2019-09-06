@@ -7,6 +7,7 @@ use settings;
 use std::ffi::CString;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::INVALID_WALLET_HANDLE;
 
 /// Initializes VCX with config settings
 ///
@@ -106,7 +107,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
 
     settings::log_settings();
 
-    if wallet::get_wallet_handle() > 0 {
+    if wallet::get_wallet_handle() != INVALID_WALLET_HANDLE {
         error!("Library was already initialized");
         return VcxError::from_msg(VcxErrorKind::AlreadyInitialized, "Library was already initialized").into();
     }
@@ -187,7 +188,7 @@ pub extern fn vcx_init_minimal(config: *const c_char) -> u32 {
         }
     };
 
-    if wallet::get_wallet_handle() <= 0 || pool::get_pool_handle().is_err() {
+    if wallet::get_wallet_handle() == INVALID_WALLET_HANDLE || pool::get_pool_handle().is_err() {
         error!("Library cannot be initialized without wallet/pool");
         return error::INVALID_STATE.code_num;
     }

@@ -79,6 +79,7 @@ pub mod tests {
     static mut INSTITUTION_CONFIG: u32 = 0;
     static mut CONSUMER_CONFIG: u32 = 0;
     use indy::ErrorCode;
+    use indy_sys::WalletHandle;
 
     static INIT_PLUGIN: std::sync::Once = std::sync::ONCE_INIT;
 
@@ -325,7 +326,7 @@ pub mod tests {
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
     }
 
-    pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
+    pub fn setup_wallet_env(test_name: &str) -> Result<WalletHandle, String> {
         use utils::libindy::wallet::init_wallet;
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         init_wallet(test_name, None, None, None).map_err(|e| format!("Unable to init_wallet in tests: {}", e))

@@ -9,6 +9,7 @@ use utils::threadpool::spawn;
 use std::thread;
 use std::ptr::null;
 use error::prelude::*;
+use indy_sys::{CommandHandle, SearchHandle, WalletHandle};
 
 /// Get the total balance from all addresses contained in the configured wallet
 ///
@@ -65,9 +66,9 @@ pub extern fn vcx_wallet_get_token_info(command_handle: u32,
 /// #Returns
 /// Error code as u32
 #[no_mangle]
-pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
+pub extern fn vcx_wallet_create_payment_address(command_handle: CommandHandle,
                                                 seed: *const c_char,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, address: *const c_char)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, address: *const c_char)>) -> u32 {
     info!("vcx_wallet_create_payment_address >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -652,12 +653,12 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub  extern fn vcx_wallet_open_search(command_handle: i32,
+pub  extern fn vcx_wallet_open_search(command_handle: CommandHandle,
                                       type_: *const c_char,
                                       query_json: *const c_char,
                                       options_json: *const c_char,
-                                      cb: Option<extern fn(command_handle_: i32, err: u32,
-                                                           search_handle: i32)>) -> u32 {
+                                      cb: Option<extern fn(command_handle_: CommandHandle, err: u32,
+                                                           search_handle: SearchHandle)>) -> u32 {
     info!("vcx_wallet_open_search >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -883,7 +884,7 @@ pub  extern fn vcx_wallet_validate_payment_address(command_handle: i32,
 /// #Returns
 /// Error code as u32
 #[no_mangle]
-pub extern fn vcx_wallet_set_handle(handle: i32) -> i32 {
+pub extern fn vcx_wallet_set_handle(handle: WalletHandle) -> WalletHandle {
     wallet::set_wallet_handle(handle)
 }
 
