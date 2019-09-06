@@ -55,6 +55,7 @@ regex = "1.2.1"
 indy-api-types = { path = "./indy-api-types"}
 indy-utils = { path = "./indy-utils"}
 indy-wallet = { path = "./indy-wallet"}
+futures-preview = {version = "=0.3.0-alpha.17", features=["async-await", "nightly"]}
 
 [dependencies.uuid]
 version = "0.7.4"
@@ -72,7 +73,6 @@ android_logger = "0.5"
 criterion = "0.2"
 indy = { path = "../wrappers/rust" }
 indy-sys = { path = "../wrappers/rust/indy-sys" }
-futures = "0.1.28"
 sodiumoxide = {version = "0.0.16"}
 openssl = "0.10"
 dirs = "2.0.2"
