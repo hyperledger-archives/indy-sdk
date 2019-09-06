@@ -1,6 +1,7 @@
 use indy::IndyError;
 use indy::pool;
 use indy::future::Future;
+use indy::PoolHandle;
 
 pub struct Pool {}
 
@@ -13,7 +14,7 @@ impl Pool {
         pool::open_pool_ledger(pool_name, config).wait()
     }
 
-    pub fn refresh(pool_handle: i32) -> Result<(), IndyError> {
+    pub fn refresh(pool_handle: PoolHandle) -> Result<(), IndyError> {
         pool::refresh_pool_ledger(pool_handle).wait()
     }
 
@@ -21,7 +22,7 @@ impl Pool {
         pool::list_pools().wait()
     }
 
-    pub fn close(pool_handle: i32) -> Result<(), IndyError> {
+    pub fn close(pool_handle: PoolHandle) -> Result<(), IndyError> {
         pool::close_pool_ledger(pool_handle).wait()
     }
 

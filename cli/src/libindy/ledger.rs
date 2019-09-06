@@ -1,27 +1,28 @@
 use indy::IndyError;
 use indy::future::Future;
 use indy::ledger;
+use indy::{PoolHandle, WalletHandle};
 
 pub struct Ledger {}
 
 impl Ledger {
-    pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+    pub fn sign_and_submit_request(pool_handle: PoolHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
         ledger::sign_and_submit_request(pool_handle, wallet_handle, submitter_did, request_json).wait()
     }
 
-    pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, IndyError> {
+    pub fn submit_request(pool_handle: PoolHandle, request_json: &str) -> Result<String, IndyError> {
         ledger::submit_request(pool_handle, request_json).wait()
     }
 
-    pub fn submit_action(pool_handle: i32, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, IndyError> {
+    pub fn submit_action(pool_handle: PoolHandle, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, IndyError> {
         ledger::submit_action(pool_handle, request_json, nodes, timeout).wait()
     }
 
-    pub fn sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+    pub fn sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
         ledger::sign_request(wallet_handle, submitter_did, request_json).wait()
     }
 
-    pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+    pub fn multi_sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
         ledger::multi_sign_request(wallet_handle, submitter_did, request_json).wait()
     }
 
