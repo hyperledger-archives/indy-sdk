@@ -6,6 +6,7 @@ use std::ptr;
 use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection, process_acceptance_message};
 use error::prelude::*;
 use messages::get_message::Message;
+use indy_sys::CommandHandle;
 
 /// Delete a Connection object and release its handle
 ///
@@ -20,10 +21,10 @@ use messages::get_message::Message;
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_assignments)]
-pub extern fn vcx_connection_delete_connection(command_handle: u32,
+pub extern fn vcx_connection_delete_connection(command_handle: CommandHandle,
                                                connection_handle: u32,
                                                cb: Option<extern fn(
-                                                   xcommand_handle: u32,
+                                                   xcommand_handle: CommandHandle,
                                                    err: u32)>) -> u32 {
     info!("vcx_delete_connection >>>");
 
@@ -64,9 +65,9 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_assignments)]
-pub extern fn vcx_connection_create(command_handle: u32,
+pub extern fn vcx_connection_create(command_handle: CommandHandle,
                                     source_id: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, connection_handle: u32)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, connection_handle: u32)>) -> u32 {
     info!("vcx_connection_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -108,10 +109,10 @@ pub extern fn vcx_connection_create(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_create_with_invite(command_handle: u32,
+pub extern fn vcx_connection_create_with_invite(command_handle: CommandHandle,
                                                 source_id: *const c_char,
                                                 invite_details: *const c_char,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credential_handle: u32)>) -> u32 {
     info!("vcx_connection_create_with_invite >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -154,10 +155,10 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_connect(command_handle:u32,
+pub extern fn vcx_connection_connect(command_handle: CommandHandle,
                                      connection_handle: u32,
                                      connection_options: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, invite_details: *const c_char)>) -> u32 {
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, invite_details: *const c_char)>) -> u32 {
     info!("vcx_connection_connect >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -221,9 +222,9 @@ pub extern fn vcx_connection_connect(command_handle:u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_serialize(command_handle: u32,
+pub extern fn vcx_connection_serialize(command_handle: CommandHandle,
                                        connection_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, serialized_data: *const c_char)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, serialized_data: *const c_char)>) -> u32 {
     info!("vcx_connection_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -270,9 +271,9 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_deserialize(command_handle: u32,
+pub extern fn vcx_connection_deserialize(command_handle: CommandHandle,
                                       connection_data: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, connection_handle: u32)>) -> u32 {
+                                      cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, connection_handle: u32)>) -> u32 {
     info!("vcx_connection_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -316,9 +317,9 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_update_state(command_handle: u32,
+pub extern fn vcx_connection_update_state(command_handle: CommandHandle,
                                           connection_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_connection_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -368,10 +369,10 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_update_state_with_message(command_handle: u32,
+pub extern fn vcx_connection_update_state_with_message(command_handle: CommandHandle,
                                           connection_handle: u32,
                                           message: *const c_char,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_connection_update_state_with_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -424,9 +425,9 @@ pub extern fn vcx_connection_update_state_with_message(command_handle: u32,
 ///
 /// #Returns
 #[no_mangle]
-pub extern fn vcx_connection_get_state(command_handle: u32,
+pub extern fn vcx_connection_get_state(command_handle: CommandHandle,
                                        connection_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_connection_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -465,10 +466,10 @@ pub extern fn vcx_connection_get_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_invite_details(command_handle: u32,
+pub extern fn vcx_connection_invite_details(command_handle: CommandHandle,
                                             connection_handle: u32,
                                             abbreviated: bool,
-                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, details: *const c_char)>) -> u32 {
+                                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, details: *const c_char)>) -> u32 {
     info!("vcx_connection_invite_details >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -526,11 +527,11 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 /// Error code as a u32
 
 #[no_mangle]
-pub extern fn vcx_connection_send_message(command_handle: u32,
+pub extern fn vcx_connection_send_message(command_handle: CommandHandle,
                                connection_handle: u32,
                                msg: *const c_char,
                                send_msg_options: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: u32, err: u32, msg_id: *const c_char)>) -> u32 {
+                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg_id: *const c_char)>) -> u32 {
     info!("vcx_message_send >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -580,11 +581,11 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_sign_data(command_handle: u32,
+pub extern fn vcx_connection_sign_data(command_handle: CommandHandle,
                                   connection_handle: u32,
                                   data_raw: *const u8,
                                   data_len: u32,
-                                  cb: Option<extern fn(command_handle_: u32,
+                                  cb: Option<extern fn(command_handle_: CommandHandle,
                                                        err: u32,
                                                        signature_raw: *const u8,
                                                        signature_len: u32)>) -> u32  {
@@ -651,13 +652,13 @@ pub extern fn vcx_connection_sign_data(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_verify_signature(command_handle: u32,
+pub extern fn vcx_connection_verify_signature(command_handle: CommandHandle,
                                   connection_handle: u32,
                                   data_raw: *const u8,
                                   data_len: u32,
                                   signature_raw: *const u8,
                                   signature_len: u32,
-                                  cb: Option<extern fn(command_handle_: u32,
+                                  cb: Option<extern fn(command_handle_: CommandHandle,
                                                        err: u32,
                                                        valid: bool)>) -> u32 {
     trace!("vcx_connection_verify_signature: >>> connection_handle: {}, data_raw: {:?}, data_len: {}, signature_raw: {:?}, signature_len: {}",
@@ -894,7 +895,7 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
-    extern "C" fn test_sign_cb(command_handle: u32, error: u32, signature: *const u8, signature_length: u32) {
+    extern "C" fn test_sign_cb(command_handle: CommandHandle, error: u32, signature: *const u8, signature_length: u32) {
         assert_eq!(error, error::SUCCESS.code_num);
     }
 
@@ -911,7 +912,7 @@ mod tests {
         thread::sleep(Duration::from_secs(2));
     }
 
-    extern "C" fn test_verify_cb(command_handle: u32, error: u32, valid: bool) {
+    extern "C" fn test_verify_cb(command_handle: CommandHandle, error: u32, valid: bool) {
         assert_eq!(valid, true);
     }
 

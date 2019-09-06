@@ -10,6 +10,7 @@ use utils::threadpool::spawn;
 use utils::libindy::payments;
 use std::thread;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateAgentInfo {
@@ -67,9 +68,9 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
 /// #Returns
 /// Configuration (wallet also populated), on error returns NULL
 #[no_mangle]
-pub extern fn vcx_agent_provision_async(command_handle: u32,
+pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
                                         config: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, _config: *const c_char)>) -> u32 {
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, _config: *const c_char)>) -> u32 {
     info!("vcx_agent_provision_async >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -108,9 +109,9 @@ pub extern fn vcx_agent_provision_async(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_agent_update_info(command_handle: u32,
+pub extern fn vcx_agent_update_info(command_handle: CommandHandle,
                                     json: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_agent_update_info >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -156,8 +157,8 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_ledger_get_fees(command_handle: u32,
-                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, fees: *const c_char)>) -> u32 {
+pub extern fn vcx_ledger_get_fees(command_handle: CommandHandle,
+                                  cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, fees: *const c_char)>) -> u32 {
     info!("vcx_ledger_get_fees >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -222,11 +223,11 @@ pub extern fn vcx_set_next_agency_response(message_index: u32) {
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_messages_download(command_handle: u32,
+pub extern fn vcx_messages_download(command_handle: CommandHandle,
                                     message_status: *const c_char,
                                     uids: *const c_char,
                                     pw_dids: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, messages: *const c_char)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, messages: *const c_char)>) -> u32 {
     info!("vcx_messages_download >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -310,10 +311,10 @@ pub extern fn vcx_messages_download(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_messages_update_status(command_handle: u32,
+pub extern fn vcx_messages_update_status(command_handle: CommandHandle,
                                          message_status: *const c_char,
                                          msg_json: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                         cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_messages_update_status >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -380,10 +381,10 @@ pub extern fn vcx_pool_set_handle(handle: i32) -> i32 {
 /// # Return
 /// "price": u64 - tokens amount required for action performing
 #[no_mangle]
-pub extern fn vcx_get_request_price(command_handle: u32,
+pub extern fn vcx_get_request_price(command_handle: CommandHandle,
                                     action_json: *const c_char,
                                     requester_info_json: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, price: u64)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, price: u64)>) -> u32 {
     info!("vcx_get_request_price >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -424,9 +425,9 @@ pub extern fn vcx_get_request_price(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_endorse_transaction(command_handle: u32,
+pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
                                       transaction: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                      cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_endorse_transaction >>>");
 
     check_useful_c_str!(transaction, VcxErrorKind::InvalidOption);

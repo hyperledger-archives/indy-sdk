@@ -225,7 +225,7 @@ pub mod tests {
     #[test]
     fn test_wallet() {
         init!("false");
-        assert!(get_wallet_handle() > 0);
+        assert_ne!(get_wallet_handle(), INVALID_WALLET_HANDLE);
         assert_eq!(VcxErrorKind::WalletCreate, init_wallet(&String::from(""), None, None, None).unwrap_err().kind());
     }
 

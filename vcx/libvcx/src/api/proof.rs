@@ -6,6 +6,7 @@ use connection;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
 /// Create a new Proof object that requests a proof for an enterprise
 ///
@@ -65,13 +66,13 @@ use error::prelude::*;
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_create(command_handle: u32,
+pub extern fn vcx_proof_create(command_handle: CommandHandle,
                                source_id: *const c_char,
                                requested_attrs: *const c_char,
                                requested_predicates: *const c_char,
                                revocation_interval: *const c_char,
                                name: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_handle: u32)>) -> u32 {
+                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_handle: u32)>) -> u32 {
     info!("vcx_proof_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -117,9 +118,9 @@ pub extern fn vcx_proof_create(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_update_state(command_handle: u32,
+pub extern fn vcx_proof_update_state(command_handle: CommandHandle,
                                      proof_handle: u32,
-                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_proof_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -166,10 +167,10 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_update_state_with_message(command_handle: u32,
+pub extern fn vcx_proof_update_state_with_message(command_handle: CommandHandle,
                                                   proof_handle: u32,
                                                   message: *const c_char,
-                                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                                  cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_proof_update_state_with_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -215,9 +216,9 @@ pub extern fn vcx_proof_update_state_with_message(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_get_state(command_handle: u32,
+pub extern fn vcx_proof_get_state(command_handle: CommandHandle,
                                   proof_handle: u32,
-                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                  cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_proof_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -262,9 +263,9 @@ pub extern fn vcx_proof_get_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_serialize(command_handle: u32,
+pub extern fn vcx_proof_serialize(command_handle: CommandHandle,
                                   proof_handle: u32,
-                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_state: *const c_char)>) -> u32 {
+                                  cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_state: *const c_char)>) -> u32 {
     info!("vcx_proof_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -309,9 +310,9 @@ pub extern fn vcx_proof_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_deserialize(command_handle: u32,
+pub extern fn vcx_proof_deserialize(command_handle: CommandHandle,
                                     proof_data: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_handle: u32)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_handle: u32)>) -> u32 {
     info!("vcx_proof_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -381,10 +382,10 @@ pub extern fn vcx_proof_release(proof_handle: u32) -> u32 {
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_send_request(command_handle: u32,
+pub extern fn vcx_proof_send_request(command_handle: CommandHandle,
                                      proof_handle: u32,
                                      connection_handle: u32,
-                                     cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_proof_send_request >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -437,9 +438,9 @@ pub extern fn vcx_proof_send_request(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_get_request_msg(command_handle: u32,
+pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
                                         proof_handle: u32,
-                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg: *const c_char)>) -> u32 {
     info!("vcx_proof_get_request_msg >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -489,10 +490,10 @@ pub extern fn vcx_proof_get_request_msg(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_get_proof(command_handle: u32,
+pub extern fn vcx_get_proof(command_handle: CommandHandle,
                             proof_handle: u32,
                             connection_handle: u32,
-                            cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_state:u32, response_data: *const c_char)>) -> u32 {
+                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_state:u32, response_data: *const c_char)>) -> u32 {
     info!("vcx_get_proof >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);

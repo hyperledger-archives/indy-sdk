@@ -1,7 +1,7 @@
 use libc::c_char;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::RecvTimeoutError;
-use utils::libindy::next_u32_command_handle;
+use utils::libindy::next_command_handle;
 use utils::libindy::callback_u32 as callback;
 use utils::libindy::callback::POISON_MSG;
 use utils::libindy::error_codes::map_indy_error;
@@ -13,13 +13,14 @@ use std::time::Duration;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::ops::Deref;
+use indy_sys::CommandHandle;
 
 fn log_error<T: Display>(e: T) {
     warn!("Unable to send through libindy callback in vcx: {}", e);
 }
 
-fn insert_closure<T>(closure: T, map: &Mutex<HashMap<u32, T>>) -> u32 {
-    let command_handle = next_u32_command_handle();
+fn insert_closure<T>(closure: T, map: &Mutex<HashMap<CommandHandle, T>>) -> CommandHandle {
+    let command_handle = next_command_handle();
     {
         let mut callbacks = map.lock().expect(POISON_MSG);
         callbacks.insert(command_handle, closure);
@@ -47,7 +48,7 @@ pub fn receive<T>(receiver: &Receiver<T>, timeout: Option<Duration>) -> Result<T
 
 #[allow(non_camel_case_types)]
 pub struct Return_U32 {
-    pub command_handle: u32,
+    pub command_handle: CommandHandle,
     pub receiver: Receiver<u32>,
 }
 
@@ -66,7 +67,7 @@ impl Return_U32 {
         })
     }
 
-    pub fn get_callback(&self) -> extern fn(command_handle: u32, arg1: u32) {
+    pub fn get_callback(&self) -> extern fn(command_handle: CommandHandle, arg1: u32) {
         callback::call_cb_u32
     }
 
@@ -78,7 +79,7 @@ impl Return_U32 {
 
 #[allow(non_camel_case_types)]
 pub struct Return_U32_U32 {
-    pub command_handle: u32,
+    pub command_handle: CommandHandle,
     pub receiver: Receiver<(u32, u32)>,
 }
 impl Return_U32_U32 {
@@ -96,7 +97,7 @@ impl Return_U32_U32 {
         })
     }
 
-    pub fn get_callback(&self) -> extern fn (command_handle: u32, arg1: u32, arg2: u32) {
+    pub fn get_callback(&self) -> extern fn (command_handle: CommandHandle, arg1: u32, arg2: u32) {
         callback::call_cb_u32_u32
     }
 
@@ -109,7 +110,7 @@ impl Return_U32_U32 {
 
 #[allow(non_camel_case_types)]
 pub struct Return_U32_STR {
-    pub command_handle: u32,
+    pub command_handle: CommandHandle,
     receiver: Receiver<(u32, Option<String>)>,
 }
 impl Return_U32_STR {
@@ -127,7 +128,7 @@ impl Return_U32_STR {
         })
     }
 
-    pub fn get_callback(&self) -> extern fn(command_handle: u32, arg1: u32, arg2: *const c_char) {
+    pub fn get_callback(&self) -> extern fn(command_handle: CommandHandle, arg1: u32, arg2: *const c_char) {
         callback::call_cb_u32_str
     }
 
@@ -140,7 +141,7 @@ impl Return_U32_STR {
 
 #[allow(non_camel_case_types)]
 pub struct Return_U32_U32_STR {
-    pub command_handle: u32,
+    pub command_handle: CommandHandle,
     receiver: Receiver<(u32, u32, Option<String>)>,
 }
 
@@ -159,7 +160,7 @@ impl Return_U32_U32_STR {
         })
     }
 
-    pub fn get_callback(&self) -> extern fn(command_handle: u32, arg1: u32, arg2: u32, arg3: *const c_char) {
+    pub fn get_callback(&self) -> extern fn(command_handle: CommandHandle, arg1: u32, arg2: u32, arg3: *const c_char) {
         callback::call_cb_u32_u32_str
     }
 
@@ -172,7 +173,7 @@ impl Return_U32_U32_STR {
 
 #[allow(non_camel_case_types)]
 pub struct Return_U32_STR_STR {
-    pub command_handle: u32,
+    pub command_handle: CommandHandle,
     receiver: Receiver<(u32, Option<String>, Option<String>)>,
 }
 impl Return_U32_STR_STR {
@@ -190,7 +191,7 @@ impl Return_U32_STR_STR {
         })
     }
 
-    pub fn get_callback(&self) -> extern fn(command_handle: u32,
+    pub fn get_callback(&self) -> extern fn(command_handle: CommandHandle,
                                             arg1: u32,
                                             arg2: *const c_char,
                                             arg3: *const c_char) {
@@ -208,7 +209,7 @@ impl Return_U32_STR_STR {
 
 #[allow(non_camel_case_types)]
 pub struct Return_U32_BOOL {
-    pub command_handle: u32,
+    pub command_handle: CommandHandle,
     receiver: Receiver<(u32, bool)>,
 }
 
@@ -227,7 +228,7 @@ impl Return_U32_BOOL {
         })
     }
 
-    pub fn get_callback(&self) -> extern fn (command_handle: u32, arg1: u32, arg2: bool) {
+    pub fn get_callback(&self) -> extern fn (command_handle: CommandHandle, arg1: u32, arg2: bool) {
         callback::call_cb_u32_bool
     }
 
@@ -241,7 +242,7 @@ impl Return_U32_BOOL {
 
 #[allow(non_camel_case_types)]
 pub struct Return_U32_BIN {
-    pub command_handle: u32,
+    pub command_handle: CommandHandle,
     receiver: Receiver<(u32, Vec<u8>)>,
 }
 
@@ -260,7 +261,7 @@ impl Return_U32_BIN {
         })
     }
 
-    pub fn get_callback(&self) -> extern fn (command_handle: u32, arg1: u32, *const u8, u32) {
+    pub fn get_callback(&self) -> extern fn (command_handle: CommandHandle, arg1: u32, *const u8, u32) {
         callback::call_cb_u32_bin
     }
 
@@ -273,7 +274,7 @@ impl Return_U32_BIN {
 
 #[allow(non_camel_case_types)]
 pub struct Return_U32_OPTSTR_BIN {
-    pub command_handle: u32,
+    pub command_handle: CommandHandle,
     receiver: Receiver<(u32, Option<String>, Vec<u8>)>,
 }
 
@@ -292,7 +293,7 @@ impl Return_U32_OPTSTR_BIN {
         })
     }
 
-    pub fn get_callback(&self) -> extern fn (command_handle: u32, arg1: u32, arg2: *const c_char, arg3: *const u8, arg4: u32) {
+    pub fn get_callback(&self) -> extern fn (command_handle: CommandHandle, arg1: u32, arg2: *const c_char, arg3: *const u8, arg4: u32) {
         callback::call_cb_u32_str_bin
     }
 
@@ -306,7 +307,7 @@ impl Return_U32_OPTSTR_BIN {
 
 #[allow(non_camel_case_types)]
 pub struct Return_U32_U32_STR_STR_STR {
-    pub command_handle: u32,
+    pub command_handle: CommandHandle,
     receiver: Receiver<(u32, u32, Option<String>, Option<String>, Option<String>)>,
 }
 
@@ -325,7 +326,7 @@ impl Return_U32_U32_STR_STR_STR {
         })
     }
 
-    pub fn get_callback(&self) -> extern fn(command_handle: u32, arg1: u32, arg2: u32, arg3: *const c_char, arg4: *const c_char, arg5: *const c_char) {
+    pub fn get_callback(&self) -> extern fn(command_handle: CommandHandle, arg1: u32, arg2: u32, arg3: *const c_char, arg4: *const c_char, arg5: *const c_char) {
         callback::call_cb_u32_u32_str_str_str
     }
 

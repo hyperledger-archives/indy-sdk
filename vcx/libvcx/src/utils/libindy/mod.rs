@@ -16,6 +16,7 @@ use settings;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
 lazy_static!{
     static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
@@ -27,12 +28,8 @@ pub fn set_libindy_rc(rc: u32) {NEXT_LIBINDY_RC.lock().unwrap().push(rc as i32);
 
 static COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
-pub fn next_i32_command_handle() -> i32 {
-    (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
-}
-
-pub fn next_u32_command_handle() -> u32 {
-    (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32
+pub fn next_command_handle() -> CommandHandle {
+    (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as CommandHandle
 }
 
 pub fn init_pool() -> VcxResult<()>  {
