@@ -404,6 +404,8 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_pending_request() {
+            use crate::indy::future::Future;
+
             let setup = Setup::empty();
 
             let pool_handle = pool::create_and_open_pool_ledger(&setup.name).unwrap();

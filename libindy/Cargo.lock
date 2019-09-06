@@ -976,7 +976,6 @@ dependencies = [
  "env_logger",
  "etcommon-rlp",
  "failure",
- "futures",
  "hex",
  "indy",
  "indy-api-types",
