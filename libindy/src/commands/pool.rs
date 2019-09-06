@@ -20,10 +20,10 @@ pub enum PoolCommand {
         String, // name
         Option<PoolOpenConfig>, // config
         Box<dyn Fn(IndyResult<PoolHandle>) + Send>),
-    OpenAck(
-        CommandHandle, // cmd id
-        PoolHandle, // pool handle
-        IndyResult<()>),
+//    OpenAck(
+//        CommandHandle, // cmd id
+//        PoolHandle, // pool handle
+//        IndyResult<()>),
     List(Box<dyn Fn(IndyResult<String>) + Send>),
     Close(
         PoolHandle, // pool handle
@@ -33,8 +33,8 @@ pub enum PoolCommand {
     Refresh(
         PoolHandle, // pool handle
         Box<dyn Fn(IndyResult<()>) + Send>),
-    RefreshAck(CommandHandle,
-               IndyResult<()>),
+//    RefreshAck(CommandHandle,
+//               IndyResult<()>),
     SetProtocolVersion(
         usize, // protocol version
         Box<dyn Fn(IndyResult<()>) + Send>),
@@ -43,8 +43,8 @@ pub enum PoolCommand {
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
     close_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
-    refresh_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
-    open_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<PoolHandle>)>>>,
+//    refresh_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
+//    open_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<PoolHandle>)>>>,
 }
 
 impl PoolCommandExecutor {
@@ -52,12 +52,12 @@ impl PoolCommandExecutor {
         PoolCommandExecutor {
             pool_service,
             close_callbacks: RefCell::new(HashMap::new()),
-            refresh_callbacks: RefCell::new(HashMap::new()),
-            open_callbacks: RefCell::new(HashMap::new()),
+//            refresh_callbacks: RefCell::new(HashMap::new()),
+//            open_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
-    pub fn execute(&self, command: PoolCommand) {
+    pub async fn execute(&self, command: PoolCommand) {
         match command {
             PoolCommand::Create(name, config, cb) => {
                 debug!(target: "pool_command_executor", "Create command received");
@@ -69,24 +69,24 @@ impl PoolCommandExecutor {
             }
             PoolCommand::Open(name, config, cb) => {
                 debug!(target: "pool_command_executor", "Open command received");
-                self.open(&name, config, cb);
+                self.open(name, config, cb).await;
             }
-            PoolCommand::OpenAck(handle, pool_id, result) => {
-                info!("OpenAck handle {:?}, pool_id {:?}, result {:?}", handle, pool_id, result);
-                match self.open_callbacks.try_borrow_mut() {
-                    Ok(mut cbs) => {
-                        match cbs.remove(&handle) {
-                            Some(cb) => {
-                                cb(result.and_then(|_| self.pool_service.add_open_pool(pool_id)))
-                            }
-                            None => {
-                                error!("Can't process PoolCommand::OpenAck for handle {:?} with result {:?} - appropriate callback not found!", handle, result);
-                            }
-                        }
-                    }
-                    Err(err) => { error!("{:?}", err); }
-                }
-            }
+//            PoolCommand::OpenAck(handle, pool_id, result) => {
+//                info!("OpenAck handle {:?}, pool_id {:?}, result {:?}", handle, pool_id, result);
+//                match self.open_callbacks.try_borrow_mut() {
+//                    Ok(mut cbs) => {
+//                        match cbs.remove(&handle) {
+//                            Some(cb) => {
+//                                cb(result.and_then(|_| self.pool_service.add_open_pool(pool_id)))
+//                            }
+//                            None => {
+//                                error!("Can't process PoolCommand::OpenAck for handle {:?} with result {:?} - appropriate callback not found!", handle, result);
+//                            }
+//                        }
+//                    }
+//                    Err(err) => { error!("{:?}", err); }
+//                }
+//            }
             PoolCommand::List(cb) => {
                 debug!(target: "pool_command_executor", "List command received");
                 cb(self.list());
@@ -111,23 +111,23 @@ impl PoolCommandExecutor {
             }
             PoolCommand::Refresh(handle, cb) => {
                 debug!(target: "pool_command_executor", "Refresh command received");
-                self.refresh(handle, cb);
+                self.refresh(handle, cb).await;
             }
-            PoolCommand::RefreshAck(handle, result) => {
-                debug!(target: "pool_command_executor", "RefreshAck command received");
-                match self.refresh_callbacks.try_borrow_mut() {
-                    Ok(mut cbs) => {
-                        match cbs.remove(&handle) {
-                            Some(cb) => cb(result),
-                            None => {
-                                error!("Can't process PoolCommand::RefreshAck for handle {:?} with result {:?} - appropriate callback not found!",
-                                       handle, result);
-                            }
-                        }
-                    }
-                    Err(err) => { error!("{:?}", err); }
-                }
-            }
+//            PoolCommand::RefreshAck(handle, result) => {
+//                debug!(target: "pool_command_executor", "RefreshAck command received");
+//                match self.refresh_callbacks.try_borrow_mut() {
+//                    Ok(mut cbs) => {
+//                        match cbs.remove(&handle) {
+//                            Some(cb) => cb(result),
+//                            None => {
+//                                error!("Can't process PoolCommand::RefreshAck for handle {:?} with result {:?} - appropriate callback not found!",
+//                                       handle, result);
+//                            }
+//                        }
+//                    }
+//                    Err(err) => { error!("{:?}", err); }
+//                }
+//            }
             PoolCommand::SetProtocolVersion(protocol_version, cb) => {
                 debug!(target: "pool_command_executor", "SetProtocolVersion command received");
                 cb(self.set_protocol_version(protocol_version));
@@ -155,20 +155,11 @@ impl PoolCommandExecutor {
         Ok(())
     }
 
-    fn open(&self, name: &str, config: Option<PoolOpenConfig>, cb: Box<dyn Fn(IndyResult<PoolHandle>) + Send>) {
+    async fn open(&self, name: String, config: Option<PoolOpenConfig>, cb: Box<dyn Fn(IndyResult<PoolHandle>) + Send>) {
         debug!("open >>> name: {:?}, config: {:?}", name, config);
 
-        let result = self.pool_service.open(name, config)
-            .and_then(|handle| {
-                match self.open_callbacks.try_borrow_mut() {
-                    Ok(cbs) => Ok((cbs, handle)),
-                    Err(err) => Err(err.into()),
-                }
-            });
-        match result {
-            Err(err) => { cb(Err(err)); }
-            Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
-        };
+        let result = self.pool_service.open(name, config).await;
+        cb(result);
 
         debug!("open <<<");
     }
@@ -203,20 +194,12 @@ impl PoolCommandExecutor {
         debug!("close <<<");
     }
 
-    fn refresh(&self, handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
+    async fn refresh(&self, handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
         debug!("refresh >>> handle: {:?}", handle);
 
-        let result = self.pool_service.refresh(handle)
-            .and_then(|handle| {
-                match self.refresh_callbacks.try_borrow_mut() {
-                    Ok(cbs) => Ok((cbs, handle)),
-                    Err(err) => Err(err.into())
-                }
-            });
-        match result {
-            Err(err) => { cb(Err(err)); }
-            Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
-        };
+        let result = self.pool_service.refresh(handle).await;
+
+        cb(result);
 
         debug!("refresh <<<");
     }

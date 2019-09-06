@@ -12,7 +12,7 @@ use std::{fs, io};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::Write;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use serde_json;
 use serde::de::DeserializeOwned;
@@ -34,6 +34,11 @@ use indy_api_types::{CommandHandle, PoolHandle};
 use indy_utils::{next_command_handle, next_pool_handle};
 use ursa::bls::VerKey;
 
+use futures::{channel::oneshot, lock::Mutex as MutexF};
+use futures::executor::block_on;
+
+use log_derive::logfn;
+
 mod catchup;
 mod commander;
 mod events;
@@ -46,6 +51,8 @@ mod types;
 
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
+    static ref POOL_HANDLE_SENDERS: Arc<MutexF<HashMap<PoolHandle, oneshot::Sender<IndyResult<PoolHandle>>>>> = Arc::new(MutexF::new(HashMap::new()));
+    static ref SUBMIT_SENDERS: Arc<MutexF<HashMap<PoolHandle, oneshot::Sender<IndyResult<String>>>>> = Arc::new(MutexF::new(HashMap::new()));
 }
 
 type Nodes = HashMap<String, Option<VerKey>>;
@@ -143,7 +150,7 @@ impl PoolService {
             .to_indy(IndyErrorKind::IOError, "Can't delete pool config directory")
     }
 
-    pub fn open(&self, name: &str, config: Option<PoolOpenConfig>) -> IndyResult<PoolHandle> {
+    pub async fn open(&self, name: String, config: Option<PoolOpenConfig>) -> IndyResult<PoolHandle> {
         for ref pool in self.open_pools.try_borrow()?.values() {
             if name.eq(pool.pool.get_name()) {
                 //TODO change error
@@ -154,18 +161,38 @@ impl PoolService {
         let config = config.unwrap_or_default();
 
         let pool_handle: PoolHandle = next_pool_handle();
-        let mut new_pool = Pool::new(name, pool_handle, config);
+        let mut new_pool = Pool::new(&name, pool_handle, config);
 
         let (send_cmd_sock, recv_cmd_sock) = pool_create_pair_of_sockets(&format!("pool_{}", name));
 
         new_pool.work(recv_cmd_sock);
         self._send_msg(pool_handle, COMMAND_CONNECT, &send_cmd_sock, None, None)?;
 
-        self.pending_pools.try_borrow_mut()?
+        let (sender, receiver) = oneshot::channel::<IndyResult<PoolHandle>>();
+
+        POOL_HANDLE_SENDERS.lock().await.insert(pool_handle, sender);
+
+        let res = receiver.await.unwrap();
+
+        self.open_pools.try_borrow_mut()?
             .insert(new_pool.get_id(), ZMQPool::new(new_pool, send_cmd_sock));
-        Ok(pool_handle)
+
+        res
     }
 
+    #[logfn(trace)]
+    pub fn open_ack(pool_hanlde: PoolHandle, result: IndyResult<()>) {
+        let sender: futures::channel::oneshot::Sender<IndyResult<PoolHandle>> = block_on(POOL_HANDLE_SENDERS.lock()).remove(&pool_hanlde).unwrap();
+        sender.send(result.map(|()| pool_hanlde)).unwrap(); //FIXME
+    }
+
+    #[logfn(trace)]
+    pub fn refresh_ack(cmd_id: CommandHandle, result: IndyResult<()>) {
+        let sender: futures::channel::oneshot::Sender<IndyResult<String>> = block_on(SUBMIT_SENDERS.lock()).remove(&cmd_id).unwrap();
+        sender.send(result.map(|()| String::new())).unwrap(); //FIXME
+    }
+
+    #[allow(unused)]
     pub fn add_open_pool(&self, pool_id: PoolHandle) -> IndyResult<PoolHandle> {
         let pool = self.pending_pools.try_borrow_mut()?
             .remove(&pool_id)
@@ -177,20 +204,33 @@ impl PoolService {
     }
 
 
-    pub fn send_tx(&self, handle: PoolHandle, msg: &str) -> IndyResult<CommandHandle> {
-        self.send_action(handle, msg, None, None)
+    pub async fn send_tx(&self, handle: PoolHandle, msg: &str) -> IndyResult<String> {
+        self.send_action(handle, msg, None, None).await
     }
 
-    pub fn send_action(&self, handle: PoolHandle, msg: &str, nodes: Option<&str>, timeout: Option<i32>) -> IndyResult<CommandHandle> {
+    pub async fn send_action(&self, handle: PoolHandle, msg: &str, nodes: Option<&str>, timeout: Option<i32>) -> IndyResult<String> {
         let pools = self.open_pools.try_borrow()?;
 
         if let Some(ref pool) = pools.get(&handle) {
             let cmd_id: CommandHandle = next_command_handle();
             self._send_msg(cmd_id, msg, &pool.cmd_socket, nodes, timeout)?;
-            Ok(cmd_id)
+
+            let (sender, receiver) = oneshot::channel::<IndyResult<String>>();
+
+            SUBMIT_SENDERS.lock().await.insert(cmd_id, sender);
+
+            let res = receiver.await.unwrap();
+
+            res
         } else {
             Err(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", handle)))
         }
+    }
+
+    #[logfn(trace)]
+    fn submit_ack(cmd_id: CommandHandle, result: IndyResult<String>) {
+        let sender: futures::channel::oneshot::Sender<IndyResult<String>> = block_on(SUBMIT_SENDERS.lock()).remove(&cmd_id).unwrap();
+        sender.send(result).unwrap(); //FIXME
     }
 
     pub fn register_sp_parser(txn_type: &str,
@@ -227,8 +267,8 @@ impl PoolService {
         Ok(cmd_id)
     }
 
-    pub fn refresh(&self, handle: PoolHandle) -> IndyResult<i32> {
-        self.send_action(handle, COMMAND_REFRESH, None, None)
+    pub async fn refresh(&self, handle: PoolHandle) -> IndyResult<()> {
+        self.send_action(handle, COMMAND_REFRESH, None, None).await.map(|_| ())
     }
 
     fn _send_msg(&self, cmd_id: CommandHandle, msg: &str, socket: &Socket, nodes: Option<&str>, timeout: Option<i32>) -> IndyResult<()> {
@@ -337,6 +377,7 @@ pub fn pool_create_pair_of_sockets(addr: &str) -> (zmq::Socket, zmq::Socket) {
 }
 
 #[cfg(test)]
+#[cfg(not(feature="only_high_cases"))]
 mod tests {
     use std::thread;
 
