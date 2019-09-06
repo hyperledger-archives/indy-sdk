@@ -21,9 +21,11 @@ use utils::{ctypes, sequence};
 
 pub type IndyHandle = i32;
 
-pub type WalletHandle = i32;
-pub const INVALID_WALLET_HANDLE : WalletHandle = 0;
-pub (crate) fn next_wallet_handle() -> WalletHandle { sequence::get_next_id() }
+#[repr(transparent)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+pub struct WalletHandle(pub i32);
+pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
+pub (crate) fn next_wallet_handle() -> WalletHandle { WalletHandle(sequence::get_next_id()) }
 
 pub type CallbackHandle = i32;
 
