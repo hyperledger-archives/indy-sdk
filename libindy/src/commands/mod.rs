@@ -165,7 +165,7 @@ impl CommandExecutor {
                         }
                         Some(Command::Wallet(cmd)) => {
                             debug!("WalletCommand command received");
-                            wallet_command_executor.execute(cmd);
+                            wallet_command_executor.execute(cmd).await;
                         }
                         Some(Command::Pairwise(cmd)) => {
                             debug!("PairwiseCommand command received");
