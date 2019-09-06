@@ -27,6 +27,7 @@ extern crate time;
 extern crate serde;
 extern crate sodiumoxide;
 extern crate rand;
+extern crate indy_sys;
 
 #[macro_use]
 mod utils;
@@ -51,8 +52,7 @@ use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta
 use std::collections::HashMap;
 use std::thread;
 
-use api::INVALID_WALLET_HANDLE;
-use api::INVALID_POOL_HANDLE;
+use api::{PoolHandle, WalletHandle, INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
 
 mod high_cases {
     use super::*;
@@ -1888,7 +1888,7 @@ mod high_cases {
                                constants::NYM, FIELD, Some("0"), Some("2"), &default_constraint_json);
         }
 
-        fn _change_constraint(pool_handle: i32, wallet_handle: i32, trustee_did: &str, action: &str, txn_type: &str, field: &str,
+        fn _change_constraint(pool_handle: PoolHandle, wallet_handle: WalletHandle, trustee_did: &str, action: &str, txn_type: &str, field: &str,
                               old_value: Option<&str>, new_value: Option<&str>, constraint: &str) {
             let auth_rule_request = ledger::build_auth_rule_request(&trustee_did,
                                                                     txn_type,
@@ -1901,7 +1901,7 @@ mod high_cases {
             pool::check_response_type(&response, ResponseType::REPLY);
         }
 
-        fn _get_constraint(pool_handle: i32, action: &str, txn_type: &str, field: &str,
+        fn _get_constraint(pool_handle: PoolHandle, action: &str, txn_type: &str, field: &str,
                            old_value: Option<&str>, new_value: Option<&str>) -> (serde_json::Value, String) {
             let get_auth_rule_request = ledger::build_get_auth_rule_request(None,
                                                                             Some(txn_type),
@@ -2357,24 +2357,24 @@ mod high_cases {
             (text, version)
         }
 
-        fn _send_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str, taa_text: &str, taa_version: &str) {
+        fn _send_taa(pool_handle: PoolHandle, wallet_handle: WalletHandle, trustee_did: &str, taa_text: &str, taa_version: &str) {
             let request = ledger::build_txn_author_agreement_request(&trustee_did, &taa_text, &taa_version).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
         }
 
-        fn _set_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str) -> (String, String) {
+        fn _set_taa(pool_handle: PoolHandle, wallet_handle: WalletHandle, trustee_did: &str) -> (String, String) {
             let (taa_text, taa_version) = _gen_taa_data();
             _send_taa(pool_handle, wallet_handle, trustee_did, &taa_text, &taa_version);
             (taa_text, taa_version)
         }
 
-        fn _reset_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str) {
+        fn _reset_taa(pool_handle: PoolHandle, wallet_handle: WalletHandle, trustee_did: &str) {
             let taa_version = _rand_version();
             _send_taa(pool_handle, wallet_handle, trustee_did, "", &taa_version);
         }
 
-        fn _set_aml(pool_handle: i32, wallet_handle: i32, trustee_did: &str) -> (String, String, String, String) {
+        fn _set_aml(pool_handle: PoolHandle, wallet_handle: WalletHandle, trustee_did: &str) -> (String, String, String, String) {
             let (aml, aml_label, aml_version, aml_context) = _gen_aml_data();
             let request = ledger::build_acceptance_mechanisms_request(trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, trustee_did, &request).unwrap();
@@ -2570,7 +2570,7 @@ mod high_cases {
     mod append_request_endorser {
         use super::*;
 
-        fn _setup_new_identity(wallet_handle: i32, pool_handle: i32) -> String {
+        fn _setup_new_identity(wallet_handle: WalletHandle, pool_handle: PoolHandle) -> String {
             let (my_did, my_vk) = did::create_and_store_my_did(wallet_handle, None).unwrap();
             let nym = ledger::build_nym_request(DID_TRUSTEE, &my_did, Some(&my_vk), None, None).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, DID_TRUSTEE, &nym).unwrap();

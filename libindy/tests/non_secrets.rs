@@ -23,6 +23,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate indy_sys;
 
 #[macro_use]
 mod utils;
@@ -40,6 +41,7 @@ pub const FORBIDDEN_TYPE: &'static str = "Indy::Test";
 
 use utils::test::cleanup_wallet;
 use utils::Setup;
+use indy_sys::WalletHandle;
 
 mod high_cases {
     use super::*;
@@ -367,13 +369,14 @@ mod high_cases {
 
     mod search {
         use super::*;
+        use indy_sys::{WalletHandle, SearchHandle};
 
-        fn setup(name: &str, wallet_config: &str) -> i32{
+        fn setup(name: &str, wallet_config: &str) -> WalletHandle {
             init_non_secret_test_wallet(name, wallet_config);
             wallet::open_wallet(wallet_config, WALLET_CREDENTIALS).unwrap()
         }
 
-        fn tear_down(wallet_handle: i32, search_handle: i32){
+        fn tear_down(wallet_handle: WalletHandle, search_handle: SearchHandle) {
             close_wallet_search(search_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -1164,13 +1167,14 @@ mod medium_cases {
 
     mod search {
         use super::*;
+        use indy_sys::{WalletHandle, SearchHandle};
 
-        fn setup(name: &str, wallet_config: &str) -> i32{
+        fn setup(name: &str, wallet_config: &str) -> WalletHandle {
             init_non_secret_test_wallet(name, wallet_config);
             wallet::open_wallet(wallet_config, WALLET_CREDENTIALS).unwrap()
         }
 
-        fn tear_down(wallet_handle: i32, search_handle: i32){
+        fn tear_down(wallet_handle: WalletHandle, search_handle: SearchHandle) {
             close_wallet_search(search_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -1287,7 +1291,7 @@ mod medium_cases {
     }
 }
 
-fn check_record_field(wallet_handle: i32, type_: &str, id: &str, field: &str, expected_value: &str) {
+fn check_record_field(wallet_handle: WalletHandle, type_: &str, id: &str, field: &str, expected_value: &str) {
     let record = get_wallet_record(wallet_handle, type_, id, OPTIONS_FULL).unwrap();
     let record = serde_json::from_str::<WalletRecord>(&record).unwrap();
 

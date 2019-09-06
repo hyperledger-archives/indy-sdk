@@ -1,6 +1,6 @@
 extern crate indy_sys;
 
-use self::indy_sys::Error as ErrorCode;
+use self::indy_sys::{Error as ErrorCode, WalletHandle, CommandHandle};
 
 use super::libc::c_char;
 use std::ffi::CStr;
@@ -61,6 +61,32 @@ pub fn _closure_to_cb_ec_i32() -> (Receiver<(ErrorCode, i32)>, i32,
 
     let mut callbacks = CALLBACKS.lock().unwrap();
     let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+    callbacks.insert(command_handle, closure);
+
+    (receiver, command_handle, Some(_callback))
+}
+
+pub fn _closure_to_cb_ec_wallethandle() -> (Receiver<(ErrorCode, WalletHandle)>, CommandHandle,
+                                   Option<extern fn(command_handle: CommandHandle, err: ErrorCode,
+                                                    c_i32: WalletHandle)>) {
+    let (sender, receiver) = channel();
+
+    lazy_static! {
+        static ref CALLBACKS: Mutex<HashMap<CommandHandle, Box<dyn FnMut(ErrorCode, WalletHandle) + Send>>> = Default::default();
+    }
+
+    let closure = Box::new(move |err, val| {
+        sender.send((err, val)).unwrap();
+    });
+
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, c_i32: WalletHandle) {
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let mut cb = callbacks.remove(&command_handle).unwrap();
+        cb(err, c_i32)
+    }
+
+    let mut callbacks = CALLBACKS.lock().unwrap();
+    let command_handle: CommandHandle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
     callbacks.insert(command_handle, closure);
 
     (receiver, command_handle, Some(_callback))
