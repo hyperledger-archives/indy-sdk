@@ -10,7 +10,6 @@ use failure::Context;
 
 use crate::commands::Command;
 use crate::commands::CommandExecutor;
-use crate::commands::ledger::LedgerCommand;
 use crate::commands::pool::PoolCommand;
 use crate::domain::ledger::request::ProtocolVersion;
 use crate::domain::pool::PoolOpenConfig;
@@ -18,7 +17,7 @@ use indy_api_types::errors::prelude::*;
 use crate::services::ledger::merkletree::merkletree::MerkleTree;
 use crate::services::pool::commander::Commander;
 use crate::services::pool::events::*;
-use crate::services::pool::{merkle_tree_factory, Nodes};
+use crate::services::pool::{merkle_tree_factory, Nodes, PoolService};
 use crate::services::pool::networker::{Networker, ZMQNetworker};
 use crate::services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
 use rust_base58::{FromBase58, ToBase58};
@@ -281,10 +280,11 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                         match _get_request_handler_with_ledger_status_sent(state.networker.clone(), &pool_name, timeout, extended_timeout, number_read_nodes) {
                             Ok(request_handler) => PoolState::GettingCatchupTarget((request_handler, cmd_id, state).into()),
                             Err(err) => {
-                                CommandExecutor::instance().send(
-                                    Command::Pool(
-                                        PoolCommand::OpenAck(cmd_id, id, Err(err)))
-                                ).unwrap();
+//                                CommandExecutor::instance().send(
+//                                    Command::Pool(
+//                                        PoolCommand::OpenAck(cmd_id, id, Err(err)))
+//                                ).unwrap();
+                                PoolService::open_ack(id, Err(err));
                                 PoolState::Terminated(state.into())
                             }
                         }
@@ -716,18 +716,16 @@ fn _close_pool_ack(cmd_id: CommandHandle) {
 }
 
 fn _send_submit_ack(cmd_id: CommandHandle, res: IndyResult<String>) {
-    let lc = LedgerCommand::SubmitAck(cmd_id, res);
-    CommandExecutor::instance().send(Command::Ledger(lc)).unwrap();
+    PoolService::submit_ack(cmd_id, res);
 }
 
 fn _send_open_refresh_ack(cmd_id: CommandHandle, id: PoolHandle, is_refresh: bool, res: IndyResult<()>) {
     trace!("PoolSM: from getting catchup target to active");
-    let pc = if is_refresh {
-        PoolCommand::RefreshAck(cmd_id, res)
+    if is_refresh {
+        PoolService::refresh_ack(cmd_id, res);
     } else {
-        PoolCommand::OpenAck(cmd_id, id, res)
-    };
-    CommandExecutor::instance().send(Command::Pool(pc)).unwrap();
+        PoolService::open_ack(id, res);
+    }
 }
 
 pub struct ZMQPool {
