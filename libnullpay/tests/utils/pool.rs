@@ -1,6 +1,7 @@
 use indy::IndyError;
 use indy::pool;
 use indy::future::Future;
+use indy::PoolHandle;
 
 use serde_json::to_string;
 use std::io::Write;
@@ -15,7 +16,7 @@ pub struct PoolConfig {
 
 const PROTOCOL_VERSION: usize = 2;
 
-pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, IndyError> {
+pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<PoolHandle, IndyError> {
     set_protocol_version(PROTOCOL_VERSION).unwrap();
     let txn_file_path = _create_genesis_txn_file_for_test_pool(pool_name, None, None);
     let pool_config = _pool_config_json(txn_file_path.as_path());
@@ -23,7 +24,7 @@ pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, IndyError> {
     _open_pool_ledger(pool_name, None)
 }
 
-pub fn close(pool_handle: i32) -> Result<(), IndyError> {
+pub fn close(pool_handle: PoolHandle) -> Result<(), IndyError> {
     pool::close_pool_ledger(pool_handle).wait()
 }
 
