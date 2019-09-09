@@ -37,7 +37,7 @@ impl VerifierCommandExecutor {
     pub fn execute(&self, command: VerifierCommand) {
         match command {
             VerifierCommand::VerifyProof(proof_request, proof, schemas, credential_defs, rev_reg_defs, rev_regs, cb) => {
-                info!(target: "verifier_command_executor", "VerifyProof command received");
+                debug!(target: "verifier_command_executor", "VerifyProof command received");
                 cb(self.verify_proof(proof_request, proof,
                                      &schemas_map_to_schemas_v1_map(schemas),
                                      &cred_defs_map_to_cred_defs_v1_map(credential_defs),
@@ -45,7 +45,7 @@ impl VerifierCommandExecutor {
                                      &rev_regs_map_to_rev_regs_local_map(rev_regs)));
             }
             VerifierCommand::GenerateNonce(cb) => {
-                info!(target: "verifier_command_executor", "GenerateNonce command received");
+                debug!(target: "verifier_command_executor", "GenerateNonce command received");
                 cb(self.generate_nonce());
             }
         };
