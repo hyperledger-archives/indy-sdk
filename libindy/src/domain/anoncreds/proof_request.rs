@@ -8,6 +8,9 @@ use serde::{de, Deserialize, Deserializer};
 use serde_json::Value;
 use utils::wql::Query;
 
+use super::credential::Credential;
+use super::super::crypto::did::DidQualifier;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequest {
     pub nonce: Nonce,
@@ -18,23 +21,16 @@ pub struct ProofRequest {
     pub non_revoked: Option<NonRevocedInterval>
 }
 
-impl Default for ProofRequest {
-    fn default() -> ProofRequest {
-        ProofRequest {
-            nonce: Nonce::new().unwrap(),
-            name: String::from("default"),
-            version: String::from("1.0"),
-            requested_attributes: HashMap::new(),
-            requested_predicates: HashMap::new(),
-            non_revoked: None,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum ProofRequests {
     ProofRequestV1(ProofRequest),
     ProofRequestV2(ProofRequest),
+}
+
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum ProofRequestsVersion {
+    V1,
+    V2,
 }
 
 impl ProofRequests {
@@ -42,6 +38,13 @@ impl ProofRequests {
         match self {
             ProofRequests::ProofRequestV1(proof_req) => proof_req,
             ProofRequests::ProofRequestV2(proof_req) => proof_req,
+        }
+    }
+
+    pub fn version(&self) -> ProofRequestsVersion {
+        match self {
+            ProofRequests::ProofRequestV1(_) => ProofRequestsVersion::V1,
+            ProofRequests::ProofRequestV2(_) => ProofRequestsVersion::V2,
         }
     }
 }
@@ -145,6 +148,7 @@ pub struct RequestedPredicateInfo {
 impl Validatable for ProofRequests {
     fn validate(&self) -> Result<(), String> {
         let value = self.value();
+        let version = self.version();
 
         if value.requested_attributes.is_empty() && value.requested_predicates.is_empty() {
             return Err(String::from("Proof Request validation failed: both `requested_attributes` and `requested_predicates` are empty"));
@@ -154,14 +158,61 @@ impl Validatable for ProofRequests {
             if requested_attribute.name.is_empty() {
                 return Err(format!("Proof Request validation failed: there is empty requested attribute: {:?}", requested_attribute));
             }
+            if let Some(ref restrictions) = requested_attribute.restrictions {
+                _process_operator(&restrictions, &version)?;
+            }
         }
 
         for (_, requested_predicate) in value.requested_predicates.iter() {
             if requested_predicate.name.is_empty() {
                 return Err(format!("Proof Request validation failed: there is empty requested attribute: {:?}", requested_predicate));
             }
+            if let Some(ref restrictions) = requested_predicate.restrictions {
+                _process_operator(&restrictions, &version)?;
+            }
         }
 
         Ok(())
     }
+}
+
+fn _process_operator(restriction_op: &Query, version: &ProofRequestsVersion) -> Result<(), String> {
+    match restriction_op {
+        Query::Eq(ref tag_name, ref tag_value) |
+        Query::Neq(ref tag_name, ref tag_value) |
+        Query::Gt(ref tag_name, ref tag_value) |
+        Query::Gte(ref tag_name, ref tag_value) |
+        Query::Lt(ref tag_name, ref tag_value) |
+        Query::Lte(ref tag_name, ref tag_value) |
+        Query::Like(ref tag_name, ref tag_value) => {
+            _check_restriction(tag_name, tag_value, version)
+        }
+        Query::In(ref tag_name, ref tag_values) => {
+            tag_values
+                .iter()
+                .map(|tag_value| _check_restriction(tag_name, tag_value, version))
+                .collect::<Result<Vec<()>, String>>()?;
+            Ok(())
+        }
+        Query::And(ref operators) | Query::Or(ref operators) => {
+            operators
+                .iter()
+                .map(|operator| _process_operator(operator, version))
+                .collect::<Result<Vec<()>, String>>()?;
+            Ok(())
+        }
+        Query::Not(ref operator) => {
+            _process_operator(operator, version)
+        }
+    }
+}
+
+fn _check_restriction(tag_name: &str, tag_value: &str, version: &ProofRequestsVersion) -> Result<(), String> {
+    if *version == ProofRequestsVersion::V1 &&
+        Credential::qualifiable_tags().contains(&tag_name) &&
+        DidQualifier::is_fully_qualified(tag_value) {
+        return Err("Proof Request validation failed: fully qualified identifiers can not be used for Proof Request of the first version. \
+                    Please, set \"ver\":\"2.0\" to use fully qualified identifiers.".to_string());
+    }
+    Ok(())
 }

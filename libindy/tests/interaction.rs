@@ -817,17 +817,17 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 #[cfg(feature = "revocation_tests")]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did() {
-    //    anoncreds_revocation_interaction_test_one_prover(r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#);
     let setup = Setup::empty();
 
     let pool = Pool::new(&setup.name);
 
-    let (wallet_handle, _wallet_config) = wallet::create_and_open_default_wallet(format!("wallet_for_pool_{}", pool.pool_handle).borrow()).unwrap();
+    let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(format!("wallet_for_pool_{}", pool.pool_handle).borrow()).unwrap();
     let mut issuer = Issuer {
         // Issuer creates wallet, gets wallet handle
         issuer_wallet_handle: wallet_handle,
 
         // Issuer create DID
+        issuer_wallet_config: wallet_config,
         issuer_did: did::create_store_and_publish_my_did_from_trustee_v1(wallet_handle, pool.pool_handle).unwrap().0,
 
         schema_id: String::new(),
@@ -835,11 +835,11 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
         cred_def_id: String::new(),
 
         issuance_type: String::new(),
-        tails_writer_config: anoncreds::tails_writer_config()
+        tails_writer_config: anoncreds::tails_writer_config(),
     };
 
     // Prover creates wallet, gets wallet handle
-    let (prover_wallet_handle, _prover_wallet_config) = wallet::create_and_open_default_wallet("interactions_prover").unwrap();
+    let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("interactions_prover").unwrap();
     // Prover create DID
     let my_did_json = json!({"method_name": "sov"}).to_string();
     let (prover_did, prover_verkey) = did::create_my_did(prover_wallet_handle, &my_did_json).unwrap();
@@ -849,11 +849,12 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
 
     let mut prover = Prover {
         wallet_handle: prover_wallet_handle,
+        wallet_config: prover_wallet_config,
         did: prover_did.clone(),
         verkey: prover_verkey.clone(),
         master_secret_id: String::from(master_secret_id),
         cred_def_id: None,
-        cred_req_metadata_json: None
+        cred_req_metadata_json: None,
     };
 
     // Issuer publish Prover DID

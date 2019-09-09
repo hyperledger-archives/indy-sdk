@@ -526,10 +526,12 @@ impl ProverCommandExecutor {
         debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}", wallet_handle, proof_request);
 
         let proof_req = proof_request.value();
+        let version = proof_request.version();
+
         let mut credentials_for_proof_request: CredentialsForProofRequest = CredentialsForProofRequest::default();
 
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_request,
+            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
                                                           &requested_attr.name,
                                                           &attr_id,
                                                           &requested_attr.restrictions,
@@ -542,7 +544,7 @@ impl ProverCommandExecutor {
         }
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_request,
+            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
                                                           &requested_predicate.name,
                                                           &predicate_id,
                                                           &requested_predicate.restrictions,
@@ -571,10 +573,12 @@ impl ProverCommandExecutor {
         debug!("search_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}, extra_query: {:?}", wallet_handle, proof_request, extra_query);
 
         let proof_req = proof_request.value();
+        let version = proof_request.version();
+
         let mut credentials_for_proof_request_search = HashMap::<String, SearchForProofRequest>::new();
 
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_request,
+            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
                                                           &requested_attr.name,
                                                           &attr_id,
                                                           &requested_attr.restrictions,
@@ -591,7 +595,7 @@ impl ProverCommandExecutor {
         }
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_request,
+            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
                                                           &requested_predicate.name,
                                                           &predicate_id,
                                                           &requested_predicate.restrictions,

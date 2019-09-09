@@ -19,7 +19,7 @@ use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as Credent
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequestMetadata;
 use domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
-use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequests, ProofRequest, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
+use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequests, ProofRequest, ProofRequestsVersion, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
 use domain::anoncreds::requested_credential::ProvingCredentialKey;
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
@@ -411,7 +411,7 @@ impl Prover {
     }
 
     pub fn extend_proof_request_restrictions(&self,
-                                             proof_request: &ProofRequests,
+                                             version: &ProofRequestsVersion,
                                              name: &str,
                                              referent: &str,
                                              restrictions: &Option<Query>,
@@ -421,11 +421,11 @@ impl Prover {
         ];
 
         if let Some(restrictions_) = restrictions {
-            match proof_request {
-                ProofRequests::ProofRequestV1(_) => {
-                    queries.push(self.extend_operator(restrictions_.clone())?)
+            match version {
+                ProofRequestsVersion::V1 => {
+                    queries.push(self.double_restrictions(restrictions_.clone())?)
                 }
-                ProofRequests::ProofRequestV2(_) => {
+                ProofRequestsVersion::V2 => {
                     queries.push(restrictions_.clone())
                 }
             };
@@ -438,7 +438,7 @@ impl Prover {
         Ok(Query::And(queries))
     }
 
-    fn extend_operator(&self, operator: Query) -> IndyResult<Query> {
+    fn double_restrictions(&self, operator: Query) -> IndyResult<Query> {
         Ok(match operator {
             Query::Eq(tag_name, tag_value) => {
                 if Credential::qualifiable_tags().contains(&tag_name.as_str()) {
@@ -468,7 +468,7 @@ impl Prover {
                 Query::And(
                     operators
                         .into_iter()
-                        .map(|op| self.extend_operator(op))
+                        .map(|op| self.double_restrictions(op))
                         .collect::<IndyResult<Vec<Query>>>()?
                 )
             }
@@ -476,12 +476,12 @@ impl Prover {
                 Query::Or(
                     operators
                         .into_iter()
-                        .map(|op| self.extend_operator(op))
+                        .map(|op| self.double_restrictions(op))
                         .collect::<IndyResult<Vec<Query>>>()?
                 )
             }
             Query::Not(operator) => {
-                Query::Not(::std::boxed::Box::new(self.extend_operator(*operator)?))
+                Query::Not(::std::boxed::Box::new(self.double_restrictions(*operator)?))
             }
             _ => return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "unsupported operator"))
         })
@@ -880,7 +880,7 @@ pub mod tests {
             let ps = Prover::new();
 
             let query = Query::Eq(QUALIFIABLE_TAG.to_string(), VALUE.to_string());
-            let query = ps.extend_operator(query).unwrap();
+            let query = ps.double_restrictions(query).unwrap();
 
             let expected_query = Query::Or(vec![
                 Query::Eq(QUALIFIABLE_TAG.to_string(), VALUE.to_string()),
@@ -895,7 +895,7 @@ pub mod tests {
             let ps = Prover::new();
 
             let query = Query::Eq(NOT_QUALIFIABLE_TAG.to_string(), VALUE.to_string());
-            let query = ps.extend_operator(query).unwrap();
+            let query = ps.double_restrictions(query).unwrap();
 
             let expected_query = Query::Eq(NOT_QUALIFIABLE_TAG.to_string(), VALUE.to_string());
 
@@ -910,7 +910,7 @@ pub mod tests {
                 Query::Eq(QUALIFIABLE_TAG.to_string(), VALUE.to_string()),
                 Query::Eq(NOT_QUALIFIABLE_TAG.to_string(), VALUE.to_string())
             ]);
-            let query = ps.extend_operator(query).unwrap();
+            let query = ps.double_restrictions(query).unwrap();
 
             let expected_query = Query::And(vec![
                 Query::Or(vec![
@@ -938,7 +938,7 @@ pub mod tests {
         fn build_query_works() {
             let ps = Prover::new();
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
                                                              ATTR_NAME,
                                                              ATTR_REFERENT,
                                                              &None,
@@ -960,7 +960,7 @@ pub mod tests {
                 Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
             ]);
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
                                                              ATTR_NAME,
                                                              ATTR_REFERENT,
                                                              &Some(restriction),
@@ -985,7 +985,7 @@ pub mod tests {
                 ATTR_REFERENT.to_string() => Query::Eq("name".to_string(), "Alex".to_string())
             );
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
                                                              ATTR_NAME,
                                                              ATTR_REFERENT,
                                                              &None,
@@ -1012,7 +1012,7 @@ pub mod tests {
                 ATTR_REFERENT.to_string() => Query::Eq("name".to_string(), "Alex".to_string())
             );
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
                                                              ATTR_NAME,
                                                              ATTR_REFERENT,
                                                              &Some(restriction),
@@ -1038,7 +1038,7 @@ pub mod tests {
                 "other_attr_referent".to_string() => Query::Eq("name".to_string(), "Alex".to_string())
             );
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
                                                              ATTR_NAME,
                                                              ATTR_REFERENT,
                                                              &None,
@@ -1068,7 +1068,7 @@ pub mod tests {
                     ])
             );
 
-            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
                                                              ATTR_NAME,
                                                              ATTR_REFERENT,
                                                              &Some(restriction),
