@@ -40,6 +40,7 @@ struct Pool {
 
 struct Issuer {
     issuer_wallet_handle: i32,
+    issuer_wallet_config: String,
     issuer_did: String,
 
     schema_id: String,
@@ -54,6 +55,7 @@ struct Issuer {
 struct Prover {
 
     wallet_handle: i32,
+    wallet_config: String,
     did: String,
     verkey: String,
     master_secret_id: String,
@@ -143,10 +145,11 @@ impl Issuer {
 
     pub fn new(pool: &Pool) -> Issuer {
 
-        let (wallet_handle, _wallet_config) = wallet::create_and_open_default_wallet(format!("wallet_for_pool_{}", pool.pool_handle).borrow()).unwrap();
+        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(format!("wallet_for_pool_{}", pool.pool_handle).borrow()).unwrap();
         Issuer {
             // Issuer creates wallet, gets wallet handle
             issuer_wallet_handle: wallet_handle,
+            issuer_wallet_config: wallet_config,
 
             // Issuer create DID
             issuer_did: did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool.pool_handle).unwrap().0,
@@ -269,7 +272,7 @@ impl Issuer {
 
     pub fn close(&self)
     {
-        wallet::close_wallet(self.issuer_wallet_handle).unwrap();
+        wallet::close_and_delete_wallet(self.issuer_wallet_handle, &self.issuer_wallet_config).unwrap();
     }
 }
 
@@ -279,7 +282,7 @@ impl Prover
     pub fn new(master_secret_id: Option<&str>) -> Prover
     {
         // Prover creates wallet, gets wallet handle
-        let (prover_wallet_handle, _prover_wallet_config) = wallet::create_and_open_default_wallet("interactions_prover").unwrap();
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("interactions_prover").unwrap();
         // Prover create DID
         let (prover_did, prover_verkey) = did::create_my_did(prover_wallet_handle, "{}").unwrap();
         // Prover creates Master Secret
@@ -288,6 +291,7 @@ impl Prover
 
         Prover {
             wallet_handle: prover_wallet_handle,
+            wallet_config: prover_wallet_config,
             did: prover_did.clone(),
             verkey: prover_verkey.clone(),
             master_secret_id: String::from(master_secret_id),
@@ -432,7 +436,7 @@ impl Prover
 
     pub fn close(&self)
     {
-        wallet::close_wallet(self.wallet_handle).unwrap();
+        wallet::close_and_delete_wallet(self.wallet_handle, &self.wallet_config).unwrap();
     }
 }
 
