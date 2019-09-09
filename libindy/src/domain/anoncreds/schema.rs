@@ -1,6 +1,6 @@
 use super::DELIMITER;
 
-use super::super::crypto::did::ShortDidValue;
+use super::super::crypto::did::{DidValue, DidQualifier};
 
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
@@ -73,12 +73,31 @@ impl Validatable for AttributeNames {
 }
 
 impl SchemaId {
-    pub fn new(did: &ShortDidValue, name: &str, version: &str) -> SchemaId {
+    pub fn new(did: &DidValue, name: &str, version: &str) -> SchemaId {
         SchemaId(format!("{}{}{}{}{}{}{}", did.0, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version))
     }
 
-    pub fn issuer_did(&self) -> Option<String> {
-        self.0.split(DELIMITER).next().map(String::from)
+    pub fn parts(&self) -> (DidValue, String, String) {
+        let parts = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
+
+        let (schema_issuer_did, schema_name, schema_version) = if self.is_fully_qualified() {
+            (format!("{}:{}:{}", parts[0], parts[1], parts[2]), parts[4].to_string(), parts[5].to_string())
+        } else {
+            (parts[0].to_string(), parts[2].to_string(), parts[3].to_string())
+        };
+        (DidValue(schema_issuer_did), schema_name, schema_version)
+    }
+
+    pub fn qualify(&self, prefix: Option<String>) -> SchemaId {
+        SchemaId(DidQualifier::qualify(&self.0, prefix))
+    }
+
+    pub fn unqualify(&self, prefix: Option<String>) -> SchemaId {
+        SchemaId(DidQualifier::unqualify(&self.0, prefix))
+    }
+
+    pub fn is_fully_qualified(&self) -> bool {
+        DidQualifier::is_fully_qualified(&self.0)
     }
 }
 
@@ -86,7 +105,17 @@ impl Validatable for SchemaId {
     fn validate(&self) -> Result<(), String> {
         let parts: Vec<&str> = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
-        if parts.len() != 1 && parts.len() != 4 {
+        if parts.len() == 1 {
+            parts[0]
+                .parse::<i32>()
+                .map_err(|_| format!("SchemaId validation failed: invalid number"))?;
+        } else if parts.len() == 4 {
+            // pass
+        } else if parts.len() == 6 {
+            if !DidQualifier::is_fully_qualified(&self.0) {
+                return Err("SchemaId validation failed: must be fully qualified".to_string());
+            }
+        } else {
             return Err("SchemaId validation failed: invalid number of parts".to_string());
         }
 

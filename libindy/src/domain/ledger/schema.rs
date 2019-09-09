@@ -1,6 +1,7 @@
 use super::constants::{SCHEMA, GET_SCHEMA};
 use super::response::{GetReplyResultV1, ReplyType};
 use super::super::crypto::did::ShortDidValue;
+use super::super::anoncreds::schema::SchemaId;
 
 use std::collections::HashSet;
 
@@ -95,7 +96,7 @@ pub struct GetSchemaResultV0 {
 #[serde(rename_all = "camelCase")]
 pub struct GetSchemaResultDataV1 {
     pub ver: String,
-    pub id: String,
+    pub id: SchemaId,
     pub schema_name: String,
     pub schema_version: String,
     pub value: GetSchemaResultDataValueV1

@@ -71,7 +71,7 @@ impl<T: serde::Serialize> Request<T> {
         let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
 
         let identifier = match identifier {
-            Some(identifier_) => identifier_.clone().to_short()?,
+            Some(identifier_) => identifier_.clone().to_short(),
             None => ShortDidValue(DEFAULT_LIBIDY_DID.to_string())
         };
 

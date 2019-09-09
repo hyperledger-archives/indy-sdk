@@ -6,8 +6,6 @@ inject_indy_dependencies!();
 extern crate indyrs as indy;
 extern crate indyrs as api;
 
-use indy::set_runtime_config;
-
 use utils::{did, pool, ledger};
 use utils::constants::*;
 use utils::types::ResponseType;
@@ -326,35 +324,13 @@ mod high_cases {
 
         #[test]
         fn indy_create_my_did_works_for_first_did_version() {
-            let setup = Setup::wallet_first_did_version();
+            let setup = Setup::wallet();
 
-            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, "{}").unwrap();
+            let my_did_json = json!({"method_name": DEFAULT_METHOD_NAME}).to_string();
+            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, &my_did_json).unwrap();
 
             assert!(my_did.starts_with(DEFAULT_PREFIX));
             assert_eq!(my_did.replace(DEFAULT_PREFIX, "").from_base58().unwrap().len(), 16);
-            assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
-        }
-
-        #[test]
-        fn indy_create_my_did_works_for_first_did_version_with_custom_prefix() {
-            let setup = Setup::wallet_first_did_version();
-
-            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, r#"{"method_name": "indy"}"#).unwrap();
-
-            assert!(my_did.starts_with("did:indy:"));
-            assert_eq!(my_did.replace("did:indy:", "").from_base58().unwrap().len(), 16);
-            assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
-        }
-
-        #[test]
-        fn indy_create_my_did_works_for_first_did_version_with_default_prefix() {
-            set_runtime_config(r#"{"did_protocol_version": 1, "did_default_method_name": "indy"}"#);
-            let setup = Setup::wallet();
-
-            let (my_did, my_verkey) = did::create_my_did(setup.wallet_handle, "{}").unwrap();
-
-            assert!(my_did.starts_with("did:indy:"));
-            assert_eq!(my_did.replace("did:indy:", "").from_base58().unwrap().len(), 16);
             assert_eq!(my_verkey.from_base58().unwrap().len(), 32);
         }
 

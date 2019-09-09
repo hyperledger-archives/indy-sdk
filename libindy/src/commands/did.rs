@@ -78,6 +78,7 @@ pub enum DidCommand {
     // Internal commands
     GetNymAck(
         WalletHandle,
+        DidValue, // did
         IndyResult<String>, // GetNym Result
         CommandHandle, // deferred cmd id
     ),
@@ -173,9 +174,9 @@ impl DidCommandExecutor {
                 info!("AbbreviateVerkey command received");
                 cb(self.abbreviate_verkey(&did, verkey));
             }
-            DidCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {
+            DidCommand::GetNymAck(wallet_handle, did, result, deferred_cmd_id) => {
                 info!("GetNymAck command received");
-                self.get_nym_ack(wallet_handle, result, deferred_cmd_id);
+                self.get_nym_ack(wallet_handle,  did, result, deferred_cmd_id);
             }
             DidCommand::GetAttribAck(wallet_handle, result, deferred_cmd_id) => {
                 info!("GetAttribAck command received");
@@ -492,13 +493,14 @@ impl DidCommandExecutor {
 
     fn get_nym_ack(&self,
                    wallet_handle: WalletHandle,
+                   did: DidValue,
                    get_nym_reply_result: IndyResult<String>,
                    deferred_cmd_id: CommandHandle) {
-        let res = self._get_nym_ack(wallet_handle, get_nym_reply_result);
+        let res = self._get_nym_ack(wallet_handle, did, get_nym_reply_result);
         self._execute_deferred_command(deferred_cmd_id, res.err());
     }
 
-    fn _get_nym_ack(&self, wallet_handle: WalletHandle, get_nym_reply_result: IndyResult<String>) -> IndyResult<()> {
+    fn _get_nym_ack(&self, wallet_handle: WalletHandle, did: DidValue,get_nym_reply_result: IndyResult<String>) -> IndyResult<()> {
         trace!("_get_nym_ack >>> wallet_handle: {:?}, get_nym_reply_result: {:?}", wallet_handle, get_nym_reply_result);
 
         let get_nym_reply = get_nym_reply_result?;
@@ -512,12 +514,12 @@ impl DidCommandExecutor {
                     let gen_nym_result_data: GetNymResultDataV0 = serde_json::from_str(data)
                         .to_indy(IndyErrorKind::InvalidState, "Invalid GetNymResultData json")?;
 
-                    TheirDidInfo::new(DidValue::from_short(&gen_nym_result_data.dest), gen_nym_result_data.verkey)
+                    TheirDidInfo::new(DidValue::from_short(&gen_nym_result_data.dest, did.prefix()), gen_nym_result_data.verkey)
                 } else {
                     return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Their DID isn't found on the ledger")); //TODO FIXME use separate error
                 }
             }
-            GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(DidValue::from_short(&res.txn.data.did), res.txn.data.verkey)
+            GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(DidValue::from_short(&res.txn.data.did, did.prefix()), res.txn.data.verkey)
         };
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;
@@ -613,6 +615,7 @@ impl DidCommandExecutor {
         // TODO we need passing of my_did as identifier
         // TODO: FIXME: Remove this unwrap by sending GetNymAck with the error.
         let get_nym_request = self.ledger_service.build_get_nym_request(None, did).unwrap();
+        let did = did.clone();
 
         CommandExecutor::instance()
             .send(Command::Ledger(LedgerCommand::SubmitRequest(
@@ -622,6 +625,7 @@ impl DidCommandExecutor {
                     CommandExecutor::instance()
                         .send(Command::Did(DidCommand::GetNymAck(
                             wallet_handle,
+                            did.clone(),
                             result,
                             deferred_cmd_id,
                         ))).unwrap();

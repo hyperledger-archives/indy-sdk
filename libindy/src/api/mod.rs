@@ -272,8 +272,6 @@ pub enum ErrorCode
 ///     "collect_backtrace": Optional<bool> - whether errors backtrace should be collected.
 ///         Capturing of backtrace can affect library performance.
 ///         NOTE: must be set before invocation of any other API functions.
-///     "did_default_method_name": Optional<String> - default method name for fully qualified did
-///     "did_protocol_version": Optional<usize> -- version of fully-qualified did support -- 0 - old way, 1 -- with fully qualified did support
 /// }
 ///
 /// #Errors

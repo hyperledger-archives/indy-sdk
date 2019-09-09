@@ -42,12 +42,6 @@ macro_rules! build_result {
         })
     }
 
-macro_rules! short_did {
-    ($did:expr) => ({
-        $did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, err))?
-    })
-}
-
 pub struct LedgerService {}
 
 impl LedgerService {
@@ -77,7 +71,7 @@ impl LedgerService {
             )
         } else { None };
 
-        build_result!(NymOperation, Some(identifier), short_did!(dest),
+        build_result!(NymOperation, Some(identifier), dest.to_short(),
                                                       verkey.map(String::from),
                                                       alias.map(String::from),
                                                       role)
@@ -85,18 +79,18 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_get_nym_request(&self, identifier: Option<&DidValue>, dest: &DidValue) -> IndyResult<String> {
-        build_result!(GetNymOperation, identifier, short_did!(dest))
+        build_result!(GetNymOperation, identifier, dest.to_short())
     }
 
     #[logfn(Info)]
     pub fn build_get_ddo_request(&self, identifier: Option<&DidValue>, dest: &DidValue) -> IndyResult<String> {
-        build_result!(GetDdoOperation, identifier, short_did!(dest))
+        build_result!(GetDdoOperation, identifier, dest.to_short())
     }
 
     #[logfn(Info)]
     pub fn build_attrib_request(&self, identifier: &DidValue, dest: &DidValue, hash: Option<&str>,
                                 raw: Option<&serde_json::Value>, enc: Option<&str>) -> IndyResult<String> {
-        build_result!(AttribOperation, Some(identifier), short_did!(dest),
+        build_result!(AttribOperation, Some(identifier), dest.to_short(),
                                                          hash.map(String::from),
                                                          raw.map(serde_json::Value::to_string),
                                                          enc.map(String::from))
@@ -105,7 +99,7 @@ impl LedgerService {
     #[logfn(Info)]
     pub fn build_get_attrib_request(&self, identifier: Option<&DidValue>, dest: &DidValue, raw: Option<&str>, hash: Option<&str>,
                                     enc: Option<&str>) -> IndyResult<String> {
-        build_result!(GetAttribOperation, identifier, short_did!(dest), raw, hash, enc)
+        build_result!(GetAttribOperation, identifier, dest.to_short(), raw, hash, enc)
     }
 
     #[logfn(Info)]
@@ -116,13 +110,14 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_get_schema_request(&self, identifier: Option<&DidValue>, id: &SchemaId) -> IndyResult<String> {
+        let id = id.unqualify(identifier.and_then(|id|id.prefix()));
         let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
         if parts.len() != 4 {
             return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Schema ID `{}` cannot be used to build request: invalid number of parts", id.0)));
         }
 
-        let dest = parts[0].to_string();
+        let dest = DidValue(parts[0].to_string()).to_short().0;
         let name = parts[2].to_string();
         let version = parts[3].to_string();
 
@@ -133,14 +128,23 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_cred_def_request(&self, identifier: &DidValue, cred_def: CredentialDefinitionV1) -> IndyResult<String> {
+        let cred_def: CredentialDefinitionV1 = CredentialDefinitionV1 {
+            id: cred_def.id.unqualify(identifier.prefix()),
+            schema_id: cred_def.schema_id.unqualify(identifier.prefix()),
+            signature_type: cred_def.signature_type,
+            tag: cred_def.tag,
+            value: cred_def.value,
+        };
         build_result!(CredDefOperation, Some(identifier), cred_def)
     }
 
     #[logfn(Info)]
     pub fn build_get_cred_def_request(&self, identifier: Option<&DidValue>, id: &CredentialDefinitionId) -> IndyResult<String> {
+        let id = id.unqualify(identifier.and_then(|id|id.prefix()));
+
         let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
-        let origin = parts[0].to_string();
+        let origin = DidValue(parts[0].to_string()).to_short().0;
         let signature_type = parts[2].to_string();
 
         let ref_ = parts[3]
@@ -154,7 +158,7 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_node_request(&self, identifier: &DidValue, dest: &DidValue, data: NodeOperationData) -> IndyResult<String> {
-        build_result!(NodeOperation, Some(identifier), short_did!(dest), data)
+        build_result!(NodeOperation, Some(identifier), dest.to_short(), data)
     }
 
     #[logfn(Info)]
@@ -197,29 +201,36 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_revoc_reg_def_request(&self, identifier: &DidValue, rev_reg_def: RevocationRegistryDefinitionV1) -> IndyResult<String> {
+    pub fn build_revoc_reg_def_request(&self, identifier: &DidValue, mut rev_reg_def: RevocationRegistryDefinitionV1) -> IndyResult<String> {
+        rev_reg_def.id = rev_reg_def.id.unqualify(identifier.prefix());
+        rev_reg_def.cred_def_id = rev_reg_def.cred_def_id.unqualify(identifier.prefix());
+
         build_result!(RevRegDefOperation, Some(identifier), rev_reg_def)
     }
 
     #[logfn(Info)]
     pub fn build_get_revoc_reg_def_request(&self, identifier: Option<&DidValue>, id: &RevocationRegistryId) -> IndyResult<String> {
-        build_result!(GetRevRegDefOperation, identifier, id)
+        let id = id.unqualify(identifier.and_then(|id|id.prefix()));
+        build_result!(GetRevRegDefOperation, identifier, &id)
     }
 
     #[logfn(Info)]
     pub fn build_revoc_reg_entry_request(&self, identifier: &DidValue, revoc_reg_def_id: &RevocationRegistryId,
                                          revoc_def_type: &str, rev_reg_entry: RevocationRegistryDeltaV1) -> IndyResult<String> {
-        build_result!(RevRegEntryOperation, Some(identifier), revoc_def_type, revoc_reg_def_id, rev_reg_entry)
+        let revoc_reg_def_id = revoc_reg_def_id.unqualify(identifier.prefix());
+        build_result!(RevRegEntryOperation, Some(identifier), revoc_def_type, &revoc_reg_def_id, rev_reg_entry)
     }
 
     #[logfn(Info)]
     pub fn build_get_revoc_reg_request(&self, identifier: Option<&DidValue>, revoc_reg_def_id: &RevocationRegistryId, timestamp: i64) -> IndyResult<String> {
-        build_result!(GetRevRegOperation, identifier, revoc_reg_def_id, timestamp)
+        let revoc_reg_def_id = revoc_reg_def_id.unqualify(identifier.and_then(|id|id.prefix()));
+        build_result!(GetRevRegOperation, identifier, &revoc_reg_def_id, timestamp)
     }
 
     #[logfn(Info)]
     pub fn build_get_revoc_reg_delta_request(&self, identifier: Option<&DidValue>, revoc_reg_def_id: &RevocationRegistryId, from: Option<i64>, to: i64) -> IndyResult<String> {
-        build_result!(GetRevRegDeltaOperation, identifier, revoc_reg_def_id, from, to)
+        let revoc_reg_def_id = revoc_reg_def_id.unqualify(identifier.and_then(|id|id.prefix()));
+        build_result!(GetRevRegDeltaOperation, identifier, &revoc_reg_def_id, from, to)
     }
 
     #[logfn(Info)]
@@ -228,10 +239,10 @@ impl LedgerService {
 
         let schema = match reply.result() {
             GetSchemaReplyResult::GetSchemaReplyResultV0(res) => SchemaV1 {
-                name: res.data.name.clone(),
-                version: res.data.version.clone(),
+                id: SchemaId::new(&DidValue(res.dest.0), &res.data.name, &res.data.version),
+                name: res.data.name,
+                version: res.data.version,
                 attr_names: res.data.attr_names,
-                id: SchemaId::new(&res.dest, &res.data.name, &res.data.version),
                 seq_no: Some(res.seq_no),
             },
             GetSchemaReplyResult::GetSchemaReplyResultV1(res) => {
@@ -239,7 +250,7 @@ impl LedgerService {
                     name: res.txn.data.schema_name,
                     version: res.txn.data.schema_version,
                     attr_names: res.txn.data.value.attr_names,
-                    id: SchemaId(res.txn.data.id),
+                    id: res.txn.data.id,
                     seq_no: Some(res.txn_metadata.seq_no),
                 }
             }
@@ -259,7 +270,7 @@ impl LedgerService {
         let cred_def = match reply.result() {
             GetCredDefReplyResult::GetCredDefReplyResultV0(res) => CredentialDefinitionV1 {
                 id: CredentialDefinitionId::new(
-                    &res.origin,
+                    &DidValue(res.origin.0),
                     &SchemaId(res.ref_.to_string()),
                     &res.signature_type.to_str(),
                     &res.tag.clone().unwrap_or_default()),
@@ -269,8 +280,8 @@ impl LedgerService {
                 value: res.data,
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
-                id: CredentialDefinitionId(res.txn.data.id),
-                schema_id: SchemaId(res.txn.data.schema_ref.to_string()),
+                id: res.txn.data.id,
+                schema_id: res.txn.data.schema_ref,
                 signature_type: res.txn.data.type_,
                 tag: res.txn.data.tag,
                 value: res.txn.data.public_keys,
@@ -309,7 +320,7 @@ impl LedgerService {
             GetRevocRegReplyResult::GetRevocRegReplyResultV1(res) => (res.txn.data.revoc_reg_def_id, res.txn.data.value, res.txn_metadata.creation_time),
         };
 
-        let res = (revoc_reg_def_id.0.clone(),
+        let res = (revoc_reg_def_id.0,
                    serde_json::to_string(&RevocationRegistry::RevocationRegistryV1(revoc_reg))
                        .to_indy(IndyErrorKind::InvalidState, "Cannot serialize RevocationRegistry")?,
                    txn_time);
@@ -326,7 +337,7 @@ impl LedgerService {
             GetRevocRegDeltaReplyResult::GetRevocRegDeltaReplyResultV1(res) => (res.txn.data.revoc_reg_def_id, res.txn.data.value),
         };
 
-        let res = (revoc_reg_def_id.0.clone(),
+        let res = (revoc_reg_def_id.0,
                    serde_json::to_string(&RevocationRegistryDelta::RevocationRegistryDeltaV1(
                        RevocationRegistryDeltaV1 {
                            value: CryproRevocationRegistryDelta::from_parts(revoc_reg.value.accum_from.map(|accum| accum.value).as_ref(),
@@ -663,7 +674,7 @@ mod tests {
         attr_names.insert("male".to_string());
 
         let data = SchemaV1 {
-            id: SchemaId::new(&identifier().to_short().unwrap(), "name", "1.0"),
+            id: SchemaId::new(&identifier(), "name", "1.0"),
             name: "name".to_string(),
             version: "1.0".to_string(),
             attr_names,
@@ -687,7 +698,7 @@ mod tests {
     fn build_get_schema_request_works_for_valid_id() {
         let ledger_service = LedgerService::new();
 
-        let id = SchemaId::new(&identifier().to_short().unwrap(), "name", "1.0");
+        let id = SchemaId::new(&identifier(), "name", "1.0");
 
         let expected_result = json!({
             "type": GET_SCHEMA,
@@ -708,7 +719,7 @@ mod tests {
 
         let ledger_service = LedgerService::new();
 
-        let id = CredentialDefinitionId::new(&identifier().to_short().unwrap(), &SchemaId("1".to_string()), "signature_type", "tag");
+        let id = CredentialDefinitionId::new(&identifier(), &SchemaId("1".to_string()), "signature_type", "tag");
 
         let expected_result = json!({
             "type": GET_CRED_DEF,

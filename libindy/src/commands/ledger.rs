@@ -555,7 +555,7 @@ impl LedgerCommandExecutor {
 
         let serialized_request = serialize_signature(request.clone())?;
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
-        let did = my_did.did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, err))?;
+        let did = my_did.did.to_short();
 
         match signature_type {
             SignatureType::Single => { request["signature"] = Value::String(signature.to_base58()); }
@@ -1189,7 +1189,7 @@ impl LedgerCommandExecutor {
 
         self.crypto_service.validate_did(endorser_did)?;
 
-        let endorser_did = endorser_did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, err))?;
+        let endorser_did = endorser_did.to_short();
 
         let mut request: serde_json::Value = serde_json::from_str(request_json)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot deserialize request: {:?}", err)))?;

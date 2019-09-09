@@ -28,3 +28,5 @@ pub mod test;
 pub mod try;
 
 pub mod validation;
+
+pub mod wql;

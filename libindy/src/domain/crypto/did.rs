@@ -2,10 +2,7 @@ use named_type::NamedType;
 
 use regex::Regex;
 use rust_base58::FromBase58;
-use std::sync::{
-    Mutex,
-    atomic::{AtomicUsize, Ordering}
-};
+
 use utils::validation::Validatable;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -14,7 +11,7 @@ pub struct MyDidInfo {
     pub seed: Option<String>,
     pub crypto_type: Option<String>,
     pub cid: Option<bool>,
-    pub method_name: Option<String>
+    pub method_name: Option<String>,
 }
 
 impl Validatable for MyDidInfo {
@@ -22,6 +19,15 @@ impl Validatable for MyDidInfo {
         if let Some(ref did) = self.did {
             did.validate()?;
         }
+        if let Some(ref name) = self.method_name {
+            lazy_static! {
+                static ref REGEX_METHOD_NAME: Regex = Regex::new("^[a-z0-9]+$").unwrap();
+            }
+            if !REGEX_METHOD_NAME.is_match(name) {
+                return Err(format!("Invalid default name: {}. It does not match the DID method name format.", name));
+            }
+        }
+
         Ok(())
     }
 }
@@ -68,47 +74,47 @@ pub struct DidValue(pub String);
 
 impl DidValue {
     pub fn new(did: &str, method_name: Option<&str>) -> DidValue {
-        if DidProtocolVersion::get() == 1 {
-            let method_name = method_name.map(String::from).unwrap_or(DidProtocolVersion::get_default_method_name());
-            DidValue(format!("did:{}:{}", method_name, did))
-        } else {
-            DidValue(did.to_string())
+        match method_name {
+            Some(method_name_) => DidValue(format!("did:{}:{}", method_name_, did)),
+            None => DidValue(did.to_string())
         }
     }
 
-    pub fn to_short(&self) -> Result<ShortDidValue, &'static str> {
-        let unqualified_did = self.unqualify();
-        if DidProtocolVersion::get() == 1 {
-            let did_ = unqualified_did.ok_or("Did does not match mask")?;
-            Ok(ShortDidValue(did_))
-        } else {
-            Ok(ShortDidValue(unqualified_did.unwrap_or(self.0.to_string())))
-        }
+    pub fn to_short(&self) -> ShortDidValue {
+        ShortDidValue(self.unqualify().unwrap_or(self.0.to_string()))
     }
 
-    pub fn from_short(did: &ShortDidValue) -> DidValue {
-        if DidProtocolVersion::get() == 1 {
-        DidValue::new(&did.0, None)
-        } else {
-            DidValue(did.0.to_string())
-        }
+    pub fn from_short(did: &ShortDidValue, prefix: Option<String>) -> DidValue {
+        DidValue(DidQualifier::qualify(&did.0, prefix))
     }
 
     pub fn is_fully_qualified(&self) -> bool {
-        REGEX.is_match(&self.0)
+        DidQualifier::is_fully_qualified(&self.0)
     }
 
     pub fn is_abbreviatable(&self) -> bool {
-        if DidProtocolVersion::get() == 0 {
+        if !self.is_fully_qualified() {
             return true;
         }
-        if self.0.starts_with(&format!("did:{}:", DEFAULT_METHOD)) {
+        if self.0.starts_with(&format!("did:{}:", DEFAULT_PREFIX)) {
             return true;
         }
         false
     }
 
     fn unqualify(&self) -> Option<String> {
+        trace!("unqualify_did: did: {:?}", self);
+        let s = REGEX.captures(&self.0);
+        trace!("unqualify_did: matches: {:?}", s);
+        match s {
+            None => None,
+            Some(caps) => {
+                caps.get(2).map(|m| m.as_str().to_string())
+            }
+        }
+    }
+
+    pub fn prefix(&self) -> Option<String> {
         trace!("unqualify_did: did: {:?}", self);
         let s = REGEX.captures(&self.0);
         trace!("unqualify_did: matches: {:?}", s);
@@ -123,9 +129,8 @@ impl DidValue {
 
 impl Validatable for DidValue {
     fn validate(&self) -> Result<(), String> {
-        if DidProtocolVersion::get() == 1 {
-            self.unqualify()
-                .ok_or("Did does not match mask".to_string())?;
+        if self.is_fully_qualified() {
+            // pass
         } else {
             let did = self.0.from_base58()
                 .map_err(|err| err.to_string())?;
@@ -190,32 +195,33 @@ impl From<TemporaryDid> for Did {
     }
 }
 
-pub const DEFAULT_METHOD: &'static str = "sov";
-pub const DEFAULT_VERSION: usize = 0;
+pub const DEFAULT_PREFIX: &'static str = "did:sov:";
 
-pub struct DidProtocolVersion {}
+pub struct DidQualifier {}
 
 lazy_static! {
-    pub static ref DID_PROTOCOL_VERSION: AtomicUsize = AtomicUsize::new(DEFAULT_VERSION);
-    pub static ref DID_DEFAULT_METHOD_NAME: Mutex<String> = Mutex::new(DEFAULT_METHOD.to_string());
-    pub static ref REGEX: Regex = Regex::new("did:[a-z0-9]+:([a-zA-Z0-9:.-_]*)").unwrap();
+    pub static ref REGEX: Regex = Regex::new("(did:[a-z0-9]+:)([a-zA-Z0-9:.-_]*)").unwrap();
 }
 
-impl DidProtocolVersion {
-    pub fn set(version: usize) {
-        DID_PROTOCOL_VERSION.store(version, Ordering::Relaxed);
+impl DidQualifier {
+    pub fn qualify(entity: &str, prefix: Option<String>) -> String {
+        if DidQualifier::is_fully_qualified(entity) {
+            format!("{}{}", prefix.unwrap_or(DEFAULT_PREFIX.to_string()), entity)
+        } else {
+            entity.to_string()
+        }
     }
 
-    pub fn get() -> usize {
-        DID_PROTOCOL_VERSION.load(Ordering::Relaxed)
+    pub fn unqualify(entity: &str, prefix: Option<String>) -> String {
+        if DidQualifier::is_fully_qualified(entity) {
+            entity.replace(&prefix.unwrap_or(DEFAULT_PREFIX.to_string()), "")
+        } else {
+            entity.to_string()
+        }
     }
 
-    pub fn get_default_method_name() -> String {
-        DID_DEFAULT_METHOD_NAME.lock().unwrap().to_string()
-    }
-
-    pub fn set_default_method_name(method_name: &str) {
-        let mut val = DID_DEFAULT_METHOD_NAME.lock().unwrap();
-        *val = method_name.to_string();
+    pub fn is_fully_qualified(entity: &str) -> bool {
+        REGEX.is_match(&entity)
     }
 }
+

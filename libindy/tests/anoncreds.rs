@@ -17,7 +17,7 @@ use utils::Setup;
 use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use utils::domain::anoncreds::proof::Proof;
-use utils::domain::crypto::did::ShortDidValue;
+use utils::domain::crypto::did::DidValue;
 
 
 mod high_cases {
@@ -931,7 +931,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": [json!({ "schema_id": SchemaId::new(&ShortDidValue(DID_TRUSTEE.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
+                           "restrictions": [json!({ "schema_id": SchemaId::new(&DidValue(DID_TRUSTEE.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
                        })
                    }),
                    "requested_predicates": json!({
@@ -962,7 +962,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": [json!({ "cred_def_id": CredentialDefinitionId::new(&ShortDidValue(DID_TRUSTEE.to_string()), &SchemaId(anoncreds::gvt_schema_id()), "CL", TAG_1) })]
+                           "restrictions": [json!({ "cred_def_id": CredentialDefinitionId::new(&DidValue(DID_TRUSTEE.to_string()), &SchemaId(anoncreds::gvt_schema_id()), "CL", TAG_1) })]
                        })
                    }),
                    "requested_predicates": json!({
@@ -1454,7 +1454,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": json!({ "schema_id": SchemaId::new(&ShortDidValue(DID_TRUSTEE.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION) })
+                           "restrictions": json!({ "schema_id": SchemaId::new(&DidValue(DID_TRUSTEE.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION) })
                        })
                    }),
                    "requested_predicates": json!({
@@ -1485,7 +1485,7 @@ mod high_cases {
                    "requested_attributes": json!({
                        "attr1_referent": json!({
                            "name":"name",
-                           "restrictions": json!({ "cred_def_id": CredentialDefinitionId::new(&ShortDidValue(DID_TRUSTEE.to_string()), &SchemaId(anoncreds::gvt_schema_id()), "CL", TAG_1) })
+                           "restrictions": json!({ "cred_def_id": CredentialDefinitionId::new(&DidValue(DID_TRUSTEE.to_string()), &SchemaId(anoncreds::gvt_schema_id()), "CL", TAG_1) })
                        })
                    }),
                    "requested_predicates": json!({
@@ -1797,7 +1797,7 @@ mod high_cases {
                    "requested_attributes": json!({}),
                    "requested_predicates": json!({
                        "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                       "restrictions": [ json!({ "schema_id": SchemaId::new(&ShortDidValue(DID_TRUSTEE.to_string()), "other_schema_name", SCHEMA_VERSION) })] })
+                       "restrictions": [ json!({ "schema_id": SchemaId::new(&DidValue(DID_TRUSTEE.to_string()), "other_schema_name", SCHEMA_VERSION) })] })
                    }),
                 }).to_string();
 
@@ -2130,7 +2130,7 @@ mod high_cases {
                             "name":"age",
                             "p_type":">=",
                             "p_value":18,
-                            "restrictions": json!({ "schema_id": SchemaId::new(&ShortDidValue(DID_TRUSTEE.to_string()), "other_schema_name", SCHEMA_VERSION) })
+                            "restrictions": json!({ "schema_id": SchemaId::new(&DidValue(DID_TRUSTEE.to_string()), "other_schema_name", SCHEMA_VERSION) })
                          })
                    }),
                 }).to_string();
@@ -4179,14 +4179,14 @@ mod medium_cases {
                 "attr1_referent".to_string(),
                 AttributeInfo {
                     name: "name".to_string(),
-                    restrictions: Some(json!({
+                    restrictions: serde_json::from_value(json!({
                         "cred_def_id":{
                                 "$in":[
                                     anoncreds::issuer_1_gvt_cred_def_id(),
                                     "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0:TAG_1",
                                     "not here 3",
                             ] }
-                    })),
+                    })).unwrap(),
                     non_revoked: None
                 }
             );
@@ -4206,14 +4206,14 @@ mod medium_cases {
                 "attr1_referent".to_string(),
                 AttributeInfo {
                     name: "name".to_string(),
-                    restrictions: Some(json!({
+                    restrictions: serde_json::from_value(json!({
                         "cred_def_id":{
                                 "$in":[
                                     "not here 1",
                                     "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0:TAG_1",
                                     "not here 3",
                             ] }
-                    })),
+                    })).unwrap(),
                     non_revoked: None
                 }
             );
@@ -4233,7 +4233,7 @@ mod medium_cases {
                 "attr1_referent".to_string(),
                 AttributeInfo {
                     name: "name".to_string(),
-                    restrictions: Some(json!([
+                    restrictions: serde_json::from_value(json!([
                         {
                             "cred_def_id":anoncreds::issuer_1_gvt_cred_def_id(),
                             "issuer_did":ISSUER_DID
@@ -4242,7 +4242,7 @@ mod medium_cases {
                             "schema_id":"Not Here 2",
                             "schema_name":"Not Here 2"
                         }
-                    ])),
+                    ])).unwrap(),
                     non_revoked: None
                 }
             );
@@ -4262,7 +4262,7 @@ mod medium_cases {
                 "attr1_referent".to_string(),
                 AttributeInfo {
                     name: "name".to_string(),
-                    restrictions: Some(json!([
+                    restrictions: serde_json::from_value(json!([
                         {
                             "cred_def_id":"Not Here",
                             "issuer_did":"Not Here"
@@ -4271,7 +4271,7 @@ mod medium_cases {
                             "cred_def_id":"Not Here 2",
                             "issuer_did":"Not Here 2"
                         }
-                    ])),
+                    ])).unwrap(),
                     non_revoked: None
                 }
             );
@@ -4291,12 +4291,12 @@ mod medium_cases {
                 "attr1_referent".to_string(),
                 AttributeInfo {
                     name: "name".to_string(),
-                    restrictions: Some(json!({
+                    restrictions: serde_json::from_value(json!({
                             "$or":[
                                 { "schema_id":"not here" },
                                 { "cred_def_id":anoncreds::issuer_1_gvt_cred_def_id() }
                             ]
-                        })),
+                        })).unwrap(),
                     non_revoked: None
                 }
             );
@@ -4316,12 +4316,12 @@ mod medium_cases {
                 "attr1_referent".to_string(),
                 AttributeInfo {
                     name: "name".to_string(),
-                    restrictions: Some(json!({
+                    restrictions: serde_json::from_value(json!({
                             "$or":[
                                 { "schema_id":"not here" },
                                 { "cred_def_id":"not here" }
                             ]
-                        })),
+                        })).unwrap(),
                     non_revoked: None
                 }
             );
@@ -4341,12 +4341,12 @@ mod medium_cases {
                 "attr1_referent".to_string(),
                 AttributeInfo {
                     name: "name".to_string(),
-                    restrictions: Some(json!({
+                    restrictions: serde_json::from_value(json!({
                             "$and":[
                                 { "cred_def_id": anoncreds::issuer_1_gvt_cred_def_id()},
                                 { "schema_name":GVT_SCHEMA_NAME }
                             ]
-                        })),
+                        })).unwrap(),
                     non_revoked: None
                 }
             );
@@ -4366,12 +4366,12 @@ mod medium_cases {
                 "attr1_referent".to_string(),
                 AttributeInfo {
                     name: "name".to_string(),
-                    restrictions: Some(json!({
+                    restrictions: serde_json::from_value(json!({
                             "$and":[
                                 { "cred_def_id":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:3:CL:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:gvt:1.0:TAG_1" },
                                 { "cred_def_id":"Not Here" }
                             ]
-                        })),
+                        })).unwrap(),
                     non_revoked: None
                 }
             );

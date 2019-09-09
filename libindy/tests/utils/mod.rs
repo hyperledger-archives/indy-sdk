@@ -46,6 +46,9 @@ pub mod validation;
 #[path = "../../src/utils/inmem_wallet.rs"]
 pub mod inmem_wallet;
 
+#[path = "../../src/utils/wql.rs"]
+pub mod wql;
+
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;
 
@@ -87,8 +90,6 @@ macro_rules! inject_indy_dependencies {
     }
 }
 
-use indy::set_runtime_config;
-
 fn setup() -> String {
     let name = ::utils::rand_utils::get_rand_string(10);
     test::cleanup_storage(&name);
@@ -98,7 +99,6 @@ fn setup() -> String {
 
 fn tear_down(name: &str) {
     test::cleanup_storage(name);
-    set_runtime_config(r#"{}"#);
 }
 
 pub struct Setup {
@@ -150,21 +150,11 @@ impl Setup {
     }
 
     pub fn trustee_first_did_versions() -> Setup {
-        set_runtime_config(r#"{"did_protocol_version": 1}"#);
-        let setup = Setup::trustee();
-        setup
-    }
-
-    pub fn empty_first_did_version() -> Setup {
-        let setup = Setup::empty();
-        set_runtime_config(r#"{"did_protocol_version": 1}"#);
-        setup
-    }
-
-    pub fn wallet_first_did_version() -> Setup {
-        let setup = Setup::wallet();
-        set_runtime_config(r#"{"did_protocol_version": 1}"#);
-        setup
+        let name = setup();
+        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
+        let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
+        let (did, verkey) = did::create_and_store_my_did_v1(wallet_handle, Some(constants::TRUSTEE_SEED)).unwrap();
+        Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
     }
 
     pub fn steward() -> Setup {
@@ -179,7 +169,7 @@ impl Setup {
         let name = setup();
         let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
         let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
-        let (did, verkey) = did::create_store_and_publish_did(wallet_handle, pool_handle, "ENDORSER").unwrap();
+        let (did, verkey) = did::create_store_and_publish_did(wallet_handle, pool_handle, "ENDORSER", None).unwrap();
         Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
     }
 
@@ -187,7 +177,7 @@ impl Setup {
         let name = setup();
         let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
         let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
-        let (did, verkey) = did::create_store_and_publish_did(wallet_handle, pool_handle, "TRUSTEE").unwrap();
+        let (did, verkey) = did::create_store_and_publish_did(wallet_handle, pool_handle, "TRUSTEE", None).unwrap();
         Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
     }
 

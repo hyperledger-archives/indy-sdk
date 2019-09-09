@@ -8,7 +8,7 @@ extern crate indyrs as api;
 
 use utils::cache::*;
 use utils::Setup;
-use utils::domain::crypto::did::ShortDidValue;
+use utils::domain::crypto::did::DidValue;
 
 use self::indy::ErrorCode;
 
@@ -51,7 +51,7 @@ mod high_cases {
                 setup.pool_handle,
                 setup.wallet_handle,
                 DID_MY1,
-                &SchemaId::new(&ShortDidValue(DID.to_string()), "other_schema", "1.0").0,
+                &SchemaId::new(&DidValue(DID.to_string()), "other_schema", "1.0").0,
                 &options_json);
 
             assert_code!(ErrorCode::LedgerNotFound, res);

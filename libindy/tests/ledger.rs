@@ -22,7 +22,7 @@ use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
-use utils::domain::crypto::did::ShortDidValue;
+use utils::domain::crypto::did::DidValue;
 
 use std::collections::HashMap;
 use std::thread;
@@ -112,7 +112,7 @@ mod high_cases {
         fn indy_sign_and_submit_request_works_for_did_first_versions() {
             let setup = Setup::trustee_first_did_versions();
 
-            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+            let (did, _) = did::create_and_store_my_did_v1(setup.wallet_handle, None).unwrap();
 
             ensure_did_first_version(&setup.did);
             ensure_did_first_version(&did);
@@ -180,9 +180,9 @@ mod high_cases {
 
         #[test]
         fn indy_sign_request_works_for_first_did_version() {
-            let setup = Setup::wallet_first_did_version();
+            let setup = Setup::wallet();
 
-            let (did, _) = did::create_and_store_my_did(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (did, _) = did::create_and_store_my_did_v1(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
             ensure_did_first_version(&did);
 
             let request = ledger::sign_request(setup.wallet_handle, &did, REQUEST).unwrap();
@@ -221,10 +221,10 @@ mod high_cases {
 
         #[test]
         fn indy_multi_sign_request_works_for_first_did_version() {
-            let setup = Setup::wallet_first_did_version();
+            let setup = Setup::wallet();
 
-            let (did1, _) = did::create_and_store_my_did(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-            let (did2, _) = did::create_and_store_my_did(setup.wallet_handle, Some(MY1_SEED)).unwrap();
+            let (did1, _) = did::create_and_store_my_did_v1(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (did2, _) = did::create_and_store_my_did_v1(setup.wallet_handle, Some(MY1_SEED)).unwrap();
 
             ensure_did_first_version(&did1);
             ensure_did_first_version(&did2);
@@ -315,8 +315,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_requests_works_for_first_did_version() {
-            let _setup = Setup::empty_first_did_version();
-
             let expected_result = json!({
                 "type": constants::NYM,
                 "dest": DEST,
@@ -341,8 +339,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_nym_requests_works_for_first_did_version() {
-            let _setup = Setup::empty_first_did_version();
-
             let expected_result = json!({
                 "type": constants::GET_NYM,
                 "dest": DEST
@@ -434,8 +430,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_requests_works_for_first_did_version() {
-            let _setup = Setup::empty_first_did_version();
-
             let expected_result = json!({
                 "type": constants::ATTRIB,
                 "dest": DEST,
@@ -497,8 +491,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_requests_works_for_first_did_versions() {
-            let _setup = Setup::empty_first_did_version();
-
             let raw = "endpoint";
 
             let expected_result = json!({
@@ -561,8 +553,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_first_did_version() {
-            let _setup = Setup::empty_first_did_version();
-
             let expected_result = json!({
                 "type": constants::SCHEMA,
                 "data": {
@@ -595,8 +585,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_schema_requests_works_for_first_did_version() {
-            let _setup = Setup::empty_first_did_version();
-
             let expected_result = json!({
                 "type": constants::GET_SCHEMA,
                 "dest": ISSUER_DID,
@@ -658,8 +646,6 @@ mod high_cases {
 
         #[test]
         fn indy_build_node_request_works_for_first_did_version() {
-            let _setup = Setup::empty_first_did_version();
-
             let expected_result = json!({
                 "type": constants::NODE,
                 "dest": DEST,
@@ -825,8 +811,6 @@ mod high_cases {
 
         #[test]
         fn indy_build_get_txn_request_for_first_did_version() {
-            let _setup = Setup::empty_first_did_version();
-
             let expected_result = json!({
                 "type": constants::GET_TXN,
                 "data": SEQ_NO,
@@ -1249,8 +1233,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_request_for_first_did_version() {
-            let _setup = Setup::empty_first_did_version();
-
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG,
                 "revocRegDefId": REV_REG_ID,
@@ -3368,7 +3350,7 @@ mod medium_cases {
         fn indy_get_schema_request_works_for_unknown_schema() {
             let setup = Setup::pool();
 
-            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(&ShortDidValue(DID.to_string()), "other_schema", "1.0").0).unwrap();
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(&DidValue(DID.to_string()), "other_schema", "1.0").0).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
@@ -3394,7 +3376,7 @@ mod medium_cases {
         fn indy_get_parse_returns_error_for_wrong_type_and_unknown_schema() {
             let setup = Setup::pool();
 
-            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(&ShortDidValue(DID.to_string()), "other_schema", "1.0").0).unwrap();
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(&DidValue(DID.to_string()), "other_schema", "1.0").0).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_cred_def_response(&get_schema_response);

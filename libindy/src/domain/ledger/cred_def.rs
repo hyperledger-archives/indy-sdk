@@ -1,6 +1,7 @@
 use super::constants::{CRED_DEF, GET_CRED_DEF};
 use super::response::{GetReplyResultV1, ReplyType};
-use super::super::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
+use super::super::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType, CredentialDefinitionId};
+use super::super::anoncreds::schema::SchemaId;
 use super::super::ledger::request::ProtocolVersion;
 use super::super::crypto::did::ShortDidValue;
 
@@ -82,10 +83,10 @@ pub struct GetCredDefResultV0 {
 #[serde(rename_all = "camelCase")]
 pub struct GetCredDefResultDataV1 {
     pub ver: String,
-    pub id: String,
+    pub id: CredentialDefinitionId,
     #[serde(rename = "type")]
     pub type_: SignatureType,
     pub tag: String,
-    pub schema_ref: String,
+    pub schema_ref: SchemaId,
     pub public_keys: CredentialDefinitionData
 }

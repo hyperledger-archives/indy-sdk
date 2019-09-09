@@ -25,16 +25,6 @@ impl TagName {
         }
     }
 
-    pub fn from_utf8(&self) -> IndyResult<String> {
-        let tag_name = match *self {
-            TagName::EncryptedTagName(ref v) => v,
-            TagName::PlainTagName(ref v) => v,
-        };
-
-        String::from_utf8(tag_name.clone()).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!("Failed to convert message to UTF-8 {}", err))
-        })
-    }
 }
 
 impl string::ToString for TagName {
@@ -50,15 +40,6 @@ impl string::ToString for TagName {
 pub enum TargetValue {
     Unencrypted(String),
     Encrypted(Vec<u8>),
-}
-
-impl TargetValue {
-    pub fn value(&self) -> String {
-        match *self {
-            TargetValue::Unencrypted(ref s) => s.to_string(),
-            TargetValue::Encrypted(ref v) => base64::encode(v),
-        }
-    }
 }
 
 impl From<String> for TargetValue {

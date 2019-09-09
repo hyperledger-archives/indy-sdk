@@ -5,8 +5,8 @@ use ursa::cl::{
     Witness
 };
 
-use super::DELIMITER;
 use super::schema::SchemaId;
+use super::super::crypto::did::DidValue;
 use super::credential_definition::CredentialDefinitionId;
 use super::revocation_registry_definition::RevocationRegistryId;
 
@@ -28,29 +28,17 @@ pub struct Credential {
 }
 
 impl Credential {
-    fn schema_parts(&self) -> Vec<&str> {
-        self.schema_id.0.split_terminator(DELIMITER).collect::<Vec<&str>>()
+    pub fn issuer_did(&self) -> DidValue {
+        self.cred_def_id.issuer_did()
     }
 
-    pub fn schema_id(&self) -> String { self.schema_id.0.to_string() }
-
-    pub fn schema_issuer_did(&self) -> String {
-        self.schema_parts().get(0).map(|val| val.to_string()).unwrap_or_default()
+    pub fn qualifiable_tags() -> [&'static str; 5] {
+        ["issuer_did", "cred_def_id", "schema_id", "schema_issuer_did", "rev_reg_id"]
     }
 
-    pub fn schema_name(&self) -> String {
-        self.schema_parts().get(2).map(|val| val.to_string()).unwrap_or_default()
+    pub fn extra_tag_suffix(tag: &str) -> String {
+        format!("{}_short", tag)
     }
-
-    pub fn schema_version(&self) -> String {
-        self.schema_parts().get(3).map(|val| val.to_string()).unwrap_or_default()
-    }
-
-    pub fn issuer_did(&self) -> String {
-        self.cred_def_id.0.split_terminator(DELIMITER).collect::<Vec<&str>>()[0].to_string()
-    }
-
-    pub fn cred_def_id(&self) -> String { self.cred_def_id.0.to_string() }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -89,7 +77,7 @@ impl Validatable for Credential {
         self.cred_def_id.validate()?;
         self.values.validate()?;
 
-        if self.rev_reg_id.is_some() && (self.witness.is_none() ||self.rev_reg.is_none()){
+        if self.rev_reg_id.is_some() && (self.witness.is_none() || self.rev_reg.is_none()) {
             return Err(String::from("Credential validation failed: `witness` and `rev_reg` must be passed for revocable Credential"));
         }
 

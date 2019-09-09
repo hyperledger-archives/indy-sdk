@@ -4,7 +4,7 @@ use ursa::cl::{
     CredentialSecretsBlindingFactors,
     Nonce
 };
-use super::super::crypto::did::ShortDidValue;
+use super::super::crypto::did::DidValue;
 
 use super::credential_definition::CredentialDefinitionId;
 
@@ -12,7 +12,7 @@ use utils::validation::Validatable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialRequest {
-    pub prover_did: ShortDidValue,
+    pub prover_did: DidValue,
     pub cred_def_id: CredentialDefinitionId,
     pub blinded_ms: BlindedCredentialSecrets,
     pub blinded_ms_correctness_proof: BlindedCredentialSecretsCorrectnessProof,

@@ -18,7 +18,7 @@ use domain::anoncreds::credential::CredentialValues;
 use domain::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1 as CredentialDefinition};
 use domain::anoncreds::credential_request::CredentialRequest;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
-use domain::crypto::did::ShortDidValue;
+use domain::crypto::did::DidValue;
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
@@ -56,7 +56,7 @@ impl Issuer {
                                    cred_def: &CredentialDefinition,
                                    max_cred_num: u32,
                                    issuance_by_default: bool,
-                                   issuer_did: &ShortDidValue) -> IndyResult<(RevocationRegistryDefinitionValuePublicKeys,
+                                   issuer_did: &DidValue) -> IndyResult<(RevocationRegistryDefinitionValuePublicKeys,
                                                                               RevocationKeyPrivate,
                                                                               RevocationRegistry,
                                                                               RevocationTailsGenerator)> {

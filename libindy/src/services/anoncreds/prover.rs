@@ -19,7 +19,7 @@ use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as Credent
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequestMetadata;
 use domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
-use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestExtraQuery, RequestedAttributeInfo, RequestedPredicateInfo};
+use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequests, ProofRequest, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
 use domain::anoncreds::requested_credential::ProvingCredentialKey;
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
@@ -27,22 +27,11 @@ use domain::anoncreds::revocation_state::RevocationState;
 use domain::anoncreds::schema::{SchemaV1, SchemaId};
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
+use utils::wql::Query;
 
 const ATTRIBUTE_EXISTENCE_MARKER: &str = "1";
 
 pub struct Prover {}
-
-macro_rules! serde_map {
-    ($( $key: expr => $val: expr ),*) => {
-        {
-            let mut map = serde_json::Map::new();
-            $(
-                map.insert($key, $val);
-            )*
-            map
-        }
-    }
-}
 
 impl Prover {
     pub fn new() -> Prover {
@@ -114,7 +103,7 @@ impl Prover {
 
     pub fn create_proof(&self,
                         credentials: &HashMap<String, Credential>,
-                        proof_req: &ProofRequest,
+                        proof_req: &ProofRequests,
                         requested_credentials: &RequestedCredentials,
                         master_secret: &MasterSecret,
                         schemas: &HashMap<SchemaId, SchemaV1>,
@@ -123,6 +112,7 @@ impl Prover {
         trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret: {:?}, schemas: {:?}, cred_defs: {:?}, rev_states: {:?}",
                credentials, proof_req, requested_credentials, secret!(&master_secret), schemas, cred_defs, rev_states);
 
+        let proof_req_val = proof_req.value();
         let mut proof_builder = CryptoProver::new_proof_builder()?;
         proof_builder.add_common_attribute("master_secret")?;
 
@@ -130,7 +120,7 @@ impl Prover {
 
         requested_proof.self_attested_attrs = requested_credentials.self_attested_attributes.clone();
 
-        let credentials_for_proving = Prover::_prepare_credentials_for_proving(requested_credentials, proof_req)?;
+        let credentials_for_proving = Prover::_prepare_credentials_for_proving(requested_credentials, proof_req_val)?;
         let mut sub_proof_index = 0;
         let non_credential_schema = build_non_credential_schema()?;
 
@@ -172,23 +162,39 @@ impl Prover {
                                                 rev_state.as_ref().map(|r_info| &r_info.rev_reg),
                                                 rev_state.as_ref().map(|r_info| &r_info.witness))?;
 
-            identifiers.push(Identifier {
-                schema_id: credential.schema_id.clone(),
-                cred_def_id: credential.cred_def_id.clone(),
-                rev_reg_id: credential.rev_reg_id.clone(),
-                timestamp: cred_key.timestamp,
-            });
+
+            let identifier = match proof_req {
+                ProofRequests::ProofRequestV1(_) => {
+                    let prefix = credential.issuer_did().prefix();
+                    Identifier {
+                        schema_id: credential.schema_id.unqualify(prefix.clone()),
+                        cred_def_id: credential.cred_def_id.unqualify(prefix.clone()),
+                        rev_reg_id: credential.rev_reg_id.as_ref().map(|id| id.unqualify(prefix.clone())),
+                        timestamp: cred_key.timestamp,
+                    }
+                }
+                ProofRequests::ProofRequestV2(_) => {
+                    Identifier {
+                        schema_id: credential.schema_id.clone(),
+                        cred_def_id: credential.cred_def_id.clone(),
+                        rev_reg_id: credential.rev_reg_id.clone(),
+                        timestamp: cred_key.timestamp,
+                    }
+                }
+            };
+
+            identifiers.push(identifier);
 
             self._update_requested_proof(req_attrs_for_cred,
                                          req_predicates_for_cred,
-                                         proof_req, credential,
+                                         proof_req_val, credential,
                                          sub_proof_index,
                                          &mut requested_proof)?;
 
             sub_proof_index += 1;
         }
 
-        let proof = proof_builder.finalize(&proof_req.nonce)?;
+        let proof = proof_builder.finalize(&proof_req_val.nonce)?;
 
         let full_proof = Proof {
             proof,
@@ -272,13 +278,26 @@ impl Prover {
         trace!("build_credential_tags >>> credential: {:?}, catpol: {:?}", credential, catpol);
 
         let mut res: HashMap<String, String> = HashMap::new();
-        res.insert("schema_id".to_string(), credential.schema_id());
-        res.insert("schema_issuer_did".to_string(), credential.schema_issuer_did());
-        res.insert("schema_name".to_string(), credential.schema_name());
-        res.insert("schema_version".to_string(), credential.schema_version());
-        res.insert("issuer_did".to_string(), credential.issuer_did());
-        res.insert("cred_def_id".to_string(), credential.cred_def_id());
-        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.as_ref().map(|rev_reg_id|rev_reg_id.0.clone()).unwrap_or_else(|| "None".to_string()));
+
+        let (schema_issuer_did, schema_name, schema_version) = credential.schema_id.parts();
+
+        res.insert("schema_id".to_string(), credential.schema_id.0.to_string());
+        res.insert("schema_issuer_did".to_string(), schema_issuer_did.0.to_string());
+        res.insert("schema_name".to_string(), schema_name);
+        res.insert("schema_version".to_string(), schema_version);
+        res.insert("issuer_did".to_string(), credential.cred_def_id.issuer_did().0);
+        res.insert("cred_def_id".to_string(), credential.cred_def_id.0.to_string());
+        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.0.clone()).unwrap_or_else(|| "None".to_string()));
+
+        if credential.cred_def_id.is_fully_qualified() {
+            let prefix = credential.issuer_did().prefix();
+
+            res.insert(Credential::extra_tag_suffix("schema_id"), credential.schema_id.unqualify(prefix.clone()).0);
+            res.insert(Credential::extra_tag_suffix("schema_issuer_did"), schema_issuer_did.to_short().0);
+            res.insert(Credential::extra_tag_suffix("issuer_did"), credential.cred_def_id.issuer_did().to_short().0);
+            res.insert(Credential::extra_tag_suffix("cred_def_id"), credential.cred_def_id.unqualify(prefix.clone()).0);
+            res.insert(Credential::extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.unqualify(prefix).0.clone()).unwrap_or_else(|| "None".to_string()));
+        }
 
         credential.values
             .iter()
@@ -293,64 +312,6 @@ impl Prover {
         trace!("build_credential_tags <<< res: {:?}", res);
 
         res
-    }
-
-    pub fn build_query(&self,
-                       name: &str,
-                       referent: &str,
-                       restrictions: &Option<serde_json::Value>,
-                       extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<String> {
-        trace!("build_query >>> name: {:?}, referent: {:?}, restrictions: {:?}, extra_query: {:?}", name, referent, restrictions, extra_query);
-
-        let mut sub_queries: Vec<serde_json::Value> = vec![];
-
-        sub_queries.push(serde_json::Value::Object(serde_map!(
-            format!("attr::{}::marker", &attr_common_view(name)) => serde_json::Value::String(ATTRIBUTE_EXISTENCE_MARKER.to_string())
-        )));
-
-        match restrictions.as_ref() {
-            // Convert old restrictions format to valid wql
-            Some(&serde_json::Value::Array(ref array)) => {
-                // skip Null's
-                let mut res: Vec<serde_json::Value> = Vec::new();
-                for sub_query in array {
-                    let sub_query = sub_query.as_object()
-                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Restriction is invalid"))?
-                        .clone()
-                        .into_iter()
-                        .filter(|&(_, ref v)| !v.is_null())
-                        .collect();
-                    res.push(serde_json::Value::Object(sub_query));
-                }
-
-                if !res.is_empty() {
-                    sub_queries.push(serde_json::Value::Object(serde_map!(
-                    "$or".to_string() => serde_json::Value::Array(res)
-                    )));
-                }
-            }
-            Some(&serde_json::Value::Object(ref object)) => {
-                sub_queries.push(serde_json::Value::Object(object.clone()));
-            }
-            None => {}
-            _ => {
-                return Err(err_msg(IndyErrorKind::InvalidStructure, "Restriction is invalid"));
-            }
-        };
-
-        if let Some(q) = extra_query.as_ref().and_then(|ex_query| ex_query.get(referent)) {
-            sub_queries.push(serde_json::Value::Object(q.clone()));
-        }
-
-        let mut query: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
-        query.insert("$and".to_string(), sub_queries);
-
-        let res = serde_json::to_string(&query)
-            .to_indy(IndyErrorKind::InvalidState, "Cannot serialize Query")?;
-
-        trace!("build_query <<< res: {:?}", res);
-
-        Ok(res)
     }
 
     pub fn attribute_satisfy_predicate(&self,
@@ -448,20 +409,97 @@ impl Prover {
 
         Ok(sub_proof_request)
     }
+
+    pub fn extend_proof_request_restrictions(&self,
+                                             proof_request: &ProofRequests,
+                                             name: &str,
+                                             referent: &str,
+                                             restrictions: &Option<Query>,
+                                             extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<Query> {
+        let mut queries: Vec<Query> = vec![
+            Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
+        ];
+
+        if let Some(restrictions_) = restrictions {
+            match proof_request {
+                ProofRequests::ProofRequestV1(_) => {
+                    queries.push(self.extend_operator(restrictions_.clone())?)
+                }
+                ProofRequests::ProofRequestV2(_) => {
+                    queries.push(restrictions_.clone())
+                }
+            };
+        }
+
+        if let Some(extra_query_) = extra_query.as_ref().and_then(|query| query.get(referent)) {
+            queries.push(extra_query_.clone())
+        }
+
+        Ok(Query::And(queries))
+    }
+
+    fn extend_operator(&self, operator: Query) -> IndyResult<Query> {
+        Ok(match operator {
+            Query::Eq(tag_name, tag_value) => {
+                if Credential::qualifiable_tags().contains(&tag_name.as_str()) {
+                    Query::Or(vec![Query::Eq(tag_name.clone(), tag_value.clone()),
+                                   Query::Eq(Credential::extra_tag_suffix(&tag_name), tag_value)])
+                } else {
+                    Query::Eq(tag_name, tag_value)
+                }
+            }
+            Query::Neq(tag_name, tag_value) => {
+                if Credential::qualifiable_tags().contains(&tag_name.as_str()) {
+                    Query::And(vec![Query::Neq(tag_name.clone(), tag_value.clone()),
+                                    Query::Neq(Credential::extra_tag_suffix(&tag_name), tag_value)])
+                } else {
+                    Query::Neq(tag_name, tag_value)
+                }
+            }
+            Query::In(tag_name, tag_values) => {
+                if Credential::qualifiable_tags().contains(&tag_name.as_str()) {
+                    Query::Or(vec![Query::In(tag_name.clone(), tag_values.clone()),
+                                   Query::In(Credential::extra_tag_suffix(&&tag_name), tag_values)])
+                } else {
+                    Query::In(tag_name, tag_values)
+                }
+            }
+            Query::And(operators) => {
+                Query::And(
+                    operators
+                        .into_iter()
+                        .map(|op| self.extend_operator(op))
+                        .collect::<IndyResult<Vec<Query>>>()?
+                )
+            }
+            Query::Or(operators) => {
+                Query::Or(
+                    operators
+                        .into_iter()
+                        .map(|op| self.extend_operator(op))
+                        .collect::<IndyResult<Vec<Query>>>()?
+                )
+            }
+            Query::Not(operator) => {
+                Query::Not(::std::boxed::Box::new(self.extend_operator(*operator)?))
+            }
+            _ => return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "unsupported operator"))
+        })
+    }
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
 
-    const SCHEMA_ID: &str = "did:2:gvt:1.0";
-    const SCHEMA_ISSUER_DID: &str = "did";
-    const SCHEMA_NAME: &str = "gvt";
-    const SCHEMA_VERSION: &str = "1.0";
-    const ISSUER_DID: &str = "did";
-    const CRED_DEF_ID: &str = "did:3:CL:did:2:gvt:1.0";
-    const REV_REG_ID: &str = "did:4:did:3:CL:did:2:gvt:1.0:CL_ACCUM:TAG_1";
-    const NO_REV_REG_ID: &str = "None";
+    pub const SCHEMA_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+    pub const SCHEMA_ISSUER_DID: &str = "NcYxiDXkpYi6ov5FcYDi1e";
+    pub const SCHEMA_NAME: &str = "gvt";
+    pub const SCHEMA_VERSION: &str = "1.0";
+    pub const ISSUER_DID: &str = "NcYxiDXkpYi6ov5FcYDi1e";
+    pub const CRED_DEF_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+    pub const REV_REG_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:4:did:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:CL_ACCUM:TAG_1";
+    pub const NO_REV_REG_ID: &str = "None";
 
     macro_rules! hashmap {
         ($( $key: expr => $val: expr ),*) => {
@@ -564,260 +602,43 @@ mod tests {
 
             assert_eq!(expected_tags, tags)
         }
-    }
-
-    mod build_query {
-        use super::*;
-
-        const ATTR_NAME: &str = "name";
-        const ATTR_REFERENT: &str = "attr_1";
-
-        fn _value(json: &str) -> serde_json::Value {
-            serde_json::from_str::<serde_json::Value>(json).unwrap()
-        }
 
         #[test]
-        fn build_query_works() {
-            let ps = Prover::new();
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, None).unwrap();
-            let expected_query = json!({
-                "$and": vec![
-                    json!({
-                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
-                    })
-                ]
-            });
-            assert_eq!(expected_query, _value(&query));
-        }
-
-        #[test]
-        fn build_query_works_for_restriction() {
+        fn build_credential_tags_works_for_fully_qualified_ids() {
             let ps = Prover::new();
 
-            let restriction = json!({"schema_id": SCHEMA_ID, "cred_def_id": CRED_DEF_ID});
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), None).unwrap();
+            let schema_id = "did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+            let issuer_did = "did:sov:NcYxiDXkpYi6ov5FcYDi1e";
+            let cred_def_id = "did:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+            let rev_reg_id = "None";
 
-            let expected_query = json!({
-                "$and": vec![
-                    json!({
-                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
-                    }),
-                    json!({
-                        "schema_id": SCHEMA_ID,
-                        "cred_def_id": CRED_DEF_ID
-                    })
-                ]
-            });
+            let mut credential = _credential();
+            credential.schema_id = SchemaId(schema_id.to_string());
+            credential.cred_def_id = CredentialDefinitionId(cred_def_id.to_string());
+            credential.rev_reg_id = Some(RevocationRegistryId(rev_reg_id.to_string()));
 
-            assert_eq!(expected_query, _value(&query));
-        }
+            let tags = ps.build_credential_tags(&credential, None);
 
-        #[test]
-        fn build_query_works_for_empty_restrictions() {
-            let ps = Prover::new();
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(json!([])), None).unwrap();
-            let expected_query = json!({
-                "$and": vec![
-                    json!({
-                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
-                    })
-                ]
-            });
-            assert_eq!(expected_query, _value(&query));
-        }
+            let expected_tags: HashMap<String, String> = hashmap!(
+                    "schema_id".to_string() => schema_id.to_string(),
+                    "schema_id_short".to_string() => SCHEMA_ID.to_string(),
+                    "schema_issuer_did".to_string() => issuer_did.to_string(),
+                    "schema_issuer_did_short".to_string() => ISSUER_DID.to_string(),
+                    "schema_name".to_string() => SCHEMA_NAME.to_string(),
+                    "schema_version".to_string() => SCHEMA_VERSION.to_string(),
+                    "issuer_did".to_string() => issuer_did.to_string(),
+                    "issuer_did_short".to_string() => ISSUER_DID.to_string(),
+                    "cred_def_id".to_string() => cred_def_id.to_string(),
+                    "cred_def_id_short".to_string() => CRED_DEF_ID.to_string(),
+                    "rev_reg_id".to_string() => rev_reg_id.to_string(),
+                    "rev_reg_id_short".to_string() => rev_reg_id.to_string(),
+                    "attr::name::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),
+                    "attr::name::value".to_string() => "Alex".to_string(),
+                    "attr::age::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),
+                    "attr::age::value".to_string() => "25".to_string()
+                 );
 
-        #[test]
-        fn build_query_works_for_extra_query() {
-            let ps = Prover::new();
-
-            let extra_query: ProofRequestExtraQuery = hashmap!(
-                ATTR_REFERENT.to_string() =>
-                    serde_map!(
-                        "name".to_string() => serde_json::Value::String("Alex".to_string())
-                    )
-            );
-
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, Some(&extra_query)).unwrap();
-
-            let expected_query = json!({
-                "$and": vec![
-                    json!({
-                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
-                    }),
-                    json!({
-                        "name": "Alex"
-                    })
-                ]
-            });
-
-            assert_eq!(expected_query, _value(&query));
-        }
-
-        #[test]
-        fn build_query_works_for_mix_restriction_and_extra_query() {
-            let ps = Prover::new();
-
-            let restriction = json!({"schema_id": SCHEMA_ID, "cred_def_id": CRED_DEF_ID});
-
-            let extra_query: ProofRequestExtraQuery = hashmap!(
-                ATTR_REFERENT.to_string() =>
-                    serde_map!(
-                        "name".to_string() => serde_json::Value::String("Alex".to_string())
-                    )
-            );
-
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), Some(&extra_query)).unwrap();
-
-            let expected_query = json!({
-                "$and": vec![
-                    json!({
-                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
-                    }),
-                    json!({
-                        "schema_id": SCHEMA_ID,
-                        "cred_def_id": CRED_DEF_ID
-                    }),
-                    json!({
-                        "name": "Alex"
-                    })
-                ]
-            });
-
-            assert_eq!(expected_query, _value(&query));
-        }
-
-        #[test]
-        fn build_query_works_for_restriction_in_old_format() {
-            let ps = Prover::new();
-
-            let restriction_1 = json!({"schema_id": SCHEMA_ID, "cred_def_id": CRED_DEF_ID});
-            let restriction_2 = json!({"cred_def_id": CRED_DEF_ID});
-            let restirctions = serde_json::Value::Array(vec![restriction_1, restriction_2]);
-
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), None).unwrap();
-
-            let expected_query = json!({
-                "$and": vec![
-                    json!({
-                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
-                    }),
-                    json!({
-                        "$or": vec![
-                            json!({
-                                "schema_id": SCHEMA_ID,
-                                "cred_def_id": CRED_DEF_ID,
-                            }),
-                            json!({
-                                "cred_def_id": CRED_DEF_ID,
-                            })
-                        ]
-                    })
-                ]
-            });
-
-            assert_eq!(expected_query, _value(&query));
-        }
-
-        #[test]
-        fn build_query_works_for_restriction_in_old_format_with_nulls() {
-            let ps = Prover::new();
-
-            let restriction_1 = json!({"schema_id": SCHEMA_ID, "issuer_did": serde_json::Value::Null});
-            let restriction_2 = json!({"schema_id":  serde_json::Value::Null, "cred_def_id": CRED_DEF_ID});
-            let restirctions = serde_json::Value::Array(vec![restriction_1, restriction_2]);
-
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), None).unwrap();
-
-            let expected_query = json!({
-                "$and": vec![
-                    json!({
-                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
-                    }),
-                    json!({
-                        "$or": vec![
-                            json!({
-                                "schema_id": SCHEMA_ID
-                            }),
-                            json!({
-                                "cred_def_id": CRED_DEF_ID,
-                            })
-                        ]
-                    })
-                ]
-            });
-
-            assert_eq!(expected_query, _value(&query));
-        }
-
-        #[test]
-        fn build_query_works_for_extra_query_with_other_referent() {
-            let ps = Prover::new();
-
-            let extra_query: ProofRequestExtraQuery = hashmap!(
-                "other_attr_referent".to_string() =>
-                    serde_map!(
-                        "age".to_string() => serde_json::Value::String("25".to_string())
-                    )
-            );
-
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, Some(&extra_query)).unwrap();
-
-            let expected_query = json!({
-                "$and": vec![
-                    json!({
-                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
-                    })
-                ]
-            });
-
-            assert_eq!(expected_query, _value(&query));
-        }
-
-        #[test]
-        fn build_query_works_for_restriction_and_extra_query_contain_or_operator() {
-            let ps = Prover::new();
-
-            let restriction = json!({
-                "$or": vec![
-                    json!({ "schema_id": SCHEMA_ID }),
-                    json!({ "schema_id": "schema_id_2" })
-                ]
-            });
-
-
-            let extra_query: ProofRequestExtraQuery = hashmap!(
-                ATTR_REFERENT.to_string() =>
-                    serde_map!(
-                        "$or".to_string() => serde_json::Value::Array(vec![
-                            json!({ "name": "Alex" }),
-                            json!({ "name": "Alexander" })
-                        ])
-                    )
-            );
-
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), Some(&extra_query)).unwrap();
-
-            let expected_query = json!({
-                "$and": [
-                    json!({
-                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
-                    }),
-                    json!({
-                        "$or": vec![
-                            json!({ "schema_id": SCHEMA_ID }),
-                            json!({ "schema_id": "schema_id_2" })
-                        ]
-                    }),
-                    json!({
-                        "$or": vec![
-                            json!({ "name": "Alex" }),
-                            json!({ "name": "Alexander" })
-                        ]
-                    })
-                ]
-            });
-
-            assert_eq!(expected_query, _value(&query));
+            assert_eq!(expected_tags, tags)
         }
     }
 
@@ -1044,6 +865,228 @@ mod tests {
 
             let res = ps.get_credential_values_for_attribute(&cred_values, "            name            ").unwrap();
             assert_eq!(_attr_values(), res);
+        }
+    }
+
+    mod extend_operator {
+        use super::*;
+
+        const QUALIFIABLE_TAG: &str = "issuer_did";
+        const NOT_QUALIFIABLE_TAG: &str = "name";
+        const VALUE: &str = "1";
+
+        #[test]
+        fn extend_operator_works_for_qualifiable_tag() {
+            let ps = Prover::new();
+
+            let query = Query::Eq(QUALIFIABLE_TAG.to_string(), VALUE.to_string());
+            let query = ps.extend_operator(query).unwrap();
+
+            let expected_query = Query::Or(vec![
+                Query::Eq(QUALIFIABLE_TAG.to_string(), VALUE.to_string()),
+                Query::Eq(Credential::extra_tag_suffix(QUALIFIABLE_TAG), VALUE.to_string()),
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn extend_operator_works_for_not_qualifiable_tag() {
+            let ps = Prover::new();
+
+            let query = Query::Eq(NOT_QUALIFIABLE_TAG.to_string(), VALUE.to_string());
+            let query = ps.extend_operator(query).unwrap();
+
+            let expected_query = Query::Eq(NOT_QUALIFIABLE_TAG.to_string(), VALUE.to_string());
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn extend_operator_works_for_qualifiable_tag_for_combination() {
+            let ps = Prover::new();
+
+            let query = Query::And(vec![
+                Query::Eq(QUALIFIABLE_TAG.to_string(), VALUE.to_string()),
+                Query::Eq(NOT_QUALIFIABLE_TAG.to_string(), VALUE.to_string())
+            ]);
+            let query = ps.extend_operator(query).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::Or(vec![
+                    Query::Eq(QUALIFIABLE_TAG.to_string(), VALUE.to_string()),
+                    Query::Eq(Credential::extra_tag_suffix(QUALIFIABLE_TAG), VALUE.to_string()),
+                ]),
+                Query::Eq(NOT_QUALIFIABLE_TAG.to_string(), VALUE.to_string())
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+    }
+
+    mod extend_proof_request_restrictions {
+        use super::*;
+
+        const ATTR_NAME: &str = "name";
+        const ATTR_REFERENT: &str = "attr_1";
+
+        fn _value(json: &str) -> serde_json::Value {
+            serde_json::from_str::<serde_json::Value>(json).unwrap()
+        }
+
+        #[test]
+        fn build_query_works() {
+            let ps = Prover::new();
+
+            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+                                                             ATTR_NAME,
+                                                             ATTR_REFERENT,
+                                                             &None,
+                                                             &None).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string())
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn build_query_works_for_restriction() {
+            let ps = Prover::new();
+
+            let restriction = Query::And(vec![
+                Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
+                Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
+            ]);
+
+            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+                                                             ATTR_NAME,
+                                                             ATTR_REFERENT,
+                                                             &Some(restriction),
+                                                             &None).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
+                Query::And(vec![
+                    Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
+                    Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
+                ])
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn build_query_works_for_extra_query() {
+            let ps = Prover::new();
+
+            let extra_query: ProofRequestExtraQuery = hashmap!(
+                ATTR_REFERENT.to_string() => Query::Eq("name".to_string(), "Alex".to_string())
+            );
+
+            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+                                                             ATTR_NAME,
+                                                             ATTR_REFERENT,
+                                                             &None,
+                                                             &Some(&extra_query)).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
+                Query::Eq("name".to_string(), "Alex".to_string()),
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn build_query_works_for_mix_restriction_and_extra_query() {
+            let ps = Prover::new();
+
+            let restriction = Query::And(vec![
+                Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
+                Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
+            ]);
+
+            let extra_query: ProofRequestExtraQuery = hashmap!(
+                ATTR_REFERENT.to_string() => Query::Eq("name".to_string(), "Alex".to_string())
+            );
+
+            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+                                                             ATTR_NAME,
+                                                             ATTR_REFERENT,
+                                                             &Some(restriction),
+                                                             &Some(&extra_query)).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
+                Query::And(vec![
+                    Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
+                    Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
+                ]),
+                Query::Eq("name".to_string(), "Alex".to_string()),
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn build_query_works_for_extra_query_with_other_referent() {
+            let ps = Prover::new();
+
+            let extra_query: ProofRequestExtraQuery = hashmap!(
+                "other_attr_referent".to_string() => Query::Eq("name".to_string(), "Alex".to_string())
+            );
+
+            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+                                                             ATTR_NAME,
+                                                             ATTR_REFERENT,
+                                                             &None,
+                                                             &Some(&extra_query)).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn build_query_works_for_restriction_and_extra_query_contain_or_operator() {
+            let ps = Prover::new();
+
+            let restriction = Query::Or(vec![
+                Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
+                Query::Eq("schema_id".to_string(), "schema_id_2".to_string()),
+            ]);
+
+            let extra_query: ProofRequestExtraQuery = hashmap!(
+                ATTR_REFERENT.to_string() =>
+                    Query::Or(vec![
+                        Query::Eq("name".to_string(), "Alex".to_string()),
+                        Query::Eq("name".to_string(), "Alexander".to_string()),
+                    ])
+            );
+
+            let query = ps.extend_proof_request_restrictions(&ProofRequests::ProofRequestV2(ProofRequest::default()),
+                                                             ATTR_NAME,
+                                                             ATTR_REFERENT,
+                                                             &Some(restriction),
+                                                             &Some(&extra_query)).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
+                Query::Or(vec![
+                    Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
+                    Query::Eq("schema_id".to_string(), "schema_id_2".to_string()),
+                ]),
+                Query::Or(vec![
+                    Query::Eq("name".to_string(), "Alex".to_string()),
+                    Query::Eq("name".to_string(), "Alexander".to_string()),
+                ])
+            ]);
+
+            assert_eq!(expected_query, query);
         }
     }
 }

@@ -2,7 +2,7 @@ use ursa::cl::{RevocationKeyPublic, RevocationKeyPrivate};
 
 use super::DELIMITER;
 use super::credential_definition::CredentialDefinitionId;
-use super::super::crypto::did::ShortDidValue;
+use super::super::crypto::did::{DidValue, DidQualifier};
 
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
@@ -111,8 +111,13 @@ pub struct RevocationRegistryInfo {
 pub struct RevocationRegistryId(pub String);
 
 impl RevocationRegistryId {
-    pub fn new(did: &ShortDidValue, cred_def_id: &str, rev_reg_type: &RegistryType, tag: &str) -> RevocationRegistryId {
-        RevocationRegistryId(format!("{}{}{}{}{}{}{}{}{}", did.0, DELIMITER, REV_REG_DEG_MARKER, DELIMITER, cred_def_id, DELIMITER, rev_reg_type.to_str(), DELIMITER, tag))
+    pub fn new(did: &DidValue, cred_def_id: &CredentialDefinitionId, rev_reg_type: &RegistryType, tag: &str) -> RevocationRegistryId {
+        let cred_def_id = cred_def_id.unqualify(did.prefix());
+        RevocationRegistryId(format!("{}{}{}{}{}{}{}{}{}", did.0, DELIMITER, REV_REG_DEG_MARKER, DELIMITER, cred_def_id.0, DELIMITER, rev_reg_type.to_str(), DELIMITER, tag))
+    }
+
+    pub fn unqualify(&self, prefix: Option<String>) -> RevocationRegistryId {
+        RevocationRegistryId(DidQualifier::unqualify(&self.0, prefix))
     }
 }
 
@@ -129,15 +134,15 @@ impl Validatable for RevocationRegistryConfig {
 
 impl Validatable for RevocationRegistryId {
     fn validate(&self) -> Result<(), String> {
-        let parts: Vec<&str> = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
-
-        parts.get(0).ok_or_else(||format!("Revocation Registry Id validation failed: issuer DID not found in: {}", self.0))?;
-        parts.get(1).ok_or_else(||format!("Revocation Registry Id validation failed: marker not found in: {}", self.0))?;
-        parts.get(2).ok_or_else(||format!("Revocation Registry Id validation failed: signature type not found in: {}", self.0))?;
-
-        if parts.len() != 8 && parts.len() != 9 && parts.len() != 11 && parts.len() != 12 {
-            return Err("Revocation Registry Id validation failed: invalid number of parts".to_string());
-        }
+//        let parts: Vec<&str> = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
+//
+//        parts.get(0).ok_or_else(||format!("Revocation Registry Id validation failed: issuer DID not found in: {}", self.0))?;
+//        parts.get(1).ok_or_else(||format!("Revocation Registry Id validation failed: marker not found in: {}", self.0))?;
+//        parts.get(2).ok_or_else(||format!("Revocation Registry Id validation failed: signature type not found in: {}", self.0))?;
+//
+//        if parts.len() != 8 && parts.len() != 9 && parts.len() != 11 && parts.len() != 12 {
+//            return Err("Revocation Registry Id validation failed: invalid number of parts".to_string());
+//        }
 
         Ok(())
     }

@@ -45,7 +45,7 @@ use domain::anoncreds::revocation_registry_delta::{
     RevocationRegistryDeltaV1,
 };
 use domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1, SchemaId};
-use domain::crypto::did::{DidValue, ShortDidValue};
+use domain::crypto::did::DidValue;
 use domain::wallet::Tags;
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
@@ -240,8 +240,6 @@ impl IssuerCommandExecutor {
 
         self.crypto_service.validate_did(issuer_did)?;
 
-        let issuer_did = issuer_did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, err))?;
-
         let schema_id = SchemaId::new(&issuer_did, name, version);
 
         let schema = Schema::SchemaV1(SchemaV1 {
@@ -271,10 +269,10 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema: {:?}, tag: {:?}, \
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 
-        let issuer_did = try_cb!(issuer_did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, err)), cb);
+        let mut schema = schema.clone();
 
         let (cred_def_config, schema_id, cred_def_id, signature_type) =
-            try_cb!(self._prepare_create_and_store_credential_definition(&issuer_did, schema, tag, type_, config), cb);
+            try_cb!(self._prepare_create_and_store_credential_definition(&issuer_did, &mut schema, tag, type_, config), cb);
 
         if let Ok(cred_def) = self.wallet_service.get_indy_record_value::<CredentialDefinition>(wallet_handle, &cred_def_id.0, &RecordOptions::id_value()) {
             return cb(Ok((cred_def_id.0, cred_def)));
@@ -285,7 +283,6 @@ impl IssuerCommandExecutor {
 
         let tag = tag.to_string();
         let attr_names = schema.attr_names.clone();
-        let schema = schema.clone();
 
         self._create_credential_definition(&attr_names, cred_def_config.support_revocation, Box::new(move |res| {
             CommandExecutor::instance().send(
@@ -334,11 +331,19 @@ impl IssuerCommandExecutor {
     }
 
     fn _prepare_create_and_store_credential_definition(&self,
-                                                       issuer_did: &ShortDidValue,
-                                                       schema: &SchemaV1,
+                                                       issuer_did: &DidValue,
+                                                       schema: &mut SchemaV1,
                                                        tag: &str,
                                                        type_: Option<&str>,
                                                        config: Option<&CredentialDefinitionConfig>) -> IndyResult<(CredentialDefinitionConfig, SchemaId, CredentialDefinitionId, SignatureType)> {
+        if !issuer_did.is_fully_qualified() && schema.id.is_fully_qualified() {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use unqualified Did with fully qualified Schema"));
+        }
+
+        if issuer_did.is_fully_qualified() && !schema.id.is_fully_qualified() {
+            schema.id = schema.id.qualify(issuer_did.prefix())
+        }
+
         let default_cred_def_config = CredentialDefinitionConfig::default();
         let cred_def_config = config.unwrap_or(&default_cred_def_config);
 
@@ -544,7 +549,13 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, type_: {:?}, tag: {:?}, cred_def_id: {:?}, config: {:?}, \
                tails_handle: {:?}", wallet_handle, issuer_did, type_, tag, cred_def_id, config, tails_writer_handle);
 
-        let issuer_did = issuer_did.to_short().map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, err))?;
+        if !issuer_did.is_fully_qualified() && cred_def_id.is_fully_qualified() {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,  "You can't use unqualified Did with fully qualified Credential Definition"));
+        }
+
+        if issuer_did.is_fully_qualified() && !cred_def_id.is_fully_qualified() {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,  "You can't use fully qualified Did with unqualified Credential Definition"));
+        }
 
         let rev_reg_type = if let Some(type_) = type_ {
             serde_json::from_str::<RegistryType>(&format!("\"{}\"", type_))
@@ -556,7 +567,7 @@ impl IssuerCommandExecutor {
         let issuance_type = config.issuance_type.clone().unwrap_or(IssuanceType::ISSUANCE_ON_DEMAND);
         let max_cred_num = config.max_cred_num.unwrap_or(100000);
 
-        let rev_reg_id = RevocationRegistryId::new(&issuer_did, &cred_def_id.0, &rev_reg_type, tag);
+        let rev_reg_id = RevocationRegistryId::new(&issuer_did, &cred_def_id, &rev_reg_type, tag);
 
         if let (Ok(rev_reg_def), Ok(rev_reg)) = (self.wallet_service.get_indy_record_value::<RevocationRegistryDefinition>(wallet_handle, &rev_reg_id.0, &RecordOptions::id_value()),
                                                  self.wallet_service.get_indy_record_value::<RevocationRegistry>(wallet_handle, &rev_reg_id.0, &RecordOptions::id_value())) {
@@ -636,7 +647,7 @@ impl IssuerCommandExecutor {
         let schema_id = self._wallet_get_schema_id(wallet_handle, &cred_def_id.0)?; // TODO: FIXME get CredDef from wallet and use CredDef.schema_id
 
         let credential_offer = CredentialOffer {
-            schema_id: schema_id.clone(),
+            schema_id,
             cred_def_id: cred_def_id.clone(),
             key_correctness_proof: cred_def_correctness_proof.value,
             nonce,
@@ -917,7 +928,7 @@ impl IssuerCommandExecutor {
         schema_id_record
             .get_value()
             .map(|id| SchemaId(id.to_string()))
-            .ok_or_else(||err_msg(IndyErrorKind::InvalidStructure, format!("SchemaId not found for id: {}", key)))
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("SchemaId not found for id: {}", key)))
     }
 
     fn _wallet_get_rev_reg_def(&self, wallet_handle: WalletHandle, key: &RevocationRegistryId) -> IndyResult<RevocationRegistryDefinition> {
