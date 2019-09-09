@@ -534,7 +534,6 @@ impl ProverCommandExecutor {
                                                           &attr_id,
                                                           &requested_attr.restrictions,
                                                           &None)?;
-
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_attr.non_revoked);
 
             let credentials_for_attribute = self._query_requested_credentials(wallet_handle, &query.to_string(), None, &interval)?;

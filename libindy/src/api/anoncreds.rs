@@ -1514,7 +1514,11 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval for each attribute
-///                        // (applies to every attribute and predicate but can be overridden on attribute level)
+///                        // (applies to every attribute and predicate but can be overridden on attribute level),
+///         "ver": Optional<str>  - proof request version:
+///             - omit to use unqualified identifiers for restrictions
+///             - "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1639,6 +1643,10 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 ///                        // for date in this interval for each attribute
 ///                        // (applies to every attribute and predicate but can be overridden on attribute level)
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit to use unqualified identifiers for restrictions
+///             - "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 ///
 /// where
@@ -1865,6 +1873,10 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///                        // for date in this interval for each attribute
 ///                        // (applies to every attribute and predicate but can be overridden on attribute level)
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit to use unqualified identifiers for restrictions
+///             - "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 /// requested_credentials_json: either a credential or self-attested attribute for each requested attribute
 ///     {
@@ -2051,6 +2063,10 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit to use unqualified identifiers for restrictions
+///             - "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 /// proof_json: created for request proof json
 ///     {

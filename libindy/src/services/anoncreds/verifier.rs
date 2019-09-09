@@ -55,8 +55,6 @@ impl Verifier {
         Verifier::_verify_revealed_attribute_values(&proof_req, &full_proof)?;
 
         Verifier::_verify_requested_restrictions(&proof_req,
-                                                 schemas,
-                                                 cred_defs,
                                                  &received_revealed_attrs,
                                                  &received_unrevealed_attrs,
                                                  &received_predicates,
@@ -330,8 +328,6 @@ impl Verifier {
     }
 
     fn _verify_requested_restrictions(proof_req: &ProofRequest,
-                                      schemas: &HashMap<SchemaId, SchemaV1>,
-                                      cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
                                       received_revealed_attrs: &HashMap<String, Identifier>,
                                       received_unrevealed_attrs: &HashMap<String, Identifier>,
                                       received_predicates: &HashMap<String, Identifier>,
@@ -350,7 +346,7 @@ impl Verifier {
 
         for (referent, info) in requested_attrs {
             if let Some(ref query) = info.restrictions {
-                let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
+                let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers)?;
 
                 Verifier::_process_operator(&info.name, &query, &filter)
                     .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" attribute", &info.name)))?;
@@ -359,7 +355,7 @@ impl Verifier {
 
         for (referent, info) in proof_req.requested_predicates.iter() {
             if let Some(ref query) = info.restrictions {
-                let filter = Verifier::_gather_filter_info(&referent, received_predicates, schemas, cred_defs)?;
+                let filter = Verifier::_gather_filter_info(&referent, received_predicates)?;
 
                 Verifier::_process_operator(&info.name, &query, &filter)
                     .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" predicate", &info.name)))?;
@@ -379,9 +375,7 @@ impl Verifier {
     }
 
     fn _gather_filter_info(referent: &str,
-                           identifiers: &HashMap<String, Identifier>,
-                           schemas: &HashMap<SchemaId, SchemaV1>,
-                           cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>) -> IndyResult<Filter> {
+                           identifiers: &HashMap<String, Identifier>) -> IndyResult<Filter> {
         let identifier = identifiers
             .get(referent)
             .ok_or_else(|| err_msg(
@@ -389,29 +383,15 @@ impl Verifier {
                 format!("Identifier not found for referent: {}", referent))
             )?;
 
-        let schema: &SchemaV1 = schemas
-            .get(&identifier.schema_id)
-            .ok_or_else(|| err_msg(
-                IndyErrorKind::InvalidStructure,
-                format!("Schema not found for id: {:?}", identifier.schema_id))
-            )?;
+        let (schema_issuer_did, schema_name, schema_version) = identifier.schema_id.parts();
 
-        let cred_def: &CredentialDefinitionV1 = cred_defs
-            .get(&identifier.cred_def_id)
-            .ok_or_else(|| err_msg(
-                IndyErrorKind::InvalidStructure,
-                format!("CredentialDefinitionV1 not found for id: {:?}", identifier.cred_def_id))
-            )?;
-
-        let (schema_issuer_did, _, _) = schema.id.parts();
-
-        let issuer_did = cred_def.id.issuer_did();
+        let issuer_did = identifier.cred_def_id.issuer_did();
 
         Ok(Filter {
             schema_id: identifier.schema_id.0.to_string(),
-            schema_name: schema.name.to_string(),
+            schema_name,
             schema_issuer_did: schema_issuer_did.0,
-            schema_version: schema.version.to_string(),
+            schema_version,
             cred_def_id: identifier.cred_def_id.0.to_string(),
             issuer_did: issuer_did.0
         })

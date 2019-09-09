@@ -63,6 +63,10 @@ impl<'de> Deserialize<'de> for ProofRequests
         match helper.ver {
             Some(version) => {
                 match version.as_ref() {
+                    "1.0" => {
+                        let proof_request = ProofRequest::deserialize(v).map_err(de::Error::custom)?;
+                        Ok(ProofRequests::ProofRequestV1(proof_request))
+                    }
                     "2.0" => {
                         let proof_request = ProofRequest::deserialize(v).map_err(de::Error::custom)?;
                         Ok(ProofRequests::ProofRequestV2(proof_request))

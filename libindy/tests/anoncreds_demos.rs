@@ -18,8 +18,8 @@ mod demos {
     use utils::constants::*;
     use utils::Setup;
 
-    use utils::domain::anoncreds::schema::Schema;
-    use utils::domain::anoncreds::credential_definition::CredentialDefinition;
+    use utils::domain::anoncreds::schema::{Schema, SchemaId};
+    use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
     use utils::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
     use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
     use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest};
@@ -2825,6 +2825,214 @@ mod demos {
                                                      &rev_reg_defs_json,
                                                      &rev_regs_json).unwrap();
         assert!(valid);
+
+        wallet::close_and_delete_wallet(issuer_wallet_handle, &issuer_wallet_config).unwrap();
+        wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
+    }
+
+    #[test]
+    fn anoncreds_works_for_single_issuer_single_prover_fully_qualified_ids() {
+        Setup::empty();
+
+        //1. Create Issuer wallet, gets wallet handle
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_single_issuer_single_prover").unwrap();
+
+        //2. Create Prover wallet, gets wallet handle
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_single_issuer_single_prover").unwrap();
+
+        //3. Issuer creates Schema and Credential Definition
+        let (schema_id, schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,
+                                                                                                             ISSUER_DID_V1,
+                                                                                                             GVT_SCHEMA_NAME,
+                                                                                                             GVT_SCHEMA_ATTRIBUTES);
+
+        //4. Prover creates Master Secret
+        anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+        //5. Issuance credential for Prover
+        anoncreds::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                 prover_wallet_handle,
+                                                 issuer_wallet_handle,
+                                                 CREDENTIAL1_ID,
+                                                 &anoncreds::gvt_credential_values_json(),
+                                                 &cred_def_id,
+                                                 &cred_def_json);
+
+        //6. Proof request of version 2.0
+        let nonce = anoncreds::generate_nonce().unwrap();
+        let proof_req_json = json!({
+                                       "nonce": nonce,
+                                       "name":"proof_req_1",
+                                       "version":"0.1",
+                                       "requested_attributes":{
+                                            "attr1_referent":{
+                                                "name":"name",
+                                                "restrictions": {
+                                                    "$and": [
+                                                        {"schema_id": schema_id},
+                                                        {"cred_def_id": cred_def_id},
+                                                    ]
+                                                }
+                                            }
+                                       },
+                                       "requested_predicates":{
+                                            "predicate1_referent":{
+                                                "name":"age",
+                                                "p_type":">=",
+                                                "p_value":18,
+                                                "restrictions": {
+                                                    "$and": [
+                                                        {"issuer_did": ISSUER_DID_V1},
+                                                        {"schema_id": schema_id},
+                                                        {"cred_def_id": cred_def_id},
+                                                    ]
+                                                }
+                                                }
+                                       },
+                                       "ver": "2.0"
+                                    }).to_string();
+
+        //7. Prover gets Credentials for Proof Request
+        let credentials_json = anoncreds::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+        let credential = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+        let credential_1= anoncreds::get_credential_for_predicate_referent(&credentials_json, "predicate1_referent");
+
+        //8. Prover creates Proof
+        let requested_credentials_json = json!({
+            "self_attested_attributes": {},
+            "requested_attributes": {
+                "attr1_referent": {"cred_id": credential.referent, "revealed":true}
+            },
+            "requested_predicates": {
+                "predicate1_referent": {"cred_id": credential_1.referent}
+            }
+        }).to_string();
+
+        let schemas_json = json!({schema_id.clone(): serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
+        let cred_defs_json = json!({cred_def_id.clone(): serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
+        let rev_states_json = json!({}).to_string();
+
+        let proof_json = anoncreds::prover_create_proof(prover_wallet_handle,
+                                                        &proof_req_json,
+                                                        &requested_credentials_json,
+                                                        COMMON_MASTER_SECRET,
+                                                        &schemas_json,
+                                                        &cred_defs_json,
+                                                        &rev_states_json).unwrap();
+
+        let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+
+        //9. Verifier verifies proof
+        assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
+
+        let rev_reg_defs_json = json!({}).to_string();
+        let rev_regs_json = json!({}).to_string();
+
+        let valid = anoncreds::verifier_verify_proof(&proof_req_json,
+                                                     &proof_json,
+                                                     &schemas_json,
+                                                     &cred_defs_json,
+                                                     &rev_reg_defs_json,
+                                                     &rev_regs_json).unwrap();
+        assert!(valid);
+
+        //9. Proof request of old version
+        let nonce = anoncreds::generate_nonce().unwrap();
+        let proof_req_json = json!({
+                                       "nonce": nonce,
+                                       "name":"proof_req_2",
+                                       "version":"0.1",
+                                       "requested_attributes":{
+                                            "attr1_referent":{
+                                                "name":"name",
+                                                "restrictions": {
+                                                    "$and": [
+                                                        {"schema_id": SchemaId(schema_id.clone()).unqualify(Some(DEFAULT_PREFIX.to_string()))},
+                                                        {"cred_def_id": CredentialDefinitionId(cred_def_id.clone()).unqualify(Some(DEFAULT_PREFIX.to_string()))},
+                                                    ]
+                                                }
+                                            }
+                                       },
+                                       "requested_predicates":{
+                                            "predicate1_referent":{
+                                                "name":"age",
+                                                "p_type":">=",
+                                                "p_value":18,
+                                                "restrictions": {
+                                                    "$and": [
+                                                        {"issuer_did": ISSUER_DID.to_string()},
+                                                        {"schema_id": SchemaId(schema_id.clone()).unqualify(Some(DEFAULT_PREFIX.to_string()))},
+                                                        {"cred_def_id": CredentialDefinitionId(cred_def_id.clone()).unqualify(Some(DEFAULT_PREFIX.to_string()))},
+                                                    ]
+                                                }
+                                                }
+                                       }
+                                    }).to_string();
+
+        //10. Prover gets Credentials for Proof Request
+        let credentials_json = anoncreds::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+        let credential = anoncreds::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+        let credential_1= anoncreds::get_credential_for_predicate_referent(&credentials_json, "predicate1_referent");
+
+        //11. Prover creates Proof
+        let requested_credentials_json = json!({
+            "self_attested_attributes": {},
+            "requested_attributes": {
+                "attr1_referent": {"cred_id": credential.referent, "revealed":true}
+            },
+            "requested_predicates": {
+                "predicate1_referent": {"cred_id": credential_1.referent}
+            }
+        }).to_string();
+
+        let schemas_json = json!({schema_id.clone(): serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
+        let cred_defs_json = json!({cred_def_id.clone(): serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
+        let rev_states_json = json!({}).to_string();
+
+        let proof_json = anoncreds::prover_create_proof(prover_wallet_handle,
+                                                        &proof_req_json,
+                                                        &requested_credentials_json,
+                                                        COMMON_MASTER_SECRET,
+                                                        &schemas_json,
+                                                        &cred_defs_json,
+                                                        &rev_states_json).unwrap();
+
+        let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+
+        //12. Verifier verifies proof
+        assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
+
+        let identifiers = proof.identifiers[0].clone();
+
+        let schema_id_1 = identifiers.schema_id.0;
+        let cred_def_id_1 = identifiers.cred_def_id.0;
+
+        let schemas_json = json!({schema_id_1: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
+        let cred_defs_json = json!({cred_def_id_1: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
+        let rev_reg_defs_json = json!({}).to_string();
+        let rev_regs_json = json!({}).to_string();
+
+        let valid = anoncreds::verifier_verify_proof(&proof_req_json,
+                                                     &proof_json,
+                                                     &schemas_json,
+                                                     &cred_defs_json,
+                                                     &rev_reg_defs_json,
+                                                     &rev_regs_json).unwrap();
+
+        assert!(valid);
+
+        // 13. Used incorrect identifiers for schamas and cred_defs
+        let schemas_json = json!({schema_id: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
+        let cred_defs_json = json!({cred_def_id: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
+
+        let res = anoncreds::verifier_verify_proof(&proof_req_json,
+                                                     &proof_json,
+                                                     &schemas_json,
+                                                     &cred_defs_json,
+                                                     &rev_reg_defs_json,
+                                                     &rev_regs_json);
+        assert_code!(ErrorCode::CommonInvalidStructure, res);
+
 
         wallet::close_and_delete_wallet(issuer_wallet_handle, &issuer_wallet_config).unwrap();
         wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
