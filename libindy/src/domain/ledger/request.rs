@@ -43,7 +43,8 @@ fn get_req_id() -> u64 {
 #[serde(rename_all = "camelCase")]
 pub struct Request<T: serde::Serialize> {
     pub req_id: u64,
-    pub identifier: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
     pub operation: T,
     pub protocol_version: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -60,7 +61,7 @@ impl<T: serde::Serialize> Request<T> {
     pub fn new(req_id: u64, identifier: &str, operation: T, protocol_version: usize) -> Request<T> {
         Request {
             req_id,
-            identifier: identifier.to_string(),
+            identifier: Some(identifier.to_string()),
             operation,
             protocol_version: Some(protocol_version),
             signature: None,
