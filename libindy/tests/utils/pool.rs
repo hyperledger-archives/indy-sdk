@@ -12,7 +12,6 @@ use indy::{ErrorCode, IndyError};
 use indy::pool;
 use self::futures::Future;
 use serde_json;
-use time;
 
 use utils::types::{Response, ResponseType};
 use utils::constants::PROTOCOL_VERSION;
@@ -187,10 +186,6 @@ pub fn delete(pool_name: &str) -> Result<(), IndyError> {
 
 pub fn set_protocol_version(protocol_version: usize) -> Result<(), IndyError> {
     pool::set_protocol_version(protocol_version).wait()
-}
-
-pub fn get_req_id() -> u64 {
-    time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
 }
 
 pub fn check_response_type(response: &str, _type: ResponseType) {
