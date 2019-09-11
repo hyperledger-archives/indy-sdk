@@ -91,7 +91,7 @@ Here you should add a new function for your business logic and a new match claus
         match command {
             // some other clauses
             DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info, cb) => {
-                info!("CreateAndStoreMyDid command received");
+                debug!("CreateAndStoreMyDid command received");
                 cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
             }
         }
@@ -121,4 +121,4 @@ Here you should add a new function for your business logic and a new match claus
 In the function you should put business logic of your call.
 Notice, that if you have some functionality that can be reused later by other commands, you should put it into the service and execute service call in the function.
 
-Services should stay independent from each other. You can include Services into CommandExecutors.  
+Services should stay independent from each other. You can include Services into CommandExecutors.

@@ -172,84 +172,84 @@ impl ProverCommandExecutor {
     pub fn execute(&self, command: ProverCommand) {
         match command {
             ProverCommand::CreateMasterSecret(wallet_handle, master_secret_id, cb) => {
-                info!(target: "prover_command_executor", "CreateMasterSecret command received");
+                debug!(target: "prover_command_executor", "CreateMasterSecret command received");
                 cb(self.create_master_secret(wallet_handle, master_secret_id.as_ref().map(String::as_str)));
             }
             ProverCommand::CreateCredentialRequest(wallet_handle, prover_did, credential_offer,
                                                    credential_def, master_secret_name, cb) => {
-                info!(target: "prover_command_executor", "CreateCredentialRequest command received");
+                debug!(target: "prover_command_executor", "CreateCredentialRequest command received");
                 cb(self.create_credential_request(wallet_handle, &prover_did, &credential_offer,
                                                   &CredentialDefinitionV1::from(credential_def), &master_secret_name));
             }
             ProverCommand::SetCredentialAttrTagPolicy(wallet_handle, cred_def_id, catpol, retroactive, cb) => {
-                info!(target: "prover_command_executor", "SetCredentialAttrTagPolicy command received");
+                debug!(target: "prover_command_executor", "SetCredentialAttrTagPolicy command received");
                 cb(self.set_credential_attr_tag_policy(wallet_handle, &cred_def_id, catpol.as_ref(), retroactive));
             }
             ProverCommand::GetCredentialAttrTagPolicy(wallet_handle, cred_def_id, cb) => {
-                info!(target: "prover_command_executor", "GetCredentialAttrTagPolicy command received");
+                debug!(target: "prover_command_executor", "GetCredentialAttrTagPolicy command received");
                 cb(self.get_credential_attr_tag_policy(wallet_handle, &cred_def_id));
             }
             ProverCommand::StoreCredential(wallet_handle, cred_id, cred_req_metadata, mut cred, cred_def, rev_reg_def, cb) => {
-                info!(target: "prover_command_executor", "StoreCredential command received");
+                debug!(target: "prover_command_executor", "StoreCredential command received");
                 cb(self.store_credential(wallet_handle, cred_id.as_ref().map(String::as_str),
                                          &cred_req_metadata, &mut cred,
                                          &CredentialDefinitionV1::from(cred_def),
                                          rev_reg_def.map(RevocationRegistryDefinitionV1::from).as_ref()));
             }
             ProverCommand::GetCredentials(wallet_handle, filter_json, cb) => {
-                info!(target: "prover_command_executor", "GetCredentials command received");
+                debug!(target: "prover_command_executor", "GetCredentials command received");
                 cb(self.get_credentials(wallet_handle, filter_json.as_ref().map(String::as_str)));
             }
             ProverCommand::GetCredential(wallet_handle, cred_id, cb) => {
-                info!(target: "prover_command_executor", "GetCredential command received");
+                debug!(target: "prover_command_executor", "GetCredential command received");
                 cb(self.get_credential(wallet_handle, &cred_id));
             }
             ProverCommand::DeleteCredential(wallet_handle, cred_id, cb) => {
-                info!(target: "prover_command_executor", "DeleteCredential command received");
+                debug!(target: "prover_command_executor", "DeleteCredential command received");
                 cb(self.delete_credential(wallet_handle, &cred_id));
             }
             ProverCommand::SearchCredentials(wallet_handle, query_json, cb) => {
-                info!(target: "prover_command_executor", "SearchCredentials command received");
+                debug!(target: "prover_command_executor", "SearchCredentials command received");
                 cb(self.search_credentials(wallet_handle, query_json.as_ref().map(String::as_str)));
             }
             ProverCommand::FetchCredentials(search_handle, count, cb) => {
-                info!(target: "prover_command_executor", "FetchCredentials command received");
+                debug!(target: "prover_command_executor", "FetchCredentials command received");
                 cb(self.fetch_credentials(search_handle, count));
             }
             ProverCommand::CloseCredentialsSearch(search_handle, cb) => {
-                info!(target: "prover_command_executor", "CloseCredentialsSearch command received");
+                debug!(target: "prover_command_executor", "CloseCredentialsSearch command received");
                 cb(self.close_credentials_search(search_handle));
             }
             ProverCommand::GetCredentialsForProofReq(wallet_handle, proof_req, cb) => {
-                info!(target: "prover_command_executor", "GetCredentialsForProofReq command received");
+                debug!(target: "prover_command_executor", "GetCredentialsForProofReq command received");
                 cb(self.get_credentials_for_proof_req(wallet_handle, &proof_req));
             }
             ProverCommand::SearchCredentialsForProofReq(wallet_handle, proof_req, extra_query, cb) => {
-                info!(target: "prover_command_executor", "SearchCredentialsForProofReq command received");
+                debug!(target: "prover_command_executor", "SearchCredentialsForProofReq command received");
                 cb(self.search_credentials_for_proof_req(wallet_handle, &proof_req, extra_query.as_ref()));
             }
             ProverCommand::FetchCredentialForProofReq(search_handle, item_ref, count, cb) => {
-                info!(target: "prover_command_executor", "FetchCredentialForProofReq command received");
+                debug!(target: "prover_command_executor", "FetchCredentialForProofReq command received");
                 cb(self.fetch_credential_for_proof_request(search_handle, &item_ref, count));
             }
             ProverCommand::CloseCredentialsSearchForProofReq(search_handle, cb) => {
-                info!(target: "prover_command_executor", "CloseCredentialsSearchForProofReq command received");
+                debug!(target: "prover_command_executor", "CloseCredentialsSearchForProofReq command received");
                 cb(self.close_credentials_search_for_proof_req(search_handle));
             }
             ProverCommand::CreateProof(wallet_handle, proof_req, requested_credentials, master_secret_name,
                                        schemas, cred_defs, rev_states, cb) => {
-                info!(target: "prover_command_executor", "CreateProof command received");
+                debug!(target: "prover_command_executor", "CreateProof command received");
                 cb(self.create_proof(wallet_handle, &proof_req,& requested_credentials, &master_secret_name,
                                      &schemas_map_to_schemas_v1_map(schemas),
                                      &cred_defs_map_to_cred_defs_v1_map(cred_defs),
                                      &rev_states));
             }
             ProverCommand::CreateRevocationState(blob_storage_reader_handle, rev_reg_def, rev_reg_delta, timestamp, cred_rev_id, cb) => {
-                info!(target: "prover_command_executor", "CreateRevocationState command received");
+                debug!(target: "prover_command_executor", "CreateRevocationState command received");
                 cb(self.create_revocation_state(blob_storage_reader_handle, rev_reg_def, rev_reg_delta, timestamp, &cred_rev_id));
             }
             ProverCommand::UpdateRevocationState(blob_storage_reader_handle, rev_state, rev_reg_def, rev_reg_delta, timestamp, cred_rev_id, cb) => {
-                info!(target: "prover_command_executor", "UpdateRevocationState command received");
+                debug!(target: "prover_command_executor", "UpdateRevocationState command received");
                 cb(self.update_revocation_state(blob_storage_reader_handle, rev_state, rev_reg_def, rev_reg_delta, timestamp, &cred_rev_id));
             }
         };
