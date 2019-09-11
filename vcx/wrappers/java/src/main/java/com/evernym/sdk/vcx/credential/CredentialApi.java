@@ -247,17 +247,14 @@ public class CredentialApi extends VcxJava.API {
         return future;
     }
 
-    public static CompletableFuture<Integer> credentialRelease(
-            int credentialHandle
-    ) throws VcxException {
+    public static int credentialRelease(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         logger.debug("credentialRelease() called with: credentialHandle = [" + credentialHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
 
         int result = LibVcx.api.vcx_credential_release(credentialHandle);
         checkResult(result);
 
-        return future;
+        return result;
     }
 
     private static Callback vcxCredentialGetOffersCB = new Callback() {
