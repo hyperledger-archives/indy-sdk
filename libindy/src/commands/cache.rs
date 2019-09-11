@@ -90,27 +90,27 @@ impl CacheCommandExecutor {
     pub fn execute(&self, command: CacheCommand) {
         match command {
             CacheCommand::GetSchema(pool_handle, wallet_handle, submitter_did, id, options, cb) => {
-                info!(target: "non_secrets_command_executor", "GetSchema command received");
+                debug!(target: "non_secrets_command_executor", "GetSchema command received");
                 self.get_schema(pool_handle, wallet_handle, &submitter_did, &id, options, cb);
             }
             CacheCommand::GetSchemaContinue(wallet_handle, ledger_response, options, cb_id) => {
-                info!(target: "non_secrets_command_executor", "GetSchemaContinue command received");
+                debug!(target: "non_secrets_command_executor", "GetSchemaContinue command received");
                 self._get_schema_continue(wallet_handle, ledger_response, options, cb_id);
             }
             CacheCommand::GetCredDef(pool_handle, wallet_handle, submitter_did, id, options, cb) => {
-                info!(target: "non_secrets_command_executor", "GetCredDef command received");
+                debug!(target: "non_secrets_command_executor", "GetCredDef command received");
                 self.get_cred_def(pool_handle, wallet_handle, &submitter_did, &id, options, cb);
             }
             CacheCommand::GetCredDefContinue(wallet_handle, ledger_response, options, cb_id) => {
-                info!(target: "non_secrets_command_executor", "GetCredDefContinue command received");
+                debug!(target: "non_secrets_command_executor", "GetCredDefContinue command received");
                 self._get_cred_def_continue(wallet_handle, ledger_response, options, cb_id);
             }
             CacheCommand::PurgeSchemaCache(wallet_handle, options, cb) => {
-                info!(target: "non_secrets_command_executor", "PurgeSchemaCache command received");
+                debug!(target: "non_secrets_command_executor", "PurgeSchemaCache command received");
                 cb(self.purge_schema_cache(wallet_handle, options));
             }
             CacheCommand::PurgeCredDefCache(wallet_handle, options, cb) => {
-                info!(target: "non_secrets_command_executor", "PurgeCredDefCache command received");
+                debug!(target: "non_secrets_command_executor", "PurgeCredDefCache command received");
                 cb(self.purge_cred_def_cache(wallet_handle, options));
             }
         }

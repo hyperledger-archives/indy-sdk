@@ -45,7 +45,7 @@ impl VerifierCommandExecutor {
                                      &rev_regs_map_to_rev_regs_local_map(rev_regs)));
             }
             VerifierCommand::GenerateNonce(cb) => {
-                info!(target: "verifier_command_executor", "GenerateNonce command received");
+                debug!(target: "verifier_command_executor", "GenerateNonce command received");
                 cb(self.generate_nonce());
             }
         };

@@ -294,15 +294,15 @@ impl LedgerCommandExecutor {
     pub fn execute(&self, command: LedgerCommand) {
         match command {
             LedgerCommand::SignAndSubmitRequest(pool_handle, wallet_handle, submitter_did, request_json, cb) => {
-                info!(target: "ledger_command_executor", "SignAndSubmitRequest command received");
+                debug!(target: "ledger_command_executor", "SignAndSubmitRequest command received");
                 self.sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request_json, cb);
             }
             LedgerCommand::SubmitRequest(handle, request_json, cb) => {
-                info!(target: "ledger_command_executor", "SubmitRequest command received");
+                debug!(target: "ledger_command_executor", "SubmitRequest command received");
                 self.submit_request(handle, &request_json, cb);
             }
             LedgerCommand::SubmitAck(handle, result) => {
-                info!(target: "ledger_command_executor", "SubmitAck command received");
+                debug!(target: "ledger_command_executor", "SubmitAck command received");
                 match self.send_callbacks.borrow_mut().remove(&handle) {
                     Some(cb) => cb(result.map_err(IndyError::from)),
                     None => {
@@ -312,147 +312,147 @@ impl LedgerCommandExecutor {
                 }
             }
             LedgerCommand::SubmitAction(handle, request_json, nodes, timeout, cb) => {
-                info!(target: "ledger_command_executor", "SubmitRequest command received");
+                debug!(target: "ledger_command_executor", "SubmitRequest command received");
                 self.submit_action(handle, &request_json, nodes.as_ref().map(String::as_str), timeout, cb);
             }
             LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
-                info!(target: "ledger_command_executor", "RegisterSPParser command received");
+                debug!(target: "ledger_command_executor", "RegisterSPParser command received");
                 cb(self.register_sp_parser(&txn_type, parser, free));
             }
             LedgerCommand::SignRequest(wallet_handle, submitter_did, request_json, cb) => {
-                info!(target: "ledger_command_executor", "SignRequest command received");
+                debug!(target: "ledger_command_executor", "SignRequest command received");
                 cb(self.sign_request(wallet_handle, &submitter_did, &request_json));
             }
             LedgerCommand::MultiSignRequest(wallet_handle, submitter_did, request_json, cb) => {
-                info!(target: "ledger_command_executor", "MultiSignRequest command received");
+                debug!(target: "ledger_command_executor", "MultiSignRequest command received");
                 cb(self.multi_sign_request(wallet_handle, &submitter_did, &request_json));
             }
             LedgerCommand::BuildGetDdoRequest(submitter_did, target_did, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
                 cb(self.build_get_ddo_request(submitter_did.as_ref(), &target_did));
             }
             LedgerCommand::BuildNymRequest(submitter_did, target_did, verkey, alias, role, cb) => {
-                info!(target: "ledger_command_executor", "BuildNymRequest command received");
+                debug!(target: "ledger_command_executor", "BuildNymRequest command received");
                 cb(self.build_nym_request(&submitter_did, &target_did,
                                           verkey.as_ref().map(String::as_str),
                                           alias.as_ref().map(String::as_str),
                                           role.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildAttribRequest(submitter_did, target_did, hash, raw, enc, cb) => {
-                info!(target: "ledger_command_executor", "BuildAttribRequest command received");
+                debug!(target: "ledger_command_executor", "BuildAttribRequest command received");
                 cb(self.build_attrib_request(&submitter_did, &target_did,
                                              hash.as_ref().map(String::as_str),
                                              raw.as_ref(),
                                              enc.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, raw, hash, enc, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetAttribRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetAttribRequest command received");
                 cb(self.build_get_attrib_request(submitter_did.as_ref(), &target_did,
                                                  raw.as_ref().map(String::as_str),
                                                  hash.as_ref().map(String::as_str),
                                                  enc.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildGetNymRequest(submitter_did, target_did, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetNymRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetNymRequest command received");
                 cb(self.build_get_nym_request(submitter_did.as_ref(), &target_did));
             }
             LedgerCommand::BuildSchemaRequest(submitter_did, data, cb) => {
-                info!(target: "ledger_command_executor", "BuildSchemaRequest command received");
+                debug!(target: "ledger_command_executor", "BuildSchemaRequest command received");
                 cb(self.build_schema_request(&submitter_did, SchemaV1::from(data)));
             }
             LedgerCommand::BuildGetSchemaRequest(submitter_did, id, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetSchemaRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetSchemaRequest command received");
                 cb(self.build_get_schema_request(submitter_did.as_ref(), &id));
             }
             LedgerCommand::ParseGetSchemaResponse(get_schema_response, cb) => {
-                info!(target: "ledger_command_executor", "ParseGetSchemaResponse command received");
+                debug!(target: "ledger_command_executor", "ParseGetSchemaResponse command received");
                 cb(self.parse_get_schema_response(&get_schema_response));
             }
             LedgerCommand::BuildCredDefRequest(submitter_did, data, cb) => {
-                info!(target: "ledger_command_executor", "BuildCredDefRequest command received");
+                debug!(target: "ledger_command_executor", "BuildCredDefRequest command received");
                 cb(self.build_cred_def_request(&submitter_did, CredentialDefinitionV1::from(data)));
             }
             LedgerCommand::BuildGetCredDefRequest(submitter_did, id, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetCredDefRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetCredDefRequest command received");
                 cb(self.build_get_cred_def_request(submitter_did.as_ref(), &id));
             }
             LedgerCommand::ParseGetCredDefResponse(get_cred_def_response, cb) => {
-                info!(target: "ledger_command_executor", "ParseGetCredDefResponse command received");
+                debug!(target: "ledger_command_executor", "ParseGetCredDefResponse command received");
                 cb(self.parse_get_cred_def_response(&get_cred_def_response));
             }
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
-                info!(target: "ledger_command_executor", "BuildNodeRequest command received");
+                debug!(target: "ledger_command_executor", "BuildNodeRequest command received");
                 cb(self.build_node_request(&submitter_did, &target_did, data));
             }
             LedgerCommand::BuildGetValidatorInfoRequest(submitter_did, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetValidatorInfoRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetValidatorInfoRequest command received");
                 cb(self.build_get_validator_info_request(&submitter_did));
             }
             LedgerCommand::BuildGetTxnRequest(submitter_did, ledger_type, seq_no, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
                 cb(self.build_get_txn_request(submitter_did.as_ref(), ledger_type.as_ref().map(String::as_str), seq_no));
             }
             LedgerCommand::BuildPoolConfigRequest(submitter_did, writes, force, cb) => {
-                info!(target: "ledger_command_executor", "BuildPoolConfigRequest command received");
+                debug!(target: "ledger_command_executor", "BuildPoolConfigRequest command received");
                 cb(self.build_pool_config_request(&submitter_did, writes, force));
             }
             LedgerCommand::BuildPoolRestartRequest(submitter_did, action, datetime, cb) => {
-                info!(target: "ledger_command_executor", "BuildPoolRestartRequest command received");
+                debug!(target: "ledger_command_executor", "BuildPoolRestartRequest command received");
                 cb(self.build_pool_restart_request(&submitter_did, &action, datetime.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package, cb) => {
-                info!(target: "ledger_command_executor", "BuildPoolUpgradeRequest command received");
+                debug!(target: "ledger_command_executor", "BuildPoolUpgradeRequest command received");
                 cb(self.build_pool_upgrade_request(&submitter_did, &name, &version, &action, &sha256, timeout,
                                                    schedule,
                                                    justification.as_ref().map(String::as_str),
                                                    reinstall, force, package.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildRevocRegDefRequest(submitter_did, data, cb) => {
-                info!(target: "ledger_command_executor", "BuildRevocRegDefRequest command received");
+                debug!(target: "ledger_command_executor", "BuildRevocRegDefRequest command received");
                 cb(self.build_revoc_reg_def_request(&submitter_did, RevocationRegistryDefinitionV1::from(data)));
             }
             LedgerCommand::BuildGetRevocRegDefRequest(submitter_did, id, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetRevocRegDefRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetRevocRegDefRequest command received");
                 cb(self.build_get_revoc_reg_def_request(submitter_did.as_ref(), &id));
             }
             LedgerCommand::ParseGetRevocRegDefResponse(get_revoc_ref_def_response, cb) => {
-                info!(target: "ledger_command_executor", "ParseGetRevocRegDefDefResponse command received");
+                debug!(target: "ledger_command_executor", "ParseGetRevocRegDefDefResponse command received");
                 cb(self.parse_revoc_reg_def_response(&get_revoc_ref_def_response));
             }
             LedgerCommand::BuildRevocRegEntryRequest(submitter_did, revoc_reg_def_id, rev_def_type, value, cb) => {
-                info!(target: "ledger_command_executor", "BuildRevocRegEntryRequest command received");
+                debug!(target: "ledger_command_executor", "BuildRevocRegEntryRequest command received");
                 cb(self.build_revoc_reg_entry_request(&submitter_did, &revoc_reg_def_id, &rev_def_type, RevocationRegistryDeltaV1::from(value)));
             }
             LedgerCommand::BuildGetRevocRegRequest(submitter_did, revoc_reg_def_id, timestamp, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetRevocRegRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetRevocRegRequest command received");
                 cb(self.build_get_revoc_reg_request(submitter_did.as_ref(), &revoc_reg_def_id, timestamp));
             }
             LedgerCommand::ParseGetRevocRegResponse(get_revoc_reg_response, cb) => {
-                info!(target: "ledger_command_executor", "ParseGetRevocRegResponse command received");
+                debug!(target: "ledger_command_executor", "ParseGetRevocRegResponse command received");
                 cb(self.parse_revoc_reg_response(&get_revoc_reg_response));
             }
             LedgerCommand::BuildGetRevocRegDeltaRequest(submitter_did, revoc_reg_def_id, from, to, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetRevocRegDeltaRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetRevocRegDeltaRequest command received");
                 cb(self.build_get_revoc_reg_delta_request(submitter_did.as_ref(), &revoc_reg_def_id, from, to));
             }
             LedgerCommand::ParseGetRevocRegDeltaResponse(get_revoc_reg_delta_response, cb) => {
-                info!(target: "ledger_command_executor", "ParseGetRevocRegDeltaResponse command received");
+                debug!(target: "ledger_command_executor", "ParseGetRevocRegDeltaResponse command received");
                 cb(self.parse_revoc_reg_delta_response(&get_revoc_reg_delta_response));
             }
             LedgerCommand::GetResponseMetadata(response, cb) => {
-                info!(target: "ledger_command_executor", "GetResponseMetadata command received");
+                debug!(target: "ledger_command_executor", "GetResponseMetadata command received");
                 cb(self.get_response_metadata(&response));
             }
             LedgerCommand::BuildAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, constraint, cb) => {
-                info!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
+                debug!(target: "ledger_command_executor", "BuildAuthRuleRequest command received");
                 cb(self.build_auth_rule_request(&submitter_did, &txn_type, &action, &field, old_value.as_ref().map(String::as_str), new_value.as_ref().map(String::as_str), constraint));
             }
             LedgerCommand::BuildAuthRulesRequest(submitter_did, rules, cb) => {
-                info!(target: "ledger_command_executor", "BuildAuthRulesRequest command received");
+                debug!(target: "ledger_command_executor", "BuildAuthRulesRequest command received");
                 cb(self.build_auth_rules_request(&submitter_did, rules));
             }
             LedgerCommand::BuildGetAuthRuleRequest(submitter_did, txn_type, action, field, old_value, new_value, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetAuthRuleRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetAuthRuleRequest command received");
                 cb(self.build_get_auth_rule_request(submitter_did.as_ref(),
                                                     txn_type.as_ref().map(String::as_str),
                                                     action.as_ref().map(String::as_str),
@@ -461,41 +461,41 @@ impl LedgerCommandExecutor {
                                                     new_value.as_ref().map(String::as_str)));
             }
             LedgerCommand::GetSchema(pool_handle, submitter_did, id, cb) => {
-                info!(target: "ledger_command_executor", "GetSchema command received");
+                debug!(target: "ledger_command_executor", "GetSchema command received");
                 self.get_schema(pool_handle, submitter_did.as_ref(), &id, cb);
             }
             LedgerCommand::GetSchemaContinue(pool_response, cb_id) => {
-                info!(target: "ledger_command_executor", "GetSchemaContinue command received");
+                debug!(target: "ledger_command_executor", "GetSchemaContinue command received");
                 self._get_schema_continue(pool_response, cb_id);
             }
             LedgerCommand::GetCredDef(pool_handle, submitter_did, id, cb) => {
-                info!(target: "ledger_command_executor", "GetCredDef command received");
+                debug!(target: "ledger_command_executor", "GetCredDef command received");
                 self.get_cred_def(pool_handle, submitter_did.as_ref(), &id, cb);
             }
             LedgerCommand::GetCredDefContinue(pool_response, cb_id) => {
-                info!(target: "ledger_command_executor", "GetCredDefContinue command received");
+                debug!(target: "ledger_command_executor", "GetCredDefContinue command received");
                 self._get_cred_def_continue(pool_response, cb_id);
             }
             LedgerCommand::BuildTxnAuthorAgreementRequest(submitter_did, text, version, cb) => {
-                info!(target: "ledger_command_executor", "BuildTxnAuthorAgreementRequest command received");
+                debug!(target: "ledger_command_executor", "BuildTxnAuthorAgreementRequest command received");
                 cb(self.build_txn_author_agreement_request(&submitter_did, &text, &version));
             }
             LedgerCommand::BuildGetTxnAuthorAgreementRequest(submitter_did, data, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetTxnAuthorAgreementRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetTxnAuthorAgreementRequest command received");
                 cb(self.build_get_txn_author_agreement_request(submitter_did.as_ref(), data.as_ref()));
             }
             LedgerCommand::BuildAcceptanceMechanismRequests(submitter_did, aml, version, aml_context, cb) => {
-                info!(target: "ledger_command_executor", "BuildAcceptanceMechanismRequests command received");
+                debug!(target: "ledger_command_executor", "BuildAcceptanceMechanismRequests command received");
                 cb(self.build_acceptance_mechanisms_request(&submitter_did, aml, &version, aml_context.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildGetAcceptanceMechanismsRequest(submitter_did, timestamp, version, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetAcceptanceMechanismsRequest command received");
+                debug!(target: "ledger_command_executor", "BuildGetAcceptanceMechanismsRequest command received");
                 cb(self.build_get_acceptance_mechanisms_request(submitter_did.as_ref(),
                                                                 timestamp,
                                                                 version.as_ref().map(String::as_str)));
             }
             LedgerCommand::AppendTxnAuthorAgreementAcceptanceToRequest(request_json, text, version, hash, acc_mech_type, time_of_acceptance, cb) => {
-                info!(target: "ledger_command_executor", "AppendTxnAuthorAgreementAcceptanceToRequest command received");
+                debug!(target: "ledger_command_executor", "AppendTxnAuthorAgreementAcceptanceToRequest command received");
                 cb(self.append_txn_author_agreement_acceptance_to_request(&request_json,
                                                                           text.as_ref().map(String::as_str),
                                                                           version.as_ref().map(String::as_str),
@@ -504,7 +504,7 @@ impl LedgerCommandExecutor {
                                                                           time_of_acceptance));
             }
             LedgerCommand::AppendRequestEndorser(request_json, endorser_did, cb) => {
-                info!(target: "ledger_command_executor", "AppendRequestEndorser command received");
+                debug!(target: "ledger_command_executor", "AppendRequestEndorser command received");
                 cb(self.append_request_endorser(&request_json,
                                                 &endorser_did));
             }

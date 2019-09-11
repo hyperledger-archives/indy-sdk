@@ -36,11 +36,16 @@ pub struct TxnAuthrAgrmtAcceptanceData {
     pub time: u64
 }
 
+fn get_req_id() -> u64 {
+    time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Request<T: serde::Serialize> {
     pub req_id: u64,
-    pub identifier: ShortDidValue,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<ShortDidValue>,
     pub operation: T,
     pub protocol_version: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -57,7 +62,7 @@ impl<T: serde::Serialize> Request<T> {
     pub fn new(req_id: u64, identifier: ShortDidValue, operation: T, protocol_version: usize) -> Request<T> {
         Request {
             req_id,
-            identifier,
+            identifier: Some(identifier),
             operation,
             protocol_version: Some(protocol_version),
             signature: None,
@@ -68,7 +73,7 @@ impl<T: serde::Serialize> Request<T> {
     }
 
     pub fn build_request(identifier: Option<&DidValue>, operation: T) -> Result<String, String> {
-        let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
+        let req_id = get_req_id();
 
         let identifier = match identifier {
             Some(identifier_) => identifier_.clone().to_short(),

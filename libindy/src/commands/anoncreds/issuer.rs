@@ -172,11 +172,11 @@ impl IssuerCommandExecutor {
     pub fn execute(&self, command: IssuerCommand) {
         match command {
             IssuerCommand::CreateSchema(issuer_did, name, version, attrs, cb) => {
-                info!(target: "issuer_command_executor", "CreateSchema command received");
+                debug!(target: "issuer_command_executor", "CreateSchema command received");
                 cb(self.create_schema(&issuer_did, &name, &version, attrs));
             }
             IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema, tag, type_, config, cb) => {
-                info!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
+                debug!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
                 self.create_and_store_credential_definition(wallet_handle, &issuer_did, &SchemaV1::from(schema), &tag,
                                                             type_.as_ref().map(String::as_str), config.as_ref(), cb);
             }
@@ -198,7 +198,7 @@ impl IssuerCommandExecutor {
             }
             IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, issuer_did, type_, tag, cred_def_id, config,
                                                             tails_writer_handle, cb) => {
-                info!(target: "issuer_command_executor", "CreateAndStoreRevocationRegistryRegistry command received");
+                debug!(target: "issuer_command_executor", "CreateAndStoreRevocationRegistryRegistry command received");
                 cb(self.create_and_store_revocation_registry(wallet_handle,
                                                              &issuer_did,
                                                              type_.as_ref().map(String::as_str),
@@ -208,23 +208,23 @@ impl IssuerCommandExecutor {
                                                              tails_writer_handle));
             }
             IssuerCommand::CreateCredentialOffer(wallet_handle, cred_def_id, cb) => {
-                info!(target: "issuer_command_executor", "CreateCredentialOffer command received");
+                debug!(target: "issuer_command_executor", "CreateCredentialOffer command received");
                 cb(self.create_credential_offer(wallet_handle, &cred_def_id));
             }
             IssuerCommand::CreateCredential(wallet_handle, cred_offer, cred_req, cred_values, rev_reg_id, blob_storage_reader_handle, cb) => {
-                info!(target: "issuer_command_executor", "CreateCredential command received");
+                debug!(target: "issuer_command_executor", "CreateCredential command received");
                 cb(self.new_credential(wallet_handle, &cred_offer, &cred_req, &cred_values, rev_reg_id.as_ref(), blob_storage_reader_handle));
             }
             IssuerCommand::RevokeCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
-                info!(target: "issuer_command_executor", "RevokeCredential command received");
+                debug!(target: "issuer_command_executor", "RevokeCredential command received");
                 cb(self.revoke_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id));
             }
             /*            IssuerCommand::RecoverCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
-                            info!(target: "issuer_command_executor", "RecoverCredential command received");
+                            debug!(target: "issuer_command_executor", "RecoverCredential command received");
                             cb(self.recovery_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id));
                         }*/
             IssuerCommand::MergeRevocationRegistryDeltas(rev_reg_delta, other_rev_reg_delta, cb) => {
-                info!(target: "issuer_command_executor", "MergeRevocationRegistryDeltas command received");
+                debug!(target: "issuer_command_executor", "MergeRevocationRegistryDeltas command received");
                 cb(self.merge_revocation_registry_deltas(&mut RevocationRegistryDeltaV1::from(rev_reg_delta),
                                                          &RevocationRegistryDeltaV1::from(other_rev_reg_delta)));
             }
