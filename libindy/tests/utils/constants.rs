@@ -14,6 +14,7 @@ pub const ISSUER_DID_2: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaN
 pub const DID: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 pub const DID_V1: &'static str = "did:sov:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 pub const DID_MY1: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
+pub const DID_MY1_V1: &'static str = "did:sov:VsKV7grR1BUE29mG2Fm2kX";
 pub const DID_MY2: &'static str = "2PRyVHmkXQnQzJQKxHxnXC";
 pub const DID_TRUSTEE: &'static str = "V4SGRU86Z58d6TV7PBUe6f";
 pub const INVALID_BASE58_DID: &'static str = "invalid_base58string";

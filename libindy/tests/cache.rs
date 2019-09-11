@@ -9,6 +9,7 @@ extern crate indyrs as api;
 use utils::cache::*;
 use utils::Setup;
 use utils::domain::crypto::did::DidValue;
+use utils::qualifier::Qualifier;
 
 use self::indy::ErrorCode;
 
@@ -159,6 +160,24 @@ mod high_cases {
                 &options_json
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
+        }
+
+        #[test]
+        fn indy_get_schema_fully_qualified_ids() {
+            let setup = Setup::wallet_and_pool();
+
+            let (schema_id, _, _) = utils::ledger::post_entities();
+
+            let options_json = json!({}).to_string();
+
+            let schema_json = get_schema_cache(
+                setup.pool_handle,
+                setup.wallet_handle,
+                DID_MY1_V1,
+                &Qualifier::qualify(schema_id, None),
+                &options_json).unwrap();
+
+            let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
         }
 
         #[test]
@@ -367,6 +386,24 @@ mod high_cases {
                 &options_json
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
+        }
+
+        #[test]
+        fn indy_get_cred_def_fully_qualified_ids() {
+            let setup = Setup::wallet_and_pool();
+
+            let (_, cred_def_id, _) = utils::ledger::post_entities();
+
+            let options_json = json!({}).to_string();
+
+            let cred_def_json = get_cred_def_cache(
+                setup.pool_handle,
+                setup.wallet_handle,
+                DID_MY1_V1,
+                &Qualifier::qualify(cred_def_id, None),
+                &options_json).unwrap();
+
+            let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json).unwrap();
         }
 
         #[test]

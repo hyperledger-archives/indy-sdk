@@ -145,49 +145,56 @@ impl Setup {
     }
 
     pub fn trustee() -> Setup {
-        let name = setup();
-        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
-        let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
-        let (did, verkey) = did::create_and_store_my_did(wallet_handle, Some(constants::TRUSTEE_SEED)).unwrap();
-        Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
+        let mut setup = Setup::wallet_and_pool();
+        let (did, verkey) = did::create_and_store_my_did(setup.wallet_handle, Some(constants::TRUSTEE_SEED)).unwrap();
+        setup.did = did;
+        setup.verkey = verkey;
+        setup
     }
 
-    pub fn trustee_first_did_versions() -> Setup {
-        let name = setup();
-        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
-        let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
-        let (did, verkey) = did::create_and_store_my_did_v1(wallet_handle, Some(constants::TRUSTEE_SEED)).unwrap();
-        Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
+    pub fn trustee_fully_qualified() -> Setup {
+        let mut setup = Setup::wallet_and_pool();
+        let (did, verkey) = did::create_and_store_my_did_v1(setup.wallet_handle, Some(constants::TRUSTEE_SEED)).unwrap();
+        setup.did = did;
+        setup.verkey = verkey;
+        setup
     }
 
     pub fn steward() -> Setup {
-        let name = setup();
-        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
-        let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
-        let (did, verkey) = did::create_and_store_my_did(wallet_handle, Some(constants::STEWARD_SEED)).unwrap();
-        Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
+        let mut setup = Setup::wallet_and_pool();
+        let (did, verkey) = did::create_and_store_my_did(setup.wallet_handle, Some(constants::STEWARD_SEED)).unwrap();
+        setup.did = did;
+        setup.verkey = verkey;
+        setup
     }
 
     pub fn endorser() -> Setup {
-        let name = setup();
-        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
-        let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
-        let (did, verkey) = did::create_store_and_publish_did(wallet_handle, pool_handle, "ENDORSER", None).unwrap();
-        Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
+        let mut setup = Setup::wallet_and_pool();
+        let (did, verkey) = did::create_store_and_publish_did(setup.wallet_handle, setup.pool_handle, "ENDORSER", None).unwrap();
+        setup.did = did;
+        setup.verkey = verkey;
+        setup
     }
 
     pub fn new_identity() -> Setup {
-        let name = setup();
-        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
-        let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
-        let (did, verkey) = did::create_store_and_publish_did(wallet_handle, pool_handle, "TRUSTEE", None).unwrap();
-        Setup { name, wallet_config, wallet_handle, pool_handle, did, verkey }
+        let mut setup = Setup::wallet_and_pool();
+        let (did, verkey) = did::create_store_and_publish_did(setup.wallet_handle, setup.pool_handle, "TRUSTEE", None).unwrap();
+        setup.did = did;
+        setup.verkey = verkey;
+        setup
     }
 
     pub fn did() -> Setup {
         let name = setup();
         let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
         let (did, verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+        Setup { name, wallet_config, wallet_handle, pool_handle: 0, did, verkey }
+    }
+
+    pub fn did_fully_qualified() -> Setup {
+        let name = setup();
+        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
+        let (did, verkey) = did::create_and_store_my_did_v1(wallet_handle, None).unwrap();
         Setup { name, wallet_config, wallet_handle, pool_handle: 0, did, verkey }
     }
 

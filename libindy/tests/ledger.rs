@@ -23,6 +23,7 @@ use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistry
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
 use utils::domain::crypto::did::DidValue;
+use utils::qualifier::Qualifier;
 
 use std::collections::HashMap;
 use std::thread;
@@ -109,13 +110,20 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_sign_and_submit_request_works_for_did_first_versions() {
-            let setup = Setup::trustee_first_did_versions();
+        fn indy_submit_request_works_for_fully_qualified() {
+            let setup = Setup::trustee_fully_qualified();
+
+            let nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
+            let nym_response = ledger::submit_request(setup.pool_handle, &nym_request).unwrap();
+            pool::check_response_type(&nym_response, ResponseType::REPLY);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_sign_and_submit_request_works_for_fully_qualified() {
+            let setup = Setup::trustee_fully_qualified();
 
             let (did, _) = did::create_and_store_my_did_v1(setup.wallet_handle, None).unwrap();
-
-            ensure_did_first_version(&setup.did);
-            ensure_did_first_version(&did);
 
             let nym_request = ledger::build_nym_request(&setup.did, &did, None, None, None).unwrap();
             let nym_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_request).unwrap();
@@ -179,13 +187,10 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_sign_request_works_for_first_did_version() {
-            let setup = Setup::wallet();
+        fn indy_sign_request_works_for_fully_qualified() {
+            let setup = Setup::trustee_fully_qualified();
 
-            let (did, _) = did::create_and_store_my_did_v1(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-            ensure_did_first_version(&did);
-
-            let request = ledger::sign_request(setup.wallet_handle, &did, REQUEST).unwrap();
+            let request = ledger::sign_request(setup.wallet_handle, &setup.did, REQUEST).unwrap();
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
             assert_eq!(request["signature"].as_str().unwrap(), "65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW");
         }
@@ -220,7 +225,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_multi_sign_request_works_for_first_did_version() {
+        fn indy_multi_sign_request_works_for_fully_qualified() {
             let setup = Setup::wallet();
 
             let (did1, _) = did::create_and_store_my_did_v1(setup.wallet_handle, Some(TRUSTEE_SEED)).unwrap();
@@ -314,7 +319,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_build_nym_requests_works_for_first_did_version() {
+        fn indy_build_nym_requests_works_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::NYM,
                 "dest": DEST,
@@ -338,7 +343,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_build_get_nym_requests_works_for_first_did_version() {
+        fn indy_build_get_nym_requests_works_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::GET_NYM,
                 "dest": DEST
@@ -429,7 +434,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_build_attrib_requests_works_for_first_did_version() {
+        fn indy_build_attrib_requests_works_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::ATTRIB,
                 "dest": DEST,
@@ -490,7 +495,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_build_get_attrib_requests_works_for_first_did_versions() {
+        fn indy_build_get_attrib_requests_works_for_fully_qualifieds() {
             let raw = "endpoint";
 
             let expected_result = json!({
@@ -552,7 +557,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_build_schema_requests_works_for_first_did_version() {
+        fn indy_build_schema_requests_works_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::SCHEMA,
                 "data": {
@@ -584,7 +589,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_build_get_schema_requests_works_for_first_did_version() {
+        fn indy_build_get_schema_requests_works_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::GET_SCHEMA,
                 "dest": ISSUER_DID,
@@ -594,7 +599,7 @@ mod high_cases {
                 },
             });
 
-            let request = ledger::build_get_schema_request(Some(IDENTIFIER_V1), &anoncreds::gvt_schema_id()).unwrap();
+            let request = ledger::build_get_schema_request(Some(IDENTIFIER_V1), &Qualifier::qualify(&anoncreds::gvt_schema_id(), None)).unwrap();
             check_request(&request, expected_result, IDENTIFIER);
         }
 
@@ -645,7 +650,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_build_node_request_works_for_first_did_version() {
+        fn indy_build_node_request_works_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::NODE,
                 "dest": DEST,
@@ -743,6 +748,23 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_build_get_cred_def_request_works_for_fully_qualified() {
+            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
+            let expected_result = json!({
+                "type": constants::GET_CRED_DEF,
+                "ref": SEQ_NO,
+                "signature_type": SIGNATURE_TYPE,
+                "origin": IDENTIFIER,
+                "tag": TAG_1
+            });
+
+            let id = anoncreds::cred_def_id(IDENTIFIER_V1, &SEQ_NO.to_string(), SIGNATURE_TYPE, TAG_1);
+            let request = ledger::build_get_cred_def_request(Some(IDENTIFIER_V1), &id).unwrap();
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
         fn indy_build_get_cred_def_request_works_for_default_submitter_did() {
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
@@ -810,7 +832,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_build_get_txn_request_for_first_did_version() {
+        fn indy_build_get_txn_request_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::GET_TXN,
                 "data": SEQ_NO,
@@ -1167,6 +1189,18 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_get_revoc_reg_def_request_for_fully_qualified() {
+            let expected_result = json!({
+                "type": constants::GET_REVOC_REG_DEF,
+                "id": REV_REG_ID
+            });
+
+            let request = ledger::build_get_revoc_reg_def_request(Some(DID_V1), &Qualifier::qualify(REV_REG_ID, None)).unwrap();
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_def_request_for_default_submitter_did() {
             let request = ledger::build_get_revoc_reg_def_request(None, REV_REG_ID).unwrap();
             check_default_identifier(&request);
@@ -1232,14 +1266,14 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_build_get_revoc_reg_request_for_first_did_version() {
+        fn indy_build_get_revoc_reg_request_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG,
                 "revocRegDefId": REV_REG_ID,
                 "timestamp": 100
             });
 
-            let request = ledger::build_get_revoc_reg_request(Some(DID_V1), REV_REG_ID, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_request(Some(DID_V1), &Qualifier::qualify(REV_REG_ID, None), 100).unwrap();
             check_request(&request, expected_result, DID);
         }
 
@@ -1280,6 +1314,19 @@ mod high_cases {
             });
 
             let request = ledger::build_get_revoc_reg_delta_request(Some(DID), REV_REG_ID, None, 100).unwrap();
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_get_revoc_reg_delta_request_for_fully_qualified() {
+            let expected_result = json!({
+                "type": constants::GET_REVOC_REG_DELTA,
+                "revocRegDefId": REV_REG_ID,
+                "to": 100
+            });
+
+            let request = ledger::build_get_revoc_reg_delta_request(Some(DID_V1), &Qualifier::qualify(REV_REG_ID, None), None, 100).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -2740,6 +2787,17 @@ mod high_cases {
             let request = ledger::append_request_endorser(REQUEST, endorser_did).unwrap();
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
             assert_eq!(endorser_did, request["endorser"].as_str().unwrap());
+        }
+
+        #[test]
+        fn indy_append_request_endorser_works_for_fully_qualified() {
+            Setup::empty();
+
+            let endorser_did = DID_V1;
+
+            let request = ledger::append_request_endorser(REQUEST, endorser_did).unwrap();
+            let request: serde_json::Value = serde_json::from_str(&request).unwrap();
+            assert_eq!(DID, request["endorser"].as_str().unwrap());
         }
 
         #[test]

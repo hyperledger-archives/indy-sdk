@@ -11,9 +11,9 @@ lazy_static! {
 impl Qualifier {
     pub fn qualify(entity: &str, prefix: Option<String>) -> String {
         if Qualifier::is_fully_qualified(entity) {
-            format!("{}{}", prefix.unwrap_or(DEFAULT_PREFIX.to_string()), entity)
-        } else {
             entity.to_string()
+        } else {
+            format!("{}{}", prefix.unwrap_or(DEFAULT_PREFIX.to_string()), entity)
         }
     }
 

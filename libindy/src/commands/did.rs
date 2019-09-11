@@ -176,7 +176,7 @@ impl DidCommandExecutor {
             }
             DidCommand::GetNymAck(wallet_handle, did, result, deferred_cmd_id) => {
                 debug!("GetNymAck command received");
-                self.get_nym_ack(wallet_handle,  did, result, deferred_cmd_id);
+                self.get_nym_ack(wallet_handle, did, result, deferred_cmd_id);
             }
             DidCommand::GetAttribAck(wallet_handle, result, deferred_cmd_id) => {
                 debug!("GetAttribAck command received");
@@ -202,7 +202,7 @@ impl DidCommandExecutor {
         }
 
         self.wallet_service.add_indy_object(wallet_handle, &did.did.0, &did, &HashMap::new())?;
-        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())?;
+        let _ = self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).ok();
 
         let res = (did.did.0, did.verkey);
 
@@ -479,7 +479,7 @@ impl DidCommandExecutor {
             return Err(IndyError::from_msg(IndyErrorKind::InvalidState, "You can abbreviate fully-qualified did only with `sov` method"));
         }
 
-        let did = &did.0.from_base58()?;
+        let did = &did.unqualify().from_base58()?;
         let dverkey = &verkey.from_base58()?;
 
         let (first_part, second_part) = dverkey.split_at(16);
@@ -504,7 +504,7 @@ impl DidCommandExecutor {
         self._execute_deferred_command(deferred_cmd_id, res.err());
     }
 
-    fn _get_nym_ack(&self, wallet_handle: WalletHandle, did: DidValue,get_nym_reply_result: IndyResult<String>) -> IndyResult<()> {
+    fn _get_nym_ack(&self, wallet_handle: WalletHandle, did: DidValue, get_nym_reply_result: IndyResult<String>) -> IndyResult<()> {
         trace!("_get_nym_ack >>> wallet_handle: {:?}, get_nym_reply_result: {:?}", wallet_handle, get_nym_reply_result);
 
         let get_nym_reply = get_nym_reply_result?;
