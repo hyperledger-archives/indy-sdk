@@ -30,3 +30,5 @@ pub mod try;
 pub mod validation;
 
 pub mod wql;
+
+pub mod qualifier;

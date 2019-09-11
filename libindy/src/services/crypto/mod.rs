@@ -122,7 +122,10 @@ impl CryptoService {
     pub fn create_their_did(&self, their_did_info: &TheirDidInfo) -> IndyResult<TheirDid> {
         trace!("create_their_did >>> their_did_info: {:?}", their_did_info);
 
-        let verkey = build_full_verkey(their_did_info.did.0.as_str(),
+        // Check did is correct Base58
+        let _ = self.validate_did(&their_did_info.did)?;
+
+        let verkey = build_full_verkey(&their_did_info.did.unqualify(),
                                        their_did_info.verkey.as_ref().map(String::as_str))?;
 
         self.validate_key(&verkey)?;

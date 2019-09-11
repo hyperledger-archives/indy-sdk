@@ -1,75 +1,53 @@
 use errors::prelude::*;
 
 use super::wallet::Keys;
-use super::language::{Operator,TargetValue,TagName};
+use super::language::{Operator, TargetValue, TagName};
 use super::encryption::encrypt_as_searchable;
 use utils::wql::Query;
 
 // Performs encryption of WQL query
 // WQL query is provided as top-level Operator
-// Recursively transforms operators using encrypt_operator function
 pub(super) fn encrypt_query(query: Query, keys: &Keys) -> IndyResult<Operator> {
-    transform(query, &|op: Query| -> IndyResult<Operator> {encrypt_operator(op, keys)})
+    transform(query, keys)
 }
 
-pub fn transform(query: Query, f: &dyn Fn(Query) -> IndyResult<Operator>) -> IndyResult<Operator> {
+fn transform(query: Query, keys: &Keys) -> IndyResult<Operator> {
     match query {
-        Query::And(operators) => Ok(Operator::And(transform_list_operators(operators, f)?)),
-        Query::Or(operators) => Ok(Operator::Or(transform_list_operators(operators, f)?)),
-        Query::Not(boxed_operator) => Ok(Operator::Not(Box::new(transform(*boxed_operator, f)?))),
-        _ => Ok(f(query)?)
-    }
-}
-
-fn transform_list_operators(operators: Vec<Query>, f: &dyn Fn(Query) -> IndyResult<Operator>) -> IndyResult<Vec<Operator>> {
-    let mut transformed = Vec::with_capacity(operators.len());
-
-    for operator in operators {
-        let transformed_operator = transform(operator, f)?;
-        transformed.push(transformed_operator);
-    }
-
-    Ok(transformed)
-}
-
-
-fn encrypt_operator(op: Query, keys: &Keys) -> IndyResult<Operator> {
-    match op {
-        Query::Eq(name, value)  => {
+        Query::Eq(name, value) => {
             let (encrypted_name, encrypted_value) = encrypt_name_value(name, value, keys)?;
             Ok(Operator::Eq(encrypted_name, encrypted_value))
-        },
+        }
         Query::Neq(name, value) => {
             let (encrypted_name, encrypted_value) = encrypt_name_value(name, value, keys)?;
             Ok(Operator::Neq(encrypted_name, encrypted_value))
-        },
+        }
         Query::Gt(name, value) => {
             let (encrypted_name, encrypted_value) = encrypt_name_value(name, value, keys)?;
             Ok(Operator::Gt(encrypted_name, encrypted_value))
-        },
+        }
         Query::Gte(name, value) => {
             let (encrypted_name, encrypted_value) = encrypt_name_value(name, value, keys)?;
             Ok(Operator::Gte(encrypted_name, encrypted_value))
-        },
+        }
         Query::Lt(name, value) => {
             let (encrypted_name, encrypted_value) = encrypt_name_value(name, value, keys)?;
             Ok(Operator::Lt(encrypted_name, encrypted_value))
-        },
+        }
         Query::Lte(name, value) => {
             let (encrypted_name, encrypted_value) = encrypt_name_value(name, value, keys)?;
             Ok(Operator::Lte(encrypted_name, encrypted_value))
-        },
+        }
         Query::Like(name, value) => {
             let (encrypted_name, encrypted_value) = encrypt_name_value(name, value, keys)?;
             Ok(Operator::Like(encrypted_name, encrypted_value))
-        },
+        }
         Query::In(name, values) => {
             let ename = TagName::from(name.clone())?;
             let ename = match ename {
                 TagName::EncryptedTagName(ref name) => {
                     let encrypted_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
                     TagName::EncryptedTagName(encrypted_name)
-                },
+                }
                 TagName::PlainTagName(ref name) => {
                     let encrypted_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
                     TagName::PlainTagName(encrypted_name)
@@ -81,11 +59,22 @@ fn encrypt_operator(op: Query, keys: &Keys) -> IndyResult<Operator> {
                 encrypted_values.push(encrypt_name_value(name.clone(), value, keys)?.1);
             }
             Ok(Operator::In(ename, encrypted_values))
-        },
-        _ => {
-            panic!("Shouldn't be reached?")
         }
+        Query::And(operators) => Ok(Operator::And(transform_list_operators(operators, keys)?)),
+        Query::Or(operators) => Ok(Operator::Or(transform_list_operators(operators, keys)?)),
+        Query::Not(boxed_operator) => Ok(Operator::Not(Box::new(transform(*boxed_operator, keys)?)))
     }
+}
+
+fn transform_list_operators(operators: Vec<Query>, keys: &Keys) -> IndyResult<Vec<Operator>> {
+    let mut transformed = Vec::with_capacity(operators.len());
+
+    for operator in operators {
+        let transformed_operator = transform(operator, keys)?;
+        transformed.push(transformed_operator);
+    }
+
+    Ok(transformed)
 }
 
 // Encrypts a single tag name, tag value pair.
@@ -99,11 +88,11 @@ fn encrypt_name_value(name: String, value: String, keys: &Keys) -> IndyResult<(T
             let encrypted_tag_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
             let encrypted_tag_value = encrypt_as_searchable(s.as_bytes(), &keys.tag_value_key, &keys.tags_hmac_key);
             Ok((TagName::EncryptedTagName(encrypted_tag_name), TargetValue::Encrypted(encrypted_tag_value)))
-        },
+        }
         (TagName::PlainTagName(ref name), TargetValue::Unencrypted(ref s)) => {
             let encrypted_tag_name = encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
             Ok((TagName::PlainTagName(encrypted_tag_name), TargetValue::Unencrypted(s.clone())))
-        },
+        }
         _ => Err(err_msg(IndyErrorKind::WalletQueryError, "Reached invalid combination of tag name and value while encrypting query"))
     }
 }

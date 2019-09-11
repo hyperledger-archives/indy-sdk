@@ -1,9 +1,10 @@
 use super::DELIMITER;
 use super::schema::SchemaId;
 use super::super::ledger::request::ProtocolVersion;
-use super::super::crypto::did::{DidValue, DidQualifier};
+use super::super::crypto::did::DidValue;
 
 use utils::validation::Validatable;
+use utils::qualifier::Qualifier;
 
 use ursa::cl::{
     CredentialPrimaryPublicKey,
@@ -121,7 +122,7 @@ pub struct CredentialDefinitionId(pub String);
 
 impl CredentialDefinitionId {
     pub fn new(did: &DidValue, schema_id: &SchemaId, signature_type: &str, tag: &str) -> CredentialDefinitionId {
-        let schema_id = schema_id.unqualify(did.prefix());
+        let schema_id = schema_id.unqualify();
         if ProtocolVersion::is_node_1_3() {
             CredentialDefinitionId(format!("{}{}{}{}{}{}{}", did.0, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id.0))
         } else {
@@ -139,12 +140,12 @@ impl CredentialDefinitionId {
         }
     }
 
-    pub fn unqualify(&self, prefix: Option<String>) -> CredentialDefinitionId {
-        CredentialDefinitionId(DidQualifier::unqualify(&self.0, prefix))
+    pub fn unqualify(&self) -> CredentialDefinitionId {
+        CredentialDefinitionId(Qualifier::unqualify(&self.0))
     }
 
     pub fn is_fully_qualified(&self) -> bool {
-        DidQualifier::is_fully_qualified(&self.0)
+        Qualifier::is_fully_qualified(&self.0)
     }
 }
 

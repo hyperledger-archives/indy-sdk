@@ -43,6 +43,9 @@ pub mod ctypes;
 #[path = "../../src/utils/validation.rs"]
 pub mod validation;
 
+#[path = "../../src/utils/qualifier.rs"]
+pub mod qualifier;
+
 #[path = "../../src/utils/inmem_wallet.rs"]
 pub mod inmem_wallet;
 

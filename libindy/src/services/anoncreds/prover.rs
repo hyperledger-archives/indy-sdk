@@ -165,11 +165,10 @@ impl Prover {
 
             let identifier = match proof_req {
                 ProofRequest::ProofRequestV1(_) => {
-                    let prefix = credential.issuer_did().prefix();
                     Identifier {
-                        schema_id: credential.schema_id.unqualify(prefix.clone()),
-                        cred_def_id: credential.cred_def_id.unqualify(prefix.clone()),
-                        rev_reg_id: credential.rev_reg_id.as_ref().map(|id| id.unqualify(prefix.clone())),
+                        schema_id: credential.schema_id.unqualify(),
+                        cred_def_id: credential.cred_def_id.unqualify(),
+                        rev_reg_id: credential.rev_reg_id.as_ref().map(|id| id.unqualify()),
                         timestamp: cred_key.timestamp,
                     }
                 }
@@ -290,13 +289,11 @@ impl Prover {
         res.insert("rev_reg_id".to_string(), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.0.clone()).unwrap_or_else(|| "None".to_string()));
 
         if credential.cred_def_id.is_fully_qualified() {
-            let prefix = credential.issuer_did().prefix();
-
-            res.insert(Credential::add_extra_tag_suffix("schema_id"), credential.schema_id.unqualify(prefix.clone()).0);
+            res.insert(Credential::add_extra_tag_suffix("schema_id"), credential.schema_id.unqualify().0);
             res.insert(Credential::add_extra_tag_suffix("schema_issuer_did"), schema_issuer_did.to_short().0);
             res.insert(Credential::add_extra_tag_suffix("issuer_did"), credential.cred_def_id.issuer_did().to_short().0);
-            res.insert(Credential::add_extra_tag_suffix("cred_def_id"), credential.cred_def_id.unqualify(prefix.clone()).0);
-            res.insert(Credential::add_extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.unqualify(prefix).0.clone()).unwrap_or_else(|| "None".to_string()));
+            res.insert(Credential::add_extra_tag_suffix("cred_def_id"), credential.cred_def_id.unqualify().0);
+            res.insert(Credential::add_extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.unqualify().0.clone()).unwrap_or_else(|| "None".to_string()));
         }
 
         credential.values
@@ -489,17 +486,17 @@ impl Prover {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
 
-    pub const SCHEMA_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
-    pub const SCHEMA_ISSUER_DID: &str = "NcYxiDXkpYi6ov5FcYDi1e";
-    pub const SCHEMA_NAME: &str = "gvt";
-    pub const SCHEMA_VERSION: &str = "1.0";
-    pub const ISSUER_DID: &str = "NcYxiDXkpYi6ov5FcYDi1e";
-    pub const CRED_DEF_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
-    pub const REV_REG_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:4:did:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:CL_ACCUM:TAG_1";
-    pub const NO_REV_REG_ID: &str = "None";
+    const SCHEMA_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+    const SCHEMA_ISSUER_DID: &str = "NcYxiDXkpYi6ov5FcYDi1e";
+    const SCHEMA_NAME: &str = "gvt";
+    const SCHEMA_VERSION: &str = "1.0";
+    const ISSUER_DID: &str = "NcYxiDXkpYi6ov5FcYDi1e";
+    const CRED_DEF_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+    const REV_REG_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:4:did:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:CL_ACCUM:TAG_1";
+    const NO_REV_REG_ID: &str = "None";
 
     macro_rules! hashmap {
         ($( $key: expr => $val: expr ),*) => {

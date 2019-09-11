@@ -42,12 +42,12 @@ impl SchemaOperationData {
 pub struct GetSchemaOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub dest: String,
+    pub dest: ShortDidValue,
     pub data: GetSchemaOperationData
 }
 
 impl GetSchemaOperation {
-    pub fn new(dest: String, data: GetSchemaOperationData) -> GetSchemaOperation {
+    pub fn new(dest: ShortDidValue, data: GetSchemaOperationData) -> GetSchemaOperation {
         GetSchemaOperation {
             _type: GET_SCHEMA.to_string(),
             dest,

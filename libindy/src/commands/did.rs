@@ -175,7 +175,7 @@ impl DidCommandExecutor {
                 cb(self.abbreviate_verkey(&did, verkey));
             }
             DidCommand::GetNymAck(wallet_handle, did, result, deferred_cmd_id) => {
-                info!("GetNymAck command received");
+                debug!("GetNymAck command received");
                 self.get_nym_ack(wallet_handle,  did, result, deferred_cmd_id);
             }
             DidCommand::GetAttribAck(wallet_handle, result, deferred_cmd_id) => {
@@ -440,6 +440,8 @@ impl DidCommandExecutor {
                         metadata: String) -> IndyResult<()> {
         debug!("set_did_metadata >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
+        self.crypto_service.validate_did(did)?;
+
         let metadata = DidMetadata { value: metadata };
 
         self.wallet_service.upsert_indy_object(wallet_handle, &did.0, &metadata)?;
@@ -453,6 +455,8 @@ impl DidCommandExecutor {
                         wallet_handle: WalletHandle,
                         did: &DidValue) -> IndyResult<String> {
         debug!("get_did_metadata >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
+
+        self.crypto_service.validate_did(did)?;
 
         let metadata = self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, &did.0, &RecordOptions::id_value())?;
 
@@ -557,7 +561,7 @@ impl DidCommandExecutor {
 
         let endpoint = Endpoint::new(attrib_data.endpoint.ha, attrib_data.endpoint.verkey);
 
-        self.wallet_service.add_indy_object(wallet_handle, &did, &endpoint, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &did.0, &endpoint, &HashMap::new())?;
 
         trace!("_get_attrib_ack <<<");
 

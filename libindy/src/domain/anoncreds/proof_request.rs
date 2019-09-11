@@ -9,7 +9,7 @@ use serde_json::Value;
 use utils::wql::Query;
 
 use super::credential::Credential;
-use super::super::crypto::did::DidQualifier;
+use utils::qualifier::Qualifier;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequestPayload {
@@ -210,7 +210,7 @@ fn _process_operator(restriction_op: &Query, version: &ProofRequestsVersion) -> 
 fn _check_restriction(tag_name: &str, tag_value: &str, version: &ProofRequestsVersion) -> Result<(), String> {
     if *version == ProofRequestsVersion::V1 &&
         Credential::QUALIFIABLE_TAGS.contains(&tag_name) &&
-        DidQualifier::is_fully_qualified(tag_value) {
+        Qualifier::is_fully_qualified(tag_value) {
         return Err("Proof Request validation failed: fully qualified identifiers can not be used for Proof Request of the first version. \
                     Please, set \"ver\":\"2.0\" to use fully qualified identifiers.".to_string());
     }

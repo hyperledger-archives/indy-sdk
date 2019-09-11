@@ -27,6 +27,7 @@ use services::blob_storage::BlobStorageService;
 use services::crypto::CryptoService;
 use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
 use utils::sequence;
+use utils::wql::Query;
 
 use super::tails::SDKTailsAccessor;
 use api::WalletHandle;
@@ -526,25 +527,25 @@ impl ProverCommandExecutor {
         debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}", wallet_handle, proof_request);
 
         let proof_req = proof_request.value();
-        let version = proof_request.version();
+        let proof_req_version = proof_request.version();
 
         let mut credentials_for_proof_request: CredentialsForProofRequest = CredentialsForProofRequest::default();
 
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
+            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_req_version,
                                                                                         &requested_attr.name,
                                                                                         &attr_id,
                                                                                         &requested_attr.restrictions,
                                                                                         &None)?;
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_attr.non_revoked);
 
-            let credentials_for_attribute = self._query_requested_credentials(wallet_handle, &query.to_string(), None, &interval)?;
+            let credentials_for_attribute = self._query_requested_credentials(wallet_handle, &query, None, &interval)?;
 
             credentials_for_proof_request.attrs.insert(attr_id.to_string(), credentials_for_attribute);
         }
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
-            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
+            let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_req_version,
                                                                                         &requested_predicate.name,
                                                                                         &predicate_id,
                                                                                         &requested_predicate.restrictions,
@@ -553,7 +554,7 @@ impl ProverCommandExecutor {
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_predicate.non_revoked);
 
             let credentials_for_predicate =
-                self._query_requested_credentials(wallet_handle, &query.to_string(), Some(&requested_predicate), &interval)?;
+                self._query_requested_credentials(wallet_handle, &query, Some(&requested_predicate), &interval)?;
 
             credentials_for_proof_request.predicates.insert(predicate_id.to_string(), credentials_for_predicate);
         }
@@ -817,14 +818,14 @@ impl ProverCommandExecutor {
 
     fn _query_requested_credentials(&self,
                                     wallet_handle: WalletHandle,
-                                    query_json: &str,
+                                    query_json: &Query,
                                     predicate_info: Option<&PredicateInfo>,
                                     interval: &Option<NonRevocedInterval>) -> IndyResult<Vec<RequestedCredential>> {
         debug!("_query_requested_credentials >>> wallet_handle: {:?}, query_json: {:?}, predicate_info: {:?}",
                wallet_handle, query_json, predicate_info);
 
         let mut credentials_search =
-            self.wallet_service.search_indy_records::<Credential>(wallet_handle, query_json, &SearchOptions::id_value())?;
+            self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query_json.to_string(), &SearchOptions::id_value())?;
 
         let credentials = self._get_requested_credentials(&mut credentials_search, predicate_info, interval, None)?;
 

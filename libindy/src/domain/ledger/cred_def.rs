@@ -36,13 +36,13 @@ pub struct GetCredDefOperation {
     #[serde(rename = "ref")]
     pub _ref: i32,
     pub signature_type: String,
-    pub origin: String,
+    pub origin: ShortDidValue,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>
 }
 
 impl GetCredDefOperation {
-    pub fn new(_ref: i32, signature_type: String, origin: String, tag: Option<String>) -> GetCredDefOperation {
+    pub fn new(_ref: i32, signature_type: String, origin: ShortDidValue, tag: Option<String>) -> GetCredDefOperation {
         GetCredDefOperation {
             _type: GET_CRED_DEF.to_string(),
             _ref,
@@ -68,7 +68,7 @@ impl ReplyType for GetCredDefReplyResult {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct GetCredDefResultV0 {
-    pub identifier: String,
+    pub identifier: ShortDidValue,
     #[serde(rename = "ref")]
     pub ref_: u64,
     #[serde(rename = "seqNo")]

@@ -4,6 +4,7 @@ use regex::Regex;
 use rust_base58::FromBase58;
 
 use utils::validation::Validatable;
+use utils::qualifier::{Qualifier, DEFAULT_PREFIX};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MyDidInfo {
@@ -81,49 +82,33 @@ impl DidValue {
     }
 
     pub fn to_short(&self) -> ShortDidValue {
-        ShortDidValue(self.unqualify().unwrap_or(self.0.to_string()))
+        ShortDidValue(self.unqualify())
     }
 
     pub fn from_short(did: &ShortDidValue, prefix: Option<String>) -> DidValue {
-        DidValue(DidQualifier::qualify(&did.0, prefix))
+        DidValue(Qualifier::qualify(&did.0, prefix))
     }
 
     pub fn is_fully_qualified(&self) -> bool {
-        DidQualifier::is_fully_qualified(&self.0)
+        Qualifier::is_fully_qualified(&self.0)
     }
 
     pub fn is_abbreviatable(&self) -> bool {
         if !self.is_fully_qualified() {
             return true;
         }
-        if self.0.starts_with(&format!("did:{}:", DEFAULT_PREFIX)) {
+        if self.0.starts_with(DEFAULT_PREFIX) {
             return true;
         }
         false
     }
 
-    fn unqualify(&self) -> Option<String> {
-        trace!("unqualify_did: did: {:?}", self);
-        let s = REGEX.captures(&self.0);
-        trace!("unqualify_did: matches: {:?}", s);
-        match s {
-            None => None,
-            Some(caps) => {
-                caps.get(2).map(|m| m.as_str().to_string())
-            }
-        }
+    pub fn unqualify(&self) -> String {
+        Qualifier::unqualify(&self.0)
     }
 
     pub fn prefix(&self) -> Option<String> {
-        trace!("unqualify_did: did: {:?}", self);
-        let s = REGEX.captures(&self.0);
-        trace!("unqualify_did: matches: {:?}", s);
-        match s {
-            None => None,
-            Some(caps) => {
-                caps.get(1).map(|m| m.as_str().to_string())
-            }
-        }
+        Qualifier::prefix(&self.0)
     }
 }
 
@@ -194,34 +179,3 @@ impl From<TemporaryDid> for Did {
         }
     }
 }
-
-pub const DEFAULT_PREFIX: &'static str = "did:sov:";
-
-pub struct DidQualifier {}
-
-lazy_static! {
-    pub static ref REGEX: Regex = Regex::new("(did:[a-z0-9]+:)([a-zA-Z0-9:.-_]*)").unwrap();
-}
-
-impl DidQualifier {
-    pub fn qualify(entity: &str, prefix: Option<String>) -> String {
-        if DidQualifier::is_fully_qualified(entity) {
-            format!("{}{}", prefix.unwrap_or(DEFAULT_PREFIX.to_string()), entity)
-        } else {
-            entity.to_string()
-        }
-    }
-
-    pub fn unqualify(entity: &str, prefix: Option<String>) -> String {
-        if DidQualifier::is_fully_qualified(entity) {
-            entity.replace(&prefix.unwrap_or(DEFAULT_PREFIX.to_string()), "")
-        } else {
-            entity.to_string()
-        }
-    }
-
-    pub fn is_fully_qualified(entity: &str) -> bool {
-        REGEX.is_match(&entity)
-    }
-}
-

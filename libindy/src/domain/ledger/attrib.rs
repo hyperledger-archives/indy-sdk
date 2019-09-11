@@ -65,9 +65,9 @@ pub enum GetAttrReplyResult {
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetAttResultV0 {
-    pub  identifier: String,
+    pub  identifier: ShortDidValue,
     pub  data: String,
-    pub  dest: String,
+    pub  dest: ShortDidValue,
     pub  raw: String
 }
 
@@ -75,7 +75,7 @@ pub struct GetAttResultV0 {
 pub struct GetAttResultDataV1 {
     pub ver: String,
     pub id: String,
-    pub did: String,
+    pub did: ShortDidValue,
     pub raw: String,
 }
 

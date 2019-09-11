@@ -2,12 +2,13 @@ use ursa::cl::{RevocationKeyPublic, RevocationKeyPrivate};
 
 use super::DELIMITER;
 use super::credential_definition::CredentialDefinitionId;
-use super::super::crypto::did::{DidValue, DidQualifier};
+use super::super::crypto::did::DidValue;
 
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
 use utils::validation::Validatable;
+use utils::qualifier::Qualifier;
 
 pub const CL_ACCUM: &str = "CL_ACCUM";
 pub const REV_REG_DEG_MARKER: &str = "4";
@@ -112,12 +113,12 @@ pub struct RevocationRegistryId(pub String);
 
 impl RevocationRegistryId {
     pub fn new(did: &DidValue, cred_def_id: &CredentialDefinitionId, rev_reg_type: &RegistryType, tag: &str) -> RevocationRegistryId {
-        let cred_def_id = cred_def_id.unqualify(did.prefix());
+        let cred_def_id = cred_def_id.unqualify();
         RevocationRegistryId(format!("{}{}{}{}{}{}{}{}{}", did.0, DELIMITER, REV_REG_DEG_MARKER, DELIMITER, cred_def_id.0, DELIMITER, rev_reg_type.to_str(), DELIMITER, tag))
     }
 
-    pub fn unqualify(&self, prefix: Option<String>) -> RevocationRegistryId {
-        RevocationRegistryId(DidQualifier::unqualify(&self.0, prefix))
+    pub fn unqualify(&self) -> RevocationRegistryId {
+        RevocationRegistryId(Qualifier::unqualify(&self.0))
     }
 }
 

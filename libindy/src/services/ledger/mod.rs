@@ -110,14 +110,14 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_get_schema_request(&self, identifier: Option<&DidValue>, id: &SchemaId) -> IndyResult<String> {
-        let id = id.unqualify(identifier.and_then(|id|id.prefix()));
+        let id = id.unqualify();
         let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
         if parts.len() != 4 {
             return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Schema ID `{}` cannot be used to build request: invalid number of parts", id.0)));
         }
 
-        let dest = DidValue(parts[0].to_string()).to_short().0;
+        let dest = DidValue(parts[0].to_string()).to_short();
         let name = parts[2].to_string();
         let version = parts[3].to_string();
 
@@ -129,8 +129,8 @@ impl LedgerService {
     #[logfn(Info)]
     pub fn build_cred_def_request(&self, identifier: &DidValue, cred_def: CredentialDefinitionV1) -> IndyResult<String> {
         let cred_def: CredentialDefinitionV1 = CredentialDefinitionV1 {
-            id: cred_def.id.unqualify(identifier.prefix()),
-            schema_id: cred_def.schema_id.unqualify(identifier.prefix()),
+            id: cred_def.id.unqualify(),
+            schema_id: cred_def.schema_id.unqualify(),
             signature_type: cred_def.signature_type,
             tag: cred_def.tag,
             value: cred_def.value,
@@ -140,11 +140,11 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_get_cred_def_request(&self, identifier: Option<&DidValue>, id: &CredentialDefinitionId) -> IndyResult<String> {
-        let id = id.unqualify(identifier.and_then(|id|id.prefix()));
+        let id = id.unqualify();
 
         let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
-        let origin = DidValue(parts[0].to_string()).to_short().0;
+        let origin = DidValue(parts[0].to_string()).to_short();
         let signature_type = parts[2].to_string();
 
         let ref_ = parts[3]
@@ -202,34 +202,34 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_revoc_reg_def_request(&self, identifier: &DidValue, mut rev_reg_def: RevocationRegistryDefinitionV1) -> IndyResult<String> {
-        rev_reg_def.id = rev_reg_def.id.unqualify(identifier.prefix());
-        rev_reg_def.cred_def_id = rev_reg_def.cred_def_id.unqualify(identifier.prefix());
+        rev_reg_def.id = rev_reg_def.id.unqualify();
+        rev_reg_def.cred_def_id = rev_reg_def.cred_def_id.unqualify();
 
         build_result!(RevRegDefOperation, Some(identifier), rev_reg_def)
     }
 
     #[logfn(Info)]
     pub fn build_get_revoc_reg_def_request(&self, identifier: Option<&DidValue>, id: &RevocationRegistryId) -> IndyResult<String> {
-        let id = id.unqualify(identifier.and_then(|id|id.prefix()));
+        let id = id.unqualify();
         build_result!(GetRevRegDefOperation, identifier, &id)
     }
 
     #[logfn(Info)]
     pub fn build_revoc_reg_entry_request(&self, identifier: &DidValue, revoc_reg_def_id: &RevocationRegistryId,
                                          revoc_def_type: &str, rev_reg_entry: RevocationRegistryDeltaV1) -> IndyResult<String> {
-        let revoc_reg_def_id = revoc_reg_def_id.unqualify(identifier.prefix());
+        let revoc_reg_def_id = revoc_reg_def_id.unqualify();
         build_result!(RevRegEntryOperation, Some(identifier), revoc_def_type, &revoc_reg_def_id, rev_reg_entry)
     }
 
     #[logfn(Info)]
     pub fn build_get_revoc_reg_request(&self, identifier: Option<&DidValue>, revoc_reg_def_id: &RevocationRegistryId, timestamp: i64) -> IndyResult<String> {
-        let revoc_reg_def_id = revoc_reg_def_id.unqualify(identifier.and_then(|id|id.prefix()));
+        let revoc_reg_def_id = revoc_reg_def_id.unqualify();
         build_result!(GetRevRegOperation, identifier, &revoc_reg_def_id, timestamp)
     }
 
     #[logfn(Info)]
     pub fn build_get_revoc_reg_delta_request(&self, identifier: Option<&DidValue>, revoc_reg_def_id: &RevocationRegistryId, from: Option<i64>, to: i64) -> IndyResult<String> {
-        let revoc_reg_def_id = revoc_reg_def_id.unqualify(identifier.and_then(|id|id.prefix()));
+        let revoc_reg_def_id = revoc_reg_def_id.unqualify();
         build_result!(GetRevRegDeltaOperation, identifier, &revoc_reg_def_id, from, to)
     }
 

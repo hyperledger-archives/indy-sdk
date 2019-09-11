@@ -1,11 +1,12 @@
 use super::DELIMITER;
 
-use super::super::crypto::did::{DidValue, DidQualifier};
+use super::super::crypto::did::DidValue;
 
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
 use utils::validation::Validatable;
+use utils::qualifier::Qualifier;
 
 pub const SCHEMA_MARKER: &str = "2";
 pub const MAX_ATTRIBUTES_COUNT: usize = 125;
@@ -89,15 +90,15 @@ impl SchemaId {
     }
 
     pub fn qualify(&self, prefix: Option<String>) -> SchemaId {
-        SchemaId(DidQualifier::qualify(&self.0, prefix))
+        SchemaId(Qualifier::qualify(&self.0, prefix))
     }
 
-    pub fn unqualify(&self, prefix: Option<String>) -> SchemaId {
-        SchemaId(DidQualifier::unqualify(&self.0, prefix))
+    pub fn unqualify(&self) -> SchemaId {
+        SchemaId(Qualifier::unqualify(&self.0))
     }
 
     pub fn is_fully_qualified(&self) -> bool {
-        DidQualifier::is_fully_qualified(&self.0)
+        Qualifier::is_fully_qualified(&self.0)
     }
 }
 
@@ -112,7 +113,7 @@ impl Validatable for SchemaId {
         } else if parts.len() == 4 {
             // pass
         } else if parts.len() == 6 {
-            if !DidQualifier::is_fully_qualified(&self.0) {
+            if !Qualifier::is_fully_qualified(&self.0) {
                 return Err("SchemaId validation failed: must be fully qualified".to_string());
             }
         } else {

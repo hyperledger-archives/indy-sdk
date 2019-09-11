@@ -6,7 +6,6 @@ use ursa::cl::{
 };
 
 use super::schema::SchemaId;
-use super::super::crypto::did::DidValue;
 use super::credential_definition::CredentialDefinitionId;
 use super::revocation_registry_definition::RevocationRegistryId;
 
@@ -31,10 +30,6 @@ pub struct Credential {
 impl Credential {
     pub const QUALIFIABLE_TAGS: [&'static str; 5] = ["issuer_did", "cred_def_id", "schema_id", "schema_issuer_did", "rev_reg_id"];
     pub const EXTRA_TAG_SUFFIX: &'static str = "_short";
-
-    pub fn issuer_did(&self) -> DidValue {
-        self.cred_def_id.issuer_did()
-    }
 
     pub fn add_extra_tag_suffix(tag: &str) -> String {
         format!("{}{}", tag, Self::EXTRA_TAG_SUFFIX)

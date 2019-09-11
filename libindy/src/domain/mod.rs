@@ -12,8 +12,7 @@ use utils::validation::Validatable;
 pub struct IndyConfig {
     pub crypto_thread_pool_size: Option<usize>,
     pub collect_backtrace: Option<bool>,
-    pub freshness_threshold: Option<u64>,
-    pub did_protocol_version: Option<usize>
+    pub freshness_threshold: Option<u64>
 }
 
 impl Validatable for IndyConfig {}

@@ -2947,8 +2947,8 @@ mod demos {
                                                 "name":"name",
                                                 "restrictions": {
                                                     "$and": [
-                                                        {"schema_id": SchemaId(schema_id.clone()).unqualify(Some(DEFAULT_PREFIX.to_string()))},
-                                                        {"cred_def_id": CredentialDefinitionId(cred_def_id.clone()).unqualify(Some(DEFAULT_PREFIX.to_string()))},
+                                                        {"schema_id": SchemaId(schema_id.clone()).unqualify()},
+                                                        {"cred_def_id": CredentialDefinitionId(cred_def_id.clone()).unqualify()},
                                                     ]
                                                 }
                                             }
@@ -2961,8 +2961,8 @@ mod demos {
                                                 "restrictions": {
                                                     "$and": [
                                                         {"issuer_did": ISSUER_DID.to_string()},
-                                                        {"schema_id": SchemaId(schema_id.clone()).unqualify(Some(DEFAULT_PREFIX.to_string()))},
-                                                        {"cred_def_id": CredentialDefinitionId(cred_def_id.clone()).unqualify(Some(DEFAULT_PREFIX.to_string()))},
+                                                        {"schema_id": SchemaId(schema_id.clone()).unqualify()},
+                                                        {"cred_def_id": CredentialDefinitionId(cred_def_id.clone()).unqualify()},
                                                     ]
                                                 }
                                                 }

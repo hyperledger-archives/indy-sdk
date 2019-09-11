@@ -25,7 +25,6 @@ use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistry
 use utils::domain::anoncreds::proof::Proof;
 use utils::domain::anoncreds::revocation_state::RevocationState;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
-use utils::domain::crypto::did::DidValue;
 
 use std::thread;
 
@@ -901,7 +900,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
                "attr1_referent": json!({
                    "name":"name",
                    "restrictions": {
-                        "cred_def_id": CredentialDefinitionId(issuer.cred_def_id.clone()).unqualify(DidValue(issuer.issuer_did.clone()).prefix())
+                        "cred_def_id": CredentialDefinitionId(issuer.cred_def_id.clone()).unqualify()
                    }
                })
            }),
