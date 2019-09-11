@@ -12,9 +12,10 @@ use indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet};
 use serde_json;
 use std::convert::Into;
 use utils::futures::*;
+use indyrs::WalletHandle;
 
 pub struct ForwardAgent {
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     did: String,
     verkey: String,
     router: Addr<Router>,
@@ -127,7 +128,7 @@ impl ForwardAgent {
             .into_box()
     }
 
-    fn _restore_connections(wallet_handle: i32,
+    fn _restore_connections(wallet_handle: WalletHandle,
                             forward_agent_detail: ForwardAgentDetail,
                             wallet_storage_config: WalletStorageConfig,
                             router: Addr<Router>) -> ResponseFuture<(), Error> {

@@ -14,10 +14,11 @@ use std::collections::HashMap;
 use utils::futures::*;
 use utils::rand;
 use serde_json;
+use indyrs::WalletHandle;
 
 #[allow(unused)] //FIXME:
 pub struct Agent {
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     owner_did: String,
     owner_verkey: String,
     did: String,
@@ -172,7 +173,7 @@ impl Agent {
             .into_box()
     }
 
-    fn _restore_connections(wallet_handle: i32,
+    fn _restore_connections(wallet_handle: WalletHandle,
                             owner_did: &str,
                             owner_verkey: &str,
                             forward_agent_detail: &ForwardAgentDetail,
@@ -445,7 +446,7 @@ impl Agent {
             .into_box()
     }
 
-    fn get_pairwise_list(wallet_handle: i32) -> ResponseFuture<Vec<Pairwise>, Error> {
+    fn get_pairwise_list(wallet_handle: WalletHandle) -> ResponseFuture<Vec<Pairwise>, Error> {
         future::ok(())
             .and_then(move |_| {
                 pairwise::list_pairwise(wallet_handle)

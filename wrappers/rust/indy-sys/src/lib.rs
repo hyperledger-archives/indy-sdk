@@ -1,4 +1,6 @@
 extern crate libc;
+#[macro_use] extern crate serde_derive;
+extern crate serde;
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -20,7 +22,7 @@ pub type BString = *const u8;
 pub type CString = *const c_char;
 
 #[repr(transparent)]
-#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, Deserialize)]
 pub struct WalletHandle(pub i32);
 pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
 

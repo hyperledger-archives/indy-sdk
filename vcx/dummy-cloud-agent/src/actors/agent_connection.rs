@@ -20,6 +20,7 @@ use utils::to_i8;
 use base64;
 use rmp_serde;
 use serde_json;
+use indyrs::WalletHandle;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -34,7 +35,7 @@ struct RemoteConnectionDetail {
 #[derive(Clone, Debug, Deserialize)]
 pub struct AgentConnectionConfig {
     // Agent wallet handle
-    pub wallet_handle: i32,
+    pub wallet_handle: WalletHandle,
     // Agent Owner DID
     pub owner_did: String,
     // Agent Owner Verkey
@@ -56,7 +57,7 @@ pub struct AgentConnectionConfig {
 #[allow(unused)] //FIXME:
 pub struct AgentConnection {
     // Agent wallet handle
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     // Agent Owner DID
     owner_did: String,
     // Agent Owner Verkey
@@ -137,7 +138,7 @@ impl AgentConnection {
             .into_box()
     }
 
-    pub fn restore(wallet_handle: i32,
+    pub fn restore(wallet_handle: WalletHandle,
                    owner_did: &str,
                    owner_verkey: &str,
                    agent_pairwise_did: &str,

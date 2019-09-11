@@ -11,6 +11,7 @@ use indy::{did, pairwise, pairwise::PairwiseInfo};
 use serde_json;
 use std::convert::Into;
 use utils::futures::*;
+use indyrs::WalletHandle;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ForwardAgentConnectionState {
@@ -20,7 +21,7 @@ pub struct ForwardAgentConnectionState {
 }
 
 pub struct ForwardAgentConnection {
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     their_did: String,
     their_verkey: String,
     my_verkey: String,
@@ -31,7 +32,7 @@ pub struct ForwardAgentConnection {
 }
 
 impl ForwardAgentConnection {
-    pub fn create(wallet_handle: i32,
+    pub fn create(wallet_handle: WalletHandle,
                   their_did: String,
                   their_verkey: String,
                   router: Addr<Router>,
@@ -96,7 +97,7 @@ impl ForwardAgentConnection {
             .into_box()
     }
 
-    pub fn restore(wallet_handle: i32,
+    pub fn restore(wallet_handle: WalletHandle,
                    their_did: String,
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
