@@ -15,6 +15,7 @@ use named_type::NamedType;
 
 use utils::validation::Validatable;
 
+
 #[derive(Debug, Deserialize, Serialize, NamedType)]
 pub struct Credential {
     pub schema_id: SchemaId,
@@ -28,16 +29,15 @@ pub struct Credential {
 }
 
 impl Credential {
+    pub const QUALIFIABLE_TAGS: [&'static str; 5] = ["issuer_did", "cred_def_id", "schema_id", "schema_issuer_did", "rev_reg_id"];
+    pub const EXTRA_TAG_SUFFIX: &'static str = "_short";
+
     pub fn issuer_did(&self) -> DidValue {
         self.cred_def_id.issuer_did()
     }
 
-    pub fn qualifiable_tags() -> [&'static str; 5] {
-        ["issuer_did", "cred_def_id", "schema_id", "schema_issuer_did", "rev_reg_id"]
-    }
-
-    pub fn extra_tag_suffix(tag: &str) -> String {
-        format!("{}_short", tag)
+    pub fn add_extra_tag_suffix(tag: &str) -> String {
+        format!("{}{}", tag, Self::EXTRA_TAG_SUFFIX)
     }
 }
 

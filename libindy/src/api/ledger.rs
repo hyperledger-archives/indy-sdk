@@ -360,7 +360,7 @@ pub extern fn indy_build_nym_request(command_handle: CommandHandle,
     trace!("indy_build_nym_request: >>> submitter_did: {:?}, target_did: {:?}, verkey: {:?}, alias: {:?}, role: {:?}",
            submitter_did, target_did, verkey, alias, role);
 
-    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_opt_c_str!(verkey, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(alias, ErrorCode::CommonInvalidParam5);

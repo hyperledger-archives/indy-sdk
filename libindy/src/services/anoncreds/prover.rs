@@ -19,7 +19,7 @@ use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as Credent
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequestMetadata;
 use domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
-use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequests, ProofRequest, ProofRequestsVersion, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
+use domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestPayload, ProofRequestsVersion, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
 use domain::anoncreds::requested_credential::ProvingCredentialKey;
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
@@ -103,7 +103,7 @@ impl Prover {
 
     pub fn create_proof(&self,
                         credentials: &HashMap<String, Credential>,
-                        proof_req: &ProofRequests,
+                        proof_req: &ProofRequest,
                         requested_credentials: &RequestedCredentials,
                         master_secret: &MasterSecret,
                         schemas: &HashMap<SchemaId, SchemaV1>,
@@ -164,7 +164,7 @@ impl Prover {
 
 
             let identifier = match proof_req {
-                ProofRequests::ProofRequestV1(_) => {
+                ProofRequest::ProofRequestV1(_) => {
                     let prefix = credential.issuer_did().prefix();
                     Identifier {
                         schema_id: credential.schema_id.unqualify(prefix.clone()),
@@ -173,7 +173,7 @@ impl Prover {
                         timestamp: cred_key.timestamp,
                     }
                 }
-                ProofRequests::ProofRequestV2(_) => {
+                ProofRequest::ProofRequestV2(_) => {
                     Identifier {
                         schema_id: credential.schema_id.clone(),
                         cred_def_id: credential.cred_def_id.clone(),
@@ -208,7 +208,7 @@ impl Prover {
     }
 
     pub fn _prepare_credentials_for_proving(requested_credentials: &RequestedCredentials,
-                                            proof_req: &ProofRequest) -> IndyResult<HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)>> {
+                                            proof_req: &ProofRequestPayload) -> IndyResult<HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)>> {
         trace!("_prepare_credentials_for_proving >>> requested_credentials: {:?}, proof_req: {:?}", requested_credentials, proof_req);
 
         let mut credentials_for_proving: HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)> = HashMap::new();
@@ -292,11 +292,11 @@ impl Prover {
         if credential.cred_def_id.is_fully_qualified() {
             let prefix = credential.issuer_did().prefix();
 
-            res.insert(Credential::extra_tag_suffix("schema_id"), credential.schema_id.unqualify(prefix.clone()).0);
-            res.insert(Credential::extra_tag_suffix("schema_issuer_did"), schema_issuer_did.to_short().0);
-            res.insert(Credential::extra_tag_suffix("issuer_did"), credential.cred_def_id.issuer_did().to_short().0);
-            res.insert(Credential::extra_tag_suffix("cred_def_id"), credential.cred_def_id.unqualify(prefix.clone()).0);
-            res.insert(Credential::extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.unqualify(prefix).0.clone()).unwrap_or_else(|| "None".to_string()));
+            res.insert(Credential::add_extra_tag_suffix("schema_id"), credential.schema_id.unqualify(prefix.clone()).0);
+            res.insert(Credential::add_extra_tag_suffix("schema_issuer_did"), schema_issuer_did.to_short().0);
+            res.insert(Credential::add_extra_tag_suffix("issuer_did"), credential.cred_def_id.issuer_did().to_short().0);
+            res.insert(Credential::add_extra_tag_suffix("cred_def_id"), credential.cred_def_id.unqualify(prefix.clone()).0);
+            res.insert(Credential::add_extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.unqualify(prefix).0.clone()).unwrap_or_else(|| "None".to_string()));
         }
 
         credential.values
@@ -348,7 +348,7 @@ impl Prover {
 
     fn _update_requested_proof(&self, req_attrs_for_credential: Vec<RequestedAttributeInfo>,
                                req_predicates_for_credential: Vec<RequestedPredicateInfo>,
-                               proof_req: &ProofRequest,
+                               proof_req: &ProofRequestPayload,
                                credential: &Credential,
                                sub_proof_index: u32,
                                requested_proof: &mut RequestedProof) -> IndyResult<()> {
@@ -441,25 +441,25 @@ impl Prover {
     fn double_restrictions(&self, operator: Query) -> IndyResult<Query> {
         Ok(match operator {
             Query::Eq(tag_name, tag_value) => {
-                if Credential::qualifiable_tags().contains(&tag_name.as_str()) {
+                if Credential::QUALIFIABLE_TAGS.contains(&tag_name.as_str()) {
                     Query::Or(vec![Query::Eq(tag_name.clone(), tag_value.clone()),
-                                   Query::Eq(Credential::extra_tag_suffix(&tag_name), tag_value)])
+                                   Query::Eq(Credential::add_extra_tag_suffix(&tag_name), tag_value)])
                 } else {
                     Query::Eq(tag_name, tag_value)
                 }
             }
             Query::Neq(tag_name, tag_value) => {
-                if Credential::qualifiable_tags().contains(&tag_name.as_str()) {
+                if Credential::QUALIFIABLE_TAGS.contains(&tag_name.as_str()) {
                     Query::And(vec![Query::Neq(tag_name.clone(), tag_value.clone()),
-                                    Query::Neq(Credential::extra_tag_suffix(&tag_name), tag_value)])
+                                    Query::Neq(Credential::add_extra_tag_suffix(&tag_name), tag_value)])
                 } else {
                     Query::Neq(tag_name, tag_value)
                 }
             }
             Query::In(tag_name, tag_values) => {
-                if Credential::qualifiable_tags().contains(&tag_name.as_str()) {
+                if Credential::QUALIFIABLE_TAGS.contains(&tag_name.as_str()) {
                     Query::Or(vec![Query::In(tag_name.clone(), tag_values.clone()),
-                                   Query::In(Credential::extra_tag_suffix(&&tag_name), tag_values)])
+                                   Query::In(Credential::add_extra_tag_suffix(&&tag_name), tag_values)])
                 } else {
                     Query::In(tag_name, tag_values)
                 }
@@ -705,8 +705,8 @@ pub mod tests {
             }
         }
 
-        fn _proof_req() -> ProofRequest {
-            ProofRequest {
+        fn _proof_req() -> ProofRequestPayload {
+            ProofRequestPayload {
                 nonce: ursa::cl::new_nonce().unwrap(),
                 name: "Job-Application".to_string(),
                 version: "0.1".to_string(),
@@ -884,7 +884,7 @@ pub mod tests {
 
             let expected_query = Query::Or(vec![
                 Query::Eq(QUALIFIABLE_TAG.to_string(), VALUE.to_string()),
-                Query::Eq(Credential::extra_tag_suffix(QUALIFIABLE_TAG), VALUE.to_string()),
+                Query::Eq(Credential::add_extra_tag_suffix(QUALIFIABLE_TAG), VALUE.to_string()),
             ]);
 
             assert_eq!(expected_query, query);
@@ -915,7 +915,7 @@ pub mod tests {
             let expected_query = Query::And(vec![
                 Query::Or(vec![
                     Query::Eq(QUALIFIABLE_TAG.to_string(), VALUE.to_string()),
-                    Query::Eq(Credential::extra_tag_suffix(QUALIFIABLE_TAG), VALUE.to_string()),
+                    Query::Eq(Credential::add_extra_tag_suffix(QUALIFIABLE_TAG), VALUE.to_string()),
                 ]),
                 Query::Eq(NOT_QUALIFIABLE_TAG.to_string(), VALUE.to_string())
             ]);

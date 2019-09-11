@@ -3447,7 +3447,7 @@ mod medium_cases {
     use super::*;
     use std::collections::HashSet;
     use utils::domain::anoncreds::schema::{AttributeNames, MAX_ATTRIBUTES_COUNT};
-    use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequest};
+    use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequestPayload};
 
     mod issuer_create_schema {
         use super::*;
@@ -4239,7 +4239,7 @@ mod medium_cases {
 
         #[test]
         fn verifier_verify_proof_success_with_in_wql() {
-            let mut proof_req: ProofRequest = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
+            let mut proof_req: ProofRequestPayload = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
             proof_req.requested_attributes.insert(
                 "attr1_referent".to_string(),
                 AttributeInfo {
@@ -4266,7 +4266,7 @@ mod medium_cases {
 
         #[test]
         fn verifier_verify_proof_fails_with_in_wql() {
-            let mut proof_req: ProofRequest = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
+            let mut proof_req: ProofRequestPayload = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
             proof_req.requested_attributes.insert(
                 "attr1_referent".to_string(),
                 AttributeInfo {
@@ -4293,7 +4293,7 @@ mod medium_cases {
 
         #[test]
         fn verifier_verify_proof_success_with_vector_of_filters() {
-            let mut proof_req: ProofRequest = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
+            let mut proof_req: ProofRequestPayload = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
             proof_req.requested_attributes.insert(
                 "attr1_referent".to_string(),
                 AttributeInfo {
@@ -4322,7 +4322,7 @@ mod medium_cases {
 
         #[test]
         fn verifier_verify_proof_fails_with_vector_of_filters() {
-            let mut proof_req: ProofRequest = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
+            let mut proof_req: ProofRequestPayload = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
             proof_req.requested_attributes.insert(
                 "attr1_referent".to_string(),
                 AttributeInfo {
@@ -4351,7 +4351,7 @@ mod medium_cases {
 
         #[test]
         fn verifier_verify_proof_success_with_or_wql() {
-            let mut proof_req: ProofRequest = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
+            let mut proof_req: ProofRequestPayload = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
             proof_req.requested_attributes.insert(
                 "attr1_referent".to_string(),
                 AttributeInfo {
@@ -4376,7 +4376,7 @@ mod medium_cases {
 
         #[test]
         fn verifier_verify_proof_fails_with_or_wql() {
-            let mut proof_req: ProofRequest = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
+            let mut proof_req: ProofRequestPayload = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
             proof_req.requested_attributes.insert(
                 "attr1_referent".to_string(),
                 AttributeInfo {
@@ -4401,7 +4401,7 @@ mod medium_cases {
 
         #[test]
         fn verifier_verify_proof_success_with_and_wql() {
-            let mut proof_req: ProofRequest = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
+            let mut proof_req: ProofRequestPayload = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
             proof_req.requested_attributes.insert(
                 "attr1_referent".to_string(),
                 AttributeInfo {
@@ -4426,7 +4426,7 @@ mod medium_cases {
 
         #[test]
         fn verifier_verify_proof_fails_with_and_wql() {
-            let mut proof_req: ProofRequest = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
+            let mut proof_req: ProofRequestPayload = serde_json::from_str(&anoncreds::proof_request_restrictions()).unwrap();
             proof_req.requested_attributes.insert(
                 "attr1_referent".to_string(),
                 AttributeInfo {

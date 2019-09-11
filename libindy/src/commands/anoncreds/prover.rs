@@ -13,7 +13,7 @@ use domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
 use domain::anoncreds::master_secret::MasterSecret;
-use domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, ProofRequests, ProofRequestExtraQuery};
+use domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, ProofRequest, ProofRequestExtraQuery};
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
@@ -87,11 +87,11 @@ pub enum ProverCommand {
         Box<dyn Fn(IndyResult<()>) + Send>),
     GetCredentialsForProofReq(
         WalletHandle,
-        ProofRequests, // proof request
+        ProofRequest, // proof request
         Box<dyn Fn(IndyResult<String>) + Send>),
     SearchCredentialsForProofReq(
         WalletHandle,
-        ProofRequests, // proof request
+        ProofRequest, // proof request
         Option<ProofRequestExtraQuery>, // extra query
         Box<dyn Fn(IndyResult<i32>) + Send>),
     FetchCredentialForProofReq(
@@ -104,7 +104,7 @@ pub enum ProverCommand {
         Box<dyn Fn(IndyResult<()>) + Send>),
     CreateProof(
         WalletHandle,
-        ProofRequests, // proof request
+        ProofRequest, // proof request
         RequestedCredentials, // requested credentials
         String, // master secret name
         Schemas, // schemas
@@ -335,7 +335,7 @@ impl ProverCommandExecutor {
         match catpol {
             Some(pol) => {
                 self.wallet_service.upsert_indy_object(wallet_handle, &cred_def_id.0, pol)?;
-            },
+            }
             None => {
                 if self.wallet_service.record_exists::<CredentialAttrTagPolicy>(wallet_handle, &cred_def_id.0)? {
                     self.wallet_service.delete_indy_record::<CredentialAttrTagPolicy>(wallet_handle, &cred_def_id.0)?;
@@ -522,7 +522,7 @@ impl ProverCommandExecutor {
 
     fn get_credentials_for_proof_req(&self,
                                      wallet_handle: WalletHandle,
-                                     proof_request: &ProofRequests) -> IndyResult<String> {
+                                     proof_request: &ProofRequest) -> IndyResult<String> {
         debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}", wallet_handle, proof_request);
 
         let proof_req = proof_request.value();
@@ -532,10 +532,10 @@ impl ProverCommandExecutor {
 
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
-                                                          &requested_attr.name,
-                                                          &attr_id,
-                                                          &requested_attr.restrictions,
-                                                          &None)?;
+                                                                                        &requested_attr.name,
+                                                                                        &attr_id,
+                                                                                        &requested_attr.restrictions,
+                                                                                        &None)?;
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_attr.non_revoked);
 
             let credentials_for_attribute = self._query_requested_credentials(wallet_handle, &query.to_string(), None, &interval)?;
@@ -545,10 +545,10 @@ impl ProverCommandExecutor {
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
-                                                          &requested_predicate.name,
-                                                          &predicate_id,
-                                                          &requested_predicate.restrictions,
-                                                          &None)?;
+                                                                                        &requested_predicate.name,
+                                                                                        &predicate_id,
+                                                                                        &requested_predicate.restrictions,
+                                                                                        &None)?;
 
             let interval = get_non_revoc_interval(&proof_req.non_revoked, &requested_predicate.non_revoked);
 
@@ -568,7 +568,7 @@ impl ProverCommandExecutor {
 
     fn search_credentials_for_proof_req(&self,
                                         wallet_handle: WalletHandle,
-                                        proof_request: &ProofRequests,
+                                        proof_request: &ProofRequest,
                                         extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<i32> {
         debug!("search_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}, extra_query: {:?}", wallet_handle, proof_request, extra_query);
 
@@ -579,10 +579,10 @@ impl ProverCommandExecutor {
 
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
-                                                          &requested_attr.name,
-                                                          &attr_id,
-                                                          &requested_attr.restrictions,
-                                                          &extra_query)?;
+                                                                                        &requested_attr.name,
+                                                                                        &attr_id,
+                                                                                        &requested_attr.restrictions,
+                                                                                        &extra_query)?;
 
             let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query.to_string(), &SearchOptions::id_value())?;
@@ -596,10 +596,10 @@ impl ProverCommandExecutor {
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
-                                                          &requested_predicate.name,
-                                                          &predicate_id,
-                                                          &requested_predicate.restrictions,
-                                                          &extra_query)?;
+                                                                                        &requested_predicate.name,
+                                                                                        &predicate_id,
+                                                                                        &requested_predicate.restrictions,
+                                                                                        &extra_query)?;
 
             let credentials_search =
                 self.wallet_service.search_indy_records::<Credential>(wallet_handle, &query.to_string(), &SearchOptions::id_value())?;
@@ -666,7 +666,7 @@ impl ProverCommandExecutor {
 
     fn create_proof(&self,
                     wallet_handle: WalletHandle,
-                    proof_req: &ProofRequests,
+                    proof_req: &ProofRequest,
                     requested_credentials: &RequestedCredentials,
                     master_secret_id: &str,
                     schemas: &HashMap<SchemaId, SchemaV1>,

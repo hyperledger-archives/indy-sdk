@@ -148,38 +148,6 @@ impl CredentialDefinitionId {
     }
 }
 
-impl Validatable for CredentialDefinitionId {
-    fn validate(&self) -> Result<(), String> {
-//        let parts: Vec<&str> = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
-//
-//        parts.get(0).ok_or_else(||format!("Credential Definition Id validation failed: issuer DID not found in: {}", self.0))?;
-//        parts.get(1).ok_or_else(||format!("Credential Definition Id validation failed: marker not found in: {}", self.0))?;
-//        parts.get(2).ok_or_else(||format!("Credential Definition Id validation failed: signature type not found in: {}", self.0))?;
-//
-//        if parts.len() == 4 {
-//            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:1
-//            parts.get(3)
-//                .ok_or_else(||format!("Credential Definition Id validation failed: schema id not found in: {}", self.0))?
-//                .parse::<i32>()
-//                .map_err(|_| format!("Credential Definition Id validation failed: schema id is invalid number: {}", self.0))?;
-//        } else if parts.len() == 5 {
-//            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:tag
-//            parts.get(3)
-//                .ok_or_else(||format!("Credential Definition Id validation failed: schema id not found in: {}", self.0))?
-//                .parse::<i32>()
-//                .map_err(|_| format!("Credential Definition Id validation failed: schema id is invalid number: {}", self.0))?;
-//        } else if parts.len() == 7 {
-//            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0
-//            // nothing to do
-//        } else if parts.len() == 8 {
-//            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG_1
-//            // nothing to do
-//        } else {
-//            return Err("Credential Definition Id validation failed: too much parts".to_string());
-//        }
-
-        Ok(())
-    }
-}
+impl Validatable for CredentialDefinitionId {}
 
 impl Validatable for CredentialDefinitionConfig {}

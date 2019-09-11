@@ -57,9 +57,9 @@ impl Issuer {
                                    max_cred_num: u32,
                                    issuance_by_default: bool,
                                    issuer_did: &DidValue) -> IndyResult<(RevocationRegistryDefinitionValuePublicKeys,
-                                                                              RevocationKeyPrivate,
-                                                                              RevocationRegistry,
-                                                                              RevocationTailsGenerator)> {
+                                                                         RevocationKeyPrivate,
+                                                                         RevocationRegistry,
+                                                                         RevocationTailsGenerator)> {
         trace!("new_revocation_registry >>> pub_key: {:?}, max_cred_num: {:?}, issuance_by_default: {:?}, issuer_did: {:?}",
                cred_def, max_cred_num, issuance_by_default, issuer_did);
 

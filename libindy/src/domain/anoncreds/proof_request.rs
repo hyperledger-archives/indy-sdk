@@ -12,7 +12,7 @@ use super::credential::Credential;
 use super::super::crypto::did::DidQualifier;
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ProofRequest {
+pub struct ProofRequestPayload {
     pub nonce: Nonce,
     pub name: String,
     pub version: String,
@@ -22,9 +22,9 @@ pub struct ProofRequest {
 }
 
 #[derive(Debug)]
-pub enum ProofRequests {
-    ProofRequestV1(ProofRequest),
-    ProofRequestV2(ProofRequest),
+pub enum ProofRequest {
+    ProofRequestV1(ProofRequestPayload),
+    ProofRequestV2(ProofRequestPayload),
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -33,23 +33,23 @@ pub enum ProofRequestsVersion {
     V2,
 }
 
-impl ProofRequests {
-    pub fn value<'a>(&'a self) -> &'a ProofRequest {
+impl ProofRequest {
+    pub fn value<'a>(&'a self) -> &'a ProofRequestPayload {
         match self {
-            ProofRequests::ProofRequestV1(proof_req) => proof_req,
-            ProofRequests::ProofRequestV2(proof_req) => proof_req,
+            ProofRequest::ProofRequestV1(proof_req) => proof_req,
+            ProofRequest::ProofRequestV2(proof_req) => proof_req,
         }
     }
 
     pub fn version(&self) -> ProofRequestsVersion {
         match self {
-            ProofRequests::ProofRequestV1(_) => ProofRequestsVersion::V1,
-            ProofRequests::ProofRequestV2(_) => ProofRequestsVersion::V2,
+            ProofRequest::ProofRequestV1(_) => ProofRequestsVersion::V1,
+            ProofRequest::ProofRequestV2(_) => ProofRequestsVersion::V2,
         }
     }
 }
 
-impl<'de> Deserialize<'de> for ProofRequests
+impl<'de> Deserialize<'de> for ProofRequest
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: Deserializer<'de>
@@ -67,19 +67,19 @@ impl<'de> Deserialize<'de> for ProofRequests
             Some(version) => {
                 match version.as_ref() {
                     "1.0" => {
-                        let proof_request = ProofRequest::deserialize(v).map_err(de::Error::custom)?;
-                        Ok(ProofRequests::ProofRequestV1(proof_request))
+                        let proof_request = ProofRequestPayload::deserialize(v).map_err(de::Error::custom)?;
+                        Ok(ProofRequest::ProofRequestV1(proof_request))
                     }
                     "2.0" => {
-                        let proof_request = ProofRequest::deserialize(v).map_err(de::Error::custom)?;
-                        Ok(ProofRequests::ProofRequestV2(proof_request))
+                        let proof_request = ProofRequestPayload::deserialize(v).map_err(de::Error::custom)?;
+                        Ok(ProofRequest::ProofRequestV2(proof_request))
                     }
                     _ => Err(de::Error::unknown_variant(&version, &["2.0"]))
                 }
             }
             None => {
-                let proof_request = ProofRequest::deserialize(v).map_err(de::Error::custom)?;
-                Ok(ProofRequests::ProofRequestV1(proof_request))
+                let proof_request = ProofRequestPayload::deserialize(v).map_err(de::Error::custom)?;
+                Ok(ProofRequest::ProofRequestV1(proof_request))
             }
         }
     }
@@ -145,7 +145,7 @@ pub struct RequestedPredicateInfo {
     pub predicate_info: PredicateInfo
 }
 
-impl Validatable for ProofRequests {
+impl Validatable for ProofRequest {
     fn validate(&self) -> Result<(), String> {
         let value = self.value();
         let version = self.version();
@@ -209,7 +209,7 @@ fn _process_operator(restriction_op: &Query, version: &ProofRequestsVersion) -> 
 
 fn _check_restriction(tag_name: &str, tag_value: &str, version: &ProofRequestsVersion) -> Result<(), String> {
     if *version == ProofRequestsVersion::V1 &&
-        Credential::qualifiable_tags().contains(&tag_name) &&
+        Credential::QUALIFIABLE_TAGS.contains(&tag_name) &&
         DidQualifier::is_fully_qualified(tag_value) {
         return Err("Proof Request validation failed: fully qualified identifiers can not be used for Proof Request of the first version. \
                     Please, set \"ver\":\"2.0\" to use fully qualified identifiers.".to_string());
