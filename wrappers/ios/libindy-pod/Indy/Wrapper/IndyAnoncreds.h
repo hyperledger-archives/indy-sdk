@@ -546,6 +546,10 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                        // If specified prover must proof non-revocation
                        // for date in this interval for each attribute
                        // (applies to every attribute and predicate but can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
     }
  attr_referent: Proof-request local identifier of requested attribute
  attr_info: Describes requested attribute
@@ -635,6 +639,10 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                         // for date in this interval for each attribute
                         // (applies to every attribute and predicate but can be overridden on attribute level)
                         // (can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
     }
  @param extraQueryJSON: (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
     {
@@ -767,6 +775,10 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                         // for date in this interval for each attribute
                         // (applies to every attribute and predicate but can be overridden on attribute level)
                         // (can be overridden on attribute level)
+         "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
      }
  @param requestedCredentialsJSON: either a credential or self-attested attribute for each requested attribute
      {
@@ -830,6 +842,10 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                          // If specified prover must proof non-revocation
                          // for date in this interval this attribute
                          // (overrides proof level interval)
+          "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
       }
   non_revoc_interval: Defines non-revocation interval
       {
@@ -878,7 +894,6 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
            It should not be parsed and are likely to change in future versions).
          "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
      }
-///
   */
 + (void)proverCreateProofForRequest:(NSString *)proofRequestJSON
            requestedCredentialsJSON:(NSString *)requestedCredentialsJSON
@@ -892,7 +907,10 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 /**
  Verifies a proof (of multiple credential).
  All required schemas, public keys and revocation registries must be provided.
- 
+
+ IMPORTANT: You must use *_id's (`schema_id`, `cred_def_id`, `rev_reg_id`) listed in `proof[identifiers]`
+ as the keys for corresponding `schemasJSON`, `credentialDefsJSON`, `revocRegDefsJSON`, `revocRegsJSON` objects.
+
  @param  proofRequestJson: proof request json
      {
          "name": string,
@@ -910,6 +928,10 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                         // If specified prover must proof non-revocation
                         // for date in this interval for each attribute
                         // (can be overridden on attribute level)
+         "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
      }
  @param proofJSON: proof json
      {

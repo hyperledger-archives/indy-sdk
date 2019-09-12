@@ -240,7 +240,7 @@ impl ProverCommandExecutor {
             }
             ProverCommand::CreateProof(wallet_handle, proof_req, requested_credentials, master_secret_name,
                                        schemas, cred_defs, rev_states, cb) => {
-                info!(target: "prover_command_executor", "CreateProof command received");
+                debug!(target: "prover_command_executor", "CreateProof command received");
                 cb(self.create_proof(wallet_handle, &proof_req, &requested_credentials, &master_secret_name,
                                      &schemas_map_to_schemas_v1_map(schemas),
                                      &cred_defs_map_to_cred_defs_v1_map(cred_defs),

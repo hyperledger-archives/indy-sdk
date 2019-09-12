@@ -86,7 +86,10 @@ impl DidValue {
     }
 
     pub fn from_short(did: &ShortDidValue, prefix: Option<String>) -> DidValue {
-        DidValue(Qualifier::qualify(&did.0, prefix))
+        match prefix {
+            Some(prefix_) => DidValue(Qualifier::qualify(&did.0, Some(prefix_))),
+            None => DidValue(did.0.clone())
+        }
     }
 
     pub fn is_fully_qualified(&self) -> bool {

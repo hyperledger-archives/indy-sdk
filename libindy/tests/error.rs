@@ -7,13 +7,13 @@ use std::str::Utf8Error;
 
 use self::libc::c_char;
 
-//#[test]
-//fn get_current_error_works_for_no_error() {
-//    let mut error_json_p: *const c_char = ptr::null();
-//
-//    unsafe { indy_get_current_error(&mut error_json_p); }
-//    assert_eq!(None, c_str_to_string(error_json_p).unwrap());
-//}
+#[test]
+fn get_current_error_works_for_no_error() {
+    let mut error_json_p: *const c_char = ptr::null();
+
+    unsafe { indy_get_current_error(&mut error_json_p); }
+    assert_eq!(None, c_str_to_string(error_json_p).unwrap());
+}
 
 #[test]
 fn get_current_error_works_for_sync_error_occurred() {
