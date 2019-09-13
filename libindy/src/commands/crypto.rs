@@ -104,47 +104,47 @@ impl CryptoCommandExecutor {
     pub fn execute(&self, command: CryptoCommand) {
         match command {
             CryptoCommand::CreateKey(wallet_handle, key_info, cb) => {
-                info!("CreateKey command received");
+                debug!("CreateKey command received");
                 cb(self.create_key(wallet_handle, &key_info));
             }
             CryptoCommand::SetKeyMetadata(wallet_handle, verkey, metadata, cb) => {
-                info!("SetKeyMetadata command received");
+                debug!("SetKeyMetadata command received");
                 cb(self.set_key_metadata(wallet_handle, &verkey, &metadata));
             }
             CryptoCommand::GetKeyMetadata(wallet_handle, verkey, cb) => {
-                info!("GetKeyMetadata command received");
+                debug!("GetKeyMetadata command received");
                 cb(self.get_key_metadata(wallet_handle, &verkey));
             }
             CryptoCommand::CryptoSign(wallet_handle, my_vk, msg, cb) => {
-                info!("CryptoSign command received");
+                debug!("CryptoSign command received");
                 cb(self.crypto_sign(wallet_handle, &my_vk, &msg));
             }
             CryptoCommand::CryptoVerify(their_vk, msg, signature, cb) => {
-                info!("CryptoVerify command received");
+                debug!("CryptoVerify command received");
                 cb(self.crypto_verify(&their_vk, &msg, &signature));
             }
             CryptoCommand::AuthenticatedEncrypt(wallet_handle, my_vk, their_vk, msg, cb) => {
-                info!("AuthenticatedEncrypt command received");
+                debug!("AuthenticatedEncrypt command received");
                 cb(self.authenticated_encrypt(wallet_handle, &my_vk, &their_vk, &msg));
             }
             CryptoCommand::AuthenticatedDecrypt(wallet_handle, my_vk, encrypted_msg, cb) => {
-                info!("AuthenticatedDecrypt command received");
+                debug!("AuthenticatedDecrypt command received");
                 cb(self.authenticated_decrypt(wallet_handle, &my_vk, &encrypted_msg));
             }
             CryptoCommand::AnonymousEncrypt(their_vk, msg, cb) => {
-                info!("AnonymousEncrypt command received");
+                debug!("AnonymousEncrypt command received");
                 cb(self.anonymous_encrypt(&their_vk, &msg));
             }
             CryptoCommand::AnonymousDecrypt(wallet_handle, my_vk, encrypted_msg, cb) => {
-                info!("AnonymousDecrypt command received");
+                debug!("AnonymousDecrypt command received");
                 cb(self.anonymous_decrypt(wallet_handle, &my_vk, &encrypted_msg));
             }
             CryptoCommand::PackMessage(message, receivers, sender_vk, wallet_handle, cb) => {
-                info!("PackMessage command received");
+                debug!("PackMessage command received");
                 cb(self.pack_msg(message, receivers, sender_vk, wallet_handle));
             }
             CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
-                info!("UnpackMessage command received");
+                debug!("UnpackMessage command received");
                 cb(self.unpack_msg(jwe_json, wallet_handle));
             }
         };

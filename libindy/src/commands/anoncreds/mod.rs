@@ -47,15 +47,15 @@ impl AnoncredsCommandExecutor {
     pub fn execute(&self, command: AnoncredsCommand) {
         match command {
             AnoncredsCommand::Issuer(cmd) => {
-                info!(target: "anoncreds_command_executor", "Issuer command received");
+                debug!(target: "anoncreds_command_executor", "Issuer command received");
                 self.issuer_command_cxecutor.execute(cmd);
             }
             AnoncredsCommand::Prover(cmd) => {
-                info!(target: "anoncreds_command_executor", "Prover command received");
+                debug!(target: "anoncreds_command_executor", "Prover command received");
                 self.prover_command_cxecutor.execute(cmd);
             }
             AnoncredsCommand::Verifier(cmd) => {
-                info!(target: "anoncreds_command_executor", "Verifier command received");
+                debug!(target: "anoncreds_command_executor", "Verifier command received");
                 self.verifier_command_cxecutor.execute(cmd);
             }
         };

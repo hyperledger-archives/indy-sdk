@@ -3,21 +3,11 @@
 In this guide you will see how to add a new call to Libindy. As an example we will take `indy_create_and_store_my_did` call.
 
 Code will be splitted to the following layers:
-* API layer. Library interface layer: 
-    * Basic validation
-    * Conversion of C types to Rust types
-    * Propagation of execution to commands layer
-* Commands layer:
-    * Working threads management
-    * JSONs conversion to internal types and corresponded validation
-    * Splitting complex commands to atomic operations
-    * Propagation of atomic operations execution to service layer
-    * Joining atomic operations results to complex result
-    * Execution of user defined callbacks
-* Service layer:
-    * Implements operations business logic and complex validation
-    * Management of sockets polling threads
+* API layer - enter point to the library 
+* Commands layer - split complex operation into multiply atomic ones, call various services for atomic actions and join results from them
+* Service layer - isolated against each-other services, process atomic operations
 
+For more details please see [Layers of libindy description](../architecture/libindy_layers.md)
 
 ### API Layer
 
@@ -101,7 +91,7 @@ Here you should add a new function for your business logic and a new match claus
         match command {
             // some other clauses
             DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info, cb) => {
-                info!("CreateAndStoreMyDid command received");
+                debug!("CreateAndStoreMyDid command received");
                 cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
             }
         }
@@ -131,4 +121,4 @@ Here you should add a new function for your business logic and a new match claus
 In the function you should put business logic of your call.
 Notice, that if you have some functionality that can be reused later by other commands, you should put it into the service and execute service call in the function.
 
-Services should stay independent from each other. You can include Services into CommandExecutors.  
+Services should stay independent from each other. You can include Services into CommandExecutors.

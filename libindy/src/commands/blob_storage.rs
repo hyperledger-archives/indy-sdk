@@ -28,11 +28,11 @@ impl BlobStorageCommandExecutor {
     pub fn execute(&self, command: BlobStorageCommand) {
         match command {
             BlobStorageCommand::OpenReader(type_, config, cb) => {
-                info!("OpenReader command received");
+                debug!("OpenReader command received");
                 cb(self.open_reader(&type_, &config));
             }
             BlobStorageCommand::OpenWriter(writer_type, writer_config, cb) => {
-                info!("OpenWriter command received");
+                debug!("OpenWriter command received");
                 cb(self.open_writer(&writer_type, &writer_config));
             }
         }
