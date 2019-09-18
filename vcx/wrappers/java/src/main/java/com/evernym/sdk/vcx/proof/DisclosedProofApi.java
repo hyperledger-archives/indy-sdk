@@ -146,17 +146,14 @@ public class DisclosedProofApi extends VcxJava.API {
 
 
 
-    public static CompletableFuture<Integer> proofRelease(
-            int proofHandle
-    ) throws VcxException {
+    public static int proofRelease(int proofHandle) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("proofRelease() called with: proofHandle = [" + proofHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
 
         int result = LibVcx.api.vcx_disclosed_proof_release(proofHandle);
         checkResult(result);
 
-        return future;
+        return result;
     }
 
     private static Callback vcxProofRetrieveCredentialsCB = new Callback() {
