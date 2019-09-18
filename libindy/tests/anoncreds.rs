@@ -18,7 +18,7 @@ use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use utils::domain::anoncreds::proof::Proof;
 use utils::domain::crypto::did::DidValue;
-use utils::qualifier::Qualifier;
+use utils::qualifier;
 
 mod high_cases {
     use super::*;
@@ -41,7 +41,7 @@ mod high_cases {
                                                                  GVT_SCHEMA_NAME,
                                                                  SCHEMA_VERSION,
                                                                  GVT_SCHEMA_ATTRIBUTES).unwrap();
-            assert_eq!(Qualifier::qualify(&anoncreds::gvt_schema_id(), None), schema_id);
+            assert_eq!(qualifier::qualify(&anoncreds::gvt_schema_id(), DEFAULT_PREFIX), schema_id);
         }
     }
 

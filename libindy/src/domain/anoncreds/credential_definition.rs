@@ -4,7 +4,7 @@ use super::super::ledger::request::ProtocolVersion;
 use super::super::crypto::did::DidValue;
 
 use utils::validation::Validatable;
-use utils::qualifier::Qualifier;
+use utils::qualifier;
 
 use ursa::cl::{
     CredentialPrimaryPublicKey,
@@ -141,14 +141,52 @@ impl CredentialDefinitionId {
     }
 
     pub fn unqualify(&self) -> CredentialDefinitionId {
-        CredentialDefinitionId(Qualifier::unqualify(&self.0))
+        CredentialDefinitionId(qualifier::unqualify(&self.0))
+    }
+
+    pub fn prefix(&self) -> Option<String> {
+        qualifier::prefix(&self.0)
     }
 
     pub fn is_fully_qualified(&self) -> bool {
-        Qualifier::is_fully_qualified(&self.0)
+        qualifier::is_fully_qualified(&self.0)
     }
 }
 
-impl Validatable for CredentialDefinitionId {}
+impl Validatable for CredentialDefinitionId {
+    fn validate(&self) -> Result<(), String> {
+        let cred_def_id = self.unqualify();
+
+        let parts: Vec<&str> = cred_def_id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
+
+        parts.get(0).ok_or_else(||format!("Credential Definition Id validation failed: issuer DID not found in: {}", self.0))?;
+        parts.get(1).ok_or_else(||format!("Credential Definition Id validation failed: marker not found in: {}", self.0))?;
+        parts.get(2).ok_or_else(||format!("Credential Definition Id validation failed: signature type not found in: {}", self.0))?;
+
+        if parts.len() == 4 {
+            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:1
+            parts.get(3)
+                .ok_or_else(||format!("Credential Definition Id validation failed: schema id not found in: {}", self.0))?
+                .parse::<i32>()
+                .map_err(|_| format!("Credential Definition Id validation failed: schema id is invalid number: {}", self.0))?;
+        } else if parts.len() == 5 {
+            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:tag
+            parts.get(3)
+                .ok_or_else(||format!("Credential Definition Id validation failed: schema id not found in: {}", self.0))?
+                .parse::<i32>()
+                .map_err(|_| format!("Credential Definition Id validation failed: schema id is invalid number: {}", self.0))?;
+        } else if parts.len() == 7 {
+            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0
+            // nothing to do
+        } else if parts.len() == 8 {
+            // NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG_1
+            // nothing to do
+        } else {
+            return Err("Credential Definition Id validation failed: too much parts".to_string());
+        }
+
+        Ok(())
+    }
+}
 
 impl Validatable for CredentialDefinitionConfig {}

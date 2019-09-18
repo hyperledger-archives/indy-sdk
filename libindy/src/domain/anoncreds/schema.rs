@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
 use utils::validation::Validatable;
-use utils::qualifier::Qualifier;
+use utils::qualifier;
 
 pub const SCHEMA_MARKER: &str = "2";
 pub const MAX_ATTRIBUTES_COUNT: usize = 125;
@@ -89,22 +89,28 @@ impl SchemaId {
         (DidValue(schema_issuer_did), schema_name, schema_version)
     }
 
-    pub fn qualify(&self, prefix: Option<String>) -> SchemaId {
-        SchemaId(Qualifier::qualify(&self.0, prefix))
+    pub fn qualify(&self, prefix: &str) -> SchemaId {
+        SchemaId(qualifier::qualify(&self.0, &prefix))
     }
 
     pub fn unqualify(&self) -> SchemaId {
-        SchemaId(Qualifier::unqualify(&self.0))
+        SchemaId(qualifier::unqualify(&self.0))
+    }
+
+    pub fn prefix(&self) -> Option<String> {
+        qualifier::prefix(&self.0)
     }
 
     pub fn is_fully_qualified(&self) -> bool {
-        Qualifier::is_fully_qualified(&self.0)
+        qualifier::is_fully_qualified(&self.0)
     }
 }
 
 impl Validatable for SchemaId {
     fn validate(&self) -> Result<(), String> {
-        let parts: Vec<&str> = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
+        let schema_id = self.unqualify();
+
+        let parts: Vec<&str> = schema_id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
         if parts.len() == 1 {
             parts[0]
@@ -113,7 +119,7 @@ impl Validatable for SchemaId {
         } else if parts.len() == 4 {
             // pass
         } else if parts.len() == 6 {
-            if !Qualifier::is_fully_qualified(&self.0) {
+            if !self.is_fully_qualified() {
                 return Err("SchemaId validation failed: must be fully qualified".to_string());
             }
         } else {

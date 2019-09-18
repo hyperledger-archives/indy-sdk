@@ -9,7 +9,7 @@ extern crate indyrs as api;
 use utils::cache::*;
 use utils::Setup;
 use utils::domain::crypto::did::DidValue;
-use utils::qualifier::Qualifier;
+use utils::qualifier;
 
 use self::indy::ErrorCode;
 
@@ -174,7 +174,7 @@ mod high_cases {
                 setup.pool_handle,
                 setup.wallet_handle,
                 DID_MY1_V1,
-                &Qualifier::qualify(schema_id, None),
+                &qualifier::qualify(schema_id, DEFAULT_PREFIX),
                 &options_json).unwrap();
 
             let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
@@ -400,7 +400,7 @@ mod high_cases {
                 setup.pool_handle,
                 setup.wallet_handle,
                 DID_MY1_V1,
-                &Qualifier::qualify(cred_def_id, None),
+                &qualifier::qualify(cred_def_id, DEFAULT_PREFIX),
                 &options_json).unwrap();
 
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json).unwrap();

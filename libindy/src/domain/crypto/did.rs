@@ -4,7 +4,9 @@ use regex::Regex;
 use rust_base58::FromBase58;
 
 use utils::validation::Validatable;
-use utils::qualifier::{Qualifier, DEFAULT_PREFIX};
+use utils::qualifier;
+
+pub const ABBREVIATABLE_PREFIX: &'static str = "did:sov";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MyDidInfo {
@@ -87,31 +89,31 @@ impl DidValue {
 
     pub fn from_short(did: &ShortDidValue, prefix: Option<String>) -> DidValue {
         match prefix {
-            Some(prefix_) => DidValue(Qualifier::qualify(&did.0, Some(prefix_))),
+            Some(prefix_) => DidValue(qualifier::qualify(&did.0, &prefix_)),
             None => DidValue(did.0.clone())
         }
     }
 
     pub fn is_fully_qualified(&self) -> bool {
-        Qualifier::is_fully_qualified(&self.0)
+        qualifier::is_fully_qualified(&self.0)
     }
 
     pub fn is_abbreviatable(&self) -> bool {
         if !self.is_fully_qualified() {
             return true;
         }
-        if self.0.starts_with(DEFAULT_PREFIX) {
+        if self.0.starts_with(ABBREVIATABLE_PREFIX) {
             return true;
         }
         false
     }
 
     pub fn unqualify(&self) -> String {
-        Qualifier::unqualify(&self.0)
+        qualifier::unqualify(&self.0)
     }
 
     pub fn prefix(&self) -> Option<String> {
-        Qualifier::prefix(&self.0)
+        qualifier::prefix(&self.0)
     }
 }
 

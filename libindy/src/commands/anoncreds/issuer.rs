@@ -336,13 +336,18 @@ impl IssuerCommandExecutor {
                                                        tag: &str,
                                                        type_: Option<&str>,
                                                        config: Option<&CredentialDefinitionConfig>) -> IndyResult<(CredentialDefinitionConfig, SchemaId, CredentialDefinitionId, SignatureType)> {
-        if !issuer_did.is_fully_qualified() && schema.id.is_fully_qualified() {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use unqualified Did with fully qualified Schema"));
-        }
-
-        if issuer_did.is_fully_qualified() && !schema.id.is_fully_qualified() {
-            schema.id = schema.id.qualify(issuer_did.prefix())
-        }
+        match (issuer_did.prefix(), schema.id.prefix()) {
+            (None, Some(_)) => {
+                return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use unqualified Did with fully qualified Schema"));
+            }
+            (Some(prefix_), None) => {
+                schema.id = schema.id.qualify(&prefix_)
+            }
+            (Some(ref issuer_prefix), Some(ref schema_prefix)) if issuer_prefix != schema_prefix => {
+                return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use fully qualified Did and Schema with different methods"));
+            }
+            _ => {}
+        };
 
         let default_cred_def_config = CredentialDefinitionConfig::default();
         let cred_def_config = config.unwrap_or(&default_cred_def_config);
@@ -549,13 +554,18 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, type_: {:?}, tag: {:?}, cred_def_id: {:?}, config: {:?}, \
                tails_handle: {:?}", wallet_handle, issuer_did, type_, tag, cred_def_id, config, tails_writer_handle);
 
-        if !issuer_did.is_fully_qualified() && cred_def_id.is_fully_qualified() {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,  "You can't use unqualified Did with fully qualified Credential Definition"));
-        }
-
-        if issuer_did.is_fully_qualified() && !cred_def_id.is_fully_qualified() {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure,  "You can't use fully qualified Did with unqualified Credential Definition"));
-        }
+        match (issuer_did.prefix(), cred_def_id.prefix()) {
+            (None, Some(_)) => {
+                return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use unqualified Did with fully qualified Credential Definition"));
+            }
+            (Some(_), None) => {
+                return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use fully qualified Did with unqualified Credential Definition"));
+            }
+            (Some(ref issuer_prefix), Some(ref cred_def_id_prefix)) if issuer_prefix != cred_def_id_prefix => {
+                return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use fully qualified Did and Credential Definition with different methods"));
+            }
+            _ => {}
+        };
 
         let rev_reg_type = if let Some(type_) = type_ {
             serde_json::from_str::<RegistryType>(&format!("\"{}\"", type_))
