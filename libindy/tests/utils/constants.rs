@@ -61,4 +61,4 @@ pub const SCHEMA_ID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
 pub const CRED_DEF_ID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e:3:CL:1";
 pub const REV_REG_ID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:CL_ACCUM:TAG_1";
 pub const DEFAULT_METHOD_NAME: &'static str = "sov";
-pub const DEFAULT_PREFIX: &'static str = "did:sov";
+pub const DEFAULT_PREFIX: &'static str = "did:sov:";

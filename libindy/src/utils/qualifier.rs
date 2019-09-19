@@ -8,7 +8,7 @@ pub fn qualify(entity: &str, prefix: &str) -> String {
     if is_fully_qualified(entity) {
         entity.to_string()
     } else {
-        format!("{}:{}", prefix, entity)
+        format!("{}{}", prefix, entity)
     }
 }
 
