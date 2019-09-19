@@ -122,3 +122,41 @@ In the function you should put business logic of your call.
 Notice, that if you have some functionality that can be reused later by other commands, you should put it into the service and execute service call in the function.
 
 Services should stay independent from each other. You can include Services into CommandExecutors.
+
+### Testing
+
+One of the general principles of development within the core Indy team is to use [TDD](http://www.agiledata.org/essays/tdd.html)
+
+##### Unit test
+
+All functions within `services` and `utils` modules should be covered with Unit tests (as we mentioned above these functions must be atomic operations). 
+So, if we consider function `create_and_store_my_did` the following service functions should be covered with Unit tests:
+* `self.crypto_service.create_my_did`
+* `self.wallet_service.record_exists`
+* `self.wallet_service.add_indy_object`
+
+We don't cover the functions within the `commands` module with Unit tests because:
+*  `CommandExecutor` is a complex structure which has multiple dependencies. 
+*  These functions only join results from multiple atomic service-related functions.
+*  These functions totally correspond to an API level function which sends associated command to the `CommandExecutor`.
+
+##### Integration test
+
+Each Libindy external API function (within `api` module) should be covered with Integration tests.
+* These tests live within the `tests` directory. 
+* There are two usage types:
+    * use C function definition (like tests located at `demo` file).
+    * use Rust wrapper to avoid boilerplate like `channel` preparation and casting to C types.
+* Integration tests based on Rust wrapper is divided on High level and Medium level.
+    * High cases - typical positive scenarios or a strongly specific error related to a function.
+    * Medium cases - tricky positive scenarios or general errors like invalid input data or invalid handles. 
+* there are the set of integration tests devoted to one specific API function.
+* there are the set of integration tests which covers different complex scenarios like `interaction` or `anoncreds_demos`.
+
+These integration tests can be a good example of how a function should be used.
+
+If we consider function `indy_create_and_store_my_did`:
+ * There are multiple High and Medium tests cases file devoted to that function within `did.rs`.
+ * There is also `ledger_demo_works` test in the `demo.rs` file which uses C definition of `indy_create_and_store_my_did` function.
+
+For more details around testing, checkout out this [doc](/docs/contributors/test-design.md).
