@@ -2850,8 +2850,7 @@ mod demos {
         wallet::close_and_delete_wallet(issuer_wallet_handle, &issuer_wallet_config).unwrap();
         wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
     }
-
-
+    
     #[test] // IS-1381
     fn anoncreds_works_for_multiple_attr_value_restrictions() {
         Setup::empty();
