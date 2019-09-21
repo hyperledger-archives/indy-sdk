@@ -16,10 +16,10 @@ properties([
 
 Ubuntu16 = "Ubuntu 16.04"
 Ubuntu18 = "Ubuntu 18.04"
-RedHat = "RedHat"
+Centos = "Centos"
 
-libindyBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
-libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
+libindyBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (Centos): false]
+libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (Centos): false]
 ubuntuPakageTypes = [(Ubuntu16): "xenial", (Ubuntu18): "bionic"]
 
 gitHubUserCredId = env.GITHUB_BOT_USER ?: 'sovbot-github'
@@ -46,7 +46,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
+                'centos-test' : { centosTesting() },
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
                 'ios-test'    : { iosTesting() },
@@ -59,7 +59,7 @@ def publishing() {
     stage('Publishing') {
         echo "${env.BRANCH_NAME}: start publishing"
         publishedVersions = parallel([
-                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
+                'centos-files' : { centosPublishing() },
                 'ubuntu-files' : { ubuntuPublishing() },
                 'windows-files': { windowsPublishing() },
                 'android-files': { androidPublishing() },
@@ -212,14 +212,14 @@ String getSrcVersion(folder) {
     }
 }
 
-def linuxTesting(file, env_name, network_name, stashBuildResults) {
+def linuxTesting(file, env_name, network_name) {
     def full_testing = runAllTests(env_name)
 
     parallel([
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
-                    linuxLibindyBuild(file, env_name, network_name, stashBuildResults, full_testing)
+                    linuxLibindyBuild(file, env_name, network_name, full_testing)
                 }
             },
             "${env_name} Test: test other components" : {
@@ -228,24 +228,24 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                 }
                 def jobs = [
                         "${env_name}-cli-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting, stashBuildResults)
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
                         "${env_name}-vcx-test": {
-                            vcxTesting(file, env_name, network_name, stashBuildResults, full_testing)
+                            vcxTesting(file, env_name, network_name, full_testing)
                         }
                 ]
                 if (full_testing) {
                     jobs["${env_name}-rust-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting, stashBuildResults)
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
                     }
                     jobs["${env_name}-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting, stashBuildResults)
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
                     }
                     jobs["${env_name}-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting, stashBuildResults)
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
                     }
                     jobs["${env_name}-nodejs-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting, stashBuildResults)
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
                     }
                 }
                 parallel(jobs)
@@ -253,12 +253,12 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
     ])
 }
 
-def vcxTesting(file, env_name, network_name, stashBuildResults, full_testing) {
+def vcxTesting(file, env_name, network_name, full_testing) {
     parallel([
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
                 node('ubuntu') {
-                    linuxVcxBuild(file, env_name, network_name, stashBuildResults)
+                    linuxVcxBuild(file, env_name, network_name)
                 }
             },
             "${env_name} Test: test other vcx components": {
@@ -269,13 +269,13 @@ def vcxTesting(file, env_name, network_name, stashBuildResults, full_testing) {
 
                     def jobs = [
                             "${env_name}-vcx-nodejs-test": {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
                             },
                             "${env_name}-vcx-java-test"  : {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
                             },
                             "${env_name}-vcx-python-test": {
-                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
+                                linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
                             }
                     ]
                     parallel(jobs)
@@ -284,7 +284,7 @@ def vcxTesting(file, env_name, network_name, stashBuildResults, full_testing) {
     ])
 }
 
-def linuxLibindyBuild(file, env_name, network_name, stashBuildResults, full_testing) {
+def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -301,9 +301,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults, full_test
                 cargo build --release --features "fatal_warnings sodium_static"
             '''
 
-            if (stashBuildResults) {
-                stash includes: 'libindy/target/release/libindy.so,libindy/target/release/libindy.a', name: "LibindyBuildResult${env_name}"
-            }
+            stash includes: 'libindy/target/release/libindy.so,libindy/target/release/libindy.a', name: "LibindyBuildResult${env_name}"
         }
 
         sh "cp libindy/target/release/libindy.so wrappers/java/lib"
@@ -325,9 +323,8 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults, full_test
                 LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release
             '''
 
-            if (stashBuildResults) {
-                stash includes: 'libnullpay/target/release/libnullpay.so', name: "LibnullpayBuildResult${env_name}"
-            }
+            stash includes: 'libnullpay/target/release/libnullpay.so', name: "LibnullpayBuildResult${env_name}"
+
         }
 
         sh "cp libnullpay/target/release/libnullpay.so cli"
@@ -376,7 +373,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults, full_test
     }
 }
 
-def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
+def linuxVcxBuild(file, env_name, network_name) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -394,9 +391,9 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
                 cd vcx/libvcx
                 LIBRARY_PATH=./ cargo build --release --features fatal_warnings
             '''
-            if (stashBuildResults) {
-                stash includes: 'vcx/libvcx/target/release/libvcx.so', name: "LibvcxBuildResult${env_name}"
-            }
+
+            stash includes: 'vcx/libvcx/target/release/libvcx.so', name: "LibvcxBuildResult${env_name}"
+
         }
 
         sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/node"
@@ -443,7 +440,7 @@ def linuxVcxBuild(file, env_name, network_name, stashBuildResults) {
     }
 }
 
-def linuxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
+def linuxJavaTesting(env_name, network_name, testEnv) {
     unstash name: "LibindyJavaSO${env_name}"
     dir('wrappers/java') {
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -454,21 +451,21 @@ def linuxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
     }
 }
 
-def linuxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
+def linuxPythonTesting(env_name, network_name, testEnv) {
     unstash name: "LibindyPythonSO${env_name}"
     dir('wrappers/python') {
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
             echo "${env_name} Libindy Test: Test python wrapper"
 
             sh '''
-                    python3.5 -m pip install --user -e .[test]
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                    python3 -m pip install --user -e .[test]
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 python3 -m pytest
                 '''
         }
     }
 }
 
-def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
+def linuxCLITesting(env_name, network_name, testEnv) {
     unstash name: "LibindyCliSO${env_name}"
     unstash name: "LibnullpayCliSO${env_name}"
 
@@ -480,13 +477,13 @@ def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run
             LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"
         '''
-        if (stashBuildResults) {
-            stash includes: 'cli/target/release/indy-cli', name: "IndyCliBuildResult${env_name}"
-        }
+
+        stash includes: 'cli/target/release/indy-cli', name: "IndyCliBuildResult${env_name}"
+
     }
 }
 
-def linuxRustTesting(env_name, network_name, testEnv, stashBuildResults) {
+def linuxRustTesting(env_name, network_name, testEnv) {
     unstash name: "LibindyRustSO${env_name}"
 
     dir('wrappers/rust') {
@@ -500,7 +497,7 @@ def linuxRustTesting(env_name, network_name, testEnv, stashBuildResults) {
     }
 }
 
-def linuxNodejsTesting(env_name, network_name, testEnv, stashBuildResults) {
+def linuxNodejsTesting(env_name, network_name, testEnv) {
     unstash name: "LibindyNodejsSO${env_name}"
     testEnv.inside("--network=${network_name}") {
         echo "${env_name} Libindy Test: Test nodejs wrapper"
@@ -514,7 +511,7 @@ def linuxNodejsTesting(env_name, network_name, testEnv, stashBuildResults) {
     }
 }
 
-def linuxVcxNodejsTesting(env_name, network_name, testEnv, stashBuildResults) {
+def linuxVcxNodejsTesting(env_name, network_name, testEnv) {
     unstash name: "VcxNodeLibvcxSO${env_name}"
     unstash name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
 
@@ -529,7 +526,7 @@ def linuxVcxNodejsTesting(env_name, network_name, testEnv, stashBuildResults) {
     }
 }
 
-def linuxVcxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
+def linuxVcxJavaTesting(env_name, network_name, testEnv) {
     unstash name: "VcxJavaLibvcxSO${env_name}"
     unstash name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
 
@@ -542,7 +539,7 @@ def linuxVcxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
     }
 }
 
-def linuxVcxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
+def linuxVcxPythonTesting(env_name, network_name, testEnv) {
     unstash name: "VcxPythonLibvcxSO${env_name}"
     unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
 
@@ -551,8 +548,8 @@ def linuxVcxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
             echo "${env_name} Vcx Test: Test python wrapper"
 
             sh '''
-                    python3.5 -m pip install --user pytest==3.6.4 pytest-asyncio
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest -s
+                    python3 -m pip install --user pytest==3.6.4 pytest-asyncio
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3 -m pytest -s
             '''
         }
     }
@@ -704,27 +701,28 @@ def windowsTesting() {
 }
 
 def runAllTests(env_name) {
-    if (env_name == Ubuntu16) {
-        return true
-    }
-    return (env.BRANCH_NAME == 'rc')
+    return env_name == Ubuntu18
+//    if (env_name == Ubuntu18) {  TODO: FIXME install python in Ubuntu 16.04?
+//        return true
+//    }
+//    return (env.BRANCH_NAME == 'rc')
 }
 
 def ubuntuTesting() {
     stage('Ubuntu Test') {
         parallel([
                 "ubuntu:16.04": {
-                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", true)
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network")
                 },
                 "ubuntu:18.04": {
-                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", true)
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network")
                 }
         ])
     }
 }
 
 
-def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv, stashBuildResult) {
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     sh 'chmod -R 755 libindy/ci/*.sh'
     sh 'chmod -R 755 libindy/*.sh'
 
@@ -794,9 +792,7 @@ def iosTesting() {
                     buildIOSPod("libindy", "")
 
                     echo "iOS Test: Running pool"
-                    sh "docker rm -f indy_pool || true"
-                    sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
-                    sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+                    macosRunPool("indy_pool")
 
                     // FIXME replace this hack (manually rewrite installed pod)
                     sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
@@ -827,14 +823,7 @@ def iosTesting() {
                     cleanSimulators()
                 } catch (ignore) {
                 }
-                try {
-                    sh "docker stop indy_pool"
-                } catch (ignore) {
-                }
-                try {
-                    sh "docker rm indy_pool"
-                } catch (ignore) {
-                }
+                macosStopPool("indy_pool")
                 step([$class: 'WsCleanup'])
             }
         }
@@ -848,15 +837,16 @@ def buildIOSPod(packageName, targets) {
     sh "ci/ios-build.sh $packageName $targets"
 }
 
-def rhelTesting() {
-    stage('RedHat Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
+def centosTesting() {
+    stage('Centos Test') {
+        linuxTesting("ci/centos.dockerfile ci", "Centos", "pool_network")
     }
 }
 
 def macosTesting() {
     node('macos') {
         stage('MacOS Test') {
+            def pool_name = "indy_pool"
             try {
                 echo "MacOS Test: Checkout scm"
                 checkout scm
@@ -864,24 +854,30 @@ def macosTesting() {
                 setupRust()
                 setupBrewPackages()
 
-                macosModuleBuilding('libindy') // TODO: testing
+                macosRunPool(pool_name)
+
+                macosModuleBuildingAndTest('libindy')
 
                 stash includes: 'libindy/target/release/libindy.dylib,libindy/target/release/libindy.a', name: 'LibindyMacosBuildResult'
 
                 sh "cp libindy/target/release/libindy.dylib libnullpay"
                 sh "cp libindy/target/release/libindy.dylib vcx/libvcx"
+                sh "cp libindy/target/release/libindy.dylib cli"
 
-                macosModuleBuilding('libnullpay') // TODO: testing
+                macosModuleBuildingAndTest('libnullpay')
 
                 stash includes: 'libnullpay/target/release/libnullpay.dylib,libnullpay/target/release/libnullpay.a', name: 'LibnullpayMacosBuildResult'
 
                 sh "cp libnullpay/target/release/libnullpay.dylib vcx/libvcx"
 
-                macosModuleBuilding('vcx/libvcx')
+                macosModuleBuildingAndTest('vcx/libvcx')
 
                 stash includes: 'vcx/libvcx/target/release/libvcx.dylib,vcx/libvcx/target/release/libvcx.a', name: 'LibvcxMacosBuildResult'
 
-                macosModuleTesting('vcx/libvcx')
+                sh "sed -i'.original' -e 's/10.0.0.2/127.0.0.1/g' cli/docker_pool_transactions_genesis"
+                macosModuleBuildingAndTest('cli')
+
+                stash includes: 'cli/target/release/indy-cli', name: 'IndyCliMacosBuildResult'
 
                 //TODO wrappers testing
             } finally {
@@ -891,53 +887,102 @@ def macosTesting() {
     }
 }
 
-def macosModuleBuilding(library) {
-    dir(library) {
-        echo "MacOS ${library} Testing: Build"
-        sh "LIBRARY_PATH=./ cargo build --release --features fatal_warnings"
-        sh "LIBRARY_PATH=./ cargo test --release --no-run"
+def macosRunPool(pool_name){
+    sh "docker rm -f ${pool_name} || true"
+    sh "docker build -f ci/indy-pool.dockerfile -t ${pool_name} ci"
+    sh "docker run -d --name ${pool_name} -p 9701-9708:9701-9708 ${pool_name}"
+}
+
+def macosStopPool(pool_name){
+    try {
+        sh "docker stop ${pool_name}"
+    } catch (ignore) {
+    }
+    try {
+        sh "docker rm ${pool_name}"
+    } catch (ignore) {
     }
 }
 
-def macosModuleTesting(library) {
+def macosModuleBuildingAndTest(library) {
     dir(library) {
+        echo "MacOS ${library} Testing: Build"
+        sh "LIBRARY_PATH=./ cargo build --release --features fatal_warnings"
+
         echo "MacOS ${library} Testing: Run Tests"
+        sh "LIBRARY_PATH=./ cargo test --release --no-run"
         sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test --release"
     }
 }
 
-def rhelPublishing() {
-    def libindyVersion;
+def centosPublishing() {
+    def libindyVersion
+
+    def env_name = Centos
 
     node('ubuntu') {
-        stage('Publish Libindy RPM Files') {
+        stage("Publish ${env_name} Files") {
             try {
-                echo 'Publish Rpm files: Checkout csm'
+                echo "Publish ${env_name} files: Checkout scm"
                 checkout scm
 
                 libindyVersion = getSrcVersion("libindy")
 
-                dir('libindy') {
-                    echo 'Publish Rpm: Build docker image'
-                    def testEnv = dockerHelpers.build('indy-sdk', 'ci/amazon.dockerfile ci')
+                echo "Publish ${env_name}: Build docker image"
+                def testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/centos.dockerfile ci')
 
-                    testEnv.inside('-u 0:0') {
-
-                        sh 'chmod -R 777 ci'
-
-                        withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'repo_key')]) {
-                            sh "./ci/libindy-rpm-build-and-upload.sh $version $repo_key $env.BRANCH_NAME $env.BUILD_NUMBER"
-                        }
-                    }
-                }
+                libindyRpmPublishing(testEnv, libindyVersion, env_name)
+                libnullpayRpmPublishing(testEnv, env_name)
+                libvcxRpmPublishing(testEnv, env_name)
+                indyCliRpmPublishing(testEnv, env_name)
             }
             finally {
-                echo 'Publish RPM: Cleanup'
+                echo "Publish  ${env_name} files: Cleanup"
                 step([$class: 'WsCleanup'])
             }
         }
     }
     return libindyVersion
+}
+
+def libindyRpmPublishing(testEnv, version, env_name) {
+    echo 'Publish Libindy rpm files'
+
+    rpmPublishing(testEnv, "libindy", "libindy", version, "LibindyBuildResult${env_name}")
+}
+
+def libnullpayRpmPublishing(testEnv, env_name) {
+    echo 'Publish Libnullpay rpm files'
+    def libnullpayVersion = getSrcVersion("libnullpay")
+
+    rpmPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibnullpayBuildResult${env_name}")
+}
+
+def libvcxRpmPublishing(testEnv, env_name) {
+    echo 'Publish Libvcx rpm files'
+    def libvcxVersion = getSrcVersion("vcx/libvcx")
+
+    rpmPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibvcxBuildResult${env_name}")
+}
+
+def indyCliRpmPublishing(testEnv, env_name) {
+    echo 'Publish Indy Cli rpm files'
+    def indyCliVersion = getSrcVersion("cli")
+
+    rpmPublishing(testEnv, "cli", "indy-cli", indyCliVersion, "IndyCliBuildResult${env_name}")
+}
+
+def rpmPublishing(testEnv, directory, packageName, version, inStashName) {
+    echo 'Publish rpm files'
+    testEnv.inside {
+        sh "cp ci/rpm-build-and-upload.sh $directory && chmod -R 755 $directory/*.sh"
+
+        unstash name: inStashName
+
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+            sh "cd $directory && ./rpm-build-and-upload.sh $version $repo_key $env.BRANCH_NAME $env.BUILD_NUMBER $packageName"
+        }
+    }
 }
 
 def ubuntuPublishing() {
@@ -1143,15 +1188,19 @@ def macOsPublishing() {
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy MacOS Library'
-                publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", libindyVersion)
+                publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", libindyVersion, "lib")
 
                 echo 'Publish Libnullpay MacOS Library'
                 def libnullpayVersion = getSrcVersion("libnullpay")
-                publishMacOsArtifact(testEnv, "libnullpay", "libnullpay", "LibnullpayMacosBuildResult", libnullpayVersion)
+                publishMacOsArtifact(testEnv, "libnullpay", "libnullpay", "LibnullpayMacosBuildResult", libnullpayVersion, "lib")
 
                 echo 'Publish Libvcx MacOS Library'
                 def libvcxVersion = getSrcVersion("vcx/libvcx")
-                publishMacOsArtifact(testEnv, "libvcx", "vcx/libvcx", "LibvcxMacosBuildResult", libvcxVersion)
+                publishMacOsArtifact(testEnv, "libvcx", "vcx/libvcx", "LibvcxMacosBuildResult", libvcxVersion, "lib")
+
+                echo 'Publish Indy CLI MacOS Library'
+                def cliVersion = getSrcVersion("cli")
+                publishMacOsArtifact(testEnv, "indy-cli", "cli", "IndyCliMacosBuildResult", cliVersion, "executable")
             }
             finally {
                 echo 'Publish iOS files: Cleanup'
@@ -1161,7 +1210,7 @@ def macOsPublishing() {
     }
 }
 
-def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, packageVersion) {
+def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, packageVersion, packageType) {
     testEnv.inside {
         sh 'chmod -R 777 ci'
 
@@ -1171,7 +1220,7 @@ def publishMacOsArtifact(testEnv, packageName, packagePath, stashName, packageVe
             withEnv([
                     "SOVRIN_REPO_HOST=$SOVRIN_REPO_HOST",
             ]) {
-                sh "ci/macos-zip-and-upload.sh $packagePath $packageName $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+                sh "ci/macos-zip-and-upload.sh $packagePath $packageName $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $packageType"
             }
         }
     }
@@ -1267,8 +1316,8 @@ def pythonWrapperPublishing(testEnv, isRelease, directory, base_library) {
             withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                 sh 'cp $credentialsFile ./'
 
-                sh "PACKAGE_VERSION=$version$suffix python3.5 setup.py sdist"
-                sh "python3.5 -m twine upload dist/* --config-file .pypirc"
+                sh "PACKAGE_VERSION=$version$suffix python3 setup.py sdist"
+                sh "python3 -m twine upload dist/* --config-file .pypirc"
 
             }
         }
@@ -1441,6 +1490,9 @@ def publishingRCtoStable() {
                 echo 'Moving MacOS RC artifacts to Stable: libvcx'
                 publishLibvcxMacOSFilesRCtoStable(libvcxVersion)
 
+                echo 'Moving MacOS RC artifacts to Stable: indy cli'
+                publishIndyCliMacOSFilesRCtoStable(libindyVersion)
+
                 echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu18.dockerfile libindy/ci')
 
@@ -1458,12 +1510,46 @@ def publishingRCtoStable() {
                 echo "Moving ${env_name} RC artifacts to Stable: libvcx"
                 publishLibvcxDebRCtoStable(testEnv, env_name)
 
+                env_name = Centos
+
+                echo "Moving ${env_name} RC artifacts to Stable: libindy"
+                publishLibindyCentosFilesRCtoStable(libindyVersion)
+
+                echo "Moving ${env_name} RC artifacts to Stable: libnullapy"
+                publishLibnullapyCentosFilesRCtoStable(libnullpayVersion)
+
+                echo "Moving ${env_name} RC artifacts to Stable: libvcx"
+                publishLibvcxCentosFilesRCtoStable(libvcxVersion)
+
+                echo "Moving ${env_name} RC artifacts to Stable: indy-cli"
+                publishIndyCliCentosFilesRCtoStable(libindyVersion)
+
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
                 step([$class: 'WsCleanup'])
             }
         }
     }
+}
+
+def publishLibindyCentosFilesRCtoStable(version) {
+    publishCentosFilesRCtoStable("libindy", version)
+}
+
+def publishLibnullapyCentosFilesRCtoStable(version) {
+    publishCentosFilesRCtoStable("libnullapy", version)
+}
+
+def publishLibvcxCentosFilesRCtoStable(version) {
+    publishCentosFilesRCtoStable("libvcx", version)
+}
+
+def publishIndyCliCentosFilesRCtoStable(version) {
+    publishCentosFilesRCtoStable("indy-cli", version)
+}
+
+def publishCentosFilesRCtoStable(packageName, version) {
+    copyRcFilesToStable("rpm", packageName, version)
 }
 
 def publishLibindyWindowsFilesRCtoStable(version) {
@@ -1531,31 +1617,24 @@ def publishLibnullpayIOSFilesRCtoStable(version) {
     copyFilesFromRcToStable(src, target)
 }
 
+def publishMacosFilesRCtoStable(packageName, version) {
+    copyRcFilesToStable("macos", packageName, version)
+}
+
 def publishLibindyMacOSFilesRCtoStable(version) {
-    rcFullVersion = fullVersion(version)
-
-    src = "/var/repository/repos/macos/libindy/rc/$rcFullVersion/"
-    target = "/var/repository/repos/macos/libindy/stable/$version/"
-
-    copyFilesFromRcToStable(src, target)
+    publishMacosFilesRCtoStable("libindy", version)
 }
 
 def publishLibnullpayMacOSFilesRCtoStable(version) {
-    rcFullVersion = fullVersion(version)
-
-    src = "/var/repository/repos/macos/libnullpay/rc/$rcFullVersion/"
-    target = "/var/repository/repos/macos/libnullpay/stable/$version/"
-
-    copyFilesFromRcToStable(src, target)
+    publishMacosFilesRCtoStable("libnullpay", version)
 }
 
 def publishLibvcxMacOSFilesRCtoStable(version) {
-    rcFullVersion = fullVersion(version)
+    publishMacosFilesRCtoStable("libvcx", version)
+}
 
-    src = "/var/repository/repos/macos/libvcx/rc/$rcFullVersion/"
-    target = "/var/repository/repos/macos/libvcx/stable/$version/"
-
-    copyFilesFromRcToStable(src, target)
+def publishIndyCliMacOSFilesRCtoStable(version) {
+    publishMacosFilesRCtoStable("indy-cli", version)
 }
 
 def fullVersion(version) {
@@ -1734,11 +1813,11 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
     }
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults) {
-    linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults, 'ubuntu')
+def linuxModuleTesting(file, env_name, network_name, module_tester) {
+    linuxModuleTesting(file, env_name, network_name, module_tester, 'ubuntu')
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults, node_label) {
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
     node(node_label) {
         def poolInst
         try {
@@ -1749,7 +1828,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildRe
 
             def testEnv = buildTestEnv(file, env_name)
 
-            module_tester(env_name, network_name, testEnv, stashBuildResults)
+            module_tester(env_name, network_name, testEnv)
         } finally {
             closePool(env_name, network_name, poolInst)
         }
@@ -1761,7 +1840,7 @@ def androidTesting() {
     network_name = "pool_network"
     parallel([
             "${env_name}-android-test"    : {
-                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false, 'android')
+                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, 'android')
             },
             "${env_name}-android-building": { androidBuildAsTesting() }
     ])

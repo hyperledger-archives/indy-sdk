@@ -61,6 +61,7 @@ struct Pool {
 
 struct Issuer {
     issuer_wallet_handle: i32,
+    issuer_wallet_config: String,
     issuer_did: String,
 
     schema_id: String,
@@ -75,6 +76,7 @@ struct Issuer {
 struct Prover {
 
     wallet_handle: i32,
+    wallet_config: String,
     did: String,
     verkey: String,
     master_secret_id: String,
@@ -164,10 +166,11 @@ impl Issuer {
 
     pub fn new(pool: &Pool) -> Issuer {
 
-        let (wallet_handle, _wallet_config) = wallet::create_and_open_default_wallet(format!("wallet_for_pool_{}", pool.pool_handle).borrow()).unwrap();
+        let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(format!("wallet_for_pool_{}", pool.pool_handle).borrow()).unwrap();
         Issuer {
             // Issuer creates wallet, gets wallet handle
             issuer_wallet_handle: wallet_handle,
+            issuer_wallet_config: wallet_config,
 
             // Issuer create DID
             issuer_did: did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool.pool_handle).unwrap().0,
@@ -290,7 +293,7 @@ impl Issuer {
 
     pub fn close(&self)
     {
-        wallet::close_wallet(self.issuer_wallet_handle).unwrap();
+        wallet::close_and_delete_wallet(self.issuer_wallet_handle, &self.issuer_wallet_config).unwrap();
     }
 }
 
@@ -300,7 +303,7 @@ impl Prover
     pub fn new(master_secret_id: Option<&str>) -> Prover
     {
         // Prover creates wallet, gets wallet handle
-        let (prover_wallet_handle, _prover_wallet_config) = wallet::create_and_open_default_wallet("interactions_prover").unwrap();
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("interactions_prover").unwrap();
         // Prover create DID
         let (prover_did, prover_verkey) = did::create_my_did(prover_wallet_handle, "{}").unwrap();
         // Prover creates Master Secret
@@ -309,6 +312,7 @@ impl Prover
 
         Prover {
             wallet_handle: prover_wallet_handle,
+            wallet_config: prover_wallet_config,
             did: prover_did.clone(),
             verkey: prover_verkey.clone(),
             master_secret_id: String::from(master_secret_id),
@@ -322,7 +326,7 @@ impl Prover
     {
         // Prover gets CredentialDefinition from Ledger
         let cred_offer: CredentialOffer = serde_json::from_str(&cred_offer_json).unwrap();
-        let (cred_def_id, cred_def_json) = pool.get_cred_def(Some(&self.did), &cred_offer.cred_def_id);
+        let (cred_def_id, cred_def_json) = pool.get_cred_def(Some(&self.did), &cred_offer.cred_def_id.0);
         self.cred_def_id = Some(cred_def_id);
 
         // Prover creates Credential Request
@@ -344,7 +348,7 @@ impl Prover
         let (_, cred_def_json) = pool.get_cred_def(Some(&self.did), &self.cred_def_id.clone().unwrap());
 
         // Prover gets RevocationRegistryDefinition
-        let (_, revoc_reg_def_json) = pool.get_revoc_reg_def(None, &credential.rev_reg_id.unwrap());
+        let (_, revoc_reg_def_json) = pool.get_revoc_reg_def(None, &credential.rev_reg_id.unwrap().0);
 
         // Prover stores received Credential
         anoncreds::prover_store_credential(self.wallet_handle,
@@ -374,22 +378,22 @@ impl Prover
 
         let schema_id = cred_info.schema_id;
         let cred_def_id = cred_info.cred_def_id;
-        assert_eq!(cred_def_id, self.cred_def_id.clone().unwrap());
+        assert_eq!(cred_def_id.0, self.cred_def_id.clone().unwrap());
         let cred_rev_id = cred_info.cred_rev_id.clone().unwrap();
         let rev_reg_id = cred_info.rev_reg_id.clone().unwrap();
 
 
         // Prover gets Schema from Ledger
-        let (_, schema_json) = pool.get_schema(None, &schema_id);
+        let (_, schema_json) = pool.get_schema(None, &schema_id.0);
 
         // Prover gets CredentialDefinition from Ledger
-        let (_, cred_def_json) = pool.get_cred_def(Some(&self.did), &cred_def_id);
+        let (_, cred_def_json) = pool.get_cred_def(Some(&self.did), &cred_def_id.0);
 
         // Prover gets RevocationRegistryDefinition
-        let (_, revoc_reg_def_json) = pool.get_revoc_reg_def(None, &rev_reg_id);
+        let (_, revoc_reg_def_json) = pool.get_revoc_reg_def(None, &rev_reg_id.0);
 
         // Prover gets RevocationRegistryDelta from Ledger
-        let (_, revoc_reg_delta_json, timestamp) = pool.get_revoc_reg_delta(None, &rev_reg_id, from, to);
+        let (_, revoc_reg_delta_json, timestamp) = pool.get_revoc_reg_delta(None, &rev_reg_id.0, from, to);
 
         // Prover creates RevocationState
 
@@ -427,15 +431,15 @@ impl Prover
         };
 
         let schemas_json = json!({
-            schema_id.clone(): serde_json::from_str::<Schema>(&schema_json).unwrap()
+            schema_id.0: serde_json::from_str::<Schema>(&schema_json).unwrap()
         }).to_string();
 
         let cred_defs_json = json!({
-            cred_def_id.clone(): serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()
+            cred_def_id.0: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()
         }).to_string();
 
         let rev_states_json = json!({
-            rev_reg_id.clone(): json!({
+            rev_reg_id.0: json!({
                 timestamp.to_string(): serde_json::from_str::<RevocationState>(&rev_state_json).unwrap()
             })
         }).to_string();
@@ -454,7 +458,7 @@ impl Prover
 
     pub fn close(&self)
     {
-        wallet::close_wallet(self.wallet_handle).unwrap();
+        wallet::close_and_delete_wallet(self.wallet_handle, &self.wallet_config).unwrap();
     }
 }
 
@@ -487,17 +491,17 @@ impl Verifier {
         let identifier = proof.identifiers[0].clone();
 
         // Verifier gets Schema from Ledger
-        let (schema_id, schema_json) = pool.get_schema(Some(DID_MY1), &identifier.schema_id);
+        let (schema_id, schema_json) = pool.get_schema(Some(DID_MY1), &identifier.schema_id.0);
 
         // Verifier gets CredentialDefinition from Ledger
-        let (cred_def_id, cred_def_json) = pool.get_cred_def(Some(DID_MY1), &identifier.cred_def_id);
+        let (cred_def_id, cred_def_json) = pool.get_cred_def(Some(DID_MY1), &identifier.cred_def_id.0);
 
         // Verifier gets RevocationRegistryDefinition from Ledger
-        let (rev_reg_id, revoc_reg_def_json) = pool.get_revoc_reg_def(Some(DID_MY1), &identifier.rev_reg_id.clone().unwrap());
+        let (rev_reg_id, revoc_reg_def_json) = pool.get_revoc_reg_def(Some(DID_MY1), &identifier.rev_reg_id.clone().unwrap().0);
 
         // Verifier gets RevocationRegistry from Ledger
         let (_, rev_reg_json, timestamp) =
-            pool.get_revoc_reg_delta(Some(DID_MY1), &identifier.rev_reg_id.clone().unwrap(), None, identifier.timestamp.unwrap());
+            pool.get_revoc_reg_delta(Some(DID_MY1), &identifier.rev_reg_id.clone().unwrap().0, None, identifier.timestamp.unwrap());
 
         let schemas_json = json!({
             schema_id.clone(): serde_json::from_str::<Schema>(&schema_json).unwrap()

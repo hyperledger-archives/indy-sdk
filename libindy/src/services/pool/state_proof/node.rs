@@ -203,9 +203,9 @@ impl Node {
             Node::Hash(ref hash) => {
                 let hash = NodeHash::from_slice(hash.as_slice());
                 if let Some(ref next) = db.get(hash) {
-                    return next._get_node(db, path, seen_path);
+                    next._get_node(db, path, seen_path)
                 } else {
-                    return Err(err_msg(IndyErrorKind::InvalidStructure, "Incomplete key-value DB for Patricia Merkle Trie to get value by the key"));
+                    Err(err_msg(IndyErrorKind::InvalidStructure, "Incomplete key-value DB for Patricia Merkle Trie to get value by the key"))
                 }
             }
             Node::Leaf(ref pair) => {

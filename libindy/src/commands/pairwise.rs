@@ -47,23 +47,23 @@ impl PairwiseCommandExecutor {
     pub fn execute(&self, command: PairwiseCommand) {
         match command {
             PairwiseCommand::PairwiseExists(wallet_handle, their_did, cb) => {
-                info!(target: "pairwise_command_executor", "PairwiseExists command received");
+                debug!(target: "pairwise_command_executor", "PairwiseExists command received");
                 cb(self.pairwise_exists(wallet_handle, &their_did));
             }
             PairwiseCommand::CreatePairwise(wallet_handle, their_did, my_did, metadata, cb) => {
-                info!(target: "pairwise_command_executor", "CreatePairwise command received");
+                debug!(target: "pairwise_command_executor", "CreatePairwise command received");
                 cb(self.create_pairwise(wallet_handle, &their_did, &my_did, metadata.as_ref().map(String::as_str)));
             }
             PairwiseCommand::ListPairwise(wallet_handle, cb) => {
-                info!(target: "pairwise_command_executor", "ListPairwise command received");
+                debug!(target: "pairwise_command_executor", "ListPairwise command received");
                 cb(self.list_pairwise(wallet_handle));
             }
             PairwiseCommand::GetPairwise(wallet_handle, their_did, cb) => {
-                info!(target: "pairwise_command_executor", "GetPairwise command received");
+                debug!(target: "pairwise_command_executor", "GetPairwise command received");
                 cb(self.get_pairwise(wallet_handle, &their_did));
             }
             PairwiseCommand::SetPairwiseMetadata(wallet_handle, their_did, metadata, cb) => {
-                info!(target: "pairwise_command_executor", "SetPairwiseMetadata command received");
+                debug!(target: "pairwise_command_executor", "SetPairwiseMetadata command received");
                 cb(self.set_pairwise_metadata(wallet_handle, &their_did, metadata.as_ref().map(String::as_str)));
             }
         };
@@ -117,7 +117,7 @@ impl PairwiseCommandExecutor {
             let pairwise_id = pairwise_record.get_id();
 
             let pairwise_value = pairwise_record.get_value()
-                .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Pairwise not found for id: {}", pairwise_id)))?.to_string();
+                .ok_or_else(||err_msg(IndyErrorKind::InvalidStructure, format!("Pairwise not found for id: {}", pairwise_id)))?.to_string();
 
             list_pairwise.push(pairwise_value);
         }

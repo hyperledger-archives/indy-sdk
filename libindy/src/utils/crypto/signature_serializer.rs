@@ -38,7 +38,7 @@ fn _serialize_signature(v: Value, is_top_level: bool, _type: Option<&str>) -> Re
 
                     ctx.update(&value
                         .as_str()
-                        .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, "Cannot update hash context"))?
+                        .ok_or_else(|| IndyError::from_msg(IndyErrorKind::InvalidState, "Cannot update hash context"))?
                         .as_bytes())?;
 
                     value = Value::String(hex::encode(ctx.finish()?.as_ref()));

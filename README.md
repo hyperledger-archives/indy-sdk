@@ -2,7 +2,7 @@
 ![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
 This is the official SDK for [Hyperledger Indy](https://www.hyperledger.org/projects),
 which provides a distributed-ledger-based foundation for [self-sovereign identity](https://sovrin.org). Indy provides a software ecosystem for private, secure, and powerful identity, and the Indy SDK enables clients for it.
-The major artifact of the SDK is a c-callable
+The major artifact of the SDK is a C-callable
 library; there are also convenience wrappers for various programming languages and Indy CLI tool.
 
 All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa)
@@ -115,20 +115,21 @@ It is recommended to install the SDK packages with APT:
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) {release channel}"
     sudo apt-get update
-    sudo apt-get install -y libindy
+    sudo apt-get install -y {library}
 
+* {library} must be replaced with libindy, libnullpay, libvcx or indy-cli.
 * (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
 * {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section "Release channels" above for more details.
 
 ### Windows
 
-1. Go to https://repo.sovrin.org/windows/libindy/{release-channel}.
-2. Download last version of libindy.
+1. Go to https://repo.sovrin.org/windows/{library}/{release-channel}.
+2. Download last version of library.
 3. Unzip archives to the directory where you want to save working library.
 4. After unzip you will get next structure of files:
 
-* `Your working directory`
+* `Your working directory for libindy`
     * `include`
         * `...`
     * `lib`
@@ -148,18 +149,21 @@ that may be need for your applications.
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 See section "Release channels" for more details.
 
+{library} must be replaced with libindy, libnullpay, libvcx or indy-cli.
+
 ### iOS
+
 See [wrapper iOS install documentation](wrappers/ios/README.md "How to install").
 
 ### Android
 
-1. Go to `https://repo.sovrin.org/android/libindy/{release-channel}`.
+1. Go to `https://repo.sovrin.org/android/{library}/{release-channel}`.
 2. 3 architecture are supported as of now arm,arm64 and x86.
-3. Download latest version of libindy.
+3. Download latest version of library.
 4. Unzip archives to the directory where you want to save the `.so` files.
 5. After unzip you will get next structure of files:
 
-* `Your working directory`
+* `Your working directory for libindy`
     * `include`
         * `...`
     * `lib`
@@ -180,6 +184,8 @@ that may be need for your applications.
 
  * `libindy.a` - This is a static library, which is compiled with NDK.
 
+{library} must be replaced with libindy, libnullpay or libvcx.
+
  [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/docs/android-build.md#usage)  
 
 {release channel} must be replaced with rc or stable to define corresponded release channel.
@@ -192,27 +198,41 @@ See section "Release channels" for more details.
  - We are using the [NDK16b](https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip) because it is the last NDK to have support for `gnustl_shared` stl.
  gnustl_shared is deprecated in latest NDK. gnustal_shared is needed because the dependencies are compiled using gnustal_shared and you will get build errors if more than one type of stl while compiling.
 
+### Centos
+
+1. Go to https://repo.sovrin.org/rpm/{library}/{release-channel}.
+2. Download and unzip the last version of library.
+3. Install with `rpm -i library-version.rpm`.
+
+{library} must be replaced with libindy, libnullpay, libvcx, indy-cli to define corresponded library.
+
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+See section "Release channels" for more details.
 
 ### MacOS
 
-Pre-built libraries are not provided for MacOS.
+1. Go to `https://repo.sovrin.org/macos/{library}/{release-channel}`.
+2. Download the latest version of library.
+3. Unzip archives to the directory where you want to save working library.
+4. After unzip you will get next structure of files:
 
-Clone the repo and run `mac.build.sh` in the `libindy` folder.
+* `Your working directory`
+    * `include` - contains c-header files which contains all necessary declarations that may be need for your applications.
+        * `...`
+    * `lib` - contains library binaries (static and dynamic).
+        * `library.a`
+        * `library.dylib`
+    
+You need add the path to lib folder to LIBRARY_PATH environment variable. 
+    
+{library} must be replaced with libindy, libnullpay, libvcx or indy-cli to define corresponded library.
 
-Please see [here](docs/build-guides/mac-build.md) for manual build steps.
-
-### RHEL-based distributions (Amazon Linux 2017.03)
-Pre-built libraries are not provided for RHEL-based distributions. Please look [here](docs/build-guides/rhel-build.md)
-for details on building from source for RHEL-based distributions.
-
-After successfully compiling `libindy`, you will need to add the path containing `libindy.so` to the
-`LD_LIBRARY_PATH` environment variable. This is required for your application to link to
-`libindy`.
-
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+    
 ## How to build Indy SDK from source
 
 * [Ubuntu based distributions (Ubuntu 16.04)](docs/build-guides/ubuntu-build.md)
-* [RHEL based distributions (Amazon Linux 2017.03)](docs/build-guides/rhel-build.md)
+* [RHEL based distributions (Centos)](docs/build-guides/rhel-build.md)
 * [Windows](docs/build-guides/windows-build.md)
 * [MacOS](docs/build-guides/mac-build.md)
 * [Android](docs/build-guides/android-build.md)
@@ -296,16 +316,11 @@ Docker machine needs to be rebooted after these changes.
 
 ## Wrappers documentation
 
-The following wrappers are tested and complete. There is also active work
-on a wrapper for Go; visit
+The following [wrappers](docs/architecture/language-bindings.md) are tested and complete. 
+
+There is also active work on a wrapper for Go; visit
 [#indy-sdk on Rocket.Chat](https://chat.hyperledger.org/channel/indy-sdk) for
 details.
-
-* [.Net](wrappers/dotnet/README.md)
-* [Java](wrappers/java/README.md)
-* [Python](wrappers/python/README.md)
-* [iOS](wrappers/ios/README.md)
-* [NodeJS](wrappers/nodejs/README.md)
 
 ## Indy CLI documentation
 * An explanation of how to install the official command line interface for that provides commands to manage wallets and interactions with the ledger: [Indy CLI](cli/README.md)

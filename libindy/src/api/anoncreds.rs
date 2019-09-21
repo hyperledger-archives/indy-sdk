@@ -5,24 +5,23 @@ use commands::anoncreds::AnoncredsCommand;
 use commands::anoncreds::issuer::IssuerCommand;
 use commands::anoncreds::prover::ProverCommand;
 use commands::anoncreds::verifier::VerifierCommand;
-use domain::anoncreds::schema::{Schema, AttributeNames};
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
+use domain::anoncreds::schema::{Schema, AttributeNames, Schemas};
+use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId, CredentialDefinitions};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
 use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
 use domain::anoncreds::credential::{Credential, CredentialValues};
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, RevocationRegistryDefinition};
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, RevocationRegistryDefinition, RevocationRegistryId, RevocationRegistryDefinitions};
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
 use domain::anoncreds::proof::Proof;
 use domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery};
 use domain::anoncreds::requested_credential::RequestedCredentials;
-use domain::anoncreds::revocation_registry::RevocationRegistry;
-use domain::anoncreds::revocation_state::RevocationState;
+use domain::anoncreds::revocation_registry::RevocationRegistries;
+use domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
 use utils::ctypes;
 
 use libc::c_char;
 use std::ptr;
-use std::collections::HashMap;
 
 use utils::validation::Validatable;
 
@@ -188,7 +187,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
     check_useful_validatable_json!(schema_json, ErrorCode::CommonInvalidParam4, Schema);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam6);
-    check_useful_opt_json!(config_json, ErrorCode::CommonInvalidParam7, CredentialDefinitionConfig);
+    check_useful_opt_validatable_json!(config_json, ErrorCode::CommonInvalidParam7, CredentialDefinitionConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     trace!("indy_issuer_create_and_store_credential_def: entities >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, tag: {:?}, \
@@ -268,8 +267,8 @@ pub extern fn indy_issuer_rotate_credential_def_start(command_handle: CommandHan
     trace!("indy_issuer_rotate_credential_def_start: >>> wallet_handle: {:?}, cred_def_id: {:?}, config_json: {:?}",
            wallet_handle, cred_def_id, config_json);
 
-    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_json!(config_json, ErrorCode::CommonInvalidParam4, CredentialDefinitionConfig);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
+    check_useful_opt_validatable_json!(config_json, ErrorCode::CommonInvalidParam4, CredentialDefinitionConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_issuer_rotate_credential_def_start: entities >>> wallet_handle: {:?}, cred_def_id: {:?}, config_json: {:?}",
@@ -321,7 +320,7 @@ pub extern fn indy_issuer_rotate_credential_def_apply(command_handle: CommandHan
     trace!("indy_issuer_rotate_credential_def_apply: >>> wallet_handle: {:?}, cred_def_id: {:?}",
            wallet_handle, cred_def_id);
 
-    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_issuer_rotate_credential_def_apply: entities >>> wallet_handle: {:?}, cred_def_id: {:?}",
@@ -442,7 +441,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHand
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(revoc_def_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam6);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam6, CredentialDefinitionId);
     check_useful_validatable_json!(config_json, ErrorCode::CommonInvalidParam7, RevocationRegistryConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
@@ -512,7 +511,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
                                                                        cred_offer_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_credential_offer: >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
 
-    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_issuer_create_credential_offer: entities >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
@@ -602,10 +601,10 @@ pub extern fn indy_issuer_create_credential(command_handle: CommandHandle,
     trace!("indy_issuer_create_credential: >>> wallet_handle: {:?}, cred_offer_json: {:?}, cred_req_json: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, \
     blob_storage_reader_handle: {:?}", wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle);
 
-    check_useful_json!(cred_offer_json, ErrorCode::CommonInvalidParam3, CredentialOffer);
-    check_useful_json!(cred_req_json, ErrorCode::CommonInvalidParam4, CredentialRequest);
+    check_useful_validatable_json!(cred_offer_json, ErrorCode::CommonInvalidParam3, CredentialOffer);
+    check_useful_validatable_json!(cred_req_json, ErrorCode::CommonInvalidParam4, CredentialRequest);
     check_useful_validatable_json!(cred_values_json, ErrorCode::CommonInvalidParam5, CredentialValues);
-    check_useful_opt_c_str!(rev_reg_id, ErrorCode::CommonInvalidParam6);
+    check_useful_validatable_opt_string!(rev_reg_id, ErrorCode::CommonInvalidParam6, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let blob_storage_reader_handle = if blob_storage_reader_handle != -1 { Some(blob_storage_reader_handle) } else { None };
@@ -685,7 +684,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: CommandHandle,
     trace!("indy_issuer_revoke_credential: >>> wallet_handle: {:?}, blob_storage_reader_cfg_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
            wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id, cred_revoc_id);
 
-    check_useful_c_str!(rev_reg_id, ErrorCode::CommonInvalidParam4);
+    check_useful_validatable_string!(rev_reg_id, ErrorCode::CommonInvalidParam4, RevocationRegistryId);
     check_useful_c_str!(cred_revoc_id, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
@@ -816,8 +815,8 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: Comma
     trace!("indy_issuer_merge_revocation_registry_deltas: >>> rev_reg_delta_json: {:?}, other_rev_reg_delta_json: {:?}",
            rev_reg_delta_json, other_rev_reg_delta_json);
 
-    check_useful_json!(rev_reg_delta_json, ErrorCode::CommonInvalidParam2, RevocationRegistryDelta);
-    check_useful_json!(other_rev_reg_delta_json, ErrorCode::CommonInvalidParam3, RevocationRegistryDelta);
+    check_useful_validatable_json!(rev_reg_delta_json, ErrorCode::CommonInvalidParam2, RevocationRegistryDelta);
+    check_useful_validatable_json!(other_rev_reg_delta_json, ErrorCode::CommonInvalidParam3, RevocationRegistryDelta);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_issuer_merge_revocation_registry_deltas: entities >>> rev_reg_delta_json: {:?}, other_rev_reg_delta_json: {:?}",
@@ -941,8 +940,8 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
            wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id);
 
     check_useful_c_str!(prover_did, ErrorCode::CommonInvalidParam3);
-    check_useful_json!(cred_offer_json, ErrorCode::CommonInvalidParam4, CredentialOffer);
-    check_useful_json!(cred_def_json, ErrorCode::CommonInvalidParam5, CredentialDefinition);
+    check_useful_validatable_json!(cred_offer_json, ErrorCode::CommonInvalidParam4, CredentialOffer);
+    check_useful_validatable_json!(cred_def_json, ErrorCode::CommonInvalidParam5, CredentialDefinition);
     check_useful_c_str!(master_secret_id, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
@@ -1019,7 +1018,7 @@ pub extern fn indy_prover_set_credential_attr_tag_policy(command_handle: Command
                                                          cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_prover_set_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}, tag_attrs_json: {:?}, retroactive: {:?}", wallet_handle, cred_def_id, tag_attrs_json, retroactive);
 
-    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_opt_json!(tag_attrs_json, ErrorCode::CommonInvalidParam4, CredentialAttrTagPolicy);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
@@ -1075,7 +1074,7 @@ pub extern fn indy_prover_get_credential_attr_tag_policy(command_handle: Command
                                                                               catpol_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_get_credential_attr_tag_policy: >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
 
-    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_prover_get_credential_attr_tag_policy: entities >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
@@ -1157,10 +1156,10 @@ pub extern fn indy_prover_store_credential(command_handle: CommandHandle,
     cred_def_json: {:?}", wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
 
     check_useful_opt_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
-    check_useful_json!(cred_req_metadata_json, ErrorCode::CommonInvalidParam4, CredentialRequestMetadata);
-    check_useful_json!(cred_json, ErrorCode::CommonInvalidParam5, Credential);
-    check_useful_json!(cred_def_json, ErrorCode::CommonInvalidParam6, CredentialDefinition);
-    check_useful_opt_json!(rev_reg_def_json, ErrorCode::CommonInvalidParam7, RevocationRegistryDefinition);
+    check_useful_validatable_json!(cred_req_metadata_json, ErrorCode::CommonInvalidParam4, CredentialRequestMetadata);
+    check_useful_validatable_json!(cred_json, ErrorCode::CommonInvalidParam5, Credential);
+    check_useful_validatable_json!(cred_def_json, ErrorCode::CommonInvalidParam6, CredentialDefinition);
+    check_useful_opt_validatable_json!(rev_reg_def_json, ErrorCode::CommonInvalidParam7, RevocationRegistryDefinition);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     trace!("indy_prover_store_credential: entities >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
@@ -1591,7 +1590,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
                                                             credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_get_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}", wallet_handle, proof_request_json);
 
-    check_useful_json!(proof_request_json, ErrorCode::CommonInvalidParam3, ProofRequest);
+    check_useful_validatable_json!(proof_request_json, ErrorCode::CommonInvalidParam3, ProofRequest);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_prover_get_credentials_for_proof_req: entities >>> wallet_handle: {:?}, proof_request_json: {:?}",
@@ -1640,6 +1639,8 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 ///                        // (applies to every attribute and predicate but can be overridden on attribute level)
 ///                        // (can be overridden on attribute level)
 ///     }
+///
+/// where
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
@@ -1700,7 +1701,7 @@ pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: Comma
                                                                search_handle: SearchHandle)>) -> ErrorCode {
     trace!("indy_prover_search_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}", wallet_handle, proof_request_json, extra_query_json);
 
-    check_useful_json!(proof_request_json, ErrorCode::CommonInvalidParam3, ProofRequest);
+    check_useful_validatable_json!(proof_request_json, ErrorCode::CommonInvalidParam3, ProofRequest);
     check_useful_opt_json!(extra_query_json, ErrorCode::CommonInvalidParam4, ProofRequestExtraQuery);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1993,12 +1994,12 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
     schemas_json: {:?}, credential_defs_json: {:?}, rev_states_json: {:?}",
            wallet_handle, proof_req_json, requested_credentials_json, master_secret_id, schemas_json, credential_defs_json, rev_states_json);
 
-    check_useful_json!(proof_req_json, ErrorCode::CommonInvalidParam3, ProofRequest);
-    check_useful_json!(requested_credentials_json, ErrorCode::CommonInvalidParam4, RequestedCredentials);
+    check_useful_validatable_json!(proof_req_json, ErrorCode::CommonInvalidParam3, ProofRequest);
+    check_useful_validatable_json!(requested_credentials_json, ErrorCode::CommonInvalidParam4, RequestedCredentials);
     check_useful_c_str!(master_secret_id, ErrorCode::CommonInvalidParam5);
-    check_useful_json!(schemas_json, ErrorCode::CommonInvalidParam6, HashMap<String, Schema>);
-    check_useful_json!(credential_defs_json, ErrorCode::CommonInvalidParam7, HashMap<String, CredentialDefinition>);
-    check_useful_json!(rev_states_json, ErrorCode::CommonInvalidParam8, HashMap<String, HashMap<u64, RevocationState>>);
+    check_useful_json!(schemas_json, ErrorCode::CommonInvalidParam6, Schemas);
+    check_useful_json!(credential_defs_json, ErrorCode::CommonInvalidParam7, CredentialDefinitions);
+    check_useful_json!(rev_states_json, ErrorCode::CommonInvalidParam8, RevocationStates);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     trace!("indy_prover_create_proof: entities >>> wallet_handle: {:?}, proof_req_json: {:?}, requested_credentials_json: {:?}, master_secret_id: {:?}, \
@@ -2163,12 +2164,12 @@ pub extern fn indy_verifier_verify_proof(command_handle: CommandHandle,
     trace!("indy_verifier_verify_proof: >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, credential_defs_json: {:?}, \
     rev_reg_defs_json: {:?}, rev_regs_json: {:?}", proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json);
 
-    check_useful_json!(proof_request_json, ErrorCode::CommonInvalidParam2, ProofRequest);
-    check_useful_json!(proof_json, ErrorCode::CommonInvalidParam3, Proof);
-    check_useful_json!(schemas_json, ErrorCode::CommonInvalidParam4, HashMap<String, Schema>);
-    check_useful_json!(credential_defs_json, ErrorCode::CommonInvalidParam5, HashMap<String, CredentialDefinition>);
-    check_useful_json!(rev_reg_defs_json, ErrorCode::CommonInvalidParam6, HashMap<String, RevocationRegistryDefinition>);
-    check_useful_json!(rev_regs_json, ErrorCode::CommonInvalidParam7, HashMap<String, HashMap<u64, RevocationRegistry>>);
+    check_useful_validatable_json!(proof_request_json, ErrorCode::CommonInvalidParam2, ProofRequest);
+    check_useful_validatable_json!(proof_json, ErrorCode::CommonInvalidParam3, Proof);
+    check_useful_json!(schemas_json, ErrorCode::CommonInvalidParam4, Schemas);
+    check_useful_json!(credential_defs_json, ErrorCode::CommonInvalidParam5, CredentialDefinitions);
+    check_useful_json!(rev_reg_defs_json, ErrorCode::CommonInvalidParam6, RevocationRegistryDefinitions);
+    check_useful_json!(rev_regs_json, ErrorCode::CommonInvalidParam7, RevocationRegistries);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     trace!("indy_verifier_verify_proof: entities >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, credential_defs_json: {:?}, \
@@ -2234,8 +2235,8 @@ pub extern fn indy_create_revocation_state(command_handle: CommandHandle,
     trace!("indy_create_revocation_state: >>> blob_storage_reader_handle: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, \
     cred_rev_id: {:?}", blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
 
-    check_useful_json!(rev_reg_def_json, ErrorCode::CommonInvalidParam3, RevocationRegistryDefinition);
-    check_useful_json!(rev_reg_delta_json, ErrorCode::CommonInvalidParam4, RevocationRegistryDelta);
+    check_useful_validatable_json!(rev_reg_def_json, ErrorCode::CommonInvalidParam3, RevocationRegistryDefinition);
+    check_useful_validatable_json!(rev_reg_delta_json, ErrorCode::CommonInvalidParam4, RevocationRegistryDelta);
     check_useful_c_str!(cred_rev_id, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
@@ -2299,9 +2300,9 @@ pub extern fn indy_update_revocation_state(command_handle: CommandHandle,
     trace!("indy_update_revocation_state: >>> blob_storage_reader_handle: {:?}, rev_state_json: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, \
     timestamp: {:?}, cred_rev_id: {:?}", blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
 
-    check_useful_json!(rev_state_json, ErrorCode::CommonInvalidParam3, RevocationState);
-    check_useful_json!(rev_reg_def_json, ErrorCode::CommonInvalidParam4, RevocationRegistryDefinition);
-    check_useful_json!(rev_reg_delta_json, ErrorCode::CommonInvalidParam5, RevocationRegistryDelta);
+    check_useful_validatable_json!(rev_state_json, ErrorCode::CommonInvalidParam3, RevocationState);
+    check_useful_validatable_json!(rev_reg_def_json, ErrorCode::CommonInvalidParam4, RevocationRegistryDefinition);
+    check_useful_validatable_json!(rev_reg_delta_json, ErrorCode::CommonInvalidParam5, RevocationRegistryDelta);
     check_useful_c_str!(cred_rev_id, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 

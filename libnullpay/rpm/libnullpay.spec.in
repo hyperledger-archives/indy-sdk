@@ -1,0 +1,38 @@
+%global __os_install_post %{nil}
+%define _rpmdir @result_dir@
+%define _rpmfilename %%{NAME}.%%{VERSION}.rpm
+
+Summary: Null Payment Plugin for Indy SDK
+Name: libnullpay
+Version: @version@
+Release: @release@
+License: Apache License 2.0
+Group: System Environment/Libraries
+Source: https://github.com/hyperledger/indy-sdk/
+Requires: libindy
+BuildRequires: libindy
+
+%description
+This is a simple plugin that can be used for development of applications that use Payments API of Indy SDK.
+
+%prep
+%build
+
+%install
+rm -rf ${RPM_BUILD_ROOT}
+
+install -dm0755 $RPM_BUILD_ROOT/%{_libdir}
+install -Dm0644 @dir@/target/release/libnullpay.so $RPM_BUILD_ROOT/%{_libdir}/libnullpay.so
+
+%clean
+rm -rf ${RPM_BUILD_ROOT}
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%files
+%defattr(755,root,root)
+%{_libdir}/libnullpay.so*
+
+%changelog

@@ -1,6 +1,11 @@
 use std::collections::HashMap;
 
-use ursa::cl::{Proof as CryptoProof};
+use ursa::cl::Proof as CryptoProof;
+
+use super::schema::SchemaId;
+use super::credential_definition::CredentialDefinitionId;
+use super::revocation_registry_definition::RevocationRegistryId;
+use utils::validation::Validatable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Proof {
@@ -30,12 +35,12 @@ impl Default for RequestedProof {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SubProofReferent {
-    pub sub_proof_index: i32,
+    pub sub_proof_index: u32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RevealedAttributeInfo {
-    pub sub_proof_index: i32,
+    pub sub_proof_index: u32,
     pub raw: String,
     pub encoded: String
 }
@@ -43,8 +48,10 @@ pub struct RevealedAttributeInfo {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Identifier {
-    pub schema_id: String,
-    pub cred_def_id: String,
-    pub rev_reg_id: Option<String>,
+    pub schema_id: SchemaId,
+    pub cred_def_id: CredentialDefinitionId,
+    pub rev_reg_id: Option<RevocationRegistryId>,
     pub timestamp: Option<u64>
 }
+
+impl Validatable for Proof {}

@@ -42,6 +42,8 @@ pub mod non_secrets;
 pub mod payments;
 pub mod cache;
 
+type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + Send>;
+
 pub enum Command {
     Exit,
     Anoncreds(AnoncredsCommand),
@@ -121,51 +123,51 @@ impl CommandExecutor {
                 loop {
                     match receiver.recv() {
                         Ok(Command::Anoncreds(cmd)) => {
-                            info!("AnoncredsCommand command received");
+                            debug!("AnoncredsCommand command received");
                             anoncreds_command_executor.execute(cmd);
                         }
                         Ok(Command::BlobStorage(cmd)) => {
-                            info!("BlobStorageCommand command received");
+                            debug!("BlobStorageCommand command received");
                             blob_storage_command_executor.execute(cmd);
                         }
                         Ok(Command::Crypto(cmd)) => {
-                            info!("CryptoCommand command received");
+                            debug!("CryptoCommand command received");
                             crypto_command_executor.execute(cmd);
                         }
                         Ok(Command::Ledger(cmd)) => {
-                            info!("LedgerCommand command received");
+                            debug!("LedgerCommand command received");
                             ledger_command_executor.execute(cmd);
                         }
                         Ok(Command::Pool(cmd)) => {
-                            info!("PoolCommand command received");
+                            debug!("PoolCommand command received");
                             pool_command_executor.execute(cmd);
                         }
                         Ok(Command::Did(cmd)) => {
-                            info!("DidCommand command received");
+                            debug!("DidCommand command received");
                             did_command_executor.execute(cmd);
                         }
                         Ok(Command::Wallet(cmd)) => {
-                            info!("WalletCommand command received");
+                            debug!("WalletCommand command received");
                             wallet_command_executor.execute(cmd);
                         }
                         Ok(Command::Pairwise(cmd)) => {
-                            info!("PairwiseCommand command received");
+                            debug!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
                         }
                         Ok(Command::NonSecrets(cmd)) => {
-                            info!("NonSecretCommand command received");
+                            debug!("NonSecretCommand command received");
                             non_secret_command_executor.execute(cmd);
                         }
                         Ok(Command::Payments(cmd)) => {
-                            info!("PaymentsCommand command received");
+                            debug!("PaymentsCommand command received");
                             payments_command_executor.execute(cmd);
                         }
                         Ok(Command::Cache(cmd)) => {
-                            info!("CacheCommand command received");
+                            debug!("CacheCommand command received");
                             cache_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
-                            info!("Exit command received");
+                            debug!("Exit command received");
                             break
                         }
                         Err(err) => {

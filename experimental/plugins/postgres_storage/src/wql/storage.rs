@@ -86,7 +86,7 @@ pub trait WalletStorage {
     fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), WalletStorageError>;
     fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError>;
     fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), WalletStorageError>;
-    fn get_all(&self) -> Result<Box<StorageIterator>, WalletStorageError>;
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError>;
+    fn get_all(&self) -> Result<Box<dyn StorageIterator>, WalletStorageError>;
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<dyn StorageIterator>, WalletStorageError>;
     fn close(&mut self) -> Result<(), WalletStorageError>;
 }

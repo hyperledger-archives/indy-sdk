@@ -32,7 +32,7 @@ impl error::Error for CryptoError {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             CryptoError::UnknownCryptoError(_) => None,
             CryptoError::CommonError(ref err) => Some(err)

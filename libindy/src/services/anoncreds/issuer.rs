@@ -100,46 +100,47 @@ impl Issuer {
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
 
         let (credential_signature, signature_correctness_proof, rev_reg_delta) =
-            if rev_idx.is_some() {
-                let rev_idx = rev_idx.unwrap();
+            match rev_idx {
+                Some(rev_idx) => {
+                    let rev_reg = rev_reg
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "RevocationRegistry not found"))?;
 
-                let rev_reg = rev_reg
-                    .ok_or(err_msg(IndyErrorKind::InvalidState, "RevocationRegistry not found"))?;
+                    let rev_key_priv = rev_key_priv
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "RevocationKeyPrivate not found"))?;
 
-                let rev_key_priv = rev_key_priv
-                    .ok_or(err_msg(IndyErrorKind::InvalidState, "RevocationKeyPrivate not found"))?;
+                    let rev_reg_def = rev_reg_def
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "RevocationRegistryDefinitionValue not found"))?;
 
-                let rev_reg_def = rev_reg_def
-                    .ok_or(err_msg(IndyErrorKind::InvalidState, "RevocationRegistryDefinitionValue not found"))?;
+                    let rev_tails_accessor = rev_tails_accessor
+                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "RevocationTailsAccessor not found"))?;
 
-                let rev_tails_accessor = rev_tails_accessor
-                    .ok_or(err_msg(IndyErrorKind::InvalidState, "RevocationTailsAccessor not found"))?;
-
-                CryptoIssuer::sign_credential_with_revoc(&cred_request.prover_did,
-                                                         &cred_request.blinded_ms,
-                                                         &cred_request.blinded_ms_correctness_proof,
-                                                         cred_issuance_blinding_nonce,
-                                                         &cred_request.nonce,
-                                                         &credential_values,
-                                                         &credential_pub_key,
-                                                         &cred_priv_key,
-                                                         rev_idx,
-                                                         rev_reg_def.value.max_cred_num,
-                                                         rev_reg_def.value.issuance_type.to_bool(),
-                                                         rev_reg,
-                                                         rev_key_priv,
-                                                         rev_tails_accessor)?
-            } else {
-                let (signature, correctness_proof) =
-                    CryptoIssuer::sign_credential(&cred_request.prover_did,
-                                                  &cred_request.blinded_ms,
-                                                  &cred_request.blinded_ms_correctness_proof,
-                                                  cred_issuance_blinding_nonce,
-                                                  &cred_request.nonce,
-                                                  &credential_values,
-                                                  &credential_pub_key,
-                                                  &cred_priv_key)?;
-                (signature, correctness_proof, None)
+                    CryptoIssuer::sign_credential_with_revoc(&cred_request.prover_did,
+                                                             &cred_request.blinded_ms,
+                                                             &cred_request.blinded_ms_correctness_proof,
+                                                             cred_issuance_blinding_nonce,
+                                                             &cred_request.nonce,
+                                                             &credential_values,
+                                                             &credential_pub_key,
+                                                             &cred_priv_key,
+                                                             rev_idx,
+                                                             rev_reg_def.value.max_cred_num,
+                                                             rev_reg_def.value.issuance_type.to_bool(),
+                                                             rev_reg,
+                                                             rev_key_priv,
+                                                             rev_tails_accessor)?
+                },
+                None => {
+                    let (signature, correctness_proof) =
+                        CryptoIssuer::sign_credential(&cred_request.prover_did,
+                                                      &cred_request.blinded_ms,
+                                                      &cred_request.blinded_ms_correctness_proof,
+                                                      cred_issuance_blinding_nonce,
+                                                      &cred_request.nonce,
+                                                      &credential_values,
+                                                      &credential_pub_key,
+                                                      &cred_priv_key)?;
+                    (signature, correctness_proof, None)
+                }
             };
 
         trace!("new_credential <<< credential_signature {:?}, signature_correctness_proof {:?}, rev_reg_delta {:?}",

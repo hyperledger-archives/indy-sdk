@@ -1,18 +1,22 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.json.JSONObject;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
-
-public class GetRevocRegDefRequestTest extends IndyIntegrationTestWithPoolAndSingleWallet {
+public class GetRevocRegDefRequestTest extends LedgerIntegrationTest {
 
 	@Test
 	public void testBuildGetRevocRegDefRequestWorks() throws Exception {
-		String expectedResult = "\"operation\":{\"type\":\"115\",\"id\":\"RevocRegID\"}";
+		JSONObject expectedResult = new JSONObject()
+				.put("operation", new JSONObject()
+						.put("type", "115")
+						.put("id", revRegDefId)
+				);
 
-		String request = Ledger.buildGetRevocRegDefRequest(DID, "RevocRegID").get();
+		String request = Ledger.buildGetRevocRegDefRequest(DID, revRegDefId).get();
 
-		assertTrue(request.replaceAll("\\s+","").contains(expectedResult.replaceAll("\\s+","")));
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
 	}
 }

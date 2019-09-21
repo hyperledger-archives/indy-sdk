@@ -5,12 +5,12 @@ use serde_json;
 use serde_json::Value;
 use log_derive::logfn;
 
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId};
 use domain::anoncreds::DELIMITER;
 use domain::anoncreds::revocation_registry::RevocationRegistry;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::schema::{Schema, SchemaV1};
+use domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
 use domain::ledger::constants::{GET_VALIDATOR_INFO, NYM, POOL_RESTART, ROLE_REMOVE, STEWARD, ENDORSER, TRUSTEE, NETWORK_MONITOR, ROLES, txn_name_to_code};
 use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
@@ -117,17 +117,16 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_get_schema_request(&self, identifier: Option<&str>, id: &str) -> IndyResult<String> {
-        let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
+    pub fn build_get_schema_request(&self, identifier: Option<&str>, id: &SchemaId) -> IndyResult<String> {
+        let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
-        let dest = parts.get(0)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema issuer DID not found in: {}", id)))?.to_string();
+        if parts.len() != 4 {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Schema ID `{}` cannot be used to build request: invalid number of parts", id.0)));
+        }
 
-        let name = parts.get(2)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema name not found in: {}", id)))?.to_string();
-
-        let version = parts.get(3)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema version not found in: {}", id)))?.to_string();
+        let dest = parts[0].to_string();
+        let name = parts[2].to_string();
+        let version = parts[3].to_string();
 
         let data = GetSchemaOperationData::new(name, version);
 
@@ -140,21 +139,17 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_get_cred_def_request(&self, identifier: Option<&str>, id: &str) -> IndyResult<String> {
-        let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
+    pub fn build_get_cred_def_request(&self, identifier: Option<&str>, id: &CredentialDefinitionId) -> IndyResult<String> {
+        let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
-        let origin = parts.get(0)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Origin not found in: {}", id)))?.to_string();
+        let origin = parts[0].to_string();
+        let signature_type = parts[2].to_string();
 
-        let ref_ = parts.get(3)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Schema ID not found in: {}", id)))?
+        let ref_ = parts[3]
             .parse::<i32>()
-            .to_indy(IndyErrorKind::InvalidStructure, format!("Schema ID is invalid number in: {}", id))?;
+            .to_indy(IndyErrorKind::InvalidStructure, format!("Schema ID is invalid number in: {:?}", id))?;
 
-        let signature_type = parts.get(2)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Signature type not found in: {}", id)))?.to_string();
-
-        let tag = parts.get(4).map(|tag| tag.to_string());
+        let tag = parts.get(4).map(|val| val.to_string());
 
         build_result!(GetCredDefOperation, identifier, ref_, signature_type, origin, tag)
     }
@@ -209,23 +204,23 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_get_revoc_reg_def_request(&self, identifier: Option<&str>, id: &str) -> IndyResult<String> {
+    pub fn build_get_revoc_reg_def_request(&self, identifier: Option<&str>, id: &RevocationRegistryId) -> IndyResult<String> {
         build_result!(GetRevRegDefOperation, identifier, id)
     }
 
     #[logfn(Info)]
-    pub fn build_revoc_reg_entry_request(&self, identifier: &str, revoc_reg_def_id: &str,
+    pub fn build_revoc_reg_entry_request(&self, identifier: &str, revoc_reg_def_id: &RevocationRegistryId,
                                          revoc_def_type: &str, rev_reg_entry: RevocationRegistryDeltaV1) -> IndyResult<String> {
         build_result!(RevRegEntryOperation, Some(identifier), revoc_def_type, revoc_reg_def_id, rev_reg_entry)
     }
 
     #[logfn(Info)]
-    pub fn build_get_revoc_reg_request(&self, identifier: Option<&str>, revoc_reg_def_id: &str, timestamp: i64) -> IndyResult<String> {
+    pub fn build_get_revoc_reg_request(&self, identifier: Option<&str>, revoc_reg_def_id: &RevocationRegistryId, timestamp: i64) -> IndyResult<String> {
         build_result!(GetRevRegOperation, identifier, revoc_reg_def_id, timestamp)
     }
 
     #[logfn(Info)]
-    pub fn build_get_revoc_reg_delta_request(&self, identifier: Option<&str>, revoc_reg_def_id: &str, from: Option<i64>, to: i64) -> IndyResult<String> {
+    pub fn build_get_revoc_reg_delta_request(&self, identifier: Option<&str>, revoc_reg_def_id: &RevocationRegistryId, from: Option<i64>, to: i64) -> IndyResult<String> {
         build_result!(GetRevRegDeltaOperation, identifier, revoc_reg_def_id, from, to)
     }
 
@@ -238,19 +233,21 @@ impl LedgerService {
                 name: res.data.name.clone(),
                 version: res.data.version.clone(),
                 attr_names: res.data.attr_names,
-                id: Schema::schema_id(&res.dest, &res.data.name, &res.data.version),
+                id: SchemaId::new(&res.dest, &res.data.name, &res.data.version),
                 seq_no: Some(res.seq_no),
             },
-            GetSchemaReplyResult::GetSchemaReplyResultV1(res) => SchemaV1 {
-                name: res.txn.data.schema_name,
-                version: res.txn.data.schema_version,
-                attr_names: res.txn.data.value.attr_names,
-                id: res.txn.data.id,
-                seq_no: Some(res.txn_metadata.seq_no),
+            GetSchemaReplyResult::GetSchemaReplyResultV1(res) => {
+                SchemaV1 {
+                    name: res.txn.data.schema_name,
+                    version: res.txn.data.schema_version,
+                    attr_names: res.txn.data.value.attr_names,
+                    id: SchemaId(res.txn.data.id),
+                    seq_no: Some(res.txn_metadata.seq_no),
+                }
             }
         };
 
-        let res = (schema.id.clone(),
+        let res = (schema.id.0.clone(),
                    serde_json::to_string(&Schema::SchemaV1(schema))
                        .to_indy(IndyErrorKind::InvalidState, "Cannot serialize Schema")?);
 
@@ -263,26 +260,26 @@ impl LedgerService {
 
         let cred_def = match reply.result() {
             GetCredDefReplyResult::GetCredDefReplyResultV0(res) => CredentialDefinitionV1 {
-                id: CredentialDefinition::cred_def_id(
+                id: CredentialDefinitionId::new(
                     &res.origin,
-                    &res.ref_.to_string(),
+                    &SchemaId(res.ref_.to_string()),
                     &res.signature_type.to_str(),
                     &res.tag.clone().unwrap_or_default()),
-                schema_id: res.ref_.to_string(),
+                schema_id: SchemaId(res.ref_.to_string()),
                 signature_type: res.signature_type,
                 tag: res.tag.unwrap_or_default(),
                 value: res.data,
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
-                id: res.txn.data.id,
-                schema_id: res.txn.data.schema_ref,
+                id: CredentialDefinitionId(res.txn.data.id),
+                schema_id:SchemaId(res.txn.data.schema_ref.to_string()),
                 signature_type: res.txn.data.type_,
                 tag: res.txn.data.tag,
                 value: res.txn.data.public_keys,
             }
         };
 
-        let res = (cred_def.id.clone(),
+        let res = (cred_def.id.0.clone(),
                    serde_json::to_string(&CredentialDefinition::CredentialDefinitionV1(cred_def))
                        .to_indy(IndyErrorKind::InvalidState, "Cannot serialize CredentialDefinition")?);
 
@@ -298,7 +295,7 @@ impl LedgerService {
             GetRevocRegDefReplyResult::GetRevocRegDefReplyResultV1(res) => res.txn.data,
         };
 
-        let res = (revoc_reg_def.id.clone(),
+        let res = (revoc_reg_def.id.0.clone(),
                    serde_json::to_string(&RevocationRegistryDefinition::RevocationRegistryDefinitionV1(revoc_reg_def))
                        .to_indy(IndyErrorKind::InvalidState, "Cannot serialize RevocationRegistryDefinition")?);
 
@@ -314,7 +311,7 @@ impl LedgerService {
             GetRevocRegReplyResult::GetRevocRegReplyResultV1(res) => (res.txn.data.revoc_reg_def_id, res.txn.data.value, res.txn_metadata.creation_time),
         };
 
-        let res = (revoc_reg_def_id,
+        let res = (revoc_reg_def_id.0.clone(),
                    serde_json::to_string(&RevocationRegistry::RevocationRegistryV1(revoc_reg))
                        .to_indy(IndyErrorKind::InvalidState, "Cannot serialize RevocationRegistry")?,
                    txn_time);
@@ -331,7 +328,7 @@ impl LedgerService {
             GetRevocRegDeltaReplyResult::GetRevocRegDeltaReplyResultV1(res) => (res.txn.data.revoc_reg_def_id, res.txn.data.value),
         };
 
-        let res = (revoc_reg_def_id.clone(),
+        let res = (revoc_reg_def_id.0.clone(),
                    serde_json::to_string(&RevocationRegistryDelta::RevocationRegistryDeltaV1(
                        RevocationRegistryDeltaV1 {
                            value: CryproRevocationRegistryDelta::from_parts(revoc_reg.value.accum_from.map(|accum| accum.value).as_ref(),
@@ -349,7 +346,7 @@ impl LedgerService {
     pub fn build_auth_rule_request(&self, submitter_did: &str, txn_type: &str, action: &str, field: &str,
                                    old_value: Option<&str>, new_value: Option<&str>, constraint: Constraint) -> IndyResult<String> {
         let txn_type = txn_name_to_code(&txn_type)
-            .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `txn_type`: {}", txn_type)))?;
 
         let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", action))
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
@@ -370,7 +367,7 @@ impl LedgerService {
             (None, None, None) => GetAuthRuleOperation::get_all(),
             (Some(auth_type), Some(auth_action), Some(field)) => {
                 let type_ = txn_name_to_code(&auth_type)
-                    .ok_or(err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", auth_type)))?;
+                    .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Unsupported `auth_type`: {}", auth_type)))?;
 
                 let action = serde_json::from_str::<AuthAction>(&format!("\"{}\"", auth_action))
                     .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot parse auth action: {}", err)))?;
@@ -476,7 +473,7 @@ impl LedgerService {
         Ok(acceptance_data)
     }
 
-    fn datetime_to_date_timestamp(time: u64) -> u64{
+    fn datetime_to_date_timestamp(time: u64) -> u64 {
         const SEC_IN_DAY: u64 = 86400;
         time / SEC_IN_DAY * SEC_IN_DAY
     }
@@ -660,7 +657,7 @@ mod tests {
         attr_names.insert("male".to_string());
 
         let data = SchemaV1 {
-            id: Schema::schema_id(IDENTIFIER, "name", "1.0"),
+            id: SchemaId::new(IDENTIFIER, "name", "1.0"),
             name: "name".to_string(),
             version: "1.0".to_string(),
             attr_names,
@@ -681,18 +678,10 @@ mod tests {
     }
 
     #[test]
-    fn build_get_schema_request_works_for_invalid_id() {
-        let ledger_service = LedgerService::new();
-
-        let res = ledger_service.build_get_schema_request(Some(IDENTIFIER), "wrong_schema_id");
-        assert_kind!(IndyErrorKind::InvalidStructure, res);
-    }
-
-    #[test]
     fn build_get_schema_request_works_for_valid_id() {
         let ledger_service = LedgerService::new();
 
-        let id = Schema::schema_id(IDENTIFIER, "name", "1.0");
+        let id = SchemaId::new(IDENTIFIER, "name", "1.0");
 
         let expected_result = json!({
             "type": GET_SCHEMA,
@@ -713,7 +702,7 @@ mod tests {
 
         let ledger_service = LedgerService::new();
 
-        let id = CredentialDefinition::cred_def_id(IDENTIFIER, "1", "signature_type", "tag");
+        let id = CredentialDefinitionId::new(IDENTIFIER, &SchemaId("1".to_string()), "signature_type", "tag");
 
         let expected_result = json!({
             "type": GET_CRED_DEF,
@@ -1179,7 +1168,7 @@ mod tests {
     }
 
     #[test]
-    fn datetime_to_date(){
+    fn datetime_to_date() {
         assert_eq!(0, LedgerService::datetime_to_date_timestamp(0));
         assert_eq!(0, LedgerService::datetime_to_date_timestamp(20));
         assert_eq!(1562284800, LedgerService::datetime_to_date_timestamp(1562367600));

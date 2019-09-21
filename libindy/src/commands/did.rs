@@ -5,7 +5,7 @@ use std::str;
 
 use serde_json;
 
-use commands::{Command, CommandExecutor};
+use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use commands::ledger::LedgerCommand;
 use domain::crypto::did::{Did, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo};
 use domain::crypto::key::KeyInfo;
@@ -23,7 +23,7 @@ pub enum DidCommand {
     CreateAndStoreMyDid(
         WalletHandle,
         MyDidInfo, // my did info
-        Box<dyn Fn(IndyResult<(String, String)>) + Send>),
+        BoxedCallbackStringStringSend),
     ReplaceKeysStart(
         WalletHandle,
         KeyInfo, // key info
@@ -121,63 +121,63 @@ impl DidCommandExecutor {
     pub fn execute(&self, command: DidCommand) {
         match command {
             DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info, cb) => {
-                info!("CreateAndStoreMyDid command received");
+                debug!("CreateAndStoreMyDid command received");
                 cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
             }
             DidCommand::ReplaceKeysStart(wallet_handle, key_info, did, cb) => {
-                info!("ReplaceKeysStart command received");
+                debug!("ReplaceKeysStart command received");
                 cb(self.replace_keys_start(wallet_handle, &key_info, &did));
             }
             DidCommand::ReplaceKeysApply(wallet_handle, did, cb) => {
-                info!("ReplaceKeysApply command received");
+                debug!("ReplaceKeysApply command received");
                 cb(self.replace_keys_apply(wallet_handle, &did));
             }
             DidCommand::StoreTheirDid(wallet_handle, their_did_info, cb) => {
-                info!("StoreTheirDid command received");
+                debug!("StoreTheirDid command received");
                 cb(self.store_their_did(wallet_handle, &their_did_info));
             }
             DidCommand::GetMyDidWithMeta(wallet_handle, my_did, cb) => {
-                info!("GetMyDidWithMeta command received");
+                debug!("GetMyDidWithMeta command received");
                 cb(self.get_my_did_with_meta(wallet_handle, &my_did))
             }
             DidCommand::ListMyDidsWithMeta(wallet_handle, cb) => {
-                info!("ListMyDidsWithMeta command received");
+                debug!("ListMyDidsWithMeta command received");
                 cb(self.list_my_dids_with_meta(wallet_handle));
             }
             DidCommand::KeyForDid(pool_handle, wallet_handle, did, cb) => {
-                info!("KeyForDid command received");
+                debug!("KeyForDid command received");
                 self.key_for_did(pool_handle, wallet_handle, did, cb);
             }
             DidCommand::KeyForLocalDid(wallet_handle, did, cb) => {
-                info!("KeyForLocalDid command received");
+                debug!("KeyForLocalDid command received");
                 cb(self.key_for_local_did(wallet_handle, &did));
             }
             DidCommand::SetEndpointForDid(wallet_handle, did, endpoint, cb) => {
-                info!("SetEndpointForDid command received");
+                debug!("SetEndpointForDid command received");
                 cb(self.set_endpoint_for_did(wallet_handle, &did, &endpoint));
             }
             DidCommand::GetEndpointForDid(wallet_handle, pool_handle, did, cb) => {
-                info!("GetEndpointForDid command received");
+                debug!("GetEndpointForDid command received");
                 self.get_endpoint_for_did(wallet_handle, pool_handle, did, cb);
             }
             DidCommand::SetDidMetadata(wallet_handle, did, metadata, cb) => {
-                info!("SetDidMetadata command received");
+                debug!("SetDidMetadata command received");
                 cb(self.set_did_metadata(wallet_handle, &did, metadata));
             }
             DidCommand::GetDidMetadata(wallet_handle, did, cb) => {
-                info!("GetDidMetadata command received");
+                debug!("GetDidMetadata command received");
                 cb(self.get_did_metadata(wallet_handle, &did));
             }
             DidCommand::AbbreviateVerkey(did, verkey, cb) => {
-                info!("AbbreviateVerkey command received");
+                debug!("AbbreviateVerkey command received");
                 cb(self.abbreviate_verkey(&did, verkey));
             }
             DidCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {
-                info!("GetNymAck command received");
+                debug!("GetNymAck command received");
                 self.get_nym_ack(wallet_handle, result, deferred_cmd_id);
             }
             DidCommand::GetAttribAck(wallet_handle, result, deferred_cmd_id) => {
-                info!("GetAttribAck command received");
+                debug!("GetAttribAck command received");
                 self.get_attrib_ack(wallet_handle, result, deferred_cmd_id);
             }
         };
@@ -303,7 +303,7 @@ impl DidCommandExecutor {
             let did_id = did_record.get_id();
 
             let did: Did = did_record.get_value()
-                .ok_or(err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
+                .ok_or_else(||err_msg(IndyErrorKind::InvalidState, "No value for DID record"))
                 .and_then(|tags_json| serde_json::from_str(&tags_json)
                     .to_indy(IndyErrorKind::InvalidState, format!("Cannot deserialize Did: {:?}", did_id)))?;
 

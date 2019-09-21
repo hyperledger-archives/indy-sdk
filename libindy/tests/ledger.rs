@@ -42,7 +42,7 @@ use self::rand::distributions::Alphanumeric;
 
 use utils::domain::ledger::constants;
 use utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
-use utils::domain::anoncreds::schema::{SchemaV1};
+use utils::domain::anoncreds::schema::SchemaV1;
 use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
@@ -562,8 +562,8 @@ mod high_cases {
 
             let cred_def_json = json!({
                "ver":"1.0",
-               "id":"cred_def_id",
-               "schemaId":"1",
+               "id": CRED_DEF_ID,
+               "schemaId": "1",
                "type":"CL",
                "tag":"TAG_1",
                "value":{
@@ -973,27 +973,44 @@ mod high_cases {
         fn indy_build_revoc_reg_def_request() {
             let data = json!({
                 "ver": "1.0",
-                "id": "RevocRegID",
+                "id": REV_REG_ID,
                 "revocDefType": REVOC_REG_TYPE,
                 "tag": TAG_1,
-                "credDefId": "CredDefID",
-                "value": json!({
+                "credDefId": CRED_DEF_ID,
+                "value": {
                     "issuanceType":"ISSUANCE_ON_DEMAND",
                     "maxCredNum":5,
                     "tailsHash":"s",
                     "tailsLocation":"http://tails.location.com",
-                    "publicKeys": json!({
-                        "accumKey": json!({
+                    "publicKeys": {
+                        "accumKey": {
                             "z": "1 0000000000000000000000000000000000000000000000000000000000001111 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"
-                        })
-                    })
-                })
+                        }
+                    }
+                }
             }).to_string();
 
-            let expected_result = r#""operation":{"type":"113","id":"RevocRegID","revocDefType":"CL_ACCUM","tag":"TAG_1","credDefId":"CredDefID","value":{"issuanceType":"ISSUANCE_ON_DEMAND","maxCredNum":5,"publicKeys":{"accumKey":{"z":"1 0000000000000000000000000000000000000000000000000000000000001111 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"}},"tailsHash":"s","tailsLocation":"http://tails.location.com"}}"#;
+            let expected_result = json!({
+                "id":REV_REG_ID,
+                "credDefId": CRED_DEF_ID,
+                "revocDefType":"CL_ACCUM",
+                "tag":"TAG_1",
+                "type":"113",
+                "value": {
+                    "issuanceType":"ISSUANCE_ON_DEMAND",
+                    "maxCredNum":5,
+                    "tailsHash":"s",
+                    "tailsLocation":"http://tails.location.com",
+                    "publicKeys": {
+                        "accumKey": {
+                            "z": "1 0000000000000000000000000000000000000000000000000000000000001111 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"
+                        }
+                    }
+                }
+            });
 
             let request = ledger::build_revoc_reg_def_request(DID, &data).unwrap();
-            assert!(request.contains(expected_result));
+            check_request(&request, expected_result);
         }
 
         #[test]
@@ -1001,17 +1018,17 @@ mod high_cases {
         fn indy_build_get_revoc_reg_def_request() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG_DEF,
-                "id": "RevocRegID"
+                "id": REV_REG_ID
             });
 
-            let request = ledger::build_get_revoc_reg_def_request(Some(DID), "RevocRegID").unwrap();
+            let request = ledger::build_get_revoc_reg_def_request(Some(DID), REV_REG_ID).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_def_request_for_default_submitter_did() {
-            let request = ledger::build_get_revoc_reg_def_request(None, "RevocRegID").unwrap();
+            let request = ledger::build_get_revoc_reg_def_request(None, REV_REG_ID).unwrap();
             check_default_identifier(&request);
         }
 
@@ -1037,7 +1054,7 @@ mod high_cases {
         fn indy_build_revoc_reg_entry_request() {
             let expected_result = json!({
                 "type": constants::REVOC_REG_ENTRY,
-                "revocRegDefId": "RevocRegID",
+                "revocRegDefId": REV_REG_ID,
                 "revocDefType": "CL_ACCUM",
                 "value": {
                     "accum": "1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"
@@ -1046,7 +1063,7 @@ mod high_cases {
 
             let rev_reg_entry_value = r#"{"value":{"accum":"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"}, "ver":"1.0"}"#;
 
-            let request = ledger::build_revoc_reg_entry_request(DID, "RevocRegID", REVOC_REG_TYPE, rev_reg_entry_value).unwrap();
+            let request = ledger::build_revoc_reg_entry_request(DID, REV_REG_ID, REVOC_REG_TYPE, rev_reg_entry_value).unwrap();
             check_request(&request, expected_result);
         }
 
@@ -1065,18 +1082,18 @@ mod high_cases {
         fn indy_build_get_revoc_reg_request() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG,
-                "revocRegDefId": "RevRegId",
+                "revocRegDefId": REV_REG_ID,
                 "timestamp": 100
             });
 
-            let request = ledger::build_get_revoc_reg_request(Some(DID), "RevRegId", 100).unwrap();
+            let request = ledger::build_get_revoc_reg_request(Some(DID), REV_REG_ID, 100).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_request_for_default_submitter_did() {
-            let request = ledger::build_get_revoc_reg_request(None, "RevRegId", 100).unwrap();
+            let request = ledger::build_get_revoc_reg_request(None, REV_REG_ID, 100).unwrap();
             check_default_identifier(&request);
         }
 
@@ -1105,18 +1122,18 @@ mod high_cases {
         fn indy_build_get_revoc_reg_delta_request() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG_DELTA,
-                "revocRegDefId": "RevRegId",
+                "revocRegDefId": REV_REG_ID,
                 "to": 100
             });
 
-            let request = ledger::build_get_revoc_reg_delta_request(Some(DID), "RevRegId", None, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_delta_request(Some(DID), REV_REG_ID, None, 100).unwrap();
             check_request(&request, expected_result);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_delta_request_for_default_submitter_did() {
-            let request = ledger::build_get_revoc_reg_delta_request(None, "RevRegId", None, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_delta_request(None, REV_REG_ID, None, 100).unwrap();
             check_default_identifier(&request);
         }
 
@@ -1283,8 +1300,7 @@ mod high_cases {
             "metadata": {},
             "role": "0",
             "constraint_id": "ROLE",
-            "need_to_be_owner": false,
-            "off_ledger_signature": false
+            "need_to_be_owner": false
         }"#;
 
         #[test]
@@ -1786,7 +1802,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[cfg(not(feature="only_high_cases"))]
+        #[cfg(not(feature = "only_high_cases"))]
         fn indy_auth_rule_requests_works_for_demote_trustee() {
             let setup = Setup::trustee();
 
@@ -1815,7 +1831,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[cfg(not(feature="only_high_cases"))]
+        #[cfg(not(feature = "only_high_cases"))]
         fn indy_auth_rule_requests_works_for_promote_role_to_trustee() {
             let setup = Setup::trustee();
 
@@ -1844,7 +1860,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[cfg(not(feature="only_high_cases"))]
+        #[cfg(not(feature = "only_high_cases"))]
         fn indy_auth_rule_requests_works_for_change_trustee_to_steward() {
             let setup = Setup::trustee();
 
@@ -2440,7 +2456,7 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(not(feature="only_high_cases"))]
+        #[cfg(not(feature = "only_high_cases"))]
         fn indy_reset_author_agreement_works() {
             let setup = Setup::trustee();
 
@@ -2487,7 +2503,7 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(not(feature="only_high_cases"))]
+        #[cfg(not(feature = "only_high_cases"))]
         fn indy_author_agreement_works_for_using_invalid_aml() {
             let setup = Setup::trustee();
 
@@ -2513,7 +2529,7 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(not(feature="only_high_cases"))]
+        #[cfg(not(feature = "only_high_cases"))]
         fn indy_author_agreement_works_for_using_not_last_taa() {
             let setup = Setup::trustee();
 
@@ -2601,7 +2617,7 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(not(feature="only_high_cases"))]
+        #[cfg(not(feature = "only_high_cases"))]
         fn indy_send_request_by_endorser_for_both_author_and_endorser_must_sign() {
             let setup = Setup::endorser();
             let my_did = _setup_new_identity(setup.wallet_handle, setup.pool_handle);
@@ -2625,12 +2641,12 @@ mod high_cases {
     }
 }
 
-#[cfg(not(feature="only_high_cases"))]
+#[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
     use openssl::hash::{MessageDigest, Hasher};
     use sodiumoxide::crypto::secretbox;
-    use utils::domain::anoncreds::schema::{Schema};
+    use utils::domain::anoncreds::schema::Schema;
 
     mod requests {
         use super::*;
@@ -3090,6 +3106,7 @@ mod medium_cases {
 
     mod schemas_requests {
         use super::*;
+        use utils::domain::anoncreds::schema::SchemaId;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -3180,7 +3197,7 @@ mod medium_cases {
         fn indy_get_schema_request_works_for_unknown_schema() {
             let setup = Setup::pool();
 
-            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &Schema::schema_id(DID, "other_schema", "1.0")).unwrap();
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(DID, "other_schema", "1.0").0).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
@@ -3206,7 +3223,7 @@ mod medium_cases {
         fn indy_get_parse_returns_error_for_wrong_type_and_unknown_schema() {
             let setup = Setup::pool();
 
-            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &Schema::schema_id(DID, "other_schema", "1.0")).unwrap();
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &SchemaId::new(DID, "other_schema", "1.0").0).unwrap();
             let get_schema_response = ledger::submit_request(setup.pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_cred_def_response(&get_schema_response);

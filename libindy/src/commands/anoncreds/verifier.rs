@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1};
+use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
 use domain::anoncreds::proof::Proof;
 use domain::anoncreds::proof_request::ProofRequest;
-use domain::anoncreds::revocation_registry::{rev_regs_map_to_rev_regs_local_map, RevocationRegistry, RevocationRegistryV1};
-use domain::anoncreds::revocation_registry_definition::{rev_reg_defs_map_to_rev_reg_defs_v1_map, RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
-use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map, SchemaV1};
+use domain::anoncreds::revocation_registry::{rev_regs_map_to_rev_regs_local_map, RevocationRegistryV1, RevocationRegistries};
+use domain::anoncreds::revocation_registry_definition::{rev_reg_defs_map_to_rev_reg_defs_v1_map, RevocationRegistryDefinitionV1, RevocationRegistryId, RevocationRegistryDefinitions};
+use domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
 use errors::prelude::*;
 use services::anoncreds::AnoncredsService;
 
@@ -14,10 +14,10 @@ pub enum VerifierCommand {
     VerifyProof(
         ProofRequest, // proof request
         Proof, // proof
-        HashMap<String, Schema>, // credential schemas
-        HashMap<String, CredentialDefinition>, // credential defs
-        HashMap<String, RevocationRegistryDefinition>, // rev reg defs
-        HashMap<String, HashMap<u64, RevocationRegistry>>, // rev reg entries
+        Schemas, // credential schemas
+        CredentialDefinitions, // credential defs
+        RevocationRegistryDefinitions, // rev reg defs
+        RevocationRegistries, // rev reg entries
         Box<dyn Fn(IndyResult<bool>) + Send>),
     GenerateNonce(
         Box<dyn Fn(IndyResult<String>) + Send>)
@@ -37,7 +37,7 @@ impl VerifierCommandExecutor {
     pub fn execute(&self, command: VerifierCommand) {
         match command {
             VerifierCommand::VerifyProof(proof_request, proof, schemas, credential_defs, rev_reg_defs, rev_regs, cb) => {
-                info!(target: "verifier_command_executor", "VerifyProof command received");
+                debug!(target: "verifier_command_executor", "VerifyProof command received");
                 cb(self.verify_proof(proof_request, proof,
                                      &schemas_map_to_schemas_v1_map(schemas),
                                      &cred_defs_map_to_cred_defs_v1_map(credential_defs),
@@ -45,7 +45,7 @@ impl VerifierCommandExecutor {
                                      &rev_regs_map_to_rev_regs_local_map(rev_regs)));
             }
             VerifierCommand::GenerateNonce(cb) => {
-                info!(target: "verifier_command_executor", "GenerateNonce command received");
+                debug!(target: "verifier_command_executor", "GenerateNonce command received");
                 cb(self.generate_nonce());
             }
         };
@@ -54,10 +54,10 @@ impl VerifierCommandExecutor {
     fn verify_proof(&self,
                     proof_req: ProofRequest,
                     proof: Proof,
-                    schemas: &HashMap<String, SchemaV1>,
-                    cred_defs: &HashMap<String, CredentialDefinitionV1>,
-                    rev_reg_defs: &HashMap<String, RevocationRegistryDefinitionV1>,
-                    rev_regs: &HashMap<String, HashMap<u64, RevocationRegistryV1>>) -> IndyResult<bool> {
+                    schemas: &HashMap<SchemaId, SchemaV1>,
+                    cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
+                    rev_reg_defs: &HashMap<RevocationRegistryId, RevocationRegistryDefinitionV1>,
+                    rev_regs: &HashMap<RevocationRegistryId, HashMap<u64, RevocationRegistryV1>>) -> IndyResult<bool> {
         debug!("verify_proof >>> proof_req: {:?}, proof: {:?}, schemas: {:?}, cred_defs: {:?},  \
                rev_reg_defs: {:?}, rev_regs: {:?}",
                proof_req, proof, schemas, cred_defs, rev_reg_defs, rev_regs);
