@@ -1,9 +1,7 @@
 [package]
 name = "storage-postgres"
 version = "1.7.0"
-authors = [
-  "Ian Costanzo <ian@anon-solutions.ca>"
-]
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 
 description = "Postgres storage plug-in for indy sdk wallet."
 license = "MIT/Apache-2.0"
