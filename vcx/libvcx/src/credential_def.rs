@@ -587,7 +587,7 @@ pub mod tests {
     fn test_vcx_endorse_cred_def() {
         use utils::libindy::payments::add_new_did;
 
-        init!("ledger");
+        init!("ledger_zero_fees");
         let (schema_handle, schema_id, did, revocation_details) = prepare_create_cred_def_data(false);
 
         let (endorser_did, _) = add_new_did(Some("ENDORSER"));
