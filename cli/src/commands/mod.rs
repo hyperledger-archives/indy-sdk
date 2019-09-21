@@ -230,7 +230,7 @@ pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(WalletHandle, Stri
             ctx.set_string_value("OPENED_WALLET_NAME", Some(wallet_name.to_owned()));
             ctx.set_sub_prompt(2, Some(wallet_name));
         },
-        _ => {
+        None => {
             ctx.set_int_value("OPENED_WALLET_HANDLE", None);
             ctx.set_string_value("OPENED_WALLET_NAME", None);
             ctx.set_sub_prompt(2, None);
