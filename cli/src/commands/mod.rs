@@ -220,10 +220,7 @@ pub fn get_opened_wallet(ctx: &CommandContext) -> Option<(WalletHandle, String)>
 }
 
 pub fn get_opened_wallet_handle(ctx: &CommandContext) -> Option<WalletHandle> {
-    match ctx.get_int_value("OPENED_WALLET_HANDLE") {
-        Some(value) => Some(WalletHandle(value)),
-        None => None
-    }
+    ctx.get_int_value("OPENED_WALLET_HANDLE").map(|val| WalletHandle(val))
 }
 
 pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(WalletHandle, String)>) {
