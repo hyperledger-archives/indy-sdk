@@ -2,6 +2,9 @@ libvcx (0.4.1) unstable; urgency=medium
 
 [ Hyperledger ]
 
+## 0.4.2
+* Bugfixes
+
 ## 0.4.1
 * Supported endorsing of transactions in Libvcx.
     * `vcx_*_prepare_for_endorser` - functions for `schema` and `credentialdef` which build transaction and crete internal object in differed state.

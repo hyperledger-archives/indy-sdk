@@ -1,6 +1,9 @@
-indy-cli (1.11.1) unstable; urgency=medium
+indy-cli (1.12.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.12.0
+* added `qualify` command to `did` to qualify did for some namespace.
 
 ## 1.11.1
 * Supported endorsing of transactions:
