@@ -30,13 +30,13 @@ copy_native_binaries(){
 }
 
 download_prebuilt_libindy(){
-    curl -o libindy_android_arm_${libindy_version}.zip "https://repo.sovrin.org/android/libindy/stable/${libindy_version}/libindy_android_arm_${libindy_version}.zip"
+    wget -O libindy_android_arm_${libindy_version}.zip "https://repo.sovrin.org/android/libindy/stable/${libindy_version}/libindy_android_arm_${libindy_version}.zip"
     unzip libindy_android_arm_${libindy_version}.zip
 
-    curl -o libindy_android_arm64_${libindy_version}.zip "https://repo.sovrin.org/android/libindy/stable/${libindy_version}/libindy_android_arm64_${libindy_version}.zip"
+    wget -O libindy_android_arm64_${libindy_version}.zip "https://repo.sovrin.org/android/libindy/stable/${libindy_version}/libindy_android_arm64_${libindy_version}.zip"
     unzip libindy_android_arm64_${libindy_version}.zip
     
-    curl -o libindy_android_x86_${libindy_version}.zip "https://repo.sovrin.org/android/libindy/stable/${libindy_version}/libindy_android_x86_${libindy_version}.zip"
+    wget -O libindy_android_x86_${libindy_version}.zip "https://repo.sovrin.org/android/libindy/stable/${libindy_version}/libindy_android_x86_${libindy_version}.zip"
     unzip libindy_android_x86_${libindy_version}.zip
 }
 cleanup(){

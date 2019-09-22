@@ -54,13 +54,7 @@ def buildTime() {
     return df.format(new Date())
 }
 
-def getKrakenPassFromEnv(){
-    return System.getenv( 'KRAKEN_PASS' )
-}
 
-def getKrakenUserFromEnv(){
-    return System.getenv( 'KRAKEN_USER' )
-}
 version = "${versionMajor()}"
 
 def fullVersionName() {
@@ -116,12 +110,6 @@ android {
 archivesBaseName = fullVersionName()
 
 
-task uploadToKraken(type:Exec) {
-    executable "/bin/sh"
-    String krakenPass= getKrakenPassFromEnv()
-    String krakenUser= getKrakenUserFromEnv()
-    args "-c", "curl --insecure -u $krakenUser:$krakenPass -X POST -F file=@$buildDir/outputs/aar/${archivesBaseName}-release.aar https://kraken.corp.evernym.com/repo/android/upload"
-}
 
 tasks.withType(Test) {
     testLogging {
@@ -131,7 +119,6 @@ tasks.withType(Test) {
     }
 }
 
-uploadToKraken.dependsOn(assemble)
 
 
 dependencies {

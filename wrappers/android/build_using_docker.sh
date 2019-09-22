@@ -11,7 +11,7 @@ docker pull thyrlian/android-sdk
 
 # copy the pre-downloaded SDK to the mounted 'sdk' directory
 docker run -it --rm -v $(pwd)/sdk:/sdk thyrlian/android-sdk \
-bash -c 'export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y curl unzip;cp -a $ANDROID_HOME/. /sdk'
+bash -c 'export DEBIAN_FRONTEND=noninteractive && RUNLEVEL=1 apt-get update && apt-get install -y wget unzip;cp -a $ANDROID_HOME/. /sdk'
 
 # Update SDK
 docker run -it --rm -v $(pwd)/sdk:/opt/android-sdk thyrlian/android-sdk \
@@ -21,16 +21,15 @@ bash -c '/opt/android-sdk/tools/bin/sdkmanager --update'
 docker run -it --rm -v $(pwd)/sdk:/opt/android-sdk thyrlian/android-sdk \
 bash -c '/opt/android-sdk/tools/bin/sdkmanager "platform-tools" "platforms;android-29" "emulator"'
 
-# Download emulator system image
-# docker run -it --rm -v $(pwd)/sdk:/opt/android-sdk thyrlian/android-sdk \
-# bash -c '/opt/android-sdk/tools/bin/sdkmanager "system-images;android-29;default;x86"'
 
-export APP_FOLDER="."
+# wrappers folder in indy-sdk
+export WRAPPERS_FOLDER="$(pwd)/../.."
+
 docker run -it \
 -v $(pwd)/sdk:/opt/android-sdk:rw \
 -v $(pwd)/android:/root/.android:rw \
 -v $(pwd)/gradle:/root/.gradle:rw \
--v $(pwd)/../..:/wrappers \
--v $(pwd)/../aar:/wrappers/android/aar \
+-v $WRAPPERS_FOLDER:/wrappers \
+-v $WRAPPERS_FOLDER/android/aar:/wrappers/android/aar \
 --workdir /wrappers/android \
 thyrlian/android-sdk /bin/bash -c 'cd /wrappers/android && ./build.sh'
