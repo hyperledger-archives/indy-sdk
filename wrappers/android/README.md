@@ -1,12 +1,18 @@
 ## Indy SDK for Android
+### Build Instructions
 
-- Make sure you have build  binaries libindy for Android
+#### Using docker (recommended)
 
-- The script to build binaries is present in folder libindy (`build-libindy-android.sh`). OR In the `build.sh` script uncomment line number 13.
+- Run `build_using_docker.sh`. This will build the aar file and put it in folder `wrappers/android/aar`
 
-- use jdk 8
+#### Without docker
+- Make sure you have android-sdk installed
+- Run the `build.sh`
+- Aar should be present in the `wrappers/android/aar` after the successful build.
 
-- run build.sh
+#### Change the version of libindy
+- In `build.sh` change the version number in variable `libindy_version`
+- Note: only stable release of libindy is supported as of now by the script.
 
 
 Sample app for the usage of this wrapper is present in folder `samples/android/WrapperTest`
