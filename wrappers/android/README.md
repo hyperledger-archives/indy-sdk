@@ -1,4 +1,8 @@
 ## Indy SDK for Android
+This is an Android wrapper for [Indy](https://www.hyperledger.org/projects/indy).
+This is basically same as the Java wrapper for indy-sdk. For more details look into `build.sh`
+
+Pull requests welcome!
 ### Build Instructions
 
 #### Using docker (recommended)
