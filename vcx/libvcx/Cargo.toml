@@ -2,7 +2,7 @@
 
 name = "libvcx"
 version = "0.4.1"
-authors = [ "Evernym Inc." ]
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 publish = false
 description = "This is the official SDK for Evernym's VCX"
 license = ""
