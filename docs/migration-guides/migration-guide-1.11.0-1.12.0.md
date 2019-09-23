@@ -70,9 +70,14 @@ pub extern fn indy_qualify_did(command_handle: CommandHandle,
       </pre>
       </td>
     </tr>
-    <tr>
 </table>
+
+Also, contents of `config` param for `indy_create_and_store_my_did` has been extended -- you can specify the needed method by `method_name` param, otherwise the default value will be used. 
     
 ### Anoncreds API
 
 As we have released Fully-Qualified DIDs, we can make proof request with restrictions in fully-qualified form and in unqualified form. You should correspond the docs for [`indy_prover_create_proof`](https://github.com/hyperledger/indy-sdk/blob/v1.12.0/libindy/src/api/anoncreds.rs) on how to use the version to make a proof request.
+
+### Ledger API
+
+Although we have released Fully-Qualified DIDs, all ledger-related functions will return unqualified DIDs. However you can create ledger requests with both Fully-Qualified DIDs and the old ones.  

@@ -4,8 +4,10 @@
 * Minimal Support of Fully-Qualified DIDs.
     * Now all methods can work with fully-qualified DIDs (new way) as well as with unqualified DIDs.
     * Proof requests now support version of restrictions -- it specifies whether dids are full qualified or not. For more details see the documentation of `indy_prover_create_proof`.
-    * There is a new function -- `indy_qualify_did` -- that helps to qualify did for some specific network. NB: it should not be qualified for it in before.
-* Supported `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
+    * There is a new function -- `indy_qualify_did` -- that helps to qualify did for some specific network.
+* Fixed `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
+* Migrated Android onto the API v21
+* Supported MacOS builds for Indy CLI.
 
 ## 1.11.1 - 2019-08-30
 * Supported endorsing of transactions in Indy-CLI and Libvcx.
