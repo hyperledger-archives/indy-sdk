@@ -1228,7 +1228,7 @@ impl AgentConnection {
                 verkey: self.user_pairwise_verkey.clone(),
                 agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
                 name: self.agent_configs.get("name").cloned(),
-                logo_url: self.agent_configs.get("logo_url").cloned(),
+                logo_url: self.agent_configs.get("logoUrl").cloned(),
                 public_did: Some(self.owner_did.clone()),
             },
             status_code: msg.status_code.clone(),
