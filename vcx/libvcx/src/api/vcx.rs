@@ -439,7 +439,7 @@ mod tests {
     use api::VcxStateType;
     use api::return_types_u32;
     use api::connection::vcx_connection_create;
-    use indy_sys::{WalletHandle, INVALID_POOL_HANDLE};
+    use indy_sys::{WalletHandle};
 
     fn create_config_util(logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
