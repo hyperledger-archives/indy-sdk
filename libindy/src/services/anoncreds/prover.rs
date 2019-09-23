@@ -604,9 +604,9 @@ mod tests {
         fn build_credential_tags_works_for_fully_qualified_ids() {
             let ps = Prover::new();
 
-            let schema_id = "did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+            let schema_id = "schema:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
             let issuer_did = "did:sov:NcYxiDXkpYi6ov5FcYDi1e";
-            let cred_def_id = "did:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+            let cred_def_id = "creddef:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
             let rev_reg_id = "None";
 
             let mut credential = _credential();

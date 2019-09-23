@@ -479,7 +479,7 @@ impl DidCommandExecutor {
             return Err(IndyError::from_msg(IndyErrorKind::InvalidState, "You can abbreviate fully-qualified did only with `sov` method"));
         }
 
-        let did = &did.unqualify().from_base58()?;
+        let did = &did.unqualify().0.from_base58()?;
         let dverkey = &verkey.from_base58()?;
 
         let (first_part, second_part) = dverkey.split_at(16);
@@ -518,12 +518,12 @@ impl DidCommandExecutor {
                     let gen_nym_result_data: GetNymResultDataV0 = serde_json::from_str(data)
                         .to_indy(IndyErrorKind::InvalidState, "Invalid GetNymResultData json")?;
 
-                    TheirDidInfo::new(DidValue::from_short(&gen_nym_result_data.dest, did.prefix()), gen_nym_result_data.verkey)
+                    TheirDidInfo::new(DidValue::from_short(&gen_nym_result_data.dest, did.method()), gen_nym_result_data.verkey)
                 } else {
                     return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Their DID isn't found on the ledger")); //TODO FIXME use separate error
                 }
             }
-            GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(DidValue::from_short(&res.txn.data.did, did.prefix()), res.txn.data.verkey)
+            GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(DidValue::from_short(&res.txn.data.did, did.method()), res.txn.data.verkey)
         };
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;
