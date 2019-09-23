@@ -8,7 +8,7 @@
         "file": "LICENSE"
     },
     "authors": {
-        "Daniel Hardman": "daniel.hardman@evernym.com"
+        "Hyperledger Indy Contributors": "hyperledger-indy@lists.hyperledger.org"
     },
     "source": {
         "http": "https://repo.sovrin.org/ios/libindy/stable/indy-objc/1.6.8/libindy-objc.zip"

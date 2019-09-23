@@ -9,7 +9,7 @@
     "file": "LICENSE"
   },
   "authors": {
-    "Daniel Hardman": "daniel.hardman@evernym.com"
+    "Hyperledger Indy Contributors": "hyperledger-indy@lists.hyperledger.org"
   },
   "platforms": {
     "ios": "10.0"
