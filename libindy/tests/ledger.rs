@@ -17,13 +17,12 @@ use self::rand::distributions::Alphanumeric;
 
 use utils::domain::ledger::constants;
 use utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
-use utils::domain::anoncreds::schema::SchemaV1;
+use utils::domain::anoncreds::schema::{SchemaV1, SchemaId};
 use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
-use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
 use utils::domain::crypto::did::DidValue;
-use utils::qualifier;
 
 use std::collections::HashMap;
 use std::thread;
@@ -599,7 +598,7 @@ mod high_cases {
                 },
             });
 
-            let request = ledger::build_get_schema_request(Some(IDENTIFIER_V1), &qualifier::qualify(&anoncreds::gvt_schema_id(), DEFAULT_PREFIX)).unwrap();
+            let request = ledger::build_get_schema_request(Some(IDENTIFIER_V1), &SchemaId(anoncreds::gvt_schema_id()).qualify(DEFAULT_METHOD_NAME).0).unwrap();
             check_request(&request, expected_result, IDENTIFIER);
         }
 
@@ -1195,7 +1194,7 @@ mod high_cases {
                 "id": REV_REG_ID
             });
 
-            let request = ledger::build_get_revoc_reg_def_request(Some(DID_V1), &qualifier::qualify(REV_REG_ID, DEFAULT_PREFIX)).unwrap();
+            let request = ledger::build_get_revoc_reg_def_request(Some(DID_V1), &RevocationRegistryId(REV_REG_ID.to_string()).qualify(DEFAULT_METHOD_NAME).0).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -1273,7 +1272,7 @@ mod high_cases {
                 "timestamp": 100
             });
 
-            let request = ledger::build_get_revoc_reg_request(Some(DID_V1), &qualifier::qualify(REV_REG_ID, DEFAULT_PREFIX), 100).unwrap();
+            let request = ledger::build_get_revoc_reg_request(Some(DID_V1), &RevocationRegistryId(REV_REG_ID.to_string()).qualify(DEFAULT_METHOD_NAME).0, 100).unwrap();
             check_request(&request, expected_result, DID);
         }
 
@@ -1326,7 +1325,7 @@ mod high_cases {
                 "to": 100
             });
 
-            let request = ledger::build_get_revoc_reg_delta_request(Some(DID_V1), &qualifier::qualify(REV_REG_ID, DEFAULT_PREFIX), None, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_delta_request(Some(DID_V1), &RevocationRegistryId(REV_REG_ID.to_string()).qualify(DEFAULT_METHOD_NAME).0, None, 100).unwrap();
             check_request_operation(&request, expected_result);
         }
 

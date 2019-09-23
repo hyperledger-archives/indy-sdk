@@ -31,4 +31,5 @@ pub mod validation;
 
 pub mod wql;
 
+#[macro_use]
 pub mod qualifier;

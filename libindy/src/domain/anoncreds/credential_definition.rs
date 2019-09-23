@@ -117,16 +117,20 @@ impl Validatable for CredentialDefinition {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CredentialDefinitionId(pub String);
+qualifiable_type!(CredentialDefinitionId);
 
 impl CredentialDefinitionId {
+    pub const PREFIX: &'static str = "creddef";
+
     pub fn new(did: &DidValue, schema_id: &SchemaId, signature_type: &str, tag: &str) -> CredentialDefinitionId {
-        let schema_id = schema_id.unqualify();
-        if ProtocolVersion::is_node_1_3() {
-            CredentialDefinitionId(format!("{}{}{}{}{}{}{}", did.0, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id.0))
+        let id = if ProtocolVersion::is_node_1_3() {
+            CredentialDefinitionId(format!("{}{}{}{}{}{}{}", did.unqualify().0, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id.unqualify().0))
         } else {
-            CredentialDefinitionId(format!("{}{}{}{}{}{}{}{}{}", did.0, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id.0, DELIMITER, tag))
+            CredentialDefinitionId(format!("{}{}{}{}{}{}{}{}{}", did.unqualify().0, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id.unqualify().0, DELIMITER, tag))
+        };
+        match did.method() {
+            Some(method) => id.qualify(&method),
+            None => id
         }
     }
 
@@ -134,22 +138,10 @@ impl CredentialDefinitionId {
         let parts = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
         if self.is_fully_qualified() {
-            DidValue(format!("{}:{}:{}", parts[0], parts[1], parts[2]))
+            DidValue::new(parts[2], Some(parts[1]))
         } else {
-            DidValue(parts[0].to_string())
+            DidValue::new(parts[0], None)
         }
-    }
-
-    pub fn unqualify(&self) -> CredentialDefinitionId {
-        CredentialDefinitionId(qualifier::unqualify(&self.0))
-    }
-
-    pub fn prefix(&self) -> Option<String> {
-        qualifier::prefix(&self.0)
-    }
-
-    pub fn is_fully_qualified(&self) -> bool {
-        qualifier::is_fully_qualified(&self.0)
     }
 }
 

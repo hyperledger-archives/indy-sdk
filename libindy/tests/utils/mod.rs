@@ -43,6 +43,7 @@ pub mod ctypes;
 #[path = "../../src/utils/validation.rs"]
 pub mod validation;
 
+#[macro_use]
 #[path = "../../src/utils/qualifier.rs"]
 pub mod qualifier;
 

@@ -174,7 +174,7 @@ mod high_cases {
                 setup.pool_handle,
                 setup.wallet_handle,
                 DID_MY1_V1,
-                &qualifier::qualify(schema_id, DEFAULT_PREFIX),
+                &SchemaId(schema_id.to_string()).qualify(DEFAULT_METHOD_NAME).0,
                 &options_json).unwrap();
 
             let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
@@ -231,7 +231,7 @@ mod high_cases {
 
     mod cred_def_cache {
         use super::*;
-        use utils::domain::anoncreds::credential_definition::{CredentialDefinition};
+        use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
         use utils::constants::*;
         use std::thread::sleep;
 
@@ -400,7 +400,7 @@ mod high_cases {
                 setup.pool_handle,
                 setup.wallet_handle,
                 DID_MY1_V1,
-                &qualifier::qualify(cred_def_id, DEFAULT_PREFIX),
+                &CredentialDefinitionId(cred_def_id.to_string()).qualify(DEFAULT_METHOD_NAME).0,
                 &options_json).unwrap();
 
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json).unwrap();
