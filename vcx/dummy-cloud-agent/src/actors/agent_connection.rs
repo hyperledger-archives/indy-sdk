@@ -191,10 +191,19 @@ impl AgentConnection {
 
                 let agent_connection = agent_connection.start();
 
-                router
+                let add_route_f = router
                     .send(AddA2ARoute(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
                     .from_err()
-                    .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
+                    .map_err(|err: Error| err.context("Can't add A2A route for Agent Connection.").into());
+
+                let add_conn_route_f = router
+                    .send(AddA2ConnRoute(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
+                    .from_err()
+                    .map_err(|err: Error| err.context("Can't add A2AConnection route for Agent Connection.").into());
+
+                add_route_f
+                    .join(add_conn_route_f)
+                    .map(|_| ())
             })
             .into_box()
     }
@@ -219,6 +228,7 @@ impl AgentConnection {
                     .into_actor(slf)
             })
             .and_then(|(sender_vk, msg, msgs), slf, _| {
+                debug!("AgentConnection::handle_a2a_msg >> {:?}", msg);
                 match msg {
                     Some(A2AMessage::Version1(msg)) => {
                         match msg {

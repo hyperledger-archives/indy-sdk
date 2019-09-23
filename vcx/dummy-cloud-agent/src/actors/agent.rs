@@ -261,7 +261,7 @@ impl Agent {
     fn handle_agent_msg_v1(&mut self,
                            sender_vk: String,
                            msg: A2AMessageV1) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("Agent::handle_agent_msg_v1 >> {:?}, {:?}", sender_vk, msg);
+        debug!("Agent::handle_agent_msg_v1 >> {:?}, {:?}", sender_vk, msg);
 
         match msg {
             A2AMessageV1::CreateKey(msg) => self.handle_create_key_v1(msg),
@@ -285,7 +285,7 @@ impl Agent {
     fn handle_agent_msg_v2(&mut self,
                            sender_vk: String,
                            msg: A2AMessageV2) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("Agent::handle_agent_msg_v2 >> {:?}, {:?}", sender_vk, msg);
+        debug!("Agent::handle_agent_msg_v2 >> {:?}, {:?}", sender_vk, msg);
 
         match msg {
             A2AMessageV2::CreateKey(msg) => self.handle_create_key_v2(msg),
