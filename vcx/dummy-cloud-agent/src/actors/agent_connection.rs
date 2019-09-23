@@ -228,6 +228,7 @@ impl AgentConnection {
                     .into_actor(slf)
             })
             .and_then(|(sender_vk, msg, msgs), slf, _| {
+                debug!("AgentConnection::handle_a2a_msg >> {:?}", msg);
                 match msg {
                     Some(A2AMessage::Version1(msg)) => {
                         match msg {
