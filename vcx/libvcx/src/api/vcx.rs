@@ -678,7 +678,7 @@ mod tests {
         assert_eq!(settings::get_config_value("wallet_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
 
         // Init for the second time works
-        ::utils::devsetup::tests::setup_ledger_env();
+        ::utils::devsetup::tests::setup_ledger_env(false);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         let cb = return_types_u32::Return_U32::new().unwrap();
