@@ -336,7 +336,7 @@ impl IssuerCommandExecutor {
                                                        tag: &str,
                                                        type_: Option<&str>,
                                                        config: Option<&CredentialDefinitionConfig>) -> IndyResult<(CredentialDefinitionConfig, SchemaId, CredentialDefinitionId, SignatureType)> {
-        match (issuer_did.prefix(), schema.id.prefix()) {
+        match (issuer_did.method(), schema.id.method()) {
             (None, Some(_)) => {
                 return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use unqualified Did with fully qualified Schema"));
             }
@@ -554,7 +554,7 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, type_: {:?}, tag: {:?}, cred_def_id: {:?}, config: {:?}, \
                tails_handle: {:?}", wallet_handle, issuer_did, type_, tag, cred_def_id, config, tails_writer_handle);
 
-        match (issuer_did.prefix(), cred_def_id.prefix()) {
+        match (issuer_did.method(), cred_def_id.method()) {
             (None, Some(_)) => {
                 return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use unqualified Did with fully qualified Credential Definition"));
             }

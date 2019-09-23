@@ -72,30 +72,27 @@ impl Did {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-pub struct DidValue(pub String);
+qualifiable_type!(DidValue);
 
 impl DidValue {
+    pub const PREFIX: &'static str = "did";
+
     pub fn new(did: &str, method_name: Option<&str>) -> DidValue {
         match method_name {
-            Some(method_name_) => DidValue(format!("did:{}:{}", method_name_, did)),
+            Some(method_name_) => DidValue(format!("{}:{}:{}", Self::PREFIX, method_name_, did)),
             None => DidValue(did.to_string())
         }
     }
 
     pub fn to_short(&self) -> ShortDidValue {
-        ShortDidValue(self.unqualify())
+        ShortDidValue(self.unqualify().0)
     }
 
     pub fn from_short(did: &ShortDidValue, prefix: Option<String>) -> DidValue {
         match prefix {
-            Some(prefix_) => DidValue(qualifier::qualify(&did.0, &prefix_)),
+            Some(prefix_) => DidValue(qualifier::qualify(&did.0, Self::PREFIX, &prefix_)),
             None => DidValue(did.0.clone())
         }
-    }
-
-    pub fn is_fully_qualified(&self) -> bool {
-        qualifier::is_fully_qualified(&self.0)
     }
 
     pub fn is_abbreviatable(&self) -> bool {
@@ -106,14 +103,6 @@ impl DidValue {
             return true;
         }
         false
-    }
-
-    pub fn unqualify(&self) -> String {
-        qualifier::unqualify(&self.0)
-    }
-
-    pub fn prefix(&self) -> Option<String> {
-        qualifier::prefix(&self.0)
     }
 }
 

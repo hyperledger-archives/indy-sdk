@@ -108,17 +108,17 @@ pub struct RevocationRegistryInfo {
     pub used_ids: HashSet<u32>
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RevocationRegistryId(pub String);
+qualifiable_type!(RevocationRegistryId);
 
 impl RevocationRegistryId {
-    pub fn new(did: &DidValue, cred_def_id: &CredentialDefinitionId, rev_reg_type: &RegistryType, tag: &str) -> RevocationRegistryId {
-        let cred_def_id = cred_def_id.unqualify();
-        RevocationRegistryId(format!("{}{}{}{}{}{}{}{}{}", did.0, DELIMITER, REV_REG_DEG_MARKER, DELIMITER, cred_def_id.0, DELIMITER, rev_reg_type.to_str(), DELIMITER, tag))
-    }
+    pub const PREFIX: &'static str = "revocreg";
 
-    pub fn unqualify(&self) -> RevocationRegistryId {
-        RevocationRegistryId(qualifier::unqualify(&self.0))
+    pub fn new(did: &DidValue, cred_def_id: &CredentialDefinitionId, rev_reg_type: &RegistryType, tag: &str) -> RevocationRegistryId {
+        let id = RevocationRegistryId(format!("{}{}{}{}{}{}{}{}{}", did.unqualify().0, DELIMITER, REV_REG_DEG_MARKER, DELIMITER, cred_def_id.unqualify().0, DELIMITER, rev_reg_type.to_str(), DELIMITER, tag));
+        match did.method() {
+            Some(method) => id.qualify(&method),
+            None => id
+        }
     }
 }
 
@@ -139,9 +139,9 @@ impl Validatable for RevocationRegistryId {
 
         let parts: Vec<&str> = rev_reg_id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
-        parts.get(0).ok_or_else(||format!("Revocation Registry Id validation failed: issuer DID not found in: {}", self.0))?;
-        parts.get(1).ok_or_else(||format!("Revocation Registry Id validation failed: marker not found in: {}", self.0))?;
-        parts.get(2).ok_or_else(||format!("Revocation Registry Id validation failed: signature type not found in: {}", self.0))?;
+        parts.get(0).ok_or_else(|| format!("Revocation Registry Id validation failed: issuer DID not found in: {}", self.0))?;
+        parts.get(1).ok_or_else(|| format!("Revocation Registry Id validation failed: marker not found in: {}", self.0))?;
+        parts.get(2).ok_or_else(|| format!("Revocation Registry Id validation failed: signature type not found in: {}", self.0))?;
 
         if parts.len() != 8 && parts.len() != 9 && parts.len() != 11 && parts.len() != 12 {
             return Err("Revocation Registry Id validation failed: invalid number of parts".to_string());

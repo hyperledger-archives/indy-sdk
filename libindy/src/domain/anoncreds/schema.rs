@@ -45,9 +45,6 @@ pub fn schemas_map_to_schemas_v1_map(schemas: Schemas) -> HashMap<SchemaId, Sche
 
 pub type AttributeNames = HashSet<String>;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SchemaId(pub String);
-
 impl Validatable for Schema {
     fn validate(&self) -> Result<(), String> {
         match self {
@@ -73,36 +70,30 @@ impl Validatable for AttributeNames {
     }
 }
 
+qualifiable_type!(SchemaId);
+
 impl SchemaId {
+    pub const PREFIX: &'static str = "schema";
+
     pub fn new(did: &DidValue, name: &str, version: &str) -> SchemaId {
-        SchemaId(format!("{}{}{}{}{}{}{}", did.0, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version))
+        let id = SchemaId(format!("{}{}{}{}{}{}{}", did.unqualify().0, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version));
+        match did.method() {
+            Some(method) => id.qualify(&method),
+            None => id
+        }
     }
 
     pub fn parts(&self) -> (DidValue, String, String) {
         let parts = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
         let (schema_issuer_did, schema_name, schema_version) = if self.is_fully_qualified() {
-            (format!("{}:{}:{}", parts[0], parts[1], parts[2]), parts[4].to_string(), parts[5].to_string())
+            (DidValue::new(parts[2], Some(parts[1])),
+             parts[4].to_string(),
+             parts[5].to_string())
         } else {
-            (parts[0].to_string(), parts[2].to_string(), parts[3].to_string())
+            (DidValue::new(parts[0], None), parts[2].to_string(), parts[3].to_string())
         };
-        (DidValue(schema_issuer_did), schema_name, schema_version)
-    }
-
-    pub fn qualify(&self, prefix: &str) -> SchemaId {
-        SchemaId(qualifier::qualify(&self.0, &prefix))
-    }
-
-    pub fn unqualify(&self) -> SchemaId {
-        SchemaId(qualifier::unqualify(&self.0))
-    }
-
-    pub fn prefix(&self) -> Option<String> {
-        qualifier::prefix(&self.0)
-    }
-
-    pub fn is_fully_qualified(&self) -> bool {
-        qualifier::is_fully_qualified(&self.0)
+        (schema_issuer_did, schema_name, schema_version)
     }
 }
 

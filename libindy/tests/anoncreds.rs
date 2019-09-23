@@ -25,6 +25,7 @@ mod high_cases {
 
     mod issuer_create_schema {
         use super::*;
+        use utils::domain::anoncreds::schema::SchemaId;
 
         #[test]
         fn issuer_create_schema_works() {
@@ -41,7 +42,7 @@ mod high_cases {
                                                                  GVT_SCHEMA_NAME,
                                                                  SCHEMA_VERSION,
                                                                  GVT_SCHEMA_ATTRIBUTES).unwrap();
-            assert_eq!(qualifier::qualify(&anoncreds::gvt_schema_id(), DEFAULT_PREFIX), schema_id);
+            assert_eq!(SchemaId(anoncreds::gvt_schema_id()).qualify(DEFAULT_METHOD_NAME).0, schema_id);
         }
     }
 
@@ -3043,11 +3044,11 @@ mod high_cases {
             let proof_req_json = anoncreds::proof_request_attr().replace(r#""name":"name""#, r#""name":"NAME""#);
 
             let valid = anoncreds::verifier_verify_proof(&proof_req_json,
-                                                       &anoncreds::proof_json(),
-                                                       &anoncreds::schemas_for_proof(),
-                                                       &anoncreds::cred_defs_for_proof(),
-                                                       "{}",
-                                                       "{}").unwrap();
+                                                         &anoncreds::proof_json(),
+                                                         &anoncreds::schemas_for_proof(),
+                                                         &anoncreds::cred_defs_for_proof(),
+                                                         "{}",
+                                                         "{}").unwrap();
             assert!(valid);
         }
     }
