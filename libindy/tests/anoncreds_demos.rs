@@ -2852,15 +2852,14 @@ mod demos {
     }
 
     #[test] // IS-1380
-    #[should_panic]
     fn anoncreds_fails_for_unmet_attr_value_restrictions() {
         Setup::empty();
 
         //1. Create Issuer wallet, gets wallet handle
-        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_attr_value_restriction").unwrap();
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_fails_for_unmet_attr_value_restrictions").unwrap();
 
         //2. Create Prover wallet, gets wallet handle
-        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_attr_value_restriction").unwrap();
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_fails_for_unmet_attr_value_restrictions").unwrap();
 
         //3. Issuer creates Schema and Credential Definition
         let (schema_id, schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,
@@ -2933,13 +2932,13 @@ mod demos {
         let rev_reg_defs_json = json!({}).to_string();
         let rev_regs_json = json!({}).to_string();
 
-        let valid = anoncreds::verifier_verify_proof(&proof_req_json,
+        let res = anoncreds::verifier_verify_proof(&proof_req_json,
                                                      &proof_json,
                                                      &schemas_json,
                                                      &cred_defs_json,
                                                      &rev_reg_defs_json,
-                                                     &rev_regs_json).unwrap();
-        assert!(valid);
+                                                     &rev_regs_json);
+        assert_code!(ErrorCode::AnoncredsProofRejected , res);
 
         wallet::close_and_delete_wallet(issuer_wallet_handle, &issuer_wallet_config).unwrap();
         wallet::close_and_delete_wallet(prover_wallet_handle, &prover_wallet_config).unwrap();
