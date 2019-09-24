@@ -12,6 +12,11 @@ use services::anoncreds::helpers::*;
 use ursa::cl::{CredentialPublicKey, new_nonce, Nonce};
 use ursa::cl::verifier::Verifier as CryptoVerifier;
 use services::wallet::language::{parse_from_json, Operator};
+use regex::Regex;
+
+lazy_static! {
+    pub static ref INTERNAL_TAG_REGEX: Regex = Regex::new("^attr::.*::[marker,value]").unwrap();
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Filter {
@@ -434,12 +439,12 @@ impl Verifier {
         match restriction_op {
             Operator::Eq(ref tag_name, ref tag_value) => {
                 let tag_name = tag_name.from_utf8()?;
-                Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter)
+                Verifier::_process_filter(&tag_name, &tag_value.value(), filter)
                     .map_err(|err| err.extend(format!("$eq operator validation failed for tag: \"{}\", value: \"{}\"", tag_name, tag_value.value())))
             }
             Operator::Neq(ref tag_name, ref tag_value) => {
                 let tag_name = tag_name.from_utf8()?;
-                if Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter).is_err() {
+                if Verifier::_process_filter(&tag_name, &tag_value.value(), filter).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
@@ -450,7 +455,7 @@ impl Verifier {
                 let tag_name = tag_name.from_utf8()?;
                 let res = tag_values
                     .iter()
-                    .any(|val| Verifier::_process_filter(attr, &tag_name, &val.value(), filter).is_ok());
+                    .any(|val| Verifier::_process_filter(&tag_name, &val.value(), filter).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -487,8 +492,7 @@ impl Verifier {
         }
     }
 
-    fn _process_filter(attr: &str,
-                       tag: &str,
+    fn _process_filter(tag: &str,
                        tag_value: &str,
                        filter: &Filter) -> IndyResult<()> {
         match tag {
@@ -498,8 +502,7 @@ impl Verifier {
             tag_ @ "schema_version" => Verifier::_precess_filed(tag_, &filter.schema_version, tag_value),
             tag_ @ "cred_def_id" => Verifier::_precess_filed(tag_, &filter.cred_def_id, tag_value),
             tag_ @ "issuer_did" => Verifier::_precess_filed(tag_, &filter.issuer_did, tag_value),
-            x if Verifier::_is_attr_internal_tag(x, attr) => Ok(()),
-            x if Verifier::_is_attr_operator(x) => Ok(()),
+            x if Verifier::_is_attr_internal_tag(x) => Ok(()),
             _ => Err(err_msg(IndyErrorKind::InvalidStructure, "Unknown Filter Type"))
         }
     }
@@ -512,11 +515,9 @@ impl Verifier {
         }
     }
 
-    fn _is_attr_internal_tag(key: &str, attr: &str) -> bool {
-        key == format!("attr::{}::value", attr) || key == format!("attr::{}::marker", attr)
+    fn _is_attr_internal_tag(key: &str) -> bool {
+        INTERNAL_TAG_REGEX.is_match(&key)
     }
-
-    fn _is_attr_operator(key: &str) -> bool { key.starts_with("attr::") && key.ends_with("::marker") }
 }
 
 #[cfg(test)]
@@ -530,6 +531,7 @@ mod tests {
     pub const SCHEMA_VERSION: &str = "1.2.3";
     pub const CRED_DEF_ID: &str = "345";
     pub const ISSUER_DID: &str = "456";
+    pub const VALUE: &str = "value";
 
     fn encrypted_tag(tag: String) -> TagName { TagName::EncryptedTagName(tag.into_bytes()) }
 
@@ -547,7 +549,13 @@ mod tests {
 
     fn issuer_did_tag() -> TagName { encrypted_tag("issuer_did".to_string()) }
 
-    fn attr_tag() -> TagName { encrypted_tag("attr::zip::marker".to_string()) }
+    fn zip_marker() -> TagName { encrypted_tag("attr::zip::marker".to_string()) }
+
+    fn zip_value() -> TagName { encrypted_tag("attr::zip::value".to_string()) }
+
+    fn extra_marker() -> TagName { encrypted_tag("attr::extra::marker".to_string()) }
+
+    fn extra_value() -> TagName { encrypted_tag("attr::extra::value".to_string()) }
 
     fn bad_attr_tag() -> TagName { encrypted_tag("bad::zip::marker".to_string()) }
 
@@ -570,7 +578,7 @@ mod tests {
         Verifier::_process_operator("zip", &op, &filter).unwrap();
 
         op = Operator::And(vec![
-            Operator::Eq(attr_tag(), unencrypted_target("1".to_string())),
+            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
         ]);
         Verifier::_process_operator("zip", &op, &filter).unwrap();
@@ -778,6 +786,49 @@ mod tests {
             Operator::Not(Box::new(Operator::Eq(schema_version_tag(), unencrypted_target(SCHEMA_VERSION.to_string()))))
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+    }
+
+    #[test]
+    fn test_process_op_eq_internal_tags() {
+        let filter = filter();
+
+        let mut op = Operator::Eq(zip_value(), unencrypted_target(VALUE.to_string()));
+        Verifier::_process_operator("zip", &op, &filter).unwrap();
+
+        op = Operator::And(vec![
+            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
+            Operator::Eq(zip_value(), unencrypted_target(VALUE.to_string())),
+        ]);
+        Verifier::_process_operator("zip", &op, &filter).unwrap();
+
+        op = Operator::And(vec![
+            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
+            Operator::Eq(zip_value(), unencrypted_target(VALUE.to_string())),
+            Operator::Eq(extra_marker(), unencrypted_target("1".to_string())),
+            Operator::Eq(extra_value(), unencrypted_target(VALUE.to_string())),
+        ]);
+        Verifier::_process_operator("zip", &op, &filter).unwrap();
+
+        op = Operator::Eq(encrypted_tag("attr::zip::NOT HERE".to_string()), unencrypted_target(VALUE.to_string()));
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+
+        op = Operator::Eq(encrypted_tag("NOT HEREattrNOT HERE::zip::value".to_string()), unencrypted_target(VALUE.to_string()));
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+
+        op = Operator::Eq(encrypted_tag("NOT HERE::zip::marker".to_string()), unencrypted_target(VALUE.to_string()));
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+
+        op = Operator::And(vec![
+            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
+            Operator::Eq(encrypted_tag("attr::zip::NOT HERE".to_string()), unencrypted_target(VALUE.to_string())),
+        ]);
+        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+
+        op = Operator::Or(vec![
+            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
+            Operator::Eq(encrypted_tag("attr::zip::NOT HERE".to_string()), unencrypted_target(VALUE.to_string())),
+        ]);
+        Verifier::_process_operator("zip", &op, &filter).unwrap();
     }
 
     fn _received() -> HashMap<String, Identifier> {
