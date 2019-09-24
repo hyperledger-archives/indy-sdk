@@ -443,12 +443,12 @@ impl Verifier {
         match restriction_op {
             Operator::Eq(ref tag_name, ref tag_value) => {
                 let tag_name = tag_name.from_utf8()?;
-                Verifier::_process_filter(&tag_name, &tag_value.value(), filter, revealed_value)
+                Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter, revealed_value)
                     .map_err(|err| err.extend(format!("$eq operator validation failed for tag: \"{}\", value: \"{}\"", tag_name, tag_value.value())))
             }
             Operator::Neq(ref tag_name, ref tag_value) => {
                 let tag_name = tag_name.from_utf8()?;
-                if Verifier::_process_filter(&tag_name, &tag_value.value(), filter, revealed_value).is_err() {
+                if Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter, revealed_value).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
@@ -459,7 +459,7 @@ impl Verifier {
                 let tag_name = tag_name.from_utf8()?;
                 let res = tag_values
                     .iter()
-                    .any(|val| Verifier::_process_filter(&tag_name, &val.value(), filter, revealed_value).is_ok());
+                    .any(|val| Verifier::_process_filter(attr, &tag_name, &val.value(), filter, revealed_value).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -496,7 +496,8 @@ impl Verifier {
         }
     }
 
-    fn _process_filter(tag: &str,
+    fn _process_filter(attr: &str,
+                       tag: &str,
                        tag_value: &str,
                        filter: &Filter,
                        revealed_value: Option<&str>) -> IndyResult<()> {
