@@ -1027,6 +1027,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_minimal() {
+        use indy_sys::INVALID_POOL_HANDLE;
         init!("ledger");
         let content = get_settings();
         settings::clear_config();
