@@ -12,8 +12,8 @@ javascripts FFI functionality to load and use postgres library functions:
 3.1. See the example below.  Make sure the library name and path fit your setup.    
 4. Use `import` or `require` to import `postgres.plugin.ts`.
 5. In your application startup, need to make two calls to initialize postgres with indysdk.  
-5.1. call `postgresPlugin.postgresstorage_init();`  
-5.2. call `postgresPlugin.init_storagetype(initConfig, initCredentials);`.  
+5.1. call `storagePlugin.postgresstorage_init();`  
+5.2. call `storagePlugin.init_storagetype(initConfig, initCredentials);`.  
 5.3. see below examples for the structure of the inputs. 
 6. Both indy `createWallet` and `openWallet` calls require some postgres specific inputs as well.  Both create and openWallet calls  are the same. Call `indy.openWallet(walletConfig, walletCredentials);` 
 
