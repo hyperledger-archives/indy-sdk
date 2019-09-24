@@ -5,8 +5,8 @@ for [IndySdk](https://github.com/hyperledger/indy-sdk) wallets.
 
 ## Use
 1. Start with [installing](https://github.com/hyperledger/indy-sdk/blob/master/README.md#installation) indysdk and [installing](https://github.com/hyperledger/indy-sdk/tree/master/experimental/plugins/postgres_storage#installing-and-testing-the-postgres-plug-in) the postgres plugin.
-2. Copy [postgres.plugin.ts](./postgres.plugin.ts) into your project.
-3. Copy the postgres plugin library to resources directory (in the same directory as src)
+2. Copy the postgres plugin library to resources directory (in the same directory as src)
+3. Copy [postgres.plugin.ts](./postgres.plugin.ts) into your project.
 4. Use `import` or `require` to import `postgres.plugin.ts`
 5. In your application startup, need to make two calls to initialize postgres with indysdk
 5.1. call `postgresPlugin.init();`  
@@ -15,14 +15,23 @@ for [IndySdk](https://github.com/hyperledger/indy-sdk) wallets.
 6.1. call `indy.openWallet(walletConfig, walletCredentials);` 
 
 ### initConfig
-`{ "url": "postgress-server-db:5432", "wallet_scheme": "MultiWalletSingleTable" }`
+```
+{ 
+    "url": "postgress-server-db:5432", 
+    "wallet_scheme": "MultiWalletSingleTable" 
+}
+```
 
 
 ### initCredentials
-`{ "account": "user_name",
-          "password": "user_name_password",
-          "admin_account": "admin_name",
-          "admin_password": "admin_name_password }`
+```
+{ 
+   "account": "user_name",
+   "password": "user_name_password",
+   "admin_account": "admin_name",
+   "admin_password": "admin_name_password" 
+}
+```
 
 ### walletConfig
 ```
@@ -39,10 +48,10 @@ for [IndySdk](https://github.com/hyperledger/indy-sdk) wallets.
 ```
     {'key': 'key',
       'storage_credentials': {
-            'account': process.env.IDENTITY_WALLET_DB_USER,
-            'password': process.env.IDENTITY_WALLET_DB_PASS,
-            'admin_account': process.env.IDENTITY_WALLET_DB_ADMIN_USER,
-            'admin_password': process.env.IDENTITY_WALLET_DB_ADMIN_PASS,
+           'account': 'user_name',
+           'password': 'user_name_password',
+           'admin_account': 'admin_name',
+           'admin_password': 'admin_name_password' 
         },
     }
 ```
