@@ -11,7 +11,7 @@
     "file": "LICENSE"
   },
   "authors": {
-    "Evernym Inc.": "iosdev@evernym.com"
+    "Hyperledger Indy Contributors": "hyperledger-indy@lists.hyperledger.org"
   },
   "homepage": "https://github.com/evernym/sdk/vcx/wrappers/ios",
   "source": {

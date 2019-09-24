@@ -18,7 +18,6 @@ use utils::domain::anoncreds::credential::CredentialInfo;
 use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use utils::domain::anoncreds::proof::Proof;
 use utils::domain::crypto::did::DidValue;
-use utils::qualifier;
 
 mod high_cases {
     use super::*;
