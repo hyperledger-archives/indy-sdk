@@ -54,6 +54,7 @@ impl Verifier {
         Verifier::_verify_revealed_attribute_values(&proof_req, &full_proof)?;
 
         Verifier::_verify_requested_restrictions(&proof_req,
+                                                 &full_proof.requested_proof,
                                                  schemas,
                                                  cred_defs,
                                                  &received_revealed_attrs,
@@ -329,6 +330,7 @@ impl Verifier {
     }
 
     fn _verify_requested_restrictions(proof_req: &ProofRequest,
+                                      requested_proof: &RequestedProof,
                                       schemas: &HashMap<SchemaId, SchemaV1>,
                                       cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
                                       received_revealed_attrs: &HashMap<String, Identifier>,
@@ -353,8 +355,9 @@ impl Verifier {
             )?;
 
             let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
+            let revealed_value = requested_proof.revealed_attrs.get(&referent).map(|attr| attr.raw.as_str());
 
-            Verifier::_process_operator(&info.name, &op, &filter)
+            Verifier::_process_operator(&info.name, &op, &filter, revealed_value)
                 .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" attribute", &info.name)))?;
         }
 
@@ -365,7 +368,7 @@ impl Verifier {
 
             let filter = Verifier::_gather_filter_info(&referent, received_predicates, schemas, cred_defs)?;
 
-            Verifier::_process_operator(&info.name, &op, &filter)
+            Verifier::_process_operator(&info.name, &op, &filter, None)
                 .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" predicate", &info.name)))?;
         }
 
@@ -430,16 +433,17 @@ impl Verifier {
 
     fn _process_operator(attr: &str,
                          restriction_op: &Operator,
-                         filter: &Filter) -> IndyResult<()> {
+                         filter: &Filter,
+                         revealed_value: Option<&str>) -> IndyResult<()> {
         match restriction_op {
             Operator::Eq(ref tag_name, ref tag_value) => {
                 let tag_name = tag_name.from_utf8()?;
-                Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter)
+                Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter, revealed_value)
                     .map_err(|err| err.extend(format!("$eq operator validation failed for tag: \"{}\", value: \"{}\"", tag_name, tag_value.value())))
             }
             Operator::Neq(ref tag_name, ref tag_value) => {
                 let tag_name = tag_name.from_utf8()?;
-                if Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter).is_err() {
+                if Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter, revealed_value).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
@@ -450,7 +454,7 @@ impl Verifier {
                 let tag_name = tag_name.from_utf8()?;
                 let res = tag_values
                     .iter()
-                    .any(|val| Verifier::_process_filter(attr, &tag_name, &val.value(), filter).is_ok());
+                    .any(|val| Verifier::_process_filter(attr, &tag_name, &val.value(), filter, revealed_value).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -461,7 +465,7 @@ impl Verifier {
             Operator::And(ref operators) => {
                 operators
                     .iter()
-                    .map(|op| Verifier::_process_operator(attr, op, filter))
+                    .map(|op| Verifier::_process_operator(attr, op, filter, revealed_value))
                     .collect::<IndyResult<Vec<()>>>()
                     .map(|_| ())
                     .map_err(|err| err.extend("$and operator validation failed."))
@@ -469,7 +473,7 @@ impl Verifier {
             Operator::Or(ref operators) => {
                 let res = operators
                     .iter()
-                    .any(|op| Verifier::_process_operator(attr, op, filter).is_ok());
+                    .any(|op| Verifier::_process_operator(attr, op, filter, revealed_value).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -477,7 +481,7 @@ impl Verifier {
                 }
             }
             Operator::Not(ref operator) => {
-                if Verifier::_process_operator(attr, &*operator, filter).is_err() {
+                if Verifier::_process_operator(attr, &*operator, filter, revealed_value).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected, "$not operator validation failed. All conditions were passed."))
@@ -490,7 +494,8 @@ impl Verifier {
     fn _process_filter(attr: &str,
                        tag: &str,
                        tag_value: &str,
-                       filter: &Filter) -> IndyResult<()> {
+                       filter: &Filter,
+                       revealed_value: Option<&str>) -> IndyResult<()> {
         match tag {
             tag_ @ "schema_id" => Verifier::_precess_filed(tag_, &filter.schema_id, tag_value),
             tag_ @ "schema_issuer_did" => Verifier::_precess_filed(tag_, &filter.schema_issuer_did, tag_value),
@@ -498,7 +503,7 @@ impl Verifier {
             tag_ @ "schema_version" => Verifier::_precess_filed(tag_, &filter.schema_version, tag_value),
             tag_ @ "cred_def_id" => Verifier::_precess_filed(tag_, &filter.cred_def_id, tag_value),
             tag_ @ "issuer_did" => Verifier::_precess_filed(tag_, &filter.issuer_did, tag_value),
-            x if Verifier::_is_attr_internal_tag(x, attr) => Ok(()),
+            x if Verifier::_is_attr_internal_tag(x, attr) => Verifier::_check_internal_tag_revealed_value(x, attr, tag_value, revealed_value),
             x if Verifier::_is_attr_operator(x) => Ok(()),
             _ => Err(err_msg(IndyErrorKind::InvalidStructure, "Unknown Filter Type"))
         }
@@ -514,6 +519,16 @@ impl Verifier {
 
     fn _is_attr_internal_tag(key: &str, attr: &str) -> bool {
         key == format!("attr::{}::value", attr) || key == format!("attr::{}::marker", attr)
+    }
+
+    fn _check_internal_tag_revealed_value(key: &str, attr: &str, tag_value: &str, revealed_value: Option<&str>) -> IndyResult<()> {
+        if let Some(revealed_value) = revealed_value {
+            if key == format!("attr::{}::value", attr) && revealed_value != tag_value {
+                return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
+                                               format!("\"{}\" values are different: expected: \"{}\", actual: \"{}\"", key, tag_value, revealed_value)));
+            }
+        }
+        Ok(())
     }
 
     fn _is_attr_operator(key: &str) -> bool { key.starts_with("attr::") && key.ends_with("::marker") }
@@ -549,6 +564,8 @@ mod tests {
 
     fn attr_tag() -> TagName { encrypted_tag("attr::zip::marker".to_string()) }
 
+    fn attr_tag_value() -> TagName { encrypted_tag("attr::zip::value".to_string()) }
+
     fn bad_attr_tag() -> TagName { encrypted_tag("bad::zip::marker".to_string()) }
 
     fn filter() -> Filter {
@@ -567,32 +584,32 @@ mod tests {
         let filter = filter();
 
         let mut op = Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string()));
-        Verifier::_process_operator("zip", &op, &filter).unwrap();
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
         op = Operator::And(vec![
             Operator::Eq(attr_tag(), unencrypted_target("1".to_string())),
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
         ]);
-        Verifier::_process_operator("zip", &op, &filter).unwrap();
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
         op = Operator::And(vec![
             Operator::Eq(bad_attr_tag(), unencrypted_target("1".to_string())),
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
         ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::Eq(schema_id_tag(), unencrypted_target("NOT HERE".to_string()));
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
     }
 
     #[test]
     fn test_process_op_ne() {
         let filter = filter();
         let mut op = Operator::Neq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string()));
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::Neq(schema_id_tag(), unencrypted_target("NOT HERE".to_string()));
-        Verifier::_process_operator("zip", &op, &filter).unwrap()
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
 
     #[test]
@@ -601,11 +618,11 @@ mod tests {
         let mut cred_def_ids = vec![unencrypted_target("Not Here".to_string())];
 
         let mut op = Operator::In(cred_def_id_tag(), cred_def_ids.clone());
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         cred_def_ids.push(unencrypted_target(CRED_DEF_ID.to_string()));
         op = Operator::In(cred_def_id_tag(), cred_def_ids.clone());
-        Verifier::_process_operator("zip", &op, &filter).unwrap()
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
 
     #[test]
@@ -615,13 +632,13 @@ mod tests {
             Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::Or(vec![
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ]);
-        Verifier::_process_operator("zip", &op, &filter).unwrap()
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
 
     #[test]
@@ -631,19 +648,19 @@ mod tests {
             Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::And(vec![
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::And(vec![
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
         ]);
-        Verifier::_process_operator("zip", &op, &filter).unwrap()
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
 
     #[test]
@@ -653,13 +670,13 @@ mod tests {
             Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
         ])));
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::Not(Box::new(Operator::And(vec![
             Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
             Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
         ])));
-        Verifier::_process_operator("zip", &op, &filter).unwrap()
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
 
     #[test]
@@ -679,7 +696,7 @@ mod tests {
                 Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
             ]),
         ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::Or(vec![
             Operator::And(vec![
@@ -695,7 +712,7 @@ mod tests {
                 Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
             ]),
         ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::Or(vec![
             Operator::And(vec![
@@ -711,7 +728,7 @@ mod tests {
                 Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
             ]),
         ]);
-        Verifier::_process_operator("zip", &op, &filter).unwrap()
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
 
     #[test]
@@ -735,7 +752,7 @@ mod tests {
                 Operator::Eq(issuer_did_tag(), unencrypted_target(ISSUER_DID.to_string()))
             ]),
         ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::And(vec![
             Operator::And(vec![
@@ -756,7 +773,7 @@ mod tests {
             ]),
             Operator::Not(Box::new(Operator::Eq(schema_version_tag(), unencrypted_target("NOT HERE".to_string()))))
         ]);
-        Verifier::_process_operator("zip", &op, &filter).unwrap();
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
         op = Operator::And(vec![
             Operator::And(vec![
@@ -777,7 +794,25 @@ mod tests {
             ]),
             Operator::Not(Box::new(Operator::Eq(schema_version_tag(), unencrypted_target(SCHEMA_VERSION.to_string()))))
         ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
+    }
+
+    #[test]
+    fn test_process_op_eq_revealed_value() {
+        let filter = filter();
+        let value = "value";
+
+        let mut op = Operator::Eq(attr_tag_value(), unencrypted_target(value.to_string()));
+        Verifier::_process_operator("zip", &op, &filter, Some(value)).unwrap();
+
+        op = Operator::And(vec![
+            Operator::Eq(attr_tag_value(), unencrypted_target(value.to_string())),
+            Operator::Eq(schema_issuer_did_tag(), unencrypted_target(SCHEMA_ISSUER_DID.to_string())),
+        ]);
+        Verifier::_process_operator("zip", &op, &filter, Some(value)).unwrap();
+
+        op = Operator::Eq(attr_tag_value(), unencrypted_target(value.to_string()));
+        assert!(Verifier::_process_operator("zip", &op, &filter, Some("NOT HERE")).is_err());
     }
 
     fn _received() -> HashMap<String, Identifier> {

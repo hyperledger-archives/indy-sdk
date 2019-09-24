@@ -1,7 +1,7 @@
 [package]
 name = "rotate-key"
 version = "0.1.0"
-authors = ["matt raffel <matt.raffel@evernym.com>"]
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 description = "Demonstrates using Rust wrapper for LibIndy through changing the verkey that the ledger associates with a DID"
 
 [[bin]]

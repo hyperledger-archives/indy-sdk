@@ -228,6 +228,7 @@ impl AgentConnection {
                     .into_actor(slf)
             })
             .and_then(|(sender_vk, msg, msgs), slf, _| {
+                debug!("AgentConnection::handle_a2a_msg >> {:?}", msg);
                 match msg {
                     Some(A2AMessage::Version1(msg)) => {
                         match msg {
@@ -1227,7 +1228,7 @@ impl AgentConnection {
                 verkey: self.user_pairwise_verkey.clone(),
                 agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
                 name: self.agent_configs.get("name").cloned(),
-                logo_url: self.agent_configs.get("logo_url").cloned(),
+                logo_url: self.agent_configs.get("logoUrl").cloned(),
                 public_did: Some(self.owner_did.clone()),
             },
             status_code: msg.status_code.clone(),
