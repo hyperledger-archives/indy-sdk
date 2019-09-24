@@ -832,13 +832,13 @@ mod tests {
         let filter = filter();
 
         let mut op = Operator::Eq(zip_value(), unencrypted_target(VALUE.to_string()));
-        Verifier::_process_operator("zip", &op, &filter).unwrap();
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
         op = Operator::And(vec![
             Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
             Operator::Eq(zip_value(), unencrypted_target(VALUE.to_string())),
         ]);
-        Verifier::_process_operator("zip", &op, &filter).unwrap();
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
         op = Operator::And(vec![
             Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
@@ -846,28 +846,28 @@ mod tests {
             Operator::Eq(extra_marker(), unencrypted_target("1".to_string())),
             Operator::Eq(extra_value(), unencrypted_target(VALUE.to_string())),
         ]);
-        Verifier::_process_operator("zip", &op, &filter).unwrap();
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
         op = Operator::Eq(encrypted_tag("attr::zip::NOT HERE".to_string()), unencrypted_target(VALUE.to_string()));
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::Eq(encrypted_tag("NOT HEREattrNOT HERE::zip::value".to_string()), unencrypted_target(VALUE.to_string()));
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::Eq(encrypted_tag("NOT HERE::zip::marker".to_string()), unencrypted_target(VALUE.to_string()));
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::And(vec![
             Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
             Operator::Eq(encrypted_tag("attr::zip::NOT HERE".to_string()), unencrypted_target(VALUE.to_string())),
         ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter).is_err());
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
         op = Operator::Or(vec![
             Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
             Operator::Eq(encrypted_tag("attr::zip::NOT HERE".to_string()), unencrypted_target(VALUE.to_string())),
         ]);
-        Verifier::_process_operator("zip", &op, &filter).unwrap();
+        Verifier::_process_operator("zip", &op, &filter, None).unwrap();
     }
 
     fn _received() -> HashMap<String, Identifier> {
