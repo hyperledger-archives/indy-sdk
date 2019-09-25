@@ -14,7 +14,9 @@ use std::mem;
 use std::ffi::CString;
 
 pub static mut SCHEMA_ID: &'static str = "";
+pub static mut SCHEMA_ID_V2: &'static str = "";
 pub static mut CRED_DEF_ID: &'static str = "";
+pub static mut CRED_DEF_ID_V2: &'static str = "";
 pub static mut REV_REG_DEF_ID: &'static str = "";
 pub const SCHEMA_DATA: &'static str = r#"{"id":"id","name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#;
 
@@ -340,5 +342,63 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
         });
 
         (SCHEMA_ID, CRED_DEF_ID, REV_REG_DEF_ID)
+    }
+}
+
+pub fn post_qualified_entities() -> (&'static str, &'static str) {
+    lazy_static! {
+                    static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
+
+                }
+
+    unsafe {
+        COMMON_ENTITIES_INIT.call_once(|| {
+            let pool_and_wallet_name = "COMMON_ENTITIES_POOL";
+            super::test::cleanup_storage(pool_and_wallet_name);
+
+            let pool_handle = pool::create_and_open_pool_ledger(pool_and_wallet_name).unwrap();
+
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(pool_and_wallet_name).unwrap();
+
+            let (issuer_did, _) = did::create_store_and_publish_my_did_from_trustee_v1(wallet_handle, pool_handle).unwrap();
+
+            let (schema_id, schema_json) = anoncreds::issuer_create_schema(&issuer_did,
+                                                                           GVT_SCHEMA_NAME,
+                                                                           SCHEMA_VERSION,
+                                                                           GVT_SCHEMA_ATTRIBUTES).unwrap();
+
+            let schema_request = build_schema_request(&issuer_did, &schema_json).unwrap();
+            let schema_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
+            pool::check_response_type(&schema_response, ::utils::types::ResponseType::REPLY);
+
+            let get_schema_request = build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
+            let get_schema_response = submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
+            let (schema_id, schema_json) = parse_get_schema_response(&get_schema_response).unwrap();
+
+            let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(wallet_handle,
+                                                                                              &issuer_did,
+                                                                                              &schema_json,
+                                                                                              TAG_1,
+                                                                                              None,
+                                                                                              Some(&anoncreds::revocation_cred_def_config())).unwrap();
+            let cred_def_request = build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
+            let cred_def_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
+            pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
+
+            let res = mem::transmute(&schema_id as &str);
+            mem::forget(schema_id);
+            SCHEMA_ID_V2 = res;
+
+            let res = mem::transmute(&cred_def_id as &str);
+            mem::forget(cred_def_id);
+            CRED_DEF_ID_V2 = res;
+
+            pool::close(pool_handle).unwrap();
+            pool::delete(pool_and_wallet_name).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
+        });
+
+        (SCHEMA_ID_V2, CRED_DEF_ID_V2)
     }
 }
