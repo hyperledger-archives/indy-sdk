@@ -6,6 +6,7 @@ use commands::anoncreds::issuer::IssuerCommand;
 use commands::anoncreds::prover::ProverCommand;
 use commands::anoncreds::verifier::VerifierCommand;
 use domain::anoncreds::schema::{Schema, AttributeNames, Schemas};
+use domain::crypto::did::DidValue;
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId, CredentialDefinitions};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
@@ -77,7 +78,7 @@ pub extern fn indy_issuer_create_schema(command_handle: CommandHandle,
                                                              schema_id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
     trace!("indy_issuer_create_schema: >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(issuer_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_validatable_json!(attrs, ErrorCode::CommonInvalidParam5, AttributeNames);
@@ -183,7 +184,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: Comman
     trace!("indy_issuer_create_and_store_credential_def: >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, tag: {:?}, \
     signature_type: {:?}, config_json: {:?}", wallet_handle, issuer_did, schema_json, tag, signature_type, config_json);
 
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(issuer_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_validatable_json!(schema_json, ErrorCode::CommonInvalidParam4, Schema);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam6);
@@ -438,7 +439,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHand
     trace!("indy_issuer_create_and_store_credential_def: >>> wallet_handle: {:?}, issuer_did: {:?}, revoc_def_type: {:?}, tag: {:?}, \
     cred_def_id: {:?}, config_json: {:?}, tails_writer_handle: {:?}", wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle);
 
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(issuer_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_opt_c_str!(revoc_def_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
     check_useful_validatable_string!(cred_def_id, ErrorCode::CommonInvalidParam6, CredentialDefinitionId);
@@ -939,7 +940,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: CommandHandle,
     trace!("indy_prover_create_credential_req: >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer_json: {:?}, cred_def_json: {:?}, master_secret_id: {:?}",
            wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id);
 
-    check_useful_c_str!(prover_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(prover_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_validatable_json!(cred_offer_json, ErrorCode::CommonInvalidParam4, CredentialOffer);
     check_useful_validatable_json!(cred_def_json, ErrorCode::CommonInvalidParam5, CredentialDefinition);
     check_useful_c_str!(master_secret_id, ErrorCode::CommonInvalidParam6);
@@ -1513,7 +1514,10 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval for each attribute
-///                        // (applies to every attribute and predicate but can be overridden on attribute level)
+///                        // (applies to every attribute and predicate but can be overridden on attribute level),
+///         "ver": Optional<str>  - proof request version:
+///             - omit or "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1638,6 +1642,9 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 ///                        // for date in this interval for each attribute
 ///                        // (applies to every attribute and predicate but can be overridden on attribute level)
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit or "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 ///
 /// where
@@ -1864,6 +1871,9 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///                        // for date in this interval for each attribute
 ///                        // (applies to every attribute and predicate but can be overridden on attribute level)
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit or "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 /// requested_credentials_json: either a credential or self-attested attribute for each requested attribute
 ///     {
@@ -2028,6 +2038,9 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 /// Verifies a proof (of multiple credential).
 /// All required schemas, public keys and revocation registries must be provided.
 ///
+/// IMPORTANT: You must use *_id's (`schema_id`, `cred_def_id`, `rev_reg_id`) listed in `proof[identifiers]`
+/// as the keys for corresponding `schemas_json`, `credential_defs_json`, `rev_reg_defs_json`, `rev_regs_json` objects.
+///
 /// #Params
 /// wallet_handle: wallet handle (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
@@ -2048,6 +2061,9 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit or "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 /// proof_json: created for request proof json
 ///     {
@@ -2355,6 +2371,55 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
     let res = prepare_result!(result);
 
     trace!("indy_generate_nonce: <<< res: {:?}", res);
+
+    res
+}
+
+/// Get unqualified form of fully qualified entity.
+///
+/// This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+///     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+///     Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+///     another case when casting to unqualified form needed
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// entity: string - one of
+///             Did
+///             SchemaId
+///             CredentialDefinitionId
+///             RevocationRegistryId
+///             CredentialOffer
+///
+/// #Returns
+///   res: unqualified form of entity.
+#[no_mangle]
+pub  extern fn indy_disqualify(command_handle: CommandHandle,
+                               entity: *const c_char,
+                               cb: Option<extern fn(command_handle_: CommandHandle,
+                                                    err: ErrorCode,
+                                                    res: *const c_char)>) -> ErrorCode {
+    trace!("indy_disqualify_identifier: >>> entity: {:?}", entity);
+
+    check_useful_c_str!(entity, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_disqualify_identifier: entities >>> entity: {:?}", entity);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(AnoncredsCommand::Disqualify(
+            entity,
+            Box::new(move |result| {
+                let (err, res) = prepare_result_1!(result, String::new());
+                trace!("indy_disqualify_identifier: did: {:?}", res);
+                let res = ctypes::string_to_cstring(res);
+                cb(command_handle, err, res.as_ptr())
+            }),
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_disqualify_identifier: <<< res: {:?}", res);
 
     res
 }

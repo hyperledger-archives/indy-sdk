@@ -31,9 +31,11 @@ pub mod new_command {
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_optional_param("did", "Known DID for new wallet instance")
                 .add_optional_deferred_param("seed", "Seed for creating DID key-pair (UTF-8, base64 or hex)")
+                .add_optional_param("method", "Method name to create fully qualified DID")
                 .add_optional_param("metadata", "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
+                .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX method=indy")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX seed=00000000000000000000000000000My1")
                 .add_example("did new seed=00000000000000000000000000000My1 metadata=did_metadata")
                 .finalize()
@@ -46,12 +48,14 @@ pub mod new_command {
 
         let did = get_opt_str_param("did", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
+        let method = get_opt_str_param("method", params).map_err(error_err!())?;
         let metadata = get_opt_empty_str_param("metadata", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
             update_json_map_opt_key!(json, "did", did);
             update_json_map_opt_key!(json, "seed", seed);
+            update_json_map_opt_key!(json, "method_name", method);
             JSONValue::from(json).to_string()
         };
 
@@ -62,7 +66,7 @@ pub mod new_command {
                 .and_then(|(did, vk)|
                     match Did::abbreviate_verkey(&did, &vk) {
                         Ok(vk) => Ok((did, vk)),
-                        Err(err) => Err(err)
+                        Err(_) => Ok((did, vk))
                     });
 
         trace!(r#"Did::new return: {:?}"#, res);
@@ -333,7 +337,7 @@ pub mod rotate_key_command {
 
             ledger::set_author_agreement(ctx, &mut request)?;
 
-            let payment_method = set_request_fees(ctx,  params,&mut request, wallet_handle, Some(&did))?;
+            let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&did))?;
 
             let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
                 .map_err(|err| {
@@ -425,8 +429,8 @@ pub mod list_command {
 
                 print_list_table(&dids,
                                  &[("did", "Did"),
-                                       ("verkey", "Verkey"),
-                                       ("metadata", "Metadata")],
+                                     ("verkey", "Verkey"),
+                                     ("metadata", "Metadata")],
                                  "There are no dids");
                 if let Some(cur_did) = get_active_did(ctx) {
                     println_succ!("Current did \"{}\"", cur_did);
@@ -596,6 +600,44 @@ pub mod tests {
                 params.insert("seed", "invalid_base58_string".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn new_works_for_method_name() {
+            let ctx = setup_with_wallet();
+            let method = "sov";
+            {
+                let cmd = new_command::new();
+                let mut params = CommandParams::new();
+                params.insert("seed", SEED_TRUSTEE.to_string());
+                params.insert("method", method.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let expected_did = format!("did:{}:{}", method, DID_TRUSTEE);
+            let did = get_did_info(&ctx, &expected_did);
+            assert_eq!(did["did"].as_str().unwrap(), &expected_did);
+            assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn new_works_for_not_abbreviatable() {
+            let ctx = setup_with_wallet();
+            let method = "indy";
+            {
+                let cmd = new_command::new();
+                let mut params = CommandParams::new();
+                params.insert("seed", SEED_TRUSTEE.to_string());
+                params.insert("method", method.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let expected_did = format!("did:{}:{}", method, DID_TRUSTEE);
+            let did = get_did_info(&ctx, &expected_did);
+            assert_eq!(did["did"].as_str().unwrap(), &expected_did);
+            assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+
             tear_down_with_wallet(&ctx);
         }
     }

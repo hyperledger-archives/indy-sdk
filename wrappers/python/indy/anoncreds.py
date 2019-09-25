@@ -1140,6 +1140,10 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
                            // If specified prover must proof non-revocation
                            // for date in this interval for each attribute
                            // (applies to every attribute and predicate but can be overridden on attribute level)
+            "ver": Optional<str>  - proof request version:
+                - omit to use unqualified identifiers for restrictions
+                - "1.0" to use unqualified identifiers for restrictions
+                - "2.0" to use fully qualified identifiers for restrictions
         }
     where
     attr_referent: Proof-request local identifier of requested attribute
@@ -1250,6 +1254,10 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
                            // for date in this interval for each attribute
                            // (applies to every attribute and predicate but can be overridden on attribute level)
                            // (can be overridden on attribute level)
+            "ver": Optional<str>  - proof request version:
+                - omit to use unqualified identifiers for restrictions
+                - "1.0" to use unqualified identifiers for restrictions
+                - "2.0" to use fully qualified identifiers for restrictions
         }
     :param extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
         {
@@ -1440,6 +1448,10 @@ async def prover_create_proof(wallet_handle: int,
                            // for date in this interval for each attribute
                            // (applies to every attribute and predicate but can be overridden on attribute level)
                            // (can be overridden on attribute level)
+            "ver": Optional<str>  - proof request version:
+                - omit to use unqualified identifiers for restrictions
+                - "1.0" to use unqualified identifiers for restrictions
+                - "2.0" to use fully qualified identifiers for restrictions
         }
     :param requested_credentials_json: either a credential or self-attested attribute for each requested attribute
         {
@@ -1598,6 +1610,9 @@ async def verifier_verify_proof(proof_request_json: str,
     Verifies a proof (of multiple credential).
     All required schemas, public keys and revocation registries must be provided.
 
+    IMPORTANT: You must use *_id's (`schema_id`, `cred_def_id`, `rev_reg_id`) listed in `proof[identifiers]`
+        as the keys for corresponding `schemas_json`, `credential_defs_json`, `rev_reg_defs_json`, `rev_regs_json` objects.
+
     :param proof_request_json:
         {
             "name": string,
@@ -1615,6 +1630,10 @@ async def verifier_verify_proof(proof_request_json: str,
                            // If specified prover must proof non-revocation
                            // for date in this interval for each attribute
                            // (can be overridden on attribute level)
+            "ver": Optional<str>  - proof request version:
+                - omit to use unqualified identifiers for restrictions
+                - "1.0" to use unqualified identifiers for restrictions
+                - "2.0" to use fully qualified identifiers for restrictions
         }
     :param proof_json: created for request proof json
         {
