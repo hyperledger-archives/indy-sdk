@@ -6,7 +6,6 @@ use serde_json::Value;
 use log_derive::logfn;
 
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId};
-use domain::anoncreds::DELIMITER;
 use domain::anoncreds::revocation_registry::RevocationRegistry;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
@@ -110,27 +109,19 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_get_schema_request(&self, identifier: Option<&DidValue>, id: &SchemaId) -> IndyResult<String> {
-        let id = id.unqualify();
-        let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
-
-        if parts.len() != 4 {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Schema ID `{}` cannot be used to build request: invalid number of parts", id.0)));
-        }
-
-        let dest = DidValue(parts[0].to_string()).to_short();
-        let name = parts[2].to_string();
-        let version = parts[3].to_string();
+        let id = id.disqualify();
+        let (dest, name, version) = id.parts()
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Schema ID `{}` cannot be used to build request: invalid number of parts", id.0)))?;
 
         let data = GetSchemaOperationData::new(name, version);
-
-        build_result!(GetSchemaOperation, identifier, dest, data)
+        build_result!(GetSchemaOperation, identifier, dest.to_short(), data)
     }
 
     #[logfn(Info)]
     pub fn build_cred_def_request(&self, identifier: &DidValue, cred_def: CredentialDefinitionV1) -> IndyResult<String> {
         let cred_def: CredentialDefinitionV1 = CredentialDefinitionV1 {
-            id: cred_def.id.unqualify(),
-            schema_id: cred_def.schema_id.unqualify(),
+            id: cred_def.id.disqualify(),
+            schema_id: cred_def.schema_id.disqualify(),
             signature_type: cred_def.signature_type,
             tag: cred_def.tag,
             value: cred_def.value,
@@ -140,20 +131,15 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_get_cred_def_request(&self, identifier: Option<&DidValue>, id: &CredentialDefinitionId) -> IndyResult<String> {
-        let id = id.unqualify();
+        let id = id.disqualify();
+        let (origin, signature_type, schema_id, tag) = id.parts()
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Credential Definition ID `{}` cannot be used to build request: invalid number of parts", id.0)))?;
 
-        let parts: Vec<&str> = id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
-
-        let origin = DidValue(parts[0].to_string()).to_short();
-        let signature_type = parts[2].to_string();
-
-        let ref_ = parts[3]
+        let ref_ = schema_id.0
             .parse::<i32>()
             .to_indy(IndyErrorKind::InvalidStructure, format!("Schema ID is invalid number in: {:?}", id))?;
 
-        let tag = parts.get(4).map(|val| val.to_string());
-
-        build_result!(GetCredDefOperation, identifier, ref_, signature_type, origin, tag)
+        build_result!(GetCredDefOperation, identifier, ref_, signature_type, origin.to_short(), Some(tag))
     }
 
     #[logfn(Info)]
@@ -202,34 +188,33 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_revoc_reg_def_request(&self, identifier: &DidValue, mut rev_reg_def: RevocationRegistryDefinitionV1) -> IndyResult<String> {
-        rev_reg_def.id = rev_reg_def.id.unqualify();
-        rev_reg_def.cred_def_id = rev_reg_def.cred_def_id.unqualify();
-
+        rev_reg_def.id = rev_reg_def.id.disqualify();
+        rev_reg_def.cred_def_id = rev_reg_def.cred_def_id.disqualify();
         build_result!(RevRegDefOperation, Some(identifier), rev_reg_def)
     }
 
     #[logfn(Info)]
     pub fn build_get_revoc_reg_def_request(&self, identifier: Option<&DidValue>, id: &RevocationRegistryId) -> IndyResult<String> {
-        let id = id.unqualify();
+        let id = id.disqualify();
         build_result!(GetRevRegDefOperation, identifier, &id)
     }
 
     #[logfn(Info)]
     pub fn build_revoc_reg_entry_request(&self, identifier: &DidValue, revoc_reg_def_id: &RevocationRegistryId,
                                          revoc_def_type: &str, rev_reg_entry: RevocationRegistryDeltaV1) -> IndyResult<String> {
-        let revoc_reg_def_id = revoc_reg_def_id.unqualify();
+        let revoc_reg_def_id = revoc_reg_def_id.disqualify();
         build_result!(RevRegEntryOperation, Some(identifier), revoc_def_type, &revoc_reg_def_id, rev_reg_entry)
     }
 
     #[logfn(Info)]
     pub fn build_get_revoc_reg_request(&self, identifier: Option<&DidValue>, revoc_reg_def_id: &RevocationRegistryId, timestamp: i64) -> IndyResult<String> {
-        let revoc_reg_def_id = revoc_reg_def_id.unqualify();
+        let revoc_reg_def_id = revoc_reg_def_id.disqualify();
         build_result!(GetRevRegOperation, identifier, &revoc_reg_def_id, timestamp)
     }
 
     #[logfn(Info)]
     pub fn build_get_revoc_reg_delta_request(&self, identifier: Option<&DidValue>, revoc_reg_def_id: &RevocationRegistryId, from: Option<i64>, to: i64) -> IndyResult<String> {
-        let revoc_reg_def_id = revoc_reg_def_id.unqualify();
+        let revoc_reg_def_id = revoc_reg_def_id.disqualify();
         build_result!(GetRevRegDeltaOperation, identifier, &revoc_reg_def_id, from, to)
     }
 

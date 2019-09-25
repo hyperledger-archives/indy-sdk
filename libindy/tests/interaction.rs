@@ -17,7 +17,7 @@ use utils::constants::*;
 use utils::Setup;
 
 use utils::domain::anoncreds::schema::Schema;
-use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
+use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential_offer::CredentialOffer;
 use utils::domain::anoncreds::credential::Credential;
 use utils::domain::anoncreds::credential::CredentialInfo;
@@ -900,7 +900,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
                "attr1_referent": json!({
                    "name":"name",
                    "restrictions": {
-                        "cred_def_id": CredentialDefinitionId(issuer.cred_def_id.clone()).unqualify()
+                        "cred_def_id": anoncreds::disqualify(&issuer.cred_def_id).unwrap(),
                    }
                })
            }),
@@ -938,6 +938,121 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
            }),
            "non_revoked": json!({ "to": to.clone() }),
            "ver": "2.0"
+        }).to_string();
+
+    let verifier = Verifier::new(&proof_request);
+
+    let proof_json = prover.make_proof(&pool, &proof_request, "attr1_referent", None, to);
+
+    // Verifier verifies revealed attribute
+    verifier.verify_revealed(&proof_json, "attr1_referent", "Alex");
+
+    let valid = verifier.verify(&pool, &proof_json);
+    assert!(valid);
+
+    issuer.close();
+    prover.close();
+
+    pool.close();
+}
+
+#[cfg(feature = "revocation_tests")]
+#[test]
+fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_issuer_unqualified_prover() {
+    let setup = Setup::empty();
+
+    let pool = Pool::new(&setup.name);
+
+    let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(format!("wallet_for_pool_{}", pool.pool_handle).borrow()).unwrap();
+    let mut issuer = Issuer {
+        // Issuer creates wallet, gets wallet handle
+        issuer_wallet_handle: wallet_handle,
+
+        // Issuer create DID
+        issuer_wallet_config: wallet_config,
+        issuer_did: did::create_store_and_publish_my_did_from_trustee_v1(wallet_handle, pool.pool_handle).unwrap().0,
+
+        schema_id: String::new(),
+        rev_reg_id: String::new(),
+        cred_def_id: String::new(),
+
+        issuance_type: String::new(),
+        tails_writer_config: anoncreds::tails_writer_config(),
+    };
+
+    // Prover creates wallet, gets wallet handle
+    let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("interactions_prover").unwrap();
+    // Prover create DID
+    let (prover_did, prover_verkey) = did::create_my_did(prover_wallet_handle, "{}").unwrap();
+    // Prover creates Master Secret
+    let master_secret_id = COMMON_MASTER_SECRET;
+    anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+    let mut prover = Prover {
+        wallet_handle: prover_wallet_handle,
+        wallet_config: prover_wallet_config,
+        did: prover_did.clone(),
+        verkey: prover_verkey.clone(),
+        master_secret_id: String::from(master_secret_id),
+        cred_def_id: None,
+        cred_req_metadata_json: None,
+    };
+
+    // Issuer publish Prover DID
+    pool.submit_nym(&issuer.issuer_did, issuer.issuer_wallet_handle, &prover.did, Some(&prover.verkey));
+
+
+    // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
+    issuer.create_initial_ledger_state(&pool, r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#);
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Issuance Credential for Prover
+
+    // Issuer creates Credential Offer
+    let cred_offer_json = issuer.make_credential_offer();
+
+    // Issuer disqualifies Credential Offer
+    let cred_offer_json = anoncreds::disqualify(&cred_offer_json).unwrap();
+
+    // Prover makes credential request
+    let cred_req_json = prover.make_credential_request(&pool, &cred_offer_json);
+
+    // Issuer issues credential
+    let (cred_json, _, _) = issuer.issue_credential(&pool, &cred_offer_json, &cred_req_json, &anoncreds::gvt_credential_values_json());
+
+    // Prover stores credentials
+    prover.store_credentials(&pool, &cred_json, CREDENTIAL1_ID);
+
+
+    // Basic check
+    let credentials = anoncreds::prover_get_credentials(prover.wallet_handle, &json!({"schema_name": GVT_SCHEMA_NAME}).to_string()).unwrap();
+    let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials).unwrap();
+    assert_eq!(credentials.len(), 1);
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    // Verifying Prover's Credential
+    thread::sleep(std::time::Duration::from_secs(1));
+
+    let to = time::get_time().sec as u64;
+
+    // Verify proof in a short identifiers
+    let proof_request = json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": json!({
+               "attr1_referent": json!({
+                   "name":"name",
+                   "restrictions": {
+                        "cred_def_id": anoncreds::disqualify(&issuer.cred_def_id).unwrap()
+                   }
+               })
+           }),
+           "requested_predicates": json!({
+               "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18 })
+           }),
+           "non_revoked": json!({ "to": to.clone() })
         }).to_string();
 
     let verifier = Verifier::new(&proof_request);

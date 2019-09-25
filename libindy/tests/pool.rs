@@ -51,8 +51,6 @@ mod high_cases {
         fn open_pool_ledger_works() {
             let setup = Setup::empty();
 
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
@@ -64,8 +62,6 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_config() {
             let setup = Setup::empty();
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let config = r#"{"timeout": 20}"#;
 
@@ -81,8 +77,6 @@ mod high_cases {
         fn open_pool_ledger_works_for_two_nodes() {
             let setup = Setup::empty();
 
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(2), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
@@ -95,8 +89,6 @@ mod high_cases {
         fn open_pool_ledger_works_for_three_nodes() {
             let setup = Setup::empty();
 
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, Some(3), None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
@@ -108,8 +100,6 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         pub fn open_pool_ledger_works_for_cached_txns() {
             let setup = Setup::empty();
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
@@ -180,6 +170,7 @@ mod high_cases {
         #[test]
         fn indy_set_protocol_version_works() {
             pool::set_protocol_version(1).unwrap();
+            pool::set_protocol_version(2).unwrap();
         }
     }
 }
@@ -269,8 +260,6 @@ mod medium_cases {
         pub fn open_pool_ledger_works_for_corrupted_cached_txns() {
             let setup = Setup::empty();
 
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
@@ -306,8 +295,6 @@ mod medium_cases {
         fn open_pool_ledger_works_for_invalid_nodes_file() {
             let setup = Setup::empty();
 
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool_with_invalid_nodes(&setup.name, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
@@ -320,8 +307,6 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_wrong_alias() {
             let setup = Setup::empty();
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool_with_wrong_alias(&setup.name, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
@@ -337,8 +322,6 @@ mod medium_cases {
             let setup = Setup::empty();
 
             let config = r#"{"timeout": "true"}"#;
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool(&setup.name, None, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
@@ -361,14 +344,15 @@ mod medium_cases {
 
             let res = pool::open_pool_ledger(&setup.name, None);
             assert_code!(ErrorCode::PoolIncompatibleProtocolVersion, res);
+
+            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_wrong_ips() {
             let setup = Setup::empty();
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let txn_file_path = pool::create_genesis_txn_file_for_test_pool_with_wrong_ips(&setup.name, None);
             let pool_config = pool::pool_config_json(txn_file_path.as_path());
@@ -382,8 +366,6 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_config_read_nodes_count() {
             let setup = Setup::empty();
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let config = json!({"read_nodes_count": 3}).to_string();
 

@@ -1,18 +1,14 @@
 use regex::Regex;
 
 lazy_static! {
-    pub static ref REGEX: Regex = Regex::new("^[a-z0-9]+:([a-z0-9]+):([a-zA-Z0-9:.-_]*)").unwrap();
+    pub static ref REGEX: Regex = Regex::new("^[a-z0-9]+:([a-z0-9]+):([a-zA-Z0-9:.-_]*)$").unwrap();
 }
 
 pub fn qualify(entity: &str, prefix: &str, method: &str) -> String {
-    if is_fully_qualified(entity) {
-        entity.to_string()
-    } else {
-        format!("{}:{}:{}", prefix, method, entity)
-    }
+    format!("{}:{}:{}", prefix, method, entity)
 }
 
-pub fn unqualify(entity: &str) -> String {
+pub fn disqualify(entity: &str) -> String {
     match REGEX.captures(entity) {
         None => entity.to_string(),
         Some(caps) => {
@@ -40,19 +36,14 @@ macro_rules! qualifiable_type (($newtype:ident) => (
     pub struct $newtype(pub String);
 
     impl $newtype {
-        #[allow(dead_code)]
-        pub fn qualify(&self, method: &str) -> $newtype {
-            $newtype(qualifier::qualify(&self.0, $newtype::PREFIX, &method))
-        }
 
         #[allow(dead_code)]
-        pub fn unqualify(&self) -> $newtype {
-            $newtype(qualifier::unqualify(&self.0))
-        }
-
-        #[allow(dead_code)]
-        pub fn method(&self) -> Option<String> {
+        pub fn get_method(&self) -> Option<String> {
             qualifier::method(&self.0)
+        }
+        #[allow(dead_code)]
+        pub fn set_method(&self, method: &str) -> $newtype {
+            $newtype(qualifier::qualify(&self.0, $newtype::PREFIX, &method))
         }
 
         #[allow(dead_code)]

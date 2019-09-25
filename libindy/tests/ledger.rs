@@ -17,9 +17,9 @@ use self::rand::distributions::Alphanumeric;
 
 use utils::domain::ledger::constants;
 use utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
-use utils::domain::anoncreds::schema::{SchemaV1, SchemaId};
+use utils::domain::anoncreds::schema::SchemaV1;
 use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
-use utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
+use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
 use utils::domain::crypto::did::DidValue;
@@ -598,7 +598,7 @@ mod high_cases {
                 },
             });
 
-            let request = ledger::build_get_schema_request(Some(IDENTIFIER_V1), &SchemaId(anoncreds::gvt_schema_id()).qualify(DEFAULT_METHOD_NAME).0).unwrap();
+            let request = ledger::build_get_schema_request(Some(IDENTIFIER_V1), &anoncreds::gvt_schema_id_fully_qualified()).unwrap();
             check_request(&request, expected_result, IDENTIFIER);
         }
 
@@ -690,11 +690,9 @@ mod high_cases {
 
         #[test]
         fn indy_build_cred_def_request_works_for_correct_data_json() {
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
             let cred_def_json = json!({
                "ver":"1.0",
-               "id": CRED_DEF_ID,
+               "id": anoncreds::gvt_cred_def_id(),
                "schemaId": "1",
                "type":"CL",
                "tag":"TAG_1",
@@ -731,8 +729,6 @@ mod high_cases {
 
         #[test]
         fn indy_build_get_cred_def_request_works() {
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
             let expected_result = json!({
                 "type": constants::GET_CRED_DEF,
                 "ref": SEQ_NO,
@@ -748,25 +744,19 @@ mod high_cases {
 
         #[test]
         fn indy_build_get_cred_def_request_works_for_fully_qualified() {
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
             let expected_result = json!({
                 "type": constants::GET_CRED_DEF,
                 "ref": SEQ_NO,
                 "signature_type": SIGNATURE_TYPE,
-                "origin": IDENTIFIER,
+                "origin": ISSUER_DID,
                 "tag": TAG_1
             });
-
-            let id = anoncreds::cred_def_id(IDENTIFIER_V1, &SEQ_NO.to_string(), SIGNATURE_TYPE, TAG_1);
-            let request = ledger::build_get_cred_def_request(Some(IDENTIFIER_V1), &id).unwrap();
+            let request = ledger::build_get_cred_def_request(Some(IDENTIFIER_V1), &anoncreds::gvt_cred_def_id_fully_qualified()).unwrap();
             check_request_operation(&request, expected_result);
         }
 
         #[test]
         fn indy_build_get_cred_def_request_works_for_default_submitter_did() {
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
-
             let id = anoncreds::cred_def_id(IDENTIFIER, &SEQ_NO.to_string(), SIGNATURE_TYPE, TAG_1);
             let request = ledger::build_get_cred_def_request(None, &id).unwrap();
             check_default_identifier(&request);
@@ -1134,10 +1124,10 @@ mod high_cases {
         fn indy_build_revoc_reg_def_request() {
             let data = json!({
                 "ver": "1.0",
-                "id": REV_REG_ID,
+                "id": anoncreds::gvt_rev_reg_id(),
                 "revocDefType": REVOC_REG_TYPE,
                 "tag": TAG_1,
-                "credDefId": CRED_DEF_ID,
+                "credDefId": anoncreds::gvt_cred_def_id(),
                 "value": {
                     "issuanceType":"ISSUANCE_ON_DEMAND",
                     "maxCredNum":5,
@@ -1152,8 +1142,8 @@ mod high_cases {
             }).to_string();
 
             let expected_result = json!({
-                "id":REV_REG_ID,
-                "credDefId": CRED_DEF_ID,
+                "id":anoncreds::gvt_rev_reg_id(),
+                "credDefId": anoncreds::gvt_cred_def_id(),
                 "revocDefType":"CL_ACCUM",
                 "tag":"TAG_1",
                 "type":"113",
@@ -1179,10 +1169,10 @@ mod high_cases {
         fn indy_build_get_revoc_reg_def_request() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG_DEF,
-                "id": REV_REG_ID
+                "id": anoncreds::gvt_rev_reg_id()
             });
 
-            let request = ledger::build_get_revoc_reg_def_request(Some(DID), REV_REG_ID).unwrap();
+            let request = ledger::build_get_revoc_reg_def_request(Some(DID), &anoncreds::gvt_rev_reg_id()).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -1191,17 +1181,17 @@ mod high_cases {
         fn indy_build_get_revoc_reg_def_request_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG_DEF,
-                "id": REV_REG_ID
+                "id": anoncreds::gvt_rev_reg_id()
             });
 
-            let request = ledger::build_get_revoc_reg_def_request(Some(DID_V1), &RevocationRegistryId(REV_REG_ID.to_string()).qualify(DEFAULT_METHOD_NAME).0).unwrap();
+            let request = ledger::build_get_revoc_reg_def_request(Some(DID_V1), &anoncreds::gvt_rev_reg_id_fully_qualified()).unwrap();
             check_request_operation(&request, expected_result);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_def_request_for_default_submitter_did() {
-            let request = ledger::build_get_revoc_reg_def_request(None, REV_REG_ID).unwrap();
+            let request = ledger::build_get_revoc_reg_def_request(None, &anoncreds::gvt_rev_reg_id()).unwrap();
             check_default_identifier(&request);
         }
 
@@ -1227,7 +1217,7 @@ mod high_cases {
         fn indy_build_revoc_reg_entry_request() {
             let expected_result = json!({
                 "type": constants::REVOC_REG_ENTRY,
-                "revocRegDefId": REV_REG_ID,
+                "revocRegDefId": anoncreds::gvt_rev_reg_id(),
                 "revocDefType": "CL_ACCUM",
                 "value": {
                     "accum": "1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"
@@ -1236,7 +1226,7 @@ mod high_cases {
 
             let rev_reg_entry_value = r#"{"value":{"accum":"1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000"}, "ver":"1.0"}"#;
 
-            let request = ledger::build_revoc_reg_entry_request(DID, REV_REG_ID, REVOC_REG_TYPE, rev_reg_entry_value).unwrap();
+            let request = ledger::build_revoc_reg_entry_request(DID, &anoncreds::gvt_rev_reg_id(), REVOC_REG_TYPE, rev_reg_entry_value).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -1255,11 +1245,11 @@ mod high_cases {
         fn indy_build_get_revoc_reg_request() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG,
-                "revocRegDefId": REV_REG_ID,
+                "revocRegDefId": anoncreds::gvt_rev_reg_id(),
                 "timestamp": 100
             });
 
-            let request = ledger::build_get_revoc_reg_request(Some(DID), REV_REG_ID, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_request(Some(DID), &anoncreds::gvt_rev_reg_id(), 100).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -1268,18 +1258,18 @@ mod high_cases {
         fn indy_build_get_revoc_reg_request_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG,
-                "revocRegDefId": REV_REG_ID,
+                "revocRegDefId": anoncreds::gvt_rev_reg_id(),
                 "timestamp": 100
             });
 
-            let request = ledger::build_get_revoc_reg_request(Some(DID_V1), &RevocationRegistryId(REV_REG_ID.to_string()).qualify(DEFAULT_METHOD_NAME).0, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_request(Some(DID_V1), &anoncreds::gvt_rev_reg_id_fully_qualified(), 100).unwrap();
             check_request(&request, expected_result, DID);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_request_for_default_submitter_did() {
-            let request = ledger::build_get_revoc_reg_request(None, REV_REG_ID, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_request(None, &anoncreds::gvt_rev_reg_id(), 100).unwrap();
             check_default_identifier(&request);
         }
 
@@ -1308,11 +1298,11 @@ mod high_cases {
         fn indy_build_get_revoc_reg_delta_request() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG_DELTA,
-                "revocRegDefId": REV_REG_ID,
+                "revocRegDefId": anoncreds::gvt_rev_reg_id(),
                 "to": 100
             });
 
-            let request = ledger::build_get_revoc_reg_delta_request(Some(DID), REV_REG_ID, None, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_delta_request(Some(DID), &anoncreds::gvt_rev_reg_id(), None, 100).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -1321,18 +1311,18 @@ mod high_cases {
         fn indy_build_get_revoc_reg_delta_request_for_fully_qualified() {
             let expected_result = json!({
                 "type": constants::GET_REVOC_REG_DELTA,
-                "revocRegDefId": REV_REG_ID,
+                "revocRegDefId": anoncreds::gvt_rev_reg_id(),
                 "to": 100
             });
 
-            let request = ledger::build_get_revoc_reg_delta_request(Some(DID_V1), &RevocationRegistryId(REV_REG_ID.to_string()).qualify(DEFAULT_METHOD_NAME).0, None, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_delta_request(Some(DID_V1), &anoncreds::gvt_rev_reg_id_fully_qualified(), None, 100).unwrap();
             check_request_operation(&request, expected_result);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_delta_request_for_default_submitter_did() {
-            let request = ledger::build_get_revoc_reg_delta_request(None, REV_REG_ID, None, 100).unwrap();
+            let request = ledger::build_get_revoc_reg_delta_request(None, &anoncreds::gvt_rev_reg_id(), None, 100).unwrap();
             check_default_identifier(&request);
         }
 

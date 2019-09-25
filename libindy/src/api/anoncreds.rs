@@ -2375,3 +2375,52 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
     res
 }
 
+/// Get unqualified form of fully qualified entity.
+///
+/// This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+///     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+///     Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+///     another case when casting to unqualified form needed
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// entity: string - one of
+///             Did
+///             SchemaId
+///             CredentialDefinitionId
+///             RevocationRegistryId
+///             CredentialOffer
+///
+/// #Returns
+///   res: unqualified form of entity.
+#[no_mangle]
+pub  extern fn indy_disqualify(command_handle: CommandHandle,
+                               entity: *const c_char,
+                               cb: Option<extern fn(command_handle_: CommandHandle,
+                                                    err: ErrorCode,
+                                                    res: *const c_char)>) -> ErrorCode {
+    trace!("indy_disqualify_identifier: >>> entity: {:?}", entity);
+
+    check_useful_c_str!(entity, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_disqualify_identifier: entities >>> entity: {:?}", entity);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(AnoncredsCommand::Disqualify(
+            entity,
+            Box::new(move |result| {
+                let (err, res) = prepare_result_1!(result, String::new());
+                trace!("indy_disqualify_identifier: did: {:?}", res);
+                let res = ctypes::string_to_cstring(res);
+                cb(command_handle, err, res.as_ptr())
+            }),
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_disqualify_identifier: <<< res: {:?}", res);
+
+    res
+}
+

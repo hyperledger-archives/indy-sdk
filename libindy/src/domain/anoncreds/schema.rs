@@ -8,7 +8,6 @@ use named_type::NamedType;
 use utils::validation::Validatable;
 use utils::qualifier;
 
-pub const SCHEMA_MARKER: &str = "2";
 pub const MAX_ATTRIBUTES_COUNT: usize = 125;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -74,49 +73,179 @@ qualifiable_type!(SchemaId);
 
 impl SchemaId {
     pub const PREFIX: &'static str = "schema";
+    pub const MARKER: &'static str = "2";
 
     pub fn new(did: &DidValue, name: &str, version: &str) -> SchemaId {
-        let id = SchemaId(format!("{}{}{}{}{}{}{}", did.unqualify().0, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version));
-        match did.method() {
-            Some(method) => id.qualify(&method),
+        let id = SchemaId(format!("{}{}{}{}{}{}{}", did.0, DELIMITER, Self::MARKER, DELIMITER, name, DELIMITER, version));
+        match did.get_method() {
+            Some(method) => id.set_method(&method),
             None => id
         }
     }
 
-    pub fn parts(&self) -> (DidValue, String, String) {
+    pub fn parts(&self) -> Option<(DidValue, String, String)> {
         let parts = self.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
 
-        let (schema_issuer_did, schema_name, schema_version) = if self.is_fully_qualified() {
-            (DidValue::new(parts[2], Some(parts[1])),
-             parts[4].to_string(),
-             parts[5].to_string())
-        } else {
-            (DidValue::new(parts[0], None), parts[2].to_string(), parts[3].to_string())
-        };
-        (schema_issuer_did, schema_name, schema_version)
+        if parts.len() == 1 {
+            // 1
+            return None;
+        }
+
+        if parts.len() == 4 {
+            // NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0
+            let did = parts[0].to_string();
+            let name = parts[2].to_string();
+            let version = parts[3].to_string();
+            return Some((DidValue(did), name, version));
+        }
+
+        if parts.len() == 8 {
+            // schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0
+            let did = parts[2..5].join(DELIMITER);
+            let name = parts[6].to_string();
+            let version = parts[7].to_string();
+            return Some((DidValue(did), name, version));
+        }
+
+        None
+    }
+
+    pub fn qualify(&self, method: &str) -> SchemaId {
+        match self.parts() {
+            Some((did, name, version)) => {
+                SchemaId::new(&did.qualify(method), &name, &version)
+            }
+            None => self.clone()
+        }
+    }
+
+    pub fn disqualify(&self) -> SchemaId {
+        match self.parts() {
+            Some((did, name, version)) => {
+                SchemaId::new(&did.disqualify(), &name, &version)
+            }
+            None => self.clone()
+        }
     }
 }
 
 impl Validatable for SchemaId {
     fn validate(&self) -> Result<(), String> {
-        let schema_id = self.unqualify();
-
-        let parts: Vec<&str> = schema_id.0.split_terminator(DELIMITER).collect::<Vec<&str>>();
-
-        if parts.len() == 1 {
-            parts[0]
-                .parse::<i32>()
-                .map_err(|_| format!("SchemaId validation failed: invalid number"))?;
-        } else if parts.len() == 4 {
-            // pass
-        } else if parts.len() == 6 {
-            if !self.is_fully_qualified() {
-                return Err("SchemaId validation failed: must be fully qualified".to_string());
-            }
-        } else {
-            return Err("SchemaId validation failed: invalid number of parts".to_string());
+        if self.0.parse::<i32>().is_ok() {
+            return Ok(());
         }
 
+        self.parts().ok_or(format!("SchemaId validation failed: {:?}, doesn't match pattern", self.0))?;
+
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn _did() -> DidValue {
+        DidValue("NcYxiDXkpYi6ov5FcYDi1e".to_string())
+    }
+
+    fn _did_qualified() -> DidValue {
+        DidValue("did:sov:NcYxiDXkpYi6ov5FcYDi1e".to_string())
+    }
+
+    fn _schema_id_seq_no() -> SchemaId {
+        SchemaId("1".to_string())
+    }
+
+    fn _schema_id_unqualified() -> SchemaId {
+        SchemaId("NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0".to_string())
+    }
+
+    fn _schema_id_qualified() -> SchemaId {
+        SchemaId("schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0".to_string())
+    }
+
+    fn _schema_id_invalid() -> SchemaId {
+        SchemaId("NcYxiDXkpYi6ov5FcYDi1e:2".to_string())
+    }
+
+    mod disqualify {
+        use super::*;
+
+        #[test]
+        fn test_schema_id_unqualify_for_id_as_seq_no() {
+            assert_eq!(_schema_id_seq_no(), _schema_id_seq_no().disqualify());
+        }
+
+        #[test]
+        fn test_schema_id_parts_for_id_as_unqualified() {
+            assert_eq!(_schema_id_unqualified(), _schema_id_unqualified().disqualify());
+        }
+
+        #[test]
+        fn test_schema_id_parts_for_id_as_qualified() {
+            assert_eq!(_schema_id_unqualified(), _schema_id_qualified().disqualify());
+        }
+
+        #[test]
+        fn test_schema_id_parts_for_invalid_unqualified() {
+            assert_eq!(_schema_id_invalid(), _schema_id_invalid().disqualify());
+        }
+    }
+
+    mod parts {
+        use super::*;
+
+        #[test]
+        fn test_schema_id_parts_for_id_as_seq_no() {
+            assert!(_schema_id_seq_no().parts().is_none());
+        }
+
+        #[test]
+        fn test_schema_id_parts_for_id_as_unqualified() {
+            let (did, _, _) = _schema_id_unqualified().parts().unwrap();
+            assert_eq!(_did(), did);
+        }
+
+        #[test]
+        fn test_schema_id_parts_for_id_as_qualified() {
+            let (did, _, _) = _schema_id_qualified().parts().unwrap();
+            assert_eq!(_did_qualified(), did);
+        }
+
+        #[test]
+        fn test_schema_id_parts_for_invalid_unqualified() {
+            assert!(_schema_id_invalid().parts().is_none());
+        }
+    }
+
+    mod validate {
+        use super::*;
+
+        #[test]
+        fn test_validate_schema_id_as_seq_no() {
+            _schema_id_seq_no().validate().unwrap();
+        }
+
+        #[test]
+        fn test_validate_schema_id_as_unqualified() {
+            _schema_id_unqualified().validate().unwrap();
+        }
+
+        #[test]
+        fn test_validate_schema_id_as_fully_qualified() {
+            _schema_id_qualified().validate().unwrap();
+        }
+
+        #[test]
+        fn test_validate_schema_id_for_invalid_unqualified() {
+            _schema_id_invalid().validate().unwrap_err();
+        }
+
+        #[test]
+        fn test_validate_schema_id_for_invalid_fully_qualified() {
+            let id = SchemaId("schema:sov:NcYxiDXkpYi6ov5FcYDi1e:2:1.0".to_string());
+            id.validate().unwrap_err();
+        }
     }
 }

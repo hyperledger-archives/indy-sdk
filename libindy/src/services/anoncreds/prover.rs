@@ -166,9 +166,9 @@ impl Prover {
             let identifier = match proof_req {
                 ProofRequest::ProofRequestV1(_) => {
                     Identifier {
-                        schema_id: credential.schema_id.unqualify(),
-                        cred_def_id: credential.cred_def_id.unqualify(),
-                        rev_reg_id: credential.rev_reg_id.as_ref().map(|id| id.unqualify()),
+                        schema_id: credential.schema_id.disqualify(),
+                        cred_def_id: credential.cred_def_id.disqualify(),
+                        rev_reg_id: credential.rev_reg_id.as_ref().map(|id| id.disqualify()),
                         timestamp: cred_key.timestamp,
                     }
                 }
@@ -273,27 +273,31 @@ impl Prover {
         res
     }
 
-    pub fn build_credential_tags(&self, credential: &Credential, catpol: Option<&CredentialAttrTagPolicy>) -> HashMap<String, String> {
+    pub fn build_credential_tags(&self, credential: &Credential, catpol: Option<&CredentialAttrTagPolicy>) -> IndyResult<HashMap<String, String>> {
         trace!("build_credential_tags >>> credential: {:?}, catpol: {:?}", credential, catpol);
 
         let mut res: HashMap<String, String> = HashMap::new();
 
-        let (schema_issuer_did, schema_name, schema_version) = credential.schema_id.parts();
+        let (schema_issuer_did, schema_name, schema_version) = credential.schema_id.parts()
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Invalid Schema ID `{}`: wrong number of parts", credential.schema_id.0)))?;
+
+        let issuer_did = credential.cred_def_id.issuer_did()
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Invalid Credential Definition ID `{}`: wrong number of parts", credential.cred_def_id.0)))?;
 
         res.insert("schema_id".to_string(), credential.schema_id.0.to_string());
         res.insert("schema_issuer_did".to_string(), schema_issuer_did.0.to_string());
         res.insert("schema_name".to_string(), schema_name);
         res.insert("schema_version".to_string(), schema_version);
-        res.insert("issuer_did".to_string(), credential.cred_def_id.issuer_did().0);
+        res.insert("issuer_did".to_string(), issuer_did.0.to_string());
         res.insert("cred_def_id".to_string(), credential.cred_def_id.0.to_string());
         res.insert("rev_reg_id".to_string(), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.0.clone()).unwrap_or_else(|| "None".to_string()));
 
         if credential.cred_def_id.is_fully_qualified() {
-            res.insert(Credential::add_extra_tag_suffix("schema_id"), credential.schema_id.unqualify().0);
-            res.insert(Credential::add_extra_tag_suffix("schema_issuer_did"), schema_issuer_did.to_short().0);
-            res.insert(Credential::add_extra_tag_suffix("issuer_did"), credential.cred_def_id.issuer_did().to_short().0);
-            res.insert(Credential::add_extra_tag_suffix("cred_def_id"), credential.cred_def_id.unqualify().0);
-            res.insert(Credential::add_extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.unqualify().0.clone()).unwrap_or_else(|| "None".to_string()));
+            res.insert(Credential::add_extra_tag_suffix("schema_id"), credential.schema_id.disqualify().0);
+            res.insert(Credential::add_extra_tag_suffix("schema_issuer_did"), schema_issuer_did.disqualify().0);
+            res.insert(Credential::add_extra_tag_suffix("issuer_did"), issuer_did.disqualify().0);
+            res.insert(Credential::add_extra_tag_suffix("cred_def_id"), credential.cred_def_id.disqualify().0);
+            res.insert(Credential::add_extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.disqualify().0.clone()).unwrap_or_else(|| "None".to_string()));
         }
 
         credential.values
@@ -308,7 +312,7 @@ impl Prover {
 
         trace!("build_credential_tags <<< res: {:?}", res);
 
-        res
+        Ok(res)
     }
 
     pub fn attribute_satisfy_predicate(&self,
@@ -494,8 +498,8 @@ mod tests {
     const SCHEMA_NAME: &str = "gvt";
     const SCHEMA_VERSION: &str = "1.0";
     const ISSUER_DID: &str = "NcYxiDXkpYi6ov5FcYDi1e";
-    const CRED_DEF_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
-    const REV_REG_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:4:did:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:CL_ACCUM:TAG_1";
+    const CRED_DEF_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag";
+    const REV_REG_ID: &str = "NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag:CL_ACCUM:TAG_1";
     const NO_REV_REG_ID: &str = "None";
 
     macro_rules! hashmap {
@@ -536,7 +540,7 @@ mod tests {
         #[test]
         fn build_credential_tags_works() {
             let ps = Prover::new();
-            let tags = ps.build_credential_tags(&_credential(), None);
+            let tags = ps.build_credential_tags(&_credential(), None).unwrap();
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -559,7 +563,7 @@ mod tests {
         fn build_credential_tags_works_for_catpol() {
             let ps = Prover::new();
             let catpol = CredentialAttrTagPolicy::from(vec!(String::from("name")));
-            let tags = ps.build_credential_tags(&_credential(), Some(catpol).as_ref());
+            let tags = ps.build_credential_tags(&_credential(), Some(catpol).as_ref()).unwrap();
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -581,7 +585,7 @@ mod tests {
             let ps = Prover::new();
             let mut credential = _credential();
             credential.rev_reg_id = Some(RevocationRegistryId(REV_REG_ID.to_string()));
-            let tags = ps.build_credential_tags(&credential, None);
+            let tags = ps.build_credential_tags(&credential, None).unwrap();
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => SCHEMA_ID.to_string(),
@@ -604,17 +608,17 @@ mod tests {
         fn build_credential_tags_works_for_fully_qualified_ids() {
             let ps = Prover::new();
 
-            let schema_id = "schema:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+            let schema_id = "schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
             let issuer_did = "did:sov:NcYxiDXkpYi6ov5FcYDi1e";
-            let cred_def_id = "creddef:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
-            let rev_reg_id = "None";
+            let cred_def_id = "creddef:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag";
+            let rev_reg_id = "revreg:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:4:creddef:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag:CL_ACCUM:TAG_1";
 
             let mut credential = _credential();
             credential.schema_id = SchemaId(schema_id.to_string());
             credential.cred_def_id = CredentialDefinitionId(cred_def_id.to_string());
             credential.rev_reg_id = Some(RevocationRegistryId(rev_reg_id.to_string()));
 
-            let tags = ps.build_credential_tags(&credential, None);
+            let tags = ps.build_credential_tags(&credential, None).unwrap();
 
             let expected_tags: HashMap<String, String> = hashmap!(
                     "schema_id".to_string() => schema_id.to_string(),
@@ -628,7 +632,7 @@ mod tests {
                     "cred_def_id".to_string() => cred_def_id.to_string(),
                     "cred_def_id_short".to_string() => CRED_DEF_ID.to_string(),
                     "rev_reg_id".to_string() => rev_reg_id.to_string(),
-                    "rev_reg_id_short".to_string() => rev_reg_id.to_string(),
+                    "rev_reg_id_short".to_string() => REV_REG_ID.to_string(),
                     "attr::name::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),
                     "attr::name::value".to_string() => "Alex".to_string(),
                     "attr::age::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),

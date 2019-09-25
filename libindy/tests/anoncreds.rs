@@ -41,7 +41,7 @@ mod high_cases {
                                                                  GVT_SCHEMA_NAME,
                                                                  SCHEMA_VERSION,
                                                                  GVT_SCHEMA_ATTRIBUTES).unwrap();
-            assert_eq!(SchemaId(anoncreds::gvt_schema_id()).qualify(DEFAULT_METHOD_NAME).0, schema_id);
+            assert_eq!(SchemaId(anoncreds::gvt_schema_id_fully_qualified()).0, schema_id);
         }
     }
 

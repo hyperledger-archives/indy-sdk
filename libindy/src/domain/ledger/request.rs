@@ -11,7 +11,7 @@ pub const DEFAULT_LIBIDY_DID: &str = "LibindyDid111111111111";
 pub struct ProtocolVersion {}
 
 lazy_static! {
-    pub static ref PROTOCOL_VERSION: AtomicUsize = AtomicUsize::new(1);
+    pub static ref PROTOCOL_VERSION: AtomicUsize = AtomicUsize::new(2);
 }
 
 impl ProtocolVersion {

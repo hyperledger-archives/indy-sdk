@@ -336,15 +336,12 @@ impl IssuerCommandExecutor {
                                                        tag: &str,
                                                        type_: Option<&str>,
                                                        config: Option<&CredentialDefinitionConfig>) -> IndyResult<(CredentialDefinitionConfig, SchemaId, CredentialDefinitionId, SignatureType)> {
-        match (issuer_did.method(), schema.id.method()) {
+        match (issuer_did.get_method(), schema.id.get_method()) {
             (None, Some(_)) => {
                 return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use unqualified Did with fully qualified Schema"));
             }
             (Some(prefix_), None) => {
-                schema.id = schema.id.qualify(&prefix_)
-            }
-            (Some(ref issuer_prefix), Some(ref schema_prefix)) if issuer_prefix != schema_prefix => {
-                return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use fully qualified Did and Schema with different methods"));
+                schema.id = schema.id.qualify(&prefix_);
             }
             _ => {}
         };
@@ -554,15 +551,12 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, type_: {:?}, tag: {:?}, cred_def_id: {:?}, config: {:?}, \
                tails_handle: {:?}", wallet_handle, issuer_did, type_, tag, cred_def_id, config, tails_writer_handle);
 
-        match (issuer_did.method(), cred_def_id.method()) {
+        match (issuer_did.get_method(), cred_def_id.get_method()) {
             (None, Some(_)) => {
                 return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use unqualified Did with fully qualified Credential Definition"));
             }
             (Some(_), None) => {
                 return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use fully qualified Did with unqualified Credential Definition"));
-            }
-            (Some(ref issuer_prefix), Some(ref cred_def_id_prefix)) if issuer_prefix != cred_def_id_prefix => {
-                return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use fully qualified Did and Credential Definition with different methods"));
             }
             _ => {}
         };
@@ -577,7 +571,7 @@ impl IssuerCommandExecutor {
         let issuance_type = config.issuance_type.clone().unwrap_or(IssuanceType::ISSUANCE_ON_DEMAND);
         let max_cred_num = config.max_cred_num.unwrap_or(100000);
 
-        let rev_reg_id = RevocationRegistryId::new(&issuer_did, &cred_def_id, &rev_reg_type, tag);
+        let rev_reg_id = RevocationRegistryId::new(&issuer_did, &cred_def_id, &rev_reg_type.to_str(), tag);
 
         if let (Ok(rev_reg_def), Ok(rev_reg)) = (self.wallet_service.get_indy_record_value::<RevocationRegistryDefinition>(wallet_handle, &rev_reg_id.0, &RecordOptions::id_value()),
                                                  self.wallet_service.get_indy_record_value::<RevocationRegistry>(wallet_handle, &rev_reg_id.0, &RecordOptions::id_value())) {
@@ -661,6 +655,7 @@ impl IssuerCommandExecutor {
             cred_def_id: cred_def_id.clone(),
             key_correctness_proof: cred_def_correctness_proof.value,
             nonce,
+            method_name: None,
         };
 
         let credential_offer_json = serde_json::to_string(&credential_offer)
@@ -681,14 +676,17 @@ impl IssuerCommandExecutor {
         debug!("new_credential >>> wallet_handle: {:?}, cred_offer: {:?}, cred_req: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, blob_storage_reader_handle: {:?}",
                wallet_handle, secret!(&cred_offer), secret!(&cred_request), secret!(&cred_values), rev_reg_id, blob_storage_reader_handle);
 
+        let cred_def_id = match cred_offer.method_name {
+            Some(ref method_name) => cred_offer.cred_def_id.qualify(method_name),
+            None => cred_offer.cred_def_id.clone()
+        };
+
         let cred_def: CredentialDefinitionV1 =
             CredentialDefinitionV1::from(
-                self.wallet_service.get_indy_object::<CredentialDefinition>(wallet_handle, &cred_offer.cred_def_id.0, &RecordOptions::id_value())?);
+                self.wallet_service.get_indy_object::<CredentialDefinition>(wallet_handle, &cred_def_id.0, &RecordOptions::id_value())?);
 
         let cred_def_priv_key: CredentialDefinitionPrivateKey =
-            self.wallet_service.get_indy_object(wallet_handle, &cred_request.cred_def_id.0, &RecordOptions::id_value())?;
-
-        let schema_id = self._wallet_get_schema_id(wallet_handle, &cred_offer.cred_def_id.0)?;  // TODO: FIXME get CredDef from wallet and use CredDef.schema_id
+            self.wallet_service.get_indy_object(wallet_handle, &cred_def_id.0, &RecordOptions::id_value())?;
 
         let (rev_reg_def, mut rev_reg,
             rev_reg_def_priv, sdk_tails_accessor, rev_reg_info) = match rev_reg_id {
@@ -757,10 +755,15 @@ impl IssuerCommandExecutor {
                 None
             };
 
+        let cred_rev_reg_id = match (rev_reg_id, cred_offer.method_name.as_ref()) {
+            (Some(rev_reg_id), Some(ref _method_name)) => Some(rev_reg_id.disqualify()),
+            (rev_reg_id, _) => rev_reg_id.cloned()
+        };
+
         let credential = Credential {
-            schema_id,
-            cred_def_id: cred_request.cred_def_id.clone(),
-            rev_reg_id: rev_reg_id.cloned(),
+            schema_id: cred_offer.schema_id.clone(),
+            cred_def_id: cred_offer.cred_def_id.clone(),
+            rev_reg_id: cred_rev_reg_id,
             values: cred_values.clone(),
             signature: credential_signature,
             signature_correctness_proof,

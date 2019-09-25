@@ -85,14 +85,22 @@ impl DidValue {
     }
 
     pub fn to_short(&self) -> ShortDidValue {
-        ShortDidValue(self.unqualify().0)
+        ShortDidValue(self.disqualify().0)
     }
 
-    pub fn from_short(did: &ShortDidValue, prefix: Option<String>) -> DidValue {
-        match prefix {
-            Some(prefix_) => DidValue(qualifier::qualify(&did.0, Self::PREFIX, &prefix_)),
+    pub fn from_short(did: &ShortDidValue, method: Option<String>) -> DidValue {
+        match method {
+            Some(method_) => DidValue(did.set_method(&method_).0),
             None => DidValue(did.0.clone())
         }
+    }
+
+    pub fn qualify(&self, method: &str) -> DidValue {
+        self.set_method(&method)
+    }
+
+    pub fn disqualify(&self) -> DidValue {
+        DidValue(qualifier::disqualify(&self.0))
     }
 
     pub fn is_abbreviatable(&self) -> bool {
@@ -123,8 +131,11 @@ impl Validatable for DidValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct ShortDidValue(pub String);
+qualifiable_type!(ShortDidValue);
+
+impl ShortDidValue {
+    pub const PREFIX: &'static str = "did";
+}
 
 impl Validatable for ShortDidValue {
     fn validate(&self) -> Result<(), String> {

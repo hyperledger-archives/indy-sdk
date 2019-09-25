@@ -9,7 +9,6 @@ extern crate indyrs as api;
 use utils::cache::*;
 use utils::Setup;
 use utils::domain::crypto::did::DidValue;
-use utils::qualifier;
 
 use self::indy::ErrorCode;
 
@@ -166,7 +165,7 @@ mod high_cases {
         fn indy_get_schema_fully_qualified_ids() {
             let setup = Setup::wallet_and_pool();
 
-            let (schema_id, _, _) = utils::ledger::post_entities();
+            let (schema_id, _) = utils::ledger::post_qualified_entities();
 
             let options_json = json!({}).to_string();
 
@@ -174,7 +173,7 @@ mod high_cases {
                 setup.pool_handle,
                 setup.wallet_handle,
                 DID_MY1_V1,
-                &SchemaId(schema_id.to_string()).qualify(DEFAULT_METHOD_NAME).0,
+                &schema_id,
                 &options_json).unwrap();
 
             let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
@@ -231,7 +230,7 @@ mod high_cases {
 
     mod cred_def_cache {
         use super::*;
-        use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
+        use utils::domain::anoncreds::credential_definition::CredentialDefinition;
         use utils::constants::*;
         use std::thread::sleep;
 
@@ -392,7 +391,7 @@ mod high_cases {
         fn indy_get_cred_def_fully_qualified_ids() {
             let setup = Setup::wallet_and_pool();
 
-            let (_, cred_def_id, _) = utils::ledger::post_entities();
+            let (_, cred_def_id) = utils::ledger::post_qualified_entities();
 
             let options_json = json!({}).to_string();
 
@@ -400,7 +399,7 @@ mod high_cases {
                 setup.pool_handle,
                 setup.wallet_handle,
                 DID_MY1_V1,
-                &CredentialDefinitionId(cred_def_id.to_string()).qualify(DEFAULT_METHOD_NAME).0,
+                &cred_def_id,
                 &options_json).unwrap();
 
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json).unwrap();
