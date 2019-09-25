@@ -219,6 +219,7 @@ pub enum LedgerCommand {
         BoxedCallbackStringStringSend,
     ),
     GetSchemaContinue(
+        SchemaId,
         IndyResult<String>,
         CommandHandle,
     ),
@@ -229,6 +230,7 @@ pub enum LedgerCommand {
         BoxedCallbackStringStringSend,
     ),
     GetCredDefContinue(
+        CredentialDefinitionId,
         IndyResult<String>,
         CommandHandle,
     ),
@@ -464,17 +466,17 @@ impl LedgerCommandExecutor {
                 debug!(target: "ledger_command_executor", "GetSchema command received");
                 self.get_schema(pool_handle, submitter_did.as_ref(), &id, cb);
             }
-            LedgerCommand::GetSchemaContinue(pool_response, cb_id) => {
+            LedgerCommand::GetSchemaContinue(id, pool_response, cb_id) => {
                 debug!(target: "ledger_command_executor", "GetSchemaContinue command received");
-                self._get_schema_continue(pool_response, cb_id);
+                self._get_schema_continue(id, pool_response, cb_id);
             }
             LedgerCommand::GetCredDef(pool_handle, submitter_did, id, cb) => {
                 debug!(target: "ledger_command_executor", "GetCredDef command received");
                 self.get_cred_def(pool_handle, submitter_did.as_ref(), &id, cb);
             }
-            LedgerCommand::GetCredDefContinue(pool_response, cb_id) => {
+            LedgerCommand::GetCredDefContinue(id, pool_response, cb_id) => {
                 debug!(target: "ledger_command_executor", "GetCredDefContinue command received");
-                self._get_cred_def_continue(pool_response, cb_id);
+                self._get_cred_def_continue(id, pool_response, cb_id);
             }
             LedgerCommand::BuildTxnAuthorAgreementRequest(submitter_did, text, version, cb) => {
                 debug!(target: "ledger_command_executor", "BuildTxnAuthorAgreementRequest command received");
@@ -776,7 +778,7 @@ impl LedgerCommandExecutor {
                                  get_schema_response: &str) -> IndyResult<(String, String)> {
         debug!("parse_get_schema_response >>> get_schema_response: {:?}", get_schema_response);
 
-        let res = self.ledger_service.parse_get_schema_response(get_schema_response)?;
+        let res = self.ledger_service.parse_get_schema_response(get_schema_response, None)?;
 
         debug!("parse_get_schema_response <<< res: {:?}", res);
 
@@ -816,7 +818,7 @@ impl LedgerCommandExecutor {
                                    get_cred_def_response: &str) -> IndyResult<(String, String)> {
         debug!("parse_get_cred_def_response >>> get_cred_def_response: {:?}", get_cred_def_response);
 
-        let res = self.ledger_service.parse_get_cred_def_response(get_cred_def_response)?;
+        let res = self.ledger_service.parse_get_cred_def_response(get_cred_def_response, None)?;
 
         debug!("parse_get_cred_def_response <<< res: {:?}", res);
 
@@ -1216,11 +1218,13 @@ impl LedgerCommandExecutor {
 
         let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
+        let id = id.clone();
 
         self.submit_request(pool_handle, &request_json, Box::new(move |response| {
             CommandExecutor::instance().send(
                 Command::Ledger(
                     LedgerCommand::GetSchemaContinue(
+                        id.clone(),
                         response,
                         cb_id
                     )
@@ -1229,10 +1233,10 @@ impl LedgerCommandExecutor {
         }));
     }
 
-    fn _get_schema_continue(&self, pool_response: IndyResult<String>, cb_id: CommandHandle) {
+    fn _get_schema_continue(&self, id: SchemaId, pool_response: IndyResult<String>, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
         let pool_response = try_cb!(pool_response, cb);
-        cb(self.parse_get_schema_response(&pool_response));
+        cb(self.ledger_service.parse_get_schema_response(&pool_response, id.get_method().as_ref().map(String::as_str)))
     }
 
     fn get_cred_def(&self, pool_handle: i32, submitter_did: Option<&DidValue>, id: &CredentialDefinitionId, cb: BoxedCallbackStringStringSend) {
@@ -1240,11 +1244,13 @@ impl LedgerCommandExecutor {
 
         let cb_id = next_command_handle();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
+        let id = id.clone();
 
         self.submit_request(pool_handle, &request_json, Box::new(move |response| {
             CommandExecutor::instance().send(
                 Command::Ledger(
                     LedgerCommand::GetCredDefContinue(
+                        id.clone(),
                         response,
                         cb_id
                     )
@@ -1253,10 +1259,10 @@ impl LedgerCommandExecutor {
         }));
     }
 
-    fn _get_cred_def_continue(&self, pool_response: IndyResult<String>, cb_id: CommandHandle) {
+    fn _get_cred_def_continue(&self, id: CredentialDefinitionId, pool_response: IndyResult<String>, cb_id: CommandHandle) {
         let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
         let pool_response = try_cb!(pool_response, cb);
-        cb(self.parse_get_cred_def_response(&pool_response));
+        cb(self.ledger_service.parse_get_cred_def_response(&pool_response, id.get_method().as_ref().map(String::as_str)))
     }
 }
 

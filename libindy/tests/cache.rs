@@ -176,7 +176,8 @@ mod high_cases {
                 &schema_id,
                 &options_json).unwrap();
 
-            let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
+            let schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
+            assert_eq!(schema_id, schema.id.0);
         }
 
         #[test]
@@ -230,7 +231,7 @@ mod high_cases {
 
     mod cred_def_cache {
         use super::*;
-        use utils::domain::anoncreds::credential_definition::CredentialDefinition;
+        use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
         use utils::constants::*;
         use std::thread::sleep;
 
@@ -402,7 +403,9 @@ mod high_cases {
                 &cred_def_id,
                 &options_json).unwrap();
 
-            let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json).unwrap();
+            let cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
+            assert_eq!(cred_def_id, cred_def.id.0);
+
         }
 
         #[test]

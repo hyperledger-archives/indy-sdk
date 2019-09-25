@@ -219,12 +219,12 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn parse_get_schema_response(&self, get_schema_response: &str) -> IndyResult<(String, String)> {
+    pub fn parse_get_schema_response(&self, get_schema_response: &str, method_name: Option<&str>) -> IndyResult<(String, String)> {
         let reply: Reply<GetSchemaReplyResult> = LedgerService::parse_response(get_schema_response)?;
 
         let schema = match reply.result() {
             GetSchemaReplyResult::GetSchemaReplyResultV0(res) => SchemaV1 {
-                id: SchemaId::new(&DidValue(res.dest.0), &res.data.name, &res.data.version),
+                id: SchemaId::new(&DidValue::new(&res.dest.0, method_name), &res.data.name, &res.data.version),
                 name: res.data.name,
                 version: res.data.version,
                 attr_names: res.data.attr_names,
@@ -235,7 +235,10 @@ impl LedgerService {
                     name: res.txn.data.schema_name,
                     version: res.txn.data.schema_version,
                     attr_names: res.txn.data.value.attr_names,
-                    id: res.txn.data.id,
+                    id: match method_name {
+                        Some(method) => res.txn.data.id.qualify(method),
+                        None => res.txn.data.id
+                    },
                     seq_no: Some(res.txn_metadata.seq_no),
                 }
             }
@@ -249,13 +252,13 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn parse_get_cred_def_response(&self, get_cred_def_response: &str) -> IndyResult<(String, String)> {
+    pub fn parse_get_cred_def_response(&self, get_cred_def_response: &str, method_name: Option<&str>) -> IndyResult<(String, String)> {
         let reply: Reply<GetCredDefReplyResult> = LedgerService::parse_response(get_cred_def_response)?;
 
         let cred_def = match reply.result() {
             GetCredDefReplyResult::GetCredDefReplyResultV0(res) => CredentialDefinitionV1 {
                 id: CredentialDefinitionId::new(
-                    &DidValue(res.origin.0),
+                    &DidValue::new(&res.origin.0, method_name),
                     &SchemaId(res.ref_.to_string()),
                     &res.signature_type.to_str(),
                     &res.tag.clone().unwrap_or_default()),
@@ -265,7 +268,10 @@ impl LedgerService {
                 value: res.data,
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
-                id: res.txn.data.id,
+                id: match method_name {
+                    Some(method) => res.txn.data.id.qualify(method),
+                    None => res.txn.data.id
+                },
                 schema_id: res.txn.data.schema_ref,
                 signature_type: res.txn.data.type_,
                 tag: res.txn.data.tag,

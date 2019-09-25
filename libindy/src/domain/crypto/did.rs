@@ -6,8 +6,6 @@ use rust_base58::FromBase58;
 use utils::validation::Validatable;
 use utils::qualifier;
 
-pub const ABBREVIATABLE_PREFIX: &'static str = "did:sov";
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MyDidInfo {
     pub did: Option<DidValue>,
@@ -77,9 +75,9 @@ qualifiable_type!(DidValue);
 impl DidValue {
     pub const PREFIX: &'static str = "did";
 
-    pub fn new(did: &str, method_name: Option<&str>) -> DidValue {
-        match method_name {
-            Some(method_name_) => DidValue(format!("{}:{}:{}", Self::PREFIX, method_name_, did)),
+    pub fn new(did: &str, method: Option<&str>) -> DidValue {
+        match method {
+            Some(method_) => DidValue(did.to_string()).set_method(&method_),
             None => DidValue(did.to_string())
         }
     }
@@ -88,29 +86,18 @@ impl DidValue {
         ShortDidValue(self.disqualify().0)
     }
 
-    pub fn from_short(did: &ShortDidValue, method: Option<String>) -> DidValue {
-        match method {
-            Some(method_) => DidValue(did.set_method(&method_).0),
-            None => DidValue(did.0.clone())
-        }
-    }
-
-    pub fn qualify(&self, method: &str) -> DidValue {
-        self.set_method(&method)
-    }
+    pub fn qualify(&self, method: &str) -> DidValue { self.set_method(&method) }
 
     pub fn disqualify(&self) -> DidValue {
         DidValue(qualifier::disqualify(&self.0))
     }
 
     pub fn is_abbreviatable(&self) -> bool {
-        if !self.is_fully_qualified() {
-            return true;
+        match self.get_method() {
+            Some(ref method) if method.starts_with("sov") => true,
+            Some(_) => false,
+            None => true
         }
-        if self.0.starts_with(ABBREVIATABLE_PREFIX) {
-            return true;
-        }
-        false
     }
 }
 
@@ -135,6 +122,13 @@ qualifiable_type!(ShortDidValue);
 
 impl ShortDidValue {
     pub const PREFIX: &'static str = "did";
+
+    pub fn qualify(&self, method: Option<String>) -> DidValue {
+        match method {
+            Some(method_) => DidValue(self.set_method(&method_).0),
+            None => DidValue(self.0.to_string())
+        }
+    }
 }
 
 impl Validatable for ShortDidValue {

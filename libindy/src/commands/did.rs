@@ -518,12 +518,12 @@ impl DidCommandExecutor {
                     let gen_nym_result_data: GetNymResultDataV0 = serde_json::from_str(data)
                         .to_indy(IndyErrorKind::InvalidState, "Invalid GetNymResultData json")?;
 
-                    TheirDidInfo::new(DidValue::from_short(&gen_nym_result_data.dest, did.get_method()), gen_nym_result_data.verkey)
+                    TheirDidInfo::new(gen_nym_result_data.dest.qualify(did.get_method()), gen_nym_result_data.verkey)
                 } else {
                     return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Their DID isn't found on the ledger")); //TODO FIXME use separate error
                 }
             }
-            GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(DidValue::from_short(&res.txn.data.did, did.get_method()), res.txn.data.verkey)
+            GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(res.txn.data.did.qualify(did.get_method()), res.txn.data.verkey)
         };
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;
