@@ -308,6 +308,13 @@ extern "C" {
                                                                  const char*   nonce)
                                             );
 
+    extern indy_error_t indy_disqualify(indy_handle_t command_handle,
+                                        const char *  entity,
+                                        void           (*cb)(indy_handle_t command_handle_,
+                                                             indy_error_t  err,
+                                                             const char*   res)
+                                        );
+
 #ifdef __cplusplus
 }
 #endif

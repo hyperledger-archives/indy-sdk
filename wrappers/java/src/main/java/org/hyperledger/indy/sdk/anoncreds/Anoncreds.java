@@ -1541,4 +1541,39 @@ public class Anoncreds extends IndyJava.API {
 
 		return future;
 	}
+
+	/**
+	 * Get unqualified form of fully qualified entity.
+	 *
+	 * This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+	 *     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+	 *     Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+	 *     another case when casting to unqualified form needed
+	 *
+	 * @param entity target entity to disqualify. Can be one of:
+	 *             Did
+	 *             SchemaId
+	 *             CredentialDefinitionId
+	 *             RevocationRegistryId
+	 *             CredentialOffer
+	 * @return A future that resolves to entity either in unqualified form or original if disqualification isn't possible
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> disqualify(
+			String entity) throws IndyException {
+
+		ParamGuard.notNull(entity, "entity");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_disqualify(
+				commandHandle,
+				entity,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
 }

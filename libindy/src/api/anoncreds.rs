@@ -2384,7 +2384,7 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
-/// entity: string - one of
+/// entity: string - target entity to disqualify. Can be one of:
 ///             Did
 ///             SchemaId
 ///             CredentialDefinitionId
@@ -2392,7 +2392,7 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
 ///             CredentialOffer
 ///
 /// #Returns
-///   res: unqualified form of entity.
+///   res: entity either in unqualified form or original if disqualification isn't possible
 #[no_mangle]
 pub  extern fn indy_disqualify(command_handle: CommandHandle,
                                entity: *const c_char,

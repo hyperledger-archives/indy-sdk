@@ -1857,3 +1857,40 @@ async def generate_nonce() -> str:
     res = nonce.decode()
     logger.debug("generate_nonce: <<< res: %r", res)
     return res
+
+
+async def disqualify(entity: str) -> str:
+    """
+    Get unqualified form of fully qualified entity.
+   
+    This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+        Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+        Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+        another case when casting to unqualified form needed
+
+    :param entity: target entity to disqualify. Can be one of:
+                Did
+                SchemaId
+                CredentialDefinitionId
+                RevocationRegistryId
+                CredentialOffer
+
+    :return: entity either in unqualified form or original if disqualification isn't possible
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("disqualify: >>> entity: %r", entity)
+
+    if not hasattr(disqualify, "cb"):
+        logger.debug("disqualify: Creating callback")
+        disqualify.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_entity = c_char_p(entity.encode('utf-8'))
+
+    res = await do_call('indy_disqualify',
+                        c_entity,
+                        disqualify.cb)
+
+    res = res.decode()
+    logger.debug("disqualify: <<< res: %r", res)
+    return res

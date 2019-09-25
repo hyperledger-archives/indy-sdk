@@ -173,6 +173,11 @@ test('anoncreds', async function (t) {
 
   await indy.issuerRotateCredentialDefApply(wh, credDefId)
 
+  var qualified = 'did:sov:NcYxiDXkpYi6ov5FcYDi1e'
+  var unqualified = 'NcYxiDXkpYi6ov5FcYDi1e'
+  t.is(unqualified, await indy.disqualify(qualified))
+  t.is(unqualified, await indy.disqualify(unqualified))
+
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
   pool.cleanup()

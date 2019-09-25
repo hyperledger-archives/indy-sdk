@@ -104,6 +104,6 @@ impl AnoncredsCommandExecutor {
                 .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize Credential Offer: {:?}", err)));
         }
 
-        Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot disqualify {:?}: unsupported type", entity)))
+        Ok(entity)
     }
 }
