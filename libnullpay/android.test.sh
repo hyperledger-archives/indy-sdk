@@ -53,16 +53,16 @@ build_test_artifacts(){
 
         # TODO move RUSTFLAGS to cargo config and do not duplicate it here
         # build - separate step to see origin build output
-        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -L${INDY_DIR} -lsodium -lzmq -lc++_shared -lindy" \
+        RUSTFLAGS="-lc -lz -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -L${INDY_DIR} -lsodium -lzmq -lc++_shared -lindy" \
             cargo build ${BUILD_TYPE} --target=${TRIPLET}
 
         # This is needed to get the correct message if test are not built. Next call will just reuse old results and parse the response.
-        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -L${INDY_DIR} -lsodium -lzmq -lc++_shared -lindy" \
+        RUSTFLAGS="-lc -lz -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -L${INDY_DIR} -lsodium -lzmq -lc++_shared -lindy" \
             cargo test ${BUILD_TYPE} --target=${TRIPLET} ${SET_OF_TESTS} --no-run
 
         # collect items to execute tests, uses resulting files from previous step
         EXE_ARRAY=($(
-            RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -L${INDY_DIR} -lsodium -lzmq -lc++_shared -lindy" \
+            RUSTFLAGS="-lc -lz -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -L${INDY_DIR} -lsodium -lzmq -lc++_shared -lindy" \
                 cargo test ${BUILD_TYPE} --target=${TRIPLET} ${SET_OF_TESTS} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
     popd
 }
@@ -81,7 +81,7 @@ execute_on_device(){
     set -x
 
     adb -e push \
-    "${TOOLCHAIN_DIR}/${TRIPLET}/${TOOLCHAIN_SYSROOT_LIB}/libc++_shared.so" "/data/local/tmp/libc++_shared.so"
+    "${TOOLCHAIN_DIR}/sysroot/usr/lib/${TRIPLET}/libc++_shared.so" "/data/local/tmp/libc++_shared.so"
 
     adb -e push \
     "${SODIUM_LIB_DIR}/libsodium.so" "/data/local/tmp/libsodium.so"
