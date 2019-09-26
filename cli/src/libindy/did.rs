@@ -35,7 +35,7 @@ impl Did {
         did::abbreviate_verkey(did, verkey).wait()
     }
 
-    pub fn qualify_did(wallet_handle: i32, did: &str, prefix: &str) -> Result<String, IndyError> {
-        did::qualify_did(wallet_handle, did, prefix).wait()
+    pub fn qualify_did(wallet_handle: i32, did: &str, method: &str) -> Result<String, IndyError> {
+        did::qualify_did(wallet_handle, did, method).wait()
     }
 }

@@ -377,9 +377,9 @@ indy.abbreviateVerkey = function abbreviateVerkey (did, fullVerkey, cb) {
   return cb.promise
 }
 
-indy.qualifyDid = function qualifyDid (wh, did, prefix, cb) {
+indy.qualifyDid = function qualifyDid (wh, did, method, cb) {
   cb = wrapIndyCallback(cb)
-  capi.qualifyDid(wh, did, prefix, cb)
+  capi.qualifyDid(wh, did, method, cb)
   return cb.promise
 }
 

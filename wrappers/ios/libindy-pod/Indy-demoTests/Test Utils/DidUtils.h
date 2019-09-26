@@ -93,7 +93,7 @@
 
 
 - (NSError *)qualifyDid:(NSString)did
-                 prefix:(NSString *)prefix
+                 method:(NSString *)method
            walletHandle:(IndyHandle)walletHandle
        fullQualifiedDid:(NSString **)fullQualifiedDid;
 

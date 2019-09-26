@@ -227,15 +227,17 @@
      - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
      - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
 
+ Update DID related entities stored in the wallet.
+
  @param  walletHandle: Wallet handle (created by open_wallet).
  @param  did: target DID stored in the wallet.
- @param  prefix: prefix to apply to the DID.
+ @param  method: method to apply to the DID.
 
  @param completion Callback that takes command result as parameter.
  Returns did: fully qualified did
  */
 + (void)qualifyDid:(NSString *)did
-            prefix:(NSString *)prefix
+            method:(NSString *)method
       walletHandle:(IndyHandle)walletHandle
         completion:(void (^)(NSError *error, NSString *fullQualifiedDid))completion;
        

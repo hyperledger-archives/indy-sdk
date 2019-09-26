@@ -6,7 +6,7 @@ use serde_json;
 
 use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use commands::ledger::LedgerCommand;
-use domain::crypto::did::{Did, DidValue, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo};
+use domain::crypto::did::{Did, DidValue, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo, DidMethod};
 use domain::crypto::key::KeyInfo;
 use domain::ledger::attrib::{AttribData, Endpoint, GetAttrReplyResult};
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
@@ -92,8 +92,8 @@ pub enum DidCommand {
     ),
     QualifyDid(
         WalletHandle,
-        String, // did
-        String, // prefix
+        DidValue, // did
+        DidMethod, // method
         Box<dyn Fn(IndyResult<String /*full qualified did*/>) + Send>,
     ),
 }
@@ -190,9 +190,9 @@ impl DidCommandExecutor {
                 debug!("GetAttribAck command received");
                 self.get_attrib_ack(wallet_handle, result, deferred_cmd_id);
             }
-            DidCommand::QualifyDid(wallet_handle, did, prefix, cb) => {
+            DidCommand::QualifyDid(wallet_handle, did, method, cb) => {
                 info!("QualifyDid command received");
-                cb(self.qualify_did(wallet_handle, &did, &prefix));
+                cb(self.qualify_did(wallet_handle, &did, &method));
             }
         };
     }
@@ -509,46 +509,31 @@ impl DidCommandExecutor {
 
     fn qualify_did(&self,
                    wallet_handle: WalletHandle,
-                   did: &str,
-                   prefix: &str) -> IndyResult<String> {
-        info!("qualify_did >>> wallet_handle: {:?}, curr_did: {:?}, prefix: {:?}", wallet_handle, did, prefix);
+                   did: &DidValue,
+                   method: &DidMethod) -> IndyResult<String> {
+        info!("qualify_did >>> wallet_handle: {:?}, curr_did: {:?}, method: {:?}", wallet_handle, did, method);
 
         self.crypto_service.validate_did(did)?;
 
-        let prefix_parts = prefix.split_terminator(":").collect::<Vec<&str>>().len();
+        let mut curr_did: Did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &did.0, &RecordOptions::id_value())?;
 
-        if prefix_parts != 2 {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported Prefix format: invalid number of parts: {}. Expected: 2 (did:example)", prefix_parts)));
-        }
+        curr_did.did = DidValue::new(&did.to_short().0, Some(&method.0));
 
-        let mut curr_did: Did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &did, &RecordOptions::id_value())?;
-
-        let parts: Vec<&str> = curr_did.parts();
-
-        let did_value = match parts.len() {
-            1 => parts[0], // curr_did is not full qualified - take whole - append prefix
-            3 => parts[2], // curr_did is full qualified - take the last part - change prefix
-            p => return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported DID format: invalid number of parts: {}", p)))
-        };
-
-        let new_did_val = format!("{}:{}", prefix, did_value);
-        curr_did.did = new_did_val.clone();
-
-        self.wallet_service.delete_indy_record::<Did>(wallet_handle, &did)?;
-        self.wallet_service.add_indy_object(wallet_handle, &new_did_val, &curr_did, &HashMap::new())?;
+        self.wallet_service.delete_indy_record::<Did>(wallet_handle, &did.0)?;
+        self.wallet_service.add_indy_object(wallet_handle, &curr_did.did.0, &curr_did, &HashMap::new())?;
 
         // move temporary Did
-        if let Ok(mut temp_did) = self.wallet_service.get_indy_object::<TemporaryDid>(wallet_handle, &did, &RecordOptions::id_value()) {
-            temp_did.did = new_did_val.clone();
-            self.wallet_service.delete_indy_record::<TemporaryDid>(wallet_handle, &did)?;
-            self.wallet_service.add_indy_object(wallet_handle, &new_did_val, &temp_did, &HashMap::new())?;
+        if let Ok(mut temp_did) = self.wallet_service.get_indy_object::<TemporaryDid>(wallet_handle, &did.0, &RecordOptions::id_value()) {
+            temp_did.did = curr_did.did.clone();
+            self.wallet_service.delete_indy_record::<TemporaryDid>(wallet_handle, &did.0)?;
+            self.wallet_service.add_indy_object(wallet_handle, &curr_did.did.0, &temp_did, &HashMap::new())?;
         }
 
         // move metadata
-        self.update_dependent_entity_reference::<DidMetadata>(wallet_handle, &did, &new_did_val)?;
+        self.update_dependent_entity_reference::<DidMetadata>(wallet_handle, &did.0, &curr_did.did.0)?;
 
         // move endpoint
-        self.update_dependent_entity_reference::<Endpoint>(wallet_handle, &did, &new_did_val)?;
+        self.update_dependent_entity_reference::<Endpoint>(wallet_handle, &did.0, &curr_did.did.0)?;
 
         // move all pairwise
         let mut pairwise_search =
@@ -560,15 +545,15 @@ impl DidCommandExecutor {
                 .and_then(|pairwise_json| serde_json::from_str(&pairwise_json)
                     .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot deserialize Pairwise: {:?}", err))))?;
 
-            if pairwise.my_did == did {
-                pairwise.my_did = new_did_val.clone();
-                self.wallet_service.update_indy_object(wallet_handle, &pairwise.their_did, &pairwise)?;
+            if pairwise.my_did.eq(did) {
+                pairwise.my_did = curr_did.did.clone();
+                self.wallet_service.update_indy_object(wallet_handle, &pairwise.their_did.0, &pairwise)?;
             }
         }
 
-        debug!("qualify_did <<< res: {:?}", new_did_val);
+        debug!("qualify_did <<< res: {:?}", curr_did.did);
 
-        Ok(new_did_val)
+        Ok(curr_did.did.0)
     }
 
     fn update_dependent_entity_reference<T>(&self, wallet_handle: WalletHandle, id: &str, new_id: &str) -> IndyResult<()>

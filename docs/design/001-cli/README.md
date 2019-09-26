@@ -249,7 +249,7 @@ indy> did rotate-key [seed=<UTF-8, base64 or hex string>] [fees_inputs=<source-1
 #### Qualify DID
 Update DID stored in the wallet to make fully qualified, or to do other DID maintenance:
 ```
-indy> did qualify did=<did> prefix=<prefix>
+indy> did qualify did=<did> method=<method>
 ```
 
 ### Ledger transactions/messages

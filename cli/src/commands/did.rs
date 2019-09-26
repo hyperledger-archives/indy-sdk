@@ -453,7 +453,7 @@ pub mod qualify_command {
 
     command!(CommandMetadata::build("qualify", "Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.")
                 .add_main_param_with_dynamic_completion("did", "Did stored in wallet", DynamicCompletionType::Did)
-                .add_main_param("prefix", "Prefix to apply to the DID")
+                .add_main_param("method", "Method to apply to the DID.")
                 .add_example("did qualify did=VsKV7grR1BUE29mG2Fm2kX prefix=did:peer")
                 .finalize());
 
@@ -461,11 +461,11 @@ pub mod qualify_command {
         trace!("execute >> ctx {:?}, params {:?}", ctx, params);
 
         let did = get_str_param("did", params).map_err(error_err!())?;
-        let prefix = get_str_param("prefix", params).map_err(error_err!())?;
+        let method = get_str_param("method", params).map_err(error_err!())?;
 
         let wallet_handle = ensure_opened_wallet_handle(ctx)?;
 
-        let res = match Did::qualify_did(wallet_handle, &did, &prefix) {
+        let res = match Did::qualify_did(wallet_handle, &did, &method) {
             Ok(full_qualified_did) => {
                 println_succ!("Fully qualified DID \"{}\"", full_qualified_did);
 
@@ -982,7 +982,7 @@ pub mod tests {
     mod qualify_did {
         use super::*;
 
-        const PREFIX: &str = "did:peer";
+        const METHOD: &str = "peer";
 
         #[test]
         pub fn qualify_did_works() {
@@ -992,7 +992,7 @@ pub mod tests {
                 let cmd = qualify_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("prefix", PREFIX.to_string());
+                params.insert("method", METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet(&ctx);
@@ -1007,7 +1007,7 @@ pub mod tests {
                 let cmd = qualify_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("prefix", PREFIX.to_string());
+                params.insert("method", METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet(&ctx);
@@ -1020,7 +1020,7 @@ pub mod tests {
                 let cmd = qualify_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("prefix", PREFIX.to_string());
+                params.insert("method", METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet(&ctx);

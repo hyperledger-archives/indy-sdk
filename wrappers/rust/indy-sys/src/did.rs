@@ -89,7 +89,7 @@ extern {
     #[no_mangle]
     pub fn indy_qualify_did(command_handle: CommandHandle,
                             wallet_handle: WalletHandle,
-                            did: CString,
+                            method: CString,
                             prefix: CString,
                             cb: Option<ResponseStringCB>) -> Error;
 }

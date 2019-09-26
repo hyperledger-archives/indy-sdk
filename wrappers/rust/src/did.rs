@@ -360,27 +360,29 @@ fn _abbreviate_verkey(command_handle: CommandHandle, tgt_did: &str, verkey: &str
 }
 
 /// Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
-///     - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
-///     - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
+///     - If the DID has no method, a method will be appended (prepend did:peer to a legacy did)
+///     - If the DID has a method, a method will be updated (migrate did:peer to did:peer-new)
+///
+/// Update DID related entities stored in the wallet.
 ///
 /// # Arguments
 /// * `wallet_handle` - wallet handle (created by Wallet::open)
 /// * `did` - target DID stored in the wallet.
-/// * `prefix` - prefix to apply to the DID.
+/// * `method` - method to apply to the DID.
 ///
 /// # Returns
 /// fully qualified did
-pub fn qualify_did(wallet_handle: WalletHandle, did: &str, prefix: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
+pub fn qualify_did(wallet_handle: WalletHandle, did: &str, method: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _qualify_did(command_handle, wallet_handle, did, prefix, cb);
+    let err = _qualify_did(command_handle, wallet_handle, did, method, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _qualify_did(command_handle: CommandHandle, wallet_handle: WalletHandle, did: &str, prefix: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _qualify_did(command_handle: CommandHandle, wallet_handle: WalletHandle, did: &str, method: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let did = c_str!(did);
-    let prefix = c_str!(prefix);
+    let method = c_str!(method);
 
-    ErrorCode::from(unsafe { did::indy_qualify_did(command_handle, wallet_handle, did.as_ptr(), prefix.as_ptr(), cb) })
+    ErrorCode::from(unsafe { did::indy_qualify_did(command_handle, wallet_handle, did.as_ptr(), method.as_ptr(), cb) })
 }

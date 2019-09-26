@@ -392,14 +392,14 @@
     XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
 
     // 2. Qualify did
-    NSString *prefix = "did:peer";
+    NSString *method = "peer";
     NSString *fullQualifiedDid;
     ret = [[DidUtils sharedInstance] qualifyDid:did
-                                         prefix:prefix
+                                         method:method
                                    walletHandle:walletHandle
                                fullQualifiedDid:&fullQualifiedDid];
     XCTAssertEqual(ret.code, Success, @"DidUtils::abbreviateVerkey() failed");
-    NSString expectedDid = [NSString stringWithFormat:@"%@:%@", prefix, did];
+    NSString expectedDid = [NSString stringWithFormat:@"did:%@:%@", method, did];
     XCTAssertFalse([fullQualifiedDid isEqualToString:expectedDid], @"Did are equal");
 }
 

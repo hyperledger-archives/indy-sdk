@@ -646,29 +646,27 @@ mod high_cases {
         }
     }
 
-    mod build_full_qualified_did {
+    mod qualify_did {
         use super::*;
 
-        const PREFIX: &str = "did:peer";
+        const CUSTOM_METHOD: &str = "peer";
 
         #[test]
         fn qualify_did_for_appending_prefix() {
             let setup = Setup::new_identity();
 
-            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, PREFIX).unwrap();
-            assert_eq!(full_qualified_did, format!("{}:{}", PREFIX, setup.did));
+            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, DEFAULT_METHOD_NAME).unwrap();
+            assert_eq!(full_qualified_did, format!("{}{}", DEFAULT_PREFIX, setup.did));
         }
 
         #[test]
         fn qualify_did_for_updating_prefix() {
             let setup = Setup::did();
 
-            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, PREFIX).unwrap();
+            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, DEFAULT_METHOD_NAME).unwrap();
 
-            let new_prefix = "did:peer-new";
-
-            let new_full_qualified_did = did::qualify_did(setup.wallet_handle, &full_qualified_did, new_prefix).unwrap();
-            assert_eq!(new_full_qualified_did, format!("{}:{}", new_prefix, setup.did));
+            let new_full_qualified_did = did::qualify_did(setup.wallet_handle, &full_qualified_did, CUSTOM_METHOD).unwrap();
+            assert_eq!(new_full_qualified_did, format!("did:{}:{}", CUSTOM_METHOD, setup.did));
         }
 
         #[test]
@@ -692,8 +690,8 @@ mod high_cases {
             did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
             utils::pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, None).unwrap();
 
-            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, PREFIX).unwrap();
-            assert_eq!(full_qualified_did, format!("{}:{}", PREFIX, setup.did));
+            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, DEFAULT_METHOD_NAME).unwrap();
+            assert_eq!(full_qualified_did, format!("{}{}", DEFAULT_PREFIX, setup.did));
 
             {
                 // check key for did

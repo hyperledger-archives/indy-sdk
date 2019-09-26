@@ -696,22 +696,24 @@ public class Did extends IndyJava.API {
 
 	/**
 	 * Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
-	 *     - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
-	 *     - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
+	 *     - If the DID has no method, a method will be appended (prepend did:peer to a legacy did)
+	 *     - If the DID has a method, a method will be updated (migrate did:peer to did:peer-new)
+	 *
+	 * Update DID related entities stored in the wallet.
 	 *
 	 * @param wallet The wallet.
 	 * @param did The target DID stored in the wallet.
-	 * @param prefix The prefix to apply to the DID.
+	 * @param method The method to apply to the DID.
 	 * @return A future resolving to a fully qualified did
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> qualifyDid(
 			Wallet wallet,
 			String did,
-			String prefix) throws IndyException {
+			String method) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(did, "did");
-		ParamGuard.notNull(prefix, "prefix");
+		ParamGuard.notNull(method, "method");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -722,7 +724,7 @@ public class Did extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				did,
-				prefix,
+				method,
 				getDidMetadataCb);
 
 		checkResult(future, result);

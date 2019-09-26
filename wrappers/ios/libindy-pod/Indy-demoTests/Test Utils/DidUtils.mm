@@ -497,14 +497,14 @@
 }
 
 - (NSError *)qualifyDid:(NSString)did
-                 prefix:(NSString *)prefix
+                 method:(NSString *)method
            walletHandle:(IndyHandle)walletHandle
        fullQualifiedDid:(NSString **)fullQualifiedDid
 {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
 
-    [IndyDid qualifyDid:did prefix:prefix walletHandle:walletHandle completion:^(NSError *error, NSString *did_) {
+    [IndyDid qualifyDid:did method:method walletHandle:walletHandle completion:^(NSError *error, NSString *did_) {
         err = error;
         if (fullQualifiedDid) *fullQualifiedDid = did_;
         [completionExpectation fulfill];

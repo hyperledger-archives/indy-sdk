@@ -1385,15 +1385,17 @@ Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### qualifyDid \( wh, did, prefix \) -&gt; fullQualifiedDid
+#### qualifyDid \( wh, did, method \) -&gt; fullQualifiedDid
 
 Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
    - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
    - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
 
+Update DID related entities stored in the wallet.
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `did`: String - target DID stored in the wallet.
-* `prefix`: String - prefix to apply to the DID.
+* `method`: String - method to apply to the DID.
 * __->__ `fullQualifiedDid`: String - fully qualified did
 
 Errors: `Common*`, `Wallet*`, `Crypto*`

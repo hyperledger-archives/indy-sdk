@@ -609,21 +609,23 @@ async def abbreviate_verkey(did: str,
 
 async def qualify_did(wallet_handle: int,
                       did: str,
-                      prefix: str) -> str:
+                      method: str) -> str:
     """
     Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
         - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
         - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
 
+    Update DID related entities stored in the wallet.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param did: target DID stored in the wallet.
-    :param prefix: prefix to apply to the DID.
+    :param method: method to apply to the DID.
     :return: fully qualified did
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("qualify_did: >>> wallet_handle: %r, did: %r, prefix: %r",
-                 wallet_handle, did, prefix)
+    logger.debug("qualify_did: >>> wallet_handle: %r, did: %r, method: %r",
+                 wallet_handle, did, method)
 
     if not hasattr(qualify_did, "cb"):
         logger.debug("qualify_did: Creating callback")
@@ -631,12 +633,12 @@ async def qualify_did(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
-    c_prefix = c_char_p(prefix.encode('utf-8'))
+    c_method = c_char_p(method.encode('utf-8'))
 
     full_qualified_did = await do_call('indy_qualify_did',
                                        c_wallet_handle,
                                        c_did,
-                                       c_prefix,
+                                       c_method,
                                        qualify_did.cb)
 
     res = full_qualified_did.decode()
