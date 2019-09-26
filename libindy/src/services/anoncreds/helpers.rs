@@ -4,6 +4,12 @@ use domain::anoncreds::credential::AttributeValues;
 use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, NonRevocedInterval};
 use ursa::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
 
+use domain::crypto::did::DidValue;
+use domain::anoncreds::schema::SchemaId;
+use domain::anoncreds::credential_definition::CredentialDefinitionId;
+use domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
+use domain::anoncreds::credential_offer::CredentialOffer;
+use domain::anoncreds::proof_request::ProofRequest;
 
 use std::collections::{HashSet, HashMap};
 
@@ -99,12 +105,45 @@ pub fn get_non_revoc_interval(global_interval: &Option<NonRevocedInterval>, loca
     interval
 }
 
+pub fn to_unqualified(entity: &str) -> IndyResult<String> {
+    info!("to_unqualified >>> entity: {:?}", entity);
+
+    if entity.starts_with(DidValue::PREFIX) {
+        return Ok(DidValue(entity.to_string()).to_unqualified().0);
+    }
+
+    if entity.starts_with(SchemaId::PREFIX) {
+        return Ok(SchemaId(entity.to_string()).to_unqualified().0);
+    }
+
+    if entity.starts_with(CredentialDefinitionId::PREFIX) {
+        return Ok(CredentialDefinitionId(entity.to_string()).to_unqualified().0);
+    }
+
+    if entity.starts_with(RevocationRegistryId::PREFIX) {
+        return Ok(RevocationRegistryId(entity.to_string()).to_unqualified().0);
+    }
+
+    if let Ok(cred_offer) = ::serde_json::from_str::<CredentialOffer>(&entity) {
+        let cred_offer = cred_offer.to_unqualified();
+        return serde_json::to_string(&cred_offer)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize Credential Offer: {:?}", err)));
+    }
+
+    if let Ok(proof_request) = ::serde_json::from_str::<ProofRequest>(&entity) {
+        let proof_request = proof_request.to_unqualified();
+        return serde_json::to_string(&proof_request)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize Proof Request: {:?}", err)));
+    }
+
+    Ok(entity.to_string())
+}
+
+#[cfg(test)]
 mod tests{
     use super::*;
 
-    fn _interval() -> NonRevocedInterval {
-        NonRevocedInterval { from: None, to: Some(123) }
-    }
+    fn _interval() -> NonRevocedInterval { NonRevocedInterval { from: None, to: Some(123) } }
 
     #[test]
     fn get_non_revoc_interval_for_global() {
@@ -122,5 +161,37 @@ mod tests{
     fn get_non_revoc_interval_for_none() {
         let res = get_non_revoc_interval(&None, &None);
         assert_eq!(None, res);
+    }
+
+    mod to_unqualified {
+        use super::*;
+        
+        const DID_QUALIFIED: &str = "did:sov:NcYxiDXkpYi6ov5FcYDi1e";
+        const DID_UNQUALIFIED: &str = "NcYxiDXkpYi6ov5FcYDi1e";
+        const SCHEMA_ID_QUALIFIED: &str = "schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+        const SCHEMA_ID_UNQUALIFIED: &str = "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+        const CRED_DEF_ID_QUALIFIED: &str = "creddef:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag";
+        const CRED_DEF_ID_UNQUALIFIED: &str = "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag";
+        const REV_REG_ID_QUALIFIED: &str = "revreg:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:4:creddef:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag:CL_ACCUM:TAG_1";
+        const REV_REG_ID_UNQUALIFIED: &str = "NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag:CL_ACCUM:TAG_1";
+        
+        #[test]
+        fn test_to_unqualified() {
+            // DID
+            assert_eq!(DID_UNQUALIFIED, to_unqualified(DID_QUALIFIED).unwrap());
+            assert_eq!(DID_UNQUALIFIED, to_unqualified(DID_UNQUALIFIED).unwrap());
+
+            // SchemaId
+            assert_eq!(SCHEMA_ID_UNQUALIFIED, to_unqualified(SCHEMA_ID_QUALIFIED).unwrap());
+            assert_eq!(SCHEMA_ID_UNQUALIFIED, to_unqualified(SCHEMA_ID_UNQUALIFIED).unwrap());
+
+            // Credential Definition Id
+            assert_eq!(CRED_DEF_ID_UNQUALIFIED, to_unqualified(CRED_DEF_ID_QUALIFIED).unwrap());
+            assert_eq!(CRED_DEF_ID_UNQUALIFIED, to_unqualified(CRED_DEF_ID_UNQUALIFIED).unwrap());
+
+            // Revocation Registry Id
+            assert_eq!(REV_REG_ID_UNQUALIFIED, to_unqualified(REV_REG_ID_QUALIFIED).unwrap());
+            assert_eq!(REV_REG_ID_UNQUALIFIED, to_unqualified(REV_REG_ID_UNQUALIFIED).unwrap());
+        }
     }
 }

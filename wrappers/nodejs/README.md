@@ -922,6 +922,18 @@ Generates 80-bit numbers that can be used as a nonce for proof request.
 
 Errors: `Common*`
 
+#### toUnqualified \( entity \) -&gt; res
+
+Get unqualified form (short form without method) of a fully qualified entity like DID.
+
+This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+1) Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+2) Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+3) another case when casting to unqualified form needed
+
+* `entity`: String - target entity to disqualify. Can be one of: Did, SchemaId, CredentialDefinitionId, RevocationRegistryId, CredentialOffer.
+* __->__ `res`: Json - entity either in unqualified form or original if casting isn't possible
+
 ### blob_storage
 
 #### openBlobStorageReader \( type, config \) -&gt; handle

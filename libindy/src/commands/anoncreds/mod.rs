@@ -3,8 +3,6 @@ pub mod prover;
 pub mod verifier;
 mod tails;
 
-use serde_json;
-
 use commands::anoncreds::issuer::{IssuerCommand, IssuerCommandExecutor};
 use commands::anoncreds::prover::{ProverCommand, ProverCommandExecutor};
 use commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecutor};
@@ -14,12 +12,7 @@ use services::blob_storage::BlobStorageService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
-
-use domain::crypto::did::DidValue;
-use domain::anoncreds::schema::SchemaId;
-use domain::anoncreds::credential_definition::CredentialDefinitionId;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
-use domain::anoncreds::credential_offer::CredentialOffer;
+use services::anoncreds::helpers::to_unqualified;
 
 use errors::prelude::*;
 
@@ -29,7 +22,7 @@ pub enum AnoncredsCommand {
     Issuer(IssuerCommand),
     Prover(ProverCommand),
     Verifier(VerifierCommand),
-    Disqualify(
+    ToUnqualified(
         String, // entity
         Box<dyn Fn(IndyResult<String>) + Send>)
 }
@@ -71,39 +64,10 @@ impl AnoncredsCommandExecutor {
                 debug!(target: "anoncreds_command_executor", "Verifier command received");
                 self.verifier_command_cxecutor.execute(cmd);
             }
-            AnoncredsCommand::Disqualify(entity, cb) => {
-                debug!("Disqualify command received");
-                cb(self.disqualify(entity));
+            AnoncredsCommand::ToUnqualified(entity, cb) => {
+                debug!("ToUnqualified command received");
+                cb(to_unqualified(&entity));
             }
         };
-    }
-
-    fn disqualify(&self,
-                  entity: String) -> IndyResult<String> {
-        info!("disqualify >>> entity: {:?}", entity);
-
-        if entity.starts_with(DidValue::PREFIX) {
-            return Ok(DidValue(entity).disqualify().0);
-        }
-
-        if entity.starts_with(SchemaId::PREFIX) {
-            return Ok(SchemaId(entity).disqualify().0);
-        }
-
-        if entity.starts_with(CredentialDefinitionId::PREFIX) {
-            return Ok(CredentialDefinitionId(entity).disqualify().0);
-        }
-
-        if entity.starts_with(RevocationRegistryId::PREFIX) {
-            return Ok(RevocationRegistryId(entity).disqualify().0);
-        }
-
-        if let Ok(cred_offer) = ::serde_json::from_str::<CredentialOffer>(&entity) {
-            let cred_offer = cred_offer.disqualify();
-            return serde_json::to_string(&cred_offer)
-                .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize Credential Offer: {:?}", err)));
-        }
-
-        Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Cannot disqualify {:?}: unsupported type", entity)))
     }
 }

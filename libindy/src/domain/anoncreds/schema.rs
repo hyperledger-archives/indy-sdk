@@ -119,10 +119,10 @@ impl SchemaId {
         }
     }
 
-    pub fn disqualify(&self) -> SchemaId {
+    pub fn to_unqualified(&self) -> SchemaId {
         match self.parts() {
             Some((did, name, version)) => {
-                SchemaId::new(&did.disqualify(), &name, &version)
+                SchemaId::new(&did.to_unqualified(), &name, &version)
             }
             None => self.clone()
         }
@@ -169,27 +169,27 @@ mod tests {
         SchemaId("NcYxiDXkpYi6ov5FcYDi1e:2".to_string())
     }
 
-    mod disqualify {
+    mod to_unqualified {
         use super::*;
 
         #[test]
         fn test_schema_id_unqualify_for_id_as_seq_no() {
-            assert_eq!(_schema_id_seq_no(), _schema_id_seq_no().disqualify());
+            assert_eq!(_schema_id_seq_no(), _schema_id_seq_no().to_unqualified());
         }
 
         #[test]
         fn test_schema_id_parts_for_id_as_unqualified() {
-            assert_eq!(_schema_id_unqualified(), _schema_id_unqualified().disqualify());
+            assert_eq!(_schema_id_unqualified(), _schema_id_unqualified().to_unqualified());
         }
 
         #[test]
         fn test_schema_id_parts_for_id_as_qualified() {
-            assert_eq!(_schema_id_unqualified(), _schema_id_qualified().disqualify());
+            assert_eq!(_schema_id_unqualified(), _schema_id_qualified().to_unqualified());
         }
 
         #[test]
         fn test_schema_id_parts_for_invalid_unqualified() {
-            assert_eq!(_schema_id_invalid(), _schema_id_invalid().disqualify());
+            assert_eq!(_schema_id_invalid(), _schema_id_invalid().to_unqualified());
         }
     }
 

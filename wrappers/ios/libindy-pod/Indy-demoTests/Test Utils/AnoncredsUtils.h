@@ -200,4 +200,7 @@
 
 - (NSString *)toJson:(NSDictionary *)dictionary;
 
+- (NSError *)toUnqualified:(NSString *)entity
+                       res:(NSString **)res;
+
 @end

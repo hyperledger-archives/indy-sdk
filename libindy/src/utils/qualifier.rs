@@ -8,7 +8,7 @@ pub fn qualify(entity: &str, prefix: &str, method: &str) -> String {
     format!("{}:{}:{}", prefix, method, entity)
 }
 
-pub fn disqualify(entity: &str) -> String {
+pub fn to_unqualified(entity: &str) -> String {
     match REGEX.captures(entity) {
         None => entity.to_string(),
         Some(caps) => {

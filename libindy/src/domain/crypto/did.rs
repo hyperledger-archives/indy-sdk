@@ -83,13 +83,13 @@ impl DidValue {
     }
 
     pub fn to_short(&self) -> ShortDidValue {
-        ShortDidValue(self.disqualify().0)
+        ShortDidValue(self.to_unqualified().0)
     }
 
     pub fn qualify(&self, method: &str) -> DidValue { self.set_method(&method) }
 
-    pub fn disqualify(&self) -> DidValue {
-        DidValue(qualifier::disqualify(&self.0))
+    pub fn to_unqualified(&self) -> DidValue {
+        DidValue(qualifier::to_unqualified(&self.0))
     }
 
     pub fn is_abbreviatable(&self) -> bool {
