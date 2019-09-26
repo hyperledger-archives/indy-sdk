@@ -1,7 +1,7 @@
 [package]
 name = "save-schema-and-cred-def"
 version = "0.1.0"
-authors = ["matt raffel <matt.raffel@evernym.com>"]
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 description = "Demonstrates using Rust wrapper for LibIndy through creating Schema and Credential Definition"
 
 [[bin]]

@@ -17,6 +17,7 @@ use libc::c_char;
 use domain::IndyConfig;
 use errors::prelude::*;
 
+use utils::validation::Validatable;
 use utils::{ctypes, sequence};
 
 pub type IndyHandle = i32;
@@ -279,7 +280,7 @@ pub enum ErrorCode
 pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
     trace!("indy_set_runtime_config >>> config: {:?}", config);
 
-    check_useful_json!(config, ErrorCode::CommonInvalidParam1, IndyConfig);
+    check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam1, IndyConfig);
 
     ::commands::indy_set_runtime_config(config);
 

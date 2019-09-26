@@ -163,7 +163,10 @@ public class SchemaApi extends VcxJava.API {
         ParamGuard.notNull(schemaHandle, "schemaHandle");
         logger.debug("schemaRelease() called with: schemaHandle = [" + schemaHandle + "]");
 
-        return LibVcx.api.vcx_schema_release(schemaHandle);
+        int result = LibVcx.api.vcx_schema_release(schemaHandle);
+        checkResult(result);
+
+        return result;
     }
 
     private static Callback schemaPrepareForEndorserCB = new Callback() {

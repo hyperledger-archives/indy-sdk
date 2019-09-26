@@ -1,31 +1,10 @@
 #[macro_use]
-extern crate lazy_static;
+mod utils;
 
-#[macro_use]
-extern crate named_type_derive;
+inject_indy_dependencies!();
 
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
 extern crate indyrs as indy;
 extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
-
-#[macro_use]
-mod utils;
 
 use utils::inmem_wallet::InmemWallet;
 use utils::{environment, wallet, test, did};

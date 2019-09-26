@@ -34,6 +34,7 @@ use {CommandHandle, WalletHandle, PoolHandle};
 ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
 ///               currently only 'ed25519' value is supported for this field)
 ///     "cid": bool, (optional; if not set then false is used;)
+///     "method_name": string, (optional) method name to create fully qualified did.
 /// }
 ///
 /// # Returns

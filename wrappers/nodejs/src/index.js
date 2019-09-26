@@ -215,6 +215,12 @@ indy.generateNonce = function generateNonce (cb) {
   return cb.promise
 }
 
+indy.toUnqualified = function toUnqualified (entity, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.toUnqualified(entity, cb)
+  return cb.promise
+}
+
 indy.openBlobStorageReader = function openBlobStorageReader (type, config, cb) {
   cb = wrapIndyCallback(cb)
   capi.openBlobStorageReader(type, toJson(config), cb)

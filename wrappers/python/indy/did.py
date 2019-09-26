@@ -29,6 +29,7 @@ async def create_and_store_my_did(wallet_handle: int,
             "crypto_type": string, (optional; if not set then ed25519 curve is used;
                       currently only 'ed25519' value is supported for this field)
             "cid": bool, (optional; if not set then false is used;)
+            "method_name": string, (optional) method name to create fully qualified did.
         }
     :return: DID and verkey (for verification of signature)
     """

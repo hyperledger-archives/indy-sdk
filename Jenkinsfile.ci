@@ -20,7 +20,7 @@ def testing() {
                 'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
-                // 'redhat-test' : { rhelTesting() },
+                // 'centos-test' : { centosTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -202,6 +202,7 @@ def windowsTesting() {
 def macosTesting() {
     node('macos') {
         stage('MacOS Test') {
+            def pool_name = "indy_pool"
             try {
                 echo "MacOS Test: Checkout scm"
                 checkout scm
@@ -209,38 +210,46 @@ def macosTesting() {
                 setupRust()
                 setupBrewPackages()
 
-                macosModuleBuilding('libindy') // TODO: testing
+                macosRunPool(pool_name)
+                macosCleanIndyDir()
+
+                macosModuleBuildingAndTest('libindy', "--features only_high_cases")
 
                 sh "cp libindy/target/debug/libindy.dylib libnullpay"
                 sh "cp libindy/target/debug/libindy.dylib vcx/libvcx"
+                sh "cp libindy/target/debug/libindy.dylib cli"
 
-                macosModuleBuilding('libnullpay') // TODO: testing
+                macosModuleBuildingAndTest('libnullpay')
 
                 sh "cp libnullpay/target/debug/libnullpay.dylib vcx/libvcx"
 
-                macosModuleBuilding('vcx/libvcx')
-                macosModuleTesting('vcx/libvcx')
+                macosModuleBuildingAndTest('vcx/libvcx')
+
+                sh "sed -i'.original' -e 's/10.0.0.2/127.0.0.1/g' cli/docker_pool_transactions_genesis"
+                macosModuleBuildingAndTest('cli')
 
                 //TODO wrappers testing
             } finally {
+                macosStopPool(pool_name)
+                macosCleanIndyDir()
                 step([$class: 'WsCleanup'])
             }
         }
     }
 }
 
-def macosModuleBuilding(library) {
+def macosCleanIndyDir() {
+    sh "rm -rf ~/.indy_client || true"
+}
+
+def macosModuleBuildingAndTest(library, testFeatures = "") {
     dir(library) {
         echo "MacOS ${library} Testing: Build"
         sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
-        sh "LIBRARY_PATH=./ cargo test --no-run"
-    }
-}
 
-def macosModuleTesting(library) {
-    dir(library) {
         echo "MacOS ${library} Testing: Run Tests"
-        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test"
+        sh "LIBRARY_PATH=./ cargo test --no-run ${testFeatures}"
+        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test ${testFeatures}"
     }
 }
 
@@ -271,6 +280,7 @@ def iosTesting() {
 
     node('macos') {
         stage('iOS Test') {
+            def pool_name = "indy_pool"
             try {
                 echo "iOS Test: Checkout scm"
                 checkout scm
@@ -305,9 +315,7 @@ def iosTesting() {
                     }
 
                     echo "iOS Test: Running pool"
-                    sh "docker rm -f indy_pool || true"
-                    sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
-                    sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+                    macosRunPool(pool_name)
 
                     sh 'chmod -R 777 ci'
                     echo "iOS Test: build libindy pod"
@@ -327,14 +335,7 @@ def iosTesting() {
                     cleanSimulators()
                 } catch (ignore) {
                 }
-                try {
-                    sh "docker stop indy_pool"
-                } catch (ignore) {
-                }
-                try {
-                    sh "docker rm indy_pool"
-                } catch (ignore) {
-                }
+                macosStopPool(pool_name)
                 step([$class: 'WsCleanup'])
             }
         }
@@ -354,9 +355,9 @@ def ubuntuTesting() {
     }
 }
 
-def rhelTesting() {
+def centosTesting() {
     stage('RedHat Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
+        linuxTesting("ci/centos.dockerfile ci", "RedHat", "pool_network", false)
     }
 }
 
@@ -373,10 +374,10 @@ def linuxTesting(file, env_name, network_name, full_testing) {
                     libindyBuildFinished[env_name]
                 }
                 def jobs = [
-                        "${env_name}-cli-test"        : {
+                        "${env_name}-cli-test": {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
-                        "${env_name}-vcx-test"        : {
+                        "${env_name}-vcx-test": {
                             vcxTesting(file, env_name, network_name, full_testing)
                         }
                 ]
@@ -755,6 +756,23 @@ def buildTestEnv(file, env_name) {
 
 def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
     return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
+}
+
+def macosRunPool(pool_name) {
+    sh "docker rm -f ${pool_name} || true"
+    sh "docker build -f ci/indy-pool.dockerfile -t ${pool_name} ci"
+    sh "docker run -d --name ${pool_name} -p 9701-9708:9701-9708 ${pool_name}"
+}
+
+def macosStopPool(pool_name) {
+    try {
+        sh "docker stop ${pool_name}"
+    } catch (ignore) {
+    }
+    try {
+        sh "docker rm ${pool_name}"
+    } catch (ignore) {
+    }
 }
 
 def dockerClean(env_name, network_name) {

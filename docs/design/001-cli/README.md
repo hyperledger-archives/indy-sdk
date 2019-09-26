@@ -224,7 +224,7 @@ indy> did <subcommand>
 #### New
 Create and store my DID in the opened wallet. Requires opened wallet.
 ```
-indy> did new [did=<did>] [seed=<UTF-8, base64 or hex string>] [metadata=<metadata string>]
+indy> did new [did=<did>] [seed=<UTF-8, base64 or hex string>] [metadata=<metadata string>] [<method>=<did method name>]
 ```
 
 #### List

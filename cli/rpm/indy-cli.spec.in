@@ -1,0 +1,38 @@
+%global __os_install_post %{nil}
+%define _rpmdir @result_dir@
+%define _rpmfilename %%{NAME}.%%{VERSION}.rpm
+
+Summary: Command line interface for Indy SDK
+Name: indy-cli
+Version: @version@
+Release: @release@
+License: Apache License 2.0
+Group: System Environment/Libraries
+Source: https://github.com/hyperledger/indy-sdk/
+Requires: libindy
+BuildRequires: libindy
+
+%description
+This is the official command line interface for Indy SDK, which provides a distributed-ledger-based foundation for self-sovereign identity.
+
+%prep
+%build
+
+%install
+rm -rf ${RPM_BUILD_ROOT}
+
+install -dm0755 $RPM_BUILD_ROOT/%{_bindir}
+install -Dm0644 @dir@/target/release/indy-cli $RPM_BUILD_ROOT/%{_bindir}/indy-cli
+
+%clean
+rm -rf ${RPM_BUILD_ROOT}
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%files
+%defattr(755,root,root)
+%{_bindir}/indy-cli*
+
+%changelog

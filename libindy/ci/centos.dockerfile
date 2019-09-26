@@ -1,4 +1,4 @@
-FROM amazonlinux:2017.03
+FROM centos:7
 
 ARG uid=1000
 
@@ -22,12 +22,12 @@ RUN curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
 RUN yum -y install nodejs
 
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz | tar -xz && \
-    cd /tmp/libsodium-1.0.18 && \
+   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz && \
+    cd /tmp/libsodium-1.0.14 && \
     ./configure && \
     make && \
     make install && \
-    rm -rf /tmp/libsodium-1.0.18
+    rm -rf /tmp/libsodium-1.0.14
 
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
@@ -70,6 +70,8 @@ RUN cd /tmp && \
     make && \
     make install && \
     rm -rf /tmp/zeromq-4.2.2
+
+RUN yum install fakeroot -y
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
