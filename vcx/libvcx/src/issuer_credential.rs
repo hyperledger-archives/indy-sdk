@@ -348,7 +348,7 @@ impl IssuerCredential {
 
         let cred_def_id =
             if !Qualifier::is_fully_qualified(&self.remote_did) {
-                anoncreds::libindy_disqualify(&self.cred_def_id)?
+                anoncreds::libindy_to_unqualified(&self.cred_def_id)?
             } else {
                 self.cred_def_id.clone()
             };
@@ -371,10 +371,11 @@ impl IssuerCredential {
         //Todo: make a cred_def_offer error
         let libindy_offer = anoncreds::libindy_issuer_create_credential_offer(&self.cred_def_id)?;
 
+        println!("remote_did {:?}", self.remote_did);
         let (libindy_offer, cred_def_id) =
             if !Qualifier::is_fully_qualified(&self.remote_did) {
-                (anoncreds::libindy_disqualify(&libindy_offer)?,
-                 anoncreds::libindy_disqualify(&self.cred_def_id)?)
+                (anoncreds::libindy_to_unqualified(&libindy_offer)?,
+                 anoncreds::libindy_to_unqualified(&self.cred_def_id)?)
             } else {
                 (libindy_offer, self.cred_def_id.clone())
             };

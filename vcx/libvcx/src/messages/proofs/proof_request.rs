@@ -221,12 +221,12 @@ impl ProofRequestMessage {
                     .into_iter()
                     .map(|filter| {
                         Filter {
-                            schema_id: filter.schema_id.as_ref().and_then(|schema_id| anoncreds::libindy_disqualify(&schema_id).ok()),
-                            schema_issuer_did: filter.schema_issuer_did.as_ref().and_then(|schema_issuer_did|  anoncreds::libindy_disqualify(&schema_issuer_did).ok()),
+                            schema_id: filter.schema_id.as_ref().and_then(|schema_id| anoncreds::libindy_to_unqualified(&schema_id).ok()),
+                            schema_issuer_did: filter.schema_issuer_did.as_ref().and_then(|schema_issuer_did|  anoncreds::libindy_to_unqualified(&schema_issuer_did).ok()),
                             schema_name: filter.schema_name,
                             schema_version: filter.schema_version,
-                            issuer_did: filter.issuer_did.as_ref().and_then(|issuer_did| anoncreds::libindy_disqualify(&issuer_did).ok()),
-                            cred_def_id: filter.cred_def_id.as_ref().and_then(|cred_def_id| anoncreds::libindy_disqualify(&cred_def_id).ok()),
+                            issuer_did: filter.issuer_did.as_ref().and_then(|issuer_did| anoncreds::libindy_to_unqualified(&issuer_did).ok()),
+                            cred_def_id: filter.cred_def_id.as_ref().and_then(|cred_def_id| anoncreds::libindy_to_unqualified(&cred_def_id).ok()),
                         }
                     })
                     .collect()
