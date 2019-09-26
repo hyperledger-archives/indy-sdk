@@ -5,9 +5,11 @@ use std::vec::Vec;
 
 use messages::validation;
 use error::prelude::*;
+use utils::libindy::anoncreds;
 
 static PROOF_REQUEST: &str = "PROOF_REQUEST";
 static PROOF_DATA: &str = "proof_request_data";
+pub const PROOF_REQUEST_V2: &str = "2.0";
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 struct ProofType {
@@ -72,7 +74,8 @@ pub struct ProofRequestData {
     data_version: String,
     pub requested_attributes: HashMap<String, AttrInfo>,
     pub requested_predicates: HashMap<String, PredicateInfo>,
-    pub non_revoked: Option<NonRevokedInterval>
+    pub non_revoked: Option<NonRevokedInterval>,
+    ver: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -113,7 +116,8 @@ impl ProofRequestMessage {
                 data_version: String::new(),
                 requested_attributes: HashMap::new(),
                 requested_predicates: HashMap::new(),
-                non_revoked: None
+                non_revoked: None,
+                ver: None
             },
             msg_ref_id: None,
             from_timestamp: None,
@@ -148,6 +152,11 @@ impl ProofRequestMessage {
         Ok(self)
     }
 
+    pub fn proof_request_format_version(&mut self, version: Option<&str>) -> VcxResult<&mut Self> {
+        self.proof_request_data.ver = version.map(String::from);
+        Ok(self)
+    }
+
     pub fn proof_data_version(&mut self, version: &str) -> VcxResult<&mut Self> {
         self.proof_request_data.data_version = String::from(version);
         Ok(self)
@@ -163,7 +172,9 @@ impl ProofRequestMessage {
             })?;
 
         let mut index = 1;
-        for attr in proof_attrs {
+        for mut attr in proof_attrs.into_iter() {
+            attr.restrictions = self.process_restrictions(attr.restrictions);
+
             if check_req_attrs.contains_key(&attr.name) {
                 check_req_attrs.insert(format!("{}_{}", attr.name, index), attr);
             } else {
@@ -184,7 +195,9 @@ impl ProofRequestMessage {
             })?;
 
         let mut index = 1;
-        for attr in attr_values {
+        for mut attr in attr_values.into_iter() {
+            attr.restrictions = self.process_restrictions(attr.restrictions);
+
             if check_predicates.contains_key(&attr.name) {
                 check_predicates.insert(format!("{}_{}", attr.name, index), attr);
             } else {
@@ -195,6 +208,29 @@ impl ProofRequestMessage {
 
         self.proof_request_data.requested_predicates = check_predicates;
         Ok(self)
+    }
+
+    fn process_restrictions(&self, restrictions: Option<Vec<Filter>>) -> Option<Vec<Filter>> {
+        if let Some(PROOF_REQUEST_V2) = self.proof_request_data.ver.as_ref().map(String::as_str) {
+            return restrictions;
+        }
+
+        restrictions
+            .map(|filters|
+                filters
+                    .into_iter()
+                    .map(|filter| {
+                        Filter {
+                            schema_id: filter.schema_id.as_ref().and_then(|schema_id| anoncreds::libindy_to_unqualified(&schema_id).ok()),
+                            schema_issuer_did: filter.schema_issuer_did.as_ref().and_then(|schema_issuer_did|  anoncreds::libindy_to_unqualified(&schema_issuer_did).ok()),
+                            schema_name: filter.schema_name,
+                            schema_version: filter.schema_version,
+                            issuer_did: filter.issuer_did.as_ref().and_then(|issuer_did| anoncreds::libindy_to_unqualified(&issuer_did).ok()),
+                            cred_def_id: filter.cred_def_id.as_ref().and_then(|cred_def_id| anoncreds::libindy_to_unqualified(&cred_def_id).ok()),
+                        }
+                    })
+                    .collect()
+            )
     }
 
     pub fn from_timestamp(&mut self, from: Option<u64>) -> VcxResult<&mut Self> {
@@ -238,7 +274,8 @@ mod tests {
             data_version: String::new(),
             requested_attributes: HashMap::new(),
             requested_predicates: HashMap::new(),
-            non_revoked: None
+            non_revoked: None,
+            ver: None,
         };
         assert_eq!(request.proof_request_data, proof_data);
     }
@@ -259,6 +296,7 @@ mod tests {
             .tid(tid).unwrap()
             .mid(mid).unwrap()
             .nonce(nonce).unwrap()
+            .proof_request_format_version(Some(PROOF_REQUEST_V2)).unwrap()
             .proof_name(data_name).unwrap()
             .proof_data_version(data_version).unwrap()
             .requested_attrs(REQUESTED_ATTRS).unwrap()
@@ -275,6 +313,7 @@ mod tests {
         assert!(serialized_msg.contains(r#""age":{"name":"age","restrictions":[{"schema_id":"6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB","schema_name":"Faber Student Info","schema_version":"1.0","issuer_did":"8XFh8yBzrpJQmNyZzgoTqB","cred_def_id":"8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766"},{"schema_id":"5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB","schema_name":"BYU Student Info","schema_version":"1.0","issuer_did":"66Fh8yBzrpJQmNyZzgoTqB","cred_def_id":"66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}"#));
         assert!(serialized_msg.contains(r#""to_timestamp":100"#));
         assert!(serialized_msg.contains(r#""from_timestamp":1"#));
+        assert!(serialized_msg.contains(r#""ver":"2.0""#));
     }
 
     #[test]

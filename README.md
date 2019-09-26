@@ -195,8 +195,6 @@ See section "Release channels" for more details.
 
  - [WARNING] This library should be considered as experimental as currently unit tests are *not* executed in the CI phase.
 
- - We are using the [NDK16b](https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip) because it is the last NDK to have support for `gnustl_shared` stl.
- gnustl_shared is deprecated in latest NDK. gnustal_shared is needed because the dependencies are compiled using gnustal_shared and you will get build errors if more than one type of stl while compiling.
 
 ### Centos
 
