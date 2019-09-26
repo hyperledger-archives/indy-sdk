@@ -1096,4 +1096,26 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  */
 + (void)generateNonce:(void (^)(NSError *error, NSString *nonce))completion;
 
+/**
+ Get unqualified form (short form without method) of a fully qualified entity like DIDs..
+
+ This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+     Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+     another case when casting to unqualified form needed
+
+ @param  entity: utarget entity to disqualify.
+    Can be one of:
+       Did
+       SchemaId
+       CredentialDefinitionId
+       RevocationRegistryId
+       CredentialOffer
+       ProofRequest
+
+ Returns entity either in unqualified form or original if casting isn't possible
+ */
++ (void)toUnqualified:(NSString *)entity
+        completion:(void (^)(NSError *error, NSString *res))completion;
+
 @end

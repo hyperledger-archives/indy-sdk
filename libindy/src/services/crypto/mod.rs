@@ -125,7 +125,7 @@ impl CryptoService {
         // Check did is correct Base58
         let _ = self.validate_did(&their_did_info.did)?;
 
-        let verkey = build_full_verkey(&their_did_info.did.disqualify().0,
+        let verkey = build_full_verkey(&their_did_info.did.to_unqualified().0,
                                        their_did_info.verkey.as_ref().map(String::as_str))?;
 
         self.validate_key(&verkey)?;

@@ -177,8 +177,8 @@ pub fn generate_nonce() -> Result<String, IndyError> {
     anoncreds::generate_nonce().wait()
 }
 
-pub fn disqualify(entity: &str) -> Result<String, IndyError> {
-    anoncreds::disqualify(entity).wait()
+pub fn to_unqualified(entity: &str) -> Result<String, IndyError> {
+    anoncreds::to_unqualified(entity).wait()
 }
 
 pub fn default_cred_def_config() -> String {

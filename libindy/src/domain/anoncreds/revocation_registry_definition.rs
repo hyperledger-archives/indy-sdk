@@ -136,9 +136,9 @@ impl RevocationRegistryId {
         }
     }
 
-    pub fn disqualify(&self) -> RevocationRegistryId {
+    pub fn to_unqualified(&self) -> RevocationRegistryId {
         match self.parts() {
-            Some((did, cred_def_id, rev_reg_type, tag)) => RevocationRegistryId::new(&did.disqualify(), &cred_def_id.disqualify(), &rev_reg_type, &tag),
+            Some((did, cred_def_id, rev_reg_type, tag)) => RevocationRegistryId::new(&did.to_unqualified(), &cred_def_id.to_unqualified(), &rev_reg_type, &tag),
             None => self.clone()
         }
     }
@@ -205,17 +205,17 @@ mod tests {
         RevocationRegistryId("revreg:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:4:creddef:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag:CL_ACCUM:TAG_1".to_string())
     }
 
-    mod disqualify {
+    mod to_unqualified {
         use super::*;
 
         #[test]
         fn test_rev_reg_id_parts_for_id_as_unqualified() {
-            assert_eq!(_rev_reg_id_unqualified(), _rev_reg_id_unqualified().disqualify());
+            assert_eq!(_rev_reg_id_unqualified(), _rev_reg_id_unqualified().to_unqualified());
         }
 
         #[test]
         fn test_rev_reg_id_parts_for_id_as_qualified() {
-            assert_eq!(_rev_reg_id_unqualified(), _rev_reg_id_qualified().disqualify());
+            assert_eq!(_rev_reg_id_unqualified(), _rev_reg_id_qualified().to_unqualified());
         }
     }
 

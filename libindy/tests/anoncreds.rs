@@ -3449,6 +3449,19 @@ mod high_cases {
             assert_code!(ErrorCode::WalletItemNotFound, res);
         }
     }
+
+    mod to_unqualified {
+        use super::*;
+
+        #[test]
+        fn to_unqualified() {
+            let qualified = "did:sov:NcYxiDXkpYi6ov5FcYDi1e";
+            let unqualified = "NcYxiDXkpYi6ov5FcYDi1e";
+
+            assert_eq!(unqualified, anoncreds::to_unqualified(qualified).unwrap());
+            assert_eq!(unqualified, anoncreds::to_unqualified(unqualified).unwrap());
+        }
+    }
 }
 
 #[cfg(not(feature = "only_high_cases"))]

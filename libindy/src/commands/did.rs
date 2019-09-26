@@ -479,7 +479,7 @@ impl DidCommandExecutor {
             return Err(IndyError::from_msg(IndyErrorKind::InvalidState, "You can abbreviate fully-qualified did only with `sov` method"));
         }
 
-        let did = &did.disqualify().0.from_base58()?;
+        let did = &did.to_unqualified().0.from_base58()?;
         let dverkey = &verkey.from_base58()?;
 
         let (first_part, second_part) = dverkey.split_at(16);

@@ -166,9 +166,9 @@ impl Prover {
             let identifier = match proof_req {
                 ProofRequest::ProofRequestV1(_) => {
                     Identifier {
-                        schema_id: credential.schema_id.disqualify(),
-                        cred_def_id: credential.cred_def_id.disqualify(),
-                        rev_reg_id: credential.rev_reg_id.as_ref().map(|id| id.disqualify()),
+                        schema_id: credential.schema_id.to_unqualified(),
+                        cred_def_id: credential.cred_def_id.to_unqualified(),
+                        rev_reg_id: credential.rev_reg_id.as_ref().map(|id| id.to_unqualified()),
                         timestamp: cred_key.timestamp,
                     }
                 }
@@ -293,11 +293,11 @@ impl Prover {
         res.insert("rev_reg_id".to_string(), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.0.clone()).unwrap_or_else(|| "None".to_string()));
 
         if credential.cred_def_id.is_fully_qualified() {
-            res.insert(Credential::add_extra_tag_suffix("schema_id"), credential.schema_id.disqualify().0);
-            res.insert(Credential::add_extra_tag_suffix("schema_issuer_did"), schema_issuer_did.disqualify().0);
-            res.insert(Credential::add_extra_tag_suffix("issuer_did"), issuer_did.disqualify().0);
-            res.insert(Credential::add_extra_tag_suffix("cred_def_id"), credential.cred_def_id.disqualify().0);
-            res.insert(Credential::add_extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.disqualify().0.clone()).unwrap_or_else(|| "None".to_string()));
+            res.insert(Credential::add_extra_tag_suffix("schema_id"), credential.schema_id.to_unqualified().0);
+            res.insert(Credential::add_extra_tag_suffix("schema_issuer_did"), schema_issuer_did.to_unqualified().0);
+            res.insert(Credential::add_extra_tag_suffix("issuer_did"), issuer_did.to_unqualified().0);
+            res.insert(Credential::add_extra_tag_suffix("cred_def_id"), credential.cred_def_id.to_unqualified().0);
+            res.insert(Credential::add_extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.to_unqualified().0.clone()).unwrap_or_else(|| "None".to_string()));
         }
 
         credential.values

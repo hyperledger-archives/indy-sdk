@@ -219,8 +219,8 @@ extern {
     pub fn indy_generate_nonce(command_handle: CommandHandle,
                                cb: Option<ResponseStringCB>) -> Error;
     #[no_mangle]
-    pub fn indy_disqualify(command_handle: CommandHandle,
-                           entity: CString,
-                           cb: Option<ResponseStringCB>) -> Error;
+    pub fn indy_to_unqualified(command_handle: CommandHandle,
+                               entity: CString,
+                               cb: Option<ResponseStringCB>) -> Error;
 }
 

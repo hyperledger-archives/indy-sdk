@@ -3041,8 +3041,8 @@ mod demos {
                                                 "name":"name",
                                                 "restrictions": {
                                                     "$and": [
-                                                        {"schema_id": anoncreds::disqualify(&schema_id).unwrap()},
-                                                        {"cred_def_id": anoncreds::disqualify(&cred_def_id).unwrap()},
+                                                        {"schema_id": anoncreds::to_unqualified(&schema_id).unwrap()},
+                                                        {"cred_def_id": anoncreds::to_unqualified(&cred_def_id).unwrap()},
                                                     ]
                                                 }
                                             }
@@ -3054,9 +3054,9 @@ mod demos {
                                                 "p_value":18,
                                                 "restrictions": {
                                                     "$and": [
-                                                        {"issuer_did": anoncreds::disqualify(&ISSUER_DID_V1).unwrap()},
-                                                        {"schema_id": anoncreds::disqualify(&schema_id).unwrap()},
-                                                        {"cred_def_id": anoncreds::disqualify(&cred_def_id).unwrap()},
+                                                        {"issuer_did": anoncreds::to_unqualified(&ISSUER_DID_V1).unwrap()},
+                                                        {"schema_id": anoncreds::to_unqualified(&schema_id).unwrap()},
+                                                        {"cred_def_id": anoncreds::to_unqualified(&cred_def_id).unwrap()},
                                                     ]
                                                 }
                                                 }
@@ -3158,8 +3158,8 @@ mod demos {
         // Issuer creates Credential Offer
         let cred_offer_json = anoncreds::issuer_create_credential_offer(issuer_wallet_handle, &cred_def_id).unwrap();
 
-        // Issuer disqualify Credential Offer to get unqualified form
-        let cred_offer_json = anoncreds::disqualify(&cred_offer_json).unwrap();
+        // Issuer convert Credential Offer to unqualified form
+        let cred_offer_json = anoncreds::to_unqualified(&cred_offer_json).unwrap();
 
         let cred_offer: CredentialOffer = serde_json::from_str(&cred_offer_json).unwrap();
         assert_eq!(cred_offer.schema_id.0, anoncreds::gvt_schema_id());
@@ -3200,8 +3200,8 @@ mod demos {
                                                 "name":"name",
                                                 "restrictions": {
                                                     "$and": [
-                                                        {"schema_id": anoncreds::disqualify(&schema_id).unwrap()},
-                                                        {"cred_def_id": anoncreds::disqualify(&cred_def_id).unwrap()},
+                                                        {"schema_id": anoncreds::to_unqualified(&schema_id).unwrap()},
+                                                        {"cred_def_id": anoncreds::to_unqualified(&cred_def_id).unwrap()},
                                                     ]
                                                 }
                                             }
@@ -3213,8 +3213,8 @@ mod demos {
                                                 "p_value":18,
                                                 "restrictions": {
                                                     "$and": [
-                                                        {"issuer_did": anoncreds::disqualify(&ISSUER_DID_V1).unwrap()},
-                                                        {"schema_id": anoncreds::disqualify(&schema_id).unwrap()},
+                                                        {"issuer_did": anoncreds::to_unqualified(&ISSUER_DID_V1).unwrap()},
+                                                        {"schema_id": anoncreds::to_unqualified(&schema_id).unwrap()},
                                                     ]
                                                 }
                                                 }
