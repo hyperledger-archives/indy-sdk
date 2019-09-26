@@ -600,4 +600,24 @@
     [[WalletUtils sharedInstance] closeWalletWithHandle:localWalletHandle];
 }
 
+// MARK: - To Unqualified
+
+- (void)testToUnqualified {
+    NSString *qualified = @"did:sov:NcYxiDXkpYi6ov5FcYDi1e";
+    NSString *unqualified = @"NcYxiDXkpYi6ov5FcYDi1e";
+
+    NSString* res;;
+
+    ret = [[AnoncredsUtils sharedInstance] toUnqualified:qualified
+                                                     res:&res];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::toUnqualified failed");
+    XCTAssertTrue([unqualified isEqualToString:res]);
+
+    ret = [[AnoncredsUtils sharedInstance] toUnqualified:unqualified
+                                                     res:&res];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::toUnqualified failed");
+    XCTAssertTrue([unqualified isEqualToString:res]);
+}
+
+
 @end

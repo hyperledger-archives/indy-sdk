@@ -658,4 +658,23 @@
     }
 }
 
++ (void)toUnqualified:(NSString *)entity
+           completion:(void (^)(NSError *error, NSString *res))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_to_unqualified(handle,
+            [entity UTF8String],
+            IndyWrapperCommonStringCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 @end
