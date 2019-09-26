@@ -208,10 +208,10 @@ impl CredentialDefinitionId {
         }
     }
 
-    pub fn disqualify(&self) -> CredentialDefinitionId {
+    pub fn to_unqualified(&self) -> CredentialDefinitionId {
         match self.parts() {
             Some((did, signature_type, schema_id, tag)) => {
-                CredentialDefinitionId::new(&did.disqualify(), &schema_id.disqualify(), &signature_type, &tag)
+                CredentialDefinitionId::new(&did.to_unqualified(), &schema_id.to_unqualified(), &signature_type, &tag)
             }
             None => self.clone()
         }
@@ -279,37 +279,37 @@ mod tests {
         CredentialDefinitionId("creddef:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:3:CL:schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag".to_string())
     }
 
-    mod disqualify {
+    mod to_unqualified {
         use super::*;
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified() {
-            assert_eq!(_cred_def_id_unqualified(), _cred_def_id_unqualified().disqualify());
+            assert_eq!(_cred_def_id_unqualified(), _cred_def_id_unqualified().to_unqualified());
         }
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_without_tag() {
-            assert_eq!(_cred_def_id_unqualified_without_tag(), _cred_def_id_unqualified_without_tag().disqualify());
+            assert_eq!(_cred_def_id_unqualified_without_tag(), _cred_def_id_unqualified_without_tag().to_unqualified());
         }
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_without_tag_with_schema_as_seq_no() {
-            assert_eq!(_cred_def_id_unqualified_with_schema_as_seq_no(), _cred_def_id_unqualified_with_schema_as_seq_no().disqualify());
+            assert_eq!(_cred_def_id_unqualified_with_schema_as_seq_no(), _cred_def_id_unqualified_with_schema_as_seq_no().to_unqualified());
         }
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_without_tag_with_schema_as_seq_no_without_tag() {
-            assert_eq!(_cred_def_id_unqualified_with_schema_as_seq_no_without_tag(), _cred_def_id_unqualified_with_schema_as_seq_no_without_tag().disqualify());
+            assert_eq!(_cred_def_id_unqualified_with_schema_as_seq_no_without_tag(), _cred_def_id_unqualified_with_schema_as_seq_no_without_tag().to_unqualified());
         }
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_qualified() {
-            assert_eq!(_cred_def_id_unqualified(), _cred_def_id_qualified().disqualify());
+            assert_eq!(_cred_def_id_unqualified(), _cred_def_id_qualified().to_unqualified());
         }
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_qualified_with_schema_as_seq_no() {
-            assert_eq!(_cred_def_id_unqualified_with_schema_as_seq_no(), _cred_def_id_qualified_with_schema_as_seq_no().disqualify());
+            assert_eq!(_cred_def_id_unqualified_with_schema_as_seq_no(), _cred_def_id_qualified_with_schema_as_seq_no().to_unqualified());
         }
     }
 

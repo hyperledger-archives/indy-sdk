@@ -2375,7 +2375,7 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
     res
 }
 
-/// Get unqualified form of fully qualified entity.
+/// Get unqualified form (short form without method) of a fully qualified entity like DID.
 ///
 /// This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
 ///     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
@@ -2392,26 +2392,26 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
 ///             CredentialOffer
 ///
 /// #Returns
-///   res: entity either in unqualified form or original if disqualification isn't possible
+///   res: entity either in unqualified form or original if casting isn't possible
 #[no_mangle]
-pub  extern fn indy_disqualify(command_handle: CommandHandle,
-                               entity: *const c_char,
-                               cb: Option<extern fn(command_handle_: CommandHandle,
-                                                    err: ErrorCode,
-                                                    res: *const c_char)>) -> ErrorCode {
-    trace!("indy_disqualify_identifier: >>> entity: {:?}", entity);
+pub  extern fn indy_to_unqualified(command_handle: CommandHandle,
+                                   entity: *const c_char,
+                                   cb: Option<extern fn(command_handle_: CommandHandle,
+                                                        err: ErrorCode,
+                                                        res: *const c_char)>) -> ErrorCode {
+    trace!("indy_to_unqualified: >>> entity: {:?}", entity);
 
     check_useful_c_str!(entity, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_disqualify_identifier: entities >>> entity: {:?}", entity);
+    trace!("indy_to_unqualified: entities >>> entity: {:?}", entity);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Disqualify(
+        .send(Command::Anoncreds(AnoncredsCommand::ToUnqualified(
             entity,
             Box::new(move |result| {
                 let (err, res) = prepare_result_1!(result, String::new());
-                trace!("indy_disqualify_identifier: did: {:?}", res);
+                trace!("indy_to_unqualified: did: {:?}", res);
                 let res = ctypes::string_to_cstring(res);
                 cb(command_handle, err, res.as_ptr())
             }),
@@ -2419,7 +2419,7 @@ pub  extern fn indy_disqualify(command_handle: CommandHandle,
 
     let res = prepare_result!(result);
 
-    trace!("indy_disqualify_identifier: <<< res: {:?}", res);
+    trace!("indy_to_unqualified: <<< res: {:?}", res);
 
     res
 }

@@ -1444,7 +1444,7 @@ fn _generate_nonce(command_handle: CommandHandle, cb: Option<ResponseStringCB>) 
     })
 }
 
-/// Get unqualified form of fully qualified entity.
+/// Get unqualified form (short form without method) of a fully qualified entity like DID.
 ///
 /// This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
 ///     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
@@ -1452,7 +1452,7 @@ fn _generate_nonce(command_handle: CommandHandle, cb: Option<ResponseStringCB>) 
 ///     another case when casting to unqualified form needed
 ///
 /// # Arguments
-/// * `entity`: one of
+/// * `entity`: target entity to disqualify. Can be one of:
 ///         Did
 ///         SchemaId
 ///         CredentialDefinitionId
@@ -1460,19 +1460,19 @@ fn _generate_nonce(command_handle: CommandHandle, cb: Option<ResponseStringCB>) 
 ///         CredentialOffer
 ///
 /// # Returns
-/// * `res`: disqualified form of identifier
-pub fn disqualify(entity: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
+/// * `res`: entity either in unqualified form or original if casting isn't possible
+pub fn to_unqualified(entity: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _disqualify(command_handle, entity,  cb);
+    let err = _to_unqualified(command_handle, entity, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
-fn _disqualify(command_handle: CommandHandle, entity: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+fn _to_unqualified(command_handle: CommandHandle, entity: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
     let entity = c_str!(entity);
 
     ErrorCode::from(unsafe {
-        anoncreds::indy_disqualify(command_handle, entity.as_ptr(), cb)
+        anoncreds::indy_to_unqualified(command_handle, entity.as_ptr(), cb)
     })
 }

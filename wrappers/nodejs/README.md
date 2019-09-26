@@ -924,7 +924,7 @@ Errors: `Common*`
 
 #### disqualify \( entity \) -&gt; res
 
-Get unqualified form of fully qualified entity.
+Get unqualified form (short form without method) of a fully qualified entity like DIDs..
 
 This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
 1) Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
@@ -932,7 +932,7 @@ This function should be used to the proper casting of fully qualified entity to 
 3) another case when casting to unqualified form needed
 
 * `entity`: String - target entity to disqualify. Can be one of: Did, SchemaId, CredentialDefinitionId, RevocationRegistryId, CredentialOffer.
-* __->__ `res`: Json - entity either in unqualified form or original if disqualification isn't possible
+* __->__ `res`: Json - entity either in unqualified form or original if casting isn't possible
 
 ### blob_storage
 

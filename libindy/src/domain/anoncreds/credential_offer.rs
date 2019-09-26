@@ -16,10 +16,10 @@ pub struct CredentialOffer {
 }
 
 impl CredentialOffer {
-    pub fn disqualify(self) -> CredentialOffer {
+    pub fn to_unqualified(self) -> CredentialOffer {
         CredentialOffer {
-            schema_id: self.schema_id.disqualify(),
-            cred_def_id: self.cred_def_id.disqualify(),
+            schema_id: self.schema_id.to_unqualified(),
+            cred_def_id: self.cred_def_id.to_unqualified(),
             key_correctness_proof: self.key_correctness_proof,
             nonce: self.nonce,
             method_name: if self.schema_id.is_fully_qualified(){ self.schema_id.get_method()} else { None },

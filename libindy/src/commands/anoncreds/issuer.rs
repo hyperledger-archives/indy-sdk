@@ -756,7 +756,7 @@ impl IssuerCommandExecutor {
             };
 
         let cred_rev_reg_id = match (rev_reg_id, cred_offer.method_name.as_ref()) {
-            (Some(rev_reg_id), Some(ref _method_name)) => Some(rev_reg_id.disqualify()),
+            (Some(rev_reg_id), Some(ref _method_name)) => Some(rev_reg_id.to_unqualified()),
             (rev_reg_id, _) => rev_reg_id.cloned()
         };
 
