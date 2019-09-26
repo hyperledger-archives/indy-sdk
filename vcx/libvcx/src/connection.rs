@@ -18,7 +18,6 @@ use utils::json::mapped_key_rewrite;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::json::KeyMatch;
 use std::collections::HashMap;
-use utils::qualifier::Qualifier;
 
 lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connection> = Default::default();
