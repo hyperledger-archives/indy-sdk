@@ -1,16 +1,17 @@
 use serde;
 use serde_json;
 use time;
-use std::collections::HashMap;
 
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use super::super::crypto::did::{DidValue, ShortDidValue};
 
 pub const DEFAULT_LIBIDY_DID: &str = "LibindyDid111111111111";
 
 pub struct ProtocolVersion {}
 
 lazy_static! {
-    pub static ref PROTOCOL_VERSION: AtomicUsize = AtomicUsize::new(1);
+    pub static ref PROTOCOL_VERSION: AtomicUsize = AtomicUsize::new(2);
 }
 
 impl ProtocolVersion {
@@ -44,7 +45,7 @@ fn get_req_id() -> u64 {
 pub struct Request<T: serde::Serialize> {
     pub req_id: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier: Option<String>,
+    pub identifier: Option<ShortDidValue>,
     pub operation: T,
     pub protocol_version: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -54,14 +55,14 @@ pub struct Request<T: serde::Serialize> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub taa_acceptance: Option<TxnAuthrAgrmtAcceptanceData>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub endorser: Option<String>
+    pub endorser: Option<ShortDidValue>
 }
 
 impl<T: serde::Serialize> Request<T> {
-    pub fn new(req_id: u64, identifier: &str, operation: T, protocol_version: usize) -> Request<T> {
+    pub fn new(req_id: u64, identifier: ShortDidValue, operation: T, protocol_version: usize) -> Request<T> {
         Request {
             req_id,
-            identifier: Some(identifier.to_string()),
+            identifier: Some(identifier),
             operation,
             protocol_version: Some(protocol_version),
             signature: None,
@@ -71,9 +72,15 @@ impl<T: serde::Serialize> Request<T> {
         }
     }
 
-    pub fn build_request(identifier: Option<&str>, operation: T) -> Result<String, serde_json::Error> {
+    pub fn build_request(identifier: Option<&DidValue>, operation: T) -> Result<String, String> {
         let req_id = get_req_id();
-        let identifier = identifier.unwrap_or(DEFAULT_LIBIDY_DID);
+
+        let identifier = match identifier {
+            Some(identifier_) => identifier_.clone().to_short(),
+            None => ShortDidValue(DEFAULT_LIBIDY_DID.to_string())
+        };
+
         serde_json::to_string(&Request::new(req_id, identifier, operation, ProtocolVersion::get()))
+            .map_err(|err| format!("Cannot serialize Request: {:?}", err))
     }
 }

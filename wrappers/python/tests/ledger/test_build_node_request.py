@@ -15,7 +15,7 @@ async def test_build_node_request_works_for_missed_fields_in_data_json(did_trust
 
 @pytest.mark.asyncio
 async def test_build_node_request_works_for_correct_data_json(did_trustee):
-    destination = "destination"
+    destination = "VsKV7grR1BUE29mG2Fm2kX"
     data = {
         "node_ip": "ip",
         "node_port": 1,

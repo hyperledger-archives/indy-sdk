@@ -2,16 +2,17 @@ use std::collections::{HashMap, HashSet};
 
 use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinitionId};
 use domain::anoncreds::proof::{Proof, RequestedProof, Identifier};
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequest, NonRevocedInterval};
+use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestPayload, NonRevocedInterval};
 use domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
 use domain::anoncreds::schema::{SchemaV1, SchemaId};
 use errors::prelude::*;
 use services::anoncreds::helpers::*;
 
+
 use ursa::cl::{CredentialPublicKey, new_nonce, Nonce};
 use ursa::cl::verifier::Verifier as CryptoVerifier;
-use services::wallet::language::{parse_from_json, Operator};
+use utils::wql::Query;
 use regex::Regex;
 
 lazy_static! {
@@ -37,7 +38,7 @@ impl Verifier {
 
     pub fn verify(&self,
                   full_proof: &Proof,
-                  proof_req: &ProofRequest,
+                  proof_req: &ProofRequestPayload,
                   schemas: &HashMap<SchemaId, SchemaV1>,
                   cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
                   rev_reg_defs: &HashMap<RevocationRegistryId, RevocationRegistryDefinitionV1>,
@@ -60,8 +61,6 @@ impl Verifier {
 
         Verifier::_verify_requested_restrictions(&proof_req,
                                                  &full_proof.requested_proof,
-                                                 schemas,
-                                                 cred_defs,
                                                  &received_revealed_attrs,
                                                  &received_unrevealed_attrs,
                                                  &received_predicates,
@@ -141,7 +140,7 @@ impl Verifier {
 
     fn _get_revealed_attributes_for_credential(sub_proof_index: usize,
                                                requested_proof: &RequestedProof,
-                                               proof_req: &ProofRequest) -> IndyResult<Vec<AttributeInfo>> {
+                                               proof_req: &ProofRequestPayload) -> IndyResult<Vec<AttributeInfo>> {
         trace!("_get_revealed_attributes_for_credential >>> sub_proof_index: {:?}, requested_credentials: {:?}, proof_req: {:?}",
                sub_proof_index, requested_proof, proof_req);
 
@@ -160,7 +159,7 @@ impl Verifier {
 
     fn _get_predicates_for_credential(sub_proof_index: usize,
                                       requested_proof: &RequestedProof,
-                                      proof_req: &ProofRequest) -> IndyResult<Vec<PredicateInfo>> {
+                                      proof_req: &ProofRequestPayload) -> IndyResult<Vec<PredicateInfo>> {
         trace!("_get_predicates_for_credential >>> sub_proof_index: {:?}, requested_credentials: {:?}, proof_req: {:?}",
                sub_proof_index, requested_proof, proof_req);
 
@@ -177,7 +176,7 @@ impl Verifier {
         Ok(predicates_for_credential)
     }
 
-    fn _compare_attr_from_proof_and_request(proof_req: &ProofRequest,
+    fn _compare_attr_from_proof_and_request(proof_req: &ProofRequestPayload,
                                             received_revealed_attrs: &HashMap<String, Identifier>,
                                             received_unrevealed_attrs: &HashMap<String, Identifier>,
                                             received_self_attested_attrs: &HashSet<String>,
@@ -217,7 +216,7 @@ impl Verifier {
         Ok(())
     }
 
-    fn _compare_timestamps_from_proof_and_request(proof_req: &ProofRequest,
+    fn _compare_timestamps_from_proof_and_request(proof_req: &ProofRequestPayload,
                                                   received_revealed_attrs: &HashMap<String, Identifier>,
                                                   received_unrevealed_attrs: &HashMap<String, Identifier>,
                                                   received_self_attested_attrs: &HashSet<String>,
@@ -306,7 +305,7 @@ impl Verifier {
             ))
     }
 
-    fn _verify_revealed_attribute_values(proof_req: &ProofRequest,
+    fn _verify_revealed_attribute_values(proof_req: &ProofRequestPayload,
                                          proof: &Proof) -> IndyResult<()> {
         for (attr_referent, attr_info) in proof.requested_proof.revealed_attrs.iter() {
             let reveal_attr_encoded = attr_info.encoded.to_string();
@@ -315,7 +314,7 @@ impl Verifier {
             let attr_name = proof_req.requested_attributes.get(attr_referent.as_str())
                 .as_ref()
                 .map(|attr_info| attr_info.name.as_str())
-                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequest", attr_referent)))?;
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequests", attr_referent)))?;
 
             let crypto_proof_encoded = proof.proof.proofs
                 .get(sub_proof_index)
@@ -334,10 +333,8 @@ impl Verifier {
         Ok(())
     }
 
-    fn _verify_requested_restrictions(proof_req: &ProofRequest,
+    fn _verify_requested_restrictions(proof_req: &ProofRequestPayload,
                                       requested_proof: &RequestedProof,
-                                      schemas: &HashMap<SchemaId, SchemaV1>,
-                                      cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
                                       received_revealed_attrs: &HashMap<String, Identifier>,
                                       received_unrevealed_attrs: &HashMap<String, Identifier>,
                                       received_predicates: &HashMap<String, Identifier>,
@@ -355,26 +352,22 @@ impl Verifier {
             .collect();
 
         for (referent, info) in requested_attrs {
-            let op = parse_from_json(
-                &build_wql_query(&info.name, &referent, &info.restrictions, None)?
-            )?;
+            if let Some(ref query) = info.restrictions {
+                let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers)?;
+                let revealed_value = requested_proof.revealed_attrs.get(&referent).map(|attr| attr.raw.as_str());
 
-            let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers, schemas, cred_defs)?;
-            let revealed_value = requested_proof.revealed_attrs.get(&referent).map(|attr| attr.raw.as_str());
-
-            Verifier::_process_operator(&info.name, &op, &filter, revealed_value)
-                .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" attribute", &info.name)))?;
+                Verifier::_process_operator(&info.name, &query, &filter, revealed_value)
+                    .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" attribute", &info.name)))?;
+            }
         }
 
         for (referent, info) in proof_req.requested_predicates.iter() {
-            let op = parse_from_json(
-                &build_wql_query(&info.name, &referent, &info.restrictions, None)?
-            )?;
+            if let Some(ref query) = info.restrictions {
+                let filter = Verifier::_gather_filter_info(&referent, received_predicates)?;
 
-            let filter = Verifier::_gather_filter_info(&referent, received_predicates, schemas, cred_defs)?;
-
-            Verifier::_process_operator(&info.name, &op, &filter, None)
-                .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" predicate", &info.name)))?;
+                Verifier::_process_operator(&info.name, &query, &filter, None)
+                    .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" predicate", &info.name)))?;
+            }
         }
 
         Ok(())
@@ -382,7 +375,7 @@ impl Verifier {
 
     fn _is_self_attested(referent: &str, info: &AttributeInfo, self_attested_attrs: &HashSet<String>) -> bool {
         match info.restrictions.as_ref() {
-            Some(&serde_json::Value::Array(ref array)) if array.is_empty() =>
+            Some(&Query::And(ref array)) | Some(&Query::Or(ref array)) if array.is_empty() =>
                 self_attested_attrs.contains(referent),
             None => self_attested_attrs.contains(referent),
             Some(_) => false
@@ -390,9 +383,7 @@ impl Verifier {
     }
 
     fn _gather_filter_info(referent: &str,
-                           identifiers: &HashMap<String, Identifier>,
-                           schemas: &HashMap<SchemaId, SchemaV1>,
-                           cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>) -> IndyResult<Filter> {
+                           identifiers: &HashMap<String, Identifier>) -> IndyResult<Filter> {
         let identifier = identifiers
             .get(referent)
             .ok_or_else(|| err_msg(
@@ -400,66 +391,43 @@ impl Verifier {
                 format!("Identifier not found for referent: {}", referent))
             )?;
 
-        let schema: &SchemaV1 = schemas
-            .get(&identifier.schema_id)
-            .ok_or_else(|| err_msg(
-                IndyErrorKind::InvalidStructure,
-                format!("Schema not found for id: {:?}", identifier.schema_id))
-            )?;
+        let (schema_issuer_did, schema_name, schema_version) = identifier.schema_id.parts()
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Invalid Schema ID `{}`: wrong number of parts", identifier.schema_id.0)))?;
 
-        let cred_def: &CredentialDefinitionV1 = cred_defs
-            .get(&identifier.cred_def_id)
-            .ok_or_else(|| err_msg(
-                IndyErrorKind::InvalidStructure,
-                format!("CredentialDefinitionV1 not found for id: {:?}", identifier.cred_def_id))
-            )?;
-
-        let schema_issuer_did = cred_def.schema_id.issuer_did()
-            .ok_or_else(|| err_msg(
-                IndyErrorKind::InvalidStructure,
-                format!("schema_id has invalid format: {:?}", schema.id))
-            )?;
-
-        let issuer_did = cred_def.id.issuer_did()
-            .ok_or_else(|| err_msg(
-                IndyErrorKind::InvalidStructure,
-                format!("cred_def_id has invalid format: {:?}", cred_def.id))
-            )?;
+        let issuer_did = identifier.cred_def_id.issuer_did()
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Invalid Credential Definition ID `{}`: wrong number of parts", identifier.cred_def_id.0)))?;
 
         Ok(Filter {
             schema_id: identifier.schema_id.0.to_string(),
-            schema_name: schema.name.to_string(),
-            schema_issuer_did,
-            schema_version: schema.version.to_string(),
+            schema_name,
+            schema_issuer_did: schema_issuer_did.0,
+            schema_version,
             cred_def_id: identifier.cred_def_id.0.to_string(),
-            issuer_did
+            issuer_did: issuer_did.0
         })
     }
 
     fn _process_operator(attr: &str,
-                         restriction_op: &Operator,
+                         restriction_op: &Query,
                          filter: &Filter,
                          revealed_value: Option<&str>) -> IndyResult<()> {
         match restriction_op {
-            Operator::Eq(ref tag_name, ref tag_value) => {
-                let tag_name = tag_name.from_utf8()?;
-                Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter, revealed_value)
-                    .map_err(|err| err.extend(format!("$eq operator validation failed for tag: \"{}\", value: \"{}\"", tag_name, tag_value.value())))
+            Query::Eq(ref tag_name, ref tag_value) => {
+                Verifier::_process_filter(attr, &tag_name, &tag_value, filter, revealed_value)
+                    .map_err(|err| err.extend(format!("$eq operator validation failed for tag: \"{}\", value: \"{}\"", tag_name, tag_value)))
             }
-            Operator::Neq(ref tag_name, ref tag_value) => {
-                let tag_name = tag_name.from_utf8()?;
-                if Verifier::_process_filter(attr, &tag_name, &tag_value.value(), filter, revealed_value).is_err() {
+            Query::Neq(ref tag_name, ref tag_value) => {
+                if Verifier::_process_filter(attr, &tag_name, &tag_value, filter, revealed_value).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
-                                            format!("$neq operator validation failed for tag: \"{}\", value: \"{}\". Condition was passed.", tag_name, tag_value.value())))
+                                            format!("$neq operator validation failed for tag: \"{}\", value: \"{}\". Condition was passed.", tag_name, tag_value)))
                 }
             }
-            Operator::In(ref tag_name, ref tag_values) => {
-                let tag_name = tag_name.from_utf8()?;
+            Query::In(ref tag_name, ref tag_values) => {
                 let res = tag_values
                     .iter()
-                    .any(|val| Verifier::_process_filter(attr, &tag_name, &val.value(), filter, revealed_value).is_ok());
+                    .any(|val| Verifier::_process_filter(attr, &tag_name, &val, filter, revealed_value).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -467,7 +435,7 @@ impl Verifier {
                                             format!("$in operator validation failed for tag: \"{}\", values \"{:?}\".", tag_name, tag_values)))
                 }
             }
-            Operator::And(ref operators) => {
+            Query::And(ref operators) => {
                 operators
                     .iter()
                     .map(|op| Verifier::_process_operator(attr, op, filter, revealed_value))
@@ -475,7 +443,7 @@ impl Verifier {
                     .map(|_| ())
                     .map_err(|err| err.extend("$and operator validation failed."))
             }
-            Operator::Or(ref operators) => {
+            Query::Or(ref operators) => {
                 let res = operators
                     .iter()
                     .any(|op| Verifier::_process_operator(attr, op, filter, revealed_value).is_ok());
@@ -485,7 +453,7 @@ impl Verifier {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected, "$or operator validation failed. All conditions were failed."))
                 }
             }
-            Operator::Not(ref operator) => {
+            Query::Not(ref operator) => {
                 if Verifier::_process_operator(attr, &*operator, filter, revealed_value).is_err() {
                     Ok(())
                 } else {
@@ -542,7 +510,6 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::wallet::language::{TagName, TargetValue};
 
     pub const SCHEMA_ID: &str = "123";
     pub const SCHEMA_NAME: &str = "Schema Name";
@@ -552,33 +519,31 @@ mod tests {
     pub const ISSUER_DID: &str = "456";
     pub const VALUE: &str = "value";
 
-    fn encrypted_tag(tag: String) -> TagName { TagName::EncryptedTagName(tag.into_bytes()) }
+    fn schema_id_tag() -> String { "schema_id".to_string() }
 
-    fn unencrypted_target(tag: String) -> TargetValue { TargetValue::Unencrypted(tag) }
+    fn schema_name_tag() -> String { "schema_name".to_string() }
 
-    fn schema_id_tag() -> TagName { encrypted_tag("schema_id".to_string()) }
+    fn schema_issuer_did_tag() -> String { "schema_issuer_did".to_string() }
 
-    fn schema_name_tag() -> TagName { encrypted_tag("schema_name".to_string()) }
+    fn schema_version_tag() -> String { "schema_version".to_string() }
 
-    fn schema_issuer_did_tag() -> TagName { encrypted_tag("schema_issuer_did".to_string()) }
+    fn cred_def_id_tag() -> String { "cred_def_id".to_string() }
 
-    fn schema_version_tag() -> TagName { encrypted_tag("schema_version".to_string()) }
+    fn issuer_did_tag() -> String { "issuer_did".to_string() }
 
-    fn cred_def_id_tag() -> TagName { encrypted_tag("cred_def_id".to_string()) }
+    fn attr_tag() -> String { "attr::zip::marker".to_string() }
 
-    fn issuer_did_tag() -> TagName { encrypted_tag("issuer_did".to_string()) }
+    fn attr_tag_value() -> String { "attr::zip::value".to_string() }
 
-    fn zip_marker() -> TagName { encrypted_tag("attr::zip::marker".to_string()) }
+    fn zip_marker() -> String { "attr::zip::marker".to_string() }
 
-    fn zip_value() -> TagName { encrypted_tag("attr::zip::value".to_string()) }
+    fn zip_value() -> String { "attr::zip::value".to_string() }
 
-    fn extra_marker() -> TagName { encrypted_tag("attr::extra::marker".to_string()) }
+    fn extra_marker() -> String { "attr::extra::marker".to_string() }
 
-    fn extra_value() -> TagName { encrypted_tag("attr::extra::value".to_string()) }
+    fn extra_value() -> String { "attr::extra::value".to_string() }
 
-    fn attr_tag_value() -> TagName { encrypted_tag("attr::zip::value".to_string()) }
-
-    fn bad_attr_tag() -> TagName { encrypted_tag("bad::zip::marker".to_string()) }
+    fn bad_attr_tag() -> String { "bad::zip::marker".to_string() }
 
     fn filter() -> Filter {
         Filter {
@@ -595,60 +560,60 @@ mod tests {
     fn test_process_op_eq() {
         let filter = filter();
 
-        let mut op = Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string()));
+        let mut op = Query::Eq(schema_id_tag(), SCHEMA_ID.to_string());
         Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
-        op = Operator::And(vec![
-            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
-            Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
+        op = Query::And(vec![
+            Query::Eq(attr_tag(), "1".to_string()),
+            Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
         ]);
         Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
-        op = Operator::And(vec![
-            Operator::Eq(bad_attr_tag(), unencrypted_target("1".to_string())),
-            Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
+        op = Query::And(vec![
+            Query::Eq(bad_attr_tag(), "1".to_string()),
+            Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::Eq(schema_id_tag(), unencrypted_target("NOT HERE".to_string()));
+        op = Query::Eq(schema_id_tag(), "NOT HERE".to_string());
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
     }
 
     #[test]
     fn test_process_op_ne() {
         let filter = filter();
-        let mut op = Operator::Neq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string()));
+        let mut op = Query::Neq(schema_id_tag(), SCHEMA_ID.to_string());
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::Neq(schema_id_tag(), unencrypted_target("NOT HERE".to_string()));
+        op = Query::Neq(schema_id_tag(), "NOT HERE".to_string());
         Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
 
     #[test]
     fn test_process_op_in() {
         let filter = filter();
-        let mut cred_def_ids = vec![unencrypted_target("Not Here".to_string())];
+        let mut cred_def_ids = vec!["Not Here".to_string()];
 
-        let mut op = Operator::In(cred_def_id_tag(), cred_def_ids.clone());
+        let mut op = Query::In(cred_def_id_tag(), cred_def_ids.clone());
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        cred_def_ids.push(unencrypted_target(CRED_DEF_ID.to_string()));
-        op = Operator::In(cred_def_id_tag(), cred_def_ids.clone());
+        cred_def_ids.push(CRED_DEF_ID.to_string());
+        op = Query::In(cred_def_id_tag(), cred_def_ids.clone());
         Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
 
     #[test]
     fn test_process_op_or() {
         let filter = filter();
-        let mut op = Operator::Or(vec![
-            Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
-            Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
+        let mut op = Query::Or(vec![
+            Query::Eq(schema_id_tag(), "Not Here".to_string()),
+            Query::Eq(cred_def_id_tag(), "Not Here".to_string())
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::Or(vec![
-            Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
-            Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
+        op = Query::Or(vec![
+            Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
+            Query::Eq(cred_def_id_tag(), "Not Here".to_string())
         ]);
         Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
@@ -656,21 +621,21 @@ mod tests {
     #[test]
     fn test_process_op_and() {
         let filter = filter();
-        let mut op = Operator::And(vec![
-            Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
-            Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
+        let mut op = Query::And(vec![
+            Query::Eq(schema_id_tag(), "Not Here".to_string()),
+            Query::Eq(cred_def_id_tag(), "Not Here".to_string())
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::And(vec![
-            Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
-            Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
+        op = Query::And(vec![
+            Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
+            Query::Eq(cred_def_id_tag(), "Not Here".to_string())
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::And(vec![
-            Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
-            Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
+        op = Query::And(vec![
+            Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
+            Query::Eq(cred_def_id_tag(), CRED_DEF_ID.to_string())
         ]);
         Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
@@ -678,15 +643,15 @@ mod tests {
     #[test]
     fn test_process_op_not() {
         let filter = filter();
-        let mut op = Operator::Not(Box::new(Operator::And(vec![
-            Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
-            Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
+        let mut op = Query::Not(Box::new(Query::And(vec![
+            Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
+            Query::Eq(cred_def_id_tag(), CRED_DEF_ID.to_string())
         ])));
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::Not(Box::new(Operator::And(vec![
-            Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
-            Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
+        op = Query::Not(Box::new(Query::And(vec![
+            Query::Eq(schema_id_tag(), "Not Here".to_string()),
+            Query::Eq(cred_def_id_tag(), "Not Here".to_string())
         ])));
         Verifier::_process_operator("zip", &op, &filter, None).unwrap()
     }
@@ -694,50 +659,50 @@ mod tests {
     #[test]
     fn test_proccess_op_or_with_nested_and() {
         let filter = filter();
-        let mut op = Operator::Or(vec![
-            Operator::And(vec![
-                Operator::Eq(schema_id_tag(), unencrypted_target("Not Here".to_string())),
-                Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
+        let mut op = Query::Or(vec![
+            Query::And(vec![
+                Query::Eq(schema_id_tag(), "Not Here".to_string()),
+                Query::Eq(cred_def_id_tag(), "Not Here".to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_issuer_did_tag(), unencrypted_target("Not Here".to_string())),
-                Operator::Eq(schema_name_tag(), unencrypted_target("Not Here".to_string()))
+            Query::And(vec![
+                Query::Eq(schema_issuer_did_tag(), "Not Here".to_string()),
+                Query::Eq(schema_name_tag(), "Not Here".to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_name_tag(), unencrypted_target("Not Here".to_string())),
-                Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
-            ]),
-        ]);
-        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
-
-        op = Operator::Or(vec![
-            Operator::And(vec![
-                Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
-                Operator::Eq(cred_def_id_tag(), unencrypted_target("Not Here".to_string()))
-            ]),
-            Operator::And(vec![
-                Operator::Eq(schema_issuer_did_tag(), unencrypted_target("Not Here".to_string())),
-                Operator::Eq(schema_name_tag(), unencrypted_target("Not Here".to_string()))
-            ]),
-            Operator::And(vec![
-                Operator::Eq(schema_name_tag(), unencrypted_target("Not Here".to_string())),
-                Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
+            Query::And(vec![
+                Query::Eq(schema_name_tag(), "Not Here".to_string()),
+                Query::Eq(issuer_did_tag(), "Not Here".to_string())
             ]),
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::Or(vec![
-            Operator::And(vec![
-                Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
-                Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
+        op = Query::Or(vec![
+            Query::And(vec![
+                Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
+                Query::Eq(cred_def_id_tag(), "Not Here".to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_issuer_did_tag(), unencrypted_target("Not Here".to_string())),
-                Operator::Eq(schema_name_tag(), unencrypted_target("Not Here".to_string()))
+            Query::And(vec![
+                Query::Eq(schema_issuer_did_tag(), "Not Here".to_string()),
+                Query::Eq(schema_name_tag(), "Not Here".to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_name_tag(), unencrypted_target("Not Here".to_string())),
-                Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
+            Query::And(vec![
+                Query::Eq(schema_name_tag(), "Not Here".to_string()),
+                Query::Eq(issuer_did_tag(), "Not Here".to_string())
+            ]),
+        ]);
+        assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
+
+        op = Query::Or(vec![
+            Query::And(vec![
+                Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
+                Query::Eq(cred_def_id_tag(), CRED_DEF_ID.to_string())
+            ]),
+            Query::And(vec![
+                Query::Eq(schema_issuer_did_tag(), "Not Here".to_string()),
+                Query::Eq(schema_name_tag(), "Not Here".to_string())
+            ]),
+            Query::And(vec![
+                Query::Eq(schema_name_tag(), "Not Here".to_string()),
+                Query::Eq(issuer_did_tag(), "Not Here".to_string())
             ]),
         ]);
         Verifier::_process_operator("zip", &op, &filter, None).unwrap()
@@ -746,65 +711,65 @@ mod tests {
     #[test]
     fn test_verify_op_complex_nested() {
         let filter = filter();
-        let mut op = Operator::And(vec![
-            Operator::And(vec![
-                Operator::Or(vec![
-                    Operator::Eq(schema_name_tag(), unencrypted_target("Not Here".to_string())),
-                    Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
+        let mut op = Query::And(vec![
+            Query::And(vec![
+                Query::Or(vec![
+                    Query::Eq(schema_name_tag(), "Not Here".to_string()),
+                    Query::Eq(issuer_did_tag(), "Not Here".to_string())
                 ]),
-                Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
-                Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
+                Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
+                Query::Eq(cred_def_id_tag(), CRED_DEF_ID.to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_issuer_did_tag(), unencrypted_target(SCHEMA_ISSUER_DID.to_string())),
-                Operator::Eq(schema_name_tag(), unencrypted_target(SCHEMA_NAME.to_string()))
+            Query::And(vec![
+                Query::Eq(schema_issuer_did_tag(), SCHEMA_ISSUER_DID.to_string()),
+                Query::Eq(schema_name_tag(), SCHEMA_NAME.to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_version_tag(), unencrypted_target(SCHEMA_VERSION.to_string())),
-                Operator::Eq(issuer_did_tag(), unencrypted_target(ISSUER_DID.to_string()))
+            Query::And(vec![
+                Query::Eq(schema_version_tag(), SCHEMA_VERSION.to_string()),
+                Query::Eq(issuer_did_tag(), ISSUER_DID.to_string())
             ]),
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::And(vec![
-            Operator::And(vec![
-                Operator::Or(vec![
-                    Operator::Eq(schema_name_tag(), unencrypted_target(SCHEMA_NAME.to_string())),
-                    Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
+        op = Query::And(vec![
+            Query::And(vec![
+                Query::Or(vec![
+                    Query::Eq(schema_name_tag(), SCHEMA_NAME.to_string()),
+                    Query::Eq(issuer_did_tag(), "Not Here".to_string())
                 ]),
-                Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
-                Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
+                Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
+                Query::Eq(cred_def_id_tag(), CRED_DEF_ID.to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_issuer_did_tag(), unencrypted_target(SCHEMA_ISSUER_DID.to_string())),
-                Operator::Eq(schema_name_tag(), unencrypted_target(SCHEMA_NAME.to_string()))
+            Query::And(vec![
+                Query::Eq(schema_issuer_did_tag(), SCHEMA_ISSUER_DID.to_string()),
+                Query::Eq(schema_name_tag(), SCHEMA_NAME.to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_version_tag(), unencrypted_target(SCHEMA_VERSION.to_string())),
-                Operator::Eq(issuer_did_tag(), unencrypted_target(ISSUER_DID.to_string()))
+            Query::And(vec![
+                Query::Eq(schema_version_tag(), SCHEMA_VERSION.to_string()),
+                Query::Eq(issuer_did_tag(), ISSUER_DID.to_string())
             ]),
-            Operator::Not(Box::new(Operator::Eq(schema_version_tag(), unencrypted_target("NOT HERE".to_string()))))
+            Query::Not(Box::new(Query::Eq(schema_version_tag(), "NOT HERE".to_string())))
         ]);
         Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
-        op = Operator::And(vec![
-            Operator::And(vec![
-                Operator::Or(vec![
-                    Operator::Eq(schema_name_tag(), unencrypted_target(SCHEMA_NAME.to_string())),
-                    Operator::Eq(issuer_did_tag(), unencrypted_target("Not Here".to_string()))
+        op = Query::And(vec![
+            Query::And(vec![
+                Query::Or(vec![
+                    Query::Eq(schema_name_tag(), SCHEMA_NAME.to_string()),
+                    Query::Eq(issuer_did_tag(), "Not Here".to_string())
                 ]),
-                Operator::Eq(schema_id_tag(), unencrypted_target(SCHEMA_ID.to_string())),
-                Operator::Eq(cred_def_id_tag(), unencrypted_target(CRED_DEF_ID.to_string()))
+                Query::Eq(schema_id_tag(), SCHEMA_ID.to_string()),
+                Query::Eq(cred_def_id_tag(), CRED_DEF_ID.to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_issuer_did_tag(), unencrypted_target(SCHEMA_ISSUER_DID.to_string())),
-                Operator::Eq(schema_name_tag(), unencrypted_target(SCHEMA_NAME.to_string()))
+            Query::And(vec![
+                Query::Eq(schema_issuer_did_tag(), SCHEMA_ISSUER_DID.to_string()),
+                Query::Eq(schema_name_tag(), SCHEMA_NAME.to_string())
             ]),
-            Operator::And(vec![
-                Operator::Eq(schema_version_tag(), unencrypted_target(SCHEMA_VERSION.to_string())),
-                Operator::Eq(issuer_did_tag(), unencrypted_target(ISSUER_DID.to_string()))
+            Query::And(vec![
+                Query::Eq(schema_version_tag(), SCHEMA_VERSION.to_string()),
+                Query::Eq(issuer_did_tag(), ISSUER_DID.to_string())
             ]),
-            Operator::Not(Box::new(Operator::Eq(schema_version_tag(), unencrypted_target(SCHEMA_VERSION.to_string()))))
+            Query::Not(Box::new(Query::Eq(schema_version_tag(), SCHEMA_VERSION.to_string())))
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
     }
@@ -814,16 +779,16 @@ mod tests {
         let filter = filter();
         let value = "value";
 
-        let mut op = Operator::Eq(attr_tag_value(), unencrypted_target(value.to_string()));
+        let mut op = Query::Eq(attr_tag_value(), value.to_string());
         Verifier::_process_operator("zip", &op, &filter, Some(value)).unwrap();
 
-        op = Operator::And(vec![
-            Operator::Eq(attr_tag_value(), unencrypted_target(value.to_string())),
-            Operator::Eq(schema_issuer_did_tag(), unencrypted_target(SCHEMA_ISSUER_DID.to_string())),
+        op = Query::And(vec![
+            Query::Eq(attr_tag_value(), value.to_string()),
+            Query::Eq(schema_issuer_did_tag(), SCHEMA_ISSUER_DID.to_string()),
         ]);
         Verifier::_process_operator("zip", &op, &filter, Some(value)).unwrap();
 
-        op = Operator::Eq(attr_tag_value(), unencrypted_target(value.to_string()));
+        op = Query::Eq(attr_tag_value(), value.to_string());
         assert!(Verifier::_process_operator("zip", &op, &filter, Some("NOT HERE")).is_err());
     }
 
@@ -831,41 +796,41 @@ mod tests {
     fn test_process_op_eq_internal_tags() {
         let filter = filter();
 
-        let mut op = Operator::Eq(zip_value(), unencrypted_target(VALUE.to_string()));
+        let mut op = Query::Eq(zip_value(), VALUE.to_string());
         Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
-        op = Operator::And(vec![
-            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
-            Operator::Eq(zip_value(), unencrypted_target(VALUE.to_string())),
+        op = Query::And(vec![
+            Query::Eq(zip_marker(), "1".to_string()),
+            Query::Eq(zip_value(), VALUE.to_string()),
         ]);
         Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
-        op = Operator::And(vec![
-            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
-            Operator::Eq(zip_value(), unencrypted_target(VALUE.to_string())),
-            Operator::Eq(extra_marker(), unencrypted_target("1".to_string())),
-            Operator::Eq(extra_value(), unencrypted_target(VALUE.to_string())),
+        op = Query::And(vec![
+            Query::Eq(zip_marker(), "1".to_string()),
+            Query::Eq(zip_value(), VALUE.to_string()),
+            Query::Eq(extra_marker(), "1".to_string()),
+            Query::Eq(extra_value(), VALUE.to_string()),
         ]);
         Verifier::_process_operator("zip", &op, &filter, None).unwrap();
 
-        op = Operator::Eq(encrypted_tag("attr::zip::NOT HERE".to_string()), unencrypted_target(VALUE.to_string()));
+        op = Query::Eq("attr::zip::NOT HERE".to_string(), VALUE.to_string());
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::Eq(encrypted_tag("NOT HEREattrNOT HERE::zip::value".to_string()), unencrypted_target(VALUE.to_string()));
+        op = Query::Eq("NOT HEREattrNOT HERE::zip::value".to_string(), VALUE.to_string());
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::Eq(encrypted_tag("NOT HERE::zip::marker".to_string()), unencrypted_target(VALUE.to_string()));
+        op = Query::Eq("NOT HERE::zip::marker".to_string(), VALUE.to_string());
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::And(vec![
-            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
-            Operator::Eq(encrypted_tag("attr::zip::NOT HERE".to_string()), unencrypted_target(VALUE.to_string())),
+        op = Query::And(vec![
+            Query::Eq(zip_marker(), "1".to_string()),
+            Query::Eq("attr::zip::NOT HERE".to_string(), VALUE.to_string()),
         ]);
         assert!(Verifier::_process_operator("zip", &op, &filter, None).is_err());
 
-        op = Operator::Or(vec![
-            Operator::Eq(zip_marker(), unencrypted_target("1".to_string())),
-            Operator::Eq(encrypted_tag("attr::zip::NOT HERE".to_string()), unencrypted_target(VALUE.to_string())),
+        op = Query::Or(vec![
+            Query::Eq(zip_marker(), "1".to_string()),
+            Query::Eq("attr::zip::NOT HERE".to_string(), VALUE.to_string()),
         ]);
         Verifier::_process_operator("zip", &op, &filter, None).unwrap();
     }

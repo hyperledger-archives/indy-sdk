@@ -1047,6 +1047,10 @@ public class Anoncreds extends IndyJava.API {
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval for each attribute
 	 *                        // (applies to every attribute and predicate but can be overridden on attribute level)
+	 *         "ver": Optional<str>  - proof request version:
+	 *             - omit to use unqualified identifiers for restrictions
+	 *             - "1.0" to use unqualified identifiers for restrictions
+	 *             - "2.0" to use fully qualified identifiers for restrictions
 	 *     }
 	 * where
 	 * attr_referent: Proof-request local identifier of requested attribute
@@ -1153,6 +1157,10 @@ public class Anoncreds extends IndyJava.API {
 	 *                        // for date in this interval for each attribute
 	 *                        // (applies to every attribute and predicate but can be overridden on attribute level)
 	 *                        // (can be overridden on attribute level)
+	 *         "ver": Optional<str>  - proof request version:
+	 *             - omit to use unqualified identifiers for restrictions
+	 *             - "1.0" to use unqualified identifiers for restrictions
+	 *             - "2.0" to use fully qualified identifiers for restrictions
 	 *     }
 	 * @param requestedCredentials either a credential or self-attested attribute for each requested attribute
 	 *     {
@@ -1304,6 +1312,9 @@ public class Anoncreds extends IndyJava.API {
 	 * Verifies a proof (of multiple credential).
 	 * All required schemas, public keys and revocation registries must be provided.
 	 *
+	 * IMPORTANT: You must use *_id's (`schema_id`, `cred_def_id`, `rev_reg_id`) listed in `proof[identifiers]`
+	 * as the keys for corresponding `schemas`, `credentialDefs`, `revocRegDefs`, `revocRegs` objects.
+	 *
 	 * @param proofRequest   proof request json
 	 *     {
 	 *         "name": string,
@@ -1321,6 +1332,10 @@ public class Anoncreds extends IndyJava.API {
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval for each attribute
 	 *                        // (can be overridden on attribute level)
+	 *         "ver": Optional<str>  - proof request version:
+	 *             - omit to use unqualified identifiers for restrictions
+	 *             - "1.0" to use unqualified identifiers for restrictions
+	 *             - "2.0" to use fully qualified identifiers for restrictions
 	 *     }
 	 * @param proof  Proof json
 	 *     {
@@ -1520,6 +1535,42 @@ public class Anoncreds extends IndyJava.API {
 
 		int result = LibIndy.api.indy_generate_nonce(
 				commandHandle,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Get unqualified form (short form without method) of a fully qualified entity like DIDs..
+	 *
+	 * This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+	 *     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+	 *     Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+	 *     another case when casting to unqualified form needed
+	 *
+	 * @param entity target entity to toUnqualified. Can be one of:
+	 *             Did
+	 *             SchemaId
+	 *             CredentialDefinitionId
+	 *             RevocationRegistryId
+	 *             CredentialOffer
+	 *             ProofRequest
+	 * @return A future that resolves to entity either in unqualified form or original if casting isn't possible
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> toUnqualified(
+			String entity) throws IndyException {
+
+		ParamGuard.notNull(entity, "entity");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_to_unqualified(
+				commandHandle,
+				entity,
 				stringCb);
 
 		checkResult(future, result);
