@@ -59,7 +59,7 @@ test('did', async function (t) {
   // Qualify DID
   var method = 'peer'
   var fullQualifiedDid = await indy.qualifyDid(wh, did, method)
-  t.is('did:' + prefix + ':' + did, fullQualifiedDid)
+  t.is('did:' + method + ':' + did, fullQualifiedDid)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
