@@ -922,9 +922,9 @@ Generates 80-bit numbers that can be used as a nonce for proof request.
 
 Errors: `Common*`
 
-#### disqualify \( entity \) -&gt; res
+#### toUnqualified \( entity \) -&gt; res
 
-Get unqualified form (short form without method) of a fully qualified entity like DIDs..
+Get unqualified form (short form without method) of a fully qualified entity like DID.
 
 This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
 1) Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.

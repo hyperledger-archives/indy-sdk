@@ -9,6 +9,7 @@ use domain::anoncreds::schema::SchemaId;
 use domain::anoncreds::credential_definition::CredentialDefinitionId;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
 use domain::anoncreds::credential_offer::CredentialOffer;
+use domain::anoncreds::proof_request::ProofRequest;
 
 use std::collections::{HashSet, HashMap};
 
@@ -127,6 +128,12 @@ pub fn to_unqualified(entity: &str) -> IndyResult<String> {
         let cred_offer = cred_offer.to_unqualified();
         return serde_json::to_string(&cred_offer)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize Credential Offer: {:?}", err)));
+    }
+
+    if let Ok(proof_request) = ::serde_json::from_str::<ProofRequest>(&entity) {
+        let proof_request = proof_request.to_unqualified();
+        return serde_json::to_string(&proof_request)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize Proof Request: {:?}", err)));
     }
 
     Ok(entity.to_string())

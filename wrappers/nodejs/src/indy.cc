@@ -958,20 +958,20 @@ NAN_METHOD(generateNonce) {
   indyCalled(icb, indy_generate_nonce(icb->handle, generateNonce_cb));
 }
 
-void disqualify_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+void toUnqualified_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
     icb->cbString(xerr, arg0);
   }
 }
 
-NAN_METHOD(disqualify) {
-  INDY_ASSERT_NARGS(disqualify, 2)
-  INDY_ASSERT_STRING(disqualify, 0, entity)
-  INDY_ASSERT_FUNCTION(disqualify, 1)
+NAN_METHOD(toUnqualified) {
+  INDY_ASSERT_NARGS(toUnqualified, 2)
+  INDY_ASSERT_STRING(toUnqualified, 0, entity)
+  INDY_ASSERT_FUNCTION(toUnqualified, 1)
   const char* arg0 = argToCString(info[0]);
   IndyCallback* icb = argToIndyCb(info[1]);
-  indyCalled(icb, indy_disqualify(icb->handle, arg0, disqualify_cb));
+  indyCalled(icb, indy_to_unqualified(icb->handle, arg0, toUnqualified_cb));
   delete arg0;
 }
 
@@ -3589,7 +3589,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "createRevocationState", createRevocationState);
   Nan::Export(target, "updateRevocationState", updateRevocationState);
   Nan::Export(target, "generateNonce", generateNonce);
-  Nan::Export(target, "disqualify", disqualify);
+  Nan::Export(target, "toUnqualified", toUnqualified);
   Nan::Export(target, "openBlobStorageReader", openBlobStorageReader);
   Nan::Export(target, "openBlobStorageWriter", openBlobStorageWriter);
   Nan::Export(target, "createKey", createKey);

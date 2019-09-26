@@ -664,7 +664,7 @@
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_disqualify(handle,
+    ret = indy_to_unqualified(handle,
             [entity UTF8String],
             IndyWrapperCommonStringCallback
     );

@@ -1111,6 +1111,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
        CredentialDefinitionId
        RevocationRegistryId
        CredentialOffer
+       ProofRequest
 
  Returns entity either in unqualified form or original if casting isn't possible
  */

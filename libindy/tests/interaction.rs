@@ -900,7 +900,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
                "attr1_referent": json!({
                    "name":"name",
                    "restrictions": {
-                        "cred_def_id": anoncreds::to_unqualified(&issuer.cred_def_id).unwrap(),
+                        "cred_def_id": issuer.cred_def_id,
                    }
                })
            }),
@@ -909,6 +909,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_did(
            }),
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
+
+    let proof_request = anoncreds::to_unqualified(&proof_request).unwrap();
 
     let verifier = Verifier::new(&proof_request);
 
@@ -1045,7 +1047,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_issu
                "attr1_referent": json!({
                    "name":"name",
                    "restrictions": {
-                        "cred_def_id": anoncreds::to_unqualified(&issuer.cred_def_id).unwrap()
+                        "cred_def_id": issuer.cred_def_id
                    }
                })
            }),
@@ -1054,6 +1056,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_fully_qualified_issu
            }),
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
+
+    let proof_request = anoncreds::to_unqualified(&proof_request).unwrap();
 
     let verifier = Verifier::new(&proof_request);
 

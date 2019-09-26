@@ -2390,6 +2390,7 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
 ///             CredentialDefinitionId
 ///             RevocationRegistryId
 ///             CredentialOffer
+///             ProofRequest
 ///
 /// #Returns
 ///   res: entity either in unqualified form or original if casting isn't possible

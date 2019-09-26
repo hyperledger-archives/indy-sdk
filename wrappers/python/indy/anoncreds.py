@@ -1874,6 +1874,7 @@ async def to_unqualified(entity: str) -> str:
                 CredentialDefinitionId
                 RevocationRegistryId
                 CredentialOffer
+                ProofRequest
 
     :return: entity either in unqualified form or original if casting isn't possible
     """

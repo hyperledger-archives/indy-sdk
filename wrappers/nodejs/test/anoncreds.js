@@ -175,8 +175,8 @@ test('anoncreds', async function (t) {
 
   var qualified = 'did:sov:NcYxiDXkpYi6ov5FcYDi1e'
   var unqualified = 'NcYxiDXkpYi6ov5FcYDi1e'
-  t.is(unqualified, await indy.disqualify(qualified))
-  t.is(unqualified, await indy.disqualify(unqualified))
+  t.is(unqualified, await indy.toUnqualified(qualified))
+  t.is(unqualified, await indy.toUnqualified(unqualified))
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)

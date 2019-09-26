@@ -1458,6 +1458,7 @@ fn _generate_nonce(command_handle: CommandHandle, cb: Option<ResponseStringCB>) 
 ///         CredentialDefinitionId
 ///         RevocationRegistryId
 ///         CredentialOffer
+///         ProofRequest
 ///
 /// # Returns
 /// * `res`: entity either in unqualified form or original if casting isn't possible

@@ -215,9 +215,9 @@ indy.generateNonce = function generateNonce (cb) {
   return cb.promise
 }
 
-indy.disqualify = function disqualify (entity, cb) {
+indy.toUnqualified = function toUnqualified (entity, cb) {
   cb = wrapIndyCallback(cb)
-  capi.disqualify(entity, cb)
+  capi.toUnqualified(entity, cb)
   return cb.promise
 }
 
