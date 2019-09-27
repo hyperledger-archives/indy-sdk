@@ -3,11 +3,22 @@ libindy (1.12.0) unstable; urgency=medium
 [ Hyperledger ]
 
 ## 1.12.0
-* Supported fully-qualified DIDs:
-    * Now all methods can work with fully-qualified DIDs (new way) as well as with unqualified DIDs.
-    * Proof requests now support version of restrictions -- it specifies whether dids are full qualified or not. For more details see the documentation of `indy_prover_create_proof`.
-    * There is a new function -- `indy_qualify_did` -- that helps to qualify did for some specific network. NB: it should not be qualified for it in before.
-* Supported `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
+* Minimal Support of Fully-Qualified identifiers:
+    * extended `did_info` parameter of `indy_create_and_store_my_did` function to accepts optional `method_name` filed. This field should be used to create fully qualified DID.
+    * all functions can work with fully-qualified identifiers (new way) as well as with unqualified.
+    * added a new function -- `indy_to_unqualified` -- that gets unqualified form of a fully qualified identifier.
+    * proof requests now support versioning (`ver` field) -- now it specifies whether restrictions are full qualified or not.
+         - omit or set "1.0" to use unqualified identifiers.
+         - set "2.0" to use fully qualified identifiers.
+
+        The same format of identifiers will be used in generated proof and must be used for proof verification.
+
+    * added a new function -- `indy_qualify_did` -- that updates DID stored in the wallet to make it fully qualified, or to do other DID maintenance.
+    * all functions in Ledger API can accept fully-qualified identifiers but always return results in an unqualified form.
+* Bugfixes
+    * Fixed `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
+    * Fixed `attr::{}::value` verification (IS-1380, thanks @nrempel for reporting the vulnerability)
+    * others minor bugfixes
 
 ## 1.11.1
 * Added new functions to Anoncreds API to rotate credential definition:
