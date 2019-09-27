@@ -496,7 +496,7 @@
     return err;
 }
 
-- (NSError *)qualifyDid:(NSString)did
+- (NSError *)qualifyDid:(NSString *)did
                  method:(NSString *)method
            walletHandle:(IndyHandle)walletHandle
        fullQualifiedDid:(NSString **)fullQualifiedDid

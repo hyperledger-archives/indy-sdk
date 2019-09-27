@@ -448,7 +448,7 @@ extern "C" {
     extern indy_error_t indy_qualify_did(indy_handle_t     command_handle,
                                          indy_handle_t     wallet_handle,
                                          const char *const did,
-                                         const char *const prefix,
+                                         const char *const method,
 
                                          void              (*cb)(indy_handle_t     command_handle,
                                                                  indy_error_t      err,
