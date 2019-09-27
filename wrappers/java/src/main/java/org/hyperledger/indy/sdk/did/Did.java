@@ -206,6 +206,22 @@ public class Did extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when qualifyDid completes.
+	 */
+	private static Callback qualifyDidCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String did) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			String result = did;
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
@@ -672,6 +688,44 @@ public class Did extends IndyJava.API {
 				did,
 				verkey,
 				getAttrVerkeyCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+	 *     - If the DID has no method, a method will be appended (prepend did:peer to a legacy did)
+	 *     - If the DID has a method, a method will be updated (migrate did:peer to did:peer-new)
+	 *
+	 * Update DID related entities stored in the wallet.
+	 *
+	 * @param wallet The wallet.
+	 * @param did The target DID stored in the wallet.
+	 * @param method The method to apply to the DID.
+	 * @return A future resolving to a fully qualified did
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> qualifyDid(
+			Wallet wallet,
+			String did,
+			String method) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+		ParamGuard.notNull(method, "method");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_qualify_did(
+				commandHandle,
+				walletHandle,
+				did,
+				method,
+				getDidMetadataCb);
 
 		checkResult(future, result);
 

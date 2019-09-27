@@ -99,9 +99,9 @@ impl CryptoService {
         let did = match my_did_info.did {
             Some(ref did) => did.clone(),
             _ if my_did_info.cid == Some(true) =>
-                DidValue::new(&vk[..].to_vec().to_base58(), my_did_info.method_name.as_ref().map(String::as_str)),
+                DidValue::new(&vk[..].to_vec().to_base58(), my_did_info.method_name.as_ref().map(|method| method.0.as_str())),
             _ =>
-                DidValue::new(&vk[0..16].to_vec().to_base58(), my_did_info.method_name.as_ref().map(String::as_str))
+                DidValue::new(&vk[0..16].to_vec().to_base58(), my_did_info.method_name.as_ref().map(|method| method.0.as_str()))
         };
 
         let mut vk = vk[..].to_base58();

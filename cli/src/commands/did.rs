@@ -448,6 +448,55 @@ pub mod list_command {
     }
 }
 
+pub mod qualify_command {
+    use super::*;
+
+    command!(CommandMetadata::build("qualify", "Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.")
+                .add_main_param_with_dynamic_completion("did", "Did stored in wallet", DynamicCompletionType::Did)
+                .add_main_param("method", "Method to apply to the DID.")
+                .add_example("did qualify did=VsKV7grR1BUE29mG2Fm2kX prefix=did:peer")
+                .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?}, params {:?}", ctx, params);
+
+        let did = get_str_param("did", params).map_err(error_err!())?;
+        let method = get_str_param("method", params).map_err(error_err!())?;
+
+        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+
+        let res = match Did::qualify_did(wallet_handle, &did, &method) {
+            Ok(full_qualified_did) => {
+                println_succ!("Fully qualified DID \"{}\"", full_qualified_did);
+
+                if let Some(active_did) = get_active_did(&ctx) {
+                    if active_did == did {
+                        set_active_did(ctx, Some(full_qualified_did.to_owned()));
+                        println_succ!("Target DID is the same as CLI active. Active DID has been updated");
+                    }
+                }
+
+                Ok(())
+            }
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletItemNotFound => {
+                        println_err!("Requested DID not found");
+                        Err(())
+                    },
+                    _ => {
+                        handle_indy_error(err, Some(&did), None, None);
+                        Err(())
+                    },
+                }
+            }
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 fn _list_dids(ctx: &CommandContext) -> Vec<serde_json::Value> {
     get_opened_wallet(ctx)
         .and_then(|(wallet_handle, _)|
@@ -927,6 +976,54 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
+        }
+    }
+
+    mod qualify_did {
+        use super::*;
+
+        const METHOD: &str = "peer";
+
+        #[test]
+        pub fn qualify_did_works() {
+            let ctx = setup_with_wallet();
+            new_did(&ctx, SEED_MY1);
+            {
+                let cmd = qualify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("method", METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn qualify_did_works_for_active() {
+            let ctx = setup_with_wallet();
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_MY1);
+            {
+                let cmd = qualify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("method", METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn qualify_did_works_for_unknown_did() {
+            let ctx = setup_with_wallet();
+            {
+                let cmd = qualify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("method", METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            tear_down_with_wallet(&ctx);
         }
     }
 
