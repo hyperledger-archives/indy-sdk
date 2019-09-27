@@ -106,3 +106,7 @@ pub fn get_my_did_with_metadata(wallet_handle: i32, did: &str) -> Result<String,
 pub fn abbreviate_verkey(did: &str, verkey: &str) -> Result<String, IndyError> {
     did::abbreviate_verkey(did, verkey).wait()
 }
+
+pub fn qualify_did(wallet_handle: i32, did: &str, prefix: &str) -> Result<String, IndyError> {
+    did::qualify_did(wallet_handle, did, prefix).wait()
+}

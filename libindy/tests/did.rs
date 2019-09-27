@@ -645,6 +645,105 @@ mod high_cases {
             assert_eq!(verkey, full_verkey);
         }
     }
+
+    mod qualify_did {
+        use super::*;
+
+        const CUSTOM_METHOD: &str = "peer";
+
+        #[test]
+        fn qualify_did_for_appending_prefix() {
+            let setup = Setup::new_identity();
+
+            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, DEFAULT_METHOD_NAME).unwrap();
+            assert_eq!(full_qualified_did, format!("{}{}", DEFAULT_PREFIX, setup.did));
+        }
+
+        #[test]
+        fn qualify_did_for_updating_prefix() {
+            let setup = Setup::did();
+
+            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, DEFAULT_METHOD_NAME).unwrap();
+
+            let new_full_qualified_did = did::qualify_did(setup.wallet_handle, &full_qualified_did, CUSTOM_METHOD).unwrap();
+            assert_eq!(new_full_qualified_did, format!("did:{}:{}", CUSTOM_METHOD, setup.did));
+        }
+
+        #[test]
+        fn qualify_did_for_keeping_related_entities() {
+            let setup = Setup::new_identity();
+
+            // set Metadata
+            did::set_did_metadata(setup.wallet_handle, &setup.did, METADATA).unwrap();
+
+            // set Endpoint
+            did::set_endpoint_for_did(setup.wallet_handle, &setup.did, ENDPOINT, VERKEY).unwrap();
+
+            // set Temporary Verkey
+            let temp_verkey = did::replace_keys_start(setup.wallet_handle, &setup.did, "{}").unwrap();
+
+            // set Pairwise
+            did::store_their_did(setup.wallet_handle, &json!({"did": DID}).to_string()).unwrap();
+            utils::pairwise::create_pairwise(setup.wallet_handle, DID, &setup.did, None).unwrap();
+
+            let identity_json = json!({"did": DID_TRUSTEE, "verkey": VERKEY_TRUSTEE}).to_string();
+            did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
+            utils::pairwise::create_pairwise(setup.wallet_handle, DID_TRUSTEE, &setup.did, None).unwrap();
+
+            let full_qualified_did = did::qualify_did(setup.wallet_handle, &setup.did, DEFAULT_METHOD_NAME).unwrap();
+            assert_eq!(full_qualified_did, format!("{}{}", DEFAULT_PREFIX, setup.did));
+
+            {
+                // check key for did
+                let res = did::key_for_local_did(setup.wallet_handle, &setup.did);
+                assert_code!(ErrorCode::WalletItemNotFound, res);
+
+                let verkey = did::key_for_local_did(setup.wallet_handle, &full_qualified_did).unwrap();
+                assert_eq!(setup.verkey, verkey);
+            }
+
+            {
+                // check did metadata
+                let res = did::get_did_metadata(setup.wallet_handle, &setup.did);
+                assert_code!(ErrorCode::WalletItemNotFound, res);
+
+                let meta = did::get_did_metadata(setup.wallet_handle, &full_qualified_did).unwrap();
+                assert_eq!(METADATA.to_string(), meta);
+            }
+
+            {
+                // check endpoint
+                let res = did::get_endpoint_for_did(setup.wallet_handle, setup.pool_handle, &setup.did);
+                assert_code!(ErrorCode::CommonInvalidState, res); // TODO: IS is correct code WalletItemNotFound LedgerNotFound?
+
+                let (endpoint, verkey) = did::get_endpoint_for_did(setup.wallet_handle, INVALID_POOL_HANDLE, &full_qualified_did).unwrap();
+                assert_eq!(ENDPOINT.to_string(), endpoint);
+                assert_eq!(VERKEY.to_string(), verkey.unwrap());
+            }
+
+            {
+                // check temporary key
+                let res = did::get_my_did_with_metadata(setup.wallet_handle, &setup.did);
+                assert_code!(ErrorCode::WalletItemNotFound, res);
+
+                let meta = did::get_my_did_with_metadata(setup.wallet_handle, &full_qualified_did).unwrap();
+                let meta: serde_json::Value = serde_json::from_str(&meta).unwrap();
+                assert_eq!(temp_verkey, meta["tempVerkey"].as_str().unwrap().to_string());
+            }
+
+            {
+                // check pairwise 1
+                let pairwise = utils::pairwise::get_pairwise(setup.wallet_handle, DID).unwrap();
+                let pairwise: serde_json::Value = serde_json::from_str(&pairwise).unwrap();
+                assert_eq!(full_qualified_did, pairwise["my_did"].as_str().unwrap().to_string());
+
+                // check pairwise 2
+                let pairwise = utils::pairwise::get_pairwise(setup.wallet_handle, DID_TRUSTEE).unwrap();
+                let pairwise: serde_json::Value = serde_json::from_str(&pairwise).unwrap();
+                assert_eq!(full_qualified_did, pairwise["my_did"].as_str().unwrap().to_string());
+            }
+        }
+    }
 }
 
 #[cfg(not(feature = "only_high_cases"))]
@@ -685,6 +784,7 @@ mod medium_cases {
 
     mod set_endpoint_for_did {
         use super::*;
+
         #[test]
         fn indy_set_endpoint_for_did_works_for_replace() {
             let setup = Setup::wallet_and_pool();
@@ -928,5 +1028,4 @@ mod medium_cases {
             assert_code!(ErrorCode::CommonInvalidStructure, res);
         }
     }
-
 }
