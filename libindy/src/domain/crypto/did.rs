@@ -6,13 +6,28 @@ use rust_base58::FromBase58;
 use utils::validation::Validatable;
 use utils::qualifier;
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct DidMethod(pub String);
+
+impl Validatable for DidMethod {
+    fn validate(&self) -> Result<(), String> {
+        lazy_static! {
+                static ref REGEX_METHOD_NAME: Regex = Regex::new("^[a-z0-9]+$").unwrap();
+            }
+        if !REGEX_METHOD_NAME.is_match(&self.0) {
+            return Err(format!("Invalid default name: {}. It does not match the DID method name format.", self.0));
+        }
+        Ok(())
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MyDidInfo {
     pub did: Option<DidValue>,
     pub seed: Option<String>,
     pub crypto_type: Option<String>,
     pub cid: Option<bool>,
-    pub method_name: Option<String>,
+    pub method_name: Option<DidMethod>,
 }
 
 impl Validatable for MyDidInfo {
@@ -21,14 +36,8 @@ impl Validatable for MyDidInfo {
             did.validate()?;
         }
         if let Some(ref name) = self.method_name {
-            lazy_static! {
-                static ref REGEX_METHOD_NAME: Regex = Regex::new("^[a-z0-9]+$").unwrap();
-            }
-            if !REGEX_METHOD_NAME.is_match(name) {
-                return Err(format!("Invalid default name: {}. It does not match the DID method name format.", name));
-            }
+            name.validate()?
         }
-
         Ok(())
     }
 }

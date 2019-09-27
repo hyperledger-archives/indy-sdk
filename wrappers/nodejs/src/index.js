@@ -377,6 +377,12 @@ indy.abbreviateVerkey = function abbreviateVerkey (did, fullVerkey, cb) {
   return cb.promise
 }
 
+indy.qualifyDid = function qualifyDid (wh, did, method, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.qualifyDid(wh, did, method, cb)
+  return cb.promise
+}
+
 indy.signAndSubmitRequest = function signAndSubmitRequest (poolHandle, wh, submitterDid, request, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.signAndSubmitRequest(poolHandle, wh, submitterDid, toJson(request), cb)
