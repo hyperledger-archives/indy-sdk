@@ -533,6 +533,12 @@ pub fn revoke_credential(tails_file: &str, rev_reg_id: &str, cred_rev_id: &str) 
     Ok((payment, delta))
 }
 
+pub fn libindy_to_unqualified(entity: &str) -> VcxResult<String> {
+    anoncreds::to_unqualified(entity)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
+
 fn _check_schema_response(response: &str) -> VcxResult<()> {
     // TODO: saved backwardcampatibilyty but actually we can better handle response
     match parse_response(response)? {

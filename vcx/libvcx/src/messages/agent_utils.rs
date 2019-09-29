@@ -4,7 +4,7 @@ use messages::message_type::MessageTypes;
 use utils::constants::*;
 use utils::{error, httpclient};
 use utils::libindy::{wallet, anoncreds};
-use utils::libindy::signus::create_and_store_my_did;
+use utils::libindy::signus::create_my_did;
 use error::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -132,6 +132,7 @@ pub struct Config {
     storage_config: Option<String>,
     storage_credentials: Option<String>,
     pool_config: Option<String>,
+    did_method: Option<String>,
 }
 
 
@@ -167,6 +168,9 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     if let Some(pool_config) = &my_config.pool_config {
         settings::set_config_value(settings::CONFIG_POOL_CONFIG, pool_config);
     }
+    if let Some(did_method) = &my_config.did_method {
+        settings::set_config_value(settings::CONFIG_DID_METHOD, did_method);
+    }
 
     wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str),
                         my_config.storage_config.as_ref().map(String::as_str),
@@ -179,10 +183,12 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     let logo = my_config.logo.unwrap_or(String::from("<CHANGE_ME>"));
     let path = my_config.path.unwrap_or(String::from("<CHANGE_ME>"));
 
-    let (my_did, my_vk) = create_and_store_my_did(my_config.agent_seed.as_ref().map(String::as_str))?;
+    let method_name = my_config.did_method.as_ref().map(String::as_str);
+
+    let (my_did, my_vk) = create_my_did(my_config.agent_seed.as_ref().map(String::as_str), method_name)?;
 
     let (issuer_did, issuer_vk) = if my_config.enterprise_seed != my_config.agent_seed {
-        create_and_store_my_did(my_config.enterprise_seed.as_ref().map(String::as_str))?
+        create_my_did(my_config.enterprise_seed.as_ref().map(String::as_str), method_name)?
     } else {
         (my_did.clone(), my_vk.clone())
     };
@@ -446,7 +452,7 @@ mod tests {
     fn test_update_agent_info_real() {
         init!("agency");
         ::utils::devsetup::tests::set_consumer();
-        assert!(update_agent_info("7b7f97f2","FCM:Value").is_ok());
+        assert!(update_agent_info("7b7f97f2", "FCM:Value").is_ok());
         teardown!("agency");
     }
 }

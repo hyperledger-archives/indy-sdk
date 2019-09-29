@@ -187,17 +187,17 @@ download_and_setup_toolchain(){
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
         echo "${GREEN}Resolving NDK for OSX${RESET}"
-        download_and_unzip_if_missed "android-ndk-r16b" "https://dl.google.com/android/repository/" "android-ndk-r16b-darwin-x86_64.zip"
+        download_and_unzip_if_missed "android-ndk-r20" "https://dl.google.com/android/repository/" "android-ndk-r20-darwin-x86_64.zip"
         popd
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
         export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/linux
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
         echo "${GREEN}Resolving NDK for Linux${RESET}"
-        download_and_unzip_if_missed "android-ndk-r16b" "https://dl.google.com/android/repository/" "android-ndk-r16b-linux-x86_64.zip"
+        download_and_unzip_if_missed "android-ndk-r20" "https://dl.google.com/android/repository/" "android-ndk-r20-linux-x86_64.zip"
         popd
     fi
-    export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
+    export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r20
 }
 
 
