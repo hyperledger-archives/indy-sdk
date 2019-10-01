@@ -10,7 +10,7 @@ use messages;
 use messages::proofs::proof_message::{ProofMessage, CredInfo};
 use messages::{RemoteMessageType, ObjectWithVersion, GeneralMessage};
 use messages::payload::{Payloads, PayloadKinds, Thread};
-use messages::proofs::proof_request::ProofRequestMessage;
+use messages::proofs::proof_request::{ProofRequestMessage, PROOF_REQUEST_V2};
 use utils::error;
 use utils::constants::*;
 use utils::libindy::anoncreds;
@@ -18,6 +18,7 @@ use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::openssl::encode;
+use utils::qualifier::Qualifier;
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proof> = Default::default();
@@ -69,7 +70,7 @@ impl Proof {
         let proof: Value = serde_json::from_str(proof_json)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
 
-        let revealed_attrs = match  proof["requested_proof"]["revealed_attrs"].as_object() {
+        let revealed_attrs = match proof["requested_proof"]["revealed_attrs"].as_object() {
             Some(revealed_attrs) => revealed_attrs,
             None => return Ok(())
         };
@@ -266,10 +267,13 @@ impl Proof {
     }
 
     fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
+        let proof_req_format_version = if Qualifier::is_fully_qualified(&self.remote_did) { Some(PROOF_REQUEST_V2) } else { None };
+
         let data_version = "0.1";
         let mut proof_obj = messages::proof_request();
         let proof_request = proof_obj
             .type_version(&self.version)?
+            .proof_request_format_version(proof_req_format_version)?
             .nonce(&self.nonce)?
             .proof_name(&self.name)?
             .proof_data_version(data_version)?
@@ -294,6 +298,7 @@ impl Proof {
         self.prover_did = connection::get_pw_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
         self.agent_did = connection::get_agent_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
         self.agent_vk = connection::get_agent_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
+        self.remote_did = connection::get_their_pw_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
         self.remote_vk = connection::get_their_pw_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
         self.prover_vk = connection::get_pw_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
 

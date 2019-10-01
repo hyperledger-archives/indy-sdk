@@ -4856,7 +4856,7 @@ pub mod tests {
     pub fn send_schema(ctx: &CommandContext, did: &str) -> String {
         let (pool_handle, _) = get_connected_pool(ctx).unwrap();
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
-        let schema_data = r#"{"id":"id", "name":"cli_gvt","version":"1.0","attrNames":["name"],"ver":"1.0"}"#;
+        let schema_data = r#"{"id":"1", "name":"cli_gvt","version":"1.0","attrNames":["name"],"ver":"1.0"}"#;
         let schema_request = Ledger::build_schema_request(&did, schema_data).unwrap();
         let schema_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
         let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();

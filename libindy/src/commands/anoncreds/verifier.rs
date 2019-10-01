@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
 use domain::anoncreds::proof::Proof;
-use domain::anoncreds::proof_request::ProofRequest;
+use domain::anoncreds::proof_request::{ProofRequest, ProofRequestPayload};
 use domain::anoncreds::revocation_registry::{rev_regs_map_to_rev_regs_local_map, RevocationRegistryV1, RevocationRegistries};
 use domain::anoncreds::revocation_registry_definition::{rev_reg_defs_map_to_rev_reg_defs_v1_map, RevocationRegistryDefinitionV1, RevocationRegistryId, RevocationRegistryDefinitions};
 use domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
@@ -38,7 +38,7 @@ impl VerifierCommandExecutor {
         match command {
             VerifierCommand::VerifyProof(proof_request, proof, schemas, credential_defs, rev_reg_defs, rev_regs, cb) => {
                 debug!(target: "verifier_command_executor", "VerifyProof command received");
-                cb(self.verify_proof(proof_request, proof,
+                cb(self.verify_proof(&proof_request.value(), proof,
                                      &schemas_map_to_schemas_v1_map(schemas),
                                      &cred_defs_map_to_cred_defs_v1_map(credential_defs),
                                      &rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs),
@@ -52,7 +52,7 @@ impl VerifierCommandExecutor {
     }
 
     fn verify_proof(&self,
-                    proof_req: ProofRequest,
+                    proof_req: &ProofRequestPayload,
                     proof: Proof,
                     schemas: &HashMap<SchemaId, SchemaV1>,
                     cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,

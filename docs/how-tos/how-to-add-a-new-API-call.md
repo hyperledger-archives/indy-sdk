@@ -267,9 +267,9 @@ One of the general principles of development within the core Indy team is to use
 
 All functions within `services` and `utils` modules should be covered with Unit tests (as we mentioned above these functions must be atomic operations). 
 So, if we consider function `create_and_store_my_did` the following service functions should be covered with Unit tests:
-* `self.crypto_service.create_my_did`
-* `self.wallet_service.record_exists`
-* `self.wallet_service.add_indy_object`
+* `self.crypto_service.create_my_did` - look at `libindy/src/services/crypto/mod.rs` file.
+* `self.wallet_service.record_exists` - look at `libindy/src/services/wallet/mod.rs` file.
+* `self.wallet_service.add_indy_object` - look at `libindy/src/services/wallet/mod.rs` file.
 
 We don't cover the functions within the `commands` module with Unit tests because:
 *  `CommandExecutor` is a complex structure which has multiple dependencies. 
