@@ -9,7 +9,7 @@ use self::indy_sys::ledger::{CustomTransactionParser, CustomFree, indy_register_
 use utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
 use utils::constants::*;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::{Once};
 use std::mem;
 use std::ffi::CString;
 
@@ -268,7 +268,7 @@ pub fn append_request_endorser(request_json: &str,
 
 pub fn post_entities() -> (&'static str, &'static str, &'static str) {
     lazy_static! {
-                    static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
+                    static ref COMMON_ENTITIES_INIT: Once = Once::new();
 
                 }
 
@@ -349,7 +349,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
 
 pub fn post_qualified_entities() -> (&'static str, &'static str) {
     lazy_static! {
-                    static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
+                    static ref COMMON_ENTITIES_INIT: Once = Once::new();
 
                 }
 

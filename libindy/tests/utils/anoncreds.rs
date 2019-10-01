@@ -8,7 +8,7 @@ use serde_json;
 use utils::{environment, wallet, blob_storage, test};
 use utils::types::CredentialOfferInfo;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use std::mem;
 use utils::constants::*;
 
@@ -820,7 +820,7 @@ pub fn tails_writer_config() -> String {
 
 pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'static str) {
     lazy_static! {
-                    static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
+                    static ref COMMON_WALLET_INIT: Once = Once::new();
                  }
 
     unsafe {

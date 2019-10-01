@@ -9,7 +9,7 @@ use utils::{test};
 use utils::constants::WALLET_CREDENTIALS;
 use utils::types::WalletRecord;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use std::collections::HashMap;
 
 use api::WalletHandle;
@@ -166,7 +166,7 @@ pub fn init_non_secret_test_wallet(name: &str, wallet_config: &str) {
 
 pub fn populate_common_wallet_for_search() {
     lazy_static! {
-                    static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
+                    static ref COMMON_WALLET_INIT: Once = Once::new();
 
                 }
 
