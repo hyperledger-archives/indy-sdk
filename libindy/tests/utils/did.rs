@@ -6,11 +6,11 @@ use self::futures::Future;
 
 use utils::{ledger, pool};
 use utils::types::ResponseType;
-use api::PoolHandle;
+use api::{WalletHandle, PoolHandle};
 use utils::constants::DEFAULT_METHOD_NAME;
 
 
-pub fn create_store_and_publish_did(wallet_handle: i32, pool_handle: PoolHandle, role: &str, method_name: Option<&str>) -> Result<(String, String), IndyError> {
+pub fn create_store_and_publish_did(wallet_handle: WalletHandle, pool_handle: PoolHandle, role: &str, method_name: Option<&str>) -> Result<(String, String), IndyError> {
     let my_did_json = json!({"method_name": method_name, "seed": ::utils::constants::TRUSTEE_SEED}).to_string();
     let (trustee_did, _) = create_my_did(wallet_handle, &my_did_json)?;
     let my_did_json = json!({"method_name": method_name}).to_string();
@@ -21,15 +21,15 @@ pub fn create_store_and_publish_did(wallet_handle: i32, pool_handle: PoolHandle,
     Ok((did, vk))
 }
 
-pub fn create_store_and_publish_my_did_from_trustee(wallet_handle: i32, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
+pub fn create_store_and_publish_my_did_from_trustee(wallet_handle: WalletHandle, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
     create_store_and_publish_did(wallet_handle, pool_handle, "TRUSTEE", None)
 }
 
-pub fn create_store_and_publish_my_did_from_trustee_v1(wallet_handle: i32, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
+pub fn create_store_and_publish_my_did_from_trustee_v1(wallet_handle: WalletHandle, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
     create_store_and_publish_did(wallet_handle, pool_handle, "TRUSTEE", Some("sov"))
 }
 
-pub fn create_store_and_publish_my_did_from_steward(wallet_handle: i32, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
+pub fn create_store_and_publish_my_did_from_steward(wallet_handle: WalletHandle, pool_handle: PoolHandle) -> Result<(String, String), IndyError> {
     create_store_and_publish_did(wallet_handle, pool_handle, "STEWARD", None)
 }
 
@@ -38,12 +38,12 @@ pub fn create_and_store_my_did(wallet_handle: WalletHandle, seed: Option<&str>) 
     did::create_and_store_my_did(wallet_handle, &my_did_json).wait()
 }
 
-pub fn create_and_store_my_did_v1(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String), IndyError> {
+pub fn create_and_store_my_did_v1(wallet_handle: WalletHandle, seed: Option<&str>) -> Result<(String, String), IndyError> {
     let my_did_json = json!({"seed": seed, "method_name": DEFAULT_METHOD_NAME}).to_string();
     did::create_and_store_my_did(wallet_handle, &my_did_json).wait()
 }
 
-pub fn create_my_did(wallet_handle: i32, my_did_json: &str) -> Result<(String, String), IndyError> {
+pub fn create_my_did(wallet_handle: WalletHandle, my_did_json: &str) -> Result<(String, String), IndyError> {
     did::create_and_store_my_did(wallet_handle, my_did_json).wait()
 }
 
@@ -107,6 +107,6 @@ pub fn abbreviate_verkey(did: &str, verkey: &str) -> Result<String, IndyError> {
     did::abbreviate_verkey(did, verkey).wait()
 }
 
-pub fn qualify_did(wallet_handle: i32, did: &str, prefix: &str) -> Result<String, IndyError> {
+pub fn qualify_did(wallet_handle: WalletHandle, did: &str, prefix: &str) -> Result<String, IndyError> {
     did::qualify_did(wallet_handle, did, prefix).wait()
 }
