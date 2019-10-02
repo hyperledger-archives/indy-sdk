@@ -1,7 +1,7 @@
 use regex::Regex;
 
 lazy_static! {
-    pub static ref REGEX: Regex = Regex::new("^[a-z0-9]+:([a-z0-9]+):([a-zA-Z0-9:.-_]*)$").unwrap();
+    pub static ref REGEX: Regex = Regex::new("^[a-z0-9]+:([a-z0-9]+):(.*)$").unwrap();
 }
 
 pub fn qualify(entity: &str, prefix: &str, method: &str) -> String {

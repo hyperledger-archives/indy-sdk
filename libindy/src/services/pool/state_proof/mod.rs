@@ -425,7 +425,7 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
             return Err("No ledger length for this proof".to_string())
         };
 
-        (proof, root_hash, KeyValueSimpleDataVerificationType::MerkleTree(len), parsed_data["multi_signature"].clone())
+        (proof, root_hash, KeyValueSimpleDataVerificationType::MerkleTree(len), json_msg["state_proof"]["multi_signature"].clone())
     };
 
     let value: Option<String> = match _parse_reply_for_proof_value(json_msg, data, parsed_data, xtype, sp_key) {
@@ -1473,6 +1473,8 @@ mod tests {
                 "ledgerSize": 2,
                 "rootHash": "123",
                 "txn": {"test1": "test2", "seqNo": 2},
+            },
+            "state_proof": {
                 "multi_signature": "ms"
             }
         });
@@ -1506,7 +1508,7 @@ mod tests {
                 "ledgerSize": 2,
                 "rootHash": "123",
                 "txn": {"test1": "test2", "seqNo": 2},
-//                "multi_signature": "ms"
+//              "multi_signature": "ms"
             }
         });
 
@@ -1538,7 +1540,9 @@ mod tests {
 //                "ledgerSize": 2,
                 "rootHash": "123",
                 "txn": {"test1": "test2", "seqNo": 2},
-                "multi_signature": "ms"
+                "state_proof": {
+                    "multi_signature": "ms"
+                }
             }
         });
 
@@ -1556,6 +1560,8 @@ mod tests {
                 "ledgerSize": 2,
                 "rootHash": "123",
 //                "txn": {"test1": "test2", "seqNo": 2},
+            },
+            "state_proof": {
                 "multi_signature": "ms"
             }
         });
