@@ -152,7 +152,7 @@
 }
 
 + (NSString *)gvtSchema {
-    return @"{\"id\":\"id\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
+    return @"{\"id\":\"1\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
 }
 
 + (NSString *)gvtSchemaName {

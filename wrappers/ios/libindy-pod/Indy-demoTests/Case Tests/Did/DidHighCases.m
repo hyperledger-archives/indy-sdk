@@ -379,6 +379,30 @@
     XCTAssertFalse([verkey isEqualToString:abbrVerkey], @"Keys are equal");
 }
 
+// MARK: - Qualify did
+
+- (void)testQualifyDid {
+    // 1. Create did
+    NSString *did;
+    NSString *verkey;
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:&did
+                                                     outMyVerkey:&verkey];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
+
+    // 2. Qualify did
+    NSString *method = @"peer";
+    NSString *fullQualifiedDid;
+    ret = [[DidUtils sharedInstance] qualifyDid:did
+                                         method:method
+                                   walletHandle:walletHandle
+                               fullQualifiedDid:&fullQualifiedDid];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::abbreviateVerkey() failed");
+    NSString *expectedDid = [NSString stringWithFormat:@"did:%@:%@", method, did];
+    XCTAssertTrue([fullQualifiedDid isEqualToString:expectedDid], @"Did are equal");
+}
+
 // MARK: - List DIDs
 
 - (void)testListDids {

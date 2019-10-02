@@ -32,6 +32,7 @@ pub mod libindy;
 pub mod threadpool;
 pub mod uuid;
 pub mod author_agreement;
+pub mod qualifier;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::path::PathBuf;

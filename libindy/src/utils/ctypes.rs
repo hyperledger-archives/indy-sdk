@@ -140,7 +140,7 @@ macro_rules! check_useful_validatable_opt_string {
                 match $x.validate() {
                     Ok(ok) => ok,
                     Err(err) => {
-                        return err_msg($e.into(), err).into()
+                        return err_msg(IndyErrorKind::InvalidStructure, err).into()
                     }
                 };
                 Some($x)

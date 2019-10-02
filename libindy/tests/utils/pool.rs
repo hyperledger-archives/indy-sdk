@@ -14,7 +14,6 @@ use self::futures::Future;
 use serde_json;
 
 use utils::types::{Response, ResponseType};
-use utils::constants::PROTOCOL_VERSION;
 use utils::{environment, test};
 use api::PoolHandle;
 
@@ -165,7 +164,6 @@ fn _dump_genesis_txns_to_cache(pool_name: &str, node_txns: &Vec<String>) -> Resu
 }
 
 pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<PoolHandle, IndyError> {
-    set_protocol_version(PROTOCOL_VERSION).unwrap();
     let txn_file_path = create_genesis_txn_file_for_test_pool(pool_name, None, None);
     let pool_config = pool_config_json(txn_file_path.as_path());
     create_pool_ledger_config(pool_name, Some(pool_config.as_str()))?;

@@ -254,14 +254,17 @@ impl WalletService {
         }
     }
 
+    pub fn add_indy_record<T>(&self, wallet_handle: WalletHandle, name: &str, value: &str, tags: &Tags)
+                              -> IndyResult<()> where T: NamedType {
+        self.add_record(wallet_handle, &self.add_prefix(T::short_type_name()), name, value,tags)
+    }
+
     pub fn add_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T, tags: &Tags)
                               -> IndyResult<String> where T: ::serde::Serialize + Sized + NamedType {
-        let type_ = T::short_type_name();
-
         let object_json = serde_json::to_string(object)
-            .to_indy(IndyErrorKind::InvalidState, format!("Cannot serialize {:?}", type_))?;
+            .to_indy(IndyErrorKind::InvalidState, format!("Cannot serialize {:?}", T::short_type_name()))?;
 
-        self.add_record(wallet_handle, &self.add_prefix(type_), name, &object_json, tags)?;
+        self.add_indy_record::<T>(wallet_handle, name, &object_json, tags)?;
         Ok(object_json)
     }
 
