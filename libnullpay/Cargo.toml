@@ -1,7 +1,7 @@
 [package]
 name = "null-payment-method"
-version = "1.11.1"
-authors = ["Nikita Khateev <nikita.khateev@dsr-corporation.com>"]
+version = "1.12.0"
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 build = "build.rs"
 
 [lib]
@@ -26,7 +26,7 @@ serde_derive = "1.0.97"
 
 [dev-dependencies]
 dirs = "1.0.4"
-indy = { version="1.11.1", path="../wrappers/rust" }
+indy = { version="1.12.0", path="../wrappers/rust" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.5"

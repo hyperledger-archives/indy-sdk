@@ -29,6 +29,7 @@
       "crypto_type": string, (optional; if not set then ed25519 curve is used;
                 currently only 'ed25519' value is supported for this field)
       "cid": bool, (optional; if not set then false is used;)
+      "method_name": string, (optional) method name to create fully qualified did.
   }
  @endcode
  
@@ -219,4 +220,25 @@
  */
 + (void)listMyDidsWithMeta:(IndyHandle)walletHandle
                 completion:(void (^)(NSError *error, NSString *metadata))completion;
+                
+
+/**
+ Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+     - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
+     - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
+
+ Update DID related entities stored in the wallet.
+
+ @param  walletHandle: Wallet handle (created by open_wallet).
+ @param  did: target DID stored in the wallet.
+ @param  method: method to apply to the DID.
+
+ @param completion Callback that takes command result as parameter.
+ Returns did: fully qualified did
+ */
++ (void)qualifyDid:(NSString *)did
+            method:(NSString *)method
+      walletHandle:(IndyHandle)walletHandle
+        completion:(void (^)(NSError *error, NSString *fullQualifiedDid))completion;
+       
 @end

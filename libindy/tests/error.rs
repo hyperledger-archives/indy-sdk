@@ -35,8 +35,8 @@ fn get_current_error_works_for_async_error_occurred() {
         assert!(c_str_to_string(error_json_p).unwrap().is_some());
     }
 
-    let did = ::std::ffi::CString::new("wrongdid").unwrap();
-    let verkey = ::std::ffi::CString::new("verkey").unwrap();
+    let did = ::std::ffi::CString::new("VsKV7grR1BUE29mG2Fm2kX").unwrap();
+    let verkey = ::std::ffi::CString::new("wrong_verkey").unwrap();
     unsafe { indy_abbreviate_verkey(1, did.as_ptr(), verkey.as_ptr(), Some(cb)) };
     ::std::thread::sleep(::std::time::Duration::from_secs(1));
 }

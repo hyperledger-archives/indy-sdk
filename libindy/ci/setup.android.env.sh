@@ -109,7 +109,7 @@ generate_arch_flags(){
     export ABSOLUTE_ARCH=$1
     export TARGET_ARCH=$1
     if [ $1 == "arm" ]; then
-        export TARGET_API="16"
+        export TARGET_API="21"
         export TRIPLET="arm-linux-androideabi"
         export ANDROID_TRIPLET=${TRIPLET}
         export ABI="armeabi-v7a"
@@ -118,7 +118,7 @@ generate_arch_flags(){
 
     if [ $1 == "armv7" ]; then
         export TARGET_ARCH="arm"
-        export TARGET_API="16"
+        export TARGET_API="21"
         export TRIPLET="armv7-linux-androideabi"
         export ANDROID_TRIPLET="arm-linux-androideabi"
         export ABI="armeabi-v7a"
@@ -134,7 +134,7 @@ generate_arch_flags(){
     fi
 
     if [ $1 == "x86" ]; then
-        export TARGET_API="16"
+        export TARGET_API="21"
         export TRIPLET="i686-linux-android"
         export ANDROID_TRIPLET=${TRIPLET}
         export ABI="x86"
@@ -154,9 +154,9 @@ generate_arch_flags(){
 
 download_and_unzip_dependencies(){
     pushd ${ANDROID_BUILD_FOLDER}
-        download_and_unzip_if_missed "openssl_$1" "https://repo.sovrin.org/android/libindy/deps/openssl/" "openssl_$1.zip"
-        download_and_unzip_if_missed "libsodium_$1" "https://repo.sovrin.org/android/libindy/deps/sodium/" "libsodium_$1.zip"
-        download_and_unzip_if_missed "libzmq_$1" "https://repo.sovrin.org/android/libindy/deps/zmq/" "libzmq_$1.zip"
+        download_and_unzip_if_missed "openssl_$1" "https://repo.sovrin.org/android/libindy/deps-libc++/openssl/" "openssl_$1.zip"
+        download_and_unzip_if_missed "libsodium_$1" "https://repo.sovrin.org/android/libindy/deps-libc++/sodium/" "libsodium_$1.zip"
+        download_and_unzip_if_missed "libzmq_$1" "https://repo.sovrin.org/android/libindy/deps-libc++/zmq/" "libzmq_$1.zip"
 
         export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
         export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
@@ -171,7 +171,7 @@ create_standalone_toolchain_and_rust_target(){
     python3 ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py \
     --arch ${TARGET_ARCH} \
     --api ${TARGET_API} \
-    --stl=gnustl \
+    --stl=libc++ \
     --force \
     --install-dir ${TOOLCHAIN_DIR}
 
@@ -187,17 +187,17 @@ download_and_setup_toolchain(){
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
         echo "${GREEN}Resolving NDK for OSX${RESET}"
-        download_and_unzip_if_missed "android-ndk-r16b" "https://dl.google.com/android/repository/" "android-ndk-r16b-darwin-x86_64.zip"
+        download_and_unzip_if_missed "android-ndk-r20" "https://dl.google.com/android/repository/" "android-ndk-r20-darwin-x86_64.zip"
         popd
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
         export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/linux
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
         echo "${GREEN}Resolving NDK for Linux${RESET}"
-        download_and_unzip_if_missed "android-ndk-r16b" "https://dl.google.com/android/repository/" "android-ndk-r16b-linux-x86_64.zip"
+        download_and_unzip_if_missed "android-ndk-r20" "https://dl.google.com/android/repository/" "android-ndk-r20-linux-x86_64.zip"
         popd
     fi
-    export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
+    export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r20
 }
 
 

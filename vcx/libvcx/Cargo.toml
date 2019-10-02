@@ -1,8 +1,8 @@
 [package]
 
 name = "libvcx"
-version = "0.4.1"
-authors = [ "Evernym Inc." ]
+version = "0.4.2"
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 publish = false
 description = "This is the official SDK for Evernym's VCX"
 license = ""
@@ -46,8 +46,8 @@ rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
-indy = { version = "1.11.1", path = "../../wrappers/rust/" }
-indy-sys = { version = "1.11.1", path = "../../wrappers/rust/indy-sys/" }
+indy = { version = "1.12.0", path = "../../wrappers/rust/" }
+indy-sys = { version = "1.12.0", path = "../../wrappers/rust/indy-sys/" }
 log-panics = "2.0.0"
 tokio-threadpool = "0.1.6"
 futures = "0.1.23"

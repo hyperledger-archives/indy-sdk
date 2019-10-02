@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.12.0 - 2019-09-XX
+* Minimal Support of Fully-Qualified identifiers:
+    * general format of fully-qualified identifier is `<prefix>:<method>:<value>`.
+    * extended `did_info` parameter of `indy_create_and_store_my_did` function to accepts optional `method_name` filed. This field should be used to create fully qualified DID.
+    * all functions can work with fully-qualified identifiers (new way) as well as with unqualified.
+    * added a new function -- `indy_to_unqualified` -- that gets unqualified form of a fully qualified identifier.
+    * proof requests now support versioning (`ver` field) -- now it specifies whether restrictions are full qualified or not.
+         - omit or set "1.0" to use unqualified identifiers.
+         - set "2.0" to use fully qualified identifiers.
+        
+        The same format of identifiers will be used in generated proof and must be used for proof verification. 
+        
+    * added a new function -- `indy_qualify_did` -- that updates DID stored in the wallet to make it fully qualified, or to do other DID maintenance.
+        * added correspondent `did qualify` command to Indy-CLI.
+    * all functions in Ledger API can accept fully-qualified identifiers but always return results in an unqualified form.
+    * extended VCX provisioning config to accept optional `did_method` filed. This field should be used to create fully qualified DIDs.
+* Migrated Android onto the API v21 and NDK 20.
+* Supported MacOS builds for Indy CLI.
+* Bugfixes
+    * Fixed `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
+    * Fixed `attr::{}::value` verification (IS-1380, thanks @nrempel for reporting the vulnerability)
+    * others minor bugfixes
+
 ## 1.11.1 - 2019-08-30
 * Supported endorsing of transactions in Indy-CLI and Libvcx.
     * CLI:

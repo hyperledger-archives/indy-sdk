@@ -14,10 +14,10 @@ participant "Command Thread" as Command
 end note
 participant "Expensive Thread" as Expensive
 / note over Expensive
-    Thread that is occasionally
-    used for execution of
-    some heavy operations like
-    credential definition creation
+    One of threads from threads pool
+    that is occasionally used for
+    execution of some heavy operations
+    like credential definition creation
     or key derivation
 end note
 

@@ -13,6 +13,7 @@ use utils::libindy::{payments, anoncreds};
 use utils::constants::{CRED_MSG, DEFAULT_SERIALIZE_VERSION};
 use utils::openssl::encode;
 use utils::libindy::payments::PaymentTxn;
+use utils::qualifier::Qualifier;
 use object_cache::ObjectCache;
 use error::prelude::*;
 
@@ -279,10 +280,10 @@ impl IssuerCredential {
             None => {
                 // Check cloud agent for pending messages
                 let (msg_id, message) = messages::get_message::get_ref_msg(&self.msg_uid,
-                                                                              &self.issued_did,
-                                                                              &self.issued_vk,
-                                                                              &self.agent_did,
-                                                                              &self.agent_vk)?;
+                                                                           &self.issued_did,
+                                                                           &self.issued_vk,
+                                                                           &self.agent_did,
+                                                                           &self.agent_vk)?;
 
                 let (payload, thread) = Payloads::decrypt(&self.issued_vk, &message)
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::Common(err.into()), "Cannot decrypt CredentialOffer payload"))?;
@@ -345,6 +346,13 @@ impl IssuerCredential {
 
         self.cred_rev_id = cred_revoc_id.clone();
 
+        let cred_def_id =
+            if !Qualifier::is_fully_qualified(&self.remote_did) {
+                anoncreds::libindy_to_unqualified(&self.cred_def_id)?
+            } else {
+                self.cred_def_id.clone()
+            };
+
         Ok(CredentialMessage {
             claim_offer_id: self.msg_uid.clone(),
             from_did: String::from(did),
@@ -363,6 +371,15 @@ impl IssuerCredential {
         //Todo: make a cred_def_offer error
         let libindy_offer = anoncreds::libindy_issuer_create_credential_offer(&self.cred_def_id)?;
 
+        println!("remote_did {:?}", self.remote_did);
+        let (libindy_offer, cred_def_id) =
+            if !Qualifier::is_fully_qualified(&self.remote_did) {
+                (anoncreds::libindy_to_unqualified(&libindy_offer)?,
+                 anoncreds::libindy_to_unqualified(&self.cred_def_id)?)
+            } else {
+                (libindy_offer, self.cred_def_id.clone())
+            };
+
         Ok(CredentialOffer {
             msg_type: PayloadKinds::CredOffer.name().to_string(),
             version: String::from("0.1"),
@@ -373,7 +390,7 @@ impl IssuerCredential {
             claim_name: String::from(self.credential_name.clone()),
             claim_id: String::from(self.credential_id.clone()),
             msg_ref_id: None,
-            cred_def_id: self.cred_def_id.clone(),
+            cred_def_id,
             libindy_offer,
             thread_id: None,
         })

@@ -97,6 +97,7 @@ public abstract class LibIndy {
 		public int indy_get_my_did_with_meta(int command_handle, int wallet_handle, String did, Callback cb);
 		public int indy_list_my_dids_with_meta(int command_handle, int wallet_handle, Callback cb);
 		public int indy_abbreviate_verkey(int command_handle, String did, String full_verkey, Callback cb);
+		public int indy_qualify_did(int command_handle, int wallet_handle, String did, String method, Callback cb);
 
 		// crypto.rs
 
@@ -142,6 +143,7 @@ public abstract class LibIndy {
 		public int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
 		public int indy_update_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_state_json, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
 		public int indy_generate_nonce(int command_handle, Callback cb);
+		public int indy_to_unqualified(int command_handle, String entity, Callback cb);
 
 
 		// pairwise.rs

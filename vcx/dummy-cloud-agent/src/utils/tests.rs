@@ -569,7 +569,7 @@ pub fn compose_update_configs(wallet_handle: i32, agent_did: &str, agent_verkey:
             configs: vec![
                 ConfigOption {name: "zoom_zoom".to_string(), value: "value".to_string()},
                 ConfigOption {name: "name".to_string(), value: "super agent".to_string()},
-                ConfigOption {name: "logo_url".to_string(), value: "http://logo.url".to_string()}
+                ConfigOption {name: "logoUrl".to_string(), value: "http://logo.url".to_string()}
             ]
         }))];
 
@@ -584,7 +584,7 @@ pub fn compose_update_configs(wallet_handle: i32, agent_did: &str, agent_verkey:
 pub fn compose_get_configs(wallet_handle: i32, agent_did: &str, agent_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
     let msgs = [A2AMessage::Version1(A2AMessageV1::GetConfigs(
         GetConfigs {
-            configs: vec![String::from("name"), String::from("logo_url")]
+            configs: vec![String::from("name"), String::from("logoUrl")]
         }))];
 
     let msg = A2AMessage::prepare_authcrypted(wallet_handle,
