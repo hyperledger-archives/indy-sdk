@@ -4,4 +4,3 @@ pub mod wallet;
 pub mod ledger;
 pub mod payment;
 
-pub type IndyHandle = i32;
