@@ -1,0 +1,8 @@
+target/
+.idea/
+dockerbuild.sh
+README.md
+Dockerfile
+.gitignore
+config/sample-config.json
+.dockerignore
