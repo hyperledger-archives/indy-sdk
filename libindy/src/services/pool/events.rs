@@ -5,8 +5,9 @@ use domain::ledger::constants;
 use errors::prelude::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::{PoolService, types:: *};
+use api::CommandHandle;
 
-pub const REQUESTS_FOR_STATE_PROOFS: [&str; 10] = [
+pub const REQUESTS_FOR_STATE_PROOFS: [&str; 11] = [
     constants::GET_NYM,
     constants::GET_TXN_AUTHR_AGRMT,
     constants::GET_TXN_AUTHR_AGRMT_AML,
@@ -17,6 +18,7 @@ pub const REQUESTS_FOR_STATE_PROOFS: [&str; 10] = [
     constants::GET_REVOC_REG_DEF,
     constants::GET_REVOC_REG_DELTA,
     constants::GET_AUTH_RULE,
+    constants::GET_TXN,
 ];
 
 const REQUEST_FOR_FULL: [&str; 2] = [
@@ -25,11 +27,12 @@ const REQUEST_FOR_FULL: [&str; 2] = [
 ];
 
 
-pub const REQUESTS_FOR_STATE_PROOFS_IN_THE_PAST: [&str; 4] = [
+pub const REQUESTS_FOR_STATE_PROOFS_IN_THE_PAST: [&str; 5] = [
     constants::GET_REVOC_REG,
     constants::GET_REVOC_REG_DELTA,
     constants::GET_TXN_AUTHR_AGRMT,
     constants::GET_TXN_AUTHR_AGRMT_AML,
+    constants::GET_TXN,
 ];
 
 pub const REQUESTS_FOR_MULTI_STATE_PROOFS: [&str; 1] = [
@@ -72,16 +75,16 @@ pub const COMMAND_REFRESH : &str = "refresh";
 
 #[derive(Clone, Debug)]
 pub enum PoolEvent {
-    CheckCache(i32),
+    CheckCache(CommandHandle),
     NodeReply(
         String, // reply
         String, // node alias
     ),
     Close(
-        i32, //cmd_id
+        CommandHandle
     ),
     Refresh(
-        i32, //cmd_id
+        CommandHandle
     ),
     CatchupTargetFound(
         Vec<u8>, //target_mt_root
@@ -100,7 +103,7 @@ pub enum PoolEvent {
     #[allow(dead_code)] //FIXME
     NodesBlacklisted,
     SendRequest(
-        i32, // cmd_id
+        CommandHandle,
         String, // request
         Option<i32>, // timeout
         Option<String>, // node list
@@ -263,6 +266,10 @@ fn _parse_timestamp_from_req_for_builtin_sp(req: &SJsonValue, op: &str) -> (Opti
         return (None, None);
     }
 
+    if op == constants::GET_TXN {
+        return (None, Some(0));
+    }
+
     match op {
         constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT | constants::GET_TXN_AUTHR_AGRMT_AML => {
             (None, req["operation"]["timestamp"].as_u64())
@@ -283,12 +290,12 @@ fn _parse_req_id_and_op(msg: &str) -> IndyResult<(SJsonValue, String, String)> {
 
     let req_id = req_json["reqId"]
         .as_u64()
-        .ok_or(err_msg(IndyErrorKind::InvalidStructure, "No reqId in request"))?
+        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "No reqId in request"))?
         .to_string();
 
     let op = req_json["operation"]["type"]
         .as_str()
-        .ok_or(err_msg(IndyErrorKind::InvalidStructure, "No operation type in request"))?
+        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "No operation type in request"))?
         .to_string();
 
     Ok((req_json, req_id, op))

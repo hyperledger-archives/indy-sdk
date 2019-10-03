@@ -64,7 +64,7 @@ fn _from_cache(file_name: &PathBuf) -> IndyResult<MerkleTree> {
         let bytes = match f.read_u64::<LittleEndian>() {
             Ok(bytes) => bytes,
             Err(ref e) if e.kind() == io::ErrorKind::UnexpectedEof => break,
-            Err(e) => Err(e.to_indy(IndyErrorKind::IOError, "Can't read from pool ledger cache file"))?
+            Err(e) => return Err(e.to_indy(IndyErrorKind::IOError, "Can't read from pool ledger cache file"))
         };
 
         trace!("bytes: {:?}", bytes);
@@ -73,8 +73,8 @@ fn _from_cache(file_name: &PathBuf) -> IndyResult<MerkleTree> {
         match f.read_exact(buf.as_mut()) {
             Ok(()) => (),
             Err(e) => match e.kind() {
-                    io::ErrorKind::UnexpectedEof => Err(e.to_indy(IndyErrorKind::InvalidState, "Malformed pool ledger cache file"))?,
-                    _  => Err(e.to_indy(IndyErrorKind::IOError, "Can't read from pool ledger cache file"))?,
+                    io::ErrorKind::UnexpectedEof => return Err(e.to_indy(IndyErrorKind::InvalidState, "Malformed pool ledger cache file")),
+                    _  => return Err(e.to_indy(IndyErrorKind::IOError, "Can't read from pool ledger cache file"))
             }
         }
 
@@ -117,7 +117,7 @@ fn get_pool_stored_path_base(pool_name: &str, create_dir: bool, filename: &str, 
     path
 }
 
-pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> IndyResult<()> {
+pub fn dump_new_txns(pool_name: &str, txns: &[Vec<u8>]) -> IndyResult<()> {
     let p = get_pool_stored_path( pool_name, false);
     if !p.exists() {
         _dump_genesis_to_stored(&p, pool_name)?;
@@ -136,7 +136,7 @@ fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> IndyResult<()> {
 
     if !p_genesis.exists() {
         trace!("here");
-        Err(err_msg(IndyErrorKind::PoolNotCreated, format!("Pool is not created for name: {:?}", pool_name)))?;
+        return Err(err_msg(IndyErrorKind::PoolNotCreated, format!("Pool is not created for name: {:?}", pool_name)));
     }
 
     let mut file = fs::File::create(p)
@@ -146,7 +146,7 @@ fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> IndyResult<()> {
     _dump_vec_to_file(&genesis_vec, &mut file)
 }
 
-fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file: &mut fs::File) -> IndyResult<()> {
+fn _dump_vec_to_file(v: &[Vec<u8>], file: &mut fs::File) -> IndyResult<()> {
     for ref line in v {
         file.write_u64::<LittleEndian>(line.len() as u64)
             .to_indy(IndyErrorKind::IOError, "Can't write to pool ledger cache file")?;
@@ -201,10 +201,10 @@ pub fn build_node_state(merkle_tree: &MerkleTree) -> IndyResult<HashMap<String, 
         let mut gen_txn = match gen_txn {
             NodeTransaction::NodeTransactionV0(txn) => {
                 if protocol_version != 1 {
-                    Err(err_msg(IndyErrorKind::PoolIncompatibleProtocolVersion,
+                    return Err(err_msg(IndyErrorKind::PoolIncompatibleProtocolVersion,
                                 format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
                                          Call indy_set_protocol_version(1) to set correct PROTOCOL_VERSION",
-                                        protocol_version, NodeTransactionV0::VERSION)))?;
+                                        protocol_version, NodeTransactionV0::VERSION)));
                 }
                 NodeTransactionV1::from(txn)
             }

@@ -131,26 +131,6 @@
     XCTAssertEqualObjects(outMetadata, [TestUtils someMetadata]);
 }
 
-- (void)testGetKeyMetadataWorksForEmptyString {
-    NSString *verkey = nil;
-    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
-                                                          keyJson:@"{}"
-                                                        outVerkey:&verkey];
-    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
-
-    ret = [[CryptoUtils sharedInstance] setMetadata:@""
-                                             forKey:verkey
-                                       walletHandle:walletHandle];
-    XCTAssertEqual(ret.code, Success, @"CryptoUtils:setMetadata failed");
-
-    NSString *outMetadata = nil;
-    ret = [[CryptoUtils sharedInstance] getMetadataForKey:verkey
-                                             walletHandle:walletHandle
-                                              outMetadata:&outMetadata];
-    XCTAssertEqual(ret.code, Success, @"CryptoUtils:getMetadata failed");
-    XCTAssertEqualObjects(outMetadata, @"");
-}
-
 - (void)testGetKeyMetadataWorksForNoMetadata {
     NSString *outMetadata = nil;
     ret = [[CryptoUtils sharedInstance] getMetadataForKey:[TestUtils myVerkey1]

@@ -97,6 +97,7 @@ public abstract class LibIndy {
 		public int indy_get_my_did_with_meta(int command_handle, int wallet_handle, String did, Callback cb);
 		public int indy_list_my_dids_with_meta(int command_handle, int wallet_handle, Callback cb);
 		public int indy_abbreviate_verkey(int command_handle, String did, String full_verkey, Callback cb);
+		public int indy_qualify_did(int command_handle, int wallet_handle, String did, String method, Callback cb);
 
 		// crypto.rs
 
@@ -116,6 +117,8 @@ public abstract class LibIndy {
 
 		public int indy_issuer_create_schema(int command_handle, String issuer_did, String name, String version, String attr_names, Callback cb);
 		public int indy_issuer_create_and_store_credential_def(int command_handle, int wallet_handle, String issuer_did, String schema_json, String tag, String signature_type, String config_json, Callback cb);
+		public int indy_issuer_rotate_credential_def_start(int command_handle, int wallet_handle, String cred_def_id, String config_json, Callback cb);
+		public int indy_issuer_rotate_credential_def_apply(int command_handle, int wallet_handle, String cred_def_id, Callback cb);
 		public int indy_issuer_create_and_store_revoc_reg(int command_handle, int wallet_handle, String issuer_did, String revoc_def_type, String tag, String cred_def_id, String config_json, int blob_storage_writer_handle, Callback cb);
 		public int indy_issuer_create_credential_offer(int command_handle, int wallet_handle, String cred_def_id, Callback cb);
 		public int indy_issuer_create_credential(int command_handle, int wallet_handle, String cred_offer_json, String cred_req_json, String cred_values_json, String rev_reg_id, int blob_storage_reader_handle, Callback cb);
@@ -140,6 +143,7 @@ public abstract class LibIndy {
 		public int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
 		public int indy_update_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_state_json, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
 		public int indy_generate_nonce(int command_handle, Callback cb);
+		public int indy_to_unqualified(int command_handle, String entity, Callback cb);
 
 
 		// pairwise.rs

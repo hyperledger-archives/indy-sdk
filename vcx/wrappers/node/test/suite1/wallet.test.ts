@@ -96,6 +96,23 @@ describe('Wallet:', () => {
     })
   })
 
+  describe('signWithAddress:', () => {
+    it('success', async () => {
+      const msg = Buffer.from('random string');
+      const sig = await Wallet.signWithAddress('pay:sov:1234', msg)
+      assert.ok(sig)
+    })
+  })
+
+  describe('verifyWithAddress:', () => {
+    it('success', async () => {
+      const msg = Buffer.from('random string');
+      const sig = Buffer.from('random string');
+      const valid = await Wallet.verifyWithAddress('pay:sov:1234', msg, sig)
+      assert.ok(valid)
+    })
+  })
+
   describe('records:', () => {
     it('success', async () => {
       await Wallet.addRecord(WALLET_RECORD)
@@ -119,7 +136,7 @@ describe('Wallet:', () => {
 
   describe('import:', () => {
     it('throws: libindy error', async () => {
-      let config = '{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}'
+      let config = '{"wallet_name":"name","wallet_key":"","exported_wallet_path":"","backup_key":""}'
       let error = await shouldThrow(async () => Wallet.import(config))
       assert.equal(error.vcxCode, VCXCode.IO_ERROR)
       shutdownVcx(false)

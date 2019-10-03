@@ -54,6 +54,18 @@ async def test_create_payment_address_with_seed():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_sign_with_address():
+    sig = await Wallet.sign_with_address("pay:null:test", "test_data")
+    assert sig
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_verify_with_address():
+    valid = await Wallet.verify_with_address("pay:null:test", "test_data", "test_sig")
+    assert valid
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_validate_payment_address():
     await Wallet.validate_payment_address('sov:1:1234')
 
@@ -96,7 +108,7 @@ async def test_import_wallet_failures(vcx_init_test_mode, cleanup):
     assert ErrorCode.InvalidJson == e.value.error_code
     cleanup(True)
 
-    config = {'wallet_name': '', 'wallet_key': '', 'exported_wallet_path': '', 'backup_key': ''}
+    config = {'wallet_name': 'IO_ERROR', 'wallet_key': '', 'exported_wallet_path': '', 'backup_key': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
     assert ErrorCode.IOError == e.value.error_code

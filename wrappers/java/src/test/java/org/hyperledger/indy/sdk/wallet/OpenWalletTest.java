@@ -34,17 +34,6 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testOpenWalletWorksForChangingCredentials() throws Exception {
-		Wallet.createWallet(WALLET_CONFIG, "{\"key\": \"key\"}").get();
-
-		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, "{\"key\": \"key\", \"rekey\": \"other_key\"}").get();
-		wallet.closeWallet().get();
-
-		wallet = Wallet.openWallet(WALLET_CONFIG, "{\"key\": \"other_key\"}").get();
-		wallet.closeWallet().get();
-	}
-
-	@Test
 	public void testOpenWalletWorksForNotCreatedWallet() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletNotFoundException.class));

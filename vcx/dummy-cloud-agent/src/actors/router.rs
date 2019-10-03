@@ -3,7 +3,6 @@ use actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RouteA2
 use actors::requester::Requester;
 use domain::a2connection::A2ConnMessage;
 use failure::{Error, err_msg};
-use futures::*;
 use std::collections::HashMap;
 use utils::futures::*;
 

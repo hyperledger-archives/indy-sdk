@@ -165,10 +165,10 @@ impl Node {
     }
 
     pub fn get_all_values<'a>(&'a self, db: &'a TrieDB, prefix: Option<&[u8]>) -> IndyResult<Vec<(String, String)>> {
-        let node_and_prefix = prefix.map(|prf| self.get_node(db, &prf)).unwrap_or(Ok(Some((self, vec![]))))?;
+        let node_and_prefix = prefix.map(|prf| self.get_node(db, &prf)).unwrap_or_else(|| Ok(Some((self, vec![]))))?;
         if let Some((node, prf)) = node_and_prefix {
             let vals = node._get_all_values(db, prf)?;
-            let mut res: Vec<(String, String)> = vec![];
+            let mut res: Vec<(String, String)> = Vec::with_capacity(vals.len());
             for (key, val) in vals {
                 res.push((Node::_nibbles_to_str(&key)?, val))
             }
@@ -182,7 +182,7 @@ impl Node {
         trace!("Node::get_node >> path: {:?}", path);
         let nibble_path = Node::path_to_nibbles(path);
         trace!("Node::get_node >> made some nibbles >> nibbles: {:?}", nibble_path);
-        return self._get_node(db, nibble_path.as_slice(), vec![].as_slice())
+        self._get_node(db, nibble_path.as_slice(), vec![].as_slice())
     }
 
     fn _get_node<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8], seen_path: &'b [u8]) -> IndyResult<Option<(&Node, Vec<u8>)>> {
@@ -193,7 +193,7 @@ impl Node {
                     return Ok(Some((self, seen_path.to_vec())));
                 }
                 if let Some(ref next) = node.nodes[path[0] as usize] {
-                    let mut new_seen_path = vec![];
+                    let mut new_seen_path = Vec::with_capacity(seen_path.len() + path[..1].len());
                     new_seen_path.extend_from_slice(seen_path);
                     new_seen_path.extend_from_slice(&path[..1]);
                     return next._get_node(db, &path[1..], new_seen_path.as_slice());
@@ -203,9 +203,9 @@ impl Node {
             Node::Hash(ref hash) => {
                 let hash = NodeHash::from_slice(hash.as_slice());
                 if let Some(ref next) = db.get(hash) {
-                    return next._get_node(db, path, seen_path);
+                    next._get_node(db, path, seen_path)
                 } else {
-                    return Err(err_msg(IndyErrorKind::InvalidStructure, "Incomplete key-value DB for Patricia Merkle Trie to get value by the key"));
+                    Err(err_msg(IndyErrorKind::InvalidStructure, "Incomplete key-value DB for Patricia Merkle Trie to get value by the key"))
                 }
             }
             Node::Leaf(ref pair) => {
@@ -233,7 +233,7 @@ impl Node {
                 trace!("current extension node path: {:?}", pair_path);
 
                 if path.starts_with(&pair_path) {
-                    let mut new_seen_path = vec![];
+                    let mut new_seen_path = Vec::with_capacity(seen_path.len() + pair_path.len());
                     new_seen_path.extend_from_slice(seen_path);
                     new_seen_path.extend_from_slice(pair_path.as_slice());
                     pair.next._get_node(db, &path[pair_path.len()..], new_seen_path.as_slice())
@@ -373,7 +373,7 @@ impl Node {
     }
 
     fn path_to_nibbles(path: &[u8]) -> Vec<u8> {
-        let mut nibble_path: Vec<u8> = Vec::new();
+        let mut nibble_path: Vec<u8> = Vec::with_capacity(2*path.len());
 
         for s in path {
             nibble_path.push(s >> 4);
@@ -385,7 +385,7 @@ impl Node {
 
     fn _nibbles_to_str(nibbles: &[u8]) -> IndyResult<String> {
         trace!("Node::_nibbles_to_str >> nibbles: {:?}", nibbles);
-        let mut res: Vec<u8> = vec![];
+        let mut res: Vec<u8> = Vec::with_capacity(nibbles.len() / 2);
         for x in (0..nibbles.len()).step_by(2) {
             let h: u8 = (nibbles[x] << 4) + nibbles[x+1];
             res.push(h)

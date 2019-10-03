@@ -82,6 +82,7 @@ pub mod connect_command {
                 .add_optional_param("timeout", "Timeout for network request (in sec)")
                 .add_optional_param("extended-timeout", "Extended timeout for network request (in sec)")
                 .add_optional_param("pre-ordered-nodes", "Names of nodes which will have a priority during request sending")
+                .add_optional_param("number-read-nodes", "The number of nodes to send read requests (2 by default)")
                 .add_example("pool connect pool1")
                 .add_example("pool connect pool1 protocol-version=2")
                 .add_example("pool connect pool1 protocol-version=2 timeout=100")
@@ -97,12 +98,14 @@ pub mod connect_command {
         let timeout = get_opt_number_param::<i64>("timeout", params).map_err(error_err!())?;
         let extended_timeout = get_opt_number_param::<i64>("extended-timeout", params).map_err(error_err!())?;
         let pre_ordered_nodes = get_opt_str_array_param("pre-ordered-nodes", params).map_err(error_err!())?;
+        let number_read_nodes = get_opt_number_param::<u8>("number-read-nodes", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
             update_json_map_opt_key!(json, "timeout", timeout);
             update_json_map_opt_key!(json, "extended_timeout", extended_timeout);
             update_json_map_opt_key!(json, "preordered_nodes", pre_ordered_nodes);
+            update_json_map_opt_key!(json, "number_read_nodes", number_read_nodes);
             JSONValue::from(json).to_string()
         };
 
@@ -273,7 +276,12 @@ pub mod refresh_command {
             Ok(_) => {
                 println_succ!("Pool \"{}\"  has been refreshed", pool_name);
                 Ok(())
-            },
+            }
+            Err(ref err) if err.error_code == ErrorCode::PoolLedgerTimeout => {
+                println_err!("Cannot refresh pool. Transaction response has not been received");
+                close_pool(ctx, pool_handle, &pool_name)
+                    .map(|_| println_err!("Pool \"{}\" has been disconnected", pool_name))
+            }
             Err(err) => {
                 handle_indy_error(err, None, None, None);
                 Err(())
@@ -295,28 +303,27 @@ pub mod disconnect_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (handle, name) = if let Some(pool) = get_connected_pool(ctx) {
-            pool
-        } else {
-            println_err!("There is no connected pool now");
-            return Err(());
-        };
+        let (handle, name) = ensure_connected_pool(ctx)?;
 
-        let res = match Pool::close(handle) {
+        let res = close_pool(ctx, handle, &name)
+            .map(|_| println_err!("Pool \"{}\" has been disconnected", name));
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+fn close_pool(ctx: &CommandContext, handle: i32, name: &str) -> Result<(), ()> {
+    match Pool::close(handle) {
             Ok(()) => {
                 set_connected_pool(ctx, None);
                 set_transaction_author_info(ctx, None);
-                println_succ!("Pool \"{}\" has been disconnected", name);
                 Ok(())
             }
             Err(err) => {
                 handle_indy_error(err, None, Some(&name), None);
                 Err(())
             }
-        };
-
-        trace!("execute << {:?}", res);
-        res
     }
 }
 

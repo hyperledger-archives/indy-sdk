@@ -34,8 +34,8 @@ public class IssuerApi extends VcxJava.API {
                                                                     String credentialName,
                                                                     long price) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "credentialDefId");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "SchemaId");
+        ParamGuard.notNullOrWhiteSpace(credentialData, "credentialData");
+        ParamGuard.notNullOrWhiteSpace(credentialName, "credentialName");
 
         logger.debug("issuerCreateCredential() called with: sourceId = [" + sourceId + "], credentialDefHandle = [" + credentialDefHandle + "], issuerId = [" + issuerId + "], credentialData = [" + credentialData + "], credentialName = [" + credentialName + "], price = [" + price + "]");
         //TODO: Check for more mandatory params in vcx to add in PamaGuard
@@ -290,17 +290,14 @@ public class IssuerApi extends VcxJava.API {
         return future;
 
     }
-    public static CompletableFuture<Integer> issuerCredentialRelease(
-            int credentialHandle
-    ) throws VcxException {
+    public static int issuerCredentialRelease(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         logger.debug("issuerCredentialRelease() called with: credentialHandle = [" + credentialHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
 
         int result = LibVcx.api.vcx_issuer_credential_release(credentialHandle);
         checkResult(result);
 
-        return future;
+        return result;
     }
 
     public static CompletableFuture<Integer> issuerCredentialRequest(

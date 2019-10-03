@@ -10,13 +10,15 @@ use messages;
 use messages::proofs::proof_message::{ProofMessage, CredInfo};
 use messages::{RemoteMessageType, ObjectWithVersion, GeneralMessage};
 use messages::payload::{Payloads, PayloadKinds, Thread};
-use messages::proofs::proof_request::ProofRequestMessage;
+use messages::proofs::proof_request::{ProofRequestMessage, PROOF_REQUEST_V2};
 use utils::error;
 use utils::constants::*;
 use utils::libindy::anoncreds;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use object_cache::ObjectCache;
 use error::prelude::*;
+use utils::openssl::encode;
+use utils::qualifier::Qualifier;
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proof> = Default::default();
@@ -59,6 +61,33 @@ impl Proof {
     fn validate_proof_request(&self) -> VcxResult<u32> {
         //TODO: validate proof request
         Ok(error::SUCCESS.code_num)
+    }
+
+
+    pub fn validate_proof_revealed_attributes(&mut self, proof_json: &str) -> VcxResult<()> {
+        if settings::test_indy_mode_enabled() { return Ok(()); }
+
+        let proof: Value = serde_json::from_str(proof_json)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
+
+        let revealed_attrs = match proof["requested_proof"]["revealed_attrs"].as_object() {
+            Some(revealed_attrs) => revealed_attrs,
+            None => return Ok(())
+        };
+
+        for (attr1_referent, info) in revealed_attrs.iter() {
+            let raw = info["raw"].as_str().ok_or(VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Cannot get raw value for \"{}\" attribute", attr1_referent)))?;
+            let encoded_ = info["encoded"].as_str().ok_or(VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Cannot get encoded value for \"{}\" attribute", attr1_referent)))?;
+
+            let expected_encoded = encode(&raw)?;
+
+            if expected_encoded != encoded_.to_string() {
+                self.proof_state = ProofStateType::ProofInvalid;
+                return Err(VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Encoded values are different. Expected: {}. From Proof: {}", expected_encoded, encoded_)));
+            }
+        }
+
+        Ok(())
     }
 
     fn validate_proof_indy(&mut self,
@@ -221,6 +250,8 @@ impl Proof {
         let proof_json = self.build_proof_json()?;
         let proof_req_json = self.build_proof_req_json()?;
 
+        self.validate_proof_revealed_attributes(&proof_json)?;
+
         debug!("*******\n{}\n********", credential_defs_json);
         debug!("*******\n{}\n********", schemas_json);
         debug!("*******\n{}\n********", proof_json);
@@ -236,10 +267,13 @@ impl Proof {
     }
 
     fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
+        let proof_req_format_version = if Qualifier::is_fully_qualified(&self.remote_did) { Some(PROOF_REQUEST_V2) } else { None };
+
         let data_version = "0.1";
         let mut proof_obj = messages::proof_request();
         let proof_request = proof_obj
             .type_version(&self.version)?
+            .proof_request_format_version(proof_req_format_version)?
             .nonce(&self.nonce)?
             .proof_name(&self.name)?
             .proof_data_version(data_version)?
@@ -264,6 +298,7 @@ impl Proof {
         self.prover_did = connection::get_pw_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
         self.agent_did = connection::get_agent_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
         self.agent_vk = connection::get_agent_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
+        self.remote_did = connection::get_their_pw_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
         self.remote_vk = connection::get_their_pw_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
         self.prover_vk = connection::get_pw_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
 
@@ -311,10 +346,10 @@ impl Proof {
             None => {
                 // Check cloud agent for pending messages
                 let (_, message) = messages::get_message::get_ref_msg(&self.msg_uid,
-                                                   &self.prover_did,
-                                                   &self.prover_vk,
-                                                   &self.agent_did,
-                                                   &self.agent_vk)?;
+                                                                      &self.prover_did,
+                                                                      &self.prover_vk,
+                                                                      &self.agent_did,
+                                                                      &self.agent_vk)?;
 
                 let (payload, thread) = Payloads::decrypt(&self.prover_vk, &message)?;
 
@@ -1165,5 +1200,59 @@ mod tests {
         assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_proof_validate_attribute() {
+        init!("ledger");
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (schemas, cred_defs, proof_req, proof_json) = ::utils::libindy::anoncreds::tests::create_proof();
+
+        let mut proof_req_obj = ProofRequestMessage::create();
+
+        proof_req_obj.proof_request_data = serde_json::from_str(&proof_req).unwrap();
+
+        let mut proof_msg = ProofMessage::new();
+        let mut proof = create_boxed_proof();
+        proof.proof_request = Some(proof_req_obj);
+
+        // valid proof_obj
+        {
+            proof_msg.libindy_proof = proof_json.clone();
+            proof.proof = Some(proof_msg);
+
+            let rc = proof.proof_validation().unwrap();
+            assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
+        }
+
+        let mut proof_obj: serde_json::Value = serde_json::from_str(&proof_json).unwrap();
+
+        // change Raw value
+        {
+            let mut proof_msg = ProofMessage::new();
+            proof_obj["requested_proof"]["revealed_attrs"]["address1_1"]["raw"] = json!("Other Value");
+            let proof_json = serde_json::to_string(&proof_obj).unwrap();
+
+            proof_msg.libindy_proof = proof_json;
+            proof.proof = Some(proof_msg);
+
+            let rc = proof.proof_validation();
+            rc.unwrap_err();
+            assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
+        }
+
+        // change Encoded value
+        {
+            let mut proof_msg = ProofMessage::new();
+            proof_obj["requested_proof"]["revealed_attrs"]["address1_1"]["encoded"] = json!("1111111111111111111111111111111111111111111111111111111111");
+            let proof_json = serde_json::to_string(&proof_obj).unwrap();
+
+            proof_msg.libindy_proof = proof_json;
+            proof.proof = Some(proof_msg);
+
+            let rc = proof.proof_validation();
+            rc.unwrap_err(); //FIXME check error code also
+            assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
+        }
+    }
 }
 

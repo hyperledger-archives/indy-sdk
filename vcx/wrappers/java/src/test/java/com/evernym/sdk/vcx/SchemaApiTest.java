@@ -2,6 +2,7 @@ package com.evernym.sdk.vcx;
 
 import com.evernym.sdk.vcx.schema.InvalidSchemahandleException;
 import com.evernym.sdk.vcx.schema.SchemaApi;
+import com.evernym.sdk.vcx.schema.SchemaPrepareForEndorserResult;
 import com.evernym.sdk.vcx.vcx.VcxApi;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,7 @@ public class SchemaApiTest {
     private String schemaName = "schema name";
     private String schemaVersion = "1.1.1";
     private String schemaData = "['attr1', 'attr2', 'height', 'weight']";
+    private String endorser = "V4SGRU86Z58d6TV7PBUe6f";
 
     @BeforeEach
     void setup() throws Exception {
@@ -93,4 +95,21 @@ public class SchemaApiTest {
         assert (releaseHandle == 0);
     }
 
+    @Test
+    @DisplayName("prepare a schema for endorser")
+    void prepareSchemaForEndorser() throws VcxException, ExecutionException, InterruptedException {
+        SchemaPrepareForEndorserResult schemaForEndorser = TestHelper.getResultFromFuture(SchemaApi.schemaPrepareForEndorser(sourceId, schemaName, schemaVersion, TestHelper.convertToValidJson(schemaData), endorser));
+        assert (schemaForEndorser.getSchemaHandle() != 0);
+        assert (!schemaForEndorser.getTransaction().isEmpty());
+    }
+
+    @Test
+    @DisplayName("update schema state")
+    void updateSchemaState() throws VcxException, ExecutionException, InterruptedException {
+        SchemaPrepareForEndorserResult schemaForEndorser = TestHelper.getResultFromFuture(SchemaApi.schemaPrepareForEndorser(sourceId, schemaName, schemaVersion, TestHelper.convertToValidJson(schemaData), endorser));
+        assert (schemaForEndorser.getSchemaHandle() != 0);
+        assert (TestHelper.getResultFromFuture(SchemaApi.schemaGetState(schemaForEndorser.getSchemaHandle())) == 0);
+        assert (TestHelper.getResultFromFuture(SchemaApi.schemaUpdateState(schemaForEndorser.getSchemaHandle())) == 1);
+        assert (TestHelper.getResultFromFuture(SchemaApi.schemaGetState(schemaForEndorser.getSchemaHandle())) == 1);
+    }
 }

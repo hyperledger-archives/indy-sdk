@@ -1,5 +1,6 @@
 use super::constants::{ATTRIB, GET_ATTR};
 use super::response::GetReplyResultV1;
+use super::super::crypto::did::ShortDidValue;
 
 use named_type::NamedType;
 
@@ -7,7 +8,7 @@ use named_type::NamedType;
 pub struct AttribOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub dest: String,
+    pub dest: ShortDidValue,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hash: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -17,7 +18,7 @@ pub struct AttribOperation {
 }
 
 impl AttribOperation {
-    pub fn new(dest: String, hash: Option<String>, raw: Option<String>,
+    pub fn new(dest: ShortDidValue, hash: Option<String>, raw: Option<String>,
                enc: Option<String>) -> AttribOperation {
         AttribOperation {
             _type: ATTRIB.to_string(),
@@ -33,7 +34,7 @@ impl AttribOperation {
 pub struct GetAttribOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub dest: String,
+    pub dest: ShortDidValue,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub raw: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -43,7 +44,7 @@ pub struct GetAttribOperation {
 }
 
 impl GetAttribOperation {
-    pub fn new(dest: String, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> GetAttribOperation {
+    pub fn new(dest: ShortDidValue, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> GetAttribOperation {
         GetAttribOperation {
             _type: GET_ATTR.to_string(),
             dest,
@@ -64,9 +65,9 @@ pub enum GetAttrReplyResult {
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetAttResultV0 {
-    pub  identifier: String,
+    pub  identifier: ShortDidValue,
     pub  data: String,
-    pub  dest: String,
+    pub  dest: ShortDidValue,
     pub  raw: String
 }
 
@@ -74,7 +75,7 @@ pub struct GetAttResultV0 {
 pub struct GetAttResultDataV1 {
     pub ver: String,
     pub id: String,
-    pub did: String,
+    pub did: ShortDidValue,
     pub raw: String,
 }
 
