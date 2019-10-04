@@ -41,6 +41,8 @@
     "scripts": {
         "demo:alice": "babel-node demo/alice.js",
         "demo:faber": "babel-node demo/faber.js",
+        "demo:alice:pg": "babel-node demo/alice.js --postgres",
+        "demo:faber:pg": "babel-node demo/faber.js --postgres",
         "demo:alice:sign": "babel-node demo/alice-signature.js",
         "demo:faber:verify": "babel-node demo/faber-verify-signature.js",
         "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",
