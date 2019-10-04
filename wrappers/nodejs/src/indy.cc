@@ -958,6 +958,23 @@ NAN_METHOD(generateNonce) {
   indyCalled(icb, indy_generate_nonce(icb->handle, generateNonce_cb));
 }
 
+void toUnqualified_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+
+NAN_METHOD(toUnqualified) {
+  INDY_ASSERT_NARGS(toUnqualified, 2)
+  INDY_ASSERT_STRING(toUnqualified, 0, entity)
+  INDY_ASSERT_FUNCTION(toUnqualified, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_to_unqualified(icb->handle, arg0, toUnqualified_cb));
+  delete arg0;
+}
+
 void openBlobStorageReader_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -1471,6 +1488,27 @@ NAN_METHOD(abbreviateVerkey) {
   indyCalled(icb, indy_abbreviate_verkey(icb->handle, arg0, arg1, abbreviateVerkey_cb));
   delete arg0;
   delete arg1;
+}
+
+void qualifyDid_cb(indy_handle_t handle, indy_error_t xerr, const char *const arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(qualifyDid) {
+  INDY_ASSERT_NARGS(qualifyDid, 4)
+  INDY_ASSERT_NUMBER(qualifyDid, 0, wh)
+  INDY_ASSERT_STRING(qualifyDid, 1, did)
+  INDY_ASSERT_STRING(qualifyDid, 2, prefix)
+  INDY_ASSERT_FUNCTION(qualifyDid, 3)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  IndyCallback* icb = argToIndyCb(info[3]);
+  indyCalled(icb, indy_qualify_did(icb->handle, arg0, arg1, arg2, qualifyDid_cb));
+  delete arg1;
+  delete arg2;
 }
 
 void signAndSubmitRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
@@ -3572,6 +3610,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "createRevocationState", createRevocationState);
   Nan::Export(target, "updateRevocationState", updateRevocationState);
   Nan::Export(target, "generateNonce", generateNonce);
+  Nan::Export(target, "toUnqualified", toUnqualified);
   Nan::Export(target, "openBlobStorageReader", openBlobStorageReader);
   Nan::Export(target, "openBlobStorageWriter", openBlobStorageWriter);
   Nan::Export(target, "createKey", createKey);
@@ -3598,6 +3637,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "getMyDidWithMeta", getMyDidWithMeta);
   Nan::Export(target, "listMyDidsWithMeta", listMyDidsWithMeta);
   Nan::Export(target, "abbreviateVerkey", abbreviateVerkey);
+  Nan::Export(target, "qualifyDid", qualifyDid);
   Nan::Export(target, "signAndSubmitRequest", signAndSubmitRequest);
   Nan::Export(target, "submitRequest", submitRequest);
   Nan::Export(target, "submitAction", submitAction);

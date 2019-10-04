@@ -224,7 +224,7 @@ indy> did <subcommand>
 #### New
 Create and store my DID in the opened wallet. Requires opened wallet.
 ```
-indy> did new [did=<did>] [seed=<UTF-8, base64 or hex string>] [metadata=<metadata string>]
+indy> did new [did=<did>] [seed=<UTF-8, base64 or hex string>] [metadata=<metadata string>] [<method>=<did method name>]
 ```
 
 #### List
@@ -243,6 +243,13 @@ indy> did use [did=]<did>
 Rotate keys for used DID. Sends NYM to the ledger with updated keys. Requires opened wallet and connection to pool:
 ```
 indy> did rotate-key [seed=<UTF-8, base64 or hex string>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
+```
+
+
+#### Qualify DID
+Update DID stored in the wallet to make fully qualified, or to do other DID maintenance:
+```
+indy> did qualify did=<did> method=<method>
 ```
 
 ### Ledger transactions/messages

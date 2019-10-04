@@ -9,8 +9,8 @@ setup(
     version=PKG_VERSION,
     description='Python 3 wrapper for libcxs',
     long_description='None...for now',
-    author='Devin Fisher, Ryan Marsh, Mark Hadley, Doug Wightman',
-    author_email='ryan.marsh@evernym.com',
+    author="Hyperledger Indy Contributors",
+    author_email= "hyperledger-indy@lists.hyperledger.org",
     include_package_data=True,
     packages=find_packages(exclude=['demo', 'tests'])
 )

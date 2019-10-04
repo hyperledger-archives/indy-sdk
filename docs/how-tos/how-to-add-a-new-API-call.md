@@ -3,21 +3,11 @@
 In this guide you will see how to add a new call to Libindy. As an example we will take `indy_create_and_store_my_did` call.
 
 Code will be splitted to the following layers:
-* API layer. Library interface layer: 
-    * Basic validation
-    * Conversion of C types to Rust types
-    * Propagation of execution to commands layer
-* Commands layer:
-    * Working threads management
-    * JSONs conversion to internal types and corresponded validation
-    * Splitting complex commands to atomic operations
-    * Propagation of atomic operations execution to service layer
-    * Joining atomic operations results to complex result
-    * Execution of user defined callbacks
-* Service layer:
-    * Implements operations business logic and complex validation
-    * Management of sockets polling threads
+* API layer - enter point to the library 
+* Commands layer - split complex operation into multiply atomic ones, call various services for atomic actions and join results from them
+* Service layer - isolated against each-other services, process atomic operations
 
+For more details please see [Layers of libindy description](../architecture/libindy_layers.md)
 
 ### API Layer
 
@@ -101,7 +91,7 @@ Here you should add a new function for your business logic and a new match claus
         match command {
             // some other clauses
             DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info, cb) => {
-                info!("CreateAndStoreMyDid command received");
+                debug!("CreateAndStoreMyDid command received");
                 cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
             }
         }
@@ -131,4 +121,178 @@ Here you should add a new function for your business logic and a new match claus
 In the function you should put business logic of your call.
 Notice, that if you have some functionality that can be reused later by other commands, you should put it into the service and execute service call in the function.
 
-Services should stay independent from each other. You can include Services into CommandExecutors.  
+Services should stay independent from each other. You can include Services into CommandExecutors.
+
+### Asynchronous service
+
+There are some Indy functions which either work with external libraries (like payment related) or use network communication (like sending request to ledger), or execute heavy operations like wallet keys derivation.
+
+The sequence of steps to add these kind of functions is a bit harder than we explained for `indy_create_and_store_my_did` command above because we split execution of these functions into two or more parts (Ack commands) to avoid blocking of `CommandExecutor` for long time.
+Let's look at `indy_create_payment_address` which is a good example because it uses plugged asynchronous payment plugin.
+
+
+1) Call definition:
+```
+#[no_mangle]
+pub extern fn indy_create_payment_address(command_handle: CommandHandle,
+                                          wallet_handle: WalletHandle,
+                                          payment_method: *const c_char,
+                                          config: *const c_char,
+                                          cb: Option<extern fn(command_handle_: CommandHandle,
+                                                               err: ErrorCode,
+                                                               payment_address: *const c_char)>) -> ErrorCode {
+}
+```
+
+2) Passing command to Command Thread:
+```    
+let result = CommandExecutor::instance()
+    .send(Command::Payments(PaymentsCommand::CreateAddress(
+        wallet_handle,
+        payment_method,
+        config,
+        Box::new(move |result| {
+            // here goes a call to the callback that you have passed
+        }),
+    )));
+```
+
+3) Receiving and handling the command:
+```rust
+    pub fn execute(&self, command: DidCommand) {
+        match command {
+            // some other clauses
+            PaymentsCommand::CreateAddress(wallet_handle, payment_method, config, cb) => {
+                debug!(target: "payments_command_executor", "CreateAddress command received");
+                self.create_address(wallet_handle, &type_, &config, cb);
+            }
+        }
+    }
+    // some other functions
+    fn create_address(&self, wallet_handle: WalletHandle, type_: &str, config: &str, cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+        trace!("create_address >>> wallet_handle: {:?}, type_: {:?}, config: {:?}", wallet_handle, type_, config);
+
+        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
+            Err(err) => return cb(Err(err)),
+            _ => ()
+        };
+        self._process_method_str(cb, &|i| self.payments_service.create_address(i, wallet_handle, type_, config));
+
+        trace!("create_address <<<");
+    }
+    
+    // some other functions
+    fn _process_method_str(&self, cb: Box<dyn Fn(IndyResult<String>) + Send>,
+                           method: &dyn Fn(CommandHandle) -> IndyResult<()>) {
+        let cmd_handle = next_command_handle();
+        match method(cmd_handle) {
+            Ok(()) => {
+                self.pending_callbacks_str.borrow_mut().insert(cmd_handle, cb);
+            }
+            Err(err) => cb(Err(err))
+        }
+    }
+```
+
+The `_process_method_str` is a helper function which does preparation for the next asynchronous call:
+* Generates command handle callback matching.
+* Stores callback into a map. 
+* Calls passed function (`self.payments_service.create_address` calls payment plugin) which passed execution to an external library and frees `CommandExecutor` for the next commands.
+
+So, we postponed callback execution until get result back from plugin. 
+
+4. Now we have to add a new Ack command:
+```
+CreateAddressAck(
+    CommandHandle,
+    WalletHandle,
+    IndyResult<String /* address */>),
+```
+
+This command will be send to `CommandExecutor` from `self.payments_service.create_address` after the external function completes.
+```
+CommandExecutor::instance().send(Command::Payments(
+    PaymentsCommand::CreateAddressAck(cmd_handle, wallet_handle, result))).into()
+```
+
+These command is processed the same way as the original one before:
+```                
+    pub fn execute(&self, command: DidCommand) {
+        match command {
+            // some other clauses
+            PaymentsCommand::CreateAddressAck(handle, wallet_handle, result) => {
+                debug!(target: "payments_command_executor", "CreateAddressAck command received");
+                self.create_address_ack(handle, wallet_handle, result);
+            }
+        }
+    }
+    
+    fn create_address_ack(&self, handle: CommandHandle, wallet_handle: WalletHandle, result: IndyResult<String>) {
+        trace!("create_address_ack >>> wallet_handle: {:?}, result: {:?}", wallet_handle, result);
+        let total_result: IndyResult<String> = match result {
+            Ok(res) => {
+                //TODO: think about deleting payment_address on wallet save failure
+                self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new()).map(|_| res)
+                    .map_err(IndyError::from)
+            }
+            Err(err) => Err(err)
+        };
+        self._common_ack_str(handle, total_result, "CreateAddressAck");
+        trace!("create_address_ack <<<");
+    }
+    
+    fn _common_ack_str(&self, cmd_handle: CommandHandle, result: IndyResult<String>, name: &str) {
+        match self.pending_callbacks_str.borrow_mut().remove(&cmd_handle) {
+            Some(cb) => {
+                cb(result)
+            }
+            None => error!("Can't process PaymentsCommand::{} for handle {} with result {:?} - appropriate callback not found!",
+                           name, cmd_handle, result),
+        }
+    }
+``` 
+
+The `__common_ack_str` is a helper function which:
+* does processing of the result.
+* takes callback stored in the map.
+* invokes this callback
+
+The same way you can chain calling of multiple asynchronous services.
+
+### Testing
+
+One of the general principles of development within the core Indy team is to use [TDD](http://www.agiledata.org/essays/tdd.html)
+
+##### Unit test
+
+All functions within `services` and `utils` modules should be covered with Unit tests (as we mentioned above these functions must be atomic operations). 
+So, if we consider function `create_and_store_my_did` the following service functions should be covered with Unit tests:
+* `self.crypto_service.create_my_did` - look at `libindy/src/services/crypto/mod.rs` file.
+* `self.wallet_service.record_exists` - look at `libindy/src/services/wallet/mod.rs` file.
+* `self.wallet_service.add_indy_object` - look at `libindy/src/services/wallet/mod.rs` file.
+
+We don't cover the functions within the `commands` module with Unit tests because:
+*  `CommandExecutor` is a complex structure which has multiple dependencies. 
+*  These functions only join results from multiple atomic service-related functions.
+*  These functions totally correspond to an API level function which sends associated command to the `CommandExecutor`.
+
+##### Integration test
+
+Each Libindy external API function (within `api` module) should be covered with Integration tests.
+* These tests live within the `tests` directory. 
+* There are two usage types:
+    * use C function definition (like tests located at `demo` file).
+    * use Rust wrapper to avoid boilerplate like `channel` preparation and casting to C types.
+* Integration tests based on Rust wrapper is divided on High level and Medium level.
+    * High cases - typical positive scenarios or a strongly specific error related to a function.
+    * Medium cases - tricky positive scenarios or general errors like invalid input data or invalid handles. 
+* there are the set of integration tests devoted to one specific API function.
+* there are the set of integration tests which covers different complex scenarios like `interaction` or `anoncreds_demos`.
+
+These integration tests can be a good example of how a function should be used.
+
+If we consider function `indy_create_and_store_my_did`:
+ * There are multiple High and Medium tests cases file devoted to that function within `did.rs`.
+ * There is also `ledger_demo_works` test in the `demo.rs` file which uses C definition of `indy_create_and_store_my_did` function.
+
+For more details around testing, checkout out this [doc](/docs/contributors/test-design.md).

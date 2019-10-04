@@ -290,17 +290,14 @@ public class IssuerApi extends VcxJava.API {
         return future;
 
     }
-    public static CompletableFuture<Integer> issuerCredentialRelease(
-            int credentialHandle
-    ) throws VcxException {
+    public static int issuerCredentialRelease(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
         logger.debug("issuerCredentialRelease() called with: credentialHandle = [" + credentialHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
 
         int result = LibVcx.api.vcx_issuer_credential_release(credentialHandle);
         checkResult(result);
 
-        return future;
+        return result;
     }
 
     public static CompletableFuture<Integer> issuerCredentialRequest(

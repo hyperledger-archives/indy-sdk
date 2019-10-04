@@ -143,17 +143,14 @@ public class CredentialDefApi extends VcxJava.API {
         return future;
     }
 
-    public static CompletableFuture<Integer> credentialDefRelease(
-            int handle
-    ) throws VcxException {
+    public static int credentialDefRelease(int handle) throws VcxException {
         ParamGuard.notNull(handle, "handle");
         logger.debug("credentialDefRelease() called with: handle = [" + handle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
 
         int result = LibVcx.api.vcx_credentialdef_release(handle);
         checkResult(result);
 
-        return future;
+        return result;
     }
 
     private static Callback credentialDefPrepareForEndorserCB = new Callback() {
