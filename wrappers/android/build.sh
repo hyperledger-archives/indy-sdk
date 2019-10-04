@@ -12,7 +12,7 @@ mkdir -p aar
 
 download_libgnustl(){
     rm -rf indy-android-dependencies
-    git clone https://github.com/faisal00813/indy-android-dependencies
+    git clone https://github.com/sovrin-foundation/indy-android-dependencies
     pushd indy-android-dependencies/prebuilt/libgnustl
         unzip libgnustl_arm64.zip
         unzip libgnustl_armv7.zip
