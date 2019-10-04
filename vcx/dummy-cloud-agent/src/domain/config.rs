@@ -28,6 +28,8 @@ pub struct ForwardAgentConfig {
 pub struct AppConfig {
     // Http application prefix
     pub prefix: String,
+    // enable or disable http api for fetching information about agency status
+    pub enable_admin_api: Option<bool>
 }
 
 #[derive(Clone, Debug, Deserialize)]
