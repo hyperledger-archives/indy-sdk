@@ -1,12 +1,12 @@
 [package]
 name = "indy-dummy-agent"
 version = "0.1.0"
-authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 exclude = ['config/*']
 
 [dependencies]
-actix = "0.7"
-actix-web = "0.7"
+actix = "0.8.3"
+actix-web = "1.0.7"
 bytes = "0.4.10"
 failure = "0.1.2"
 futures = "0.1.24"

@@ -24,41 +24,54 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testBuildNymRequestWorksForOnlyRequiredFields() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"type\":\"1\"}", DID, dest);
+		JSONObject expectedResult = new JSONObject()
+				.put("identifier", DID)
+				.put("operation",
+						new JSONObject()
+								.put("dest", dest)
+								.put("type", "1")
+				);
 
-		String nymRequest = Ledger.buildNymRequest(DID, dest, null, null, null).get();
-		assertTrue(nymRequest.contains(expectedResult));
-	}
-
-	@Test
-	public void testBuildNymRequestWorksForEmptyRole() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"role\":null,\"type\":\"1\"}", DID, dest);
-
-		String nymRequest = Ledger.buildNymRequest(DID, dest, null, null, "").get();
-		assertTrue(nymRequest.contains(expectedResult));
+		String request = Ledger.buildNymRequest(DID, dest, null, null, null).get();
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
 	}
 
 	@Test
 	public void testBuildNymRequestWorksForOnlyOptionalFields() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\"," +
-				"\"operation\":{" +
-				"\"alias\":\"%s\"," +
-				"\"dest\":\"%s\"," +
-				"\"role\":\"2\"," +
-				"\"type\":\"1\"," +
-				"\"verkey\":\"%s\"" +
-				"}", DID, alias, dest, VERKEY_TRUSTEE);
+		JSONObject expectedResult = new JSONObject()
+				.put("identifier", DID)
+				.put("operation",
+						new JSONObject()
+								.put("alias", alias)
+								.put("dest", dest)
+								.put("verkey", VERKEY_TRUSTEE)
+								.put("role", "2")
+								.put("type", "1")
+				);
 
-		String nymRequest = Ledger.buildNymRequest(DID, dest, VERKEY_TRUSTEE, alias, role).get();
-		assertTrue(nymRequest.contains(expectedResult));
+
+		String request = Ledger.buildNymRequest(DID, dest, VERKEY_TRUSTEE, alias, role).get();
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
 	}
 
 	@Test
 	public void testBuildGetNymRequestWorks() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"type\":\"105\",\"dest\":\"%s\"}", DID, dest);
+		JSONObject expectedResult = new JSONObject()
+				.put("identifier", DID)
+				.put("operation",
+						new JSONObject()
+								.put("dest", dest)
+								.put("type", "105")
+				);
 
-		String nymRequest = Ledger.buildGetNymRequest(DID, dest).get();
-		assertTrue(nymRequest.contains(expectedResult));
+		String request = Ledger.buildGetNymRequest(DID, dest).get();
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
 	}
 
 	@Test

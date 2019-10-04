@@ -12,6 +12,9 @@ use services::blob_storage::BlobStorageService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
+use services::anoncreds::helpers::to_unqualified;
+
+use errors::prelude::*;
 
 use std::rc::Rc;
 
@@ -19,6 +22,9 @@ pub enum AnoncredsCommand {
     Issuer(IssuerCommand),
     Prover(ProverCommand),
     Verifier(VerifierCommand),
+    ToUnqualified(
+        String, // entity
+        Box<dyn Fn(IndyResult<String>) + Send>)
 }
 
 pub struct AnoncredsCommandExecutor {
@@ -47,16 +53,20 @@ impl AnoncredsCommandExecutor {
     pub fn execute(&self, command: AnoncredsCommand) {
         match command {
             AnoncredsCommand::Issuer(cmd) => {
-                info!(target: "anoncreds_command_executor", "Issuer command received");
+                debug!(target: "anoncreds_command_executor", "Issuer command received");
                 self.issuer_command_cxecutor.execute(cmd);
             }
             AnoncredsCommand::Prover(cmd) => {
-                info!(target: "anoncreds_command_executor", "Prover command received");
+                debug!(target: "anoncreds_command_executor", "Prover command received");
                 self.prover_command_cxecutor.execute(cmd);
             }
             AnoncredsCommand::Verifier(cmd) => {
-                info!(target: "anoncreds_command_executor", "Verifier command received");
+                debug!(target: "anoncreds_command_executor", "Verifier command received");
                 self.verifier_command_cxecutor.execute(cmd);
+            }
+            AnoncredsCommand::ToUnqualified(entity, cb) => {
+                debug!("ToUnqualified command received");
+                cb(to_unqualified(&entity));
             }
         };
     }
