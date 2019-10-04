@@ -3,7 +3,7 @@ libindy (1.12.0) unstable; urgency=medium
 [ Hyperledger ]
 
 ## 1.12.0
-* Minimal Support of Fully-Qualified identifiers:
+* Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
     * extended `did_info` parameter of `indy_create_and_store_my_did` function to accepts optional `method_name` filed. This field should be used to create fully qualified DID.
     * all functions can work with fully-qualified identifiers (new way) as well as with unqualified.
     * added a new function -- `indy_to_unqualified` -- that gets unqualified form of a fully qualified identifier.

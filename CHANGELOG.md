@@ -1,7 +1,7 @@
 # Changelog
 
 ## 1.12.0 - 2019-09-XX
-* Minimal Support of Fully-Qualified identifiers:
+* Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
     * general format of fully-qualified identifier is `<prefix>:<method>:<value>`.
     * extended `did_info` parameter of `indy_create_and_store_my_did` function to accepts optional `method_name` filed. This field should be used to create fully qualified DID.
     * all functions can work with fully-qualified identifiers (new way) as well as with unqualified.
@@ -66,7 +66,7 @@ Old `indy_build_get_payment_sources_request` and `indy_parse_get_payment_sources
 
     Added correspondent `payment-address sign/verify` commands to Indy CLI.
     
-* Added new *EXPEREMENTAL* functions to get requirements and price for a ledger request.
+* Added new *EXPERIMENTAL* functions to get requirements and price for a ledger request.
     * Libindy `indy_get_request_info` - returns request requirements (with minimal price) correspondent to specific auth rule in case the requester can perform this action.
     * Libvcx `vcx_get_request_price` - returns request minimal request price for performing an action in case the requester can do it.
 * Added a set of new Libvcx APIs around credentials and proofs that work with messages that should be exchanged without handling the transport of those messages.
