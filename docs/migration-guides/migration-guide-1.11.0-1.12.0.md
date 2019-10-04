@@ -48,16 +48,20 @@ This functions also updates all DID related entities stored in the wallet to poi
 
 #### Anoncreds API
 
-As we have released Fully-Qualified identifiers, we can work with both identifier formats in a compatible way. 
+As we have released *EXPERIMENTAL* Fully-Qualified identifiers, we can work with both identifier formats in a compatible way. 
 
-The new function [indy_to_unqualified](https://github.com/hyperledger/indy-sdk/blob/v1.12.0/libindy/src/api/did.rs#L729) was added. 
+The new function [indy_to_unqualified](https://github.com/hyperledger/indy-sdk/blob/v1.12.0/libindy/src/api/anoncreds.rs#L2378) was added. 
 This function gets unqualified form of a fully-qualified identifier. 
 This function can accept the following entities: 
 * DID
 * SchemaId 
 * CredentialDefinitionId 
 * RevocationRegistryId 
-* CredentialOffer 
+* Schema
+* CredentialDefinition
+* RevocationRegistryDefinition
+* CredentialOffer
+* CredentialRequest
 * ProofRequest
 
 Let's consider Credential Issuance and Proof Presentation for different cases.

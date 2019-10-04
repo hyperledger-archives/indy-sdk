@@ -3,7 +3,8 @@ libvcx (0.4.2) unstable; urgency=medium
 [ Hyperledger ]
 
 ## 0.4.2
-* Extended provisioning config to accept optional `did_method` filed. This field should be used to create fully qualified DIDs.
+* *EXPERIMENTAL*
+  Extended provisioning config to accept optional `did_method` filed. This field should be used to create fully qualified DIDs.
   The format of identifiers used on CredentialIssuance and ProofPresentation will determine based on the type of remote DID.
 * Bugfixes
 
