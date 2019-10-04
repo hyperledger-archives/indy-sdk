@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str;
 
 use crate::domain::wallet::{KeyDerivationMethod, Metadata};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
 
 use super::{Keys, WalletRecord};

@@ -2,7 +2,7 @@ use std::cell;
 use std::fmt;
 use std::io;
 use std::sync::Arc;
-use std::ffi::CString;
+use std::ffi::{CString, NulError};
 use std::cell::RefCell;
 use std::ptr;
 
@@ -12,8 +12,7 @@ use ursa::errors::{UrsaCryptoError, UrsaCryptoErrorKind};
 use log;
 use libc::c_char;
 
-use crate::api::ErrorCode;
-use crate::utils::ctypes;
+use crate::ErrorCode;
 
 pub mod prelude {
     pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, set_current_error, get_current_error_c_json};
@@ -241,6 +240,33 @@ impl From<rust_base58::base58::FromBase58Error> for IndyError {
     }
 }
 
+impl From<openssl::error::ErrorStack> for IndyError {
+    fn from(err: openssl::error::ErrorStack) -> IndyError {
+        // TODO: FIXME: Analyze ErrorStack and split invalid structure errors from other errors
+        err.to_indy(IndyErrorKind::InvalidState, "Internal OpenSSL error")
+    }
+}
+
+impl From<NulError> for IndyError {
+    fn from(err: NulError) -> IndyError {
+        err.to_indy(IndyErrorKind::InvalidState, "Null symbols in payments strings") // TODO: Review kind
+    }
+}
+
+impl From<rusqlite::Error> for IndyError {
+    fn from(err: rusqlite::Error) -> IndyError {
+        match err {
+            rusqlite::Error::QueryReturnedNoRows => err.to_indy(IndyErrorKind::WalletItemNotFound, "Item not found"),
+            rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::ConstraintViolation, .. }, _) =>
+                err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
+            rusqlite::Error::SqliteFailure(rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::SystemIOFailure, .. }, _) =>
+                err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
+            _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
+        }
+    }
+}
+
 impl<T> From<IndyResult<T>> for ErrorCode {
     fn from(r: Result<T, IndyError>) -> ErrorCode {
         match r {
@@ -462,7 +488,7 @@ pub fn set_current_error(err: &IndyError) {
             "message": err.to_string(),
             "backtrace": err.backtrace().map(|bt| bt.to_string())
         }).to_string();
-        error.replace(Some(ctypes::string_to_cstring(error_json)));
+        error.replace(Some(string_to_cstring(error_json)));
     })
         .map_err(|err| error!("Thread local variable access failed with: {:?}", err)).ok();
 }
@@ -476,4 +502,8 @@ pub fn get_current_error_c_json() -> *const c_char {
         .map_err(|err| error!("Thread local variable access failed with: {:?}", err)).ok();
 
     value
+}
+
+pub fn string_to_cstring(s: String) -> CString {
+    CString::new(s).unwrap()
 }

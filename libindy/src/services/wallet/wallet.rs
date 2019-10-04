@@ -4,7 +4,7 @@ use std::rc::Rc;
 use crate::utils::crypto::{hmacsha256, chacha20poly1305_ietf};
 use crate::utils::wql::Query;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 use zeroize::Zeroize;
 

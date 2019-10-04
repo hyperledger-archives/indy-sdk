@@ -1,4 +1,4 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 use super::wallet::Keys;
 use super::language::{Operator, TargetValue, TagName};

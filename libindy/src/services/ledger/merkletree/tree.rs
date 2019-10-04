@@ -1,6 +1,6 @@
 use std::cmp;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 pub use crate::services::ledger::merkletree::proof::{
     Lemma,
     Positioned,

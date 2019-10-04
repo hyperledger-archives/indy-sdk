@@ -1,4 +1,4 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use failure::ResultExt;
 
 pub fn encode(doc: &[u8]) -> String {

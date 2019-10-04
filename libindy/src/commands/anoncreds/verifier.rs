@@ -7,7 +7,7 @@ use crate::domain::anoncreds::proof_request::{ProofRequest, ProofRequestPayload}
 use crate::domain::anoncreds::revocation_registry::{rev_regs_map_to_rev_regs_local_map, RevocationRegistryV1, RevocationRegistries};
 use crate::domain::anoncreds::revocation_registry_definition::{rev_reg_defs_map_to_rev_reg_defs_v1_map, RevocationRegistryDefinitionV1, RevocationRegistryId, RevocationRegistryDefinitions};
 use crate::domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
 
 pub enum VerifierCommand {

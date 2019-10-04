@@ -8,7 +8,7 @@ use std::rc::Rc;
 use rusqlite;
 use serde_json;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::wallet::language;
 use crate::utils::environment;
 
@@ -741,21 +741,6 @@ impl WalletStorageType for SQLiteStorageType {
         Ok(Box::new(SQLiteStorage { conn: Rc::new(conn) }))
     }
 }
-
-impl From<rusqlite::Error> for IndyError {
-    fn from(err: rusqlite::Error) -> IndyError {
-        match err {
-            rusqlite::Error::QueryReturnedNoRows => err.to_indy(IndyErrorKind::WalletItemNotFound, "Item not found"),
-            rusqlite::Error::SqliteFailure(
-                rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::ConstraintViolation, .. }, _) =>
-                err.to_indy(IndyErrorKind::WalletItemAlreadyExists, "Wallet item already exists"),
-            rusqlite::Error::SqliteFailure(rusqlite::ffi::Error { code: rusqlite::ffi::ErrorCode::SystemIOFailure, .. }, _) =>
-                err.to_indy(IndyErrorKind::IOError, "IO error during access sqlite database"),
-            _ => err.to_indy(IndyErrorKind::InvalidState, "Unexpected sqlite error"),
-        }
-    }
-}
-
 
 #[cfg(test)]
 mod tests {

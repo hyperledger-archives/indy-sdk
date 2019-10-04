@@ -12,7 +12,7 @@ use serde_json::Value as SValue;
 use crate::api::wallet::*;
 
 use crate::domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, Tags};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 pub use crate::services::wallet::encryption::KeyDerivationData;
 use crate::utils::crypto::chacha20poly1305_ietf;
 use crate::utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
@@ -22,7 +22,7 @@ use self::storage::{WalletStorage, WalletStorageType};
 use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Keys, Wallet};
-use crate::api::{WalletHandle, next_wallet_handle};
+use indy_api_types::{WalletHandle, next_wallet_handle};
 
 mod storage;
 mod encryption;
@@ -746,11 +746,11 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use crate::api::INVALID_WALLET_HANDLE;
+    use indy_api_types::INVALID_WALLET_HANDLE;
 
     use crate::domain::wallet::KeyDerivationMethod;
     use crate::utils::environment;
-    use crate::utils::inmem_wallet::InmemWallet;
+    use indy_utils::inmem_wallet::InmemWallet;
     use crate::utils::test;
 
     use super::*;

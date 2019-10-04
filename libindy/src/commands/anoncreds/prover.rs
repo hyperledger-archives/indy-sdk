@@ -20,17 +20,17 @@ use crate::domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelt
 use crate::domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
 use crate::domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
 use crate::domain::crypto::did::DidValue;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
 use crate::services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use crate::utils::sequence;
+use indy_utils::sequence;
 use crate::utils::wql::Query;
 
 use super::tails::SDKTailsAccessor;
-use crate::api::WalletHandle;
+use indy_api_types::WalletHandle;
 use crate::commands::BoxedCallbackStringStringSend;
 
 pub enum ProverCommand {

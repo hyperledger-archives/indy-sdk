@@ -1,10 +1,10 @@
 
-use crate::api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle, StorageHandle, INVALID_WALLET_HANDLE};
+use indy_api_types::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle, StorageHandle, INVALID_WALLET_HANDLE};
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::wallet::WalletCommand;
 use crate::domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
-use crate::errors::prelude::*;
-use crate::utils::ctypes;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 use crate::utils::validation::Validatable;
 
 use serde_json;

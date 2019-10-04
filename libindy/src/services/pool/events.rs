@@ -2,10 +2,10 @@ use serde_json;
 use serde_json::Value as SJsonValue;
 
 use crate::domain::ledger::constants;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::ledger::merkletree::merkletree::MerkleTree;
 use crate::services::pool::{PoolService, types:: *};
-use crate::api::CommandHandle;
+use indy_api_types::CommandHandle;
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&str; 11] = [
     constants::GET_NYM,

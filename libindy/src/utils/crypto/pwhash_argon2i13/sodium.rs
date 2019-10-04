@@ -2,7 +2,7 @@ extern crate serde;
 extern crate sodiumoxide;
 
 use crate::domain::wallet::KeyDerivationMethod;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use libc::{c_int, c_ulonglong, size_t};
 use self::sodiumoxide::crypto::pwhash;
 

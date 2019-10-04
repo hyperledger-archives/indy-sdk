@@ -1,7 +1,6 @@
 extern crate openssl;
 
-use crate::errors::prelude::*;
-use self::openssl::error::ErrorStack;
+use indy_api_types::errors::prelude::*;
 use self::openssl::hash::{Hasher, MessageDigest};
 
 pub const HASHBYTES: usize = 32;
@@ -70,12 +69,5 @@ impl<T: AsRef<[u8]>> Hashable for T {
         context
             .update(self.as_ref())
             .to_indy(IndyErrorKind::InvalidState, "Internal OpenSSL error")
-    }
-}
-
-impl From<ErrorStack> for IndyError {
-    fn from(err: ErrorStack) -> IndyError {
-        // TODO: FIXME: Analyze ErrorStack and split invalid structure errors from other errors
-        err.to_indy(IndyErrorKind::InvalidState, "Internal OpenSSL error")
     }
 }

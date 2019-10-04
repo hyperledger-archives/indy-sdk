@@ -19,7 +19,7 @@ use crate::commands::pool::{PoolCommand, PoolCommandExecutor};
 use crate::commands::wallet::{WalletCommand, WalletCommandExecutor};
 use crate::commands::cache::{CacheCommand, CacheCommandExecutor};
 use crate::domain::IndyConfig;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;

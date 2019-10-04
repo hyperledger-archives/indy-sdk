@@ -6,9 +6,9 @@ use std::ptr;
 use libc::c_char;
 use serde_json;
 
-use crate::api::ErrorCode;
+use indy_api_types::ErrorCode;
 use crate::api::wallet::*;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::wallet::language;
 use crate::utils::crypto::base64;
 
@@ -814,7 +814,7 @@ mod tests {
     use std::clone::Clone;
     use std::sync::RwLock;
 
-    use crate::api::ErrorCode;
+    use indy_api_types::ErrorCode;
 
     use super::*;
 

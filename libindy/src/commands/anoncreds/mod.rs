@@ -14,7 +14,7 @@ use crate::services::wallet::WalletService;
 use crate::services::crypto::CryptoService;
 use crate::services::anoncreds::helpers::to_unqualified;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 use std::rc::Rc;
 

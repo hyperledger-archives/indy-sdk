@@ -74,6 +74,8 @@ log-panics = "2.0.0"
 zeroize = "0.9.3"
 regex = "1.2.1"
 ursa = { version = "0.2.0-dev-1", optional = true }
+indy-api-types = { path = "./indy-api-types"}
+indy-utils = { path = "./indy-utils"}
 
 [dependencies.uuid]
 version = "0.7.4"

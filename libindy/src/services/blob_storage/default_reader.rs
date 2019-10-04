@@ -1,7 +1,7 @@
 use rust_base58::ToBase58;
 
 use super::{ReadableBlob, Reader, ReaderType};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 use serde_json;
 use std::fs::File;

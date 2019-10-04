@@ -1,7 +1,7 @@
 pub mod default;
 pub mod plugged;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::wallet::language;
 use crate::services::wallet::wallet::EncryptedValue;
 

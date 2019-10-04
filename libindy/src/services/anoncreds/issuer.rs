@@ -19,7 +19,7 @@ use crate::domain::anoncreds::credential_definition::{CredentialDefinitionData, 
 use crate::domain::anoncreds::credential_request::CredentialRequest;
 use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
 use crate::domain::crypto::did::DidValue;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::helpers::*;
 
 pub struct Issuer {}

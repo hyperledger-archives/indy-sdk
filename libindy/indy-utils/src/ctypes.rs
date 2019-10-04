@@ -27,6 +27,7 @@ pub fn string_to_cstring(s: String) -> CString {
 pub fn str_to_cstring(s: &str) -> CString { CString::new(s).unwrap() }
 
 
+#[macro_export]
 macro_rules! check_useful_c_str {
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
@@ -42,6 +43,7 @@ macro_rules! check_useful_c_str {
     }
 }
 
+#[macro_export]
 macro_rules! check_useful_opt_json {
     ($x:ident, $e:expr, $t:ty) => {
         let $x = match ctypes::c_str_to_string($x) {
@@ -62,6 +64,7 @@ macro_rules! check_useful_opt_json {
     }
 }
 
+#[macro_export]
 macro_rules! check_useful_json {
     ($x:ident, $e:expr, $t:ty) => {
         let $x = match ctypes::c_str_to_string($x) {
@@ -75,6 +78,7 @@ macro_rules! check_useful_json {
     }
 }
 
+#[macro_export]
 macro_rules! check_useful_validatable_json {
     ($x:ident, $e:expr, $t:ty) => {
         check_useful_json!($x, $e, $t);
@@ -88,6 +92,7 @@ macro_rules! check_useful_validatable_json {
     }
 }
 
+#[macro_export]
 macro_rules! check_useful_opt_validatable_json {
     ($x:ident, $e:expr, $t:ty) => {
         let $x = match ctypes::c_str_to_string($x) {
@@ -114,6 +119,7 @@ macro_rules! check_useful_opt_validatable_json {
     }
 }
 
+#[macro_export]
 macro_rules! check_useful_validatable_string {
     ($x:ident, $e:expr, $t:ident) => {
         check_useful_c_str!($x, $e);
@@ -129,6 +135,7 @@ macro_rules! check_useful_validatable_string {
     }
 }
 
+#[macro_export]
 macro_rules! check_useful_validatable_opt_string {
     ($x:ident, $e:expr, $t:ident) => {
         check_useful_opt_c_str!($x, $e);
@@ -150,6 +157,7 @@ macro_rules! check_useful_validatable_opt_string {
     }
 }
 
+#[macro_export]
 macro_rules! parse_json {
     ($x:ident, $e:expr, $t:ty) => {
         if $x.is_empty() {
@@ -157,7 +165,7 @@ macro_rules! parse_json {
         }
 
         let r = serde_json::from_str::<$t>($x)
-                    .to_indy(crate::errors::IndyErrorKind::InvalidStructure, format!("Invalid {} json has been passed", stringify!($t)));
+                    .to_indy(indy_api_types::errors::IndyErrorKind::InvalidStructure, format!("Invalid {} json has been passed", stringify!($t)));
 
         let $x: $t = match r {
             Ok(ok) => ok,
@@ -168,6 +176,7 @@ macro_rules! parse_json {
     }
 }
 
+#[macro_export]
 macro_rules! check_useful_c_str_empty_accepted {
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {
@@ -179,6 +188,7 @@ macro_rules! check_useful_c_str_empty_accepted {
     }
 }
 
+#[macro_export]
 macro_rules! check_useful_opt_c_str {
     //TODO This no longer returns None options, only Strings are returned
     ($x:ident, $e:expr) => {
@@ -192,6 +202,7 @@ macro_rules! check_useful_opt_c_str {
 }
 
 /// Vector helpers
+#[macro_export]
 macro_rules! check_useful_c_byte_array {
     ($ptr:ident, $len:expr, $err1:expr, $err2:expr) => {
         if $ptr.is_null() {
@@ -213,6 +224,7 @@ pub fn vec_to_pointer(v: &Vec<u8>) -> (*const u8, u32) {
     (v.as_ptr() as *const u8, len)
 }
 
+#[macro_export]
 macro_rules! boxed_callback_string {
     ($method_name: expr, $cb: ident, $command_handle: ident) => {
         Box::new(move |result| {

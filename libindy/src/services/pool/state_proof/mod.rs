@@ -11,9 +11,9 @@ use rlp::UntrustedRlp;
 use serde_json;
 use serde_json::Value as SJsonValue;
 
-use crate::api::ErrorCode;
+use indy_api_types::ErrorCode;
 use crate::domain::ledger::{constants, request::ProtocolVersion};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::pool::events::{REQUESTS_FOR_STATE_PROOFS, REQUESTS_FOR_MULTI_STATE_PROOFS};
 use crate::utils::crypto::hash::hash as openssl_hash;
 

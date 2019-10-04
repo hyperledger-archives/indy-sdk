@@ -1,4 +1,4 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::ledger::merkletree::proof::{Lemma, Proof};
 use crate::services::ledger::merkletree::tree::{LeavesIntoIterator, LeavesIterator, Tree, TreeLeafData};
 use crate::utils::crypto::hash::{Hash, EMPTY_HASH_BYTES};

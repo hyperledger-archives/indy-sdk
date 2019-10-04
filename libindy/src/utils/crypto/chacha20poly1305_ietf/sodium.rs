@@ -1,14 +1,14 @@
 extern crate sodiumoxide;
 
 use crate::domain::wallet::KeyDerivationMethod;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use self::sodiumoxide::crypto::aead::
 chacha20poly1305_ietf;
 use self::sodiumoxide::utils;
 use std::cmp;
 use std::io;
 use std::io::{Read, Write};
-use crate::utils::crypto::pwhash_argon2i13;
+use super::pwhash_argon2i13;
 
 pub const KEYBYTES: usize = chacha20poly1305_ietf::KEYBYTES;
 pub const NONCEBYTES: usize = chacha20poly1305_ietf::NONCEBYTES;

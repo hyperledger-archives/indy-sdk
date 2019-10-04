@@ -7,7 +7,7 @@ use rmp_serde;
 
 use crate::domain::wallet::export_import::{EncryptionMethod, Header, Record};
 use crate::domain::wallet::KeyDerivationMethod;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::wallet::encryption::KeyDerivationData;
 use crate::utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
 use crate::utils::crypto::hash::{hash, HASHBYTES};

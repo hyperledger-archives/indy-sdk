@@ -10,9 +10,9 @@ macro_rules! sodium_type (($newtype:ident, $sodiumtype:path, $len:ident) => (
         }
 
         #[allow(dead_code)]
-        pub fn from_slice(bs: &[u8]) -> Result<$newtype, crate::errors::IndyError> {
+        pub fn from_slice(bs: &[u8]) -> Result<$newtype, indy_api_types::errors::IndyError> {
             let inner = <$sodiumtype>::from_slice(bs)
-                .ok_or(crate::errors::err_msg(crate::errors::IndyErrorKind::InvalidStructure, format!("Invalid bytes for {:?}", stringify!($newtype))))?;
+                .ok_or(indy_api_types::errors::err_msg(indy_api_types::errors::IndyErrorKind::InvalidStructure, format!("Invalid bytes for {:?}", stringify!($newtype))))?;
 
             Ok($newtype(inner))
         }

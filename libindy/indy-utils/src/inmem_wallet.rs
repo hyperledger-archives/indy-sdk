@@ -3,8 +3,8 @@ extern crate time;
 extern crate ursa;
 extern crate serde_json;
 
-use crate::api::ErrorCode;
-use crate::utils::sequence;
+use super::ErrorCode;
+use super::sequence;
 
 use self::libc::c_char;
 

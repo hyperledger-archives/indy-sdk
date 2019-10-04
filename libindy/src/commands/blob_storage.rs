@@ -1,7 +1,7 @@
 use crate::services::blob_storage::BlobStorageService;
 use std::rc::Rc;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 pub enum BlobStorageCommand {
     OpenReader(

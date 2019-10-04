@@ -25,7 +25,7 @@ use crate::domain::anoncreds::requested_credential::RequestedCredentials;
 use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
 use crate::domain::anoncreds::revocation_state::RevocationState;
 use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::helpers::*;
 use crate::utils::wql::Query;
 

@@ -1,4 +1,4 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use rusqlite::types::ToSql;
 use crate::services::wallet::language::{Operator, TagName, TargetValue};
 
