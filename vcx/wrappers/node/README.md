@@ -46,14 +46,17 @@ through intermediary service represented by **Dummy Cloud Agent**. The data **Al
 is something like illiterate postman. He'll take a letter from one party and delivers it to the other party. But he's 
 unable to read the messages he's handling. 
 
-
 ### Pre-requirements
 ##### Libraries
 Before you'll be able to run demo, you need to make sure you've compiled 
-[`libindy`](https://github.com/hyperledger/indy-sdk/tree/master/libindy), 
-[`libvcx`](https://github.com/hyperledger/indy-sdk/tree/master/vcx) and 
-[`libnullpay`](https://github.com/hyperledger/indy-sdk/tree/master/libnullpay) libraries and are available on your 
-system. 
+- [`libindy`](https://github.com/hyperledger/indy-sdk/tree/master/libindy)
+- [`libvcx`](https://github.com/hyperledger/indy-sdk/tree/master/vcx)
+- [`libnullpay`](https://github.com/hyperledger/indy-sdk/tree/master/libnullpay) 
+- Optionally [`libindystrgpostgres`](https://github.com/hyperledger/indy-sdk/tree/master/experimental/plugins/postgres_storage) if you want to run demo
+with postgres wallet.
+
+Library binaries must be located `/usr/local/lib` on OSX, `/usr/lib` on Linux. 
+
 #### Indy pool
 You'll also have to run pool of Indy nodes on your machine. You can achieve by simply running a docker container
 which encapsulates multiple interconnected Indy nodes. 
@@ -78,4 +81,18 @@ npm run demo:faber
 ```
 npm run demo:alice
 ```
+
+### Demo with Posgres wallet
+You can also run demo in mode where both Faber and Alice are using Postgres wallets. Follow 
+[instructions](https://github.com/hyperledger/indy-sdk/tree/master/experimental/plugins/postgres_storage) to 
+compile postgres wallet plugin and startup local postgres docker container. 
+
+Once yu have that ready, use these commands to start demo in postgres mode.
+```
+npm run demo:faber:pg
+```
+```
+npm run demo:alice:pg
+```
+
 

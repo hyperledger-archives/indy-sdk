@@ -23,31 +23,42 @@ const provisionConfig = {
 
 const logLevel = 'error';
 
+function postegressEnabled() {
+    return process.argv[2] === '--postgres'
+}
+
 async function run() {
     await demoCommon.initLibNullPay();
 
-    logger.info("#0 initialize rust API from NodeJS");
+    logger.info("#0 Initialize rust API from NodeJS");
     await demoCommon.initRustApiAndLogger(logLevel);
 
-    logger.info("#1 Provision an agent and wallet, get back configuration details");
-    logger.debug(`Config used to provision agent in agency: ${JSON.stringify(provisionConfig, null, 2)}`);
-    let config = await demoCommon.provisionAgentInAgency(provisionConfig);
+    if (postegressEnabled()) {
+        logger.info("Going to initialize postgress plugin.")
+        await demoCommon.loadPostgresPlugin(provisionConfig);
+        logger.info("Postgress plugin initialized.")
+        provisionConfig['wallet_type'] = 'postgres_storage'
+        provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
+        provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
+    }
 
-    logger.info("#2 Initialize libvcx with new configuration");
-    logger.debug(`${JSON.stringify(config, null, 2)}`);
-    await demoCommon.initVcxWithProvisionedAgentConfig(config);
+    logger.info(`#1 Config used to provision agent in agency: ${JSON.stringify(provisionConfig, null, 2)}`);
+    const agentProvision = await demoCommon.provisionAgentInAgency(provisionConfig);
 
-    logger.info("#3 Create a new schema on the ledger");
+    logger.info(`#2 Using following agent provision to initialize VCX ${JSON.stringify(agentProvision, null, 2)}`);
+    await demoCommon.initVcxWithProvisionedAgentConfig(agentProvision);
+
     const version = `${getRandomInt(1, 101)}.${getRandomInt(1, 101)}.${getRandomInt(1, 101)}`;
     const schemaData = {
         data: {
             attrNames: ['name', 'date', 'degree'],
-            name: `Schema1`,
+            name: `FaberVcx`,
             version
         },
         paymentHandle: 0,
-        sourceId: 'testSchemaSourceId123'
+        sourceId: `your-identifier-fabervcx-${version}`
     };
+    logger.info(`#3 Create a new schema on the ledger: ${JSON.stringify(schemaData, null, 2)}`);
 
     const schema = await Schema.create(schemaData);
     const schemaId = await schema.getSchemaId();
@@ -133,9 +144,9 @@ async function run() {
     }
 
     const proofAttributes = [
-        {'name': 'name', 'restrictions': [{'issuer_did': config['institution_did']}]},
-        {'name': 'date', 'restrictions': [{'issuer_did': config['institution_did']}]},
-        {'name': 'degree', 'restrictions': [{'issuer_did': config['institution_did']}]}
+        {'name': 'name', 'restrictions': [{'issuer_did': agentProvision['institution_did']}]},
+        {'name': 'date', 'restrictions': [{'issuer_did': agentProvision['institution_did']}]},
+        {'name': 'degree', 'restrictions': [{'issuer_did': agentProvision['institution_did']}]}
     ];
 
     logger.info("#19 Create a Proof object");
@@ -162,9 +173,9 @@ async function run() {
 
     logger.info("#28 Check if proof is valid");
     if (proof.proofState === ProofState.Verified) {
-        logger.info("proof is verified!!")
+        logger.info("Proof is verified")
     } else {
-        logger.info("could not verify proof :(")
+        logger.info("Could not verify proof")
     }
 }
 
