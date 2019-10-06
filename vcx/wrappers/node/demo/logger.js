@@ -10,7 +10,7 @@ const prettyFormatter = format.combine(
 const logger = createLogger({
     level: 'debug',
     format: format.combine(
-        label({ label: 'Demo Faber:' }),
+        label({ label: 'VCX Node demo:' }),
         format.colorize({all: true}),
         prettyFormatter
     ),
