@@ -1,5 +1,7 @@
 ﻿using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.PaymentsApi.NativeMethods;
 #if __IOS__
@@ -222,6 +224,37 @@ namespace Hyperledger.Indy.PaymentsApi
             taskCompletionSource.SetResult(txn_json);
         }
         static ParseVerifyPaymentResponseDelegate ParseVerifyPaymentResponseDelegate = ParseVerifyPaymentResponseDelegateMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(SignWithAddressDelegate))]
+#endif
+        static void SignWithAddressDelegateMethod(int xcommand_handle, int err, IntPtr signature_raw, uint signature_len)
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var signatureBytes = new byte[signature_len];
+            Marshal.Copy(signature_raw, signatureBytes, 0, (int)signature_len);
+
+            taskCompletionSource.SetResult(signatureBytes);
+        }
+        static SignWithAddressDelegate SignWithAddressDelegate = SignWithAddressDelegateMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(VerifyWithAddressDelegate))]
+#endif
+        static void VerifyWithAddressDelegateMethod(int xcommand_handle, int err, bool result)
+        {
+            var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(result);
+        }
+        static VerifyWithAddressDelegate VerifyWithAddressDelegate = VerifyWithAddressDelegateMethod;
 
         /// <summary>
         /// Create the payment address for this payment method.
@@ -808,6 +841,65 @@ namespace Hyperledger.Indy.PaymentsApi
                 paymentMethod,
                 responseJson,
                 ParseVerifyPaymentResponseDelegate);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Signs a message with a payment address.
+        /// </summary>
+        /// <param name="wallet">Wallet handle</param>
+        /// <param name="address">Payment address of message signer. The key must be created by calling <see cref="CreatePaymentAddressAsync" /></param>
+        /// <param name="message">Message to be signed</param>
+        /// <returns></returns>
+        public static Task<byte[]> SignWithAddressAsync(Wallet wallet, string address, byte[] message)
+        {
+            ParamGuard.NotNullOrWhiteSpace(address, "address");
+            ParamGuard.NotNull(message, "message");
+            ParamGuard.NotNull(wallet, "wallet");
+
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_sign_with_address(
+                commandHandle,
+                wallet.Handle,
+                address,
+                message,
+                (uint)message.Length,
+                SignWithAddressDelegate);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Verify a signature with a payment address.
+        /// </summary>
+        /// <param name="address">Payment address of the message signer</param>
+        /// <param name="message">Message data</param>
+        /// <param name="signature">Signed message data</param>
+        /// <returns><c>true</c> - if signature is valid, <c>false</c> - otherwise</returns>
+        public static Task<bool> VerifyWithAddressAsync(string address, byte[] message, byte[] signature)
+        {
+            ParamGuard.NotNullOrWhiteSpace(address, "address");
+            ParamGuard.NotNull(message, "message");
+            ParamGuard.NotNull(signature, "signature");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_verify_with_address(
+                commandHandle,
+                address,
+                message,
+                (uint)message.Length,
+                signature,
+                (uint)signature.Length,
+                VerifyWithAddressDelegate);
 
             CallbackHelper.CheckResult(result);
 
