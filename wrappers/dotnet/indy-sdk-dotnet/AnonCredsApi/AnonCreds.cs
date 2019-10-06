@@ -364,6 +364,34 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
         private static UpdateRevocationStateCompletedDelegate UpdateRevocationStateCallback = UpdateRevocationStateCallbackMethod;
 
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GenerateNonceCompletedDelegate))]
+#endif
+        private static void GenerateNonceCallbackMethod(int xcommand_handle, int err, string nonce)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(nonce);
+        }
+        private static GenerateNonceCompletedDelegate GenerateNonceCallback = GenerateNonceCallbackMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ToUnqualifiedCompletedDelegate))]
+#endif
+        private static void ToUnqualifiedCallbackMethod(int xcommand_handle, int err, string res)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(res);
+        }
+        private static ToUnqualifiedCompletedDelegate ToUnqualifiedCallback = ToUnqualifiedCallbackMethod;
+
         /// <summary>
         /// Create credential schema entity that describes credential attributes list and allows credentials
         /// interoperability.
@@ -1583,6 +1611,59 @@ namespace Hyperledger.Indy.AnonCredsApi
                 timestamp,
                 credRevId,
                 UpdateRevocationStateCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Generates 80-bit numbers that can be used as a nonce for proof request.
+        /// </summary>
+        /// <returns>Generated number as a string</returns>
+        public static Task<string> GenerateNonceAsync()
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_generate_nonce(
+                commandHandle,
+                GenerateNonceCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Get unqualified form (short form without method) of a fully qualified entity like DID.
+        ///
+        /// This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+        ///     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+        ///     Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+        ///     another case when casting to unqualified form needed
+        /// </summary>
+        /// <param name="entity">
+        /// target entity to disqualify. Can be one of:
+        ///             Did
+        ///             SchemaId
+        ///             CredentialDefinitionId
+        ///             RevocationRegistryId
+        ///             CredentialOffer
+        ///             ProofRequest
+        /// </param>
+        /// <returns></returns>
+        public static Task<string> ToUnqualifiedAsync(string entity)
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_to_unqualified(
+                commandHandle,
+                entity,
+                ToUnqualifiedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

@@ -286,85 +286,33 @@ namespace Hyperledger.Indy.AnonCredsApi
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_fetch_credentials_for_proof_req(int command_handle, int search_handle, string item_referent, int count, ProverFetchCredentialsForProofReqCompletedDelegate cb);
-
         internal delegate void ProverFetchCredentialsForProofReqCompletedDelegate(int xcommand_handle, int err, string credentials_json);
 
-        /// <summary>
-        /// Close credentials search (make search handle invalid)
-        /// </summary>
-        /// <returns>The prover close credentials search.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="search_handle">Search handle.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_close_credentials_search_for_proof_req(int command_handle, int search_handle, IndyMethodCompletedDelegate cb);
 
-        /// <summary>
-        /// Indies the prover create proof.
-        /// </summary>
-        /// <returns>The prover create proof.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="wallet_handle">Wallet handle.</param>
-        /// <param name="proof_req_json">Proof req json.</param>
-        /// <param name="requested_credentials_json">Requested credentials json.</param>
-        /// <param name="master_secret_id">Master secret identifier.</param>
-        /// <param name="schemas_json">Schemas json.</param>
-        /// <param name="credential_defs_json">Credential defs json.</param>
-        /// <param name="rev_states_json">Rev states json.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_create_proof(int command_handle, int wallet_handle, string proof_req_json, string requested_credentials_json, string master_secret_id, string schemas_json, string credential_defs_json, string rev_states_json, ProverCreateProofCompletedDelegate cb);
-
         internal delegate void ProverCreateProofCompletedDelegate(int xcommand_handle, int err, string proof_json);
 
-        /// <summary>
-        /// Indies the verifier verify proof.
-        /// </summary>
-        /// <returns>The verifier verify proof.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="proof_request_json">Proof request json.</param>
-        /// <param name="proof_json">Proof json.</param>
-        /// <param name="schemas_json">Schemas json.</param>
-        /// <param name="credential_defs_json">Credential defs json.</param>
-        /// <param name="rev_reg_defs_json">Rev reg defs json.</param>
-        /// <param name="rev_regs_json">Rev regs json.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_verifier_verify_proof(int command_handle, string proof_request_json, string proof_json, string schemas_json, string credential_defs_json, string rev_reg_defs_json, string rev_regs_json, VerifierVerifyProofCompletedDelegate cb);
-
         internal delegate void VerifierVerifyProofCompletedDelegate(int xcommand_handle, int err, bool valid);
 
-        /// <summary>
-        /// Indies the state of the create revocation.
-        /// </summary>
-        /// <returns>The create revocation state.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="blob_storage_reader_handle">BLOB storage reader handle.</param>
-        /// <param name="rev_reg_def_json">Rev reg def json.</param>
-        /// <param name="rev_reg_delta_json">Rev reg delta json.</param>
-        /// <param name="timestamp">Timestamp.</param>
-        /// <param name="cred_rev_id">Cred rev identifier.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, string rev_reg_def_json, string rev_reg_delta_json, long timestamp, string cred_rev_id, CreateRevocationStateCompletedDelegate cb);
-
         internal delegate void CreateRevocationStateCompletedDelegate(int xcommand_handle, int err, string rev_state_json);
 
-        /// <summary>
-        /// Indies the state of the update revocation.
-        /// </summary>
-        /// <returns>The update revocation state.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="blob_storage_reader_handle">BLOB storage reader handle.</param>
-        /// <param name="rev_state_json">Rev state json.</param>
-        /// <param name="rev_reg_def_json">Rev reg def json.</param>
-        /// <param name="rev_reg_delta_json">Rev reg delta json.</param>
-        /// <param name="timestamp">Timestamp.</param>
-        /// <param name="cred_rev_id">Cred rev identifier.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_update_revocation_state(int command_handle, int blob_storage_reader_handle, string rev_state_json, string rev_reg_def_json, string rev_reg_delta_json, long timestamp, string cred_rev_id, UpdateRevocationStateCompletedDelegate cb);
-
         internal delegate void UpdateRevocationStateCompletedDelegate(int xcommand_handle, int err, string updated_rev_state_json);
+    
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_generate_nonce(int command_handle, GenerateNonceCompletedDelegate cb);
+        internal delegate void GenerateNonceCompletedDelegate(int xcommand_handle, int err, string nonce);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_to_unqualified(int command_handle, string entity, ToUnqualifiedCompletedDelegate cb);
+        internal delegate void ToUnqualifiedCompletedDelegate(int xcommand_handle, int err, string res);
     }
 }
