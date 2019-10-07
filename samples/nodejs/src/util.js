@@ -33,7 +33,7 @@ async function mkdir(filePath) {
     })
 }
 
-function pathToIndyClientHome() {
+function getPathToIndyClientHome() {
     return require('os').homedir() + "/.indy_client"
 }
 
