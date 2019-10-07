@@ -1,4 +1,4 @@
-pub mod environment;
+pub use indy_utils::environment;
 
 #[macro_use]
 pub mod ccallback;
@@ -12,9 +12,7 @@ pub mod logger;
 pub mod result;
 
 #[cfg(test)]
-#[macro_use]
-#[allow(unused_macros)]
-pub mod test;
+pub use indy_utils::test;
 
 #[macro_use]
 pub mod try_utils;

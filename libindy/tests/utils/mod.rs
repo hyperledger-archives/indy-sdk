@@ -5,7 +5,7 @@ extern crate indyrs as indy;
 
 pub mod callback;
 
-#[path = "../../src/utils/environment.rs"]
+#[path = "../../indy-utils/src/environment.rs"]
 pub mod environment;
 
 pub mod pool;
@@ -27,7 +27,7 @@ pub mod cache;
 
 #[macro_use]
 #[allow(unused_macros)]
-#[path = "../../src/utils/test.rs"]
+#[path = "../../indy-utils/src/test.rs"]
 pub mod test;
 
 pub mod timeout;

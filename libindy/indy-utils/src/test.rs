@@ -1,4 +1,4 @@
-use crate::utils::environment;
+use super::environment;
 
 use std::fs;
 use std::path::PathBuf;
@@ -40,7 +40,6 @@ pub fn cleanup_storage(name: &str) {
     cleanup_temp(name);
 }
 
-#[cfg(test)]
 pub fn test_pool_create_poolfile(pool_name: &str) -> File {
     let mut pool_path = environment::pool_path(pool_name);
     fs::create_dir_all(pool_path.as_path()).unwrap();
@@ -58,7 +57,7 @@ pub fn gen_txns() -> Vec<String> {
          format!(r#"{{"reqSignature":{{}},"txn":{{"data":{{"data":{{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","blskey_pop":"RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP","client_ip":"{}","client_port":9708,"node_ip":"{}","node_port":9707,"services":["VALIDATOR"]}},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"}},"metadata":{{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"}},"type":"0"}},"txnMetadata":{{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"}},"ver":"1"}}"#, test_pool_ip, test_pool_ip)]
 }
 
-#[cfg(test)]
+#[macro_export]
 macro_rules! assert_match {
     ($pattern:pat, $var:expr) => (
         assert!(match $var {
@@ -80,7 +79,7 @@ macro_rules! assert_match {
     );
 }
 
-#[cfg(test)]
+#[macro_export]
 macro_rules! assert_kind {
     ($kind:expr, $var:expr) => (
         match $var {
@@ -90,7 +89,7 @@ macro_rules! assert_kind {
     );
 }
 
-#[cfg(test)]
+#[macro_export]
 macro_rules! assert_code {
     ($code:expr, $var:expr) => (
         match $var {
