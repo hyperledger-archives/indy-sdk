@@ -22,7 +22,10 @@ regex = "1.1.0"
 rmp-serde = "0.13.7"
 rust-base58 = "0.0.4"
 base64 = "0.6.0"
+reqwest = "0.9.20"
+uuid = "0.7.4"
 indy = { path = "../../wrappers/rust" }
+
 
 [dev-dependencies]
 dirs = "1.0.4"

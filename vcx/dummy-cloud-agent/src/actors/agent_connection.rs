@@ -22,6 +22,7 @@ use rmp_serde;
 use serde_json;
 use actors::admin::Admin;
 use domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
+use futures::future::ok;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -81,6 +82,17 @@ pub struct AgentConnection {
     router: Addr<Router>,
     // Address of admin agent
     admin: Addr<Admin>
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MessageNotification {
+    msg_uid: String,
+    msg_type: RemoteMessageType,
+    msg_sender_did: String,
+    msg_status_code: MessageStatusCode,
+    msg_owner_did: String,
+    notification_id: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -801,6 +813,39 @@ impl AgentConnection {
             .into_box()
     }
 
+    fn send_webhook_notification(&self, webhook_url: &str, msg_notification: MessageNotification) {
+        let notification_id = msg_notification.notification_id.clone();
+        let ser_msg_notification = serde_json::to_string(&msg_notification).unwrap();
+        debug!("Sending webhook notification {} to {} data", notification_id, webhook_url);
+        let send_notification = reqwest::r#async::Client::new()
+            .post(webhook_url)
+            .header("Accepts", "application/json")
+            .header("Content-type", "application/json")
+            .body(ser_msg_notification)
+            .send()
+            .map_err(move |error| {
+                error!("Problem sending webhook notification. NotificationId {} {:?}",
+                       notification_id, error);
+            })
+            .and_then(move |res| {
+                if let Err(res_err) = res.error_for_status_ref() {
+                    error!("Error code returned from webhook url. NotificationId {} {:?}",
+                           msg_notification.notification_id, res_err);
+                };
+                ok(())
+            });
+
+        Arbiter::spawn_fn(move || { send_notification });
+    }
+
+    fn get_webhook_for_message(&self, sender_did: &str, status_code: MessageStatusCode) -> Option<&String> {
+        match status_code {
+            MessageStatusCode::Received => self.agent_configs.get("notificationWebhookUrl"),
+            MessageStatusCode::Accepted if (sender_did != self.user_pairwise_did) => self.agent_configs.get("notificationWebhookUrl"),
+            _ => None
+        }
+    }
+
     fn create_and_store_internal_message(&mut self,
                                          uid: Option<&str>,
                                          mtype: RemoteMessageType,
@@ -822,6 +867,20 @@ impl AgentConnection {
                                        sending_data,
                                        thread);
         self.state.messages.insert(msg.uid.to_string(), msg.clone());
+        match self.get_webhook_for_message(&msg.sender_did, msg.status_code.clone()) {
+            Some(webhook_url) => {
+                let msg_notification = MessageNotification {
+                    msg_uid: msg.uid.clone(),
+                    msg_type: msg._type.clone(),
+                    msg_sender_did: msg.sender_did.clone(),
+                    msg_status_code: msg.status_code.clone(),
+                    msg_owner_did: self.owner_did.clone(),
+                    notification_id: uuid::Uuid::new_v4().to_string(),
+                };
+                self.send_webhook_notification(webhook_url, msg_notification)
+            }
+            None => ()
+        }
         msg
     }
 
