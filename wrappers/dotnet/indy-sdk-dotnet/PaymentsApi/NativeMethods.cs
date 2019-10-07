@@ -156,6 +156,10 @@ namespace Hyperledger.Indy.PaymentsApi
         public delegate void ParseVerifyPaymentResponseDelegate(int command_handle, int err, string txn_json);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
+        internal static extern int indy_get_request_info(int command_handle, string get_auth_rule_response_json, string requester_info_json, string fees_json, GetRequestInfoDelegate cb);
+        internal delegate void GetRequestInfoDelegate(int command_handle, int err, string request_info_json);
+                                                
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_sign_with_address(int command_handle, int wallet_handle, string address, byte[] message_raw, uint message_len, SignWithAddressDelegate cb);
         internal delegate void SignWithAddressDelegate(int command_handle, int err, IntPtr signature_raw, uint signature_len);
     

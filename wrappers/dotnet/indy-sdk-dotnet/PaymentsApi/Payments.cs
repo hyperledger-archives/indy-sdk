@@ -226,6 +226,20 @@ namespace Hyperledger.Indy.PaymentsApi
         static ParseVerifyPaymentResponseDelegate ParseVerifyPaymentResponseDelegate = ParseVerifyPaymentResponseDelegateMethod;
 
 #if __IOS__
+        [MonoPInvokeCallback(typeof(GetRequestInfoDelegate))]
+#endif
+        static void GetRequestInfoDelegateMethod(int xcommand_handle, int err, string request_info_json)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(request_info_json);
+        }
+        static GetRequestInfoDelegate GetRequestInfoDelegate = GetRequestInfoDelegateMethod;
+
+#if __IOS__
         [MonoPInvokeCallback(typeof(SignWithAddressDelegate))]
 #endif
         static void SignWithAddressDelegateMethod(int xcommand_handle, int err, IntPtr signature_raw, uint signature_len)
@@ -841,6 +855,56 @@ namespace Hyperledger.Indy.PaymentsApi
                 paymentMethod,
                 responseJson,
                 ParseVerifyPaymentResponseDelegate);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Gets request requirements (with minimal price) correspondent to specific auth rule
+        /// in case the requester can perform this action.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
+        /// </summary>
+        /// <param name="getAuthRuleResponseJson">Response on `GET_AUTH_RULE` request returning action constraints set on the ledger.</param>
+        /// <param name="requesterInfoJson">
+        /// {
+        ///     "role": string (optional) - role of a user which can sign a transaction.
+        ///     "sig_count": u64 - number of signers.
+        ///     "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+        ///     "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
+        /// }</param>
+        /// <param name="feesJson">fees set on the ledger (result of <see cref="ParseGetTxnFeesResponseAsync" />).</param>
+        /// <returns>
+        /// request info if a requester match to the action constraints.
+        /// {
+        ///     "price": u64 - fee required for the action performing,
+        ///     "requirements": [{
+        ///         "role": string (optional) - role of users who should sign,
+        ///         "sig_count": u64 - number of signers,
+        ///         "need_to_be_owner": bool - if requester need to be owner,
+        ///         "off_ledger_signature": bool - allow signature of unknow for ledger did (false by default).
+        ///     }]
+        /// }
+        /// </returns>
+        public static Task<string> GetRequestInfoAsync(string getAuthRuleResponseJson, string requesterInfoJson, string feesJson)
+        {
+            ParamGuard.NotNullOrWhiteSpace(getAuthRuleResponseJson, "getAuthRuleResponseJson");
+            ParamGuard.NotNullOrWhiteSpace(requesterInfoJson, "requesterInfoJson");
+            ParamGuard.NotNullOrWhiteSpace(feesJson, "feesJson");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_get_request_info(
+                commandHandle,
+                getAuthRuleResponseJson,
+                requesterInfoJson,
+                feesJson,
+                GetRequestInfoDelegate);
 
             CallbackHelper.CheckResult(result);
 
