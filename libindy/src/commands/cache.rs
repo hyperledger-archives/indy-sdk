@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::domain::wallet::Tags;
+use indy_api_types::domain::wallet::Tags;
 use crate::domain::anoncreds::schema::SchemaId;
 use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
 use indy_api_types::errors::prelude::*;
-use crate::services::wallet::{WalletService, WalletRecord};
+use indy_wallet::{WalletService, WalletRecord};
 use indy_api_types::{WalletHandle, PoolHandle, CommandHandle};
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::ledger::LedgerCommand;

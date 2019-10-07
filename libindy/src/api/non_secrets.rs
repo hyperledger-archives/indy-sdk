@@ -2,7 +2,7 @@
 use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, SearchHandle};
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::non_secrets::NonSecretsCommand;
-use crate::domain::wallet::Tags;
+use indy_api_types::domain::wallet::Tags;
 use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
 

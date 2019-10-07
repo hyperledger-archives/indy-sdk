@@ -25,7 +25,7 @@ use crate::services::anoncreds::AnoncredsService;
 use crate::services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
-use crate::services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
 use indy_utils::sequence;
 use crate::utils::wql::Query;
 

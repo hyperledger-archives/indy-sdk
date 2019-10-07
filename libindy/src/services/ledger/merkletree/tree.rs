@@ -6,7 +6,7 @@ pub use crate::services::ledger::merkletree::proof::{
     Positioned,
     Proof
 };
-use crate::utils::crypto::hash::{Hash};
+use indy_utils::crypto::hash::{Hash};
 
 pub type TreeLeafData = Vec<u8>;
 

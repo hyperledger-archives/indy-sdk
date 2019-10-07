@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::str;
 
-use crate::domain::wallet::{KeyDerivationMethod, Metadata};
+use indy_api_types::domain::wallet::{KeyDerivationMethod, Metadata};
 use indy_api_types::errors::prelude::*;
-use crate::utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
+use indy_utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
 
 use super::{Keys, WalletRecord};
 use super::storage::{StorageRecord, Tag, TagName};
@@ -209,8 +209,8 @@ pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Ind
 
 #[cfg(test)]
 mod tests {
-    use crate::services::wallet::wallet::EncryptedValue;
-    use crate::services::wallet::wallet::Keys;
+    use indy_wallet::wallet::EncryptedValue;
+    use indy_wallet::wallet::Keys;
     use crate::utils::crypto::hmacsha256;
 
     use super::*;

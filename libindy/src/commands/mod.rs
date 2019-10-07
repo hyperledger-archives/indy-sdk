@@ -26,7 +26,7 @@ use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::payments::PaymentsService;
 use crate::services::pool::{PoolService, set_freshness_threshold};
-use crate::services::wallet::WalletService;
+use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
 

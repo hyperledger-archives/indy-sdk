@@ -1,3 +1,16 @@
+#[macro_use]
+extern crate indy_api_types;
+
+#[macro_use]
+extern crate log;
+
+extern crate serde;
+
+#[macro_use]
+extern crate serde_derive;
+
+extern crate serde_json;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
@@ -6,16 +19,15 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use named_type::NamedType;
-use serde_json;
 use serde_json::Value as SValue;
 
-use crate::api::wallet::*;
+use indy_api_types::wallet::*;
 
-use crate::domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, Tags};
+use indy_api_types::domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, Tags};
 use indy_api_types::errors::prelude::*;
-pub use crate::services::wallet::encryption::KeyDerivationData;
-use crate::utils::crypto::chacha20poly1305_ietf;
-use crate::utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
+pub use crate::encryption::KeyDerivationData;
+use indy_utils::crypto::chacha20poly1305_ietf;
+use indy_utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
 
 use self::export_import::{export_continue, finish_import, preparse_file_to_import};
 use self::storage::{WalletStorage, WalletStorageType};
@@ -748,7 +760,7 @@ mod tests {
 
     use indy_api_types::INVALID_WALLET_HANDLE;
 
-    use crate::domain::wallet::KeyDerivationMethod;
+    use indy_api_types::domain::wallet::KeyDerivationMethod;
     use crate::utils::environment;
     use indy_utils::inmem_wallet::InmemWallet;
     use crate::utils::test;

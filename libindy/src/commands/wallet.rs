@@ -2,12 +2,12 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::api::wallet::*;
+use indy_api_types::wallet::*;
 use crate::commands::{Command, CommandExecutor};
-use crate::domain::wallet::{Config, Credentials, ExportConfig, KeyConfig, Metadata};
+use indy_api_types::domain::wallet::{Config, Credentials, ExportConfig, KeyConfig, Metadata};
 use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
-use crate::services::wallet::{KeyDerivationData, WalletService};
+use indy_wallet::{KeyDerivationData, WalletService};
 use crate::utils::crypto::{chacha20poly1305_ietf, randombytes};
 use crate::utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
 use indy_api_types::{WalletHandle, CallbackHandle};

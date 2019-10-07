@@ -40,9 +40,6 @@ pub mod sequence;
 #[path = "../../indy-utils/src/ctypes.rs"]
 pub mod ctypes;
 
-#[path = "../../src/utils/validation.rs"]
-pub mod validation;
-
 #[macro_use]
 #[path = "../../src/utils/qualifier.rs"]
 pub mod qualifier;
@@ -51,7 +48,7 @@ pub(crate) use indy::ErrorCode;
 #[path = "../../indy-utils/src/inmem_wallet.rs"]
 pub mod inmem_wallet;
 
-#[path = "../../src/utils/wql.rs"]
+#[path = "../../indy-utils/src/wql.rs"]
 pub mod wql;
 
 #[path = "../../src/domain/mod.rs"]

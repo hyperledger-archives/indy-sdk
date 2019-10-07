@@ -1,4 +1,5 @@
 // This macro allows to wrap Sodimoxide type to libindy type keeping the same behaviour
+#[macro_export]
 macro_rules! sodium_type (($newtype:ident, $sodiumtype:path, $len:ident) => (
     pub struct $newtype(pub(super) $sodiumtype);
 

@@ -28,7 +28,7 @@ use crate::domain::ledger::validator_info::GetValidatorInfoOperation;
 use crate::domain::ledger::auth_rule::*;
 use crate::domain::ledger::author_agreement::*;
 use indy_api_types::errors::prelude::*;
-use crate::utils::crypto::hash::hash as openssl_hash;
+use indy_utils::crypto::hash::hash as openssl_hash;
 
 pub mod merkletree;
 

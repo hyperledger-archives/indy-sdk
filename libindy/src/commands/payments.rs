@@ -12,7 +12,7 @@ use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
-use crate::services::wallet::{RecordOptions, WalletService};
+use indy_wallet::{RecordOptions, WalletService};
 use indy_api_types::{WalletHandle, CommandHandle};
 use crate::domain::ledger::auth_rule::AuthRule;
 use crate::domain::crypto::did::DidValue;

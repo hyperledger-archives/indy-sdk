@@ -3,7 +3,7 @@ use indy_api_types::errors::prelude::*;
 use super::wallet::Keys;
 use super::language::{Operator, TargetValue, TagName};
 use super::encryption::encrypt_as_searchable;
-use crate::utils::wql::Query;
+use indy_utils::wql::Query;
 
 // Performs encryption of WQL query
 // WQL query is provided as top-level Operator

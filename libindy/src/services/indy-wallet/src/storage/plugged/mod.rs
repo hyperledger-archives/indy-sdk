@@ -7,10 +7,10 @@ use libc::c_char;
 use serde_json;
 
 use indy_api_types::ErrorCode;
-use crate::api::wallet::*;
+use indy_api_types::wallet::*;
 use indy_api_types::errors::prelude::*;
-use crate::services::wallet::language;
-use crate::utils::crypto::base64;
+use crate::language;
+use indy_utils::crypto::base64;
 
 use super::{EncryptedValue, StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType};
 use super::super::{RecordOptions, SearchOptions};

@@ -3,7 +3,7 @@ use super::schema::SchemaId;
 use super::super::ledger::request::ProtocolVersion;
 use super::super::crypto::did::DidValue;
 
-use crate::utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 use crate::utils::qualifier;
 
 use ursa::cl::{

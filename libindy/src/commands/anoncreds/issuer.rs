@@ -46,14 +46,14 @@ use crate::domain::anoncreds::revocation_registry_delta::{
 };
 use crate::domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1, SchemaId};
 use crate::domain::crypto::did::DidValue;
-use crate::domain::wallet::Tags;
+use indy_api_types::domain::wallet::Tags;
 use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::anoncreds::helpers::parse_cred_rev_id;
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
 use crate::services::pool::PoolService;
-use crate::services::wallet::{RecordOptions, WalletService};
+use indy_wallet::{RecordOptions, WalletService};
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
 use indy_api_types::{WalletHandle, CommandHandle, next_command_handle};

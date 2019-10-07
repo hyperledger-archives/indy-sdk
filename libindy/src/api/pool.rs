@@ -5,7 +5,7 @@ use crate::commands::pool::PoolCommand;
 use crate::domain::pool::{PoolConfig, PoolOpenConfig};
 use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
-use crate::utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;

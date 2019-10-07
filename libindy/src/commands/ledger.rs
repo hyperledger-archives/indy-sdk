@@ -24,7 +24,7 @@ use crate::services::pool::{
     PoolService,
     parse_response_metadata
 };
-use crate::services::wallet::{RecordOptions, WalletService};
+use indy_wallet::{RecordOptions, WalletService};
 use crate::utils::crypto::signature_serializer::serialize_signature;
 use indy_api_types::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
 use crate::commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};

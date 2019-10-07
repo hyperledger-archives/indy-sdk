@@ -2,8 +2,8 @@ pub mod default;
 pub mod plugged;
 
 use indy_api_types::errors::prelude::*;
-use crate::services::wallet::language;
-use crate::services::wallet::wallet::EncryptedValue;
+use crate::language;
+use crate::wallet::EncryptedValue;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Tag {

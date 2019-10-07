@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::utils::crypto::{hmacsha256, chacha20poly1305_ietf};
-use crate::utils::wql::Query;
+use indy_utils::crypto::{hmacsha256, chacha20poly1305_ietf};
+use indy_utils::wql::Query;
 
 use indy_api_types::errors::prelude::*;
 
@@ -222,12 +222,12 @@ mod tests {
     use std::rc::Rc;
     use std::collections::HashMap;
 
-    use crate::domain::wallet::{Metadata, MetadataArgon};
-    use crate::services::wallet::encryption;
-    use crate::services::wallet::wallet::Wallet;
-    use crate::services::wallet::storage::WalletStorageType;
-    use crate::services::wallet::storage::default::SQLiteStorageType;
-    use crate::services::wallet::language::*;
+    use indy_api_types::domain::wallet::{Metadata, MetadataArgon};
+    use indy_wallet::encryption;
+    use indy_wallet::wallet::Wallet;
+    use indy_wallet::storage::WalletStorageType;
+    use indy_wallet::storage::default::SQLiteStorageType;
+    use indy_wallet::language::*;
     use crate::utils::test;
 
     macro_rules! jsonstr {

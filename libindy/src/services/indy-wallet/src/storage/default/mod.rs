@@ -9,8 +9,8 @@ use rusqlite;
 use serde_json;
 
 use indy_api_types::errors::prelude::*;
-use crate::services::wallet::language;
-use crate::utils::environment;
+use crate::language;
+use indy_utils::environment;
 
 use super::{EncryptedValue, StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType};
 use super::super::{RecordOptions, SearchOptions};

@@ -15,7 +15,7 @@ use crate::domain::pairwise::Pairwise;
 use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
-use crate::services::wallet::{RecordOptions, SearchOptions, WalletService};
+use indy_wallet::{RecordOptions, SearchOptions, WalletService};
 use indy_api_types::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
 use rust_base58::{FromBase58, ToBase58};
 use named_type::NamedType;

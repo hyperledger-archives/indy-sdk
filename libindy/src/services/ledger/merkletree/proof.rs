@@ -1,5 +1,5 @@
 use crate::services::ledger::merkletree::tree::{Tree, TreeLeafData};
-use crate::utils::crypto::hash::Hash;
+use indy_utils::crypto::hash::Hash;
 use indy_api_types::errors::prelude::*;
 
 /// An inclusion proof represent the fact that a `value` is a member

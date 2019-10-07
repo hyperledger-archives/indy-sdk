@@ -7,7 +7,7 @@ use serde_json;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
-use crate::utils::crypto::hash::Hash;
+use indy_utils::crypto::hash::Hash;
 
 pub struct DefaultReader {
     file: File,

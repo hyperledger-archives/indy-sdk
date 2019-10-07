@@ -5,12 +5,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use rmp_serde;
 
-use crate::domain::wallet::export_import::{EncryptionMethod, Header, Record};
-use crate::domain::wallet::KeyDerivationMethod;
+use indy_api_types::domain::wallet::export_import::{EncryptionMethod, Header, Record};
+use indy_api_types::domain::wallet::KeyDerivationMethod;
 use indy_api_types::errors::prelude::*;
-use crate::services::wallet::encryption::KeyDerivationData;
-use crate::utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
-use crate::utils::crypto::hash::{hash, HASHBYTES};
+use crate::encryption::KeyDerivationData;
+use indy_utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
+use indy_utils::crypto::hash::{hash, HASHBYTES};
 
 use super::{Wallet, WalletRecord};
 
@@ -192,11 +192,11 @@ mod tests {
 
     use serde_json;
 
-    use crate::domain::wallet::{Metadata, MetadataArgon};
-    use crate::services::wallet::encryption;
-    use crate::services::wallet::storage::default::SQLiteStorageType;
-    use crate::services::wallet::storage::WalletStorageType;
-    use crate::services::wallet::wallet::{Keys, Wallet};
+    use indy_api_types::domain::wallet::{Metadata, MetadataArgon};
+    use indy_wallet::encryption;
+    use indy_wallet::storage::default::SQLiteStorageType;
+    use indy_wallet::storage::WalletStorageType;
+    use indy_wallet::wallet::{Keys, Wallet};
     use crate::utils::crypto::pwhash_argon2i13;
     use crate::utils::test;
 

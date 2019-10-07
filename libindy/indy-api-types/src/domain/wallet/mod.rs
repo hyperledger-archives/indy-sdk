@@ -3,7 +3,7 @@ pub mod export_import;
 use serde_json::value::Value;
 use std::collections::HashMap;
 
-use crate::utils::validation::Validatable;
+use crate::validation::Validatable;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {

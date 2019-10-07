@@ -1,7 +1,7 @@
 use std::string;
 
 use indy_api_types::errors::prelude::*;
-use crate::utils::crypto::base64;
+use indy_utils::crypto::base64;
 
 #[derive(Debug, PartialEq, Hash, Clone)]
 pub enum TagName {

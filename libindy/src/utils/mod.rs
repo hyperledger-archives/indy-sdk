@@ -17,9 +17,9 @@ pub use indy_utils::test;
 #[macro_use]
 pub mod try_utils;
 
-pub mod validation;
+pub use indy_api_types::validation;
 
-pub mod wql;
+pub use indy_utils::wql;
 
 #[macro_use]
 pub mod qualifier;
