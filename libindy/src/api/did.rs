@@ -5,7 +5,7 @@ use crate::domain::crypto::did::{TheirDidInfo, DidValue, MyDidInfo, DidMethod};
 use crate::domain::crypto::key::KeyInfo;
 use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
-use crate::utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;

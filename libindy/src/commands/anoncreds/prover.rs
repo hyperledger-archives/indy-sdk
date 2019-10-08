@@ -788,7 +788,7 @@ impl ProverCommandExecutor {
                             referent: &str,
                             credential: Credential) -> CredentialInfo {
         let credential_values: HashMap<String, String> =
-            credential.values
+            credential.values.0
                 .into_iter()
                 .map(|(attr, values)| (attr, values.raw))
                 .collect();
@@ -849,7 +849,7 @@ impl ProverCommandExecutor {
             let (referent, credential) = self._get_credential(&credential_record)?;
 
             if let Some(predicate) = predicate_info {
-                let values = self.anoncreds_service.prover.get_credential_values_for_attribute(&credential.values, &predicate.name)
+                let values = self.anoncreds_service.prover.get_credential_values_for_attribute(&credential.values.0, &predicate.name)
                     .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "Credential values not found"))?;
 
                 let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate, &values.encoded)?;

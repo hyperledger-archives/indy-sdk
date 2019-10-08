@@ -24,7 +24,7 @@ use indy_utils::ctypes;
 use libc::c_char;
 use std::ptr;
 
-use crate::utils::validation::Validatable;
+use crate::indy_api_types::validation::Validatable;
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:

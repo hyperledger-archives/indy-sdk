@@ -15,7 +15,7 @@ pub mod cache;
 use libc::c_char;
 
 use crate::domain::IndyConfig;
-use crate::utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 use indy_api_types::*;
 use indy_api_types::errors::prelude::*;

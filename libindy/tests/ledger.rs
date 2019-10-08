@@ -3359,7 +3359,7 @@ mod medium_cases {
             use crate::utils::domain::anoncreds::schema::MAX_ATTRIBUTES_COUNT;
 
             let mut schema = utils::anoncreds::gvt_schema();
-            schema.attr_names = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
+            schema.attr_names = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect::<std::collections::HashSet<String>>().into();
             let schema = Schema::SchemaV1(schema);
             let schema_json = serde_json::to_string(&schema).unwrap();
 

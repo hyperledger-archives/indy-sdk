@@ -12,7 +12,7 @@ use crate::domain::ledger::node::NodeOperationData;
 use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
 use crate::domain::ledger::pool::Schedule;
 use indy_utils::ctypes;
-use crate::utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
