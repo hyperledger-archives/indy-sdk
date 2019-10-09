@@ -208,7 +208,7 @@ impl CredentialDefinitionId {
             return Some((DidValue(did), signature_type, SchemaId(schema_id), tag));
         }
 
-        return None;
+        None
     }
 
     pub fn issuer_did(&self) -> Option<DidValue> {
