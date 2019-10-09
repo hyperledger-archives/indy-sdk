@@ -1106,12 +1106,16 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 
  @param  entity: utarget entity to disqualify.
     Can be one of:
-       Did
-       SchemaId
-       CredentialDefinitionId
-       RevocationRegistryId
-       CredentialOffer
-       ProofRequest
+        Did
+        SchemaId
+        CredentialDefinitionId
+        RevocationRegistryId
+        Schema
+        CredentialDefinition
+        RevocationRegistryDefinition
+        CredentialOffer
+        CredentialRequest
+        ProofRequest
 
  Returns entity either in unqualified form or original if casting isn't possible
  */

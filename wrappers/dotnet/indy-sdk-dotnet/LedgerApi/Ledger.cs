@@ -1493,5 +1493,41 @@ namespace Hyperledger.Indy.LedgerApi
 
             return taskCompletionSource.Task;
         }
+
+        /// <summary>
+        /// Append Endorser to an existing request.
+        ///
+        /// An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+        /// But it is expecting that the transaction will be sent by the specified Endorser.
+        ///
+        /// Note: Both Transaction Author and Endorser must sign output request after that.
+        ///
+        /// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
+        ///                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+        /// </summary>
+        /// <param name="requestJson">Original request</param>
+        /// <param name="endorserDid">
+        /// DID of the Endorser that will submit the transaction.
+        /// The Endorser's DID must be present on the ledger.
+        /// </param>
+        /// <returns>Request JSON with Endorser field appended.</returns>
+        public static Task<string> AppendRequestEndorserAsync(string requestJson, string endorserDid)
+        {
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
+            ParamGuard.NotNullOrWhiteSpace(endorserDid, "endorserDid");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_append_request_endorser(
+                commandHandle,
+                requestJson,
+                endorserDid,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
     }
 }
