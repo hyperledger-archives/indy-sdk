@@ -1453,12 +1453,16 @@ fn _generate_nonce(command_handle: CommandHandle, cb: Option<ResponseStringCB>) 
 ///
 /// # Arguments
 /// * `entity`: target entity to disqualify. Can be one of:
-///         Did
-///         SchemaId
-///         CredentialDefinitionId
-///         RevocationRegistryId
-///         CredentialOffer
-///         ProofRequest
+///             Did
+///             SchemaId
+///             CredentialDefinitionId
+///             RevocationRegistryId
+///             Schema
+///             CredentialDefinition
+///             RevocationRegistryDefinition
+///             CredentialOffer
+///             CredentialRequest
+///             ProofRequest
 ///
 /// # Returns
 /// * `res`: entity either in unqualified form or original if casting isn't possible

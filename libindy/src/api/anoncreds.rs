@@ -2389,7 +2389,11 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
 ///             SchemaId
 ///             CredentialDefinitionId
 ///             RevocationRegistryId
+///             Schema
+///             CredentialDefinition
+///             RevocationRegistryDefinition
 ///             CredentialOffer
+///             CredentialRequest
 ///             ProofRequest
 ///
 /// #Returns

@@ -1541,7 +1541,11 @@ public class Anoncreds extends IndyJava.API {
 	 *             SchemaId
 	 *             CredentialDefinitionId
 	 *             RevocationRegistryId
+	 *             Schema
+	 *             CredentialDefinition
+	 *             RevocationRegistryDefinition
 	 *             CredentialOffer
+	 *             CredentialRequest
 	 *             ProofRequest
 	 * @return A future that resolves to entity either in unqualified form or original if casting isn't possible
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
