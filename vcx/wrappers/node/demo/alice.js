@@ -19,21 +19,34 @@ const provisionConfig = {
     'enterprise_seed': '000000000000000000000000Trustee1'
 };
 
-const logLevel = 'warn';
+const logLevel = 'error';
+
+function postegressEnabled() {
+    return process.argv[2] === '--postgres'
+}
 
 async function run() {
     await demoCommon.initLibNullPay();
 
-    logger.info("#0 initialize rust API from NodeJS");
+    logger.info("#7 initialize rust API from NodeJS");
     await demoCommon.initRustApiAndLogger(logLevel);
 
-    logger.info("#1 Provision an agent and wallet, get back configuration details");
+    if (postegressEnabled()) {
+        logger.info("Going to initialize postgress plugin.")
+        await demoCommon.loadPostgresPlugin(provisionConfig);
+        logger.info("Postgress plugin initialized.")
+        provisionConfig['wallet_type'] = 'postgres_storage'
+        provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
+        provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
+    }
+
+    logger.info("#8 Provision an agent and wallet, get back configuration details");
     let config = await demoCommon.provisionAgentInAgency(provisionConfig);
 
-    logger.info("#2 Initialize libvcx with new configuration");
+    logger.info("#9 Initialize libvcx with new configuration");
     await demoCommon.initVcxWithProvisionedAgentConfig(config);
 
-    logger.info("#9 Input faber.py invitation details");
+    logger.info("Input faber.py invitation details");
     const details = readlineSync.question('Enter your invite details: ');
     const jdetails = JSON.parse(details);
 
@@ -85,6 +98,5 @@ async function run() {
     logger.info("#26 Send the proof to faber");
     await proof.sendProof(connection_to_faber);
 }
-
 
 run();

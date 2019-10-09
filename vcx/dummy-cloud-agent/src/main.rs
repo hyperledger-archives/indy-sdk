@@ -32,18 +32,18 @@ use actors::forward_agent::ForwardAgent;
 use domain::config::Config;
 use domain::protocol_type::ProtocolType;
 use failure::*;
-use futures::*;
 use std::env;
 use std::fs::File;
+use app::start_app_server;
 
 #[macro_use]
 pub(crate) mod utils;
 
 pub(crate) mod actors;
 pub(crate) mod app;
+pub(crate) mod api_agent;
 pub(crate) mod domain;
 pub(crate) mod indy;
-pub(crate) mod server;
 
 fn main() {
     indy::logger::set_default_logger(None)
@@ -93,15 +93,7 @@ fn _start(config_path: &str) {
 
         ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config)
             .map(move |forward_agent| {
-                info!("Forward Agent started");
-                info!("Starting Server with config: {:?}", server_config);
-
-                server::start(server_config, move || {
-                    info!("Starting App with config: {:?}", app_config);
-                    app::new(app_config.clone(), forward_agent.clone())
-                });
-
-                info!("Server started");
+                start_app_server(server_config, app_config, forward_agent)
             })
             .map(|_| ()) // TODO: Expose server addr for graceful shutdown support
             .map_err(|err| panic!("Can't start Indy Dummy Agent: {}!", err))

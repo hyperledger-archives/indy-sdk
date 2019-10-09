@@ -2113,7 +2113,7 @@ If all text, version and taaDigest parameters are specified, a check integrity o
 * `version`: String - \(Optional\) raw data about TAA from ledger.
      * `text` and `version` parameters should be passed together.
      * `text` and `version` parameters are required if taaDigest parameter is omitted.
-* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. Digest is sha256 hash calculated on concatenated strings: version || text. This parameter is required if text and version parameters are omitted.
 * `accMechType`: String - mechanism how user has accepted the TAA.
 * `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk. 
 
