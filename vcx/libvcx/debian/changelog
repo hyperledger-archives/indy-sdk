@@ -1,6 +1,12 @@
-libvcx (0.4.1) unstable; urgency=medium
+libvcx (0.4.2) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 0.4.2
+* *EXPERIMENTAL*
+  Extended provisioning config to accept optional `did_method` filed. This field should be used to create fully qualified DIDs.
+  The format of identifiers used on CredentialIssuance and ProofPresentation will determine based on the type of remote DID.
+* Bugfixes
 
 ## 0.4.1
 * Supported endorsing of transactions in Libvcx.
