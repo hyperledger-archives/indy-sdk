@@ -1,0 +1,144 @@
+@startuml
+
+participant "Alice" as Alice
+participant "Alice Agency" as AliceAgency
+participant "Alice Agent" as AliceAgent
+participant "Bob Agent" as BobAgent
+participant "Bob Agency" as BobAgency
+participant "Bob" as Bob
+
+== Provisioning ==
+
+Alice -> AliceAgency: Provision Alice DID --> Alice Agent DID - will be stored at DIDDoc as routingKeys
+Bob -> BobAgency: Provision Bob DID --> Bob Agent DID - will be stored at DIDDoc as routingKeys
+
+== Invitation ==
+
+Alice -> Bob: Share plain `invitation` message with Bob
+note left
+{
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/invitation",
+    "@id": "12345678900987654321",
+    "label": "Alice",
+    "did": "Alice DID"
+}
+end note
+
+== Connection Request ==
+
+Bob -> Bob: resolve DIDDoc correspondent to Alice DID
+note right
+will receive `recipientKeys`, `routingKeys`, `serviceEndpoint`
+end note
+
+Bob -> AliceAgency: Send `request` to `serviceEndpoint` taken from DIDDoc.
+note right
+forward_message = {
+  "@type" : "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/routing/1.0/forward",
+  "to"   : "Alice Agent DID",
+  "msg"  : forward_2_message
+}
+
+encrypted_fwd_request = <pack(forward_message, routingKeys[0] == Alice Agency key)>
+end note
+
+AliceAgency -> AliceAgent: forward `encrypted_request`
+
+note right
+request = {
+  "@id": "5678876542345",
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/request",
+  "label": "Bob",
+  "connection": {
+    "did": "B.did@B:A",  // alice
+  	"did_doc": {
+        "@context": "https://w3id.org/did/v1"
+      	// DID Doc contents here.
+    }
+  }
+}
+
+encrypted_request = <pack(request, recipientKeys[0] = Alice Key, B.did@B:A)>
+end note
+
+AliceAgent -> AliceAgent: stores encrypted_request in queue
+AliceAgent <- Alice: Get all messages {'status': 'Received'}
+AliceAgent -> Alice: [ encrypted_request ]
+Alice -> AliceAgent: Updated messages
+Alice -> Alice: process request
+
+note left
+Alice decrypt `encrypted_request` and generates response for Bob
+end note
+
+== Connection Response ==
+
+Alice -> BobAgency: Send `response` to `serviceEndpoint` taken from DIDDoc taken from `request`
+
+note right
+forward_message = {
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/routing/1.0/forward",
+  "to"   : "Bob Agent DID",
+  "msg"  :  encrypted_response
+}
+
+encrypted_fwd_response = <pack(forward_message, routingKeys[0] == Bob Agency key)>
+end note
+
+BobAgency -> BobAgent: forward `encrypted_response`
+
+note right
+response = {
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/response",
+  "@id": "12345678900987654321",
+  "~thread": {
+    "thid": "<The Thread ID is the Message ID (@id) of the first message in the thread>"
+  },
+  "connection": {
+    "did": "A.did@B:A",
+  	"did_doc": {
+      "@context": "https://w3id.org/did/v1"
+      // DID Doc contents here.
+    }
+  }
+}
+
+encrypted_response = <pack(response, key for B.did@B:A = Bob Key, A.did@A:B = Alice Key)>
+end note
+
+BobAgent -> BobAgent: stores encrypted_response in queue
+BobAgent <- Bob: Get all messages
+BobAgent -> Bob: [ encrypted_response ]
+Bob -> Bob: process response
+
+== Ack ==
+
+Bob -> AliceAgency: `ack` message  to `serviceEndpoint` taken from DIDDoc.
+note right
+forward_message = {
+  "@type" : "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/routing/1.0/forward",
+  "to"   : "Alice Agent DID",
+  "msg"  : forward_2_message
+}
+
+encrypted_fwd_request = <pack(forward_message, routingKeys[0] == Alice Agency key)>
+end note
+
+AliceAgency -> AliceAgent: forward `encrypted_request`
+
+note right
+request = {
+  "@type" : "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/routing/1.0/ack",
+  "@id": "5678876542345",
+}
+
+encrypted_request = <pack(request, recipientKeys[0] = Alice Key, B.did@B:A)>
+end note
+
+AliceAgent -> AliceAgent: stores encrypted_request in queue
+AliceAgent <- Alice: Get all messages {'status': 'Received'}
+AliceAgent -> Alice: [ encrypted_request ]
+Alice -> AliceAgent: Updated messages
+Alice -> Alice: process request
+
+@enduml
