@@ -3,8 +3,8 @@ use super::schema::SchemaId;
 use super::super::ledger::request::ProtocolVersion;
 use super::super::crypto::did::DidValue;
 
-use utils::validation::Validatable;
-use utils::qualifier;
+use crate::utils::validation::Validatable;
+use crate::utils::qualifier;
 
 use ursa::cl::{
     CredentialPrimaryPublicKey,

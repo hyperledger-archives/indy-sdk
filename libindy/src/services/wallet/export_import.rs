@@ -5,12 +5,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use rmp_serde;
 
-use domain::wallet::export_import::{EncryptionMethod, Header, Record};
-use domain::wallet::KeyDerivationMethod;
-use errors::prelude::*;
-use services::wallet::encryption::KeyDerivationData;
-use utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
-use utils::crypto::hash::{hash, HASHBYTES};
+use crate::domain::wallet::export_import::{EncryptionMethod, Header, Record};
+use crate::domain::wallet::KeyDerivationMethod;
+use crate::errors::prelude::*;
+use crate::services::wallet::encryption::KeyDerivationData;
+use crate::utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
+use crate::utils::crypto::hash::{hash, HASHBYTES};
 
 use super::{Wallet, WalletRecord};
 
@@ -192,13 +192,13 @@ mod tests {
 
     use serde_json;
 
-    use domain::wallet::{Metadata, MetadataArgon};
-    use services::wallet::encryption;
-    use services::wallet::storage::default::SQLiteStorageType;
-    use services::wallet::storage::WalletStorageType;
-    use services::wallet::wallet::{Keys, Wallet};
-    use utils::crypto::pwhash_argon2i13;
-    use utils::test;
+    use crate::domain::wallet::{Metadata, MetadataArgon};
+    use crate::services::wallet::encryption;
+    use crate::services::wallet::storage::default::SQLiteStorageType;
+    use crate::services::wallet::storage::WalletStorageType;
+    use crate::services::wallet::wallet::{Keys, Wallet};
+    use crate::utils::crypto::pwhash_argon2i13;
+    use crate::utils::test;
 
     use super::*;
 

@@ -3,8 +3,8 @@ extern crate time;
 extern crate ursa;
 extern crate serde_json;
 
-use api::ErrorCode;
-use utils::sequence;
+use crate::api::ErrorCode;
+use crate::utils::sequence;
 
 use self::libc::c_char;
 
@@ -50,7 +50,7 @@ macro_rules! check_useful_c_byte_array {
             return $err2;
         }
 
-        let $ptr = unsafe { $crate::std::slice::from_raw_parts($ptr, $len as usize) };
+        let $ptr = unsafe { ::std::slice::from_raw_parts($ptr, $len as usize) };
         let $ptr = $ptr.to_vec();
     }
 }
