@@ -28,6 +28,22 @@ pub enum Schema {
     SchemaV1(SchemaV1)
 }
 
+impl Schema {
+    pub fn to_unqualified(self) -> Schema {
+        match self {
+            Schema::SchemaV1(schema) => {
+                Schema::SchemaV1(SchemaV1 {
+                    id: schema.id.to_unqualified(),
+                    name: schema.name,
+                    version: schema.version,
+                    attr_names: schema.attr_names,
+                    seq_no: schema.seq_no,
+                })
+            }
+        }
+    }
+}
+
 impl From<Schema> for SchemaV1 {
     fn from(schema: Schema) -> Self {
         match schema {

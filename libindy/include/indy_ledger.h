@@ -1226,7 +1226,9 @@ extern "C" {
     /// text and version - (optional) raw data about TAA from ledger.
     ///     These parameters should be passed together.
     ///     These parameters are required if taa_digest parameter is omitted.
-    /// taa_digest - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    /// taa_digest - (optional) digest on text and version.
+    ///     Digest is sha256 hash calculated on concatenated strings: version || text.
+    ///     This parameter is required if text and version parameters are omitted.
     /// mechanism - mechanism how user has accepted the TAA
     /// time - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
     ///

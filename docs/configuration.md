@@ -14,6 +14,9 @@ This document contains information on how Indy-SDK components can be configured.
     * [Error Handling](#error-handling)
     * [Runtime](#runtime)
     * [Transaction Endorser](#eransaction-endorser)
+    * [Transaction Author Agreement](#transaction-author-agreement)
+    * [Fully-Qualified Identifiers](#fully-qualified-Identifiers)
+
 * [Indy-CLI](#indy-cLI)
     * [Options](#options)
     * [Config](#config)
@@ -160,6 +163,12 @@ Instead, I will have a relationship with an endorser who will endorse my transac
 1. Transaction author sends the request to the Endorser (out of scope).
 1. Transaction Endorser signs the request (as of now `indy_multi_sign_request` must be called, not `indy_sign_request`) and submits it to the ledger.
 
+#### Transaction Author Agreement
+See [document](./how-tos/transaction-author-agreement.md)
+
+#### Fully-Qualified Identifiers
+See [document](./how-tos/fully-qualified-did-support.md)
+
 ## Indy-CLI
 There is a Command Line Interface (CLI) built over Libindy which provides a set of commands to:
 * Manage wallets
@@ -213,22 +222,4 @@ An example of a batch script:
     ```
 
 #### Transaction Author Agreement
-CLI uses session-based approach to work with Transaction Author Agreement.
-
-##### TAA acceptance Workflow
-1. On CLI start: Pass a config JSON file containing a label of mechanism how a user is going to accept a transaction author agreement.
-    `indy-cli --config <path-to-config-json-file>` where config looks like:
-    ```
-    {
-      "taaAcceptanceMechanism": "Click Agreement",
-      .....
-    }
-    ```
-    The list of available acceptance mechanisms can be received by sending `get_acceptance_mechanisms` request to ledger.
-1. On `pool connect` command execution: User will be asked if he would like to accept TAA.
-User either can accept it or skip and accept it later by `pool show-taa` command.
-    
-    Note that accepting TAA one time on `pool connect` or `pool show-taa` is a CLI-specific behavior that actually caches value for future uses.
-    Actual TAA check will be performed on write requests sending only.
-
-1. On write request sending to Ledger: TAA will be appended to requests.
+See [document](./how-tos/transaction-author-agreement.md)

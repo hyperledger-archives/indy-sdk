@@ -93,7 +93,7 @@ macro_rules! send_request {
 
 macro_rules! get_transaction_to_use {
     ($ctx:expr, $param_txn:expr) => ({
-        let request = if let Some(txn_) = $param_txn {
+        if let Some(txn_) = $param_txn {
             txn_.to_string()
         } else if let Some(txn_) = get_transaction($ctx) {
             println!("Transaction stored into context: {:?}.", txn_);
@@ -113,8 +113,7 @@ macro_rules! get_transaction_to_use {
                     load transaction using `ledger load-transaction`, or \
                     build a transaction (with passing either `send=false` or `endorser` parameter).");
             return Err(());
-        };
-        request
+        }
     })
 }
 
