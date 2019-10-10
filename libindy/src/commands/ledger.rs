@@ -5,29 +5,29 @@ use std::rc::Rc;
 use serde_json;
 use serde_json::Value;
 
-use api::ledger::{CustomFree, CustomTransactionParser};
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId};
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
-use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
-use domain::crypto::did::{Did, DidValue};
-use domain::crypto::key::Key;
-use domain::ledger::node::NodeOperationData;
-use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::auth_rule::{Constraint, AuthRules};
-use domain::ledger::request::Request;
-use domain::ledger::pool::Schedule;
-use errors::prelude::*;
-use services::crypto::CryptoService;
-use services::ledger::LedgerService;
-use services::pool::{
+use crate::api::ledger::{CustomFree, CustomTransactionParser};
+use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId};
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
+use crate::domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
+use crate::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
+use crate::domain::crypto::did::{Did, DidValue};
+use crate::domain::crypto::key::Key;
+use crate::domain::ledger::node::NodeOperationData;
+use crate::domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
+use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
+use crate::domain::ledger::request::Request;
+use crate::domain::ledger::pool::Schedule;
+use crate::errors::prelude::*;
+use crate::services::crypto::CryptoService;
+use crate::services::ledger::LedgerService;
+use crate::services::pool::{
     PoolService,
     parse_response_metadata
 };
-use services::wallet::{RecordOptions, WalletService};
-use utils::crypto::signature_serializer::serialize_signature;
-use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
-use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
+use crate::services::wallet::{RecordOptions, WalletService};
+use crate::utils::crypto::signature_serializer::serialize_signature;
+use crate::api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
+use crate::commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use rust_base58::ToBase58;
 use std::string::ToString;
 

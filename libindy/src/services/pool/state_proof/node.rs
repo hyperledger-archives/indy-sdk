@@ -5,7 +5,7 @@ use rlp::{DecoderError as RlpDecoderError, Prototype as RlpPrototype,
           UntrustedRlp,
 };
 
-use errors::prelude::*;
+use crate::errors::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Node {

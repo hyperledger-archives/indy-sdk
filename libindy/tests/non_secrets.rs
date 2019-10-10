@@ -6,10 +6,10 @@ inject_indy_dependencies!();
 extern crate indyrs as indy;
 extern crate indyrs as api;
 
-use utils::constants::WALLET_CREDENTIALS;
-use utils::wallet;
-use utils::non_secrets::*;
-use utils::types::{WalletRecord, SearchRecords};
+use crate::utils::constants::WALLET_CREDENTIALS;
+use crate::utils::wallet;
+use crate::utils::non_secrets::*;
+use crate::utils::types::{WalletRecord, SearchRecords};
 
 use std::collections::HashMap;
 
@@ -17,8 +17,8 @@ use self::indy::ErrorCode;
 
 pub const FORBIDDEN_TYPE: &'static str = "Indy::Test";
 
-use utils::test::cleanup_wallet;
-use utils::Setup;
+use crate::utils::test::cleanup_wallet;
+use crate::utils::Setup;
 
 mod high_cases {
     use super::*;
@@ -858,7 +858,7 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use api::INVALID_WALLET_HANDLE;
+    use crate::api::INVALID_WALLET_HANDLE;
 
     mod add_record {
         use super::*;

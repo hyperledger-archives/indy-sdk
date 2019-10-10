@@ -1,19 +1,19 @@
-use errors::prelude::*;
+use crate::errors::prelude::*;
 
-use domain::anoncreds::credential::AttributeValues;
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, NonRevocedInterval};
+use crate::domain::anoncreds::credential::AttributeValues;
+use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, NonRevocedInterval};
 use ursa::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
 
-use domain::crypto::did::DidValue;
-use domain::anoncreds::schema::SchemaId;
-use domain::anoncreds::credential_definition::CredentialDefinitionId;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
-use domain::anoncreds::schema::Schema;
-use domain::anoncreds::credential_definition::CredentialDefinition;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
-use domain::anoncreds::credential_offer::CredentialOffer;
-use domain::anoncreds::credential_request::CredentialRequest;
-use domain::anoncreds::proof_request::ProofRequest;
+use crate::domain::crypto::did::DidValue;
+use crate::domain::anoncreds::schema::SchemaId;
+use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
+use crate::domain::anoncreds::schema::Schema;
+use crate::domain::anoncreds::credential_definition::CredentialDefinition;
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use crate::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::domain::anoncreds::credential_request::CredentialRequest;
+use crate::domain::anoncreds::proof_request::ProofRequest;
 
 use std::collections::{HashSet, HashMap};
 
