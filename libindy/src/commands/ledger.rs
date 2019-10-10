@@ -26,7 +26,8 @@ use crate::services::pool::{
 };
 use indy_wallet::{RecordOptions, WalletService};
 use crate::utils::crypto::signature_serializer::serialize_signature;
-use indy_api_types::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
+use indy_api_types::{WalletHandle, PoolHandle, CommandHandle};
+use indy_utils::next_command_handle;
 use crate::commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use rust_base58::ToBase58;
 use std::string::ToString;

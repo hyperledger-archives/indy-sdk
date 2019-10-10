@@ -30,7 +30,8 @@ use indy_api_types::errors::*;
 use crate::services::pool::pool::{Pool, ZMQPool};
 use crate::utils::environment;
 use crate::services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
-use indy_api_types::{CommandHandle, next_command_handle, PoolHandle, next_pool_handle};
+use indy_api_types::{CommandHandle, PoolHandle};
+use indy_utils::{next_command_handle, next_pool_handle};
 use ursa::bls::VerKey;
 
 mod catchup;

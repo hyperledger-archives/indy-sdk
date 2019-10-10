@@ -56,7 +56,8 @@ use crate::services::pool::PoolService;
 use indy_wallet::{RecordOptions, WalletService};
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
-use indy_api_types::{WalletHandle, CommandHandle, next_command_handle};
+use indy_api_types::{WalletHandle, CommandHandle};
+use indy_utils::next_command_handle;
 
 pub enum IssuerCommand {
     CreateSchema(

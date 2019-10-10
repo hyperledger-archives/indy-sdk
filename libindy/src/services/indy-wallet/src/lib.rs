@@ -1,5 +1,7 @@
-#[macro_use]
 extern crate indy_api_types;
+
+#[macro_use]
+extern crate indy_utils;
 
 #[macro_use]
 extern crate log;
@@ -34,7 +36,7 @@ use self::storage::{WalletStorage, WalletStorageType};
 use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Keys, Wallet};
-use indy_api_types::{WalletHandle, next_wallet_handle};
+use indy_api_types::{WalletHandle};
 
 mod storage;
 mod encryption;
@@ -195,7 +197,7 @@ impl WalletService {
 
         let (storage, metadata, key_derivation_data) = self._open_storage_and_fetch_metadata(config, credentials)?;
 
-        let wallet_handle = next_wallet_handle();
+        let wallet_handle = indy_utils::next_wallet_handle();
 
         let rekey_data: Option<KeyDerivationData> = credentials.rekey.as_ref().map(|ref rekey|
             KeyDerivationData::from_passphrase_with_new_salt(rekey, &credentials.rekey_derivation_method));
@@ -479,7 +481,7 @@ impl WalletService {
         let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(exported_file_to_import, &export_config.key)?;
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
 
-        let wallet_handle = next_wallet_handle();
+        let wallet_handle = indy_utils::next_wallet_handle();
 
         let stashed_key_data = key_data.clone();
 

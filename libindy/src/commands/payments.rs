@@ -17,7 +17,7 @@ use indy_api_types::{WalletHandle, CommandHandle};
 use crate::domain::ledger::auth_rule::AuthRule;
 use crate::domain::crypto::did::DidValue;
 
-use indy_api_types::next_command_handle;
+use indy_utils::next_command_handle;
 use crate::commands::BoxedCallbackStringStringSend;
 
 pub enum PaymentsCommand {

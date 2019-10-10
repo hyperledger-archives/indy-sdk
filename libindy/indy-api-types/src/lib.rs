@@ -18,21 +18,14 @@ pub type IndyHandle = i32;
 
 pub type WalletHandle = i32;
 pub const INVALID_WALLET_HANDLE : WalletHandle = 0;
-pub fn next_wallet_handle() -> WalletHandle { utils::sequence::get_next_id() }
 
 pub type CallbackHandle = i32;
 
 pub type PoolHandle = i32;
 pub const INVALID_POOL_HANDLE : PoolHandle = 0;
-pub fn next_pool_handle() -> PoolHandle {
-    utils::sequence::get_next_id()
-}
 
 pub type CommandHandle = i32;
 pub const INVALID_COMMAND_HANDLE : CommandHandle = 0;
-pub fn next_command_handle() -> CommandHandle {
-    utils::sequence::get_next_id()
-}
 
 pub type StorageHandle = i32;
 pub type SearchHandle = i32;
@@ -263,32 +256,6 @@ pub enum ErrorCode
     // The transaction is not allowed to a requester
     TransactionNotAllowedError = 706,
 
-}
-
-pub mod utils {
-    pub (crate) mod sequence {
-        use std::sync::atomic::{AtomicUsize, Ordering};
-
-        lazy_static! {
-            static ref IDS_COUNTER: AtomicUsize = AtomicUsize::new(1);
-        }
-
-        pub fn get_next_id() -> i32 {
-            (IDS_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
-        }
-    }
-
-    #[cfg(debug_assertions)]
-    #[macro_export]
-    macro_rules! secret {
-        ($val:expr) => {{ $val }};
-    }
-
-    #[cfg(not(debug_assertions))]
-    #[macro_export]
-    macro_rules! secret {
-        ($val:expr) => {{ "_" }};
-    }
 }
 
 pub mod wallet {

@@ -14,7 +14,7 @@ use crate::commands::ledger::LedgerCommand;
 use crate::domain::cache::{GetCacheOptions, PurgeOptions};
 use crate::domain::crypto::did::DidValue;
 
-use indy_api_types::next_command_handle;
+use indy_utils::next_command_handle;
 
 const CRED_DEF_CACHE: &str = "cred_def_cache";
 const SCHEMA_CACHE: &str = "schema_cache";

@@ -769,13 +769,13 @@ mod tests {
     use crate::utils::test;
     use crate::utils::test::test_pool_create_poolfile;
 
-    use indy_api_types::next_command_handle;
+    use indy_utils::next_command_handle;
 
     use super::*;
 
     mod pool {
         use super::*;
-        use crate::services::pool::next_pool_handle;
+        use indy_utils::next_pool_handle;
 
         #[test]
         pub fn pool_new_works() {
@@ -804,7 +804,7 @@ mod tests {
         use serde_json;
 
         use super::*;
-        use crate::services::pool::next_pool_handle;
+        use indy_utils::next_pool_handle;
         use crate::domain::pool::NUMBER_READ_NODES;
 
         #[test]
