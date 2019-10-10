@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.12.0 - 2019-09-XX
+## 1.12.0 - 2019-10-08
 * Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
     * general format of fully-qualified identifier is `<prefix>:<method>:<value>`.
     * extended `did_info` parameter of `indy_create_and_store_my_did` function to accepts optional `method_name` filed. This field should be used to create fully qualified DID.
@@ -18,6 +18,7 @@
     * extended VCX provisioning config to accept optional `did_method` filed. This field should be used to create fully qualified DIDs.
 * Migrated Android onto the API v21 and NDK 20.
 * Supported MacOS builds for Indy CLI.
+* The default value of `Protocol Version` was changed on 2. Henceforth `indy_set_protocol_version` function should be called if you are going to work with Indy-Node 1.3 and less. 
 * Bugfixes
     * Fixed `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
     * Fixed `attr::{}::value` verification (IS-1380, thanks @nrempel for reporting the vulnerability)
