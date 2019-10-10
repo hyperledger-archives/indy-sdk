@@ -2,11 +2,11 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use domain::wallet::Tags;
-use errors::prelude::*;
-use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use utils::sequence;
-use api::WalletHandle;
+use crate::domain::wallet::Tags;
+use crate::errors::prelude::*;
+use crate::services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use crate::utils::sequence;
+use crate::api::WalletHandle;
 
 
 pub enum NonSecretsCommand {

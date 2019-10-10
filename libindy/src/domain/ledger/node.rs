@@ -1,6 +1,6 @@
 use super::constants::NODE;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 use super::super::crypto::did::ShortDidValue;
 
 #[derive(Serialize, PartialEq, Debug)]

@@ -1,9 +1,9 @@
 pub mod default;
 pub mod plugged;
 
-use errors::prelude::*;
-use services::wallet::language;
-use services::wallet::wallet::EncryptedValue;
+use crate::errors::prelude::*;
+use crate::services::wallet::language;
+use crate::services::wallet::wallet::EncryptedValue;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Tag {
