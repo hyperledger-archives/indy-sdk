@@ -8,28 +8,28 @@ extern crate indyrs as api;
 
 use self::indy::ErrorCode;
 #[cfg(feature = "local_nodes_pool")]
-use utils::{pool, ledger, did, anoncreds};
-use utils::types::*;
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::{pool, ledger, did, anoncreds};
+use crate::utils::types::*;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 use self::rand::distributions::Alphanumeric;
 
-use utils::domain::ledger::constants;
-use utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
-use utils::domain::ledger::nym::NymData;
-use utils::domain::anoncreds::schema::SchemaV1;
-use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
-use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
-use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
-use utils::domain::crypto::did::DidValue;
+use crate::utils::domain::ledger::constants;
+use crate::utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
+use crate::utils::domain::ledger::nym::NymData;
+use crate::utils::domain::anoncreds::schema::SchemaV1;
+use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
+use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use crate::utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
+use crate::utils::domain::crypto::did::DidValue;
 
 use std::collections::HashMap;
 use std::thread;
 
-use api::INVALID_WALLET_HANDLE;
-use api::INVALID_POOL_HANDLE;
+use crate::api::INVALID_WALLET_HANDLE;
+use crate::api::INVALID_POOL_HANDLE;
 
 mod high_cases {
     use super::*;
@@ -2849,7 +2849,7 @@ mod medium_cases {
     use super::*;
     use openssl::hash::{MessageDigest, Hasher};
     use sodiumoxide::crypto::secretbox;
-    use utils::domain::anoncreds::schema::Schema;
+    use crate::utils::domain::anoncreds::schema::Schema;
 
     mod requests {
         use super::*;
@@ -3308,7 +3308,7 @@ mod medium_cases {
 
     mod schemas_requests {
         use super::*;
-        use utils::domain::anoncreds::schema::SchemaId;
+        use crate::utils::domain::anoncreds::schema::SchemaId;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -3358,7 +3358,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_request_works_for_attrs_count_more_than_acceptable() {
-            use utils::domain::anoncreds::schema::MAX_ATTRIBUTES_COUNT;
+            use crate::utils::domain::anoncreds::schema::MAX_ATTRIBUTES_COUNT;
 
             let mut schema = utils::anoncreds::gvt_schema();
             schema.attr_names = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
@@ -3566,7 +3566,7 @@ mod medium_cases {
 
             let schema_request = ledger::build_schema_request(&setup.did, &schema_json).unwrap();
             let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
-            pool::check_response_type(&schema_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&schema_response, crate::utils::types::ResponseType::REPLY);
 
             let get_schema_request = ledger::build_get_schema_request(Some(&setup.did), &schema_id).unwrap();
             let get_schema_response = ledger::submit_request_with_retries(setup.pool_handle, &get_schema_request, &schema_response).unwrap();
@@ -3580,7 +3580,7 @@ mod medium_cases {
                                                                                               Some(&anoncreds::default_cred_def_config())).unwrap();
             let cred_def_request = ledger::build_cred_def_txn(&setup.did, &cred_def_json).unwrap();
             let cred_def_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &cred_def_request).unwrap();
-            pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&cred_def_response, crate::utils::types::ResponseType::REPLY);
 
             let get_cred_def_request = ledger::build_get_cred_def_request(Some(DID_MY1), &cred_def_id).unwrap();
             let get_cred_def_response = ledger::submit_request_with_retries(setup.pool_handle, &get_cred_def_request, &cred_def_response).unwrap();

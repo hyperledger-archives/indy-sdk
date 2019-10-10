@@ -1,30 +1,30 @@
-use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
-use errors::prelude::*;
-use commands::{Command, CommandExecutor};
-use commands::anoncreds::AnoncredsCommand;
-use commands::anoncreds::issuer::IssuerCommand;
-use commands::anoncreds::prover::ProverCommand;
-use commands::anoncreds::verifier::VerifierCommand;
-use domain::anoncreds::schema::{Schema, AttributeNames, Schemas};
-use domain::crypto::did::DidValue;
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId, CredentialDefinitions};
-use domain::anoncreds::credential_offer::CredentialOffer;
-use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
-use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
-use domain::anoncreds::credential::{Credential, CredentialValues};
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, RevocationRegistryDefinition, RevocationRegistryId, RevocationRegistryDefinitions};
-use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
-use domain::anoncreds::proof::Proof;
-use domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery};
-use domain::anoncreds::requested_credential::RequestedCredentials;
-use domain::anoncreds::revocation_registry::RevocationRegistries;
-use domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
-use utils::ctypes;
+use crate::api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
+use crate::errors::prelude::*;
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::anoncreds::AnoncredsCommand;
+use crate::commands::anoncreds::issuer::IssuerCommand;
+use crate::commands::anoncreds::prover::ProverCommand;
+use crate::commands::anoncreds::verifier::VerifierCommand;
+use crate::domain::anoncreds::schema::{Schema, AttributeNames, Schemas};
+use crate::domain::crypto::did::DidValue;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId, CredentialDefinitions};
+use crate::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
+use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
+use crate::domain::anoncreds::credential::{Credential, CredentialValues};
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, RevocationRegistryDefinition, RevocationRegistryId, RevocationRegistryDefinitions};
+use crate::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
+use crate::domain::anoncreds::proof::Proof;
+use crate::domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery};
+use crate::domain::anoncreds::requested_credential::RequestedCredentials;
+use crate::domain::anoncreds::revocation_registry::RevocationRegistries;
+use crate::domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
+use crate::utils::ctypes;
 
 use libc::c_char;
 use std::ptr;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:
@@ -2389,7 +2389,11 @@ pub extern fn indy_generate_nonce(command_handle: CommandHandle,
 ///             SchemaId
 ///             CredentialDefinitionId
 ///             RevocationRegistryId
+///             Schema
+///             CredentialDefinition
+///             RevocationRegistryDefinition
 ///             CredentialOffer
+///             CredentialRequest
 ///             ProofRequest
 ///
 /// #Returns

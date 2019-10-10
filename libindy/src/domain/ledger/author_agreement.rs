@@ -1,6 +1,6 @@
 use super::constants::{TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT, TXN_AUTHR_AGRMT_AML, GET_TXN_AUTHR_AGRMT_AML};
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 use std::collections::HashMap;
 

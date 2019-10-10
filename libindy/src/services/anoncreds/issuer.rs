@@ -13,14 +13,14 @@ use ursa::cl::{
 };
 use ursa::cl::issuer::Issuer as CryptoIssuer;
 
-use domain::anoncreds::schema::AttributeNames;
-use domain::anoncreds::credential::CredentialValues;
-use domain::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1 as CredentialDefinition};
-use domain::anoncreds::credential_request::CredentialRequest;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
-use domain::crypto::did::DidValue;
-use errors::prelude::*;
-use services::anoncreds::helpers::*;
+use crate::domain::anoncreds::schema::AttributeNames;
+use crate::domain::anoncreds::credential::CredentialValues;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1 as CredentialDefinition};
+use crate::domain::anoncreds::credential_request::CredentialRequest;
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
+use crate::domain::crypto::did::DidValue;
+use crate::errors::prelude::*;
+use crate::services::anoncreds::helpers::*;
 
 pub struct Issuer {}
 

@@ -172,7 +172,20 @@ indy_build_get_payment_sources_request(command_handle: CommandHandle,
           <b>DEPRECATED</b>
       </td>  
     </tr>
-    <tr>
+    <tr>## Notes
+
+Migration information is organized in tables, there are mappings for each Libindy API part of how older version functionality maps to a newer one.
+Functions from older version are listed in the left column, and the equivalent newer version function is placed in the right column:
+
+* If some function had been added, the word 'NEW' would be placed in the left column.
+* If some function had been deleted, the word 'DELETED' would be placed in the right column.
+* If some function had been deprecated, the word 'DEPRECATED' would be placed in the right column.
+* If some function had been changed, the current format would be placed in the right column.
+* If some function had not been changed, the symbol '=' would be placed in the right column.
+* To get more details about current format of a function click on the description above it.
+* Bellow are signatures of functions in Libindy C API.
+  The params of ```cb``` (except command_handle and err) will be result values of the similar function in any Libindy wrapper.
+
       <th colspan="2">
           <a href="https://github.com/hyperledger/indy-sdk/blob/v1.11.0/libindy/src/api/payments.rs#L729">
               Parses response for Indy request for getting sources list.

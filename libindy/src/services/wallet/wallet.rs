@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use utils::crypto::{hmacsha256, chacha20poly1305_ietf};
-use utils::wql::Query;
+use crate::utils::crypto::{hmacsha256, chacha20poly1305_ietf};
+use crate::utils::wql::Query;
 
-use errors::prelude::*;
+use crate::errors::prelude::*;
 
 use zeroize::Zeroize;
 
@@ -222,13 +222,13 @@ mod tests {
     use std::rc::Rc;
     use std::collections::HashMap;
 
-    use domain::wallet::{Metadata, MetadataArgon};
-    use services::wallet::encryption;
-    use services::wallet::wallet::Wallet;
-    use services::wallet::storage::WalletStorageType;
-    use services::wallet::storage::default::SQLiteStorageType;
-    use services::wallet::language::*;
-    use utils::test;
+    use crate::domain::wallet::{Metadata, MetadataArgon};
+    use crate::services::wallet::encryption;
+    use crate::services::wallet::wallet::Wallet;
+    use crate::services::wallet::storage::WalletStorageType;
+    use crate::services::wallet::storage::default::SQLiteStorageType;
+    use crate::services::wallet::language::*;
+    use crate::utils::test;
 
     macro_rules! jsonstr {
         ($($x:tt)+) => {
