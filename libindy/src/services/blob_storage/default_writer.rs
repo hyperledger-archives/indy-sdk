@@ -5,8 +5,8 @@ use std::path::PathBuf;
 
 use serde_json;
 
-use errors::prelude::*;
-use utils::environment;
+use crate::errors::prelude::*;
+use crate::utils::environment;
 
 use super::{WritableBlob, Writer, WriterType};
 

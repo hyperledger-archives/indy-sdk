@@ -75,6 +75,7 @@ macro_rules! inject_indy_dependencies {
         #[macro_use]
         extern crate serde_json;
 
+        #[allow(unused_imports)]
         #[macro_use]
         extern crate log;
 
@@ -95,7 +96,7 @@ macro_rules! inject_indy_dependencies {
 }
 
 fn setup() -> String {
-    let name = ::utils::rand_utils::get_rand_string(10);
+    let name = crate::utils::rand_utils::get_rand_string(10);
     test::cleanup_storage(&name);
     logger::set_default_logger();
     name

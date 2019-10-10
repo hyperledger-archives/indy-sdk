@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedCredentials {

@@ -2,18 +2,18 @@ use std::collections::HashMap;
 use std::fmt;
 use ursa::cl::Nonce;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
-use utils::wql::Query;
+use crate::utils::wql::Query;
 
 use super::credential::Credential;
 use super::super::crypto::did::DidValue;
 use super::credential_definition::CredentialDefinitionId;
 use super::revocation_registry_definition::RevocationRegistryId;
 use super::schema::SchemaId;
-use utils::qualifier;
+use crate::utils::qualifier;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequestPayload {

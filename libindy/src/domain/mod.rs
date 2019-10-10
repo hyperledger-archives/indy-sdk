@@ -6,7 +6,7 @@ pub mod pool;
 pub mod wallet;
 pub mod cache;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndyConfig {
