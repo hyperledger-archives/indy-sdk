@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::str;
 
-use indy_api_types::domain::wallet::{KeyDerivationMethod, Metadata};
+use indy_api_types::domain::wallet::KeyDerivationMethod;
 use indy_api_types::errors::prelude::*;
 use indy_utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
 
-use super::{Keys, WalletRecord};
+use super::{Keys, WalletRecord, Metadata};
 use super::storage::{StorageRecord, Tag, TagName};
 use rust_base58::FromBase58;
 

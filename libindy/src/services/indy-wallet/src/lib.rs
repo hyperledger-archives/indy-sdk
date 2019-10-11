@@ -25,7 +25,7 @@ use serde_json::Value as SValue;
 
 use indy_api_types::wallet::*;
 
-use indy_api_types::domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, Tags};
+use indy_api_types::domain::wallet::{Config, Credentials, ExportConfig, Tags};
 use indy_api_types::errors::prelude::*;
 pub use crate::encryption::KeyDerivationData;
 use indy_utils::crypto::chacha20poly1305_ietf;
@@ -600,6 +600,33 @@ impl WalletService {
     pub fn add_prefix(&self, type_: &str) -> String {
         format!("{}::{}", WalletService::PREFIX, type_)
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum Metadata {
+    MetadataArgon(MetadataArgon),
+    MetadataRaw(MetadataRaw),
+}
+
+impl Metadata {
+    pub fn get_keys(&self) -> &Vec<u8> {
+        match *self {
+            Metadata::MetadataArgon(ref metadata) => &metadata.keys,
+            Metadata::MetadataRaw(ref metadata) => &metadata.keys,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MetadataArgon {
+    pub keys: Vec<u8>,
+    pub master_key_salt: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MetadataRaw {
+    pub keys: Vec<u8>
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

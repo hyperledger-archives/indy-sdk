@@ -5,7 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use rmp_serde;
 
-use indy_api_types::domain::wallet::export_import::{EncryptionMethod, Header, Record};
+use indy_api_types::domain::wallet::Record;
 use indy_api_types::domain::wallet::KeyDerivationMethod;
 use indy_api_types::errors::prelude::*;
 use crate::encryption::KeyDerivationData;
@@ -15,6 +15,59 @@ use indy_utils::crypto::hash::{hash, HASHBYTES};
 use super::{Wallet, WalletRecord};
 
 const CHUNK_SIZE: usize = 1024;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum EncryptionMethod {
+    // **ChaCha20-Poly1305-IETF** cypher in blocks per chunk_size bytes
+    ChaCha20Poly1305IETF {
+        // pwhash_argon2i13::Salt as bytes. Random salt used for deriving of key from passphrase
+        salt: Vec<u8>,
+        // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
+        nonce: Vec<u8>,
+        // size of encrypted chunk
+        chunk_size: usize,
+    },
+    // **ChaCha20-Poly1305-IETF interactive key derivation** cypher in blocks per chunk_size bytes
+    ChaCha20Poly1305IETFInteractive {
+        // pwhash_argon2i13::Salt as bytes. Random salt used for deriving of key from passphrase
+        salt: Vec<u8>,
+        // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
+        nonce: Vec<u8>,
+        // size of encrypted chunk
+        chunk_size: usize,
+    },
+    // **ChaCha20-Poly1305-IETF raw key** cypher in blocks per chunk_size bytes
+    ChaCha20Poly1305IETFRaw {
+        // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
+        nonce: Vec<u8>,
+        // size of encrypted chunk
+        chunk_size: usize,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Header {
+    // Method of encryption for encrypted stream
+    pub encryption_method: EncryptionMethod,
+    // Export time in seconds from UNIX Epoch
+    pub time: u64,
+    // Version of header
+    pub version: u32
+}
+
+// Note that we use externally tagged enum serialization and header will be represented as:
+//
+// {
+//   "encryption_method": {
+//     "ChaCha20Poly1305IETF": {
+//       "salt": ..,
+//       "nonce": ..,
+//       "chunk_size": ..,
+//     },
+//   },
+//   "time": ..,
+//   "version": ..,
+// }
 
 pub(super) fn export_continue(wallet: &Wallet, writer: &mut dyn Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> IndyResult<()> {
     let nonce = chacha20poly1305_ietf::gen_nonce();
