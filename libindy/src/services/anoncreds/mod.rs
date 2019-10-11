@@ -3,9 +3,9 @@ pub mod issuer;
 pub mod prover;
 pub mod verifier;
 
-use services::anoncreds::issuer::Issuer;
-use services::anoncreds::prover::Prover;
-use services::anoncreds::verifier::Verifier;
+use crate::services::anoncreds::issuer::Issuer;
+use crate::services::anoncreds::prover::Prover;
+use crate::services::anoncreds::verifier::Verifier;
 
 pub struct AnoncredsService {
     pub issuer: Issuer,

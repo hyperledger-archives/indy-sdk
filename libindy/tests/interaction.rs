@@ -7,24 +7,24 @@ extern crate indyrs as indy;
 extern crate indyrs as api;
 extern crate core;
 
-use utils::{wallet, anoncreds, blob_storage, pool, ledger, did};
-use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID};
+use crate::utils::{wallet, anoncreds, blob_storage, pool, ledger, did};
+use crate::utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID};
 #[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
 #[cfg(not(feature = "only_high_cases"))]
-use utils::anoncreds::{CREDENTIAL2_ID, CREDENTIAL3_ID};
+use crate::utils::anoncreds::{CREDENTIAL2_ID, CREDENTIAL3_ID};
 
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
-use utils::domain::anoncreds::schema::Schema;
-use utils::domain::anoncreds::credential_definition::CredentialDefinition;
-use utils::domain::anoncreds::credential_offer::CredentialOffer;
-use utils::domain::anoncreds::credential::Credential;
-use utils::domain::anoncreds::credential::CredentialInfo;
-use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
-use utils::domain::anoncreds::proof::Proof;
-use utils::domain::anoncreds::revocation_state::RevocationState;
-use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
+use crate::utils::domain::anoncreds::schema::Schema;
+use crate::utils::domain::anoncreds::credential_definition::CredentialDefinition;
+use crate::utils::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::utils::domain::anoncreds::credential::Credential;
+use crate::utils::domain::anoncreds::credential::CredentialInfo;
+use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use crate::utils::domain::anoncreds::proof::Proof;
+use crate::utils::domain::anoncreds::revocation_state::RevocationState;
+use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistry;
 
 use std::thread;
 

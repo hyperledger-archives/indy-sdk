@@ -12,7 +12,7 @@ use super::revocation_registry_definition::RevocationRegistryId;
 use std::collections::HashMap;
 use named_type::NamedType;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
 
 
 #[derive(Debug, Deserialize, Serialize, NamedType)]

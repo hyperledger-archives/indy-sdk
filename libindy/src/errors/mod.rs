@@ -12,8 +12,8 @@ use ursa::errors::{UrsaCryptoError, UrsaCryptoErrorKind};
 use log;
 use libc::c_char;
 
-use api::ErrorCode;
-use utils::ctypes;
+use crate::api::ErrorCode;
+use crate::utils::ctypes;
 
 pub mod prelude {
     pub use super::{err_msg, IndyError, IndyErrorExt, IndyErrorKind, IndyResult, IndyResultExt, set_current_error, get_current_error_c_json};
