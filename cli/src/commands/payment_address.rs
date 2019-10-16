@@ -1,16 +1,16 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
-use commands::*;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
+use crate::commands::*;
 
 use indy::{ErrorCode, IndyError};
-use libindy::payment::Payment;
+use crate::libindy::payment::Payment;
 
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use utils::table::print_list_table;
+use crate::utils::table::print_list_table;
 
 
 pub mod group {
@@ -231,8 +231,8 @@ pub fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
 #[cfg(feature = "nullpay_plugin")]
 pub mod tests {
     use super::*;
-    use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
-    use commands::did::tests::SEED_MY1;
+    use crate::commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
+    use crate::commands::did::tests::SEED_MY1;
 
     pub const INPUT: &str = "123456789";
 

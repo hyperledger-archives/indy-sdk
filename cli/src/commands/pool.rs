@@ -1,12 +1,12 @@
 extern crate serde_json;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, wait_for_user_reply, DynamicCompletionType};
-use commands::*;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, wait_for_user_reply, DynamicCompletionType};
+use crate::commands::*;
 
 use indy::{ErrorCode, IndyError};
-use libindy::pool::Pool;
-use utils::table::print_list_table;
+use crate::libindy::pool::Pool;
+use crate::utils::table::print_list_table;
 
 use self::chrono::prelude::*;
 use serde_json::Value as JSONValue;
@@ -438,7 +438,7 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use libindy::pool::Pool;
+    use crate::libindy::pool::Pool;
 
     const POOL: &'static str = "pool";
 
