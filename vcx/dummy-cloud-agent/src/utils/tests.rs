@@ -19,6 +19,7 @@ use std::fs;
 use std::path::PathBuf;
 use tokio_core::reactor::Core;
 use utils::futures::*;
+use actors::admin::Admin;
 
 pub const EDGE_AGENT_WALLET_ID: &'static str = "edge_agent_wallet_id";
 pub const EDGE_AGENT_WALLET_CONFIG: &'static str = "{\"id\": \"edge_agent_wallet_id\"}";
@@ -111,7 +112,8 @@ pub fn run_test<F, B>(f: F)
         Arbiter::spawn_fn(move || {
             future::ok(())
                 .and_then(move |_| {
-                    ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config())
+                    let admin = Admin::create();
+                    ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config(), admin)
                 })
                 .and_then(f)
                 .and_then(|wallet_handle|
