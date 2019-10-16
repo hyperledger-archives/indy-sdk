@@ -9,8 +9,8 @@ edition = "2018"
 [dependencies]
 base64 = "*"
 byteorder = "1.3.2"
-indy-api-types = { path = "../../../indy-api-types"}
-indy-utils = { path = "../../../indy-utils"}
+indy-api-types = { path = "../indy-api-types"}
+indy-utils = { path = "../indy-utils"}
 libc = "*"
 log = "0.4.8"
 named_type = "0.2.1"
