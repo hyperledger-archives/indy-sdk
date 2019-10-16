@@ -14,7 +14,12 @@
 
         # 3.
         print_log('\n3. Creating Issuer wallet and opening it to get the handle.\n')
-        issuer_wallet_handle = await open_wallet(issuer_wallet_config, issuer_wallet_credentials)
+        try:
+            await wallet.create_wallet(config=issuer_wallet_config,credentials=issuer_wallet_credentials)
+        except IndyError as err:
+            if err.error_code == ErrorCode.WalletAlreadyExistsError:
+                pass        
+        issuer_wallet_handle = await wallet.open_wallet(issuer_wallet_config, issuer_wallet_credentials)
 
         # 4.
         print_log('\n4. Generating and storing steward DID and verkey\n')

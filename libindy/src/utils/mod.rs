@@ -25,7 +25,7 @@ pub mod sequence;
 pub mod test;
 
 #[macro_use]
-pub mod try;
+pub mod try_utils;
 
 pub mod validation;
 

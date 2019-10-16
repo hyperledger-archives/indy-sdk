@@ -1,18 +1,18 @@
-use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
-use errors::prelude::*;
-use commands::{Command, CommandExecutor};
-use commands::ledger::LedgerCommand;
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
-use domain::anoncreds::schema::{Schema, SchemaId};
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryId};
-use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
-use domain::crypto::did::DidValue;
-use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::node::NodeOperationData;
-use domain::ledger::auth_rule::{Constraint, AuthRules};
-use domain::ledger::pool::Schedule;
-use utils::ctypes;
-use utils::validation::Validatable;
+use crate::api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
+use crate::errors::prelude::*;
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::ledger::LedgerCommand;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
+use crate::domain::anoncreds::schema::{Schema, SchemaId};
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryId};
+use crate::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
+use crate::domain::crypto::did::DidValue;
+use crate::domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
+use crate::domain::ledger::node::NodeOperationData;
+use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
+use crate::domain::ledger::pool::Schedule;
+use crate::utils::ctypes;
+use crate::utils::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
@@ -2191,7 +2191,9 @@ pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: Comma
 /// text and version - (optional) raw data about TAA from ledger.
 ///     These parameters should be passed together.
 ///     These parameters are required if taa_digest parameter is omitted.
-/// taa_digest - (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// taa_digest - (optional) digest on text and version.
+///     Digest is sha256 hash calculated on concatenated strings: version || text.
+///     This parameter is required if text and version parameters are omitted.
 /// mechanism - mechanism how user has accepted the TAA
 /// time - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
 /// cb: Callback that takes command result as parameter.

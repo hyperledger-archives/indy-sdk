@@ -6,11 +6,11 @@ use std::ptr;
 use libc::c_char;
 use serde_json;
 
-use api::ErrorCode;
-use api::wallet::*;
-use errors::prelude::*;
-use services::wallet::language;
-use utils::crypto::base64;
+use crate::api::ErrorCode;
+use crate::api::wallet::*;
+use crate::errors::prelude::*;
+use crate::services::wallet::language;
+use crate::utils::crypto::base64;
 
 use super::{EncryptedValue, StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType};
 use super::super::{RecordOptions, SearchOptions};
@@ -814,7 +814,7 @@ mod tests {
     use std::clone::Clone;
     use std::sync::RwLock;
 
-    use api::ErrorCode;
+    use crate::api::ErrorCode;
 
     use super::*;
 

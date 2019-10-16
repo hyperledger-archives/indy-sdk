@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use errors::IndyError;
+use crate::errors::IndyError;
 
 use super::WalletRecord;
 use super::wallet::Keys;
