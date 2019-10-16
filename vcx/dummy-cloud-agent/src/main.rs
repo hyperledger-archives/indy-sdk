@@ -34,6 +34,7 @@ use domain::protocol_type::ProtocolType;
 use failure::*;
 use std::env;
 use std::fs::File;
+use actors::admin::Admin;
 use app::start_app_server;
 
 #[macro_use]
@@ -41,7 +42,6 @@ pub(crate) mod utils;
 
 pub(crate) mod actors;
 pub(crate) mod app;
-pub(crate) mod api_agent;
 pub(crate) mod domain;
 pub(crate) mod indy;
 
@@ -91,9 +91,10 @@ fn _start(config_path: &str) {
 
         ProtocolType::set(protocol_type_config);
 
-        ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config)
+        let admin = Admin::create();
+        ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config, admin.clone())
             .map(move |forward_agent| {
-                start_app_server(server_config, app_config, forward_agent)
+                start_app_server(server_config, app_config, forward_agent, admin)
             })
             .map(|_| ()) // TODO: Expose server addr for graceful shutdown support
             .map_err(|err| panic!("Can't start Indy Dummy Agent: {}!", err))
@@ -101,6 +102,7 @@ fn _start(config_path: &str) {
 
     let _ = sys.run();
 }
+
 
 fn _print_help() {
     println!("Hyperledger Indy Dummy Agent");
@@ -113,3 +115,5 @@ fn _print_help() {
     println!("\t\tindy-dummy-agent --help");
     println!();
 }
+
+
