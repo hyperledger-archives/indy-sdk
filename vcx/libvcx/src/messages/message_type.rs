@@ -112,7 +112,7 @@ impl ::std::string::ToString for MessageFamilies {
 }
 
 
-fn parse_message_type(message_type: &str) -> VcxResult<(String, String, String, String)> {
+pub fn parse_message_type(message_type: &str) -> VcxResult<(String, String, String, String)> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?x)
             (?P<did>[\d\w:]*);
