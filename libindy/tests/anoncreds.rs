@@ -7,24 +7,24 @@ extern crate indyrs as indy;
 extern crate indyrs as api;
 extern crate indy_sys;
 
-use utils::{wallet, anoncreds};
-use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, ANONCREDS_WALLET_CONFIG};
+use crate::utils::{wallet, anoncreds};
+use crate::utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, ANONCREDS_WALLET_CONFIG};
 
 use indy::ErrorCode;
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
-use utils::domain::anoncreds::credential::CredentialInfo;
-use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
-use utils::domain::anoncreds::proof::Proof;
-use utils::domain::crypto::did::DidValue;
+use crate::utils::domain::anoncreds::credential::CredentialInfo;
+use crate::utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
+use crate::utils::domain::anoncreds::proof::Proof;
+use crate::utils::domain::crypto::did::DidValue;
 
 mod high_cases {
     use super::*;
 
     mod issuer_create_schema {
         use super::*;
-        use utils::domain::anoncreds::schema::SchemaId;
+        use crate::utils::domain::anoncreds::schema::SchemaId;
 
         #[test]
         fn issuer_create_schema_works() {
@@ -451,8 +451,8 @@ mod high_cases {
     // {"issuer_did": DID, "schema_id": gvt_schema_id}
     mod prover_get_credentials_for_proof_req {
         use super::*;
-        use utils::domain::anoncreds::schema::SchemaId;
-        use utils::domain::anoncreds::credential_definition::CredentialDefinitionId;
+        use crate::utils::domain::anoncreds::schema::SchemaId;
+        use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionId;
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_empty_req() {
@@ -3452,14 +3452,57 @@ mod high_cases {
 
     mod to_unqualified {
         use super::*;
+        use utils::domain::anoncreds::schema::SchemaV1;
+        use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
+        use utils::domain::anoncreds::credential_offer::CredentialOffer;
+        use utils::domain::anoncreds::credential_request::CredentialRequest;
 
         #[test]
-        fn to_unqualified() {
-            let qualified = "did:sov:NcYxiDXkpYi6ov5FcYDi1e";
-            let unqualified = "NcYxiDXkpYi6ov5FcYDi1e";
+        fn to_unqualified_ids() {
+            assert_eq!(DID_MY1, anoncreds::to_unqualified(DID_MY1_V1).unwrap());
+            assert_eq!(DID_MY1, anoncreds::to_unqualified(DID_MY1).unwrap());
 
-            assert_eq!(unqualified, anoncreds::to_unqualified(qualified).unwrap());
-            assert_eq!(unqualified, anoncreds::to_unqualified(unqualified).unwrap());
+            assert_eq!(anoncreds::gvt_schema_id(), anoncreds::to_unqualified(&anoncreds::gvt_schema_id_fully_qualified()).unwrap());
+            assert_eq!(anoncreds::gvt_cred_def_id(), anoncreds::to_unqualified(&anoncreds::gvt_cred_def_id_fully_qualified()).unwrap());
+            assert_eq!(anoncreds::local_gvt_cred_def_id(), anoncreds::to_unqualified(&anoncreds::local_gvt_cred_def_id_fully_qualified()).unwrap());
+        }
+
+        #[test]
+        fn to_unqualified_objects() {
+            let setup = Setup::wallet();
+
+            let (schema_id, schema_json) = anoncreds::issuer_create_schema(ISSUER_DID_V1, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).unwrap();
+
+            assert_eq!(anoncreds::gvt_schema_id(), anoncreds::to_unqualified(&schema_id).unwrap());
+
+            let schema_json_un = anoncreds::to_unqualified(&schema_json).unwrap();
+            let schema: SchemaV1 = ::serde_json::from_str(&schema_json_un).unwrap();
+            assert_eq!(anoncreds::gvt_schema_id(), schema.id.0);
+
+            let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(setup.wallet_handle, ISSUER_DID_V1, &schema_json, TAG_1, None, None).unwrap();
+
+            assert_eq!(anoncreds::local_gvt_cred_def_id(), anoncreds::to_unqualified(&cred_def_id).unwrap());
+
+            let cred_def_json_un = anoncreds::to_unqualified(&cred_def_json).unwrap();
+            let cred_def: CredentialDefinitionV1 = ::serde_json::from_str(&cred_def_json_un).unwrap();
+            assert_eq!(anoncreds::local_gvt_cred_def_id(), cred_def.id.0);
+            assert_eq!(anoncreds::gvt_schema_id(), cred_def.schema_id.0);
+
+            let cred_offer_json = anoncreds::issuer_create_credential_offer(setup.wallet_handle, &cred_def_id).unwrap();
+
+            let cred_offer_json_un = anoncreds::to_unqualified(&cred_offer_json).unwrap();
+            let cred_offer: CredentialOffer = ::serde_json::from_str(&cred_offer_json_un).unwrap();
+            assert_eq!(anoncreds::local_gvt_cred_def_id(), cred_offer.cred_def_id.0);
+            assert_eq!(anoncreds::gvt_schema_id(), cred_offer.schema_id.0);
+
+            anoncreds::prover_create_master_secret(setup.wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+            let (cred_req_json, _) = anoncreds::prover_create_credential_req(setup.wallet_handle, DID_MY1_V1, &cred_offer_json, &cred_def_json_un, COMMON_MASTER_SECRET).unwrap();
+
+            let cred_req_json_un = anoncreds::to_unqualified(&cred_req_json).unwrap();
+            let cred_req: CredentialRequest = ::serde_json::from_str(&cred_req_json_un).unwrap();
+            assert_eq!(DID_MY1.to_string(), cred_req.prover_did.0);
+            assert_eq!(anoncreds::local_gvt_cred_def_id(), cred_req.cred_def_id.0);
         }
     }
 }
@@ -3468,8 +3511,8 @@ mod high_cases {
 mod medium_cases {
     use super::*;
     use std::collections::HashSet;
-    use utils::domain::anoncreds::schema::{AttributeNames, MAX_ATTRIBUTES_COUNT};
-    use utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequestPayload};
+    use crate::utils::domain::anoncreds::schema::{AttributeNames, MAX_ATTRIBUTES_COUNT};
+    use crate::utils::domain::anoncreds::proof_request::{AttributeInfo, ProofRequestPayload};
 
     mod issuer_create_schema {
         use super::*;

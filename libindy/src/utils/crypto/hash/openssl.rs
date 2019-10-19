@@ -1,6 +1,6 @@
 extern crate openssl;
 
-use errors::prelude::*;
+use crate::errors::prelude::*;
 use self::openssl::error::ErrorStack;
 use self::openssl::hash::{Hasher, MessageDigest};
 

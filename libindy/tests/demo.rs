@@ -8,19 +8,19 @@ extern crate indyrs as api;
 extern crate indy_sys;
 
 #[cfg(feature = "local_nodes_pool")]
-use utils::callback;
-use utils::constants::{WALLET_CREDENTIALS, PROTOCOL_VERSION};
-use utils::{pool as pool_utils, timeout};
-use utils::domain::anoncreds::credential_definition::CredentialDefinition;
-use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
-use utils::domain::anoncreds::proof::Proof;
-use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
-use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
-use utils::domain::anoncreds::revocation_state::RevocationState;
-use utils::domain::anoncreds::schema::Schema;
+use crate::utils::callback;
+use crate::utils::constants::{WALLET_CREDENTIALS, PROTOCOL_VERSION};
+use crate::utils::{pool as pool_utils, timeout};
+use crate::utils::domain::anoncreds::credential_definition::CredentialDefinition;
+use crate::utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use crate::utils::domain::anoncreds::proof::Proof;
+use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistry;
+use crate::utils::domain::anoncreds::revocation_state::RevocationState;
+use crate::utils::domain::anoncreds::schema::Schema;
 
-use utils::environment;
-use utils::Setup;
+use crate::utils::environment;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 use self::indy_sys::*;

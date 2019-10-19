@@ -6,9 +6,9 @@ inject_indy_dependencies!();
 extern crate indyrs as indy;
 extern crate indyrs as api;
 
-use utils::cache::*;
-use utils::Setup;
-use utils::domain::crypto::did::DidValue;
+use crate::utils::cache::*;
+use crate::utils::Setup;
+use crate::utils::domain::crypto::did::DidValue;
 
 use self::indy::ErrorCode;
 
@@ -19,8 +19,8 @@ mod high_cases {
 
     mod schema_cache {
         use super::*;
-        use utils::domain::anoncreds::schema::{SchemaV1, SchemaId};
-        use utils::constants::*;
+        use crate::utils::domain::anoncreds::schema::{SchemaV1, SchemaId};
+        use crate::utils::constants::*;
         use std::thread::sleep;
 
         #[test]
@@ -231,8 +231,8 @@ mod high_cases {
 
     mod cred_def_cache {
         use super::*;
-        use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
-        use utils::constants::*;
+        use crate::utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+        use crate::utils::constants::*;
         use std::thread::sleep;
 
 

@@ -14,11 +14,11 @@ pub mod cache;
 
 use libc::c_char;
 
-use domain::IndyConfig;
-use errors::prelude::*;
+use crate::domain::IndyConfig;
+use crate::errors::prelude::*;
 
-use utils::validation::Validatable;
-use utils::{ctypes, sequence};
+use crate::utils::validation::Validatable;
+use crate::utils::{ctypes, sequence};
 
 pub type IndyHandle = i32;
 
@@ -284,7 +284,7 @@ pub extern fn indy_set_runtime_config(config: *const c_char) -> ErrorCode {
 
     check_useful_validatable_json!(config, ErrorCode::CommonInvalidParam1, IndyConfig);
 
-    ::commands::indy_set_runtime_config(config);
+    crate::commands::indy_set_runtime_config(config);
 
     let res = ErrorCode::Success;
 

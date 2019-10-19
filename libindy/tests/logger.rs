@@ -5,10 +5,10 @@ inject_indy_dependencies!();
 
 extern crate indyrs as indy;
 extern crate indyrs as api;
-use utils::wallet;
-use utils::test;
-use utils::logger;
-use utils::constants::*;
+use crate::utils::wallet;
+use crate::utils::test;
+use crate::utils::logger;
+use crate::utils::constants::*;
 
 #[test]
 fn indy_set_logger_works() {

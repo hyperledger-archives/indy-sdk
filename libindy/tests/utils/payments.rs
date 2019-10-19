@@ -11,8 +11,8 @@ use std::ffi::CString;
 use super::libc::c_char;
 use std::sync::{Once, Mutex};
 
-use utils::callback;
 use api::{WalletHandle, CommandHandle};
+use crate::utils::callback;
 
 #[macro_export]
 macro_rules! mocked_handler {
