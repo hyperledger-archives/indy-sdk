@@ -1,4 +1,3 @@
-use indy::WalletHandle;
 use indy::did;
 use indy::IndyError;
 use indy::future::Future;
