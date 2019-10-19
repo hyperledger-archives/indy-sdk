@@ -1515,8 +1515,8 @@ def publishingRCtoStable() {
                 echo "Moving ${env_name} RC artifacts to Stable: libindy"
                 publishLibindyCentosFilesRCtoStable(libindyVersion)
 
-                echo "Moving ${env_name} RC artifacts to Stable: libnullapy"
-                publishLibnullapyCentosFilesRCtoStable(libnullpayVersion)
+                echo "Moving ${env_name} RC artifacts to Stable: libnullpay"
+                publishLibnullpayCentosFilesRCtoStable(libnullpayVersion)
 
                 echo "Moving ${env_name} RC artifacts to Stable: libvcx"
                 publishLibvcxCentosFilesRCtoStable(libvcxVersion)
@@ -1536,8 +1536,8 @@ def publishLibindyCentosFilesRCtoStable(version) {
     publishCentosFilesRCtoStable("libindy", version)
 }
 
-def publishLibnullapyCentosFilesRCtoStable(version) {
-    publishCentosFilesRCtoStable("libnullapy", version)
+def publishLibnullpayCentosFilesRCtoStable(version) {
+    publishCentosFilesRCtoStable("libnullpay", version)
 }
 
 def publishLibvcxCentosFilesRCtoStable(version) {

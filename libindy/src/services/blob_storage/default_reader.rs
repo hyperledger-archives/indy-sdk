@@ -1,13 +1,13 @@
 use rust_base58::ToBase58;
 
 use super::{ReadableBlob, Reader, ReaderType};
-use errors::prelude::*;
+use crate::errors::prelude::*;
 
 use serde_json;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
-use utils::crypto::hash::Hash;
+use crate::utils::crypto::hash::Hash;
 
 pub struct DefaultReader {
     file: File,

@@ -214,5 +214,8 @@ namespace Hyperledger.Indy.LedgerApi
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_append_txn_author_agreement_acceptance_to_request(int command_handle, string request_json, string text, string version, string taa_digest, string mechanism, ulong time, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_append_request_endorser(int command_handle, string request_json, string endorser_did, BuildRequestCompletedDelegate cb);
     }
 }

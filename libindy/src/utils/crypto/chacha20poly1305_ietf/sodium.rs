@@ -1,14 +1,14 @@
 extern crate sodiumoxide;
 
-use domain::wallet::KeyDerivationMethod;
-use errors::prelude::*;
+use crate::domain::wallet::KeyDerivationMethod;
+use crate::errors::prelude::*;
 use self::sodiumoxide::crypto::aead::
 chacha20poly1305_ietf;
 use self::sodiumoxide::utils;
 use std::cmp;
 use std::io;
 use std::io::{Read, Write};
-use utils::crypto::pwhash_argon2i13;
+use crate::utils::crypto::pwhash_argon2i13;
 
 pub const KEYBYTES: usize = chacha20poly1305_ietf::KEYBYTES;
 pub const NONCEBYTES: usize = chacha20poly1305_ietf::NONCEBYTES;
@@ -240,7 +240,7 @@ mod tests {
     extern crate rmp_serde;
 
     use super::*;
-    use utils::crypto::randombytes::randombytes;
+    use crate::utils::crypto::randombytes::randombytes;
 
     #[test]
     fn derivation_argon2i_mod_produces_expected_result() {

@@ -1,10 +1,10 @@
-use api::{ErrorCode, CommandHandle, WalletHandle};
-use commands::{Command, CommandExecutor};
-use commands::pairwise::PairwiseCommand;
-use errors::prelude::*;
-use utils::ctypes;
-use utils::validation::Validatable;
-use domain::crypto::did::DidValue;
+use crate::api::{ErrorCode, CommandHandle, WalletHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::pairwise::PairwiseCommand;
+use crate::errors::prelude::*;
+use crate::utils::ctypes;
+use crate::utils::validation::Validatable;
+use crate::domain::crypto::did::DidValue;
 
 use libc::c_char;
 

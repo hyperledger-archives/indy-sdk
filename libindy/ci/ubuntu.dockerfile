@@ -60,4 +60,6 @@ ENV PATH /home/indy/.cargo/bin:$PATH
 # Install clippy to the Rust toolchain
 RUN rustup component add clippy
 
+EXPOSE 8080
+
 WORKDIR /home/indy
