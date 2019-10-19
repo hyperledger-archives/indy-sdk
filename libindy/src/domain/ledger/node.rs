@@ -1,17 +1,18 @@
 use super::constants::NODE;
 
-use utils::validation::Validatable;
+use crate::utils::validation::Validatable;
+use super::super::crypto::did::ShortDidValue;
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct NodeOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub dest: String,
+    pub dest: ShortDidValue,
     pub data: NodeOperationData
 }
 
 impl NodeOperation {
-    pub fn new(dest: String, data: NodeOperationData) -> NodeOperation {
+    pub fn new(dest: ShortDidValue, data: NodeOperationData) -> NodeOperation {
         NodeOperation {
             _type: NODE.to_string(),
             dest,

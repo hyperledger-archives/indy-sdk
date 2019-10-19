@@ -1,35 +1,14 @@
 #[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate named_type_derive;
-
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
-extern crate indyrs as indy;
-extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
-
-#[macro_use]
 mod utils;
 
-use utils::{did, pairwise};
-use utils::constants::*;
-use utils::Setup;
+inject_indy_dependencies!();
+
+extern crate indyrs as indy;
+extern crate indyrs as api;
+
+use crate::utils::{did, pairwise};
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 
@@ -64,6 +43,18 @@ mod high_cases {
 
             let res = pairwise::create_pairwise(setup.wallet_handle, DID, &setup.did, None);
             assert_code!(ErrorCode::WalletItemNotFound, res);
+        }
+
+        #[test]
+        fn indy_create_pairwise_works_for_fully_qualified() {
+            let setup = Setup::did_fully_qualified();
+
+            did::store_their_did_from_parts(setup.wallet_handle, DID_MY1_V1, VERKEY_MY1).unwrap();
+            pairwise::create_pairwise(setup.wallet_handle, DID_MY1_V1, &setup.did, Some(METADATA)).unwrap();
+
+            did::store_their_did_from_parts(setup.wallet_handle, DID, VERKEY).unwrap();
+            pairwise::create_pairwise(setup.wallet_handle, DID, &setup.did, Some(METADATA)).unwrap();
+
         }
     }
 
@@ -176,7 +167,7 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use api::INVALID_WALLET_HANDLE;
+    use crate::api::INVALID_WALLET_HANDLE;
 
 
     mod create_pairwise {

@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RemoteMsg};
+use actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RemoteMsg, HandleAdminMessage, AdminRegisterAgentConnection};
 use actors::router::Router;
 use domain::a2a::*;
 use domain::a2connection::*;
@@ -20,6 +20,8 @@ use utils::to_i8;
 use base64;
 use rmp_serde;
 use serde_json;
+use actors::admin::Admin;
+use domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -77,6 +79,8 @@ pub struct AgentConnection {
     state: AgentConnectionState,
     // Address of router agent
     router: Addr<Router>,
+    // Address of admin agent
+    admin: Addr<Admin>
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -95,7 +99,8 @@ struct AgentConnectionState {
 
 impl AgentConnection {
     pub fn create(config: AgentConnectionConfig,
-                  router: Addr<Router>) -> ResponseFuture<(), Error> {
+                  router: Addr<Router>,
+                  admin: Addr<Admin>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::create >> {:?}", config);
 
         future::ok(())
@@ -117,6 +122,7 @@ impl AgentConnection {
                         messages: HashMap::new(),
                     },
                     router: router.clone(),
+                    admin: admin.clone()
                 };
 
                 let agent_connection = agent_connection.start();
@@ -129,10 +135,17 @@ impl AgentConnection {
                     .send(AddA2ConnRoute(config.agent_pairwise_did.clone(), agent_connection.clone().recipient()))
                     .from_err();
 
+                let agent_pairwise_did = config.agent_pairwise_did.clone();
                 add_route_f
                     .join(add_conn_route_f)
-                    .map(|_| ())
+                    .map(move |_| (admin, agent_pairwise_did, agent_connection))
                     .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
+            })
+            .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
+                admin.send(AdminRegisterAgentConnection(agent_pairwise_did, agent_connection.clone().recipient()))
+                    .from_err()
+                    .map(|_| ())
+                    .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())
             })
             .into_box()
     }
@@ -145,6 +158,7 @@ impl AgentConnection {
                    state: &str,
                    forward_agent_detail: &ForwardAgentDetail,
                    router: Addr<Router>,
+                   admin: Addr<Admin>,
                    agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
         trace!("AgentConnection::restore >> {:?}", wallet_handle);
 
@@ -187,14 +201,31 @@ impl AgentConnection {
                         messages: state.messages,
                     },
                     router: router.clone(),
+                    admin: admin.clone()
                 };
 
                 let agent_connection = agent_connection.start();
 
-                router
+                let add_route_f = router
                     .send(AddA2ARoute(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
                     .from_err()
+                    .map_err(|err: Error| err.context("Can't add A2A route for Agent Connection.").into());
+
+                let add_conn_route_f = router
+                    .send(AddA2ConnRoute(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
+                    .from_err()
+                    .map_err(|err: Error| err.context("Can't add A2AConnection route for Agent Connection.").into());
+
+                add_route_f
+                    .join(add_conn_route_f)
+                    .map(|_| (admin, agent_pairwise_did, agent_connection))
                     .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
+            })
+            .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
+                admin.send(AdminRegisterAgentConnection(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
+                    .from_err()
+                    .map(|_| ())
+                    .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())
             })
             .into_box()
     }
@@ -219,6 +250,7 @@ impl AgentConnection {
                     .into_actor(slf)
             })
             .and_then(|(sender_vk, msg, msgs), slf, _| {
+                debug!("AgentConnection::handle_a2a_msg >> {:?}", msg);
                 match msg {
                     Some(A2AMessage::Version1(msg)) => {
                         match msg {
@@ -1218,7 +1250,7 @@ impl AgentConnection {
                 verkey: self.user_pairwise_verkey.clone(),
                 agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
                 name: self.agent_configs.get("name").cloned(),
-                logo_url: self.agent_configs.get("logo_url").cloned(),
+                logo_url: self.agent_configs.get("logoUrl").cloned(),
                 public_did: Some(self.owner_did.clone()),
             },
             status_code: msg.status_code.clone(),
@@ -1387,6 +1419,39 @@ impl Handler<HandleA2ConnMsg> for AgentConnection {
     fn handle(&mut self, msg: HandleA2ConnMsg, _: &mut Self::Context) -> Self::Result {
         trace!("Handler<HandleA2ConnectionMsg>::handle >> {:?}", msg);
         self.handle_agent2conn_message(msg.0)
+    }
+}
+
+impl Handler<HandleAdminMessage> for AgentConnection {
+    type Result = Result<ResAdminQuery, Error>;
+
+    fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
+        trace!("Agent Connection Handler<HandleAdminMessage>::handle >>");
+        let res = match &self.state.remote_connection_detail {
+            Some(m) => {
+                ResQueryAgentConn {
+                    agent_detail_verkey: m.agent_detail.verkey.clone(),
+                    agent_detail_did: m.agent_detail.did.clone(),
+                    forward_agent_detail_verkey: m.forward_agent_detail.verkey.clone(),
+                    forward_agent_detail_did: m.forward_agent_detail.did.clone(),
+                    forward_agent_detail_endpoint: m.forward_agent_detail.endpoint.clone(),
+                    agent_configs: self.agent_configs.iter().map(|(key, value)|(key.clone(), value.clone())).collect(),
+                    logo: self.agent_configs.get("logoUrl").map_or_else(|| String::from("unknown"), |v| v.clone()),
+                    name: self.agent_configs.get("name").map_or_else(|| String::from("unknown"), |v| v.clone()),
+                }
+            }
+            None => ResQueryAgentConn {
+                agent_detail_verkey: "unknown".into(),
+                agent_detail_did: "unknown".into(),
+                forward_agent_detail_verkey: "unknown".into(),
+                forward_agent_detail_did: "unknown".into(),
+                forward_agent_detail_endpoint: "unknown".into(),
+                agent_configs: self.agent_configs.iter().map(|(key, value)|(key.clone(), value.clone())).collect(),
+                logo: self.agent_configs.get("logoUrl").map_or_else(|| String::from("unknown"), |v| v.clone()),
+                name: self.agent_configs.get("name").map_or_else(|| String::from("unknown"), |v| v.clone()),
+            }
+        };
+        Ok(ResAdminQuery::AgentConn(res))
     }
 }
 

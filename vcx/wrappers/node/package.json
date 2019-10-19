@@ -7,7 +7,12 @@
         "build": "dist",
         "lib": "src"
     },
-    "author": "evernym",
+    "contributors": [
+        {
+            "name": "Hyperledger Indy Contributors",
+            "email": "hyperledger-indy@lists.hyperledger.org"
+        }
+    ],
     "bugs": {
         "url": "https://github.com/evernym/vcx/issues"
     },
@@ -20,7 +25,7 @@
         "url": "git+https://github.com/evernym/vcx.git",
         "type": "git"
     },
-    "version": "0.4.0",
+    "version": "0.4.2",
     "dependencies": {
         "@types/ffi": "0.0.19",
         "@types/node": "^8.0.47",
@@ -36,6 +41,8 @@
     "scripts": {
         "demo:alice": "babel-node demo/alice.js",
         "demo:faber": "babel-node demo/faber.js",
+        "demo:alice:pg": "babel-node demo/alice.js --postgres",
+        "demo:faber:pg": "babel-node demo/faber.js --postgres",
         "demo:alice:sign": "babel-node demo/alice-signature.js",
         "demo:faber:verify": "babel-node demo/faber-verify-signature.js",
         "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",

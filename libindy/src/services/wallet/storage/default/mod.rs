@@ -8,9 +8,9 @@ use std::rc::Rc;
 use rusqlite;
 use serde_json;
 
-use errors::prelude::*;
-use services::wallet::language;
-use utils::environment;
+use crate::errors::prelude::*;
+use crate::services::wallet::language;
+use crate::utils::environment;
 
 use super::{EncryptedValue, StorageIterator, StorageRecord, Tag, TagName, WalletStorage, WalletStorageType};
 use super::super::{RecordOptions, SearchOptions};
@@ -759,7 +759,7 @@ impl From<rusqlite::Error> for IndyError {
 
 #[cfg(test)]
 mod tests {
-    use utils::test;
+    use crate::utils::test;
 
     use super::*;
     use super::super::Tag;

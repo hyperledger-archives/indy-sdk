@@ -859,6 +859,27 @@
     return err;
 }
 
+- (NSError *)toUnqualified:(NSString *)entity
+                       res:(NSString **)res {
+    __block NSError *err = nil;
+    __block NSString *outRes;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds toUnqualified:entity
+                      completion:^(NSError *error, NSString *result) {
+                          err = error;
+                          outRes = result;
+                          [completionExpectation fulfill];
+                      }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (res) {*res = outRes;}
+    return err;
+}
+
 - (NSError *)generateNonce:(NSString **)nonce {
     __block NSError *err = nil;
     __block NSString *outNonce;

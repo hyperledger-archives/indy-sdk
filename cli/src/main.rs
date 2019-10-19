@@ -25,10 +25,10 @@ mod command_executor;
 mod commands;
 mod libindy;
 
-use command_executor::CommandExecutor;
+use crate::command_executor::CommandExecutor;
 
-use commands::{common, did, ledger, pool, wallet, payment_address};
-use utils::history;
+use crate::commands::{common, did, ledger, pool, wallet, payment_address};
+use crate::utils::history;
 
 use linefeed::{Reader, ReadResult, Terminal, Signal};
 use linefeed::complete::{Completer, Completion};
@@ -133,6 +133,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(did::use_command::new())
         .add_command(did::rotate_key_command::new())
         .add_command(did::list_command::new())
+        .add_command(did::qualify_command::new())
         .finalize_group()
         .add_group(pool::group::new())
         .add_command(pool::create_command::new())

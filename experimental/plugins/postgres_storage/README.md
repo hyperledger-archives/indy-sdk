@@ -146,14 +146,15 @@ pub fn load_storage_library(_stg_type: &str, library: &str, initializer: &str, c
 
 This module contains some stand-alone unit tests, however there are also capabilities to run some of the general indy-sdk unit tests using the postgres plug-in (in both database-per-wallet and multi-wallet modes).
 
-The code is on this branch, as it has not been accepted into the indy-sdk:  https://github.com/ianco/indy-sdk/tree/plugin_storage_tests
+The code is on this branch, as it has not been accepted into the indy-sdk:  https://github.com/ianco/indy-sdk/tree/plugin_storage_tests/experimental/plugins/postgres_storage
 
 To run the tests:
 
 ```bash
 git clone https://github.com/ianco/indy-sdk.git
+cd indy-sdk
 git checkout plugin_storage_tests
-cd indy-sdk/libindy
+cd libindy
 ```
 
 ... or merge the code from this branch into a branch of your own fork of the indy-sdk repo.

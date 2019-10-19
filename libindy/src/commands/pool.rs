@@ -2,11 +2,11 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use domain::ledger::request::ProtocolVersion;
-use domain::pool::{PoolConfig, PoolOpenConfig};
-use errors::prelude::*;
-use services::pool::PoolService;
-use api::{PoolHandle, CommandHandle};
+use crate::domain::ledger::request::ProtocolVersion;
+use crate::domain::pool::{PoolConfig, PoolOpenConfig};
+use crate::errors::prelude::*;
+use crate::services::pool::PoolService;
+use crate::api::{PoolHandle, CommandHandle};
 
 pub enum PoolCommand {
     Create(
@@ -60,15 +60,15 @@ impl PoolCommandExecutor {
     pub fn execute(&self, command: PoolCommand) {
         match command {
             PoolCommand::Create(name, config, cb) => {
-                info!(target: "pool_command_executor", "Create command received");
+                debug!(target: "pool_command_executor", "Create command received");
                 cb(self.create(&name, config));
             }
             PoolCommand::Delete(name, cb) => {
-                info!(target: "pool_command_executor", "Delete command received");
+                debug!(target: "pool_command_executor", "Delete command received");
                 cb(self.delete(&name));
             }
             PoolCommand::Open(name, config, cb) => {
-                info!(target: "pool_command_executor", "Open command received");
+                debug!(target: "pool_command_executor", "Open command received");
                 self.open(&name, config, cb);
             }
             PoolCommand::OpenAck(handle, pool_id, result) => {
@@ -88,15 +88,15 @@ impl PoolCommandExecutor {
                 }
             }
             PoolCommand::List(cb) => {
-                info!(target: "pool_command_executor", "List command received");
+                debug!(target: "pool_command_executor", "List command received");
                 cb(self.list());
             }
             PoolCommand::Close(handle, cb) => {
-                info!(target: "pool_command_executor", "Close command received");
+                debug!(target: "pool_command_executor", "Close command received");
                 self.close(handle, cb);
             }
             PoolCommand::CloseAck(handle, result) => {
-                info!(target: "pool_command_executor", "CloseAck command received");
+                debug!(target: "pool_command_executor", "CloseAck command received");
                 match self.close_callbacks.try_borrow_mut() {
                     Ok(mut cbs) => {
                         match cbs.remove(&handle) {
@@ -110,11 +110,11 @@ impl PoolCommandExecutor {
                 }
             }
             PoolCommand::Refresh(handle, cb) => {
-                info!(target: "pool_command_executor", "Refresh command received");
+                debug!(target: "pool_command_executor", "Refresh command received");
                 self.refresh(handle, cb);
             }
             PoolCommand::RefreshAck(handle, result) => {
-                info!(target: "pool_command_executor", "RefreshAck command received");
+                debug!(target: "pool_command_executor", "RefreshAck command received");
                 match self.refresh_callbacks.try_borrow_mut() {
                     Ok(mut cbs) => {
                         match cbs.remove(&handle) {
@@ -129,7 +129,7 @@ impl PoolCommandExecutor {
                 }
             }
             PoolCommand::SetProtocolVersion(protocol_version, cb) => {
-                info!(target: "pool_command_executor", "SetProtocolVersion command received");
+                debug!(target: "pool_command_executor", "SetProtocolVersion command received");
                 cb(self.set_protocol_version(protocol_version));
             }
         };

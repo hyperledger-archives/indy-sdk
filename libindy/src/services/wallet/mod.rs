@@ -9,20 +9,20 @@ use named_type::NamedType;
 use serde_json;
 use serde_json::Value as SValue;
 
-use api::wallet::*;
+use crate::api::wallet::*;
 
-use domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, Tags};
-use errors::prelude::*;
-pub use services::wallet::encryption::KeyDerivationData;
-use utils::crypto::chacha20poly1305_ietf;
-use utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
+use crate::domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, Tags};
+use crate::errors::prelude::*;
+pub use crate::services::wallet::encryption::KeyDerivationData;
+use crate::utils::crypto::chacha20poly1305_ietf;
+use crate::utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
 
 use self::export_import::{export_continue, finish_import, preparse_file_to_import};
 use self::storage::{WalletStorage, WalletStorageType};
 use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Keys, Wallet};
-use api::{WalletHandle, next_wallet_handle};
+use crate::api::{WalletHandle, next_wallet_handle};
 
 mod storage;
 mod encryption;
@@ -254,14 +254,17 @@ impl WalletService {
         }
     }
 
+    pub fn add_indy_record<T>(&self, wallet_handle: WalletHandle, name: &str, value: &str, tags: &Tags)
+                              -> IndyResult<()> where T: NamedType {
+        self.add_record(wallet_handle, &self.add_prefix(T::short_type_name()), name, value,tags)
+    }
+
     pub fn add_indy_object<T>(&self, wallet_handle: WalletHandle, name: &str, object: &T, tags: &Tags)
                               -> IndyResult<String> where T: ::serde::Serialize + Sized + NamedType {
-        let type_ = T::short_type_name();
-
         let object_json = serde_json::to_string(object)
-            .to_indy(IndyErrorKind::InvalidState, format!("Cannot serialize {:?}", type_))?;
+            .to_indy(IndyErrorKind::InvalidState, format!("Cannot serialize {:?}", T::short_type_name()))?;
 
-        self.add_record(wallet_handle, &self.add_prefix(type_), name, &object_json, tags)?;
+        self.add_indy_record::<T>(wallet_handle, name, &object_json, tags)?;
         Ok(object_json)
     }
 
@@ -743,12 +746,12 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    use api::INVALID_WALLET_HANDLE;
+    use crate::api::INVALID_WALLET_HANDLE;
 
-    use domain::wallet::KeyDerivationMethod;
-    use utils::environment;
-    use utils::inmem_wallet::InmemWallet;
-    use utils::test;
+    use crate::domain::wallet::KeyDerivationMethod;
+    use crate::utils::environment;
+    use crate::utils::inmem_wallet::InmemWallet;
+    use crate::utils::test;
 
     use super::*;
 

@@ -12,7 +12,7 @@ use messages::get_message::{Message, MessagePayload};
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
-use utils::libindy::signus::create_and_store_my_did;
+use utils::libindy::signus::create_my_did;
 use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
@@ -381,7 +381,9 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
 pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     trace!("create_connection >>> source_id: {}", source_id);
 
-    let (pw_did, pw_verkey) = create_and_store_my_did(None)?;
+    let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
+
+    let (pw_did, pw_verkey) = create_my_did(None, method_name.as_ref().map(String::as_str))?;
 
     debug!("did: {} verkey: {}, source id: {}", pw_did, pw_verkey, source_id);
 
@@ -539,8 +541,8 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
 
     CONNECTION_MAP.get_mut(handle, |t| {
         debug!("establish connection {}", t.get_source_id());
-        t.create_agent_pairwise()?;
         t.update_agent_profile(&options_obj)?;
+        t.create_agent_pairwise()?;
         t.connect(&options_obj)
     })
 }

@@ -21,6 +21,9 @@ version you can check migration guides history:
     * [Payment API](#payment-api)
     * [Anoncreds API](#anoncreds-api)
     * [Ledger API](#ledger-api)
+* [Libindy 1.11.0 to 1.11.1 migration](#libindy-1110-to-1111-migration-guide)
+    * [Ledger API 1.11.1](#ledger-api-1111)
+    * [Anoncreds API 1.11.1](#ledger-api-1111)
 
 ## Notes
 
@@ -169,7 +172,20 @@ indy_build_get_payment_sources_request(command_handle: CommandHandle,
           <b>DEPRECATED</b>
       </td>  
     </tr>
-    <tr>
+    <tr>## Notes
+
+Migration information is organized in tables, there are mappings for each Libindy API part of how older version functionality maps to a newer one.
+Functions from older version are listed in the left column, and the equivalent newer version function is placed in the right column:
+
+* If some function had been added, the word 'NEW' would be placed in the left column.
+* If some function had been deleted, the word 'DELETED' would be placed in the right column.
+* If some function had been deprecated, the word 'DEPRECATED' would be placed in the right column.
+* If some function had been changed, the current format would be placed in the right column.
+* If some function had not been changed, the symbol '=' would be placed in the right column.
+* To get more details about current format of a function click on the description above it.
+* Bellow are signatures of functions in Libindy C API.
+  The params of ```cb``` (except command_handle and err) will be result values of the similar function in any Libindy wrapper.
+
       <th colspan="2">
           <a href="https://github.com/hyperledger/indy-sdk/blob/v1.11.0/libindy/src/api/payments.rs#L729">
               Parses response for Indy request for getting sources list.
@@ -246,3 +262,79 @@ It was done cause too much time precision can lead to privacy risk.
 It allows writing transactions to the ledger with preserving an original author but by different Endorser.
 An example flow can be found [here](../configuration.md)
 An example test can be found here: `indy-sdk/libindy/tests/ledger.rs/indy_send_request_by_endorser_works`
+
+## Libindy 1.11.0 to 1.11.1 migration Guide
+
+### Ledger API 1.11.1
+
+* Extended `config` parameter of `indy_open_pool_ledger` function to accept `number_read_nodes` value. 
+This value set the number of nodes to send read requests.
+
+### Anoncreds API 1.11.1
+
+The main idea of changes performed in Anoncreds API is to provide a way to rotate the key of a Credential Definition stored into the wallet.
+
+**WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+<table>
+    <tr>  
+      <th>v1.11.0 - Anoncreds API</th>
+      <th>v1.11.1 - Anoncreds API</th>
+    </tr>
+    <tr>
+      <th colspan="2">
+          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.11.1/libindy/src/api/anoncreds.rs#L206">
+              Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+          </a>
+      </th>
+    <tr>
+    <tr>
+      <td>
+          <b>NEW</b>
+      </td>
+      <td>
+          <pre>
+indy_issuer_rotate_credential_def_start(command_handle: i32,
+                                        wallet_handle: WalletHandle,
+                                        cred_def_id: *const c_char,
+                                        config_json: *const c_char,
+                                           cb: Option<extern fn(xcommand_handle: i32,
+                                                                err: ErrorCode, 
+                                                                cred_def_json: *const c_char)>)
+          </pre>
+      </td>
+    </tr>
+    <tr>
+      <th colspan="2">
+          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.11.1/libindy/src/api/anoncreds.rs#L270">
+              Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+          </a>
+      </th>
+    <tr>
+    <tr>
+      <td>
+          <b>NEW</b>
+      </td>
+      <td>
+          <pre>
+indy_issuer_rotate_credential_def_apply(command_handle: i32,
+                                        wallet_handle: WalletHandle,
+                                        cred_def_id: *const c_char,
+                                        cb: Option<extern fn(xcommand_handle: i32,
+                                                             err: ErrorCode)>)
+          </pre>
+      </td>
+    </tr>
+</table> 
+
+#### Workflow
+```
+cred_def_id, cred_def_json = indy_issuer_create_and_store_credential_def(...)
+indy_sign_and_submit_request(cred_def_json)
+...
+...
+temp_cred_def_json = indy_issuer_rotate_credential_def_start(cred_def_id)
+indy_sign_and_submit_request(temp_cred_def_json)
+indy_issuer_rotate_credential_def_apply(cred_def_id)
+
+```

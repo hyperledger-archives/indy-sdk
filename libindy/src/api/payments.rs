@@ -1,11 +1,13 @@
 use libc::c_char;
-use api::{ErrorCode, CommandHandle, WalletHandle};
-use commands::{Command, CommandExecutor};
-use commands::payments::PaymentsCommand;
-use services::payments::PaymentsMethodCBs;
-use errors::prelude::*;
-use utils::ctypes;
-use services::payments::{RequesterInfo, Fees};
+use crate::api::{ErrorCode, CommandHandle, WalletHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::payments::PaymentsCommand;
+use crate::services::payments::PaymentsMethodCBs;
+use crate::errors::prelude::*;
+use crate::utils::ctypes;
+use crate::services::payments::{RequesterInfo, Fees};
+use crate::domain::crypto::did::DidValue;
+use crate::utils::validation::Validatable;
 
 /// Create the payment address for this payment method.
 ///
@@ -583,7 +585,7 @@ pub extern fn indy_add_request_fees(command_handle: CommandHandle,
                                                          payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_add_request_fees: >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam6);
@@ -685,7 +687,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
                                                                           get_sources_txn_json: *const c_char,
                                                                           payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_payment_sources_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -804,7 +806,7 @@ pub extern fn indy_build_payment_req(command_handle: CommandHandle,
                                                           payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_payment_req: >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, inputs_json, outputs_json, extra);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam6);
@@ -895,7 +897,9 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
 /// text and version - (optional) raw data about TAA from ledger.
 ///     These parameters should be passed together.
 ///     These parameters are required if taa_digest parameter is omitted.
-/// taa_digest - (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// taa_digest - (optional) digest on text and version.
+///     Digest is sha256 hash calculated on concatenated strings: version || text.
+///     This parameter is required if text and version parameters are omitted.
 /// mechanism - mechanism how user has accepted the TAA
 /// time - UTC timestamp when user has accepted the TAA
 /// cb: Callback that takes command result as parameter.
@@ -978,7 +982,7 @@ pub extern fn indy_build_mint_req(command_handle: CommandHandle,
                                                        mint_req_json: *const c_char,
                                                        payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_mint_req: >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -1034,7 +1038,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: CommandHandle,
                                                                err: ErrorCode,
                                                                set_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_set_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(fees_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -1077,7 +1081,7 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: CommandHandle,
                                                                err: ErrorCode,
                                                                get_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1163,7 +1167,7 @@ pub extern fn indy_build_verify_payment_req(command_handle: CommandHandle,
                                                                  verify_txn_json: *const c_char,
                                                                  payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_verify_payment_req: >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(receipt, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 

@@ -1,38 +1,14 @@
 #[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate log;
-
-#[macro_use]
-extern crate named_type_derive;
-
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
-extern crate indyrs as indy;
-extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
-
-#[macro_use]
 mod utils;
 
-use utils::crypto;
-use utils::constants::*;
-use utils::Setup;
+inject_indy_dependencies!();
+
+extern crate indyrs as indy;
+extern crate indyrs as api;
+
+use crate::utils::crypto;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 
@@ -355,8 +331,8 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use utils::did;
-    use api::INVALID_WALLET_HANDLE;
+    use crate::utils::did;
+    use crate::api::INVALID_WALLET_HANDLE;
 
     mod create_key {
         use super::*;
@@ -627,7 +603,7 @@ mod load {
     use std::thread;
     use std::time::{Duration, SystemTime};
 
-    use utils::{wallet, did};
+    use crate::utils::{wallet, did};
 
     const AGENT_CNT: usize = 10;
     const DATA_SZ: usize = 10 * 1024;

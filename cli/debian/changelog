@@ -1,6 +1,16 @@
-indy-cli (1.11.0) unstable; urgency=medium
+indy-cli (1.12.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.12.0
+* added `qualify` command to `did` to qualify did for some namespace.
+
+## 1.11.1
+* Supported endorsing of transactions:
+    * added `endorser` parameter into `nym`, `attrib`, `ledger`, `cred def` command to set endorser for transaction.
+    * added `ledger endorse` command to endorse a transaction.
+* Added optional `number-read-nodes` parameter into `pool connect` to set a number of nodes to send read requests.
+* Bugfixes
 
 ## 1.11.0
 * Added new `payment-address sign/verify` commands to sign/verify a message with a payment address.

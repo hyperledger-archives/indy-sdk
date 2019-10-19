@@ -855,6 +855,10 @@ fn _prover_close_credentials_search(command_handle: CommandHandle, search_handle
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit to use unqualified identifiers for restrictions
+///             - "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 ///
 /// where
@@ -947,6 +951,10 @@ fn _prover_get_credentials_for_proof_req(command_handle: CommandHandle, wallet_h
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit to use unqualified identifiers for restrictions
+///             - "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 /// * `extra_query_json`: (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
 ///     {
@@ -1100,6 +1108,10 @@ fn _prover_close_credentials_search_for_proof_req(command_handle: CommandHandle,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit to use unqualified identifiers for restrictions
+///             - "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 /// * `requested_credentials_json`: either a credential or self-attested attribute for each requested attribute
 ///     {
@@ -1226,6 +1238,9 @@ fn _prover_create_proof(command_handle: CommandHandle, wallet_handle: WalletHand
 /// Verifies a proof (of multiple credential).
 /// All required schemas, public keys and revocation registries must be provided.
 ///
+/// IMPORTANT: You must use *_id's (`schema_id`, `cred_def_id`, `rev_reg_id`) listed in `proof[identifiers]`
+/// as the keys for corresponding `schemas_json`, `credential_defs_json`, `rev_reg_defs_json`, `rev_regs_json` objects.
+///
 /// # Arguments
 /// * `wallet_handle`: wallet handle (created by Wallet::open_wallet).
 /// * `proof_request_json`: proof request json
@@ -1245,6 +1260,10 @@ fn _prover_create_proof(command_handle: CommandHandle, wallet_handle: WalletHand
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
+///         "ver": Optional<str>  - proof request version:
+///             - omit to use unqualified identifiers for restrictions
+///             - "1.0" to use unqualified identifiers for restrictions
+///             - "2.0" to use fully qualified identifiers for restrictions
 ///     }
 /// * `proof_json`: created for request proof json
 ///     {
@@ -1422,5 +1441,43 @@ pub fn generate_nonce() -> Box<dyn Future<Item=String, Error=IndyError>> {
 fn _generate_nonce(command_handle: CommandHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
     ErrorCode::from(unsafe {
         anoncreds::indy_generate_nonce(command_handle, cb)
+    })
+}
+
+/// Get unqualified form (short form without method) of a fully qualified entity like DID.
+///
+/// This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+///     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+///     Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+///     another case when casting to unqualified form needed
+///
+/// # Arguments
+/// * `entity`: target entity to disqualify. Can be one of:
+///             Did
+///             SchemaId
+///             CredentialDefinitionId
+///             RevocationRegistryId
+///             Schema
+///             CredentialDefinition
+///             RevocationRegistryDefinition
+///             CredentialOffer
+///             CredentialRequest
+///             ProofRequest
+///
+/// # Returns
+/// * `res`: entity either in unqualified form or original if casting isn't possible
+pub fn to_unqualified(entity: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+    let err = _to_unqualified(command_handle, entity, cb);
+
+    ResultHandler::str(command_handle, err, receiver)
+}
+
+fn _to_unqualified(command_handle: CommandHandle, entity: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    let entity = c_str!(entity);
+
+    ErrorCode::from(unsafe {
+        anoncreds::indy_to_unqualified(command_handle, entity.as_ptr(), cb)
     })
 }

@@ -1,5 +1,51 @@
 # Changelog
 
+## 1.12.0 - 2019-10-08
+* Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
+    * general format of fully-qualified identifier is `<prefix>:<method>:<value>`.
+    * extended `did_info` parameter of `indy_create_and_store_my_did` function to accepts optional `method_name` filed. This field should be used to create fully qualified DID.
+    * all functions can work with fully-qualified identifiers (new way) as well as with unqualified.
+    * added a new function -- `indy_to_unqualified` -- that gets unqualified form of a fully qualified identifier.
+    * proof requests now support versioning (`ver` field) -- now it specifies whether restrictions are full qualified or not.
+         - omit or set "1.0" to use unqualified identifiers.
+         - set "2.0" to use fully qualified identifiers.
+        
+        The same format of identifiers will be used in generated proof and must be used for proof verification. 
+        
+    * added a new function -- `indy_qualify_did` -- that updates DID stored in the wallet to make it fully qualified, or to do other DID maintenance.
+        * added correspondent `did qualify` command to Indy-CLI.
+    * all functions in Ledger API can accept fully-qualified identifiers but always return results in an unqualified form.
+    * extended VCX provisioning config to accept optional `did_method` filed. This field should be used to create fully qualified DIDs.
+* Migrated Android onto the API v21 and NDK 20.
+* Supported MacOS builds for Indy CLI.
+* The default value of `Protocol Version` was changed on 2. Henceforth `indy_set_protocol_version` function should be called if you are going to work with Indy-Node 1.3 and less. 
+* Bugfixes
+    * Fixed `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
+    * Fixed `attr::{}::value` verification (IS-1380, thanks @nrempel for reporting the vulnerability)
+    * others minor bugfixes
+
+## 1.11.1 - 2019-08-30
+* Supported endorsing of transactions in Indy-CLI and Libvcx.
+    * CLI:
+        * added `endorser` parameter into `nym`, `attrib`, `ledger`, `cred def` commands to set endorser for transaction.
+        * added `ledger endorse` command to endorse a transaction to the ledger.
+    * Libvcx:
+        * added `vcx_*_prepare_for_endorser` - functions for `schema` and `credentialdef` which build transaction and crete internal object in differed state.
+        * added `vcx_*_update_state` - functions to update state of `schema`/`credentialdef` internal object (checks if it is published on the ledger).
+        * added  `vcx_*_get_state` - functions to get state of `schema`/`credentialdef` internal object.
+        * added `vcx_endorse_transaction` - function to endorse a transaction to the ledger.
+* Added new functions to Anoncreds API to rotate credential definition:
+    `indy_issuer_rotate_credential_def_start` - to generate temporary keys for an existing Credential Definition.
+    `indy_issuer_rotate_credential_def_apply` - to apply temporary keys as the main for an existing Credential Definition in the wallet.
+* Added sign/verify with payment address functions to Libvcx.
+* Supported state proof verification for GET_TXN request. 
+* Extended `config` parameter of `indy_open_pool_ledger` function to accept `number_read_nodes` value. This value set the number of nodes to send read requests.
+* Extended Libvcx initialization config to accept pool configuration.
+* Supported new platforms Ubuntu 18.04 and Centos:
+    * Updated CI pipeline to run tests.
+    * Updated CD pipeline to build and to publish artifacts.
+* Bugfixes
+
 ## 1.11.0 - 2019-08-2
 * Updated `indy_append_txn_author_agreement_acceptance_to_request` Libindy function to discard the time portion of `acceptance time` on appending TAA metadata into request. 
 It was done cause too much time precision can lead to privacy risk.
@@ -21,7 +67,7 @@ Old `indy_build_get_payment_sources_request` and `indy_parse_get_payment_sources
 
     Added correspondent `payment-address sign/verify` commands to Indy CLI.
     
-* Added new *EXPEREMENTAL* functions to get requirements and price for a ledger request.
+* Added new *EXPERIMENTAL* functions to get requirements and price for a ledger request.
     * Libindy `indy_get_request_info` - returns request requirements (with minimal price) correspondent to specific auth rule in case the requester can perform this action.
     * Libvcx `vcx_get_request_price` - returns request minimal request price for performing an action in case the requester can do it.
 * Added a set of new Libvcx APIs around credentials and proofs that work with messages that should be exchanged without handling the transport of those messages.

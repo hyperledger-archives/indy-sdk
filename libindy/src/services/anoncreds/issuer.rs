@@ -13,13 +13,14 @@ use ursa::cl::{
 };
 use ursa::cl::issuer::Issuer as CryptoIssuer;
 
-use domain::anoncreds::schema::AttributeNames;
-use domain::anoncreds::credential::CredentialValues;
-use domain::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1 as CredentialDefinition};
-use domain::anoncreds::credential_request::CredentialRequest;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
-use errors::prelude::*;
-use services::anoncreds::helpers::*;
+use crate::domain::anoncreds::schema::AttributeNames;
+use crate::domain::anoncreds::credential::CredentialValues;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1 as CredentialDefinition};
+use crate::domain::anoncreds::credential_request::CredentialRequest;
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
+use crate::domain::crypto::did::DidValue;
+use crate::errors::prelude::*;
+use crate::services::anoncreds::helpers::*;
 
 pub struct Issuer {}
 
@@ -55,10 +56,10 @@ impl Issuer {
                                    cred_def: &CredentialDefinition,
                                    max_cred_num: u32,
                                    issuance_by_default: bool,
-                                   issuer_did: &str) -> IndyResult<(RevocationRegistryDefinitionValuePublicKeys,
-                                                                    RevocationKeyPrivate,
-                                                                    RevocationRegistry,
-                                                                    RevocationTailsGenerator)> {
+                                   issuer_did: &DidValue) -> IndyResult<(RevocationRegistryDefinitionValuePublicKeys,
+                                                                         RevocationKeyPrivate,
+                                                                         RevocationRegistry,
+                                                                         RevocationTailsGenerator)> {
         trace!("new_revocation_registry >>> pub_key: {:?}, max_cred_num: {:?}, issuance_by_default: {:?}, issuer_did: {:?}",
                cred_def, max_cred_num, issuance_by_default, issuer_did);
 
@@ -114,7 +115,7 @@ impl Issuer {
                     let rev_tails_accessor = rev_tails_accessor
                         .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "RevocationTailsAccessor not found"))?;
 
-                    CryptoIssuer::sign_credential_with_revoc(&cred_request.prover_did,
+                    CryptoIssuer::sign_credential_with_revoc(&cred_request.prover_did.0,
                                                              &cred_request.blinded_ms,
                                                              &cred_request.blinded_ms_correctness_proof,
                                                              cred_issuance_blinding_nonce,
@@ -128,10 +129,10 @@ impl Issuer {
                                                              rev_reg,
                                                              rev_key_priv,
                                                              rev_tails_accessor)?
-                },
+                }
                 None => {
                     let (signature, correctness_proof) =
-                        CryptoIssuer::sign_credential(&cred_request.prover_did,
+                        CryptoIssuer::sign_credential(&cred_request.prover_did.0,
                                                       &cred_request.blinded_ms,
                                                       &cred_request.blinded_ms_correctness_proof,
                                                       cred_issuance_blinding_nonce,

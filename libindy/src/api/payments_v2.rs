@@ -1,12 +1,14 @@
-use api::CommandHandle;
-use api::WalletHandle;
-use api::ErrorCode;
+use crate::api::CommandHandle;
+use crate::api::WalletHandle;
+use crate::api::ErrorCode;
 use libc::c_char;
-use commands::CommandExecutor;
-use commands::Command;
-use commands::payments::PaymentsCommand;
-use utils::ctypes;
-use errors::prelude::*;
+use crate::commands::CommandExecutor;
+use crate::commands::Command;
+use crate::commands::payments::PaymentsCommand;
+use crate::utils::ctypes;
+use crate::errors::prelude::*;
+use crate::domain::crypto::did::DidValue;
+use crate::utils::validation::Validatable;
 
 /// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
@@ -32,7 +34,7 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
                                                                                     get_sources_txn_json: *const c_char,
                                                                                     payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_payment_sources_with_from_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 

@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use utils::crypto::{hmacsha256, chacha20poly1305_ietf};
+use crate::utils::crypto::{hmacsha256, chacha20poly1305_ietf};
+use crate::utils::wql::Query;
 
-use errors::prelude::*;
+use crate::errors::prelude::*;
 
 use zeroize::Zeroize;
 
@@ -11,7 +12,6 @@ use super::storage;
 use super::iterator::WalletIterator;
 use super::encryption::*;
 use super::query_encryption::encrypt_query;
-use super::language;
 use super::WalletRecord;
 
 #[derive(Serialize, Deserialize)]
@@ -52,7 +52,7 @@ impl Keys {
         let mut decrypted = decrypt_merged(bytes, master_key)?;
 
         let keys: Keys = rmp_serde::from_slice(&decrypted)
-                .to_indy(IndyErrorKind::InvalidState, "Invalid bytes for Key")?;
+            .to_indy(IndyErrorKind::InvalidState, "Invalid bytes for Key")?;
 
         decrypted.zeroize();
         Ok(keys)
@@ -189,7 +189,9 @@ impl Wallet {
     }
 
     pub fn search<'a>(&'a self, type_: &str, query: &str, options: Option<&str>) -> IndyResult<WalletIterator> {
-        let parsed_query = language::parse_from_json(query)?;
+        let parsed_query: Query = ::serde_json::from_str(query)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::WalletQueryError, err))?;
+
         let encrypted_query = encrypt_query(parsed_query, &self.keys)?;
         let encrypted_type_ = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let storage_iterator = self.storage.search(&encrypted_type_, &encrypted_query, options)?;
@@ -220,13 +222,13 @@ mod tests {
     use std::rc::Rc;
     use std::collections::HashMap;
 
-    use domain::wallet::{Metadata, MetadataArgon};
-    use services::wallet::encryption;
-    use services::wallet::wallet::Wallet;
-    use services::wallet::storage::WalletStorageType;
-    use services::wallet::storage::default::SQLiteStorageType;
-    use services::wallet::language::*;
-    use utils::test;
+    use crate::domain::wallet::{Metadata, MetadataArgon};
+    use crate::services::wallet::encryption;
+    use crate::services::wallet::wallet::Wallet;
+    use crate::services::wallet::storage::WalletStorageType;
+    use crate::services::wallet::storage::default::SQLiteStorageType;
+    use crate::services::wallet::language::*;
+    use crate::utils::test;
 
     macro_rules! jsonstr {
         ($($x:tt)+) => {
@@ -556,7 +558,7 @@ mod tests {
                 }
             });
 
-            let query = language::parse_from_json(&query).unwrap();
+            let query = serde_json::from_str(&query).unwrap();
             let encrypted_query = encrypt_query(query, &Keys::new()).unwrap();
 
             assert_match!(Operator::And(_), encrypted_query);
@@ -1868,7 +1870,7 @@ mod tests {
         {
             let mut wallet = _wallet("wallet_search_works_for_nested");
             wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
-    
+
             let query = jsonstr!({
                 "$or": [
                         {"foo": "bar"},
@@ -1887,9 +1889,9 @@ mod tests {
                         }
                 ]
             });
-    
+
             let mut iterator = wallet.search(_type1(), &query, Some(&_search_options(true, false, false, true, false))).unwrap();
-    
+
             let expected_records = vec![
                 WalletRecord {
                     type_: None,
@@ -1898,10 +1900,10 @@ mod tests {
                     tags: None,
                 },
             ];
-    
+
             assert_eq!(_fetch_all(&mut iterator), expected_records);
             assert!(iterator.get_total_count().unwrap().is_none());
-        
+
             wallet.close().unwrap();
         }
         test::cleanup_wallet("wallet_search_works_for_nested");
@@ -1943,9 +1945,9 @@ mod tests {
         jsonmap!({"tag1": "tag_value_1"})
     }
 
-//    fn _wallet_id() -> &'static str {
-//        "w1"
-//    }
+    //    fn _wallet_id() -> &'static str {
+    //        "w1"
+    //    }
 
     fn _wallet(name: &str) -> Wallet {
         let storage_type = SQLiteStorageType::new();

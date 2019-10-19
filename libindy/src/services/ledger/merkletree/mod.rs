@@ -4,8 +4,8 @@ pub mod merkletree;
 
 use self::tree::*;
 use self::merkletree::*;
-use errors::prelude::*;
-use utils::crypto::hash::Hash;
+use crate::errors::prelude::*;
+use crate::utils::crypto::hash::Hash;
 
 impl MerkleTree {
     fn count_bits(v: usize) -> usize {

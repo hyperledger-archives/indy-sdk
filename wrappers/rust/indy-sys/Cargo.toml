@@ -1,8 +1,8 @@
 [package]
 name = "indy-sys"
 description = "FFI bindings to Libindy C API"
-version = "1.11.0"
-authors = ["Mike Lodder <redmike7@gmail.com>"]
+version = "1.12.0"
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 build = "build.rs"
 links = "indy"
 license = "MIT/Apache-2.0"

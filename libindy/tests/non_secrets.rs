@@ -1,36 +1,15 @@
 #[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate named_type_derive;
-
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
-extern crate indyrs as indy;
-extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
-
-#[macro_use]
 mod utils;
 
-use utils::constants::WALLET_CREDENTIALS;
-use utils::wallet;
-use utils::non_secrets::*;
-use utils::types::{WalletRecord, SearchRecords};
+inject_indy_dependencies!();
+
+extern crate indyrs as indy;
+extern crate indyrs as api;
+
+use crate::utils::constants::WALLET_CREDENTIALS;
+use crate::utils::wallet;
+use crate::utils::non_secrets::*;
+use crate::utils::types::{WalletRecord, SearchRecords};
 
 use std::collections::HashMap;
 
@@ -38,8 +17,8 @@ use self::indy::ErrorCode;
 
 pub const FORBIDDEN_TYPE: &'static str = "Indy::Test";
 
-use utils::test::cleanup_wallet;
-use utils::Setup;
+use crate::utils::test::cleanup_wallet;
+use crate::utils::Setup;
 
 mod high_cases {
     use super::*;
@@ -879,7 +858,7 @@ mod high_cases {
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use api::INVALID_WALLET_HANDLE;
+    use crate::api::INVALID_WALLET_HANDLE;
 
     mod add_record {
         use super::*;

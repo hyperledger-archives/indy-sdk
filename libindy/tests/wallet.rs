@@ -1,36 +1,15 @@
 #[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate named_type_derive;
-
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
-extern crate indyrs as indy;
-extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
-
-#[macro_use]
 mod utils;
 
-use utils::inmem_wallet::InmemWallet;
-use utils::{environment, wallet, test, did};
-use utils::constants::*;
-use utils::Setup;
+inject_indy_dependencies!();
+
+extern crate indyrs as indy;
+extern crate indyrs as api;
+
+use crate::utils::inmem_wallet::InmemWallet;
+use crate::utils::{environment, wallet, test, did};
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 use std::path::PathBuf;
@@ -349,8 +328,8 @@ mod medium_cases {
     use super::*;
     use std::ffi::CString;
 
-    use api::INVALID_WALLET_HANDLE;
-    use utils::test::cleanup_wallet;
+    use crate::api::INVALID_WALLET_HANDLE;
+    use crate::utils::test::cleanup_wallet;
 
     mod register_wallet_type {
         use super::*;

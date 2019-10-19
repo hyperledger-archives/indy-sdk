@@ -1,7 +1,7 @@
 [package]
 name = "debugvcx"
 version = "0.1.0"
-authors = ["Norman Jarvis <norman.jarvis@evernym.com>"]
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 
 [dependencies]
 libloading = "0.5"

@@ -1,17 +1,17 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
-use commands::*;
-use utils::table::print_list_table;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
+use crate::commands::*;
+use crate::utils::table::print_list_table;
 
 use indy::ErrorCode;
 
-use libindy::did::Did;
-use libindy::ledger::Ledger;
+use crate::libindy::did::Did;
+use crate::libindy::ledger::Ledger;
 
 use std::fs::File;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use commands::ledger::{
+use crate::commands::ledger::{
     handle_transaction_response,
     set_request_fees,
     parse_response_with_fees,
@@ -31,9 +31,11 @@ pub mod new_command {
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_optional_param("did", "Known DID for new wallet instance")
                 .add_optional_deferred_param("seed", "Seed for creating DID key-pair (UTF-8, base64 or hex)")
+                .add_optional_param("method", "Method name to create fully qualified DID")
                 .add_optional_param("metadata", "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
+                .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX method=indy")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX seed=00000000000000000000000000000My1")
                 .add_example("did new seed=00000000000000000000000000000My1 metadata=did_metadata")
                 .finalize()
@@ -46,12 +48,14 @@ pub mod new_command {
 
         let did = get_opt_str_param("did", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
+        let method = get_opt_str_param("method", params).map_err(error_err!())?;
         let metadata = get_opt_empty_str_param("metadata", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
             update_json_map_opt_key!(json, "did", did);
             update_json_map_opt_key!(json, "seed", seed);
+            update_json_map_opt_key!(json, "method_name", method);
             JSONValue::from(json).to_string()
         };
 
@@ -62,7 +66,7 @@ pub mod new_command {
                 .and_then(|(did, vk)|
                     match Did::abbreviate_verkey(&did, &vk) {
                         Ok(vk) => Ok((did, vk)),
-                        Err(err) => Err(err)
+                        Err(_) => Ok((did, vk))
                     });
 
         trace!(r#"Did::new return: {:?}"#, res);
@@ -333,7 +337,7 @@ pub mod rotate_key_command {
 
             ledger::set_author_agreement(ctx, &mut request)?;
 
-            let payment_method = set_request_fees(ctx,  params,&mut request, wallet_handle, Some(&did))?;
+            let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&did))?;
 
             let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
                 .map_err(|err| {
@@ -425,8 +429,8 @@ pub mod list_command {
 
                 print_list_table(&dids,
                                  &[("did", "Did"),
-                                       ("verkey", "Verkey"),
-                                       ("metadata", "Metadata")],
+                                     ("verkey", "Verkey"),
+                                     ("metadata", "Metadata")],
                                  "There are no dids");
                 if let Some(cur_did) = get_active_did(ctx) {
                     println_succ!("Current did \"{}\"", cur_did);
@@ -437,6 +441,55 @@ pub mod list_command {
                 handle_indy_error(err, None, None, None);
                 Err(())
             },
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod qualify_command {
+    use super::*;
+
+    command!(CommandMetadata::build("qualify", "Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.")
+                .add_main_param_with_dynamic_completion("did", "Did stored in wallet", DynamicCompletionType::Did)
+                .add_main_param("method", "Method to apply to the DID.")
+                .add_example("did qualify did=VsKV7grR1BUE29mG2Fm2kX prefix=did:peer")
+                .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?}, params {:?}", ctx, params);
+
+        let did = get_str_param("did", params).map_err(error_err!())?;
+        let method = get_str_param("method", params).map_err(error_err!())?;
+
+        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+
+        let res = match Did::qualify_did(wallet_handle, &did, &method) {
+            Ok(full_qualified_did) => {
+                println_succ!("Fully qualified DID \"{}\"", full_qualified_did);
+
+                if let Some(active_did) = get_active_did(&ctx) {
+                    if active_did == did {
+                        set_active_did(ctx, Some(full_qualified_did.to_owned()));
+                        println_succ!("Target DID is the same as CLI active. Active DID has been updated");
+                    }
+                }
+
+                Ok(())
+            }
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletItemNotFound => {
+                        println_err!("Requested DID not found");
+                        Err(())
+                    },
+                    _ => {
+                        handle_indy_error(err, Some(&did), None, None);
+                        Err(())
+                    },
+                }
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -480,10 +533,10 @@ pub fn list_dids(ctx: &CommandContext) -> Vec<String> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use libindy::did::Did;
-    use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
-    use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
-    use commands::ledger::tests::send_nym;
+    use crate::libindy::did::Did;
+    use crate::commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
+    use crate::commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
+    use crate::commands::ledger::tests::send_nym;
 
     pub const SEED_TRUSTEE: &'static str = "000000000000000000000000Trustee1";
     pub const DID_TRUSTEE: &'static str = "V4SGRU86Z58d6TV7PBUe6f";
@@ -598,6 +651,44 @@ pub mod tests {
             }
             tear_down_with_wallet(&ctx);
         }
+
+        #[test]
+        pub fn new_works_for_method_name() {
+            let ctx = setup_with_wallet();
+            let method = "sov";
+            {
+                let cmd = new_command::new();
+                let mut params = CommandParams::new();
+                params.insert("seed", SEED_TRUSTEE.to_string());
+                params.insert("method", method.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let expected_did = format!("did:{}:{}", method, DID_TRUSTEE);
+            let did = get_did_info(&ctx, &expected_did);
+            assert_eq!(did["did"].as_str().unwrap(), &expected_did);
+            assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn new_works_for_not_abbreviatable() {
+            let ctx = setup_with_wallet();
+            let method = "indy";
+            {
+                let cmd = new_command::new();
+                let mut params = CommandParams::new();
+                params.insert("seed", SEED_TRUSTEE.to_string());
+                params.insert("method", method.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let expected_did = format!("did:{}:{}", method, DID_TRUSTEE);
+            let did = get_did_info(&ctx, &expected_did);
+            assert_eq!(did["did"].as_str().unwrap(), &expected_did);
+            assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+
+            tear_down_with_wallet(&ctx);
+        }
     }
 
     mod did_use {
@@ -686,7 +777,7 @@ pub mod tests {
     mod did_rotate_key {
         use super::*;
         #[cfg(feature = "nullpay_plugin")]
-        use commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
+        use crate::commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
 
         fn ensure_nym_written(ctx: &CommandContext, did: &str, verkey: &str) {
             let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
@@ -885,6 +976,54 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
+        }
+    }
+
+    mod qualify_did {
+        use super::*;
+
+        const METHOD: &str = "peer";
+
+        #[test]
+        pub fn qualify_did_works() {
+            let ctx = setup_with_wallet();
+            new_did(&ctx, SEED_MY1);
+            {
+                let cmd = qualify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("method", METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn qualify_did_works_for_active() {
+            let ctx = setup_with_wallet();
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_MY1);
+            {
+                let cmd = qualify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("method", METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn qualify_did_works_for_unknown_did() {
+            let ctx = setup_with_wallet();
+            {
+                let cmd = qualify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("method", METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            tear_down_with_wallet(&ctx);
         }
     }
 

@@ -9,9 +9,9 @@ use self::indy_sys::payments as payments_sys;
 use std::collections::VecDeque;
 use std::ffi::CString;
 use super::libc::c_char;
-use std::sync::{Once, ONCE_INIT, Mutex};
+use std::sync::{Once, Mutex};
 
-use utils::callback;
+use crate::utils::callback;
 
 #[macro_export]
 macro_rules! mocked_handler {
@@ -165,7 +165,7 @@ type ParsePaymentSourcesCallback = extern fn(command_handle_: i32,
                                              next: i64) -> i32;
 
 lazy_static! {
-        static ref CREATE_PAYMENT_METHOD_INIT: Once = ONCE_INIT;
+        static ref CREATE_PAYMENT_METHOD_INIT: Once = Once::new();
 }
 
 pub mod mock_method {

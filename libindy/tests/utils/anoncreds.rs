@@ -5,20 +5,21 @@ use indy::anoncreds;
 use self::futures::Future;
 use serde_json;
 
-use utils::{environment, wallet, blob_storage, test, pool};
-use utils::types::CredentialOfferInfo;
+use crate::utils::{environment, wallet, blob_storage, test};
+use crate::utils::types::CredentialOfferInfo;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use std::mem;
-use utils::constants::*;
+use crate::utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
 
-use utils::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
-use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId};
-use utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType};
-use utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
-use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use crate::utils::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
+use crate::utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId};
+use crate::utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType, RevocationRegistryId};
+use crate::utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
+use crate::utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use crate::utils::domain::crypto::did::DidValue;
 
 pub static mut WALLET_HANDLE: i32 = 0;
 pub static mut CREDENTIAL_DEF_JSON: &'static str = "";
@@ -176,6 +177,10 @@ pub fn generate_nonce() -> Result<String, IndyError> {
     anoncreds::generate_nonce().wait()
 }
 
+pub fn to_unqualified(entity: &str) -> Result<String, IndyError> {
+    anoncreds::to_unqualified(entity).wait()
+}
+
 pub fn default_cred_def_config() -> String {
     serde_json::to_string(&CredentialDefinitionConfig { support_revocation: false }).unwrap()
 }
@@ -193,7 +198,35 @@ pub fn issuance_by_default_rev_reg_config() -> String {
 }
 
 pub fn gvt_schema_id() -> String {
-    SchemaId::new(ISSUER_DID, GVT_SCHEMA_NAME, SCHEMA_VERSION).0
+    SchemaId::new(&DidValue(ISSUER_DID.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
+}
+
+pub fn gvt_schema_id_fully_qualified() -> String {
+    SchemaId::new(&DidValue(ISSUER_DID_V1.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
+}
+
+pub fn gvt_cred_def_id() -> String {
+    CredentialDefinitionId::new(&DidValue(ISSUER_DID.to_string()), &SchemaId(SEQ_NO.to_string()), SIGNATURE_TYPE, TAG_1).0
+}
+
+pub fn local_gvt_cred_def_id() -> String {
+    CredentialDefinitionId::new(&DidValue(ISSUER_DID.to_string()),  &SchemaId(gvt_schema_id()), SIGNATURE_TYPE, TAG_1).0
+}
+
+pub fn gvt_cred_def_id_fully_qualified() -> String {
+    CredentialDefinitionId::new(&DidValue(ISSUER_DID_V1.to_string()), &SchemaId(SEQ_NO.to_string()), SIGNATURE_TYPE, TAG_1).0
+}
+
+pub fn local_gvt_cred_def_id_fully_qualified() -> String {
+    CredentialDefinitionId::new(&DidValue(ISSUER_DID_V1.to_string()), &SchemaId(gvt_schema_id_fully_qualified()), SIGNATURE_TYPE, TAG_1).0
+}
+
+pub fn gvt_rev_reg_id() -> String {
+    RevocationRegistryId::new(&DidValue(ISSUER_DID.to_string()), &CredentialDefinitionId(gvt_cred_def_id()), REVOC_REG_TYPE, TAG_1).0
+}
+
+pub fn gvt_rev_reg_id_fully_qualified() -> String {
+    RevocationRegistryId::new(&DidValue(ISSUER_DID_V1.to_string()), &CredentialDefinitionId(gvt_cred_def_id()), REVOC_REG_TYPE, TAG_1).0
 }
 
 pub fn gvt_schema() -> SchemaV1 {
@@ -211,7 +244,7 @@ pub fn gvt_schema_json() -> String {
 }
 
 pub fn gvt_schema_id_issuer2() -> String {
-    SchemaId::new(ISSUER_DID_2, GVT_SCHEMA_NAME, SCHEMA_VERSION).0
+    SchemaId::new(&DidValue(ISSUER_DID_2.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn gvt_schema_issuer2() -> SchemaV1 {
@@ -230,7 +263,7 @@ pub fn gvt_schema_issuer2_json() -> String {
 
 
 pub fn xyz_schema_id() -> String {
-    SchemaId::new(ISSUER_DID, XYZ_SCHEMA_NAME, SCHEMA_VERSION).0
+    SchemaId::new(&DidValue(ISSUER_DID.to_string()), XYZ_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn xyz_schema() -> SchemaV1 {
@@ -248,7 +281,7 @@ pub fn xyz_schema_json() -> String {
 }
 
 pub fn xyz_schema_id_tag2() -> String {
-    SchemaId::new(ISSUER_DID, &format!("{}{}", XYZ_SCHEMA_NAME, TAG_2), SCHEMA_VERSION).0
+    SchemaId::new(&DidValue(ISSUER_DID.to_string()), &format!("{}{}", XYZ_SCHEMA_NAME, TAG_2), SCHEMA_VERSION).0
 }
 
 pub fn xyz_schema_tag2() -> SchemaV1 {
@@ -786,15 +819,13 @@ pub fn tails_writer_config() -> String {
 
 pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'static str) {
     lazy_static! {
-                    static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
+                    static ref COMMON_WALLET_INIT: Once = Once::new();
                  }
 
     unsafe {
         COMMON_WALLET_INIT.call_once(|| {
             // this name must match the one in ANONCREDS_WALLET_CONFIG
             test::cleanup_storage("anoncreds_wallet");
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             //1. Create and Open wallet
             wallet::create_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();

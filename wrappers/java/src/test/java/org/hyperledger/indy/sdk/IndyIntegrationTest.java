@@ -39,7 +39,7 @@ public class IndyIntegrationTest {
 	protected static final String INVALID_DID = "invalid_base58string";
 	protected static final String IDENTITY_JSON_TEMPLATE = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 	protected static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
-	protected static final String SCHEMA_DATA = "{\"id\":\"id\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
+	protected static final String SCHEMA_DATA = "{\"id\":\"1\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
 	protected static final String WALLET = "Wallet1";
 	protected static final String TYPE = "default";
 	protected static final String METADATA = "some metadata";
@@ -98,7 +98,7 @@ public class IndyIntegrationTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
 	@Before
 	public void setUp() throws Exception {

@@ -140,7 +140,7 @@ macro_rules! check_useful_validatable_opt_string {
                 match $x.validate() {
                     Ok(ok) => ok,
                     Err(err) => {
-                        return err_msg($e.into(), err).into()
+                        return err_msg(IndyErrorKind::InvalidStructure, err).into()
                     }
                 };
                 Some($x)
@@ -157,7 +157,7 @@ macro_rules! parse_json {
         }
 
         let r = serde_json::from_str::<$t>($x)
-                    .to_indy(::errors::IndyErrorKind::InvalidStructure, format!("Invalid {} json has been passed", stringify!($t)));
+                    .to_indy(crate::errors::IndyErrorKind::InvalidStructure, format!("Invalid {} json has been passed", stringify!($t)));
 
         let $x: $t = match r {
             Ok(ok) => ok,
@@ -202,7 +202,7 @@ macro_rules! check_useful_c_byte_array {
             return err_msg($err2.into(), "Array length must be greater than 0").into();
         }
 
-        let $ptr = unsafe { $crate::std::slice::from_raw_parts($ptr, $len as usize) };
+        let $ptr = unsafe { ::std::slice::from_raw_parts($ptr, $len as usize) };
         let $ptr = $ptr.to_vec();
     }
 }
