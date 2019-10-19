@@ -19,6 +19,8 @@ use crate::utils::domain::anoncreds::credential_for_proof_request::{CredentialsF
 use crate::utils::domain::anoncreds::proof::Proof;
 use crate::utils::domain::crypto::did::DidValue;
 
+use indy::INVALID_WALLET_HANDLE;
+
 mod high_cases {
     use super::*;
 
