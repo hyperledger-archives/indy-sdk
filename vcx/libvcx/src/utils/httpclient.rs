@@ -35,7 +35,7 @@ pub fn post_u8(body_content: &Vec<u8>) -> VcxResult<Vec<u8>> {
             .send()
             .map_err(|err| {
                 error!("error: {}", err);
-                VcxError::from_msg(VcxErrorKind::PostMessageFailed, "Could not connect")
+                VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("Could not connect {:?}", err))
             })?;
 
     trace!("Response Header: {:?}", response);
