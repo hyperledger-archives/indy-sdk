@@ -1,6 +1,6 @@
 use v3::messages::{MessageType, A2AMessageKinds};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Invitation {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,

@@ -1,7 +1,7 @@
 use settings;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
-use messages::payload::Thread;
+use messages::thread::Thread;
 use utils::httpclient;
 use utils::constants::*;
 use utils::uuid::uuid;

@@ -8,6 +8,7 @@ pub mod forward;
 pub mod connection;
 
 use v3::messages::connection::request::Request;
+use v3::messages::connection::response::Response;
 use v3::messages::forward::Forward;
 
 
@@ -18,7 +19,11 @@ pub enum A2AMessage {
     Forward(Forward),
 
     /// DID Exchange
-    ConnectionRequest(Request)
+    ConnectionRequest(Request),
+    ConnectionResponse(Response),
+
+    /// Any Raw Message
+    Generic(String)
 }
 
 impl<'de> Deserialize<'de> for A2AMessage {
@@ -37,6 +42,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::ConnectionRequest(msg))
                     .map_err(de::Error::custom)
             }
+            "response" => {
+                Response::deserialize(value)
+                    .map(|msg| A2AMessage::ConnectionResponse(msg))
+                    .map_err(de::Error::custom)
+            }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
         }
     }
@@ -46,7 +56,8 @@ impl<'de> Deserialize<'de> for A2AMessage {
 pub enum A2AMessageKinds {
     Forward,
     Invitation,
-    Request
+    Request,
+    Response
 }
 
 impl A2AMessageKinds {
@@ -55,6 +66,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Forward => MessageFamilies::Routing,
             A2AMessageKinds::Invitation => MessageFamilies::DidExchange,
             A2AMessageKinds::Request => MessageFamilies::DidExchange,
+            A2AMessageKinds::Response => MessageFamilies::DidExchange,
         }
     }
 
@@ -63,6 +75,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Forward => "forward".to_string(),
             A2AMessageKinds::Invitation => "invitation".to_string(),
             A2AMessageKinds::Request => "request".to_string(),
+            A2AMessageKinds::Response => "response".to_string(),
         }
     }
 }
