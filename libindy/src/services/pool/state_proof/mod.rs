@@ -652,7 +652,7 @@ fn _verify_proof_range(proofs_rlp: &[u8],
     map.get(root_hash).map(|root| {
         let res = root.get_all_values(&map, Some(prefix.as_bytes())).map_err(map_err_err!());
         trace!("All values from trie: {:?}", res);
-        let vals = if let Some(vals) = res.ok() {
+        let vals = if let Ok(vals) = res {
             vals
         } else {
             error!("Some errors happened while collecting values from state proof");
