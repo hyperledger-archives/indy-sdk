@@ -1,3 +1,5 @@
+pub mod states;
+
 use serde_json;
 
 use settings;
@@ -5,6 +7,7 @@ use messages;
 use messages::{MessageStatusCode, ObjectWithVersion};
 use messages::invite::InviteDetail;
 use messages::get_message::Message;
+use messages::update_message::{UIDsByConn, update_messages};
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
@@ -13,10 +16,13 @@ use utils::constants::DEFAULT_SERIALIZE_VERSION;
 
 use connection::{ConnectionOptions, create_agent_keys};
 
+use v3::handlers::connection::states::*;
 use v3::messages::A2AMessage;
 use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::Response;
+use v3::messages::connection::problem_report::ProblemReport;
+use v3::messages::ack::Ack;
 use v3::messages::connection::remote_info::RemoteConnectionInfo;
 use v3::utils::encryption_envelope::EncryptionEnvelope;
 
@@ -35,100 +41,6 @@ struct Connection {
     state: DidExchangeState
 }
 
-/// Transitions of Connection state
-/// Null -> Invited
-/// Invited -> Requested, Null
-/// Requested -> Responded, Null
-/// Responded -> Complete, Invited
-/// Complete
-#[derive(Debug, Clone, Serialize, Deserialize)]
-enum DidExchangeState {
-    Null(NullState),
-    Invited(InvitedState),
-    Requested(RequestedState),
-    Responded(RespondedState),
-    Complete(CompleteState),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct NullState {}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct InvitedState {
-    invitation: Invitation
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct RequestedState {
-    request: Request
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct RespondedState {
-    response: Response
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct CompleteState {}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-enum Messages {
-    Error(Error),
-    Invitation(Invitation),
-    ExchangeRequest(Request),
-    ExchangeResponse(Response),
-    Ack(Ack)
-}
-
-impl From<(NullState, Invitation)> for InvitedState {
-    fn from((state, invitation): (NullState, Invitation)) -> InvitedState {
-        InvitedState { invitation }
-    }
-}
-
-impl From<(InvitedState, Error)> for NullState {
-    fn from((state, error): (InvitedState, Error)) -> NullState {
-        NullState {}
-    }
-}
-
-impl From<(InvitedState, Request)> for RequestedState {
-    fn from((state, request): (InvitedState, Request)) -> RequestedState {
-        RequestedState { request }
-    }
-}
-
-impl From<(RequestedState, Error)> for NullState {
-    fn from((state, error): (RequestedState, Error)) -> NullState {
-        NullState {}
-    }
-}
-
-impl From<(RequestedState, Response)> for RespondedState {
-    fn from((state, response): (RequestedState, Response)) -> RespondedState {
-        RespondedState { response }
-    }
-}
-
-impl From<(RespondedState, Error)> for InvitedState {
-    fn from((state, error): (RespondedState, Error)) -> InvitedState {
-        InvitedState { invitation: Invitation::create() }
-    }
-}
-
-impl From<(RespondedState, Ack)> for CompleteState {
-    fn from((state, response): (RespondedState, Ack)) -> CompleteState {
-        CompleteState {}
-    }
-}
-
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct Error {}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct Ack {}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum Actor {
     Inviter,
@@ -136,46 +48,6 @@ enum Actor {
 }
 
 impl Connection {
-    fn state(&self) -> u32 {
-        match self.state {
-            DidExchangeState::Null(_) => 1,
-            DidExchangeState::Invited(_) => 2,
-            DidExchangeState::Requested(_) => 3,
-            DidExchangeState::Responded(_) => 5, // for backward compatibility
-            DidExchangeState::Complete(_) => 4,
-        }
-    }
-
-    fn remote_connection_info(&self) -> Option<RemoteConnectionInfo> {
-        match self.state {
-            DidExchangeState::Null(_) => None,
-            DidExchangeState::Invited(ref state) => Some(RemoteConnectionInfo::from(state.invitation.clone())),
-            DidExchangeState::Requested(ref state) => Some(RemoteConnectionInfo::from(state.request.clone())),
-            DidExchangeState::Responded(_) => None,
-            DidExchangeState::Complete(_) => None
-        }
-    }
-
-    fn agency_endpoint(&self) -> VcxResult<String> {
-        settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)
-    }
-
-    fn routing_keys(&self) -> VcxResult<Vec<String>> {
-        let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
-        Ok(vec![agency_vk, self.agent_vk.clone()])
-    }
-
-    fn recipient_keys(&self) -> Vec<String> {
-        vec![self.pw_vk.clone()]
-    }
-
-    fn their_vk(&self) -> VcxResult<String> {
-        match self.state {
-            DidExchangeState::Complete(_) => Ok(String::new()),
-            _ => Err(VcxError::from(VcxErrorKind::NotReady)),
-        }
-    }
-
     fn create(source_id: &str, actor: Actor) -> VcxResult<Connection> {
         let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
         let (pw_did, pw_vk) = create_my_did(None, method_name.as_ref().map(String::as_str))?;
@@ -197,11 +69,47 @@ impl Connection {
         })
     }
 
+    fn state(&self) -> u32 { self.state.state() }
+
+    fn agency_endpoint(&self) -> VcxResult<String> {
+        settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)
+    }
+
+    fn routing_keys(&self) -> VcxResult<Vec<String>> {
+        let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
+        Ok(vec![agency_vk, self.agent_vk.clone()])
+    }
+
+    fn recipient_keys(&self) -> Vec<String> {
+        vec![self.pw_vk.clone()]
+    }
+
+    fn step(&mut self, message: Messages) {
+        self.state = self.state.step(message)
+    }
+
+    fn remote_connection_info(&self) -> Option<RemoteConnectionInfo> {
+        match self.state {
+            DidExchangeState::Null(_) => None,
+            DidExchangeState::Invited(ref state) => Some(RemoteConnectionInfo::from(state.invitation.clone())),
+            DidExchangeState::Requested(ref state) => Some(RemoteConnectionInfo::from(state.request.clone())),
+            DidExchangeState::Responded(_) => None,
+            DidExchangeState::Complete(_) => None
+        }
+    }
+
+    fn remote_connection_vk(&self) -> VcxResult<String> {
+        match self.state {
+            DidExchangeState::Complete(_) => Ok(String::new()),
+            _ => Err(VcxError::from(VcxErrorKind::NotReady)),
+        }
+    }
+
     fn process_invite(&mut self, invite: &str) -> VcxResult<()> {
         let invitation: Invitation = serde_json::from_str(&invite)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Invitation: {:?}", err)))?;
 
-        self.state = self.state.step(Messages::Invitation(invitation));
+        self.step(Messages::Invitation(invitation));
 
         Ok(())
     }
@@ -236,12 +144,12 @@ impl Connection {
             }
         };
 
-        self.state = self.state.step(message);
+        self.step(message);
 
         Ok(())
     }
 
-    fn update_state(&self, message: Option<&str>) -> VcxResult<u32> {
+    fn update_state(&mut self, message: Option<&str>) -> VcxResult<u32> {
         match self.state {
             DidExchangeState::Null(_) => return Ok(error::SUCCESS.code_num),
             DidExchangeState::Complete(_) => return Ok(error::SUCCESS.code_num),
@@ -255,22 +163,101 @@ impl Connection {
                                                                                     None,
                                                                                     Some(vec![MessageStatusCode::Received]))?;
 
-        for message in messages {
-            let message = EncryptionEnvelope::open(&self.pw_vk, message.payload()?)?;
+        let mut uids: Vec<String> = Vec::new();
+
+        for messages in messages {
+            uids.push(messages.uid.clone());
+            let message = EncryptionEnvelope::open(&self.pw_vk, messages.payload()?)?;
+
+            match self.state {
+                DidExchangeState::Invited(ref state) => {
+                    match message {
+                        A2AMessage::ConnectionRequest(request) => {
+                            self.handle_incoming_request(request)?;
+                        }
+                        _ => {}
+                    }
+                }
+                DidExchangeState::Requested(ref state) => {
+                    match message {
+                        A2AMessage::ConnectionResponse(response) => {
+                            self.handle_incoming_response(response)?;
+                        }
+                        _ => {}
+                    }
+                }
+                DidExchangeState::Responded(ref state) => {
+                    match message {
+                        A2AMessage::Ack(ack) => {
+                            self.handle_incoming_ack(ack)?;
+                        }
+                        A2AMessage::ProblemReport(problem_report) => {
+                            self.handle_incoming_problem_report(problem_report)?;
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
         }
 
-
-        //        if get_state(handle) == VcxStateType::VcxStateOfferSent as u32 || get_state(handle) == VcxStateType::VcxStateInitialized as u32 {
-        //            for message in response {
-        //                if message.status_code == MessageStatusCode::Accepted && message.msg_type == RemoteMessageType::ConnReqAnswer {
-        //                    process_acceptance_message(handle, message)?;
-        //                }
-        //            }
-        //        };
+        self.update_messages_status(uids)?;
 
         Ok(error::SUCCESS.code_num)
     }
 
+    fn handle_incoming_request(&mut self, request: Request) -> VcxResult<()> {
+        match self.actor {
+            Actor::Inviter => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Unsupported message")),
+            Actor::Invitee => {}
+        };
+
+        self.step(Messages::ExchangeRequest(request));
+
+        let request = Response::create()
+            .set_did(self.pw_did.to_string())
+            .set_service_endpoint(self.agency_endpoint()?)
+            .set_recipient_keys(self.recipient_keys())
+            .set_routing_keys(self.routing_keys()?);
+
+        self.send_message(&request.to_a2a_message())?;
+
+        self.step(Messages::ExchangeResponse(request));
+
+        Ok(())
+    }
+
+    fn handle_incoming_response(&mut self, response: Response) -> VcxResult<()> {
+        match self.actor {
+            Actor::Invitee => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Unsupported message")),
+            Actor::Inviter => {}
+        };
+
+        self.step(Messages::ExchangeResponse(response));
+
+        let ack = Ack::create();
+
+        self.send_message(&ack.to_a2a_message())?;
+
+        self.step(Messages::Ack(ack));
+
+        Ok(())
+    }
+
+    fn handle_incoming_ack(&mut self, ack: Ack) -> VcxResult<()> {
+        self.step(Messages::Ack(ack));
+        Ok(())
+    }
+
+    fn handle_incoming_problem_report(&mut self, problem_report: ProblemReport) -> VcxResult<()> {
+        self.step(Messages::Error(problem_report));
+        Ok(())
+    }
+
+    fn update_messages_status(&self, uids: Vec<String>) -> VcxResult<()> {
+        let targets = vec![UIDsByConn { pairwise_did: self.pw_did.clone(), uids }];
+        update_messages(MessageStatusCode::Reviewed, targets)
+    }
 
     fn send_message(&self, message: &A2AMessage) -> VcxResult<()> {
         let remote_connection_info = self.remote_connection_info()
@@ -303,42 +290,6 @@ impl Connection {
         ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
             .serialize()
             .map_err(|err| err.extend("Cannot serialize Connection"))
-    }
-}
-
-impl DidExchangeState {
-    fn step(&self, message: Messages) -> DidExchangeState {
-        let state = self.clone();
-        match state {
-            DidExchangeState::Null(state) => {
-                match message {
-                    Messages::Invitation(invitation) => DidExchangeState::Invited((state, invitation).into()),
-                    _ => DidExchangeState::Null(state)
-                }
-            }
-            DidExchangeState::Invited(state) => {
-                match message {
-                    Messages::Error(error) => DidExchangeState::Null((state, error).into()),
-                    Messages::ExchangeRequest(request) => DidExchangeState::Requested((state, request).into()),
-                    _ => DidExchangeState::Invited(state)
-                }
-            }
-            DidExchangeState::Requested(state) => {
-                match message {
-                    Messages::Error(error) => DidExchangeState::Null((state, error).into()),
-                    Messages::ExchangeResponse(response) => DidExchangeState::Responded((state, response).into()),
-                    _ => DidExchangeState::Requested(state)
-                }
-            }
-            DidExchangeState::Responded(state) => {
-                match message {
-                    Messages::Error(error) => DidExchangeState::Invited((state, error).into()),
-                    Messages::Ack(ack) => DidExchangeState::Complete((state, ack).into()),
-                    _ => DidExchangeState::Responded(state)
-                }
-            }
-            DidExchangeState::Complete(state) => DidExchangeState::Complete(state)
-        }
     }
 }
 
@@ -410,7 +361,7 @@ pub fn get_pw_verkey(handle: u32) -> VcxResult<String> {
 
 pub fn get_their_pw_verkey(handle: u32) -> VcxResult<String> {
     CONNECTION_MAP.get(handle, |connection| {
-        connection.their_vk()
+        connection.remote_connection_vk()
     })
 }
 

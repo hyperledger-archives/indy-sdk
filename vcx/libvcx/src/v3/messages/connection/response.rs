@@ -1,15 +1,14 @@
 use messages::thread::Thread;
 use v3::messages::A2AMessage;
 use v3::messages::connection::did_doc::*;
-use v3::messages::{MessageType, A2AMessageKinds};
-use utils::uuid;
+use v3::messages::{MessageType, MessageId, A2AMessageKinds};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Response {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
     #[serde(rename = "@id")]
-    pub id: String,
+    pub id: MessageId,
     #[serde(rename = "~thread")]
     pub thread: Thread,
     pub connection: ConnectionData
@@ -25,7 +24,7 @@ impl Response {
     pub fn create() -> Response {
         Response {
             msg_type: MessageType::build(A2AMessageKinds::Response),
-            id: uuid::uuid(),
+            id: MessageId::new(),
             thread: Thread::new(),
             connection: ConnectionData {
                 did: String::new(),
