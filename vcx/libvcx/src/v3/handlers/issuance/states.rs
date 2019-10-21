@@ -5,7 +5,7 @@
 // OfferSent -> Finished
 // CredentialSent -> Finished
 #[derive(Debug)]
-enum IssuerState {
+pub enum IssuerState {
     Initial(InitialState),
     OfferSent(OfferSentState),
     CredentialSent(CredentialSentState),
@@ -13,7 +13,7 @@ enum IssuerState {
 }
 
 #[derive(Debug)]
-struct InitialState {}
+pub struct InitialState {}
 
 #[derive(Debug)]
 struct OfferSentState {}
@@ -24,33 +24,62 @@ struct CredentialSentState {}
 #[derive(Debug)]
 struct FinishedState {}
 
-//impl From<InitialState> for OfferSentState {
-//    fn from(_state: InitialState) -> Self {
-//        OfferSentState {}
-//    }
-//}
-//
-//impl From<InitialState> for FinishedState {
-//    fn from(_state: InitialState) -> Self {
-//        FinishedState {}
-//    }
-//}
-//
-//impl From<OfferSentState> for CredentialSentState {
-//    fn from(_state: OfferSentState) -> Self {
-//        CredentialSentState {}
-//    }
-//
-//}
-//
-//impl From<OfferSentState> for FinishedState {
-//    fn from(_state: InitialState) -> Self {
-//        FinishedState {}
-//    }
-//}
-//
-//impl From<CredentialSentState> for FinishedState {
-//    fn from(_state: InitialState) -> Self {
-//        FinishedState {}
-//    }
-//}
+impl From<InitialState> for OfferSentState {
+    fn from(_state: InitialState) -> Self {
+        trace!("SM is now in OfferSent state");
+        OfferSentState {}
+    }
+}
+
+impl From<InitialState> for FinishedState {
+    fn from(_state: InitialState) -> Self {
+        trace!("SM is now in Finished state");
+        FinishedState {}
+    }
+}
+
+impl From<OfferSentState> for CredentialSentState {
+    fn from(_state: OfferSentState) -> Self {
+        trace!("SM is now in CredentialSent state");
+        CredentialSentState {}
+    }
+
+}
+
+impl From<OfferSentState> for FinishedState {
+    fn from(_state: InitialState) -> Self {
+        trace!("SM is now in Finished state");
+        FinishedState {}
+    }
+}
+
+impl From<CredentialSentState> for FinishedState {
+    fn from(_state: InitialState) -> Self {
+        trace!("SM is now in Finished state");
+        FinishedState {}
+    }
+}
+
+#[derive(Debug)]
+pub enum HolderState {
+    Initial(InitialState),
+    RequestSent(RequestSentState),
+    FinishedState(FinishedState)
+}
+
+#[derive(Debug)]
+struct RequestSentState {}
+
+impl From<InitialState> for RequestSentState {
+    fn from(_: InitialState) -> Self {
+        trace!("SM is now in RequestSent state");
+        RequestSentState{}
+    }
+}
+
+impl From<RequestSentState> for FinishedState {
+    fn from(_: RequestSentState) -> Self {
+        trace!("SM is now in Finished state");
+        FinishedState {}
+    }
+}

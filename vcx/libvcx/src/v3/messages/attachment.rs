@@ -7,6 +7,7 @@ pub enum Attachment {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Json {
+    #[serde(rename = "@id")]
     id: AttachmentId,
     data: AttachmentData
 }

@@ -8,6 +8,7 @@ pub mod ack;
 pub mod connection;
 pub mod error;
 pub mod forward;
+pub mod attachment;
 
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::Response;
