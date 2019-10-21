@@ -18,6 +18,11 @@ impl Thread {
         }
     }
 
+    pub fn set_thid(mut self, thid: String) -> Thread {
+        self.thid = Some(thid);
+        self
+    }
+
     pub fn increment_receiver(&mut self, did: &str) {
         self.received_orders.entry(did.to_string())
             .and_modify(|e| *e += 1)
