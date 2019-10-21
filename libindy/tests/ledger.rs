@@ -532,7 +532,6 @@ mod high_cases {
 
             let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, Some("endpoint"), None, None).unwrap();
             let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-            println!("get_attrib_response {:?}", get_attrib_response);
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
         }
