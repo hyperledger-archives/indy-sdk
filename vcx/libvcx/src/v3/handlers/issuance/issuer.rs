@@ -13,7 +13,7 @@ impl IssuerSM {
     }
 
     pub fn step(state: IssuerState) -> Self {
-        IssuerSM{
+        IssuerSM {
             state
         }
     }
@@ -23,7 +23,7 @@ impl IssuerSM {
         let state = match state {
             IssuerState::Initial(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialInit(_init) => {
-                    todo!("Send CredentialOffer message");
+                    panic!("Send CredentialOffer message");
                     IssuerState::OfferSent(state_data.into())
                 }
                 _ => {
@@ -33,15 +33,15 @@ impl IssuerSM {
             },
             IssuerState::OfferSent(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequest(_request) => {
-                    todo!("Send IssueCredential message");
+                    panic!("Send IssueCredential message");
                     IssuerState::CredentialSent(state_data.into())
                 }
                 CredentialIssuanceMessage::CredentialProposal(_proposal) => {
-                    todo!("Send problem report with reason: Do not support negotiation");
+                    panic!("Send problem report with reason: Do not support negotiation");
                     IssuerState::Finished(state_data.into())
                 }
                 CredentialIssuanceMessage::ProblemReport(_problem_report) => {
-                    todo!("Finalize the issuance");
+                    panic!("Finalize the issuance");
                     IssuerState::Finished(state_data.into())
                 }
                 _ => {
@@ -51,11 +51,11 @@ impl IssuerSM {
             }
             IssuerState::CredentialSent(state_data) => match cim {
                 CredentialIssuanceMessage::ProblemReport(_problem_report) => {
-                    todo!("Report the problem with issuance, close internaction");
+                    panic!("Report the problem with issuance, close internaction");
                     IssuerState::Finished(state_data.into())
                 }
                 CredentialIssuanceMessage::Ack(_ack) => {
-                    todo!("Report successful issuance, close interaction");
+                    panic!("Report successful issuance, close interaction");
                     IssuerState::Finished(state_data.into())
                 }
                 _ => {

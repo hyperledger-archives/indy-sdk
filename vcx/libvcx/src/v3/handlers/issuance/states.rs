@@ -16,13 +16,13 @@ pub enum IssuerState {
 pub struct InitialState {}
 
 #[derive(Debug)]
-struct OfferSentState {}
+pub struct OfferSentState {}
 
 #[derive(Debug)]
-struct CredentialSentState {}
+pub struct CredentialSentState {}
 
 #[derive(Debug)]
-struct FinishedState {}
+pub struct FinishedState {}
 
 impl From<InitialState> for OfferSentState {
     fn from(_state: InitialState) -> Self {
@@ -47,14 +47,14 @@ impl From<OfferSentState> for CredentialSentState {
 }
 
 impl From<OfferSentState> for FinishedState {
-    fn from(_state: InitialState) -> Self {
+    fn from(_state: OfferSentState) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {}
     }
 }
 
 impl From<CredentialSentState> for FinishedState {
-    fn from(_state: InitialState) -> Self {
+    fn from(_state: CredentialSentState) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {}
     }
@@ -64,11 +64,11 @@ impl From<CredentialSentState> for FinishedState {
 pub enum HolderState {
     Initial(InitialState),
     RequestSent(RequestSentState),
-    FinishedState(FinishedState)
+    Finished(FinishedState)
 }
 
 #[derive(Debug)]
-struct RequestSentState {}
+pub struct RequestSentState {}
 
 impl From<InitialState> for RequestSentState {
     fn from(_: InitialState) -> Self {

@@ -21,14 +21,14 @@ impl HolderSM {
         let state = match state {
             HolderState::Initial(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialOffer(offer) => {
-                    todo!("Accept or reject offer");
+                    panic!("Accept or reject offer");
                     let offer_accepted = true;
                     if offer_accepted {
-                        todo!("Send credential request");
-                        HolderState::RequestSent(state.into())
+                        panic!("Send credential request");
+                        HolderState::RequestSent(state_data.into())
                     } else {
-                        todo!("Send Problem report");
-                        HolderState::FinishedState(state.into())
+                        panic!("Send Problem report");
+                        HolderState::Finished(state_data.into())
                     }
                 },
                 _ => {
@@ -38,25 +38,25 @@ impl HolderSM {
             },
             HolderState::RequestSent(state_data) => match cim {
                 CredentialIssuanceMessage::Credential(_credential) => {
-                    todo!("Accept and send ack or problem report");
+                    panic!("Accept and send ack or problem report");
                     let ok = true;
                     if ok {
-                        todo!("send ack");
+                        panic!("send ack");
                     } else {
-                        todo!("send problem report");
+                        panic!("send problem report");
                     }
-                    HolderState::FinishedState(state_data.into())
+                    HolderState::Finished(state_data.into())
                 }
                 CredentialIssuanceMessage::ProblemReport(_report) => {
-                    todo!("Finalize state");
-                    Holder::FinishedState(state_data.into())
+                    panic!("Finalize state");
+                    HolderState::Finished(state_data.into())
                 }
                 _ => {
                     warn!("In this state Credential Issuance can accept only Credential and Problem Report");
                     HolderState::RequestSent(state_data)
                 }
             },
-            HolderState::FinishedState(state_data) => {
+            HolderState::Finished(state_data) => {
                 warn!("Exchange is finished, no messages can be sent or received");
                 HolderState::Finished(state_data)
             }
