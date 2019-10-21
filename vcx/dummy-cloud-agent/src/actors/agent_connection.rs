@@ -91,8 +91,8 @@ pub struct MessageNotification {
     msg_type: RemoteMessageType,
     msg_sender_did: String,
     msg_status_code: MessageStatusCode,
-    msg_owner_did: String,
     notification_id: String,
+    msg_user_pairwise_did: String
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -874,7 +874,7 @@ impl AgentConnection {
                     msg_type: msg._type.clone(),
                     msg_sender_did: msg.sender_did.clone(),
                     msg_status_code: msg.status_code.clone(),
-                    msg_owner_did: self.owner_did.clone(),
+                    msg_user_pairwise_did: self.user_pairwise_did.clone(),
                     notification_id: uuid::Uuid::new_v4().to_string(),
                 };
                 self.send_webhook_notification(webhook_url, msg_notification)
