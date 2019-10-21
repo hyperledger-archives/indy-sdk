@@ -10,6 +10,7 @@ use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload,
 use messages::payload::Payloads;
 use messages::thread::Thread;
 use messages::get_message::{Message, MessagePayload};
+use messages::update_connection::send_delete_connection_message;
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
@@ -19,6 +20,10 @@ use utils::json::mapped_key_rewrite;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::json::KeyMatch;
 use std::collections::HashMap;
+
+use v3::handlers::connection::CONNECTION_MAP as V3_CONNECTION_MAP;
+use v3::handlers::connection::create_connection_with_invite as create_connection_with_invite_v3;
+use v3::messages::connection::invite::Invitation as InvitationV3;
 
 lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connection> = Default::default();
@@ -105,13 +110,7 @@ impl Connection {
     pub fn delete_connection(&mut self) -> VcxResult<u32> {
         trace!("Connection::delete_connection >>>");
 
-        messages::delete_connection()
-            .to(&self.pw_did)?
-            .to_vk(&self.pw_verkey)?
-            .agent_did(&self.agent_did)?
-            .agent_vk(&self.agent_vk)?
-            .send_secure()
-            .map_err(|err| err.extend("Cannot delete connection"))?;
+        send_delete_connection_message(&self.pw_did, &self.pw_verkey, &self.agent_did, &self.agent_vk)?;
 
         self.state = VcxStateType::VcxStateNone;
 
@@ -274,7 +273,7 @@ pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str) -> VcxR
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    CONNECTION_MAP.has_handle(handle)
+    CONNECTION_MAP.has_handle(handle) || V3_CONNECTION_MAP.has_handle(handle)
 }
 
 pub fn set_agent_did(handle: u32, did: &str) -> VcxResult<()> {
@@ -437,6 +436,11 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
 
 pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResult<u32> {
     debug!("create connection {} with invite {}", source_id, details);
+
+    // Invitation of new format -- redirect to v3 folder
+    if let Ok(invitation) = serde_json::from_str::<InvitationV3>(details) {
+        return create_connection_with_invite_v3(source_id, invitation);
+    }
 
     let details: Value = serde_json::from_str(&details)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize invite details: {}", err)))?;

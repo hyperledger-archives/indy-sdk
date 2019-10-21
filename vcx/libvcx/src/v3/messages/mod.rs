@@ -10,7 +10,7 @@ pub mod error;
 pub mod forward;
 
 use v3::messages::connection::request::Request;
-use v3::messages::connection::response::Response;
+use v3::messages::connection::response::{SignedResponse};
 use v3::messages::connection::problem_report::ProblemReport;
 use v3::messages::forward::Forward;
 use self::ack::Ack;
@@ -25,7 +25,7 @@ pub enum A2AMessage {
 
     /// DID Exchange
     ConnectionRequest(Request),
-    ConnectionResponse(Response),
+    ConnectionResponse(SignedResponse),
     ProblemReport(ProblemReport),
 
     /// notification
@@ -52,7 +52,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map_err(de::Error::custom)
             }
             "response" => {
-                Response::deserialize(value)
+                SignedResponse::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionResponse(msg))
                     .map_err(de::Error::custom)
             }
@@ -78,6 +78,7 @@ pub enum A2AMessageKinds {
     Request,
     Response,
     ProblemReport,
+    Ed25519Signature,
     Ack
 }
 
@@ -90,6 +91,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Response => MessageFamilies::DidExchange,
             A2AMessageKinds::ProblemReport => MessageFamilies::DidExchange,
             A2AMessageKinds::Ack => MessageFamilies::Notification,
+            A2AMessageKinds::Ed25519Signature => MessageFamilies::Signature,
         }
     }
 
@@ -101,6 +103,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Response => "response".to_string(),
             A2AMessageKinds::ProblemReport => "problem_report".to_string(),
             A2AMessageKinds::Ack => "ack".to_string(),
+            A2AMessageKinds::Ed25519Signature => "ed25519Sha512_single".to_string(),
         }
     }
 }
@@ -110,6 +113,7 @@ pub enum MessageFamilies {
     Routing,
     DidExchange,
     Notification,
+    Signature,
     Unknown(String)
 }
 
@@ -119,6 +123,7 @@ impl MessageFamilies {
             MessageFamilies::Routing => "1.0",
             MessageFamilies::DidExchange => "1.0",
             MessageFamilies::Notification => "1.0",
+            MessageFamilies::Signature => "1.0",
             MessageFamilies::Unknown(_) => "1.0"
         }
     }
@@ -129,6 +134,7 @@ impl From<String> for MessageFamilies {
         match family.as_str() {
             "routing" => MessageFamilies::Routing,
             "didexchange" => MessageFamilies::DidExchange,
+            "signature" => MessageFamilies::Signature,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -140,6 +146,7 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::Routing => "routing".to_string(),
             MessageFamilies::DidExchange => "didexchange".to_string(),
             MessageFamilies::Notification => "notification".to_string(),
+            MessageFamilies::Signature => "signature".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }

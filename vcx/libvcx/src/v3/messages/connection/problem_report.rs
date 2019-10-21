@@ -1,4 +1,4 @@
-use v3::messages::{MessageType, MessageId, A2AMessageKinds};
+use v3::messages::{MessageType, MessageId, A2AMessage, A2AMessageKinds};
 use messages::thread::Thread;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,6 +52,27 @@ impl ProblemReport {
             localization: Localization::create(),
             thread: Thread::new(),
         }
+    }
+}
+
+impl ProblemReport {
+    pub fn set_problem_code(mut self, problem_code: ProblemCode) -> ProblemReport {
+        self.problem_code = problem_code;
+        self
+    }
+
+    pub fn set_explain(mut self, explain: String) -> ProblemReport {
+        self.explain = explain;
+        self
+    }
+
+    pub fn set_thread(mut self, thread: Thread) -> ProblemReport {
+        self.thread = thread;
+        self
+    }
+
+    pub fn to_a2a_message(&self) -> A2AMessage {
+        A2AMessage::ProblemReport(self.clone()) // TODO: THINK how to avoid clone
     }
 }
 
