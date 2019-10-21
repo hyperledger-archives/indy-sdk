@@ -60,12 +60,6 @@ async function run() {
     const details = readlineSync.question('Enter your invite details: ');
     const jdetails = JSON.parse(details);
 
-    // current implementation of VCX and Dummy have integration bug such that
-    // the first connection ever created will not see any of the Cloud Agent config (logo, webhookurl, name). Will be
-    // addressed in separate pull request
-    const alicesFirstConnection = await Connection.create({id: 'first_connection'});
-    await alicesFirstConnection.connect('{}');
-
     logger.info("#10 Convert to valid json and string and create a connection to faber");
     const connection_to_faber = await Connection.createWithInvite({id: 'faber', invite: JSON.stringify(jdetails)});
     await connection_to_faber.connect({data: '{"use_public_did": true}'});

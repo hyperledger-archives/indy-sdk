@@ -58,7 +58,6 @@ async function run() {
 
     logger.info(`#2 Using following agent provision to initialize VCX ${JSON.stringify(agentProvision, null, 2)}`);
     await demoCommon.initVcxWithProvisionedAgentConfig(agentProvision);
-    // await vcxUpdateWebhookUrl({webhookUrl: "http://noti.fy/me/here"})
 
     const version = `${getRandomInt(1, 101)}.${getRandomInt(1, 101)}.${getRandomInt(1, 101)}`;
     const schemaData = {
@@ -91,12 +90,6 @@ async function run() {
     const cred_def_id = await cred_def.getCredDefId();
     const credDefHandle = cred_def.handle;
     logger.info(`Created credential with id ${cred_def_id} and handle ${credDefHandle}`);
-
-    // current implementation of VCX and Dummy have integration bug such that
-    // the first connection ever created will not see any of the Cloud Agent config (logo, webhookurl, name). Will be
-    // addressed in separate pull request
-    const fabersFirstConnection = await Connection.create({id: 'first_connection'});
-    await fabersFirstConnection.connect('{}');
 
     logger.info("#5 Create a connection to alice and print out the invite details");
     const connectionToAlice = await Connection.create({id: 'alice'});
