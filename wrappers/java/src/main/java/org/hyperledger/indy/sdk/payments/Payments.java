@@ -12,6 +12,8 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.hyperledger.indy.sdk.Callbacks.boolCallback;
+
 public class Payments extends IndyJava.API {
 
     private Payments() {
@@ -142,22 +144,6 @@ public class Payments extends IndyJava.API {
         }
     };
 
-    /**
-     * Callback used when boolCb completes.
-     */
-    private static Callback boolCb = new Callback() {
-
-        @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int xcommand_handle, int err, boolean valid) {
-
-            CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
-            if (! checkResult(future, err)) return;
-
-            Boolean result = valid;
-            future.complete(result);
-        }
-    };
-	
     /*
      * STATIC METHODS
      */
@@ -909,7 +895,7 @@ public class Payments extends IndyJava.API {
                 message.length,
                 signature,
                 signature.length,
-                boolCb);
+                boolCallback);
 
         checkResult(future, result);
 
