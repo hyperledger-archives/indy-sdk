@@ -85,6 +85,10 @@ pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&
     ledger::build_nym_request(submitter_did, target_did, verkey, alias, role).wait()
 }
 
+pub fn parse_get_nym_response(get_nym_response: &str) -> Result<String, IndyError> {
+    ledger::parse_get_nym_response(get_nym_response).wait()
+}
+
 pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, IndyError> {
     ledger::build_attrib_request(submitter_did, target_did, hash, raw, enc).wait()
 }

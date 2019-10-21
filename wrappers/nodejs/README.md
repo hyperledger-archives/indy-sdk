@@ -1545,6 +1545,28 @@ Builds a GET\_NYM request. Request to get information about a DID \(NYM\).
 
 Errors: `Common*`
 
+#### parseGetNymResponse \( response \) -&gt; nymData
+
+Parse a GET_NYM response to get NYM data.
+
+* `response`: String - response on GET_NYM request.
+* __->__ `nymData`: Json 
+```
+   {
+       did: DID as base58-encoded string for 16 or 32 bit DID value.
+       verkey: verification key as base58-encoded string.
+       role: Role associated number
+                               null (common USER)
+                               0 - TRUSTEE
+                               2 - STEWARD
+                               101 - TRUST_ANCHOR
+                               101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+                               201 - NETWORK_MONITOR
+   }
+```
+
+Errors: `Common*`
+
 #### buildSchemaRequest \( submitterDid, data \) -&gt; request
 
 Builds a SCHEMA request. Request to add Credential's schema.
