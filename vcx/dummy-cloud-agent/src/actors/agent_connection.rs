@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RemoteMsg, HandleAdminMessage, AdminRegisterAgentConnection};
+use actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RemoteMsg, HandleAdminMessage, AdminRegisterAgentConnection, requester};
 use actors::router::Router;
 use domain::a2a::*;
 use domain::a2connection::*;
@@ -114,7 +114,6 @@ impl AgentConnection {
                   router: Addr<Router>,
                   admin: Addr<Admin>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::create >> {:?}", config);
-
         future::ok(())
             .and_then(move |_| {
                 let agent_connection = AgentConnection {
@@ -817,7 +816,7 @@ impl AgentConnection {
         let notification_id = msg_notification.notification_id.clone();
         let ser_msg_notification = serde_json::to_string(&msg_notification).unwrap();
         debug!("Sending webhook notification {} to {} data", notification_id, webhook_url);
-        let send_notification = reqwest::r#async::Client::new()
+        let send_notification = requester::REQWEST_CLIENT
             .post(webhook_url)
             .header("Accepts", "application/json")
             .header("Content-type", "application/json")
