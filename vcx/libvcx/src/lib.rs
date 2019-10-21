@@ -56,6 +56,8 @@ pub mod credential;
 pub mod object_cache;
 pub mod disclosed_proof;
 
+pub mod v3;
+
 #[allow(unused_imports)]
 #[cfg(test)]
 mod tests {

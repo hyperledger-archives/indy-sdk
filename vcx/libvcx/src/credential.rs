@@ -7,7 +7,8 @@ use issuer_credential::{CredentialOffer, CredentialMessage, PaymentInfo};
 use credential_request::CredentialRequest;
 use messages;
 use messages::{GeneralMessage, RemoteMessageType, ObjectWithVersion};
-use messages::payload::{Payloads, PayloadKinds, Thread};
+use messages::payload::{Payloads, PayloadKinds};
+use messages::thread::Thread;
 use messages::get_message;
 use messages::get_message::MessagePayload;
 use connection;
@@ -176,7 +177,6 @@ impl Credential {
     }
 
     fn _check_msg(&mut self, message: Option<String>) -> VcxResult<()> {
-
         let credential = match message {
             None => {
                 let agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
@@ -194,7 +194,7 @@ impl Credential {
                     self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
                 };
                 credential
-            },
+            }
             Some(ref message) => message.clone(),
         };
 
@@ -422,11 +422,11 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
     }).map_err(handle_err)
 }
 
-pub fn generate_credential_request_msg(handle: u32, connection_handle:u32) -> VcxResult<String> {
-     HANDLE_MAP.get_mut(handle, |obj| {
-         let req = obj.generate_request_msg(connection_handle);
-         obj.set_state(VcxStateType::VcxStateOfferSent);
-         req
+pub fn generate_credential_request_msg(handle: u32, connection_handle: u32) -> VcxResult<String> {
+    HANDLE_MAP.get_mut(handle, |obj| {
+        let req = obj.generate_request_msg(connection_handle);
+        obj.set_state(VcxStateType::VcxStateOfferSent);
+        req
     }).map_err(handle_err)
 }
 
@@ -450,7 +450,8 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResu
                                                        &my_vk,
                                                        &agent_did,
                                                        &agent_vk,
-                                                       Some(vec![msg_id.to_string()]))
+                                                       Some(vec![msg_id.to_string()]),
+                                                       None)
         .map_err(|err| err.extend("Cannot get messages"))?;
 
     if message[0].msg_type != RemoteMessageType::CredOffer {
@@ -481,6 +482,7 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
                                                        &my_vk,
                                                        &agent_did,
                                                        &agent_vk,
+                                                       None,
                                                        None)
         .map_err(|err| err.extend("Cannot get messages"))?;
 
@@ -781,6 +783,5 @@ pub mod tests {
         let offer_value: serde_json::Value = serde_json::from_str(&offer_string).unwrap();
 
         let offer_struct: CredentialOffer = serde_json::from_value(offer_value["credential_offer"].clone()).unwrap();
-
     }
 }

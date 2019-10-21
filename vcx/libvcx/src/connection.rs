@@ -7,7 +7,8 @@ use settings;
 use messages;
 use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion};
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
-use messages::payload::{Payloads, Thread};
+use messages::payload::Payloads;
+use messages::thread::Thread;
 use messages::get_message::{Message, MessagePayload};
 use object_cache::ObjectCache;
 use error::prelude::*;
@@ -24,12 +25,12 @@ lazy_static! {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct ConnectionOptions {
+pub struct ConnectionOptions {
     #[serde(default)]
-    connection_type: Option<String>,
+    pub connection_type: Option<String>,
     #[serde(default)]
-    phone: Option<String>,
-    use_public_did: Option<bool>,
+    pub phone: Option<String>,
+    pub use_public_did: Option<bool>,
 }
 
 impl Default for ConnectionOptions {
@@ -39,6 +40,21 @@ impl Default for ConnectionOptions {
             phone: None,
             use_public_did: None,
         }
+    }
+}
+
+impl ConnectionOptions {
+    pub fn from_opt_str(options: Option<String>) -> VcxResult<ConnectionOptions> {
+        Ok(
+            match options.as_ref().map(|opt| opt.trim()) {
+                None => ConnectionOptions::default(),
+                Some(opt) if opt.is_empty() => ConnectionOptions::default(),
+                Some(opt) => {
+                    serde_json::from_str(&opt)
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ConnectionOptions: {}", err)))?
+                }
+            }
+        )
     }
 }
 
@@ -212,13 +228,8 @@ impl Connection {
     fn create_agent_pairwise(&mut self) -> VcxResult<u32> {
         debug!("creating pairwise keys on agent for connection {}", self.source_id);
 
-        let (for_did, for_verkey) = messages::create_keys()
-            .for_did(&self.pw_did)?
-            .for_verkey(&self.pw_verkey)?
-            .send_secure()
-            .map_err(|err| err.extend("Cannot create pairwise keys"))?;
+        let (for_did, for_verkey) = create_agent_keys(&self.source_id, &self.pw_did, &self.pw_verkey)?;
 
-        debug!("create key for connection: {} with did {:?}, vk: {:?}", self.source_id, for_did, for_verkey);
         self.set_agent_did(&for_did);
         self.set_agent_verkey(&for_verkey);
 
@@ -244,6 +255,22 @@ impl Connection {
 
         Ok(error::SUCCESS.code_num)
     }
+}
+
+pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str) -> VcxResult<(String, String)> {
+    /*
+        Create User Pairwise Agent in old way.
+        Send Messages corresponding to V2 Protocol version to avoid code changes on Agency side.
+    */
+    debug!("creating pairwise keys on agent for connection {}", source_id);
+
+    let (agent_did, agent_verkey) = messages::create_keys()
+        .for_did(pw_did)?
+        .for_verkey(pw_verkey)?
+        .send_secure()
+        .map_err(|err| err.extend("Cannot create pairwise keys"))?;
+
+    Ok((agent_did, agent_verkey))
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
@@ -529,15 +556,7 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
-    let options_obj: ConnectionOptions =
-        match options.as_ref().map(|opt| opt.trim()) {
-            None => ConnectionOptions::default(),
-            Some(opt) if opt.is_empty() => ConnectionOptions::default(),
-            Some(opt) => {
-                serde_json::from_str(&opt)
-                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize ConnectionOptions: {}", err)))?
-            }
-        };
+    let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options)?;
 
     CONNECTION_MAP.get_mut(handle, |t| {
         debug!("establish connection {}", t.get_source_id());
