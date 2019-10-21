@@ -288,7 +288,7 @@ impl PluggedStorage {
 }
 
 fn _tags_to_json(tags: &[Tag]) -> IndyResult<String> {
-    let mut string_tags = HashMap::new();
+    let mut string_tags = HashMap::with_capacity(tags.len());
 
     for tag in tags {
         match *tag {
@@ -1474,7 +1474,7 @@ mod tests {
     }
 
     fn _fetch_options(retrieve_value: bool, retrieve_tags: bool, retrieve_type: bool) -> String {
-        let mut map = HashMap::new();
+        let mut map = HashMap::with_capacity(3);
 
         map.insert("retrieveValue", retrieve_value);
         map.insert("retrieveTags", retrieve_tags);
@@ -1484,7 +1484,7 @@ mod tests {
     }
 
     fn _search_options(retrieve_records: bool, retrieve_total_count: bool, retrieve_value: bool, retrieve_tags: bool, retrieve_type: bool) -> String {
-        let mut map = HashMap::new();
+        let mut map = HashMap::with_capacity(5);
 
         map.insert("retrieveRecords", retrieve_records);
         map.insert("retrieveTotalCount", retrieve_total_count);

@@ -1,8 +1,8 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
-use commands::*;
-use utils::table::print_list_table;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
+use crate::commands::*;
+use crate::utils::table::print_list_table;
 use indy::ErrorCode;
-use libindy::wallet::Wallet;
+use crate::libindy::wallet::Wallet;
 
 use serde_json;
 use serde_json::Value as JSONValue;
@@ -10,7 +10,7 @@ use serde_json::Map as JSONMap;
 
 use std::fs;
 use std::fs::File;
-use utils::environment::EnvironmentUtils;
+use crate::utils::environment::EnvironmentUtils;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
@@ -639,7 +639,7 @@ fn map_key_derivation_method(key: Option<&str>) -> Result<&'static str, ()> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::environment::EnvironmentUtils;
+    use crate::utils::environment::EnvironmentUtils;
     use std::path::PathBuf;
 
     const WALLET: &str = "wallet";
