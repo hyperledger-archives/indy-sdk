@@ -16,7 +16,7 @@ use crate::domain::ledger::constants::{GET_VALIDATOR_INFO, POOL_RESTART, ROLE_RE
 use crate::domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
 use crate::domain::ledger::ddo::GetDdoOperation;
 use crate::domain::ledger::node::{NodeOperation, NodeOperationData};
-use crate::domain::ledger::nym::{NymOperation, GetNymOperation};
+use crate::domain::ledger::nym::{GetNymOperation, GetNymReplyResult, GetNymResultDataV0, NymData, NymOperation};
 use crate::domain::ledger::pool::{PoolConfigOperation, PoolRestartOperation, PoolUpgradeOperation, Schedule};
 use crate::domain::ledger::request::{TxnAuthrAgrmtAcceptanceData, Request};
 use crate::domain::ledger::response::{Message, Reply, ReplyType};
@@ -79,6 +79,39 @@ impl LedgerService {
     #[logfn(Info)]
     pub fn build_get_nym_request(&self, identifier: Option<&DidValue>, dest: &DidValue) -> IndyResult<String> {
         build_result!(GetNymOperation, identifier, dest.to_short())
+    }
+
+    #[logfn(Info)]
+    pub fn parse_get_nym_response(&self, get_nym_response: &str) -> IndyResult<String> {
+        let reply: Reply<GetNymReplyResult> = LedgerService::parse_response(get_nym_response)?;
+
+        let nym_data = match reply.result() {
+            GetNymReplyResult::GetNymReplyResultV0(res) => {
+                let data: GetNymResultDataV0 = res.data
+                    .ok_or(IndyError::from_msg(IndyErrorKind::LedgerItemNotFound, format!("Nym not found")))
+                    .and_then(|data| serde_json::from_str(&data)
+                        .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot parse GET_NYM response: {}", err)))
+                    )?;
+
+                NymData {
+                    did: data.dest,
+                    verkey: data.verkey,
+                    role: data.role,
+                }
+            }
+            GetNymReplyResult::GetNymReplyResultV1(res) => {
+                NymData {
+                    did: res.txn.data.did,
+                    verkey: res.txn.data.verkey,
+                    role: res.txn.data.role
+                }
+            }
+        };
+
+        let res = serde_json::to_string(&nym_data)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize NYM data: {}", err)))?;
+
+        Ok(res)
     }
 
     #[logfn(Info)]

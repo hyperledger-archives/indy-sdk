@@ -61,6 +61,11 @@ extern {
                                       cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_parse_get_nym_response(command_handle: CommandHandle,
+                                       get_nym_response: CString,
+                                       cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
     pub fn indy_build_attrib_request(command_handle: CommandHandle,
                                      submitter_did: CString,
                                      target_did: CString,
