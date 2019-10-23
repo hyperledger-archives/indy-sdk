@@ -1,5 +1,7 @@
 use v3::handlers::issuance::states::{HolderState, InitialState};
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
+use v3::handlers::connection::send_message;
+use v3::messages::A2AMessage;
 
 pub struct HolderSM {
     state: HolderState
@@ -23,13 +25,17 @@ impl HolderSM {
                 CredentialIssuanceMessage::CredentialOffer(offer) => {
                     panic!("Accept or reject offer");
                     let offer_accepted = true;
-                    if offer_accepted {
-                        panic!("Send credential request");
-                        HolderState::RequestSent(state_data.into())
+                    let (msg, state) = if offer_accepted {
+                        // TODO: change for A2A cred request
+                        let msg = A2AMessage::Generic("cred_request".to_string());
+                        (msg, HolderState::RequestSent(state_data.into()))
                     } else {
-                        panic!("Send Problem report");
-                        HolderState::Finished(state_data.into())
-                    }
+                        // TODO: change for A2A common problem report
+                        let msg = A2AMessage::Generic("cred_request".to_string());
+                        (msg, HolderState::Finished(state_data.into()))
+                    };
+                    send_message(state_data.connection_handle, msg);
+                    state
                 },
                 _ => {
                     warn!("Credential Issuance can only start on holder side with Credential Offer");
