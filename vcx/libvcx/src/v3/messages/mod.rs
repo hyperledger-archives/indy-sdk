@@ -17,7 +17,7 @@ use self::ack::Ack;
 
 use utils::uuid;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum A2AMessage {
     /// routing
@@ -26,7 +26,7 @@ pub enum A2AMessage {
     /// DID Exchange
     ConnectionRequest(Request),
     ConnectionResponse(SignedResponse),
-    ProblemReport(ProblemReport),
+    ConnectionProblemReport(ProblemReport),
 
     /// notification
     Ack(Ack),
@@ -58,7 +58,7 @@ impl<'de> Deserialize<'de> for A2AMessage {
             }
             "problem_report" => {
                 ProblemReport::deserialize(value)
-                    .map(|msg| A2AMessage::ProblemReport(msg))
+                    .map(|msg| A2AMessage::ConnectionProblemReport(msg))
                     .map_err(de::Error::custom)
             }
             "ack" => {
@@ -77,7 +77,7 @@ pub enum A2AMessageKinds {
     Invitation,
     Request,
     Response,
-    ProblemReport,
+    ConnectionProblemReport,
     Ed25519Signature,
     Ack
 }
@@ -89,7 +89,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Invitation => MessageFamilies::DidExchange,
             A2AMessageKinds::Request => MessageFamilies::DidExchange,
             A2AMessageKinds::Response => MessageFamilies::DidExchange,
-            A2AMessageKinds::ProblemReport => MessageFamilies::DidExchange,
+            A2AMessageKinds::ConnectionProblemReport => MessageFamilies::DidExchange,
             A2AMessageKinds::Ack => MessageFamilies::Notification,
             A2AMessageKinds::Ed25519Signature => MessageFamilies::Signature,
         }
@@ -101,7 +101,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Invitation => "invitation".to_string(),
             A2AMessageKinds::Request => "request".to_string(),
             A2AMessageKinds::Response => "response".to_string(),
-            A2AMessageKinds::ProblemReport => "problem_report".to_string(),
+            A2AMessageKinds::ConnectionProblemReport => "problem_report".to_string(),
             A2AMessageKinds::Ack => "ack".to_string(),
             A2AMessageKinds::Ed25519Signature => "ed25519Sha512_single".to_string(),
         }
@@ -135,6 +135,7 @@ impl From<String> for MessageFamilies {
             "routing" => MessageFamilies::Routing,
             "didexchange" => MessageFamilies::DidExchange,
             "signature" => MessageFamilies::Signature,
+            "notification" => MessageFamilies::Notification,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -198,7 +199,7 @@ impl Serialize for MessageType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MessageId(pub String);
 
 impl MessageId {

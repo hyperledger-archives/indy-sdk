@@ -21,8 +21,7 @@ use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::json::KeyMatch;
 use std::collections::HashMap;
 
-use v3::handlers::connection::CONNECTION_MAP as V3_CONNECTION_MAP;
-use v3::handlers::connection::create_connection_with_invite as create_connection_with_invite_v3;
+use v3::handlers::connection as v3_connection;
 use v3::messages::connection::invite::Invitation as InvitationV3;
 
 lazy_static! {
@@ -273,7 +272,7 @@ pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str) -> VcxR
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    CONNECTION_MAP.has_handle(handle) || V3_CONNECTION_MAP.has_handle(handle)
+    CONNECTION_MAP.has_handle(handle) || v3_connection::CONNECTION_MAP.has_handle(handle)
 }
 
 pub fn set_agent_did(handle: u32, did: &str) -> VcxResult<()> {
@@ -325,6 +324,10 @@ pub fn get_their_public_did(handle: u32) -> VcxResult<Option<String>> {
 }
 
 pub fn get_their_pw_verkey(handle: u32) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::get_their_pw_verkey(handle);
+    }
+
     CONNECTION_MAP.get(handle, |cxn| {
         Ok(cxn.get_their_pw_verkey().to_string())
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
@@ -386,11 +389,17 @@ pub fn set_pw_verkey(handle: u32, verkey: &str) -> VcxResult<()> {
 }
 
 pub fn get_state(handle: u32) -> u32 {
+    // TODO: THINK better way
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::get_state(handle);
+    }
+
     CONNECTION_MAP.get(handle, |cxn| {
         debug!("get state for connection {}", cxn.get_source_id());
         Ok(cxn.get_state().clone())
     }).unwrap_or(0)
 }
+
 
 pub fn set_state(handle: u32, state: VcxStateType) -> VcxResult<()> {
     CONNECTION_MAP.get_mut(handle, |cxn| {
@@ -399,6 +408,10 @@ pub fn set_state(handle: u32, state: VcxStateType) -> VcxResult<()> {
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::get_source_id(handle);
+    }
+
     CONNECTION_MAP.get(handle, |cxn| {
         Ok(cxn.get_source_id().clone())
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
@@ -406,6 +419,11 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
 
 pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     trace!("create_connection >>> source_id: {}", source_id);
+
+    // Initiate connection of new format -- redirect to v3 folder
+    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+        return v3_connection::create_connection(source_id);
+    }
 
     let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
 
@@ -439,7 +457,7 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResul
 
     // Invitation of new format -- redirect to v3 folder
     if let Ok(invitation) = serde_json::from_str::<InvitationV3>(details) {
-        return create_connection_with_invite_v3(source_id, invitation);
+        return v3_connection::create_connection_with_invite(source_id, invitation);
     }
 
     let details: Value = serde_json::from_str(&details)
@@ -504,6 +522,10 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> VcxResult<Sen
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::update_state(handle, message);
+    }
+
     debug!("updating state for connection {}", get_source_id(handle).unwrap_or_default());
     let state = get_state(handle);
 
@@ -539,6 +561,10 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
 }
 
 pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u32> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::process_acceptance_message(handle, message);
+    }
+
     let details = parse_acceptance_details(handle, &message)
         .map_err(|err| err.extend("Cannot parse acceptance details"))?;
 
@@ -550,6 +576,10 @@ pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u3
 }
 
 pub fn delete_connection(handle: u32) -> VcxResult<u32> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::delete_connection(handle);
+    }
+
     CONNECTION_MAP.get_mut(handle, |t| {
         debug!("delete connection: {}", t.get_source_id());
         t.delete_connection()
@@ -560,6 +590,10 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::connect(handle, options);
+    }
+
     let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options)?;
 
     CONNECTION_MAP.get_mut(handle, |t| {
@@ -571,28 +605,44 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::to_string(handle);
+    }
+
     CONNECTION_MAP.get(handle, |t| {
         Connection::to_string(&t)
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
 pub fn from_string(connection_data: &str) -> VcxResult<u32> {
-    let derived_connection: Connection = Connection::from_str(connection_data)?;
-    let handle = CONNECTION_MAP.add(derived_connection)?;
-    debug!("inserting handle {} source_id {} into connection table", handle, get_source_id(handle).unwrap_or_default());
-    Ok(handle)
+    if let Ok(derived_connection) = Connection::from_str(connection_data) {
+        let handle = CONNECTION_MAP.add(derived_connection)?;
+        debug!("inserting handle {} source_id {} into connection table", handle, get_source_id(handle).unwrap_or_default());
+        Ok(handle)
+    } else {
+        v3_connection::from_string(connection_data)
+    }
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::release(handle);
+    }
+
     CONNECTION_MAP.release(handle)
         .or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
 pub fn release_all() {
     CONNECTION_MAP.drain().ok();
+    v3_connection::CONNECTION_MAP.drain().ok();
 }
 
 pub fn get_invite_details(handle: u32, abbreviated: bool) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(handle) {
+        return v3_connection::get_invite_details(handle, abbreviated);
+    }
+
     debug!("get invite details for connection {}", get_source_id(handle).unwrap_or_default());
 
     CONNECTION_MAP.get(handle, |t| {

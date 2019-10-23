@@ -1,12 +1,11 @@
 use utils::libindy::crypto;
-use utils::httpclient;
 
 use error::prelude::*;
 use v3::messages::A2AMessage;
 use v3::messages::connection::remote_info::RemoteConnectionInfo;
 use v3::messages::forward::Forward;
 
-pub struct EncryptionEnvelope(Vec<u8>);
+pub struct EncryptionEnvelope(pub Vec<u8>);
 
 impl EncryptionEnvelope {
     pub fn create(message: &A2AMessage,
@@ -15,11 +14,6 @@ impl EncryptionEnvelope {
         EncryptionEnvelope::encrypt_for_pairwise(message, pw_verkey, remote_connection_info)
             .and_then(|message| EncryptionEnvelope::wrap_into_forward_messages(message, remote_connection_info))
             .map(|message| EncryptionEnvelope(message))
-    }
-
-    pub fn send(&self) -> VcxResult<()> {
-        httpclient::post_u8(&self.0)?;
-        Ok(())
     }
 
     fn encrypt_for_pairwise(message: &A2AMessage,
@@ -35,20 +29,17 @@ impl EncryptionEnvelope {
         crypto::pack_message(Some(&pw_verkey), &receiver_keys, message.as_bytes())
     }
 
-    fn wrap_into_forward_messages(message: Vec<u8>,
+    fn wrap_into_forward_messages(mut message: Vec<u8>,
                                   remote_connection_info: &RemoteConnectionInfo) -> VcxResult<Vec<u8>> {
-        let mut routing_keys_iter = remote_connection_info.routing_keys.iter().peekable();
+        let mut to = remote_connection_info.recipient_keys.get(0)
+            .map(String::from)
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Recipient Key not found"))?;
 
-        let mut message: Vec<u8> = Vec::new();
+        let routing_keys_iter = remote_connection_info.routing_keys.iter().rev();
 
-        while let Some(routing_key) = routing_keys_iter.next() {
-            let to = routing_keys_iter.peek()
-                .map(|key| key.to_string())
-                .unwrap_or_else(||
-                    remote_connection_info.recipient_keys.get(0).map(String::from)
-                        .unwrap_or_default());
-
-            message = EncryptionEnvelope::wrap_into_forward(message, &to, routing_key)?;
+        for routing_key in routing_keys_iter {
+            message = EncryptionEnvelope::wrap_into_forward(message, &to, &routing_key)?;
+            to = routing_key.clone();
         }
 
         Ok(message)
@@ -84,3 +75,68 @@ impl EncryptionEnvelope {
     }
 }
 
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use v3::messages::ack::tests::_ack;
+    use v3::messages::connection::did_doc::tests::*;
+    use utils::libindy::tests::test_setup;
+    use utils::libindy::crypto::create_key;
+
+    #[test]
+    fn test_encryption_envelope_recipient_only_works() {
+        let setup = test_setup::key();
+
+        let info = RemoteConnectionInfo {
+            label: _label(),
+            recipient_keys: _recipient_keys(),
+            routing_keys: vec![],
+            service_endpoint: _service_endpoint(),
+        };
+
+        let message = A2AMessage::Ack(_ack());
+
+        let envelope = EncryptionEnvelope::create(&message, &setup.key, &info).unwrap();
+        assert_eq!(message, EncryptionEnvelope::open(&_key_1(), &::serde_json::from_slice(&envelope.0).unwrap()).unwrap());
+    }
+
+    #[test]
+    fn test_encryption_envelope_works() {
+        let setup = test_setup::key();
+        let key_1 = create_key().unwrap();
+        let key_2 = create_key().unwrap();
+
+        let info = RemoteConnectionInfo {
+            label: _label(),
+            recipient_keys: _recipient_keys(),
+            routing_keys: vec![key_1.clone(), key_2.clone()],
+            service_endpoint: _service_endpoint(),
+        };
+
+        let ack = A2AMessage::Ack(_ack());
+
+        let envelope = EncryptionEnvelope::create(&ack, &setup.key, &info).unwrap();
+
+        let message_1 = EncryptionEnvelope::open(&key_1, &::serde_json::from_slice(&envelope.0).unwrap()).unwrap();
+
+        let message_1 = match message_1 {
+            A2AMessage::Forward(forward) => {
+                assert_eq!(key_2, forward.to);
+                forward.msg
+            },
+            _ => return assert!(false)
+        };
+
+        let message_2 = EncryptionEnvelope::open(&key_2, &message_1).unwrap();
+
+        let message_2 = match message_2 {
+            A2AMessage::Forward(forward) => {
+                assert_eq!(_key_1(), forward.to);
+                forward.msg
+            },
+            _ => return assert!(false)
+        };
+
+        assert_eq!(ack, EncryptionEnvelope::open(&_key_1(), &message_2).unwrap());
+    }
+}

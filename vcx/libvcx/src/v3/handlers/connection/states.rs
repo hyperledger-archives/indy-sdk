@@ -25,37 +25,31 @@ pub struct NullState {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InvitedState {
-    pub remote_info: Option<RemoteConnectionInfo>
+    pub invitation: Invitation
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestedState {
+    pub invitation: Invitation,
     pub remote_info: RemoteConnectionInfo
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RespondedState {
-    pub remote_info: RemoteConnectionInfo
+    pub invitation: Invitation,
+    pub remote_info: RemoteConnectionInfo,
+    pub prev_agent_info: Option<AgentInfo>
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteState {
+    pub invitation: Invitation,
     pub remote_info: RemoteConnectionInfo
-}
-
-impl From<NullState> for InvitedState {
-    fn from(state: NullState) -> InvitedState {
-        InvitedState {
-            remote_info: None
-        }
-    }
 }
 
 impl From<(NullState, Invitation)> for InvitedState {
     fn from((state, invitation): (NullState, Invitation)) -> InvitedState {
-        InvitedState {
-            remote_info: Some(RemoteConnectionInfo::from(invitation))
-        }
+        InvitedState { invitation: invitation.clone() }
     }
 }
 
@@ -67,13 +61,13 @@ impl From<(InvitedState, ProblemReport)> for NullState {
 
 impl From<(InvitedState, Request)> for RequestedState {
     fn from((state, request): (InvitedState, Request)) -> RequestedState {
-        RequestedState { remote_info: RemoteConnectionInfo::from(request) }
+        RequestedState { invitation: state.invitation, remote_info: RemoteConnectionInfo::from(request) }
     }
 }
 
 impl From<InvitedState> for RequestedState {
     fn from(state: InvitedState) -> RequestedState {
-        RequestedState { remote_info: state.remote_info.unwrap() }
+        RequestedState { invitation: state.invitation.clone(), remote_info: RemoteConnectionInfo::from(state.invitation) }
     }
 }
 
@@ -83,11 +77,9 @@ impl From<(RequestedState, ProblemReport)> for NullState {
     }
 }
 
-impl From<RequestedState> for RespondedState {
-    fn from(state: RequestedState) -> RespondedState {
-        RespondedState {
-            remote_info: state.remote_info,
-        }
+impl From<(RequestedState, AgentInfo)> for RespondedState {
+    fn from((state, agent_info): (RequestedState, AgentInfo)) -> RespondedState {
+        RespondedState { invitation: state.invitation, remote_info: state.remote_info, prev_agent_info: Some(agent_info) }
     }
 }
 
@@ -95,25 +87,25 @@ impl From<(RequestedState, Response)> for RespondedState {
     fn from((state, response): (RequestedState, Response)) -> RespondedState {
         let mut remote_info = RemoteConnectionInfo::from(response);
         remote_info.label = state.remote_info.label.clone();
-        RespondedState { remote_info }
+        RespondedState { invitation: state.invitation, remote_info, prev_agent_info: None }
     }
 }
 
-impl From<(RespondedState, ProblemReport)> for InvitedState {
-    fn from((state, error): (RespondedState, ProblemReport)) -> InvitedState {
-        InvitedState { remote_info: Some(state.remote_info) }
+impl From<(RespondedState, ProblemReport)> for NullState {
+    fn from((state, error): (RespondedState, ProblemReport)) -> NullState {
+        NullState {}
     }
 }
 
 impl From<(RespondedState, Ack)> for CompleteState {
     fn from((state, ack): (RespondedState, Ack)) -> CompleteState {
-        CompleteState { remote_info: state.remote_info }
+        CompleteState { invitation: state.invitation, remote_info: state.remote_info }
     }
 }
 
 impl From<RespondedState> for CompleteState {
     fn from(state: RespondedState) -> CompleteState {
-        CompleteState { remote_info: state.remote_info }
+        CompleteState { invitation: state.invitation, remote_info: state.remote_info }
     }
 }
 
@@ -124,7 +116,7 @@ pub enum Messages {
     InvitationReceived(Invitation),
     ExchangeRequestSent(Request),
     ExchangeRequestReceived(Request),
-    ExchangeResponseSent(Response),
+    ExchangeResponseSent(Response, AgentInfo),
     ExchangeResponseReceived(Response),
     AckSent(Ack),
     AckReceived(Ack),
@@ -146,7 +138,7 @@ impl DidExchangeState {
         match state {
             DidExchangeState::Null(state) => {
                 match message {
-                    Messages::InvitationSent(invitation) => DidExchangeState::Invited(state.into()),
+                    Messages::InvitationSent(invitation) => DidExchangeState::Invited((state, invitation).into()),
                     Messages::InvitationReceived(invitation) => DidExchangeState::Invited((state, invitation).into()),
                     _ => DidExchangeState::Null(state)
                 }
@@ -162,14 +154,14 @@ impl DidExchangeState {
             DidExchangeState::Requested(state) => {
                 match message {
                     Messages::Error(error) => DidExchangeState::Null((state, error).into()),
-                    Messages::ExchangeResponseSent(response) => DidExchangeState::Responded(state.into()),
+                    Messages::ExchangeResponseSent(response, agent_info) => DidExchangeState::Responded((state, agent_info).into()),
                     Messages::ExchangeResponseReceived(response) => DidExchangeState::Responded((state, response).into()),
                     _ => DidExchangeState::Requested(state)
                 }
             }
             DidExchangeState::Responded(state) => {
                 match message {
-                    Messages::Error(error) => DidExchangeState::Invited((state, error).into()),
+                    Messages::Error(error) => DidExchangeState::Null((state, error).into()),
                     Messages::AckSent(ack) => DidExchangeState::Complete(state.into()),
                     Messages::AckReceived(ack) => DidExchangeState::Complete((state, ack).into()),
                     _ => DidExchangeState::Responded(state)
@@ -178,6 +170,14 @@ impl DidExchangeState {
             DidExchangeState::Complete(state) => DidExchangeState::Complete(state)
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentInfo {
+    pub pw_did: String,
+    pub pw_vk: String,
+    pub agent_did: String,
+    pub agent_vk: String
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

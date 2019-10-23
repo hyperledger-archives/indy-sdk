@@ -1,7 +1,6 @@
 use error::prelude::*;
 use utils::libindy::crypto;
 use base64;
-use rust_base58::ToBase58;
 use time;
 
 use messages::thread::Thread;
@@ -9,7 +8,7 @@ use v3::messages::A2AMessage;
 use v3::messages::connection::did_doc::*;
 use v3::messages::{MessageType, MessageId, A2AMessageKinds};
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Response {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
@@ -20,13 +19,13 @@ pub struct Response {
     pub connection: ConnectionData
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct ConnectionData {
     pub did: String,
     pub did_doc: DidDoc,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct SignedResponse {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
@@ -38,7 +37,7 @@ pub struct SignedResponse {
     pub connection_sig: ConnectionSignature
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct ConnectionSignature {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
@@ -49,34 +48,17 @@ pub struct ConnectionSignature {
 
 impl Response {
     pub fn create() -> Response {
-        Response {
-            msg_type: MessageType::build(A2AMessageKinds::Response),
-            id: MessageId::new(),
-            thread: Thread::new(),
-            connection: ConnectionData {
-                did: String::new(),
-                did_doc: DidDoc {
-                    context: String::from(CONTEXT),
-                    id: String::new(),
-                    public_key: vec![],
-                    authentication: vec![],
-                    service: vec![Service {
-                        // TODO: FIXME Several services????
-                        id: String::from("did:example:123456789abcdefghi;did-communication"),
-                        type_: String::from("did-communication"),
-                        priority: 0,
-                        service_endpoint: String::new(),
-                        recipient_keys: Vec::new(),
-                        routing_keys: Vec::new(),
-                    }],
-                }
-            },
-        }
+        Response::default()
+    }
+
+    pub fn set_id(mut self, id: MessageId) -> Response {
+        self.id = id;
+        self
     }
 
     pub fn set_did(mut self, did: String) -> Response {
         self.connection.did = did.clone();
-        self.connection.did_doc.id = did;
+        self.connection.did_doc.set_id(did);
         self
     }
 
@@ -85,13 +67,8 @@ impl Response {
         self
     }
 
-    pub fn set_recipient_keys(mut self, recipient_keys: Vec<String>) -> Response {
-        self.connection.did_doc.set_recipient_keys(recipient_keys);
-        self
-    }
-
-    pub fn set_routing_keys(mut self, routing_keys: Vec<String>) -> Response {
-        self.connection.did_doc.set_routing_keys(routing_keys);
+    pub fn set_keys(mut self, recipient_keys: Vec<String>, routing_keys: Vec<String>) -> Response {
+        self.connection.did_doc.set_keys(recipient_keys, routing_keys);
         self
     }
 
@@ -134,13 +111,14 @@ impl Response {
 
 impl SignedResponse {
     pub fn decode(self, invite_key: &str) -> VcxResult<Response> {
-        let signers = base64::decode_config(&self.connection_sig.signers.as_bytes(), base64::URL_SAFE)
+        let signers = base64::decode_config(&self.connection_sig.signers, base64::URL_SAFE)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode ConnectionResponse: {:?}", err)))?;
 
         let signature = base64::decode_config(&self.connection_sig.signature.as_bytes(), base64::URL_SAFE)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode ConnectionResponse: {:?}", err)))?;
 
-        let key = signers.to_base58();
+        let key = ::std::str::from_utf8(&signers)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode Response: {:?}", err)))?;
 
         if !crypto::verify(&key, &self.connection_sig.sig_data.as_bytes(), &signature)? {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "ConnectionResponse signature is invalid"));
@@ -153,7 +131,8 @@ impl SignedResponse {
         let sig_data = base64::decode_config(&self.connection_sig.sig_data.as_bytes(), base64::URL_SAFE)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode ConnectionResponse: {:?}", err)))?;
 
-        let sig_data = &sig_data[8..];
+        let sig_data = &sig_data[10..]; // TODO: FIXME.  proper way to find start
+
         let connection: ConnectionData = ::serde_json::from_slice(&sig_data)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err.to_string()))?;
 
@@ -167,5 +146,83 @@ impl SignedResponse {
 
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::ConnectionResponse(self.clone()) // TODO: THINK how to avoid clone
+    }
+}
+
+impl Default for Response {
+    fn default() -> Response {
+        Response {
+            msg_type: MessageType::build(A2AMessageKinds::Response),
+            id: MessageId::new(),
+            thread: Thread::new(),
+            connection: ConnectionData {
+                did: String::new(),
+                did_doc: DidDoc::default()
+            },
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use v3::messages::connection::did_doc::tests::*;
+    use utils::libindy::tests::test_setup;
+
+    fn _did() -> String {
+        String::from("VsKV7grR1BUE29mG2Fm2kX")
+    }
+
+    fn _id() -> MessageId {
+        MessageId(String::from("testid"))
+    }
+
+    pub fn _thread() -> Thread {
+        Thread::new().set_thid(String::from("test_id"))
+    }
+
+    pub fn _response() -> Response {
+        Response {
+            msg_type: MessageType::build(A2AMessageKinds::Response),
+            id: _id(),
+            thread: _thread(),
+            connection: ConnectionData {
+                did: _did(),
+                did_doc: _did_doc()
+            },
+        }
+    }
+
+    fn _encoded_response() -> SignedResponse {
+        SignedResponse {
+            msg_type: MessageType::build(A2AMessageKinds::Response),
+            id: _id(),
+            thread: _thread(),
+            connection_sig: ConnectionSignature {
+                msg_type: MessageType::build(A2AMessageKinds::Ed25519Signature),
+                signature: String::from("yeadfeBWKn09j5XU3ITUE3gPbUDmPNeblviyjrOIDdVMT5WZ8wxMCxQ3OpAnmq1o-Gz0kWib9zr0PLsbGc2jCA=="),
+                sig_data: String::from("MTU3MTg0NzQwM3siZGlkIjoiVnNLVjdnclIxQlVFMjltRzJGbTJrWCIsImRpZF9kb2MiOnsiQGNvbnRleHQiOiJodHRwczovL3czaWQub3JnL2RpZC92MSIsImF1dGhlbnRpY2F0aW9uIjpbeyJwdWJsaWNLZXkiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzEiLCJ0eXBlIjoiRWQyNTUxOVNpZ25hdHVyZUF1dGhlbnRpY2F0aW9uMjAxOCJ9XSwiaWQiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIiwicHVibGljS2V5IjpbeyJpZCI6IjEiLCJvd25lciI6IlZzS1Y3Z3JSMUJVRTI5bUcyRm0ya1giLCJwdWJsaWNLZXlCYXNlNTgiOiI3SjNYczhLUVV0U2ZNenB0ZVVLcThiNDg5bzdENFB4QVkxSjFKQUxDNDF6ayIsInR5cGUiOiJFZDI1NTE5VmVyaWZpY2F0aW9uS2V5MjAxOCJ9LHsiaWQiOiIyIiwib3duZXIiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIiwicHVibGljS2V5QmFzZTU4IjoiSGV6Y2UyVVdNWjN3VWhWa2gyTGZLU3M4bkR6V3d6czJXaW43RXpOTjNZYVIiLCJ0eXBlIjoiRWQyNTUxOVZlcmlmaWNhdGlvbktleTIwMTgifSx7ImlkIjoiMyIsIm93bmVyIjoiVnNLVjdnclIxQlVFMjltRzJGbTJrWCIsInB1YmxpY0tleUJhc2U1OCI6IjNMWXV4SkJKa25nRGJ2Smo0emp4MTNEQlVkWjJQOTZlTnlid2QybjlMOUFVIiwidHlwZSI6IkVkMjU1MTlWZXJpZmljYXRpb25LZXkyMDE4In1dLCJzZXJ2aWNlIjpbeyJpZCI6ImRpZDpleGFtcGxlOjEyMzQ1Njc4OWFiY2RlZmdoaTtkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIlZzS1Y3Z3JSMUJVRTI5bUcyRm0ya1gjMSJdLCJyb3V0aW5nS2V5cyI6WyJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzIiLCJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzMiXSwic2VydmljZUVuZHBvaW50IjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwidHlwZSI6ImRpZC1jb21tdW5pY2F0aW9uIn1dfX0="),
+                signers: String::from("R0oxU3pvV3phdlFZZk5MOVhrYUpkclFlamZ6dE40WHFkc2lWNGN0M0xYS0w="),
+            },
+        }
+    }
+
+    #[test]
+    fn test_response_build_works() {
+        let response: Response = Response::default()
+            .set_id(_id())
+            .set_did(_did())
+            .set_thread(_thread())
+            .set_service_endpoint(_service_endpoint())
+            .set_keys(_recipient_keys(), _routing_keys());
+
+        assert_eq!(_response(), response);
+    }
+
+    #[test]
+    fn test_response_encode_works() {
+        let setup = test_setup::key();
+        let signed_response: SignedResponse = _response().encode(&setup.key).unwrap();
+        assert_eq!(_response(), signed_response.decode(&setup.key).unwrap());
     }
 }

@@ -1,7 +1,7 @@
 use v3::messages::{MessageType, MessageId, A2AMessage, A2AMessageKinds};
 use messages::thread::Thread;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProblemReport {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
@@ -16,8 +16,7 @@ pub struct ProblemReport {
     pub thread: Thread
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ProblemCode {
     Empty,
     #[serde(rename = "request_not_accepted")]
@@ -30,13 +29,12 @@ pub enum ProblemCode {
     ResponseProcessingError
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Localization {
     locale: Locales
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Locales {
     #[serde(rename = "en")]
     En,
@@ -44,18 +42,16 @@ pub enum Locales {
 
 impl ProblemReport {
     pub fn create() -> ProblemReport {
-        ProblemReport {
-            msg_type: MessageType::build(A2AMessageKinds::ProblemReport),
-            id: MessageId::new(),
-            problem_code: ProblemCode::Empty,
-            explain: String::new(),
-            localization: Localization::create(),
-            thread: Thread::new(),
-        }
+        ProblemReport::default()
     }
 }
 
 impl ProblemReport {
+    pub fn set_id(mut self, id: MessageId) -> ProblemReport {
+        self.id = id;
+        self
+    }
+
     pub fn set_problem_code(mut self, problem_code: ProblemCode) -> ProblemReport {
         self.problem_code = problem_code;
         self
@@ -72,12 +68,65 @@ impl ProblemReport {
     }
 
     pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::ProblemReport(self.clone()) // TODO: THINK how to avoid clone
+        A2AMessage::ConnectionProblemReport(self.clone()) // TODO: THINK how to avoid clone
     }
 }
 
-impl Localization {
-    pub fn create() -> Localization {
+impl Default for ProblemReport {
+    fn default() -> ProblemReport {
+        ProblemReport {
+            msg_type: MessageType::build(A2AMessageKinds::ConnectionProblemReport),
+            id: MessageId::new(),
+            problem_code: ProblemCode::Empty,
+            explain: String::new(),
+            localization: Localization::default(),
+            thread: Thread::new(),
+        }
+    }
+}
+
+impl Default for Localization {
+    fn default() -> Localization {
         Localization { locale: Locales::En }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use v3::messages::connection::response::tests::*;
+
+    fn _id() -> MessageId {
+        MessageId(String::from("testid"))
+    }
+
+    fn _problem_code() -> ProblemCode {
+        ProblemCode::ResponseProcessingError
+    }
+
+    fn _explain() -> String {
+        String::from("test explanation")
+    }
+
+    fn _problem_report() -> ProblemReport {
+        ProblemReport {
+            msg_type: MessageType::build(A2AMessageKinds::ConnectionProblemReport),
+            id:  _id(),
+            problem_code: _problem_code(),
+            explain: _explain(),
+            localization: Localization::default(),
+            thread: _thread(),
+        }
+    }
+
+    #[test]
+    fn test_problem_report_build_works() {
+        let report: ProblemReport = ProblemReport::default()
+            .set_id(_id())
+            .set_problem_code(_problem_code())
+            .set_explain(_explain())
+            .set_thread(_thread());
+
+        assert_eq!(_problem_report(), report);
     }
 }

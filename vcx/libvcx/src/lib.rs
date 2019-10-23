@@ -38,7 +38,6 @@ extern crate failure;
 extern crate rmp_serde;
 
 extern crate base64;
-extern crate rust_base58;
 
 #[macro_use]
 pub mod utils;
