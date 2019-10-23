@@ -45,7 +45,7 @@ pub enum Locales {
 impl ProblemReport {
     pub fn create() -> ProblemReport {
         ProblemReport {
-            msg_type: MessageType::build(A2AMessageKinds::ProblemReport),
+            msg_type: MessageType::build(A2AMessageKinds::ConnectionProblemReport),
             id: MessageId::new(),
             problem_code: ProblemCode::Empty,
             explain: String::new(),

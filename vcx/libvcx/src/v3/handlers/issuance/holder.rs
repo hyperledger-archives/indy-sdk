@@ -8,9 +8,9 @@ pub struct HolderSM {
 }
 
 impl HolderSM {
-    pub fn new() -> Self {
+    pub fn new(connection_handle: u32) -> Self {
         HolderSM {
-            state: HolderState::Initial(InitialState {})
+            state: HolderState::Initial(InitialState {connection_handle})
         }
     }
 

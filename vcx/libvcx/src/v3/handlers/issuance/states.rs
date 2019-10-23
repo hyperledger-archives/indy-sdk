@@ -13,35 +13,53 @@ pub enum IssuerState {
 }
 
 #[derive(Debug)]
-pub struct InitialState {}
+pub struct InitialState {
+    pub connection_handle: u32,
+}
+
+impl InitialState {
+    pub fn new(connection_handle: u32) -> Self {
+        InitialState {
+            connection_handle
+        }
+    }
+}
 
 #[derive(Debug)]
-pub struct OfferSentState {}
+pub struct OfferSentState {
+    pub connection_handle: u32,
+}
 
 #[derive(Debug)]
-pub struct CredentialSentState {}
+pub struct CredentialSentState {
+    pub connection_handle: u32,
+}
 
 #[derive(Debug)]
 pub struct FinishedState {}
 
 impl From<InitialState> for OfferSentState {
-    fn from(_state: InitialState) -> Self {
+    fn from(state: InitialState) -> Self {
         trace!("SM is now in OfferSent state");
-        OfferSentState {}
+        OfferSentState {
+            connection_handle: state.connection_handle
+        }
     }
 }
 
 impl From<InitialState> for FinishedState {
-    fn from(_state: InitialState) -> Self {
+    fn from(state: InitialState) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {}
     }
 }
 
 impl From<OfferSentState> for CredentialSentState {
-    fn from(_state: OfferSentState) -> Self {
+    fn from(state: OfferSentState) -> Self {
         trace!("SM is now in CredentialSent state");
-        CredentialSentState {}
+        CredentialSentState {
+            connection_handle: state.connection_handle
+        }
     }
 
 }
@@ -68,12 +86,16 @@ pub enum HolderState {
 }
 
 #[derive(Debug)]
-pub struct RequestSentState {}
+pub struct RequestSentState {
+    pub connection_handle: u32,
+}
 
 impl From<InitialState> for RequestSentState {
-    fn from(_: InitialState) -> Self {
+    fn from(state: InitialState) -> Self {
         trace!("SM is now in RequestSent state");
-        RequestSentState{}
+        RequestSentState{
+            connection_handle: state.connection_handle
+        }
     }
 }
 

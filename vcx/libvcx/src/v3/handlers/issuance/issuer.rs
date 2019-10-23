@@ -1,14 +1,17 @@
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::states::{IssuerState, InitialState};
+use v3::handlers::connection::send_message;
 
 pub struct IssuerSM {
     state: IssuerState,
 }
 
 impl IssuerSM {
-    pub fn new() -> Self {
+    pub fn new(connection_handle: u32) -> Self {
         IssuerSM {
-            state: IssuerState::Initial(InitialState{})
+            state: IssuerState::Initial(InitialState{
+                connection_handle
+            })
         }
     }
 
