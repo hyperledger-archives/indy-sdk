@@ -13,6 +13,12 @@ pub struct RemoteConnectionInfo {
     pub routing_keys: Vec<String>,
 }
 
+impl RemoteConnectionInfo {
+    pub fn set_label(&mut self, label: String){
+        self.label = label
+    }
+}
+
 impl From<Invitation> for RemoteConnectionInfo {
     fn from(invite: Invitation) -> RemoteConnectionInfo {
         RemoteConnectionInfo {

@@ -1,9 +1,19 @@
+use v3::messages::connection::agent_info::AgentInfo;
 use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::Response;
 use v3::messages::connection::problem_report::ProblemReport;
 use v3::messages::connection::remote_info::RemoteConnectionInfo;
 use v3::messages::ack::Ack;
+
+use messages::update_connection::send_delete_connection_message;
+
+use error::prelude::*;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DidExchangeStateSM {
+    pub state: DidExchangeState // TODO FIX public
+}
 
 /// Transitions of Connection state
 /// Null -> Invited
@@ -49,62 +59,72 @@ pub struct CompleteState {
 
 impl From<(NullState, Invitation)> for InvitedState {
     fn from((state, invitation): (NullState, Invitation)) -> InvitedState {
-        InvitedState { invitation: invitation.clone() }
+        trace!("DidExchangeStateSM: transit state from NullState to InvitedState");
+        InvitedState { invitation }
     }
 }
 
 impl From<(InvitedState, ProblemReport)> for NullState {
     fn from((state, error): (InvitedState, ProblemReport)) -> NullState {
+        trace!("DidExchangeStateSM: transit state from InvitedState to NullState");
         NullState {}
     }
 }
 
 impl From<(InvitedState, Request)> for RequestedState {
     fn from((state, request): (InvitedState, Request)) -> RequestedState {
+        trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
         RequestedState { invitation: state.invitation, remote_info: RemoteConnectionInfo::from(request) }
     }
 }
 
 impl From<InvitedState> for RequestedState {
     fn from(state: InvitedState) -> RequestedState {
+        trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
         RequestedState { invitation: state.invitation.clone(), remote_info: RemoteConnectionInfo::from(state.invitation) }
     }
 }
 
 impl From<(RequestedState, ProblemReport)> for NullState {
     fn from((state, error): (RequestedState, ProblemReport)) -> NullState {
+        trace!("DidExchangeStateSM: transit state from RequestedState to NullState");
         NullState {}
     }
 }
 
 impl From<(RequestedState, AgentInfo)> for RespondedState {
     fn from((state, agent_info): (RequestedState, AgentInfo)) -> RespondedState {
+        trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
         RespondedState { invitation: state.invitation, remote_info: state.remote_info, prev_agent_info: Some(agent_info) }
     }
 }
 
 impl From<(RequestedState, Response)> for RespondedState {
     fn from((state, response): (RequestedState, Response)) -> RespondedState {
+        trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
         let mut remote_info = RemoteConnectionInfo::from(response);
-        remote_info.label = state.remote_info.label.clone();
+        remote_info.set_label(state.remote_info.label);
         RespondedState { invitation: state.invitation, remote_info, prev_agent_info: None }
     }
 }
 
 impl From<(RespondedState, ProblemReport)> for NullState {
     fn from((state, error): (RespondedState, ProblemReport)) -> NullState {
+        trace!("DidExchangeStateSM: transit state from RespondedState to NullState");
         NullState {}
     }
 }
 
 impl From<(RespondedState, Ack)> for CompleteState {
     fn from((state, ack): (RespondedState, Ack)) -> CompleteState {
+        trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
         CompleteState { invitation: state.invitation, remote_info: state.remote_info }
     }
 }
 
 impl From<RespondedState> for CompleteState {
     fn from(state: RespondedState) -> CompleteState {
+        trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
         CompleteState { invitation: state.invitation, remote_info: state.remote_info }
     }
 }
@@ -122,9 +142,15 @@ pub enum Messages {
     AckReceived(Ack),
 }
 
-impl DidExchangeState {
+impl DidExchangeStateSM {
+    pub fn new() -> Self {
+        DidExchangeStateSM {
+            state: DidExchangeState::Null(NullState {})
+        }
+    }
+
     pub fn state(&self) -> u32 {
-        match self {
+        match self.state {
             DidExchangeState::Null(_) => 1,
             DidExchangeState::Invited(_) => 2,
             DidExchangeState::Requested(_) => 3,
@@ -133,9 +159,11 @@ impl DidExchangeState {
         }
     }
 
-    pub fn step(&self, message: Messages) -> DidExchangeState {
-        let state = self.clone();
-        match state {
+    pub fn step(self, message: Messages) -> VcxResult<DidExchangeStateSM> {
+        trace!("DidExchangeStateSM::step >>> message: {:?}", message);
+
+        let DidExchangeStateSM { state } = self;
+        let state = match state {
             DidExchangeState::Null(state) => {
                 match message {
                     Messages::InvitationSent(invitation) => DidExchangeState::Invited((state, invitation).into()),
@@ -163,21 +191,52 @@ impl DidExchangeState {
                 match message {
                     Messages::Error(error) => DidExchangeState::Null((state, error).into()),
                     Messages::AckSent(ack) => DidExchangeState::Complete(state.into()),
-                    Messages::AckReceived(ack) => DidExchangeState::Complete((state, ack).into()),
+                    Messages::AckReceived(ack) => {
+                        if let Some(ref info) = state.prev_agent_info {
+                            send_delete_connection_message(&info.pw_did, &info.pw_vk, &info.agent_did, &info.agent_vk)?;
+                        }
+
+                        DidExchangeState::Complete((state, ack).into())
+                    },
                     _ => DidExchangeState::Responded(state)
                 }
             }
             DidExchangeState::Complete(state) => DidExchangeState::Complete(state)
+        };
+        Ok(DidExchangeStateSM { state })
+    }
+
+    pub fn remote_connection_info(&self, actor: &Actor) -> Option<RemoteConnectionInfo> {
+        match self.state {
+            DidExchangeState::Null(_) => None,
+            DidExchangeState::Invited(ref state) => {
+                match actor {
+                    Actor::Inviter => None,
+                    Actor::Invitee => Some(RemoteConnectionInfo::from(state.invitation.clone()))
+                }
+            }
+            DidExchangeState::Requested(ref state) => Some(state.remote_info.clone()),
+            DidExchangeState::Responded(ref state) => Some(state.remote_info.clone()),
+            DidExchangeState::Complete(ref state) => Some(state.remote_info.clone()),
         }
     }
-}
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentInfo {
-    pub pw_did: String,
-    pub pw_vk: String,
-    pub agent_did: String,
-    pub agent_vk: String
+    pub fn get_invitation(&self) -> Option<&Invitation> {
+        match self.state {
+            DidExchangeState::Null(_) => None,
+            DidExchangeState::Invited(ref state) => Some(&state.invitation),
+            DidExchangeState::Requested(ref state) => Some(&state.invitation),
+            DidExchangeState::Responded(ref state) => Some(&state.invitation),
+            DidExchangeState::Complete(ref state) => Some(&state.invitation),
+        }
+    }
+
+    pub fn prev_agent_info(&self) -> Option<&AgentInfo>{
+        match self.state {
+            DidExchangeState::Responded(ref state) => state.prev_agent_info.as_ref(),
+            _ => None
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
