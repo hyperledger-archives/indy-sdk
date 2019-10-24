@@ -4,9 +4,9 @@ use std::rc::Rc;
 
 use crate::domain::ledger::request::ProtocolVersion;
 use crate::domain::pool::{PoolConfig, PoolOpenConfig};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::pool::PoolService;
-use crate::api::{PoolHandle, CommandHandle};
+use indy_api_types::{PoolHandle, CommandHandle};
 
 pub enum PoolCommand {
     Create(

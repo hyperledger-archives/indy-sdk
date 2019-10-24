@@ -1,5 +1,5 @@
-use crate::api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
-use crate::errors::prelude::*;
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
+use indy_api_types::errors::prelude::*;
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::ledger::LedgerCommand;
 use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
@@ -11,8 +11,8 @@ use crate::domain::ledger::author_agreement::{GetTxnAuthorAgreementData, Accepta
 use crate::domain::ledger::node::NodeOperationData;
 use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
 use crate::domain::ledger::pool::Schedule;
-use crate::utils::ctypes;
-use crate::utils::validation::Validatable;
+use indy_utils::ctypes;
+use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
@@ -425,6 +425,56 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
     let res = prepare_result!(result);
 
     trace!("indy_build_get_nym_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Parse a GET_NYM response to get NYM data.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// get_nym_response: response on GET_NYM request.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// NYM data
+/// {
+///     did: DID as base58-encoded string for 16 or 32 bit DID value.
+///     verkey: verification key as base58-encoded string.
+///     role: Role associated number
+///                             null (common USER)
+///                             0 - TRUSTEE
+///                             2 - STEWARD
+///                             101 - TRUST_ANCHOR
+///                             101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+///                             201 - NETWORK_MONITOR
+/// }
+///
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_parse_get_nym_response(command_handle: CommandHandle,
+                                          get_nym_response: *const c_char,
+                                          cb: Option<extern fn(command_handle_: CommandHandle,
+                                                               err: ErrorCode,
+                                                               nym_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_parse_get_nym_response: >>> get_nym_response: {:?}", get_nym_response);
+
+    check_useful_c_str!(get_nym_response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_parse_get_nym_response: entities >>> get_nym_response: {:?}", get_nym_response);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::ParseGetNymResponse(
+            get_nym_response,
+            boxed_callback_string!("indy_parse_get_nym_response", cb, command_handle)
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_parse_get_nym_response: <<< res: {:?}", res);
 
     res
 }

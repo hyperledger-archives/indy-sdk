@@ -50,13 +50,17 @@ extern crate zeroize;
 
 extern crate regex;
 
+extern crate indy_api_types;
+
+#[macro_use]
+extern crate indy_utils;
+
 // Note that to use macroses from util inside of other modules it must be loaded first!
 #[macro_use]
 mod utils;
 
 pub mod api;
 mod commands;
-mod errors;
 mod services;
 mod domain;
 

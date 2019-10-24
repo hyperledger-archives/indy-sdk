@@ -526,6 +526,43 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Parse a GET_NYM response to get NYM data.
+	 *
+	 * @param response     response on GET_NYM request.
+	 * @return A future resolving to a request result as json.
+	 * {
+	 *     did: DID as base58-encoded string for 16 or 32 bit DID value.
+	 *     verkey: verification key as base58-encoded string.
+	 *     role: Role associated number
+	 *                             null (common USER)
+	 *                             0 - TRUSTEE
+	 *                             2 - STEWARD
+	 *                             101 - TRUST_ANCHOR
+	 *                             101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+	 *                             201 - NETWORK_MONITOR
+	 * }
+	 * 
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> parseGetNymResponse(
+			String response) throws IndyException {
+
+		ParamGuard.notNull(response, "response");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_parse_get_nym_response(
+				commandHandle,
+				response,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
 	 * Builds a SCHEMA request. Request to add Credential's schema.
 	 *
 	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
