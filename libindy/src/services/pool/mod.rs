@@ -26,11 +26,12 @@ use crate::domain::{
         ResponseMetadata
     }
 };
-use crate::errors::*;
+use indy_api_types::errors::*;
 use crate::services::pool::pool::{Pool, ZMQPool};
 use crate::utils::environment;
 use crate::services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
-use crate::api::{CommandHandle, next_command_handle, PoolHandle, next_pool_handle};
+use indy_api_types::{CommandHandle, PoolHandle};
+use indy_utils::{next_command_handle, next_pool_handle};
 use ursa::bls::VerKey;
 
 mod catchup;
@@ -356,7 +357,7 @@ mod tests {
 
         use libc::c_char;
 
-        use crate::api::{ErrorCode, INVALID_POOL_HANDLE};
+        use indy_api_types::{ErrorCode, INVALID_POOL_HANDLE};
 
         use super::*;
 

@@ -17,16 +17,17 @@ use crate::domain::ledger::author_agreement::{GetTxnAuthorAgreementData, Accepta
 use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
 use crate::domain::ledger::request::Request;
 use crate::domain::ledger::pool::Schedule;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::pool::{
     PoolService,
     parse_response_metadata
 };
-use crate::services::wallet::{RecordOptions, WalletService};
+use indy_wallet::{RecordOptions, WalletService};
 use crate::utils::crypto::signature_serializer::serialize_signature;
-use crate::api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
+use indy_api_types::{WalletHandle, PoolHandle, CommandHandle};
+use indy_utils::next_command_handle;
 use crate::commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use rust_base58::ToBase58;
 use std::string::ToString;
@@ -90,6 +91,9 @@ pub enum LedgerCommand {
     BuildGetNymRequest(
         Option<DidValue>, // submitter did
         DidValue, // target did
+        Box<dyn Fn(IndyResult<String>) + Send>),
+    ParseGetNymResponse(
+        String, // get nym response json
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildSchemaRequest(
         DidValue, // submitter did
@@ -357,6 +361,10 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildGetNymRequest(submitter_did, target_did, cb) => {
                 debug!(target: "ledger_command_executor", "BuildGetNymRequest command received");
                 cb(self.build_get_nym_request(submitter_did.as_ref(), &target_did));
+            }
+            LedgerCommand::ParseGetNymResponse(get_nym_response, cb) => {
+                info!(target: "ledger_command_executor", "ParseGetNymResponse command received");
+                cb(self.parse_get_nym_response(&get_nym_response));
             }
             LedgerCommand::BuildSchemaRequest(submitter_did, data, cb) => {
                 debug!(target: "ledger_command_executor", "BuildSchemaRequest command received");
@@ -742,6 +750,17 @@ impl LedgerCommandExecutor {
                                                             target_did)?;
 
         debug!("build_get_attrib_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn parse_get_nym_response(&self,
+                             get_nym_response: &str) -> IndyResult<String> {
+        debug!("parse_get_nym_response >>> get_nym_response: {:?}", get_nym_response);
+
+        let res = self.ledger_service.parse_get_nym_response(get_nym_response)?;
+
+        debug!("parse_get_nym_response <<< res: {:?}", res);
 
         Ok(res)
     }

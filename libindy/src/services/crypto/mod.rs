@@ -6,7 +6,7 @@ use std::str;
 use crate::domain::crypto::combo_box::ComboBox;
 use crate::domain::crypto::did::{Did, DidValue, MyDidInfo, TheirDid, TheirDidInfo};
 use crate::domain::crypto::key::{Key, KeyInfo};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::utils::crypto::base64;
 use crate::utils::crypto::ed25519_box;
 use crate::utils::crypto::chacha20poly1305_ietf;

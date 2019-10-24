@@ -1,4 +1,4 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::blob_storage::BlobStorageService;
 use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 

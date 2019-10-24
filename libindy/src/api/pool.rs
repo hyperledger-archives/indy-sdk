@@ -1,11 +1,11 @@
 
-use crate::api::{ErrorCode, CommandHandle, PoolHandle, INVALID_POOL_HANDLE};
+use indy_api_types::{ErrorCode, CommandHandle, PoolHandle, INVALID_POOL_HANDLE};
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::pool::PoolCommand;
 use crate::domain::pool::{PoolConfig, PoolOpenConfig};
-use crate::errors::prelude::*;
-use crate::utils::ctypes;
-use crate::utils::validation::Validatable;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
+use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;

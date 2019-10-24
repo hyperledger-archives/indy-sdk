@@ -20,17 +20,17 @@ use crate::domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelt
 use crate::domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
 use crate::domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
 use crate::domain::crypto::did::DidValue;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
-use crate::services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use crate::utils::sequence;
+use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use indy_utils::sequence;
 use crate::utils::wql::Query;
 
 use super::tails::SDKTailsAccessor;
-use crate::api::WalletHandle;
+use indy_api_types::WalletHandle;
 use crate::commands::BoxedCallbackStringStringSend;
 
 pub enum ProverCommand {
@@ -693,7 +693,7 @@ impl ProverCommandExecutor {
 
         let cred_referents = cred_refs_for_attrs.union(&cred_refs_for_predicates).cloned().collect::<Vec<String>>();
 
-        let mut credentials: HashMap<String, Credential> = HashMap::new();
+        let mut credentials: HashMap<String, Credential> = HashMap::with_capacity(cred_referents.len());
 
         for cred_referent in cred_referents.into_iter() {
             let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_referent, &RecordOptions::id_value())?;
@@ -788,7 +788,7 @@ impl ProverCommandExecutor {
                             referent: &str,
                             credential: Credential) -> CredentialInfo {
         let credential_values: HashMap<String, String> =
-            credential.values
+            credential.values.0
                 .into_iter()
                 .map(|(attr, values)| (attr, values.raw))
                 .collect();
@@ -849,7 +849,7 @@ impl ProverCommandExecutor {
             let (referent, credential) = self._get_credential(&credential_record)?;
 
             if let Some(predicate) = predicate_info {
-                let values = self.anoncreds_service.prover.get_credential_values_for_attribute(&credential.values, &predicate.name)
+                let values = self.anoncreds_service.prover.get_credential_values_for_attribute(&credential.values.0, &predicate.name)
                     .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "Credential values not found"))?;
 
                 let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate, &values.encoded)?;
