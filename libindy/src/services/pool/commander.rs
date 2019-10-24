@@ -1,10 +1,10 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::pool::events::PoolEvent;
 
 use super::zmq;
 
 use byteorder::{ByteOrder, LittleEndian};
-use crate::api::INVALID_COMMAND_HANDLE;
+use indy_api_types::INVALID_COMMAND_HANDLE;
 use crate::services::pool::{COMMAND_CONNECT, COMMAND_EXIT, COMMAND_REFRESH};
 
 pub struct Commander {
@@ -63,7 +63,8 @@ impl Commander {
 #[cfg(test)]
 mod commander_tests {
     use super::*;
-    use crate::api::{CommandHandle, next_command_handle};
+    use indy_api_types::{CommandHandle};
+    use indy_utils::next_command_handle;
     use crate::services::pool::{COMMAND_REFRESH, COMMAND_EXIT, pool_create_pair_of_sockets};
 
     fn new_commander() -> Commander {

@@ -5,7 +5,7 @@ use ursa::cl::Proof as CryptoProof;
 use super::schema::SchemaId;
 use super::credential_definition::CredentialDefinitionId;
 use super::revocation_registry_definition::RevocationRegistryId;
-use crate::utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Proof {

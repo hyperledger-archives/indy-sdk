@@ -1,5 +1,5 @@
-use crate::api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
-use crate::errors::prelude::*;
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
+use indy_api_types::errors::prelude::*;
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::ledger::LedgerCommand;
 use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
@@ -11,8 +11,8 @@ use crate::domain::ledger::author_agreement::{GetTxnAuthorAgreementData, Accepta
 use crate::domain::ledger::node::NodeOperationData;
 use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
 use crate::domain::ledger::pool::Schedule;
-use crate::utils::ctypes;
-use crate::utils::validation::Validatable;
+use indy_utils::ctypes;
+use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;

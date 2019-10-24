@@ -17,16 +17,17 @@ use crate::domain::ledger::author_agreement::{GetTxnAuthorAgreementData, Accepta
 use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
 use crate::domain::ledger::request::Request;
 use crate::domain::ledger::pool::Schedule;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::pool::{
     PoolService,
     parse_response_metadata
 };
-use crate::services::wallet::{RecordOptions, WalletService};
+use indy_wallet::{RecordOptions, WalletService};
 use crate::utils::crypto::signature_serializer::serialize_signature;
-use crate::api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
+use indy_api_types::{WalletHandle, PoolHandle, CommandHandle};
+use indy_utils::next_command_handle;
 use crate::commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use rust_base58::ToBase58;
 use std::string::ToString;

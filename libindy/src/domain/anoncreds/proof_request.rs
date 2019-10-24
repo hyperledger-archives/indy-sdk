@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 use ursa::cl::Nonce;
 
-use crate::utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;

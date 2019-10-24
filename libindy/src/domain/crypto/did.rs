@@ -3,7 +3,7 @@ use named_type::NamedType;
 use regex::Regex;
 use rust_base58::FromBase58;
 
-use crate::utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 use crate::utils::qualifier;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]

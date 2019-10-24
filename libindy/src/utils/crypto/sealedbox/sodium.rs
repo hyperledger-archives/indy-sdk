@@ -1,8 +1,8 @@
 extern crate sodiumoxide;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use self::sodiumoxide::crypto::sealedbox;
-use crate::utils::crypto::ed25519_box;
+use super::ed25519_box;
 
 pub fn encrypt(pk: &ed25519_box::PublicKey, doc: &[u8]) -> Result<Vec<u8>, IndyError> {
     Ok(sealedbox::seal(doc, &pk.0))

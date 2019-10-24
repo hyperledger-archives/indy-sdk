@@ -27,8 +27,8 @@ use crate::domain::ledger::txn::{GetTxnOperation, LedgerType};
 use crate::domain::ledger::validator_info::GetValidatorInfoOperation;
 use crate::domain::ledger::auth_rule::*;
 use crate::domain::ledger::author_agreement::*;
-use crate::errors::prelude::*;
-use crate::utils::crypto::hash::hash as openssl_hash;
+use indy_api_types::errors::prelude::*;
+use indy_utils::crypto::hash::hash as openssl_hash;
 
 pub mod merkletree;
 
@@ -136,7 +136,7 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_schema_request(&self, identifier: &DidValue, schema: SchemaV1) -> IndyResult<String> {
-        let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
+        let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names.into());
         build_result!(SchemaOperation, Some(identifier), schema_data)
     }
 
@@ -260,14 +260,14 @@ impl LedgerService {
                 id: SchemaId::new(&DidValue::new(&res.dest.0, method_name), &res.data.name, &res.data.version),
                 name: res.data.name,
                 version: res.data.version,
-                attr_names: res.data.attr_names,
+                attr_names: res.data.attr_names.into(),
                 seq_no: Some(res.seq_no),
             },
             GetSchemaReplyResult::GetSchemaReplyResultV1(res) => {
                 SchemaV1 {
                     name: res.txn.data.schema_name,
                     version: res.txn.data.schema_version,
-                    attr_names: res.txn.data.value.attr_names,
+                    attr_names: res.txn.data.value.attr_names.into(),
                     id: match method_name {
                         Some(method) => res.txn.data.id.qualify(method),
                         None => res.txn.data.id
@@ -695,7 +695,7 @@ mod tests {
         let ledger_service = LedgerService::new();
 
         let mut attr_names: AttributeNames = AttributeNames::new();
-        attr_names.insert("male".to_string());
+        attr_names.0.insert("male".to_string());
 
         let data = SchemaV1 {
             id: SchemaId::new(&identifier(), "name", "1.0"),
@@ -1127,7 +1127,7 @@ mod tests {
 
         fn _aml() -> AcceptanceMechanisms {
             let mut aml: AcceptanceMechanisms = AcceptanceMechanisms::new();
-            aml.insert(LABEL.to_string(), json!({"text": "This is description for acceptance mechanism"}));
+            aml.0.insert(LABEL.to_string(), json!({"text": "This is description for acceptance mechanism"}));
             aml
         }
 
