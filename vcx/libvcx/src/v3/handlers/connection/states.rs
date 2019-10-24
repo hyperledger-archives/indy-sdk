@@ -12,7 +12,14 @@ use error::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeStateSM {
-    pub state: DidExchangeState // TODO FIX public
+    pub agent_info: AgentInfo,
+    pub state: ActorDidExchangeState // TODO FIX public
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ActorDidExchangeState {
+    Inviter(DidExchangeState),
+    Invitee(DidExchangeState),
 }
 
 /// Transitions of Connection state
@@ -20,14 +27,14 @@ pub struct DidExchangeStateSM {
 /// Invited -> Requested, Null
 /// Requested -> Responded, Null
 /// Responded -> Complete, Invited
-/// Complete
+/// Completed
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DidExchangeState {
     Null(NullState),
     Invited(InvitedState),
     Requested(RequestedState),
     Responded(RespondedState),
-    Complete(CompleteState),
+    Completed(CompleteState),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,20 +47,17 @@ pub struct InvitedState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestedState {
-    pub invitation: Invitation,
     pub remote_info: RemoteConnectionInfo
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RespondedState {
-    pub invitation: Invitation,
     pub remote_info: RemoteConnectionInfo,
     pub prev_agent_info: Option<AgentInfo>
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteState {
-    pub invitation: Invitation,
     pub remote_info: RemoteConnectionInfo
 }
 
@@ -74,14 +78,14 @@ impl From<(InvitedState, ProblemReport)> for NullState {
 impl From<(InvitedState, Request)> for RequestedState {
     fn from((state, request): (InvitedState, Request)) -> RequestedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
-        RequestedState { invitation: state.invitation, remote_info: RemoteConnectionInfo::from(request) }
+        RequestedState { remote_info: RemoteConnectionInfo::from(request) }
     }
 }
 
 impl From<InvitedState> for RequestedState {
     fn from(state: InvitedState) -> RequestedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
-        RequestedState { invitation: state.invitation.clone(), remote_info: RemoteConnectionInfo::from(state.invitation) }
+        RequestedState { remote_info: RemoteConnectionInfo::from(state.invitation) }
     }
 }
 
@@ -92,10 +96,10 @@ impl From<(RequestedState, ProblemReport)> for NullState {
     }
 }
 
-impl From<(RequestedState, AgentInfo)> for RespondedState {
-    fn from((state, agent_info): (RequestedState, AgentInfo)) -> RespondedState {
+impl From<(RequestedState, Response, AgentInfo)> for RespondedState {
+    fn from((state, response, agent_info): (RequestedState, Response, AgentInfo)) -> RespondedState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
-        RespondedState { invitation: state.invitation, remote_info: state.remote_info, prev_agent_info: Some(agent_info) }
+        RespondedState { remote_info: state.remote_info, prev_agent_info: Some(agent_info) }
     }
 }
 
@@ -104,7 +108,7 @@ impl From<(RequestedState, Response)> for RespondedState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
         let mut remote_info = RemoteConnectionInfo::from(response);
         remote_info.set_label(state.remote_info.label);
-        RespondedState { invitation: state.invitation, remote_info, prev_agent_info: None }
+        RespondedState { remote_info, prev_agent_info: None }
     }
 }
 
@@ -118,122 +122,177 @@ impl From<(RespondedState, ProblemReport)> for NullState {
 impl From<(RespondedState, Ack)> for CompleteState {
     fn from((state, ack): (RespondedState, Ack)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { invitation: state.invitation, remote_info: state.remote_info }
+        CompleteState { remote_info: state.remote_info }
     }
 }
 
 impl From<RespondedState> for CompleteState {
     fn from(state: RespondedState) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { invitation: state.invitation, remote_info: state.remote_info }
+        CompleteState { remote_info: state.remote_info }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Messages {
-    Error(ProblemReport),
     InvitationSent(Invitation),
     InvitationReceived(Invitation),
-    ExchangeRequestSent(Request),
     ExchangeRequestReceived(Request),
-    ExchangeResponseSent(Response, AgentInfo),
+    ExchangeRequestSent(Request),
     ExchangeResponseReceived(Response),
-    AckSent(Ack),
+    ExchangeResponseSent(Response, AgentInfo),
     AckReceived(Ack),
+    AckSent(Ack),
+    ProblemReport(ProblemReport),
 }
 
 impl DidExchangeStateSM {
-    pub fn new() -> Self {
-        DidExchangeStateSM {
-            state: DidExchangeState::Null(NullState {})
+    pub fn new(actor: Actor) -> Self {
+        match actor {
+            Actor::Inviter => {
+                DidExchangeStateSM {
+                    state: ActorDidExchangeState::Inviter(DidExchangeState::Null(NullState {})),
+                    agent_info: AgentInfo::default()
+                }
+            }
+            Actor::Invitee => {
+                DidExchangeStateSM {
+                    state: ActorDidExchangeState::Invitee(DidExchangeState::Null(NullState {})),
+                    agent_info: AgentInfo::default()
+                }
+            }
         }
+    }
+
+    pub fn set_agent_info(&mut self, agent_info: AgentInfo) {
+        self.agent_info = agent_info
+    }
+
+    pub fn agent_info(&self) -> &AgentInfo {
+        &self.agent_info
     }
 
     pub fn state(&self) -> u32 {
         match self.state {
-            DidExchangeState::Null(_) => 1,
-            DidExchangeState::Invited(_) => 2,
-            DidExchangeState::Requested(_) => 3,
-            DidExchangeState::Responded(_) => 5, // for backward compatibility
-            DidExchangeState::Complete(_) => 4,
+            ActorDidExchangeState::Inviter(DidExchangeState::Null(_)) => 1,
+            ActorDidExchangeState::Inviter(DidExchangeState::Invited(_)) => 2,
+            ActorDidExchangeState::Inviter(DidExchangeState::Requested(_)) => 3,
+            ActorDidExchangeState::Inviter(DidExchangeState::Responded(_)) => 5, // for backward compatibility
+            ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)) => 4,
+            ActorDidExchangeState::Invitee(DidExchangeState::Null(_)) => 1,
+            ActorDidExchangeState::Invitee(DidExchangeState::Invited(_)) => 2,
+            ActorDidExchangeState::Invitee(DidExchangeState::Requested(_)) => 3,
+            ActorDidExchangeState::Invitee(DidExchangeState::Responded(_)) => 5,
+            ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)) => 4,
         }
     }
 
     pub fn step(self, message: Messages) -> VcxResult<DidExchangeStateSM> {
-        trace!("DidExchangeStateSM::step >>> message: {:?}", message);
+        println!("DidExchangeStateSM::step >>> message: {:?}", message);
 
-        let DidExchangeStateSM { state } = self;
+        let DidExchangeStateSM { agent_info, state } = self;
+
         let state = match state {
-            DidExchangeState::Null(state) => {
-                match message {
-                    Messages::InvitationSent(invitation) => DidExchangeState::Invited((state, invitation).into()),
-                    Messages::InvitationReceived(invitation) => DidExchangeState::Invited((state, invitation).into()),
-                    _ => DidExchangeState::Null(state)
-                }
-            }
-            DidExchangeState::Invited(state) => {
-                match message {
-                    Messages::Error(error) => DidExchangeState::Null((state, error).into()),
-                    Messages::ExchangeRequestSent(request) => DidExchangeState::Requested(state.into()),
-                    Messages::ExchangeRequestReceived(request) => DidExchangeState::Requested((state, request).into()),
-                    _ => DidExchangeState::Invited(state)
-                }
-            }
-            DidExchangeState::Requested(state) => {
-                match message {
-                    Messages::Error(error) => DidExchangeState::Null((state, error).into()),
-                    Messages::ExchangeResponseSent(response, agent_info) => DidExchangeState::Responded((state, agent_info).into()),
-                    Messages::ExchangeResponseReceived(response) => DidExchangeState::Responded((state, response).into()),
-                    _ => DidExchangeState::Requested(state)
-                }
-            }
-            DidExchangeState::Responded(state) => {
-                match message {
-                    Messages::Error(error) => DidExchangeState::Null((state, error).into()),
-                    Messages::AckSent(ack) => DidExchangeState::Complete(state.into()),
-                    Messages::AckReceived(ack) => {
-                        if let Some(ref info) = state.prev_agent_info {
-                            send_delete_connection_message(&info.pw_did, &info.pw_vk, &info.agent_did, &info.agent_vk)?;
+            ActorDidExchangeState::Inviter(state) => {
+                match state {
+                    DidExchangeState::Null(state) => {
+                        match message {
+                            Messages::InvitationSent(invitation) =>
+                                ActorDidExchangeState::Inviter(DidExchangeState::Invited((state, invitation).into())),
+                            _ => ActorDidExchangeState::Inviter(DidExchangeState::Null(state))
                         }
-
-                        DidExchangeState::Complete((state, ack).into())
-                    },
-                    _ => DidExchangeState::Responded(state)
+                    }
+                    DidExchangeState::Invited(state) => {
+                        match message {
+                            Messages::ExchangeRequestReceived(request) =>
+                                ActorDidExchangeState::Inviter(DidExchangeState::Requested((state, request).into())),
+                            Messages::ProblemReport(error) => ActorDidExchangeState::Inviter(DidExchangeState::Null((state, error).into())),
+                            _ => ActorDidExchangeState::Inviter(DidExchangeState::Invited(state))
+                        }
+                    }
+                    DidExchangeState::Requested(state) => {
+                        match message {
+                            Messages::ExchangeResponseSent(response, agent_info) =>
+                                ActorDidExchangeState::Inviter(DidExchangeState::Responded((state, response, agent_info).into())),
+                            Messages::ProblemReport(error) => ActorDidExchangeState::Inviter(DidExchangeState::Null((state, error).into())),
+                            _ => ActorDidExchangeState::Inviter(DidExchangeState::Requested(state))
+                        }
+                    }
+                    DidExchangeState::Responded(state) => {
+                        match message {
+                            Messages::AckReceived(ack) =>
+                                ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ack).into())),
+                            Messages::ProblemReport(error) => ActorDidExchangeState::Inviter(DidExchangeState::Null((state, error).into())),
+                            _ => ActorDidExchangeState::Inviter(DidExchangeState::Responded(state))
+                        }
+                    }
+                    DidExchangeState::Completed(state) => ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
                 }
             }
-            DidExchangeState::Complete(state) => DidExchangeState::Complete(state)
+            ActorDidExchangeState::Invitee(state) => {
+                match state {
+                    DidExchangeState::Null(state) => {
+                        match message {
+                            Messages::InvitationReceived(invitation) =>
+                                ActorDidExchangeState::Invitee(DidExchangeState::Invited((state, invitation).into())),
+                            _ => ActorDidExchangeState::Invitee(DidExchangeState::Null(state))
+                        }
+                    }
+                    DidExchangeState::Invited(state) => {
+                        match message {
+                            Messages::ExchangeRequestSent(request) =>
+                                ActorDidExchangeState::Invitee(DidExchangeState::Requested(state.into())),
+                            Messages::ProblemReport(error) => ActorDidExchangeState::Invitee(DidExchangeState::Null((state, error).into())),
+                            _ => ActorDidExchangeState::Invitee(DidExchangeState::Invited(state))
+                        }
+                    }
+                    DidExchangeState::Requested(state) => {
+                        match message {
+                            Messages::ExchangeResponseReceived(response) =>
+                                ActorDidExchangeState::Invitee(DidExchangeState::Responded((state, response).into())),
+                            Messages::ProblemReport(error) => ActorDidExchangeState::Invitee(DidExchangeState::Null((state, error).into())),
+                            _ => ActorDidExchangeState::Invitee(DidExchangeState::Requested(state))
+                        }
+                    }
+                    DidExchangeState::Responded(state) => {
+                        match message {
+                            Messages::AckSent(ack) =>
+                                ActorDidExchangeState::Invitee(DidExchangeState::Completed((state, ack).into())),
+                            Messages::ProblemReport(error) => ActorDidExchangeState::Invitee(DidExchangeState::Null((state, error).into())),
+                            _ => ActorDidExchangeState::Invitee(DidExchangeState::Responded(state))
+                        }
+                    }
+                    DidExchangeState::Completed(state) => ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
+                }
+            }
         };
-        Ok(DidExchangeStateSM { state })
+        Ok(DidExchangeStateSM { agent_info, state })
     }
 
-    pub fn remote_connection_info(&self, actor: &Actor) -> Option<RemoteConnectionInfo> {
+    pub fn remote_connection_info(&self) -> Option<RemoteConnectionInfo> {
         match self.state {
-            DidExchangeState::Null(_) => None,
-            DidExchangeState::Invited(ref state) => {
-                match actor {
-                    Actor::Inviter => None,
-                    Actor::Invitee => Some(RemoteConnectionInfo::from(state.invitation.clone()))
+            ActorDidExchangeState::Inviter(ref state) =>
+                match state {
+                    DidExchangeState::Null(_) => None,
+                    DidExchangeState::Invited(_) => None,
+                    DidExchangeState::Requested(ref state) => Some(state.remote_info.clone()),
+                    DidExchangeState::Responded(ref state) => Some(state.remote_info.clone()),
+                    DidExchangeState::Completed(ref state) => Some(state.remote_info.clone()),
+                },
+            ActorDidExchangeState::Invitee(ref state) =>
+                match state {
+                    DidExchangeState::Null(_) => None,
+                    DidExchangeState::Invited(ref state) => Some(RemoteConnectionInfo::from(state.invitation.clone())),
+                    DidExchangeState::Requested(ref state) => Some(state.remote_info.clone()),
+                    DidExchangeState::Responded(ref state) => Some(state.remote_info.clone()),
+                    DidExchangeState::Completed(ref state) => Some(state.remote_info.clone()),
                 }
-            }
-            DidExchangeState::Requested(ref state) => Some(state.remote_info.clone()),
-            DidExchangeState::Responded(ref state) => Some(state.remote_info.clone()),
-            DidExchangeState::Complete(ref state) => Some(state.remote_info.clone()),
         }
     }
 
-    pub fn get_invitation(&self) -> Option<&Invitation> {
+    pub fn prev_agent_info(&self) -> Option<&AgentInfo> {
         match self.state {
-            DidExchangeState::Null(_) => None,
-            DidExchangeState::Invited(ref state) => Some(&state.invitation),
-            DidExchangeState::Requested(ref state) => Some(&state.invitation),
-            DidExchangeState::Responded(ref state) => Some(&state.invitation),
-            DidExchangeState::Complete(ref state) => Some(&state.invitation),
-        }
-    }
-
-    pub fn prev_agent_info(&self) -> Option<&AgentInfo>{
-        match self.state {
-            DidExchangeState::Responded(ref state) => state.prev_agent_info.as_ref(),
+            ActorDidExchangeState::Inviter(DidExchangeState::Responded(ref state)) => state.prev_agent_info.as_ref(),
             _ => None
         }
     }

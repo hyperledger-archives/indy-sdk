@@ -34,8 +34,6 @@ lazy_static! {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
     source_id: String,
-    actor: Actor,
-    agent_info: AgentInfo,
     state: DidExchangeStateSM
 }
 
@@ -43,19 +41,15 @@ impl Connection {
     fn create(source_id: &str, actor: Actor) -> VcxResult<Connection> {
         trace!("Connection::create >>> source_id: {}, actor: {:?}", source_id, actor);
 
-        let mut connection = Connection {
+        Ok(Connection {
             source_id: source_id.to_string(),
-            actor,
-            agent_info: AgentInfo::default(),
-            state: DidExchangeStateSM::new(),
-        };
-
-        connection.provision_did()?;
-
-        Ok(connection)
+            state: DidExchangeStateSM::new(actor),
+        })
     }
 
     fn state(&self) -> u32 { self.state.state() }
+
+    fn agent_info(&self) -> &AgentInfo { self.state.agent_info() }
 
     fn agency_endpoint(&self) -> VcxResult<String> {
         settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)
@@ -63,15 +57,15 @@ impl Connection {
 
     fn routing_keys(&self) -> VcxResult<Vec<String>> {
         let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
-        Ok(vec![agency_vk, self.agent_info.agent_vk.clone()])
+        Ok(vec![agency_vk, self.agent_info().agent_vk.to_string()])
     }
 
     fn recipient_keys(&self) -> Vec<String> {
-        vec![self.agent_info.pw_vk.clone()]
+        vec![self.agent_info().pw_vk.to_string()]
     }
 
     fn remote_connection_info(&self) -> Option<RemoteConnectionInfo> {
-        self.state.remote_connection_info(&self.actor)
+        self.state.remote_connection_info()
     }
 
     fn remote_vk(&self) -> VcxResult<String> {
@@ -89,15 +83,17 @@ impl Connection {
     }
 
     fn get_invite_details(&self) -> VcxResult<String> {
-        let invitation: Option<&Invitation> = self.state.get_invitation();
-        Ok(json!(invitation).to_string())
+        let remote_connection_info: Option<RemoteConnectionInfo> = self.state.remote_connection_info();
+        Ok(json!(remote_connection_info).to_string())
     }
 
     fn connect(&mut self) -> VcxResult<u32> {
         trace!("Connection::connect >>> source_id: {}", self.source_id);
 
-        let message = match self.actor {
-            Actor::Inviter => {
+        self.provision_did()?;
+
+        let message = match self.state.state {
+            ActorDidExchangeState::Inviter(_) => {
                 let invite: Invitation = Invitation::create()
                     .set_label(self.source_id.to_string())
                     .set_service_endpoint(self.agency_endpoint()?)
@@ -106,10 +102,10 @@ impl Connection {
 
                 Messages::InvitationSent(invite)
             }
-            Actor::Invitee => {
+            ActorDidExchangeState::Invitee(_) => {
                 let request = Request::create()
                     .set_label(self.source_id.to_string())
-                    .set_did(self.agent_info.pw_did.to_string())
+                    .set_did(self.agent_info().pw_did.to_string())
                     .set_service_endpoint(self.agency_endpoint()?)
                     .set_keys(self.recipient_keys(), self.routing_keys()?);
 
@@ -126,23 +122,24 @@ impl Connection {
     fn update_state(&mut self, message: Option<&str>) -> VcxResult<u32> {
         trace!("Connection: update_state");
 
-        if let Some(message_) = message {
-            return self.update_state_with_message(message_);
+        match message {
+            Some(message_) => self.update_state_with_message(message_)?,
+            None => {
+                let (messages, messages_to_update) = self.get_messages()?;
+
+                messages
+                    .into_iter()
+                    .map(|message| self.handle_message(message))
+                    .collect::<VcxResult<Vec<u32>>>()?;
+
+                update_messages(MessageStatusCode::Reviewed, messages_to_update)?
+            }
         }
-
-        let (messages, messages_to_update) = self.get_messages()?;
-
-        messages
-            .into_iter()
-            .map(|message| self.handle_message(message))
-            .collect::<VcxResult<Vec<u32>>>()?;
-
-        update_messages(MessageStatusCode::Reviewed, messages_to_update)?;
 
         Ok(error::SUCCESS.code_num)
     }
 
-    fn update_state_with_message(&mut self, message: &str) -> VcxResult<u32> {
+    fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Connection: update_state_with_message: {}", message);
 
         let message: Message = ::serde_json::from_str(&message)
@@ -150,7 +147,7 @@ impl Connection {
 
         self.handle_message(message)?;
 
-        Ok(error::SUCCESS.code_num)
+        Ok(())
     }
 
     fn get_messages(&self) -> VcxResult<(Vec<Message>, Vec<UIDsByConn>)> {
@@ -158,16 +155,17 @@ impl Connection {
 
         let mut messages_to_update: Vec<UIDsByConn> = vec![];
 
-        let mut messages = messages::get_message::get_connection_messages(&self.agent_info.pw_did,
-                                                                          &self.agent_info.pw_vk,
-                                                                          &self.agent_info.agent_did,
-                                                                          &self.agent_info.agent_vk,
+        let agent_info = self.agent_info();
+        let mut messages = messages::get_message::get_connection_messages(&agent_info.pw_did,
+                                                                          &agent_info.pw_vk,
+                                                                          &agent_info.agent_did,
+                                                                          &agent_info.agent_vk,
                                                                           None,
                                                                           Some(vec![MessageStatusCode::Received]))?;
 
         messages_to_update.push(
             UIDsByConn {
-                pairwise_did: self.agent_info.pw_did.clone(),
+                pairwise_did: agent_info.pw_did.clone(),
                 uids: messages.iter().map(|message| message.uid.clone()).collect()
             });
 
@@ -195,10 +193,10 @@ impl Connection {
     fn handle_message(&mut self, message: Message) -> VcxResult<u32> {
         trace!("Connection: handle_message: {:?}", message);
 
-        let message = EncryptionEnvelope::open(&self.agent_info.pw_vk, message.payload()?)?;
+        let message = EncryptionEnvelope::open(&self.agent_info().pw_vk, message.payload()?)?;
 
-        match (&self.state.state, &self.actor) {
-            (DidExchangeState::Invited(ref state), Actor::Inviter) => {
+        match self.state.state {
+            ActorDidExchangeState::Inviter(DidExchangeState::Invited(ref state)) => {
                 match message {
                     A2AMessage::ConnectionRequest(request) => {
                         debug!("Inviter received ConnectionRequest message");
@@ -218,7 +216,7 @@ impl Connection {
                     }
                 }
             }
-            (DidExchangeState::Requested(ref state), Actor::Invitee) => {
+            ActorDidExchangeState::Invitee(DidExchangeState::Requested(ref state)) => {
                 match message {
                     A2AMessage::ConnectionResponse(response) => {
                         debug!("Invitee received ConnectionResponse message");
@@ -238,7 +236,7 @@ impl Connection {
                     }
                 }
             }
-            (DidExchangeState::Responded(ref state), _) => {
+            ActorDidExchangeState::Inviter(DidExchangeState::Responded(ref state)) => {
                 match message {
                     A2AMessage::Ack(ack) => {
                         debug!("Ack message received");
@@ -253,9 +251,8 @@ impl Connection {
                     }
                 }
             }
-            val @ _ => {
-                let (state, actor) = val;
-                debug!("Unexpected message received: state: {:?}, actor: {:?}, message: {:?}", state, actor, message);
+            _ => {
+                debug!("Unexpected message received: message: {:?}", message);
             }
         }
 
@@ -272,13 +269,13 @@ impl Connection {
         self.step(Messages::ExchangeRequestReceived(request))?;
 
         // original Verkey need to sign rotated keys
-        let prev_agent_info = self.agent_info.clone();
+        let prev_agent_info = self.agent_info().clone();
 
         // provision a new keys
         self.provision_did()?;
 
         let response = Response::create()
-            .set_did(self.agent_info.pw_did.to_string())
+            .set_did(self.agent_info().pw_did.to_string())
             .set_service_endpoint(self.agency_endpoint()?)
             .set_keys(self.recipient_keys(), self.routing_keys()?)
             .set_thread(thread);
@@ -310,14 +307,14 @@ impl Connection {
 
     fn handle_problem_report(&mut self, problem_report: ProblemReport) -> VcxResult<()> {
         trace!("Connection: handle_problem_report: {:?}", problem_report);
-        self.step(Messages::Error(problem_report))
+        self.step(Messages::ProblemReport(problem_report))
     }
 
     fn send_message(&self, message: &A2AMessage) -> VcxResult<()> {
         let remote_connection_info = self.remote_connection_info()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get Remote Connection information"))?;
 
-        let envelope = EncryptionEnvelope::create(&message, &self.agent_info.pw_vk, &remote_connection_info)?;
+        let envelope = EncryptionEnvelope::create(&message, &self.agent_info().pw_vk, &remote_connection_info)?;
 
         httpclient::post_u8(&envelope.0)?;
 
@@ -337,7 +334,7 @@ impl Connection {
 
         self.send_message(&problem_report.to_a2a_message())?;
 
-        self.step(Messages::Error(problem_report))?;
+        self.step(Messages::ProblemReport(problem_report))?;
 
         Ok(())
     }
@@ -352,14 +349,16 @@ impl Connection {
         */
         let (agent_did, agent_vk) = create_agent_keys(&self.source_id, &pw_did, &pw_vk)?;
 
-        self.agent_info = AgentInfo { pw_did, pw_vk, agent_did, agent_vk };
+        let agent_info = AgentInfo { pw_did, pw_vk, agent_did, agent_vk };
+
+        self.state.set_agent_info(agent_info);
 
         Ok(())
     }
 
     fn delete(&mut self) -> VcxResult<u32> {
         trace!("Connection: delete: {:?}", self.source_id);
-        send_delete_connection_message(&self.agent_info.pw_did, &self.agent_info.pw_vk, &self.agent_info.agent_did, &self.agent_info.agent_vk)?;
+        send_delete_connection_message(&self.agent_info().pw_did, &self.agent_info().pw_vk, &self.agent_info().agent_did, &self.agent_info().agent_vk)?;
         Ok(error::SUCCESS.code_num)
     }
 
@@ -437,7 +436,7 @@ pub fn send_generic_message(handle: u32, msg: &str, msg_options: &str) -> VcxRes
 
 pub fn get_pw_verkey(handle: u32) -> VcxResult<String> {
     CONNECTION_MAP.get(handle, |connection| {
-        Ok(connection.agent_info.pw_vk.clone())
+        Ok(connection.agent_info().pw_vk.to_string())
     })
 }
 
