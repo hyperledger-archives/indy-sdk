@@ -926,7 +926,7 @@ pub mod tests {
         default_nodes.insert(NODE.to_string(), None);
 
         let node_names = vec![NODE, NODE_2, "n3", "n4"];
-        let mut nodes: Nodes = HashMap::new();
+        let mut nodes: Nodes = HashMap::with_capacity(nodes_cnt);
 
         for i in 0..nodes_cnt {
             nodes.insert(node_names[i].to_string(), None);

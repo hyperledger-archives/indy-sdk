@@ -1,3 +1,4 @@
 pub mod issuer;
-mod states;
-mod messages;
+pub mod states;
+pub mod messages;
+pub mod holder;

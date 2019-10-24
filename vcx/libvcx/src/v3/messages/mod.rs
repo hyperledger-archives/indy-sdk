@@ -8,14 +8,21 @@ pub mod ack;
 pub mod connection;
 pub mod error;
 pub mod forward;
+pub mod attachment;
+pub mod issuance;
 
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{SignedResponse};
-use v3::messages::connection::problem_report::ProblemReport;
+use v3::messages::connection::problem_report::ProblemReport as ConnectionProblemReport;
 use v3::messages::forward::Forward;
+use v3::messages::error::ProblemReport as CommonProblemReport;
+use v3::messages::issuance::credential_proposal::CredentialProposal;
 use self::ack::Ack;
 
 use utils::uuid;
+use v3::messages::issuance::credential_offer::CredentialOffer;
+use v3::messages::issuance::credential_request::CredentialRequest;
+use v3::messages::issuance::credential::Credential;
 
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
@@ -26,10 +33,17 @@ pub enum A2AMessage {
     /// DID Exchange
     ConnectionRequest(Request),
     ConnectionResponse(SignedResponse),
-    ConnectionProblemReport(ProblemReport),
+    ConnectionProblemReport(ConnectionProblemReport),
 
     /// notification
     Ack(Ack),
+    CommonProblemReport(CommonProblemReport),
+
+    /// credential issuance
+    CredentialProposal(CredentialProposal),
+    CredentialOffer(CredentialOffer),
+    CredentialRequest(CredentialRequest),
+    Credential(Credential),
 
     /// Any Raw Message
     Generic(String)
@@ -57,13 +71,38 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map_err(de::Error::custom)
             }
             "problem_report" => {
-                ProblemReport::deserialize(value)
+                ConnectionProblemReport::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionProblemReport(msg))
                     .map_err(de::Error::custom)
             }
             "ack" => {
                 Ack::deserialize(value)
                     .map(|msg| A2AMessage::Ack(msg))
+                    .map_err(de::Error::custom)
+            }
+            "problem-report" => {
+                CommonProblemReport::deserialize(value)
+                    .map(|msg| A2AMessage::CommonProblemReport(msg))
+                    .map_err(de::Error::custom)
+            }
+            "issue-credential" => {
+                Credential::deserialize(value)
+                    .map(|msg| A2AMessage::Credential(msg))
+                    .map_err(de::Error::custom)
+            }
+            "propose-credential" => {
+                CredentialProposal::deserialize(value)
+                    .map(|msg| A2AMessage::CredentialProposal(msg))
+                    .map_err(de::Error::custom)
+            }
+            "offer-credential" => {
+                CredentialOffer::deserialize(value)
+                    .map(|msg| A2AMessage::CredentialOffer(msg))
+                    .map_err(de::Error::custom)
+            }
+            "request-credential" => {
+                CredentialRequest::deserialize(value)
+                    .map(|msg| A2AMessage::CredentialRequest(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -79,7 +118,12 @@ pub enum A2AMessageKinds {
     Response,
     ConnectionProblemReport,
     Ed25519Signature,
-    Ack
+    Ack,
+    CredentialOffer,
+    CredentialProposal,
+    CredentialRequest,
+    Credential,
+    ProblemReport
 }
 
 impl A2AMessageKinds {
@@ -91,7 +135,12 @@ impl A2AMessageKinds {
             A2AMessageKinds::Response => MessageFamilies::DidExchange,
             A2AMessageKinds::ConnectionProblemReport => MessageFamilies::DidExchange,
             A2AMessageKinds::Ack => MessageFamilies::Notification,
+            A2AMessageKinds::ProblemReport => MessageFamilies::ReportProblem,
             A2AMessageKinds::Ed25519Signature => MessageFamilies::Signature,
+            A2AMessageKinds::CredentialOffer => MessageFamilies::CredentialIssuance,
+            A2AMessageKinds::Credential => MessageFamilies::CredentialIssuance,
+            A2AMessageKinds::CredentialProposal => MessageFamilies::CredentialIssuance,
+            A2AMessageKinds::CredentialRequest => MessageFamilies::CredentialIssuance,
         }
     }
 
@@ -103,7 +152,13 @@ impl A2AMessageKinds {
             A2AMessageKinds::Response => "response".to_string(),
             A2AMessageKinds::ConnectionProblemReport => "problem_report".to_string(),
             A2AMessageKinds::Ack => "ack".to_string(),
+            A2AMessageKinds::ProblemReport => "problem-report".to_string(),
             A2AMessageKinds::Ed25519Signature => "ed25519Sha512_single".to_string(),
+            A2AMessageKinds::Credential => "issue-credential".to_string(),
+            A2AMessageKinds::CredentialProposal => "propose-credential".to_string(),
+            A2AMessageKinds::CredentialOffer => "offer-credential".to_string(),
+            A2AMessageKinds::CredentialRequest => "request-credential".to_string(),
+
         }
     }
 }
@@ -114,6 +169,8 @@ pub enum MessageFamilies {
     DidExchange,
     Notification,
     Signature,
+    CredentialIssuance,
+    ReportProblem,
     Unknown(String)
 }
 
@@ -124,6 +181,8 @@ impl MessageFamilies {
             MessageFamilies::DidExchange => "1.0",
             MessageFamilies::Notification => "1.0",
             MessageFamilies::Signature => "1.0",
+            MessageFamilies::CredentialIssuance => "1.0",
+            MessageFamilies::ReportProblem => "1.0",
             MessageFamilies::Unknown(_) => "1.0"
         }
     }
@@ -136,6 +195,8 @@ impl From<String> for MessageFamilies {
             "didexchange" => MessageFamilies::DidExchange,
             "signature" => MessageFamilies::Signature,
             "notification" => MessageFamilies::Notification,
+            "issue-credential" => MessageFamilies::CredentialIssuance,
+            "report-problem" => MessageFamilies::ReportProblem,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -148,6 +209,8 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::DidExchange => "didexchange".to_string(),
             MessageFamilies::Notification => "notification".to_string(),
             MessageFamilies::Signature => "signature".to_string(),
+            MessageFamilies::CredentialIssuance => "issue-credential".to_string(),
+            MessageFamilies::ReportProblem => "report-problem".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }
