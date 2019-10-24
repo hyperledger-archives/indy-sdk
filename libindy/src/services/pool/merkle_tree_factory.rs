@@ -7,7 +7,7 @@ use serde_json;
 use serde_json::Value as SJsonValue;
 
 use crate::domain::ledger::request::ProtocolVersion;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::ledger::merkletree::merkletree::MerkleTree;
 use crate::services::pool::types::{NodeTransaction, NodeTransactionV0, NodeTransactionV1};
 use crate::utils::environment;

@@ -1,5 +1,5 @@
 use super::constants::{NYM, GET_NYM};
-use super::response::{GetReplyResultV0, GetReplyResultV1};
+use super::response::{GetReplyResultV0, GetReplyResultV1, ReplyType};
 use super::super::crypto::did::ShortDidValue;
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -50,6 +50,12 @@ pub enum GetNymReplyResult {
     GetNymReplyResultV1(GetReplyResultV1<GetNymResultDataV1>)
 }
 
+impl ReplyType for GetNymReplyResult {
+    fn get_type<'a>() -> &'a str {
+        GET_NYM
+    }
+}
+
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct GetNymResultDataV0 {
     pub identifier: Option<ShortDidValue>,
@@ -65,4 +71,11 @@ pub struct GetNymResultDataV1 {
     pub did: ShortDidValue,
     pub verkey: Option<String>,
     pub role: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+pub struct NymData {
+    pub did: ShortDidValue,
+    pub verkey: Option<String>,
+    pub role: Option<String>,
 }

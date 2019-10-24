@@ -3537,7 +3537,8 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_schema_works_for_attrs_count_more_than_acceptable() {
-            let attr_names: AttributeNames = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
+            let attr_names: AttributeNames = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string())
+                .collect::<HashSet<String>>().into();
 
             let res = anoncreds::issuer_create_schema(ISSUER_DID,
                                                       GVT_SCHEMA_NAME,
@@ -3594,7 +3595,7 @@ mod medium_cases {
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let mut schema = anoncreds::gvt_schema();
-            schema.attr_names = HashSet::new();
+            schema.attr_names = AttributeNames::new();
 
             let res = anoncreds::issuer_create_credential_definition(wallet_handle,
                                                                      ISSUER_DID,

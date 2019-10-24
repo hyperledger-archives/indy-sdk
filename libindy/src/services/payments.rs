@@ -1,17 +1,17 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::ffi::{CString, NulError};
+use std::ffi::CString;
 use std::ptr::null;
 use std::ops::Not;
 
 use serde_json;
 
 use hex;
-use crate::api::{ErrorCode, WalletHandle, CommandHandle};
+use indy_api_types::{ErrorCode, WalletHandle, CommandHandle};
 use crate::api::payments::*;
-use crate::errors::prelude::*;
-use crate::utils::ctypes;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
 use crate::domain::ledger::auth_rule::{Constraint, RoleConstraint, CombinationConstraint};
 use crate::domain::crypto::did::DidValue;
@@ -608,12 +608,6 @@ pub struct Output {
     pub recipient: String,
     amount: u64,
     extra: Option<String>,
-}
-
-impl From<NulError> for IndyError {
-    fn from(err: NulError) -> IndyError {
-        err.to_indy(IndyErrorKind::InvalidState, "Null symbols in payments strings") // TODO: Review kind
-    }
 }
 
 mod cbs {

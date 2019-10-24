@@ -1,9 +1,9 @@
 
-use crate::api::{ErrorCode, IndyHandle, CommandHandle};
+use indy_api_types::{ErrorCode, IndyHandle, CommandHandle};
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::blob_storage::BlobStorageCommand;
-use crate::errors::prelude::*;
-use crate::utils::ctypes;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
 use libc::c_char;
 

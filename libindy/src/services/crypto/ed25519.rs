@@ -1,4 +1,4 @@
-use crate::errors::IndyError;
+use indy_api_types::errors::IndyError;
 use super::CryptoType;
 use crate::utils::crypto::ed25519_box;
 use crate::utils::crypto::ed25519_sign;

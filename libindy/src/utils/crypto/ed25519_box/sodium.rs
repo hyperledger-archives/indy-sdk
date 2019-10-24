@@ -1,6 +1,6 @@
 extern crate sodiumoxide;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use self::sodiumoxide::crypto::box_;
 
 

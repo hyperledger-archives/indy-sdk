@@ -1,13 +1,13 @@
 use libc::c_char;
-use crate::api::{ErrorCode, CommandHandle, WalletHandle};
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle};
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::payments::PaymentsCommand;
 use crate::services::payments::PaymentsMethodCBs;
-use crate::errors::prelude::*;
-use crate::utils::ctypes;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 use crate::services::payments::{RequesterInfo, Fees};
 use crate::domain::crypto::did::DidValue;
-use crate::utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 /// Create the payment address for this payment method.
 ///

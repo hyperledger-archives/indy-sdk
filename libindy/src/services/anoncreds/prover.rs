@@ -25,7 +25,7 @@ use crate::domain::anoncreds::requested_credential::RequestedCredentials;
 use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
 use crate::domain::anoncreds::revocation_state::RevocationState;
 use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::helpers::*;
 use crate::utils::wql::Query;
 
@@ -84,7 +84,7 @@ impl Prover {
                credential, cred_request_metadata, secret!(&master_secret), cred_def, rev_reg_def);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
-        let credential_values = build_credential_values(&credential.values, Some(master_secret))?;
+        let credential_values = build_credential_values(&credential.values.0, Some(master_secret))?;
 
         CryptoProver::process_credential_signature(&mut credential.signature,
                                                    &credential_values,
@@ -149,8 +149,8 @@ impl Prover {
 
             let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
 
-            let credential_schema = build_credential_schema(&schema.attr_names)?;
-            let credential_values = build_credential_values(&credential.values, Some(master_secret))?;
+            let credential_schema = build_credential_schema(&schema.attr_names.0)?;
+            let credential_values = build_credential_values(&credential.values.0, Some(master_secret))?;
             let sub_proof_request = Prover::_build_sub_proof_request(&req_attrs_for_cred, &req_predicates_for_cred)?;
 
             proof_builder.add_sub_proof_request(&sub_proof_request,
@@ -300,7 +300,7 @@ impl Prover {
             res.insert(Credential::add_extra_tag_suffix("rev_reg_id"), credential.rev_reg_id.as_ref().map(|rev_reg_id| rev_reg_id.to_unqualified().0.clone()).unwrap_or_else(|| "None".to_string()));
         }
 
-        credential.values
+        credential.values.0
             .iter()
             .for_each(|(attr, values)| {
                 if catpol.map(|cp| cp.is_taggable(attr.as_str())).unwrap_or(true) {
@@ -361,7 +361,7 @@ impl Prover {
             if attr_info.revealed {
                 let attribute = &proof_req.requested_attributes[&attr_info.attr_referent];
                 let attribute_values =
-                    self.get_credential_values_for_attribute(&credential.values, &attribute.name)
+                    self.get_credential_values_for_attribute(&credential.values.0, &attribute.name)
                         .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", attribute.name)))?;
 
                 requested_proof.revealed_attrs.insert(attr_info.attr_referent,
