@@ -200,12 +200,7 @@ impl Connection {
                 match message {
                     A2AMessage::ConnectionRequest(request) => {
                         debug!("Inviter received ConnectionRequest message");
-
-                        let thread = Thread::new().set_thid(request.id.0.clone());
-
-                        if let Err(err) = self.handle_connection_request(request) {
-                            self.send_problem_report(ProblemCode::RequestProcessingError, err, thread)?
-                        }
+                        self.handle_connection_request(request)?;
                     }
                     A2AMessage::ConnectionProblemReport(problem_report) => {
                         debug!("Inviter received ProblemReport message");
@@ -220,12 +215,7 @@ impl Connection {
                 match message {
                     A2AMessage::ConnectionResponse(response) => {
                         debug!("Invitee received ConnectionResponse message");
-
-                        let thread = response.thread.clone();
-
-                        if let Err(err) = self.handle_connection_response(response) {
-                            self.send_problem_report(ProblemCode::ResponseProcessingError, err, thread)?
-                        }
+                        self.handle_connection_response(response)?;
                     }
                     A2AMessage::ConnectionProblemReport(problem_report) => {
                         debug!("Invitee received ProblemReport message");
@@ -260,6 +250,15 @@ impl Connection {
     }
 
     fn handle_connection_request(&mut self, request: Request) -> VcxResult<()> {
+        let thread = Thread::new().set_thid(request.id.0.clone());
+
+        if let Err(err) = self._handle_connection_request(request) {
+            self.send_problem_report(ProblemCode::RequestProcessingError, err, thread)?
+        }
+        Ok(())
+    }
+
+    fn _handle_connection_request(&mut self, request: Request) -> VcxResult<()> {
         trace!("Connection: handle_connection_request: {:?}", request);
 
         request.connection.did_doc.validate()?;
@@ -288,6 +287,15 @@ impl Connection {
     }
 
     fn handle_connection_response(&mut self, response: SignedResponse) -> VcxResult<()> {
+        let thread = response.thread.clone();
+
+        if let Err(err) = self.handle_connection_response(response) {
+            self.send_problem_report(ProblemCode::ResponseProcessingError, err, thread)?
+        }
+        Ok(())
+    }
+
+    fn _handle_connection_response(&mut self, response: SignedResponse) -> VcxResult<()> {
         trace!("Connection: handle_connection_response: {:?}", response);
 
         let response: Response = response.decode(&self.remote_vk()?)?;
@@ -375,7 +383,7 @@ impl Connection {
     }
 
     fn step(&mut self, message: Messages) -> VcxResult<()> {
-        self.state = self.state.clone().step(message)?; // TODO: FIX CLONE
+        self.state = self.state.clone().step(message)?;
         Ok(())
     }
 }
