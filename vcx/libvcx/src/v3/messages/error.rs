@@ -2,6 +2,8 @@ use v3::messages::MessageId;
 use v3::messages::MessageType;
 use messages::thread::Thread;
 use std::collections::HashMap;
+use utils::error::Error;
+use v3::messages::A2AMessageKinds;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProblemReport {
@@ -22,14 +24,44 @@ pub struct ProblemReport {
     pub impact: Option<Impact>,
     pub noticed_time: Option<String>,
     #[serde(rename = "where")]
-    pub location: Option<Location>,
+    pub location: Option<String>,
     pub problem_items: Option<HashMap<String, String>>
+}
+
+impl ProblemReport {
+    pub fn create() -> Self {
+        ProblemReport {
+            msg_type: MessageType::build(A2AMessageKinds::ProblemReport),
+            id: MessageId::new(),
+            thread: None,
+            description: Description {
+                en: None,
+                code: 0
+            },
+            who_retries: None,
+            tracking_uri: None,
+            escalation_uri: None,
+            fix_hint: None,
+            impact: None,
+            noticed_time: None,
+            location: None,
+            problem_items: None
+        }
+    }
+
+    pub fn set_description(mut self, code: u32) -> Self {
+        self.description = Description {
+            en: None,
+            code
+        };
+        self
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Description {
     pub en: Option<String>,
-    pub code: String,
+    pub code: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -60,23 +92,3 @@ pub enum Impact {
     #[serde(rename = "connection")]
     Connection
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum Location {
-    You(SpecificLocation),
-    Me(SpecificLocation),
-    Other(SpecificLocation)
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum SpecificLocation {
-    Cloud,
-    Edge,
-    Wire,
-    Agency
-}
-
-// TODO: deserializer for Location:
-// A string that describes where the error happened, from the perspective of the reporter,
-// and that uses the “you” or “me” or “other” prefix,
-// followed by a suffix like “cloud”, “edge”, “wire”, “agency”, etc.

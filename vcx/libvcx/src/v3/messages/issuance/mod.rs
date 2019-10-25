@@ -1,4 +1,5 @@
-use v3::messages::MessageType;
+use v3::messages::{MessageType, A2AMessageKinds};
+use error::{VcxError, VcxResult, VcxErrorKind};
 
 pub mod credential;
 pub mod credential_offer;
@@ -14,11 +15,28 @@ pub struct CredentialPreviewData {
 
 impl CredentialPreviewData {
     pub fn new() -> Self {
-        unimplemented!()
-//        CredentialPreviewData {
-//            _type: "".to_string(),
-//            attributes: vec![]
-//        }
+        CredentialPreviewData {
+            _type: MessageType::build(A2AMessageKinds::CredentialPreview),
+            attributes: vec![]
+        }
+    }
+
+    pub fn add_value(mut self, name: &str, value: &str, mime_type: &str) -> VcxResult<CredentialPreviewData> {
+        let data_value = match mime_type {
+            "text/plain" => {
+                Ok(CredentialValue::String(
+                    CredentialValueData {
+                        name: name.to_string(),
+                        value: value.to_string()
+                    })
+                )
+            },
+            _ => {
+                Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, "Invalid mime type of value in credential preview"))
+            }
+        }?;
+        self.attributes.push(data_value);
+        Ok(self)
     }
 }
 
