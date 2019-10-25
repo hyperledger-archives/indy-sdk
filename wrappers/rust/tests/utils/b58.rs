@@ -1,18 +1,16 @@
 extern crate bs58;
 
-use self::bs58::decode::{DecodeError};
-
 pub trait FromBase58 {
-    fn from_base58(&self) -> Result<Vec<u8>, DecodeError>;
-    fn from_base58_check(&self) -> Result<Vec<u8>, DecodeError>;
+    fn from_base58(&self) -> Result<Vec<u8>, bs58::decode::Error>;
+    fn from_base58_check(&self) -> Result<Vec<u8>, bs58::decode::Error>;
 }
 
 impl<I: AsRef<[u8]>> FromBase58 for I {
-    fn from_base58(&self) -> Result<Vec<u8>, DecodeError> {
+    fn from_base58(&self) -> Result<Vec<u8>, bs58::decode::Error> {
         bs58::decode(self).into_vec()
     }
 
-    fn from_base58_check(&self) -> Result<Vec<u8>, DecodeError> {
+    fn from_base58_check(&self) -> Result<Vec<u8>, bs58::decode::Error> {
         bs58::decode(self).with_check(None).into_vec()
     }
 }

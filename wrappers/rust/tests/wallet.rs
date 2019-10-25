@@ -4,6 +4,7 @@ extern crate indyrs as indy;
 extern crate rmp_serde;
 extern crate byteorder;
 extern crate futures;
+extern crate indy_sys;
 
 use indy::did;
 use indy::wallet;
@@ -14,7 +15,7 @@ use std::path::{Path, PathBuf};
 
 mod utils;
 
-use utils::constants::{DEFAULT_CREDENTIALS, INVALID_HANDLE, METADATA};
+use utils::constants::{DEFAULT_CREDENTIALS, METADATA};
 use utils::file::{TempDir, TempFile};
 use utils::rand;
 #[allow(unused_imports)]
@@ -385,7 +386,8 @@ mod test_wallet_open {
 #[cfg(test)]
 mod test_wallet_close {
     use super::*;
-    
+    use indy::INVALID_WALLET_HANDLE;
+
     #[test]
     fn close_wallet() {
         let config = wallet_config::new();
@@ -404,7 +406,7 @@ mod test_wallet_close {
 
     #[test]
     fn close_wallet_invalid_handle() {
-        let result = wallet::close_wallet(INVALID_HANDLE).wait();
+        let result = wallet::close_wallet(INVALID_WALLET_HANDLE).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 
@@ -428,6 +430,7 @@ mod test_wallet_close {
 #[cfg(test)]
 mod test_wallet_export {
     use super::*;
+    use indy::INVALID_WALLET_HANDLE;
 
     #[test]
     fn export_wallet() {
@@ -482,7 +485,7 @@ mod test_wallet_export {
     fn export_wallet_invalid_handle() {
         let (config_export, path, _dir) = wallet_config::export::with_defaults();
 
-        let result = wallet::export_wallet(INVALID_HANDLE, &config_export).wait();
+        let result = wallet::export_wallet(INVALID_WALLET_HANDLE, &config_export).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
         assert!(!path.exists());
     }
