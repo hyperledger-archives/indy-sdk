@@ -4,7 +4,7 @@ use v3::messages::attachment::{
     Json,
     ENCODING_BASE64
 };
-use utils::error::{self, Error};
+use error::{VcxError, VcxResult, VcxErrorKind};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Credential {
@@ -29,8 +29,12 @@ impl Credential {
         self
     }
 
-    pub fn set_credential(mut self, credential: String) -> Result<Credential, Error> {
-        let json: Json = Json::new(serde_json::from_str(&credential).map_err(|_| error::INVALID_JSON)?, ENCODING_BASE64)?;
+    pub fn set_credential(mut self, credential: String) -> VcxResult<Credential> {
+        let json: Json = Json::new(
+            serde_json::from_str(&credential)
+                .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?,
+            ENCODING_BASE64
+        )?;
         self.credentials_attach = Attachment::JSON(json);
         Ok(self)
     }

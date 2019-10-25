@@ -109,6 +109,7 @@ pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1094, message: "Un
 pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1095, message: "Failed to create Revocation Registration Definition"};
 pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1096, message: "Failed to decode attachment"};
 pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1097, message: "This type of attachment can not be used"};
+pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1098, message: "Unknown mime type"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -211,6 +212,7 @@ lazy_static! {
         insert_c_message(&mut m, &LOGGING_ERROR);
         insert_c_message(&mut m, &INVALID_ATTACHMENT_ENCODING);
         insert_c_message(&mut m, &UNKNOWN_ATTACHMENT_ENCODING);
+        insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
 
         m
     };

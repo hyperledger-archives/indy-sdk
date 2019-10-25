@@ -123,7 +123,8 @@ pub enum A2AMessageKinds {
     CredentialProposal,
     CredentialRequest,
     Credential,
-    ProblemReport
+    CredentialPreview,
+    ProblemReport,
 }
 
 impl A2AMessageKinds {
@@ -141,6 +142,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Credential => MessageFamilies::CredentialIssuance,
             A2AMessageKinds::CredentialProposal => MessageFamilies::CredentialIssuance,
             A2AMessageKinds::CredentialRequest => MessageFamilies::CredentialIssuance,
+            A2AMessageKinds::CredentialPreview => MessageFamilies::CredentialIssuance,
         }
     }
 
@@ -156,6 +158,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::Ed25519Signature => "ed25519Sha512_single".to_string(),
             A2AMessageKinds::Credential => "issue-credential".to_string(),
             A2AMessageKinds::CredentialProposal => "propose-credential".to_string(),
+            A2AMessageKinds::CredentialPreview => "credential-preview".to_string(),
             A2AMessageKinds::CredentialOffer => "offer-credential".to_string(),
             A2AMessageKinds::CredentialRequest => "request-credential".to_string(),
 
