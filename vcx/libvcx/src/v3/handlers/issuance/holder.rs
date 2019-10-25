@@ -6,8 +6,10 @@ use v3::messages::attachment::Attachment;
 use credential::Credential;
 use utils::error::Error;
 use error::{VcxError, VcxErrorKind, VcxResult};
-use v3::handlers::connection::send_message;
+use v3::handlers::connection::{send_message, get_pw_did};
 use v3::messages::A2AMessage;
+use v3::messages::ack::{Ack, AckStatus};
+use messages::thread::Thread;
 
 pub struct HolderSM {
     state: HolderState
@@ -32,12 +34,11 @@ impl HolderSM {
                     let conn_handle = state_data.connection_handle;
                     let offer_accepted = true;
                     let (msg, state) = if offer_accepted {
-                        //TODO: get did
-                        let my_did = String::new();
+                        let my_did = get_pw_did(conn_handle)?;
                         let cred_offer = if let Attachment::JSON(json) = offer.offers_attach {
                             json.get_data()?
                         } else {
-                            panic!("Unexpected attachment type");
+                            return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Wrong messages"))
                         };
                         let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
                         let (req, req_meta, cred_def_id) =
@@ -45,7 +46,7 @@ impl HolderSM {
                         let request = CredentialRequest::create()
                             .set_requests_attach(req)?;
                         let msg = A2AMessage::CredentialRequest(request);
-                        (msg, HolderState::RequestSent(state_data.into()))
+                        (msg, HolderState::RequestSent((state_data, req_meta).into()))
                     } else {
                         let msg = A2AMessage::CommonProblemReport(
                             ProblemReport::create()
@@ -63,19 +64,34 @@ impl HolderSM {
                 }
             },
             HolderState::RequestSent(state_data) => match cim {
-                CredentialIssuanceMessage::Credential(_credential) => {
-                    panic!("Accept and send ack or problem report");
+                CredentialIssuanceMessage::Credential(credential) => {
                     let ok = true;
-                    if ok {
-                        panic!("send ack");
+                    let (msg, cred_id) = if ok {
+                        //TODO: store credential from message
+                        let cred_id = None;
+                        (
+                            A2AMessage::Ack(
+                                Ack::create()
+                                    .set_status(AckStatus::Ok)
+                                    .set_thread(Thread::new().set_thid(credential.id.0.clone()))
+                            ),
+                            cred_id
+                        )
                     } else {
-                        panic!("send problem report");
-                    }
-                    HolderState::Finished(state_data.into())
+                        (
+                            A2AMessage::CommonProblemReport(
+                                ProblemReport::create()
+                                    //TODO define some error codes inside RFC and use them here
+                                    .set_description(0)
+                            ),
+                            None
+                        )
+                    };
+                    send_message(state_data.connection_handle, msg)?;
+                    HolderState::Finished((state_data, cred_id).into())
                 }
                 CredentialIssuanceMessage::ProblemReport(_report) => {
-                    panic!("Finalize state");
-                    HolderState::Finished(state_data.into())
+                    HolderState::Finished((state_data, None).into())
                 }
                 _ => {
                     warn!("In this state Credential Issuance can accept only Credential and Problem Report");
@@ -88,6 +104,13 @@ impl HolderSM {
             }
         };
         Ok(HolderSM::step(state))
+    }
+
+    pub fn is_terminal_state(&self) -> bool {
+        match self.state {
+            HolderState::Finished(_) => true,
+            _ => false
+        }
     }
 }
 

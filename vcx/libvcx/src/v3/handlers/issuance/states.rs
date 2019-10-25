@@ -36,7 +36,9 @@ pub struct CredentialSentState {
 }
 
 #[derive(Debug)]
-pub struct FinishedState {}
+pub struct FinishedState {
+    pub cred_id: Option<String>
+}
 
 impl From<InitialState> for OfferSentState {
     fn from(state: InitialState) -> Self {
@@ -50,7 +52,9 @@ impl From<InitialState> for OfferSentState {
 impl From<InitialState> for FinishedState {
     fn from(state: InitialState) -> Self {
         trace!("SM is now in Finished state");
-        FinishedState {}
+        FinishedState {
+            cred_id: None
+        }
     }
 }
 
@@ -67,14 +71,18 @@ impl From<OfferSentState> for CredentialSentState {
 impl From<OfferSentState> for FinishedState {
     fn from(_state: OfferSentState) -> Self {
         trace!("SM is now in Finished state");
-        FinishedState {}
+        FinishedState {
+            cred_id: None
+        }
     }
 }
 
 impl From<CredentialSentState> for FinishedState {
     fn from(_state: CredentialSentState) -> Self {
         trace!("SM is now in Finished state");
-        FinishedState {}
+        FinishedState {
+            cred_id: None
+        }
     }
 }
 
@@ -88,20 +96,24 @@ pub enum HolderState {
 #[derive(Debug)]
 pub struct RequestSentState {
     pub connection_handle: u32,
+    pub req_meta: String
 }
 
-impl From<InitialState> for RequestSentState {
-    fn from(state: InitialState) -> Self {
+impl From<(InitialState, String)> for RequestSentState {
+    fn from((state, req_meta): (InitialState, String)) -> Self {
         trace!("SM is now in RequestSent state");
-        RequestSentState{
-            connection_handle: state.connection_handle
+        RequestSentState {
+            connection_handle: state.connection_handle,
+            req_meta
         }
     }
 }
 
-impl From<RequestSentState> for FinishedState {
-    fn from(_: RequestSentState) -> Self {
+impl From<(RequestSentState, Option<String>)> for FinishedState {
+    fn from((_, cred_id): (RequestSentState, Option<String>)) -> Self {
         trace!("SM is now in Finished state");
-        FinishedState {}
+        FinishedState {
+            cred_id
+        }
     }
 }
