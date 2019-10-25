@@ -1,6 +1,5 @@
 pub const SEQ_NO: i32 = 1;
 pub const PROTOCOL_VERSION: usize = 2;
-pub const WALLET: &'static str = "wallet_1";  // FIXME never use global names
 pub const TYPE: &'static str = "default";
 pub const INMEM_TYPE: &'static str = "inmem";
 pub const SIGNATURE_TYPE: &'static str = "CL";

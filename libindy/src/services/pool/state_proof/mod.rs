@@ -624,7 +624,7 @@ fn _calculate_turns(length: u64, idx: u64) -> Vec<bool> {
 fn _verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
     debug!("verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
-    let mut map: TrieDB = HashMap::new();
+    let mut map: TrieDB = HashMap::with_capacity(nodes.len());
     for node in &nodes {
         map.insert(node.get_hash(), node);
     }
@@ -994,7 +994,7 @@ mod tests {
             info!("{:?}", rlp.as_raw());
         }
         info!("parsed");
-        let mut map: TrieDB = HashMap::new();
+        let mut map: TrieDB = HashMap::with_capacity(proofs.len());
         for node in &proofs {
             info!("{:?}", node);
             let out = node.get_hash();
