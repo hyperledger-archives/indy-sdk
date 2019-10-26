@@ -235,7 +235,7 @@ pub fn gvt_schema() -> SchemaV1 {
         id: SchemaId(gvt_schema_id()),
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
-        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
+        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap().into(),
         seq_no: None
     }
 }
@@ -253,7 +253,7 @@ pub fn gvt_schema_issuer2() -> SchemaV1 {
         id: SchemaId(gvt_schema_id_issuer2()),
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
-        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
+        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap().into(),
         seq_no: None
     }
 }
@@ -272,7 +272,7 @@ pub fn xyz_schema() -> SchemaV1 {
         id: SchemaId(xyz_schema_id()),
         version: SCHEMA_VERSION.to_string(),
         name: XYZ_SCHEMA_NAME.to_string(),
-        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
+        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap().into(),
         seq_no: None
     }
 }
@@ -290,7 +290,7 @@ pub fn xyz_schema_tag2() -> SchemaV1 {
         id: SchemaId(xyz_schema_id_tag2()),
         version: SCHEMA_VERSION.to_string(),
         name: format!("{}{}", XYZ_SCHEMA_NAME, TAG_2),
-        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
+        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap().into(),
         seq_no: None
     }
 }

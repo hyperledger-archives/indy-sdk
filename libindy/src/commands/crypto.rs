@@ -2,16 +2,16 @@ use std::collections::HashMap;
 
 use crate::domain::crypto::key::{Key, KeyInfo, KeyMetadata};
 use crate::domain::crypto::pack::*;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
-use crate::services::wallet::{RecordOptions, WalletService};
+use indy_wallet::{RecordOptions, WalletService};
 
 use std::rc::Rc;
 use std::str;
 use crate::utils::crypto::base64;
 use crate::utils::crypto::chacha20poly1305_ietf;
 use crate::domain::crypto::combo_box::ComboBox;
-use crate::api::WalletHandle;
+use indy_api_types::WalletHandle;
 
 pub const PROTECTED_HEADER_ENC: &str = "xchacha20poly1305_ietf";
 pub const PROTECTED_HEADER_TYP: &str = "JWM/1.0";

@@ -18,7 +18,7 @@ use super::libc::c_char;
 use crate::utils::constants::{TYPE, INMEM_TYPE, WALLET_CREDENTIALS};
 
 use std::path::{Path, PathBuf};
-use crate::api::{WalletHandle, CommandHandle};
+use indy_api_types::{WalletHandle, CommandHandle};
 
 pub fn register_wallet_storage(xtype: &str, force_create: bool) -> Result<(), ErrorCode> {
     lazy_static! {

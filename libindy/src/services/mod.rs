@@ -4,4 +4,4 @@ pub mod crypto;
 pub mod ledger;
 pub mod payments;
 pub mod pool;
-pub mod wallet;
+pub use indy_wallet;

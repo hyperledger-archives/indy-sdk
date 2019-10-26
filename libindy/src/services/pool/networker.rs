@@ -5,10 +5,10 @@ use rand::thread_rng;
 use rand::prelude::SliceRandom;
 use time::Tm;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::pool::events::*;
 use crate::services::pool::types::*;
-use crate::utils::sequence;
+use indy_utils::sequence;
 
 use super::time::Duration;
 

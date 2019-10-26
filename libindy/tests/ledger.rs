@@ -17,6 +17,7 @@ use self::rand::distributions::Alphanumeric;
 
 use crate::utils::domain::ledger::constants;
 use crate::utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
+use crate::utils::domain::ledger::nym::NymData;
 use crate::utils::domain::anoncreds::schema::SchemaV1;
 use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
 use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
@@ -365,8 +366,7 @@ mod high_cases {
 
             let get_nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
             let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
+            ledger::parse_get_nym_response(&get_nym_response).unwrap();
         }
 
         #[test]
@@ -382,9 +382,12 @@ mod high_cases {
 
             let get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
             let get_nym_response = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_resp).unwrap();
+            let data = ledger::parse_get_nym_response(&get_nym_response).unwrap();
 
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
+            let nym_data: NymData = serde_json::from_str(&data).unwrap();
+            assert_eq!(my_did, nym_data.did.0);
+            assert_eq!(my_verkey, nym_data.verkey.unwrap());
+            assert!(nym_data.role.is_none());
         }
     }
 
@@ -528,7 +531,6 @@ mod high_cases {
 
             let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, Some("endpoint"), None, None).unwrap();
             let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
         }
@@ -2997,8 +2999,9 @@ mod medium_cases {
 
             let get_nym_request = ledger::build_get_nym_request(None, DID_TRUSTEE).unwrap();
             let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
+            let get_nym_response = ledger::parse_get_nym_response(&get_nym_response).unwrap();
+            let get_nym_response: NymData = serde_json::from_str(&get_nym_response).unwrap();
+            assert_eq!(DID_TRUSTEE.to_string(), get_nym_response.did.0);
         }
 
         #[test]
@@ -3091,8 +3094,8 @@ mod medium_cases {
 
             let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
             let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_none());
+            let res = ledger::parse_get_nym_response(&get_nym_response);
+            assert_code!(ErrorCode::LedgerNotFound, res);
         }
 
         #[test]
@@ -3136,9 +3139,8 @@ mod medium_cases {
 
             let mut get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
             let get_nym_response_with_role = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_req_resp).unwrap();
-
-            let get_nym_response_with_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_with_role).unwrap();
-            let get_nym_response_data_with_role: GetNymResultData = serde_json::from_str(&get_nym_response_with_role.result.data.unwrap()).unwrap();
+            let get_nym_response_data_with_role = ledger::parse_get_nym_response(&get_nym_response_with_role).unwrap();
+            let get_nym_response_data_with_role: NymData = serde_json::from_str(&get_nym_response_data_with_role).unwrap();
 
             nym_request = ledger::build_nym_request(&my_did, &my_did,
                                                     Some(&my_verkey), None, Some("")).unwrap();
@@ -3147,9 +3149,8 @@ mod medium_cases {
 
             get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
             let get_nym_response_without_role = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_req_resp).unwrap();
-
-            let get_nym_response_without_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_without_role).unwrap();
-            let get_nym_response_data_without_role: GetNymResultData = serde_json::from_str(&get_nym_response_without_role.result.data.unwrap()).unwrap();
+            let get_nym_response_data_without_role = ledger::parse_get_nym_response(&get_nym_response_without_role).unwrap();
+            let get_nym_response_data_without_role: NymData = serde_json::from_str(&get_nym_response_data_without_role).unwrap();
 
             assert!(get_nym_response_data_without_role.role.is_none());
             assert_ne!(get_nym_response_data_without_role.role, get_nym_response_data_with_role.role);
@@ -3358,7 +3359,7 @@ mod medium_cases {
             use crate::utils::domain::anoncreds::schema::MAX_ATTRIBUTES_COUNT;
 
             let mut schema = utils::anoncreds::gvt_schema();
-            schema.attr_names = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
+            schema.attr_names = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect::<std::collections::HashSet<String>>().into();
             let schema = Schema::SchemaV1(schema);
             let schema_json = serde_json::to_string(&schema).unwrap();
 

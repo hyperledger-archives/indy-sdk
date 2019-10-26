@@ -1,11 +1,11 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 use libc::c_int;
 use sodiumoxide::crypto::sign;
 use sodiumoxide::crypto::box_;
 
-use crate::utils::crypto::ed25519_box;
-use crate::utils::crypto::randombytes::randombytes;
+use super::ed25519_box;
+use super::randombytes::randombytes;
 
 pub const SEEDBYTES: usize = sign::SEEDBYTES;
 pub const SIG_PUBLICKEYBYTES: usize = sign::PUBLICKEYBYTES;

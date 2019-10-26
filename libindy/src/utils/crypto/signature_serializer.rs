@@ -1,6 +1,6 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use serde_json::Value;
-use crate::utils::crypto::hash::Hash;
+use indy_utils::crypto::hash::Hash;
 use crate::domain::ledger::constants::{ATTRIB, GET_ATTR};
 
 pub fn serialize_signature(v: Value) -> Result<String, IndyError> {

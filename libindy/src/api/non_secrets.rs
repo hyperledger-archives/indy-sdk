@@ -1,10 +1,10 @@
 
-use crate::api::{ErrorCode, CommandHandle, WalletHandle, SearchHandle};
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, SearchHandle};
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::non_secrets::NonSecretsCommand;
-use crate::domain::wallet::Tags;
-use crate::errors::prelude::*;
-use crate::utils::ctypes;
+use indy_api_types::domain::wallet::Tags;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
 use serde_json;
 use libc::c_char;

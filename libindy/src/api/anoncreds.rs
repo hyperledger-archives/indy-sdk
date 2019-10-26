@@ -1,5 +1,5 @@
-use crate::api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
-use crate::errors::prelude::*;
+use indy_api_types::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
+use indy_api_types::errors::prelude::*;
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::anoncreds::AnoncredsCommand;
 use crate::commands::anoncreds::issuer::IssuerCommand;
@@ -19,12 +19,12 @@ use crate::domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQue
 use crate::domain::anoncreds::requested_credential::RequestedCredentials;
 use crate::domain::anoncreds::revocation_registry::RevocationRegistries;
 use crate::domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
-use crate::utils::ctypes;
+use indy_utils::ctypes;
 
 use libc::c_char;
 use std::ptr;
 
-use crate::utils::validation::Validatable;
+use crate::indy_api_types::validation::Validatable;
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:
