@@ -12,8 +12,14 @@ lazy_static! {
 
 //Todo: change this RC to a u32
 pub fn post_u8(body_content: &Vec<u8>) -> VcxResult<Vec<u8>> {
-    let endpoint = settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)?;
-    let url = format!("{}/agency/msg", endpoint);
+    post_u8_v3(body_content, None)
+}
+
+pub fn post_u8_v3(body_content: &Vec<u8>,  endpoint: Option<String>) -> VcxResult<Vec<u8>> {
+    let url = if let Some(url) = endpoint { url } else {
+        let endpoint = settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)?;
+        format!("{}/agency/msg", endpoint)
+    };
 
     if settings::test_agency_mode_enabled() {
         return Ok(NEXT_U8_RESPONSE.lock().unwrap().pop().unwrap_or(Vec::new()));

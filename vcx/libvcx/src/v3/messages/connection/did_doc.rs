@@ -21,6 +21,7 @@ pub struct PublicKey {
     pub id: String,
     #[serde(rename = "type")]
     pub type_: String,
+    #[serde(rename = "controller")]
     pub owner: String,
     #[serde(rename = "publicKeyBase58")]
     pub public_key_base_58: String,
@@ -42,6 +43,7 @@ pub struct Service {
     pub priority: u32,
     #[serde(rename = "recipientKeys")]
     pub recipient_keys: Vec<String>,
+    #[serde(default)]
     #[serde(rename = "routingKeys")]
     pub routing_keys: Vec<String>,
     #[serde(rename = "serviceEndpoint")]
@@ -217,7 +219,7 @@ impl DidDoc {
     fn key_for_reference(&self, key_reference: &str) -> String {
         let id = DidDoc::_parse_key_reference(key_reference);
 
-        self.public_key.iter().find(|key_| key_.id == id.to_string())
+        self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string())
             .map(|key| key.public_key_base_58.clone())
             .unwrap_or_default()
     }

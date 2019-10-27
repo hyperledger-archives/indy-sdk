@@ -35,7 +35,7 @@ impl EncryptionEnvelope {
             .map(String::from)
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Recipient Key not found"))?;
 
-        let routing_keys_iter = remote_connection_info.routing_keys.iter().rev();
+        let routing_keys_iter = remote_connection_info.routing_keys.iter();
 
         for routing_key in routing_keys_iter {
             message = EncryptionEnvelope::wrap_into_forward(message, &to, &routing_key)?;

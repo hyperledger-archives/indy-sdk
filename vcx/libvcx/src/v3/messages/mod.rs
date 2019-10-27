@@ -192,7 +192,7 @@ impl From<String> for MessageFamilies {
     fn from(family: String) -> Self {
         match family.as_str() {
             "routing" => MessageFamilies::Routing,
-            "didexchange" => MessageFamilies::DidExchange,
+            "connections" => MessageFamilies::DidExchange,
             "signature" => MessageFamilies::Signature,
             "notification" => MessageFamilies::Notification,
             "issue-credential" => MessageFamilies::CredentialIssuance,
@@ -206,7 +206,7 @@ impl ::std::string::ToString for MessageFamilies {
     fn to_string(&self) -> String {
         match self {
             MessageFamilies::Routing => "routing".to_string(),
-            MessageFamilies::DidExchange => "didexchange".to_string(),
+            MessageFamilies::DidExchange => "connections".to_string(),
             MessageFamilies::Notification => "notification".to_string(),
             MessageFamilies::Signature => "signature".to_string(),
             MessageFamilies::CredentialIssuance => "issue-credential".to_string(),
