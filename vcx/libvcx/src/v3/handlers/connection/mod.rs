@@ -57,11 +57,12 @@ impl Connection {
 
     fn agency_endpoint(&self) -> VcxResult<String> {
         settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)
+            .map(|str| format!("{}/agency/msg", str))
     }
 
     fn routing_keys(&self) -> VcxResult<Vec<String>> {
         let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
-        Ok(vec![agency_vk, self.agent_info().agent_vk.to_string()])
+        Ok(vec![self.agent_info().agent_vk.to_string(), agency_vk])
     }
 
     fn recipient_keys(&self) -> Vec<String> {
