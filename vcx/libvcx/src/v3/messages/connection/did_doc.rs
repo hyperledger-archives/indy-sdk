@@ -21,7 +21,7 @@ pub struct PublicKey {
     pub id: String,
     #[serde(rename = "type")]
     pub type_: String,
-    pub owner: String,
+    pub controller: String,
     #[serde(rename = "publicKeyBase58")]
     pub public_key_base_58: String,
 }
@@ -42,6 +42,7 @@ pub struct Service {
     pub priority: u32,
     #[serde(rename = "recipientKeys")]
     pub recipient_keys: Vec<String>,
+    #[serde(default)]
     #[serde(rename = "routingKeys")]
     pub routing_keys: Vec<String>,
     #[serde(rename = "serviceEndpoint")]
@@ -96,13 +97,13 @@ impl DidDoc {
                     PublicKey {
                         id: key_id,
                         type_: String::from(KEY_TYPE),
-                        owner: self.id.clone(),
+                        controller: self.id.clone(),
                         public_key_base_58: key.clone(),
                     });
 
                 self.authentication.push(
                     Authentication {
-                        type_: String::from(KEY_AUTHENTICATION_TYPE),
+                        type_: String::from(KEY_TYPE),
                         public_key: key_reference.clone()
                     });
 
@@ -126,7 +127,7 @@ impl DidDoc {
                     PublicKey {
                         id: key_id,
                         type_: String::from(KEY_TYPE),
-                        owner: self.id.clone(),
+                        controller: self.id.clone(),
                         public_key_base_58: key.clone(),
                     });
 
@@ -165,7 +166,7 @@ impl DidDoc {
     fn validate_public_key(&self, target_key: &str) -> VcxResult<()> {
         let id = DidDoc::_parse_key_reference(target_key);
 
-        let key = self.public_key.iter().find(|key_| key_.id == id.to_string())
+        let key = self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string())
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Cannot find PublicKey definition for key: {:?}", id)))?;
 
         if key.type_ != KEY_TYPE {
@@ -179,7 +180,7 @@ impl DidDoc {
         let key = self.authentication.iter().find(|key_| key_.public_key == target_key.to_string())
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Cannot find Authentication section for key: {:?}", target_key)))?;
 
-        if key.type_ != KEY_AUTHENTICATION_TYPE {
+        if key.type_ != KEY_TYPE {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported Authentication type: {:?}", key.type_)));
         }
 
@@ -217,7 +218,7 @@ impl DidDoc {
     fn key_for_reference(&self, key_reference: &str) -> String {
         let id = DidDoc::_parse_key_reference(key_reference);
 
-        self.public_key.iter().find(|key_| key_.id == id.to_string())
+        self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string())
             .map(|key| key.public_key_base_58.clone())
             .unwrap_or_default()
     }
@@ -285,12 +286,12 @@ pub mod tests {
             context: String::from(CONTEXT),
             id: _id(),
             public_key: vec![
-                PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), owner: _id(), public_key_base_58: _key_1() },
-                PublicKey { id: "2".to_string(), type_: KEY_TYPE.to_string(), owner: _id(), public_key_base_58: _key_2() },
-                PublicKey { id: "3".to_string(), type_: KEY_TYPE.to_string(), owner: _id(), public_key_base_58: _key_3() }
+                PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+                PublicKey { id: "2".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
+                PublicKey { id: "3".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
             ],
             authentication: vec![
-                Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
+                Authentication { type_: KEY_TYPE.to_string(), public_key: _key_reference_1() }
             ],
             service: vec![Service {
                 // TODO: FIXME Several services????

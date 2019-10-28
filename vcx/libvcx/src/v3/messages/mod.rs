@@ -1,5 +1,5 @@
 use std::u8;
-use messages::message_type::{parse_message_type, DID};
+use messages::message_type::parse_message_type;
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
@@ -9,6 +9,8 @@ pub mod connection;
 pub mod error;
 pub mod forward;
 pub mod attachment;
+
+#[allow(unused)] //FIXME:
 pub mod issuance;
 
 use v3::messages::connection::request::Request;
@@ -195,7 +197,7 @@ impl From<String> for MessageFamilies {
     fn from(family: String) -> Self {
         match family.as_str() {
             "routing" => MessageFamilies::Routing,
-            "didexchange" => MessageFamilies::DidExchange,
+            "connections" => MessageFamilies::DidExchange, // TODO: should be didexchange
             "signature" => MessageFamilies::Signature,
             "notification" => MessageFamilies::Notification,
             "issue-credential" => MessageFamilies::CredentialIssuance,
@@ -209,7 +211,7 @@ impl ::std::string::ToString for MessageFamilies {
     fn to_string(&self) -> String {
         match self {
             MessageFamilies::Routing => "routing".to_string(),
-            MessageFamilies::DidExchange => "didexchange".to_string(),
+            MessageFamilies::DidExchange => "connections".to_string(), // TODO: should be didexchange
             MessageFamilies::Notification => "notification".to_string(),
             MessageFamilies::Signature => "signature".to_string(),
             MessageFamilies::CredentialIssuance => "issue-credential".to_string(),
@@ -228,9 +230,11 @@ pub struct MessageType {
 }
 
 impl MessageType {
+    const DID: &'static str = "did:sov:BzCbsNYhMrjHiqZDTUASHg";
+
     pub fn build(kind: A2AMessageKinds) -> MessageType {
         MessageType {
-            did: DID.to_string(),
+            did: Self::DID.to_string(),
             family: kind.family(),
             version: kind.family().version().to_string(),
             type_: kind.name(),

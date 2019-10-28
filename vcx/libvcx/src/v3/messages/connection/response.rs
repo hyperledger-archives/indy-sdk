@@ -79,23 +79,24 @@ impl Response {
 
     pub fn encode(&self, key: &str) -> VcxResult<SignedResponse> {
         let connection_data = json!(self.connection).to_string();
-        let now = time::get_time().sec as u64;
 
-        let sig_data = format!("{}{}", now, connection_data);
+        let now: u64 =  time::get_time().sec as u64;
 
-        let sig_data = base64::encode_config(&sig_data.as_bytes(), base64::URL_SAFE);
+        let mut sig_data = now.to_be_bytes().to_vec();
 
-        let signature = crypto::sign(key, sig_data.as_bytes())?;
+        sig_data.extend(connection_data.as_bytes());
+
+        let signature = crypto::sign(key, &sig_data)?;
+
+        let sig_data = base64::encode_config(&sig_data, base64::URL_SAFE);
 
         let signature = base64::encode_config(&signature, base64::URL_SAFE);
-
-        let signers = base64::encode_config(&key, base64::URL_SAFE);
 
         let connection_sig = ConnectionSignature {
             msg_type: MessageType::build(A2AMessageKinds::Ed25519Signature),
             signature,
             sig_data,
-            signers,
+            signers: key.to_string(),
         };
 
         let signed_response = SignedResponse {
@@ -110,28 +111,18 @@ impl Response {
 }
 
 impl SignedResponse {
-    pub fn decode(self, invite_key: &str) -> VcxResult<Response> {
-        let signers = base64::decode_config(&self.connection_sig.signers, base64::URL_SAFE)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode ConnectionResponse: {:?}", err)))?;
-
+    pub fn decode(self, key: &str) -> VcxResult<Response> {
         let signature = base64::decode_config(&self.connection_sig.signature.as_bytes(), base64::URL_SAFE)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode ConnectionResponse: {:?}", err)))?;
-
-        let key = ::std::str::from_utf8(&signers)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode Response: {:?}", err)))?;
-
-        if !crypto::verify(&key, &self.connection_sig.sig_data.as_bytes(), &signature)? {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "ConnectionResponse signature is invalid"));
-        }
-
-        if !crypto::verify(&invite_key, &self.connection_sig.sig_data.as_bytes(), &signature)? {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "ConnectionResponse signature is invalid for original Invite recipient key"));
-        }
 
         let sig_data = base64::decode_config(&self.connection_sig.sig_data.as_bytes(), base64::URL_SAFE)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot decode ConnectionResponse: {:?}", err)))?;
 
-        let sig_data = &sig_data[10..]; // TODO: FIXME.  proper way to find start
+        if !crypto::verify(&key, &sig_data, &signature)? {
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "ConnectionResponse signature is invalid for original Invite recipient key"));
+        }
+
+        let sig_data = &sig_data[8..];
 
         let connection: ConnectionData = ::serde_json::from_slice(&sig_data)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err.to_string()))?;
@@ -173,6 +164,10 @@ pub mod tests {
         String::from("VsKV7grR1BUE29mG2Fm2kX")
     }
 
+    fn _key() -> String {
+        String::from("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW")
+    }
+
     fn _id() -> MessageId {
         MessageId(String::from("testid"))
     }
@@ -202,7 +197,7 @@ pub mod tests {
                 msg_type: MessageType::build(A2AMessageKinds::Ed25519Signature),
                 signature: String::from("yeadfeBWKn09j5XU3ITUE3gPbUDmPNeblviyjrOIDdVMT5WZ8wxMCxQ3OpAnmq1o-Gz0kWib9zr0PLsbGc2jCA=="),
                 sig_data: String::from("MTU3MTg0NzQwM3siZGlkIjoiVnNLVjdnclIxQlVFMjltRzJGbTJrWCIsImRpZF9kb2MiOnsiQGNvbnRleHQiOiJodHRwczovL3czaWQub3JnL2RpZC92MSIsImF1dGhlbnRpY2F0aW9uIjpbeyJwdWJsaWNLZXkiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzEiLCJ0eXBlIjoiRWQyNTUxOVNpZ25hdHVyZUF1dGhlbnRpY2F0aW9uMjAxOCJ9XSwiaWQiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIiwicHVibGljS2V5IjpbeyJpZCI6IjEiLCJvd25lciI6IlZzS1Y3Z3JSMUJVRTI5bUcyRm0ya1giLCJwdWJsaWNLZXlCYXNlNTgiOiI3SjNYczhLUVV0U2ZNenB0ZVVLcThiNDg5bzdENFB4QVkxSjFKQUxDNDF6ayIsInR5cGUiOiJFZDI1NTE5VmVyaWZpY2F0aW9uS2V5MjAxOCJ9LHsiaWQiOiIyIiwib3duZXIiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIiwicHVibGljS2V5QmFzZTU4IjoiSGV6Y2UyVVdNWjN3VWhWa2gyTGZLU3M4bkR6V3d6czJXaW43RXpOTjNZYVIiLCJ0eXBlIjoiRWQyNTUxOVZlcmlmaWNhdGlvbktleTIwMTgifSx7ImlkIjoiMyIsIm93bmVyIjoiVnNLVjdnclIxQlVFMjltRzJGbTJrWCIsInB1YmxpY0tleUJhc2U1OCI6IjNMWXV4SkJKa25nRGJ2Smo0emp4MTNEQlVkWjJQOTZlTnlid2QybjlMOUFVIiwidHlwZSI6IkVkMjU1MTlWZXJpZmljYXRpb25LZXkyMDE4In1dLCJzZXJ2aWNlIjpbeyJpZCI6ImRpZDpleGFtcGxlOjEyMzQ1Njc4OWFiY2RlZmdoaTtkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIlZzS1Y3Z3JSMUJVRTI5bUcyRm0ya1gjMSJdLCJyb3V0aW5nS2V5cyI6WyJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzIiLCJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzMiXSwic2VydmljZUVuZHBvaW50IjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwidHlwZSI6ImRpZC1jb21tdW5pY2F0aW9uIn1dfX0="),
-                signers: String::from("R0oxU3pvV3phdlFZZk5MOVhrYUpkclFlamZ6dE40WHFkc2lWNGN0M0xYS0w="),
+                signers: _key(),
             },
         }
     }

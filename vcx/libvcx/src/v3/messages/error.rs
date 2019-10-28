@@ -2,7 +2,6 @@ use v3::messages::MessageId;
 use v3::messages::MessageType;
 use messages::thread::Thread;
 use std::collections::HashMap;
-use utils::error::Error;
 use v3::messages::A2AMessageKinds;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

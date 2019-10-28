@@ -9,6 +9,7 @@ pub struct Invitation {
     pub label: String,
     #[serde(rename = "recipientKeys")]
     pub recipient_keys: Vec<String>,
+    #[serde(default)]
     #[serde(rename = "routingKeys")]
     pub routing_keys: Vec<String>,
     #[serde(rename = "serviceEndpoint")]

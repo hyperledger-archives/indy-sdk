@@ -35,9 +35,7 @@ impl EncryptionEnvelope {
             .map(String::from)
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Recipient Key not found"))?;
 
-        let routing_keys_iter = remote_connection_info.routing_keys.iter().rev();
-
-        for routing_key in routing_keys_iter {
+        for routing_key in remote_connection_info.routing_keys.iter() {
             message = EncryptionEnvelope::wrap_into_forward(message, &to, &routing_key)?;
             to = routing_key.clone();
         }
@@ -121,7 +119,7 @@ pub mod tests {
 
         let message_1 = match message_1 {
             A2AMessage::Forward(forward) => {
-                assert_eq!(key_2, forward.to);
+                assert_eq!(key_1, forward.to);
                 forward.msg
             },
             _ => return assert!(false)
