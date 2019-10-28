@@ -1,6 +1,7 @@
 use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
+use messages::MessageStatusCode;
 use messages::payload::Payloads;
 use utils::httpclient;
 use error::prelude::*;
@@ -273,6 +274,13 @@ pub struct Message {
 }
 
 impl Message {
+    pub fn payload<'a>(&'a self) -> VcxResult<&'a ::serde_json::Value>{
+        match self.payload {
+            Some(MessagePayload::V2(ref payload)) => Ok(payload),
+            _ => Err(VcxError::from(VcxErrorKind::InvalidState)),
+        }
+    }
+
     pub fn decrypt(&self, vk: &str) -> Message {
         // TODO: must be Result
         let mut new_message = self.clone();
@@ -294,7 +302,7 @@ impl Message {
     }
 }
 
-pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>) -> VcxResult<Vec<Message>> {
+pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>) -> VcxResult<Vec<Message>> {
     trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
            pw_did, pw_vk, agent_vk, msg_uid);
 
@@ -304,6 +312,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .agent_did(&agent_did)?
         .agent_vk(&agent_vk)?
         .uid(msg_uid)?
+        .status_codes(status_codes)?
         .send_secure()
         .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
 
@@ -315,7 +324,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None)?;
     trace!("checking for ref_msg: {:?}", message);
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
@@ -323,13 +332,13 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]))?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None)?;
 
     trace!("checking for pending message: {:?}", message);
 
     // this will work for both credReq and proof types
     match message.get(0).as_ref().and_then(|message| message.payload.as_ref()) {
-        Some(payload) if message[0].status_code == MessageStatusCode::Pending => {
+        Some(payload) if message[0].status_code == MessageStatusCode::Received => {
             // TODO: check returned verkey
             Ok((message[0].uid.clone(), payload.to_owned()))
         }

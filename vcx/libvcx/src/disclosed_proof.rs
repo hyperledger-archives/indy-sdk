@@ -9,7 +9,8 @@ use api::VcxStateType;
 use connection;
 use messages;
 use messages::{GeneralMessage, RemoteMessageType, ObjectWithVersion};
-use messages::payload::{Payloads, PayloadKinds, Thread};
+use messages::payload::{Payloads, PayloadKinds};
+use messages::thread::Thread;
 use messages::proofs::proof_message::ProofMessage;
 use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, NonRevokedInterval};
 use messages::get_message::Message;
@@ -302,8 +303,8 @@ impl DisclosedProof {
         Ok(rtn.to_string())
     }
 
-    fn build_requested_credentials_json(&self, 
-                                        credentials_identifiers: &Vec<CredInfo>, 
+    fn build_requested_credentials_json(&self,
+                                        credentials_identifiers: &Vec<CredInfo>,
                                         self_attested_attrs: &str,
                                         proof_req: &ProofRequestData) -> VcxResult<String> {
         let mut rtn: Value = json!({
@@ -561,7 +562,8 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
                                                                  &my_vk,
                                                                  &agent_did,
                                                                  &agent_vk,
-                                                                 Some(vec![msg_id.to_string()]))?;
+                                                                 Some(vec![msg_id.to_string()]),
+                                                                 None)?;
 
     if message[0].msg_type == RemoteMessageType::ProofReq {
         let request = _parse_proof_req_message(&message[0], &my_vk)?;
@@ -588,7 +590,8 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
                                                                  &my_vk,
                                                                  &agent_did,
                                                                  &agent_vk,
-                                                                 None)?;
+                                                                 None,
+    None)?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 

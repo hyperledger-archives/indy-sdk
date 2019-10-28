@@ -107,6 +107,9 @@ pub static INVALID_REV_ENTRY: Error = Error{ code_num: 1092, message: "Unable to
 pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1093, message: "Invalid Credential Revocation timestamp"};
 pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1094, message: "Unknown Rejection of Schema Creation, refer to libindy documentation"};
 pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1095, message: "Failed to create Revocation Registration Definition"};
+pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1096, message: "Failed to decode attachment"};
+pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1097, message: "This type of attachment can not be used"};
+pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1098, message: "Unknown mime type"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -207,6 +210,9 @@ lazy_static! {
         insert_c_message(&mut m, &UKNOWN_LIBINDY_TRANSACTION_REJECTION);
         insert_c_message(&mut m, &MISSING_PAYMENT_METHOD);
         insert_c_message(&mut m, &LOGGING_ERROR);
+        insert_c_message(&mut m, &INVALID_ATTACHMENT_ENCODING);
+        insert_c_message(&mut m, &UNKNOWN_ATTACHMENT_ENCODING);
+        insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
 
         m
     };
@@ -232,6 +238,7 @@ fn insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
 
 }
 
+#[derive(Clone, Copy)]
 pub struct Error {
     pub code_num: u32,
     pub message: &'static str

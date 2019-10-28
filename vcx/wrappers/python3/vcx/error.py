@@ -107,7 +107,10 @@ class ErrorCode(IntEnum):
     InvalidRevEntry = 1092,
     InvalidRevocationTimestamp = 1093,
     UnknownSchemaRejection = 1094,
-    InvalidRevRegDefCreation = 1095
+    InvalidRevRegDefCreation = 1095,
+    InvalidAttachmentEncoding = 1096,
+    UnknownAttachmentEncoding = 1097,
+    UnknownMimeType = 1098
 
 
 class VcxError(Exception):

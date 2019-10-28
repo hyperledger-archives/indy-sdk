@@ -133,6 +133,7 @@ pub struct Config {
     storage_credentials: Option<String>,
     pool_config: Option<String>,
     did_method: Option<String>,
+    communication_method: Option<String>,
 }
 
 
@@ -170,6 +171,9 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     }
     if let Some(did_method) = &my_config.did_method {
         settings::set_config_value(settings::CONFIG_DID_METHOD, did_method);
+    }
+    if let Some(communication_method) = &my_config.communication_method {
+        settings::set_config_value(settings::COMMUNICATION_METHOD, communication_method);
     }
 
     wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str),
@@ -234,6 +238,9 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     }
     if let Some(_pool_config) = &my_config.pool_config {
         final_config["pool_config"] = json!(_pool_config);
+    }
+    if let Some(_communication_method) = &my_config.communication_method {
+        final_config["communication_method"] = json!(_communication_method);
     }
 
     wallet::close_wallet()?;

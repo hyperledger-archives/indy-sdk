@@ -119,7 +119,7 @@ impl ForwardAgent {
                 let forward_agent = ForwardAgent {
                     wallet_handle,
                     did: did.clone(),
-                    verkey,
+                    verkey: verkey.clone(),
                     router: router.clone(),
                     wallet_storage_config,
                     forward_agent_detail,
@@ -129,7 +129,7 @@ impl ForwardAgent {
                 let forward_agent = forward_agent.start();
 
                 router
-                    .send(AddA2ARoute(did, forward_agent.clone().recipient()))
+                    .send(AddA2ARoute(did, verkey, forward_agent.clone().recipient()))
                     .from_err()
                     .map(move |_| forward_agent)
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent").into())
@@ -233,6 +233,10 @@ impl ForwardAgent {
                     Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
                         let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
                         send_to_router(msg.fwd, msg_)
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::ForwardV3(msg))) => {
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        send_to_router(msg.to, msg_)
                     }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
