@@ -5,13 +5,10 @@ use messages;
 use messages::{MessageStatusCode, ObjectWithVersion};
 use messages::update_message::{UIDsByConn, update_messages};
 use messages::get_message::Message;
-use messages::thread::Thread;
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
 use utils::libindy::signus::create_my_did;
-use utils::constants::DEFAULT_SERIALIZE_VERSION;
-use utils::httpclient;
 
 use messages::update_connection::send_delete_connection_message;
 use connection::create_agent_keys;

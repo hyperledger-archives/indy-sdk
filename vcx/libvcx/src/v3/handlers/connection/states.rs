@@ -10,7 +10,6 @@ use v3::messages::A2AMessage;
 use v3::utils::encryption_envelope::EncryptionEnvelope;
 use utils::httpclient;
 
-use messages::update_connection::send_delete_connection_message;
 use messages::thread::Thread;
 
 use error::prelude::*;
@@ -222,7 +221,7 @@ impl DidExchangeStateSM {
 
                                 let signed_response = response.clone()
                                     .set_thread(Thread::new().set_thid(state.request.id.0.clone()))
-                                    .encode(&prev_agent_info.pw_vk, &agent_info.pw_vk)?;
+                                    .encode(&prev_agent_info.pw_vk)?;
 
                                 send_message(&signed_response.to_a2a_message(), &state.remote_info, &agent_info.pw_vk)?;
                                 ActorDidExchangeState::Inviter(DidExchangeState::Responded((state, response).into()))
@@ -404,7 +403,7 @@ impl DidExchangeStateSM {
 
 fn send_message(message: &A2AMessage, remote_connection_info: &RemoteConnectionInfo, pw_vk: &str) -> VcxResult<()> {
     let envelope = EncryptionEnvelope::create(&message, &pw_vk, &remote_connection_info)?;
-    httpclient::post_u8(&envelope.0)?;
+    httpclient::post_message(&envelope.0, &remote_connection_info.service_endpoint)?;
     Ok(())
 }
 

@@ -21,8 +21,7 @@ pub struct PublicKey {
     pub id: String,
     #[serde(rename = "type")]
     pub type_: String,
-    #[serde(rename = "controller")]
-    pub owner: String,
+    pub controller: String,
     #[serde(rename = "publicKeyBase58")]
     pub public_key_base_58: String,
 }
@@ -98,7 +97,7 @@ impl DidDoc {
                     PublicKey {
                         id: key_id,
                         type_: String::from(KEY_TYPE),
-                        owner: self.id.clone(),
+                        controller: self.id.clone(),
                         public_key_base_58: key.clone(),
                     });
 
@@ -128,7 +127,7 @@ impl DidDoc {
                     PublicKey {
                         id: key_id,
                         type_: String::from(KEY_TYPE),
-                        owner: self.id.clone(),
+                        controller: self.id.clone(),
                         public_key_base_58: key.clone(),
                     });
 
@@ -167,7 +166,7 @@ impl DidDoc {
     fn validate_public_key(&self, target_key: &str) -> VcxResult<()> {
         let id = DidDoc::_parse_key_reference(target_key);
 
-        let key = self.public_key.iter().find(|key_| key_.id == id.to_string())
+        let key = self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string())
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Cannot find PublicKey definition for key: {:?}", id)))?;
 
         if key.type_ != KEY_TYPE {
@@ -287,9 +286,9 @@ pub mod tests {
             context: String::from(CONTEXT),
             id: _id(),
             public_key: vec![
-                PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), owner: _id(), public_key_base_58: _key_1() },
-                PublicKey { id: "2".to_string(), type_: KEY_TYPE.to_string(), owner: _id(), public_key_base_58: _key_2() },
-                PublicKey { id: "3".to_string(), type_: KEY_TYPE.to_string(), owner: _id(), public_key_base_58: _key_3() }
+                PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+                PublicKey { id: "2".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
+                PublicKey { id: "3".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
             ],
             authentication: vec![
                 Authentication { type_: KEY_TYPE.to_string(), public_key: _key_reference_1() }

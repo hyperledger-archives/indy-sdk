@@ -7,7 +7,7 @@ use messages::A2AMessageKinds;
 use error::prelude::*;
 
 pub const MESSAGE_VERSION_V1: &str = "1.0";
-pub const DID: &str = "did:sov:BzCbsNYhMrjHiqZDTUASHg";
+pub const DID: &str = "did:sov:123456789abcdefghi1234";
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
