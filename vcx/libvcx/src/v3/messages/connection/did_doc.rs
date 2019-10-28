@@ -42,6 +42,7 @@ pub struct Service {
     pub priority: u32,
     #[serde(rename = "recipientKeys")]
     pub recipient_keys: Vec<String>,
+    #[serde(default)]
     #[serde(rename = "routingKeys")]
     pub routing_keys: Vec<String>,
     #[serde(rename = "serviceEndpoint")]
@@ -102,7 +103,7 @@ impl DidDoc {
 
                 self.authentication.push(
                     Authentication {
-                        type_: String::from(KEY_AUTHENTICATION_TYPE),
+                        type_: String::from(KEY_TYPE),
                         public_key: key_reference.clone()
                     });
 
@@ -179,7 +180,7 @@ impl DidDoc {
         let key = self.authentication.iter().find(|key_| key_.public_key == target_key.to_string())
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Cannot find Authentication section for key: {:?}", target_key)))?;
 
-        if key.type_ != KEY_AUTHENTICATION_TYPE {
+        if key.type_ != KEY_TYPE {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported Authentication type: {:?}", key.type_)));
         }
 
@@ -290,7 +291,7 @@ pub mod tests {
                 PublicKey { id: "3".to_string(), type_: KEY_TYPE.to_string(), owner: _id(), public_key_base_58: _key_3() }
             ],
             authentication: vec![
-                Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
+                Authentication { type_: KEY_TYPE.to_string(), public_key: _key_reference_1() }
             ],
             service: vec![Service {
                 // TODO: FIXME Several services????

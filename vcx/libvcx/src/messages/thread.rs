@@ -4,7 +4,9 @@ use std::collections::HashMap;
 pub struct Thread {
     pub thid: Option<String>,
     pub pthid: Option<String>,
+    #[serde(default)]
     pub sender_order: u32,
+    #[serde(default)]
     pub received_orders: HashMap<String, u32>,
 }
 

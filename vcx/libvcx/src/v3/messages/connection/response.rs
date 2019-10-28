@@ -77,7 +77,7 @@ impl Response {
         self
     }
 
-    pub fn encode(&self, key: &str) -> VcxResult<SignedResponse> {
+    pub fn encode(&self, prev_key: &str, active_key: &str) -> VcxResult<SignedResponse> {
         let connection_data = json!(self.connection).to_string();
         let now = time::get_time().sec as u64;
 
@@ -85,11 +85,11 @@ impl Response {
 
         let sig_data = base64::encode_config(&sig_data.as_bytes(), base64::URL_SAFE);
 
-        let signature = crypto::sign(key, sig_data.as_bytes())?;
+        let signature = crypto::sign(prev_key, sig_data.as_bytes())?;
 
         let signature = base64::encode_config(&signature, base64::URL_SAFE);
 
-        let signers = base64::encode_config(&key, base64::URL_SAFE);
+        let signers = base64::encode_config(&active_key, base64::URL_SAFE);
 
         let connection_sig = ConnectionSignature {
             msg_type: MessageType::build(A2AMessageKinds::Ed25519Signature),
@@ -222,7 +222,7 @@ pub mod tests {
     #[test]
     fn test_response_encode_works() {
         let setup = test_setup::key();
-        let signed_response: SignedResponse = _response().encode(&setup.key).unwrap();
+        let signed_response: SignedResponse = _response().encode(&setup.key, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW").unwrap();
         assert_eq!(_response(), signed_response.decode(&setup.key).unwrap());
     }
 }

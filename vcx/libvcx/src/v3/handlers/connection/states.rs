@@ -222,7 +222,7 @@ impl DidExchangeStateSM {
 
                                 let signed_response = response.clone()
                                     .set_thread(Thread::new().set_thid(state.request.id.0.clone()))
-                                    .encode(&prev_agent_info.pw_vk)?;
+                                    .encode(&prev_agent_info.pw_vk, &agent_info.pw_vk)?;
 
                                 send_message(&signed_response.to_a2a_message(), &state.remote_info, &agent_info.pw_vk)?;
                                 ActorDidExchangeState::Inviter(DidExchangeState::Responded((state, response).into()))
