@@ -28,9 +28,9 @@ impl CredentialOffer {
         self
     }
 
-    pub fn set_offers_attach(mut self, credential_offer: String) -> VcxResult<CredentialOffer> {
+    pub fn set_offers_attach(mut self, credential_offer: &str) -> VcxResult<CredentialOffer> {
         let json: Json = Json::new(
-            serde_json::from_str(&credential_offer)
+            serde_json::from_str(credential_offer)
                 .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Offer Json".to_string()))?,
             ENCODING_BASE64
         )?;

@@ -14,25 +14,22 @@ pub enum IssuerState {
 
 #[derive(Debug)]
 pub struct InitialState {
-    pub connection_handle: u32,
 }
 
 impl InitialState {
-    pub fn new(connection_handle: u32) -> Self {
-        InitialState {
-            connection_handle
-        }
+    pub fn new() -> Self {
+        InitialState {}
     }
 }
 
 #[derive(Debug)]
 pub struct OfferSentState {
-    pub connection_handle: u32,
+    pub offer: String,
+    pub cred_data: String
 }
 
 #[derive(Debug)]
 pub struct CredentialSentState {
-    pub connection_handle: u32,
 }
 
 #[derive(Debug)]
@@ -40,11 +37,12 @@ pub struct FinishedState {
     pub cred_id: Option<String>
 }
 
-impl From<InitialState> for OfferSentState {
-    fn from(state: InitialState) -> Self {
+impl From<(InitialState, String, String)> for OfferSentState {
+    fn from((state, offer, cred_data): (InitialState, String, String)) -> Self {
         trace!("SM is now in OfferSent state");
         OfferSentState {
-            connection_handle: state.connection_handle
+            offer,
+            cred_data
         }
     }
 }
@@ -61,9 +59,7 @@ impl From<InitialState> for FinishedState {
 impl From<OfferSentState> for CredentialSentState {
     fn from(state: OfferSentState) -> Self {
         trace!("SM is now in CredentialSent state");
-        CredentialSentState {
-            connection_handle: state.connection_handle
-        }
+        CredentialSentState {}
     }
 
 }
@@ -95,16 +91,17 @@ pub enum HolderState {
 
 #[derive(Debug)]
 pub struct RequestSentState {
-    pub connection_handle: u32,
-    pub req_meta: String
+    pub req_meta: String,
+    pub cred_def_json: String,
+
 }
 
-impl From<(InitialState, String)> for RequestSentState {
-    fn from((state, req_meta): (InitialState, String)) -> Self {
+impl From<(InitialState, String, String)> for RequestSentState {
+    fn from((state, req_meta, cred_def_json): (InitialState, String, String)) -> Self {
         trace!("SM is now in RequestSent state");
         RequestSentState {
-            connection_handle: state.connection_handle,
-            req_meta
+            req_meta,
+            cred_def_json
         }
     }
 }
