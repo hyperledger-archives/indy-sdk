@@ -83,7 +83,7 @@ pub struct CredInfo {
     pub timestamp: Option<u64>
 }
 
-fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData) -> VcxResult<Vec<CredInfo>> {
+pub fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData) -> VcxResult<Vec<CredInfo>> {
     let mut rtn = Vec::new();
 
     let credentials: Value = serde_json::from_str(credentials)
@@ -139,7 +139,7 @@ fn _get_revocation_interval(attr_name: &str, proof_req: &ProofRequestData) -> Vc
 }
 
 // Also updates timestamp in credentials_identifiers
-fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> VcxResult<String> {
+pub fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> VcxResult<String> {
     let mut rtn: Value = json!({});
     let mut timestamps: HashMap<String, u64> = HashMap::new();
 
@@ -269,7 +269,7 @@ impl DisclosedProof {
         anoncreds::libindy_prover_get_credentials_for_proof_req(&indy_proof_req)
     }
 
-    fn build_schemas_json(&self, credentials_identifiers: &Vec<CredInfo>) -> VcxResult<String> {
+    pub fn build_schemas_json(credentials_identifiers: &Vec<CredInfo>) -> VcxResult<String> {
         let mut rtn: Value = json!({});
 
         for ref cred_info in credentials_identifiers {
@@ -286,7 +286,7 @@ impl DisclosedProof {
         Ok(rtn.to_string())
     }
 
-    fn build_cred_def_json(&self, credentials_identifiers: &Vec<CredInfo>) -> VcxResult<String> {
+    pub fn build_cred_def_json(credentials_identifiers: &Vec<CredInfo>) -> VcxResult<String> {
         let mut rtn: Value = json!({});
 
         for ref cred_info in credentials_identifiers {
@@ -303,10 +303,9 @@ impl DisclosedProof {
         Ok(rtn.to_string())
     }
 
-    fn build_requested_credentials_json(&self,
-                                        credentials_identifiers: &Vec<CredInfo>,
-                                        self_attested_attrs: &str,
-                                        proof_req: &ProofRequestData) -> VcxResult<String> {
+    pub fn build_requested_credentials_json(credentials_identifiers: &Vec<CredInfo>,
+                                            self_attested_attrs: &str,
+                                            proof_req: &ProofRequestData) -> VcxResult<String> {
         let mut rtn: Value = json!({
               "self_attested_attributes":{},
               "requested_attributes":{},
@@ -347,31 +346,36 @@ impl DisclosedProof {
 
         let proof_req = self.proof_request.as_ref().ok_or(VcxError::from_msg(VcxErrorKind::CreateProof, "Cannot get proof request"))?;
 
-        let proof_req_data_json = serde_json::to_string(&proof_req.proof_request_data)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))?;
+        let proof = DisclosedProof::generate_indy_proof(credentials, self_attested_attrs, &proof_req.proof_request_data)?;
 
-        let mut credentials_identifiers = credential_def_identifiers(credentials,
-                                                                     &proof_req.proof_request_data)?;
-
-        let revoc_states_json = build_rev_states_json(&mut credentials_identifiers)?;
-        let requested_credentials = self.build_requested_credentials_json(&credentials_identifiers,
-                                                                          self_attested_attrs,
-                                                                          &proof_req.proof_request_data)?;
-
-        let schemas_json = self.build_schemas_json(&credentials_identifiers)?;
-        let credential_defs_json = self.build_cred_def_json(&credentials_identifiers)?;
-
-        let proof = anoncreds::libindy_prover_create_proof(&proof_req_data_json,
-                                                           &requested_credentials,
-                                                           &self.link_secret_alias,
-                                                           &schemas_json,
-                                                           &credential_defs_json,
-                                                           Some(&revoc_states_json))?;
         let mut proof_msg = ProofMessage::new();
         proof_msg.libindy_proof = proof;
         self.proof = Some(proof_msg);
 
         Ok(error::SUCCESS.code_num)
+    }
+
+    pub fn generate_indy_proof(credentials: &str, self_attested_attrs: &str, proof_request: &ProofRequestData) -> VcxResult<String> {
+        let proof_req_data_json = serde_json::to_string(&proof_request)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))?;
+
+        let mut credentials_identifiers = credential_def_identifiers(credentials, &proof_request)?;
+
+        let revoc_states_json = build_rev_states_json(&mut credentials_identifiers)?;
+        let requested_credentials = DisclosedProof::build_requested_credentials_json(&credentials_identifiers,
+                                                                                     self_attested_attrs,
+                                                                                     &proof_request)?;
+
+        let schemas_json = DisclosedProof::build_schemas_json(&credentials_identifiers)?;
+        let credential_defs_json = DisclosedProof::build_cred_def_json(&credentials_identifiers)?;
+
+        let proof = anoncreds::libindy_prover_create_proof(&proof_req_data_json,
+                                                           &requested_credentials,
+                                                           settings::DEFAULT_LINK_SECRET_ALIAS,
+                                                           &schemas_json,
+                                                           &credential_defs_json,
+                                                           Some(&revoc_states_json))?;
+        Ok(proof)
     }
 
     fn generate_proof_msg(&self) -> VcxResult<String> {
@@ -591,7 +595,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
                                                                  &agent_did,
                                                                  &agent_vk,
                                                                  None,
-    None)?;
+                                                                 None)?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 
@@ -878,7 +882,7 @@ mod tests {
             "non_revoked": {"from": 098, "to": 123}
         });
         let proof_req: ProofRequestData = serde_json::from_value(proof_req).unwrap();
-        let requested_credential = proof.build_requested_credentials_json(&creds, &self_attested_attrs, &proof_req).unwrap();
+        let requested_credential = DisclosedProof::build_requested_credentials_json(&creds, &self_attested_attrs, &proof_req).unwrap();
         assert_eq!(test.to_string(), requested_credential);
     }
 

@@ -548,6 +548,12 @@ fn _check_schema_response(response: &str) -> VcxResult<()> {
     }
 }
 
+pub fn generate_nonce() -> VcxResult<String> {
+    anoncreds::generate_nonce()
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
