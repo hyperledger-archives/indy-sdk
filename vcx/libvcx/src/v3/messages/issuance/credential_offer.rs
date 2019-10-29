@@ -3,7 +3,7 @@ use v3::messages::issuance::{CredentialPreviewData, CredentialValueData, Credent
 use v3::messages::attachment::{Attachment, Json, ENCODING_BASE64};
 use error::{VcxError, VcxResult, VcxErrorKind};
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialOffer {
     #[serde(rename="@id")]
     pub id: MessageId,

@@ -2,7 +2,7 @@ use v3::messages::MessageId;
 use v3::messages::issuance::CredentialPreviewData;
 use error::{VcxError, VcxResult, VcxErrorKind};
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialProposal {
     #[serde(rename="@id")]
     pub id: MessageId,

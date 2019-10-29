@@ -6,7 +6,7 @@ use v3::messages::attachment::{
 };
 use error::{VcxError, VcxResult, VcxErrorKind};
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Credential {
     #[serde(rename="@id")]
     pub id: MessageId,

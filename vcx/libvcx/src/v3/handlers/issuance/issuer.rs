@@ -1,6 +1,7 @@
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::states::{IssuerState, InitialState};
-use v3::handlers::connection::send_message;
+use v3::handlers::connection::{send_message, get_messages, get_pw_did};
+use messages::update_message::{UIDsByConn, update_messages};
 use v3::messages::A2AMessage;
 use v3::messages::issuance::{
     credential::Credential,
@@ -18,9 +19,9 @@ pub struct IssuerSM {
 }
 
 impl IssuerSM {
-    pub fn new() -> Self {
+    pub fn new(cred_def_id: &str, credential_data: &str, rev_reg_id: Option<String>, tails_file: Option<String>) -> Self {
         IssuerSM {
-            state: IssuerState::Initial(InitialState {})
+            state: IssuerState::Initial(InitialState::new(cred_def_id, credential_data, rev_reg_id, tails_file))
         }
     }
 
@@ -30,18 +31,38 @@ impl IssuerSM {
         }
     }
 
+    pub fn fetch_messages(&self) -> VcxResult<Vec<A2AMessage>> {
+        let (messages, _) = get_messages(self.state.get_connection_handle())?;
+
+        let (uids, msgs): (Vec<String>, Vec<A2AMessage>) = messages.into_iter()
+            .filter_map(|message| {
+                //TODO: check if message is for this SM
+                //TODO: return the pair (uid, A2A message)
+            })
+            .unzip();
+
+        let messages_to_update = vec![UIDsByConn {
+            pairwise_did: get_pw_did(connection_handle)?,
+            uids
+        }];
+
+        update_messages(MessageStatusCode::Reviewed, messages_to_update)?;
+
+        Ok(msgs)
+    }
+
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<IssuerSM> {
         let IssuerSM { state } = self;
         let state = match state {
             IssuerState::Initial(state_data) => match cim {
-                CredentialIssuanceMessage::CredentialInit(cred_def_id, credential_json, connection_handle) => {
-                    let cred_offer = libindy_issuer_create_credential_offer(&cred_def_id)?;
+                CredentialIssuanceMessage::CredentialInit(connection_handle) => {
+                    let cred_offer = libindy_issuer_create_credential_offer(&state_data.cred_def_id)?;
                     let cred_offer_msg = CredentialOffer::create()
                         .set_offers_attach(&cred_offer)?;
-                    let cred_offer_msg = _append_credential_preview(cred_offer_msg, &credential_json)?;
+                    let cred_offer_msg = _append_credential_preview(cred_offer_msg, &state_data.credential_json)?;
                     let msg = A2AMessage::CredentialOffer(cred_offer_msg);
                     send_message(connection_handle, msg)?;
-                    IssuerState::OfferSent((state_data, cred_offer, credential_json).into())
+                    IssuerState::OfferSent((state_data, cred_offer).into())
                 }
                 _ => {
                     warn!("Credential Issuance can only start on issuer side with init");
@@ -49,8 +70,8 @@ impl IssuerSM {
                 }
             },
             IssuerState::OfferSent(state_data) => match cim {
-                CredentialIssuanceMessage::CredentialRequest(request, connection_handle, credential_handle) => {
-                    let credential_msg = _create_credential(&request, credential_handle, &state_data.offer, &state_data.cred_data);
+                CredentialIssuanceMessage::CredentialRequest(request, connection_handle) => {
+                    let credential_msg = _create_credential(&request, &state_data.rev_reg_id, &state_data.tails_file, &state_data.offer, &state_data.cred_data);
                     let (msg, state) = match credential_msg {
                         Ok(credential_msg) => {
                             let msg = A2AMessage::Credential(
@@ -131,20 +152,18 @@ fn _append_credential_preview(cred_offer_msg: CredentialOffer, credential_json: 
     Ok(new_offer)
 }
 
-fn _create_credential(request: &CredentialRequest, credential_handle: u32, offer: &str, cred_data: &str) -> VcxResult<Credential> {
+fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, tails_file: &Option<String>, offer: &str, cred_data: &str) -> VcxResult<Credential> {
     let request = if let Attachment::JSON(json) = &request.requests_attach {
         json.get_data()?
     } else {
         return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Wrong messages"));
     };
 
-    let rev_reg_id = get_rev_reg_id(credential_handle)?;
-    let tails_file = get_tails_file(credential_handle)?;
     let (credential, cred_id, revoc_reg_delta) = anoncreds::libindy_issuer_create_credential(offer,
                                                                                              &request,
                                                                                              cred_data,
-                                                                                             rev_reg_id,
-                                                                                             tails_file)?;
+                                                                                             rev_reg_id.clone(),
+                                                                                             tails_file.clone())?;
     Credential::create()
         .set_credential(credential)
 }

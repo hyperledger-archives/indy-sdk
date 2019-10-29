@@ -461,12 +461,6 @@ pub fn get_pw_verkey(handle: u32) -> VcxResult<String> {
     })
 }
 
-pub fn get_pw_did(handle: u32) -> VcxResult<String> {
-    CONNECTION_MAP.get(handle, |connection| {
-        Ok(connection.agent_info().pw_did.to_string())
-    })
-}
-
 pub fn get_their_pw_verkey(handle: u32) -> VcxResult<String> {
     CONNECTION_MAP.get(handle, |connection| {
         connection.remote_vk()

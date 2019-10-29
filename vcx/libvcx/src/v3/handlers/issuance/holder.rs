@@ -1,4 +1,4 @@
-use v3::handlers::issuance::states::{HolderState, InitialState};
+use v3::handlers::issuance::states::{HolderState, InitialHolderState};
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::messages::issuance::{
     self,
@@ -23,7 +23,7 @@ pub struct HolderSM {
 impl HolderSM {
     pub fn new() -> Self {
         HolderSM {
-            state: HolderState::Initial(InitialState {})
+            state: HolderState::Initial(InitialHolderState::new())
         }
     }
 

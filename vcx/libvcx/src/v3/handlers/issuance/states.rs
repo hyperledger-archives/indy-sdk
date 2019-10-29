@@ -14,22 +14,46 @@ pub enum IssuerState {
 
 #[derive(Debug)]
 pub struct InitialState {
+    pub cred_def_id: String,
+    pub credential_json: String,
+    pub rev_reg_id: Option<String>,
+    pub tails_file: Option<String>,
+}
+
+impl IssuerState {
+    pub fn get_connection_id(&self) -> u32 {
+        match self {
+            IssuerState::Initial(state) => 0,
+            IssuerState::OfferSent(state) => state.connection_handle,
+            IssuerState::CredentialSent(state) => state.connection_handle,
+            IssuerState::Finished(state) => 0
+        }
+    }
 }
 
 impl InitialState {
-    pub fn new() -> Self {
-        InitialState {}
+    pub fn new(cred_def_id: &str, credential_json: &str, rev_reg_id: Option<String>, tails_file: Option<String>) -> Self {
+        InitialState {
+            cred_def_id: cred_def_id.to_string(),
+            credential_json: credential_json.to_string(),
+            rev_reg_id,
+            tails_file
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct OfferSentState {
     pub offer: String,
-    pub cred_data: String
+    pub cred_data: String,
+    pub rev_reg_id: Option<String>,
+    pub tails_file: Option<String>,
+    pub connection_handle: u32
 }
 
 #[derive(Debug)]
 pub struct CredentialSentState {
+    pub connection_handle: u32
 }
 
 #[derive(Debug)]
@@ -37,12 +61,15 @@ pub struct FinishedState {
     pub cred_id: Option<String>
 }
 
-impl From<(InitialState, String, String)> for OfferSentState {
-    fn from((state, offer, cred_data): (InitialState, String, String)) -> Self {
+impl From<(InitialState, String, u32)> for OfferSentState {
+    fn from((state, offer, connection_handle): (InitialState, String, u32)) -> Self {
         trace!("SM is now in OfferSent state");
         OfferSentState {
             offer,
-            cred_data
+            cred_data: state.credential_json,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
+            connection_handle
         }
     }
 }
@@ -59,7 +86,9 @@ impl From<InitialState> for FinishedState {
 impl From<OfferSentState> for CredentialSentState {
     fn from(state: OfferSentState) -> Self {
         trace!("SM is now in CredentialSent state");
-        CredentialSentState {}
+        CredentialSentState {
+            connection_handle: state.connection_handle
+        }
     }
 
 }
@@ -84,9 +113,9 @@ impl From<CredentialSentState> for FinishedState {
 
 #[derive(Debug)]
 pub enum HolderState {
-    Initial(InitialState),
+    Initial(InitialHolderState),
     RequestSent(RequestSentState),
-    Finished(FinishedState)
+    Finished(FinishedHolderState)
 }
 
 #[derive(Debug)]
@@ -96,8 +125,23 @@ pub struct RequestSentState {
 
 }
 
-impl From<(InitialState, String, String)> for RequestSentState {
-    fn from((state, req_meta, cred_def_json): (InitialState, String, String)) -> Self {
+#[derive(Debug)]
+pub struct InitialHolderState {}
+
+impl InitialHolderState {
+    pub fn new() -> Self {
+        InitialHolderState {}
+    }
+}
+
+
+#[derive(Debug)]
+pub struct FinishedHolderState {
+    pub cred_id: Option<String>
+}
+
+impl From<(InitialHolderState, String, String)> for RequestSentState {
+    fn from((state, req_meta, cred_def_json): (InitialHolderState, String, String)) -> Self {
         trace!("SM is now in RequestSent state");
         RequestSentState {
             req_meta,
@@ -106,11 +150,20 @@ impl From<(InitialState, String, String)> for RequestSentState {
     }
 }
 
-impl From<(RequestSentState, Option<String>)> for FinishedState {
+impl From<(RequestSentState, Option<String>)> for FinishedHolderState {
     fn from((_, cred_id): (RequestSentState, Option<String>)) -> Self {
         trace!("SM is now in Finished state");
-        FinishedState {
+        FinishedHolderState {
             cred_id
+        }
+    }
+}
+
+impl From<InitialHolderState> for FinishedHolderState {
+    fn from (_state: InitialHolderState) -> Self {
+        trace!("SM is now in Finished state");
+        FinishedHolderState {
+            cred_id: None
         }
     }
 }
