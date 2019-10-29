@@ -5,14 +5,14 @@ use error::{VcxResult, VcxError, VcxErrorKind};
 use v3::messages::MessageId;
 
 #[serde(tag = "mime-type")]
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Attachment {
     #[serde(rename = "application/json")]
     JSON(Json),
     Blank
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Json {
     #[serde(rename = "@id")]
     id: MessageId,
@@ -50,7 +50,7 @@ impl Json {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AttachmentData {
     #[serde(rename = "base64")]
     Base64(String)

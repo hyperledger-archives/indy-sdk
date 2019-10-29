@@ -9,7 +9,6 @@ use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
 use utils::libindy::signus::create_my_did;
-
 use messages::update_connection::send_delete_connection_message;
 use connection::create_agent_keys;
 
@@ -193,10 +192,32 @@ impl Connection {
         Ok((messages, messages_to_update))
     }
 
+    fn get_message_by_id(&self, msg_id: &str) -> VcxResult<A2AMessage> {
+        trace!("Connection: get_messages");
+
+        let agent_info = self.agent_info();
+
+        let mut messages = messages::get_message::get_connection_messages(&agent_info.pw_did,
+                                                                          &agent_info.pw_vk,
+                                                                          &agent_info.agent_did,
+                                                                          &agent_info.agent_vk,
+                                                                          Some(vec![msg_id.to_string()]),
+                                                                          None)?;
+
+        let message =
+            messages
+                .pop()
+                .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessages, format!("Message not found for id: {:?}", msg_id)))?;
+
+        let message = self.decode_message(&message)?;
+
+        Ok(message)
+    }
+
     fn handle_message(&mut self, message: Message) -> VcxResult<u32> {
         trace!("Connection: handle_message: {:?}", message);
 
-        let message = EncryptionEnvelope::open(&self.agent_info().pw_vk, message.payload()?)?;
+        let message = self.decode_message(&message)?;
 
         match self.state.state {
             ActorDidExchangeState::Inviter(DidExchangeState::Invited(ref state)) => {
@@ -254,6 +275,10 @@ impl Connection {
         }
 
         Ok(error::SUCCESS.code_num)
+    }
+
+    fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
+        EncryptionEnvelope::open(&self.agent_info().pw_vk, message.payload()?)
     }
 
     fn handle_connection_request(&mut self, request: Request) -> VcxResult<()> {
@@ -383,9 +408,27 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
 }
 
 pub fn get_state(handle: u32) -> u32 {
-    CONNECTION_MAP.get(handle, |cxn| {
-        Ok(cxn.state())
+    CONNECTION_MAP.get(handle, |connection| {
+        Ok(connection.state())
     }).unwrap_or(0)
+}
+
+pub fn get_messages(handle: u32) -> VcxResult<(Vec<Message>, Vec<UIDsByConn>)> {
+    CONNECTION_MAP.get(handle, |connection| {
+        connection.get_messages()
+    })
+}
+
+pub fn get_message_by_id(handle: u32, msg_id: String) -> VcxResult<A2AMessage> {
+    CONNECTION_MAP.get(handle, |connection| {
+        connection.get_message_by_id(&msg_id)
+    })
+}
+
+pub fn decode_message(handle: u32, message: Message) -> VcxResult<A2AMessage> {
+    CONNECTION_MAP.get(handle, |connection| {
+        connection.decode_message(&message)
+    })
 }
 
 pub fn send_message(handle: u32, message: A2AMessage) -> VcxResult<()> {
@@ -403,6 +446,12 @@ pub fn get_invite_details(handle: u32, abbreviated: bool) -> VcxResult<String> {
 pub fn send_generic_message(handle: u32, msg: &str, msg_options: &str) -> VcxResult<String> {
     CONNECTION_MAP.get(handle, |connection| {
         connection.send_generic_message(msg, msg_options)
+    })
+}
+
+pub fn get_pw_did(handle: u32) -> VcxResult<String> {
+    CONNECTION_MAP.get(handle, |connection| {
+        Ok(connection.agent_info().pw_vk.to_string())
     })
 }
 

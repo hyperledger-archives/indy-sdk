@@ -11,7 +11,7 @@ use messages::proofs::proof_message::{ProofMessage, CredInfo};
 use messages::{RemoteMessageType, ObjectWithVersion, GeneralMessage};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
-use messages::proofs::proof_request::{ProofRequestMessage, PROOF_REQUEST_V2};
+use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestVersion};
 use utils::error;
 use utils::constants::*;
 use utils::libindy::anoncreds;
@@ -65,7 +65,7 @@ impl Proof {
     }
 
 
-    pub fn validate_proof_revealed_attributes(&mut self, proof_json: &str) -> VcxResult<()> {
+    pub fn validate_proof_revealed_attributes(proof_json: &str) -> VcxResult<()> {
         if settings::test_indy_mode_enabled() { return Ok(()); }
 
         let proof: Value = serde_json::from_str(proof_json)
@@ -83,7 +83,6 @@ impl Proof {
             let expected_encoded = encode(&raw)?;
 
             if expected_encoded != encoded_.to_string() {
-                self.proof_state = ProofStateType::ProofInvalid;
                 return Err(VcxError::from_msg(VcxErrorKind::InvalidProof, format!("Encoded values are different. Expected: {}. From Proof: {}", expected_encoded, encoded_)));
             }
         }
@@ -91,40 +90,8 @@ impl Proof {
         Ok(())
     }
 
-    fn validate_proof_indy(&mut self,
-                           proof_req_json: &str,
-                           proof_json: &str,
-                           schemas_json: &str,
-                           credential_defs_json: &str,
-                           rev_reg_defs_json: &str,
-                           rev_regs_json: &str) -> VcxResult<u32> {
-        if settings::test_indy_mode_enabled() { return Ok(error::SUCCESS.code_num); }
-
-        debug!("starting libindy proof verification for {}", self.source_id);
-        let valid = anoncreds::libindy_verifier_verify_proof(proof_req_json,
-                                                             proof_json,
-                                                             schemas_json,
-                                                             credential_defs_json,
-                                                             rev_reg_defs_json,
-                                                             rev_regs_json).map_err(|err| {
-            error!("Error: {}, Proof {} wasn't valid", err, self.source_id);
-            self.proof_state = ProofStateType::ProofInvalid;
-            err.map(VcxErrorKind::InvalidProof, error::INVALID_PROOF.message)
-        })?;
-
-        if !valid {
-            warn!("indy returned false when validating proof {}", self.source_id);
-            self.proof_state = ProofStateType::ProofInvalid;
-            return Ok(error::SUCCESS.code_num);
-        }
-
-        debug!("Indy validated proof: {}", self.source_id);
-        self.proof_state = ProofStateType::ProofValidated;
-        Ok(error::SUCCESS.code_num)
-    }
-
-    fn build_credential_defs_json(&self, credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("{} building credential_def_json for proof validation", self.source_id);
+    pub fn build_credential_defs_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
+        debug!("building credential_def_json for proof validation");
         let mut credential_json = json!({});
 
         for ref cred_info in credential_data.iter() {
@@ -141,8 +108,8 @@ impl Proof {
         Ok(credential_json.to_string())
     }
 
-    fn build_schemas_json(&self, credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("{} building schemas json for proof validation", self.source_id);
+    pub fn build_schemas_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
+        debug!("building schemas json for proof validation");
 
         let mut schemas_json = json!({});
 
@@ -161,8 +128,8 @@ impl Proof {
         Ok(schemas_json.to_string())
     }
 
-    fn build_rev_reg_defs_json(&self, credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("{} building rev_reg_def_json for proof validation", self.source_id);
+    pub fn build_rev_reg_defs_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
+        debug!("building rev_reg_def_json for proof validation");
 
         let mut rev_reg_defs_json = json!({});
 
@@ -186,8 +153,8 @@ impl Proof {
         Ok(rev_reg_defs_json.to_string())
     }
 
-    fn build_rev_reg_json(&self, credential_data: &Vec<CredInfo>) -> VcxResult<String> {
-        debug!("{} building rev_reg_json for proof validation", self.source_id);
+    pub fn build_rev_reg_json(credential_data: &Vec<CredInfo>) -> VcxResult<String> {
+        debug!("building rev_reg_json for proof validation");
 
         let mut rev_regs_json = json!({});
 
@@ -240,18 +207,37 @@ impl Proof {
 
         let credential_data = proof_msg.get_credential_info()?;
 
-        let credential_defs_json = self.build_credential_defs_json(&credential_data)
-            .unwrap_or(json!({}).to_string());
-        let schemas_json = self.build_schemas_json(&credential_data)
-            .unwrap_or(json!({}).to_string());
-        let rev_reg_defs_json = self.build_rev_reg_defs_json(&credential_data)
-            .unwrap_or(json!({}).to_string());
-        let rev_regs_json = self.build_rev_reg_json(&credential_data)
-            .unwrap_or(json!({}).to_string());
         let proof_json = self.build_proof_json()?;
         let proof_req_json = self.build_proof_req_json()?;
 
-        self.validate_proof_revealed_attributes(&proof_json)?;
+        let valid = Proof::validate_indy_proof(&credential_data, &proof_json, &proof_req_json).map_err(|err| {
+            error!("Error: {}, Proof {} wasn't valid", err, self.source_id);
+            self.proof_state = ProofStateType::ProofInvalid;
+            err.map(VcxErrorKind::InvalidProof, error::INVALID_PROOF.message)
+        })?;
+
+        if !valid {
+            warn!("indy returned false when validating proof {}", self.source_id);
+            self.proof_state = ProofStateType::ProofInvalid;
+            return Ok(error::SUCCESS.code_num);
+        }
+
+        debug!("Indy validated proof: {}", self.source_id);
+        self.proof_state = ProofStateType::ProofValidated;
+        Ok(error::SUCCESS.code_num)
+    }
+
+    pub fn validate_indy_proof(credential_data: &Vec<CredInfo>, proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
+        Proof::validate_proof_revealed_attributes(&proof_json)?;
+
+        let credential_defs_json = Proof::build_credential_defs_json(&credential_data)
+            .unwrap_or(json!({}).to_string());
+        let schemas_json = Proof::build_schemas_json(&credential_data)
+            .unwrap_or(json!({}).to_string());
+        let rev_reg_defs_json = Proof::build_rev_reg_defs_json(&credential_data)
+            .unwrap_or(json!({}).to_string());
+        let rev_regs_json = Proof::build_rev_reg_json(&credential_data)
+            .unwrap_or(json!({}).to_string());
 
         debug!("*******\n{}\n********", credential_defs_json);
         debug!("*******\n{}\n********", schemas_json);
@@ -259,16 +245,16 @@ impl Proof {
         debug!("*******\n{}\n********", proof_req_json);
         debug!("*******\n{}\n********", rev_reg_defs_json);
         debug!("*******\n{}\n********", rev_regs_json);
-        self.validate_proof_indy(&proof_req_json,
-                                 &proof_json,
-                                 &schemas_json,
-                                 &credential_defs_json,
-                                 &rev_reg_defs_json,
-                                 &rev_regs_json)
+        anoncreds::libindy_verifier_verify_proof(proof_req_json,
+                                                 proof_json,
+                                                 &schemas_json,
+                                                 &credential_defs_json,
+                                                 &rev_reg_defs_json,
+                                                 &rev_regs_json)
     }
 
     fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
-        let proof_req_format_version = if Qualifier::is_fully_qualified(&self.remote_did) { Some(PROOF_REQUEST_V2) } else { None };
+        let proof_req_format_version = if Qualifier::is_fully_qualified(&self.remote_did) { Some(ProofRequestVersion::V2) } else { None };
 
         let data_version = "0.1";
         let mut proof_obj = messages::proof_request();
@@ -343,6 +329,7 @@ impl Proof {
             return Ok(self.get_state());
         }
 
+
         let payload = match message {
             None => {
                 // Check cloud agent for pending messages
@@ -360,7 +347,7 @@ impl Proof {
                 }
 
                 payload
-            },
+            }
             Some(ref message) => message.clone(),
         };
         debug!("proof: {}", payload);
@@ -1079,13 +1066,12 @@ mod tests {
 
         let mut proof = create_boxed_proof();
 
-        assert_eq!(proof.validate_proof_indy("{}", "{}", "{}", "{}", "", "").unwrap_err().kind(), VcxErrorKind::InvalidProof);;
-
         let bad_handle = 100000;
         // TODO: Do something to guarantee that this handle is bad
         assert_eq!(proof.send_proof_request(bad_handle).unwrap_err().kind(), VcxErrorKind::NotReady);
         // TODO: Add test that returns a INVALID_PROOF_CREDENTIAL_DATA
-        assert_eq!(proof.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);;
+        assert_eq!(proof.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
+        ;
 
         let empty = r#""#;
 
@@ -1093,11 +1079,15 @@ mod tests {
                                 empty.to_string(),
                                 "{}".to_string(),
                                 r#"{"support_revocation":false}"#.to_string(),
-                                "my name".to_string()).unwrap_err().kind(), VcxErrorKind::InvalidJson);;
+                                "my name".to_string()).unwrap_err().kind(), VcxErrorKind::InvalidJson);
+        ;
 
-        assert_eq!(to_string(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidHandle);;
-        assert_eq!(get_source_id(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidHandle);;
-        assert_eq!(from_string(empty).unwrap_err().kind(), VcxErrorKind::InvalidJson);;
+        assert_eq!(to_string(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
+        ;
+        assert_eq!(get_source_id(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
+        ;
+        assert_eq!(from_string(empty).unwrap_err().kind(), VcxErrorKind::InvalidJson);
+        ;
         let mut proof_good = create_boxed_proof();
         assert_eq!(proof_good.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
     }

@@ -1,8 +1,6 @@
-use v3::messages::MessageId;
-use v3::messages::MessageType;
+use v3::messages::{MessageType, MessageId, A2AMessage, A2AMessageKinds};
 use messages::thread::Thread;
 use std::collections::HashMap;
-use v3::messages::A2AMessageKinds;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProblemReport {
@@ -54,6 +52,10 @@ impl ProblemReport {
             code
         };
         self
+    }
+
+    pub fn to_a2a_message(&self) -> A2AMessage {
+        A2AMessage::CommonProblemReport(self.clone()) // TODO: THINK how to avoid clone
     }
 }
 

@@ -13,6 +13,8 @@ pub mod attachment;
 #[allow(unused)] //FIXME:
 pub mod issuance;
 
+pub mod proof_presentation;
+
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{SignedResponse};
 use v3::messages::connection::problem_report::ProblemReport as ConnectionProblemReport;
@@ -25,6 +27,10 @@ use utils::uuid;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential::Credential;
+
+use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
+use v3::messages::proof_presentation::presentation_request::PresentationRequest;
+use v3::messages::proof_presentation::presentation::Presentation;
 
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
@@ -46,6 +52,11 @@ pub enum A2AMessage {
     CredentialOffer(CredentialOffer),
     CredentialRequest(CredentialRequest),
     Credential(Credential),
+
+    /// proof presentation
+    PresentationProposal(PresentationProposal),
+    PresentationRequest(PresentationRequest),
+    Presentation(Presentation),
 
     /// Any Raw Message
     Generic(String)
@@ -107,6 +118,21 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::CredentialRequest(msg))
                     .map_err(de::Error::custom)
             }
+            "propose-presentation" => {
+                PresentationProposal::deserialize(value)
+                    .map(|msg| A2AMessage::PresentationProposal(msg))
+                    .map_err(de::Error::custom)
+            }
+            "request-presentation" => {
+                PresentationRequest::deserialize(value)
+                    .map(|msg| A2AMessage::PresentationRequest(msg))
+                    .map_err(de::Error::custom)
+            }
+            "presentation" => {
+                Presentation::deserialize(value)
+                    .map(|msg| A2AMessage::Presentation(msg))
+                    .map_err(de::Error::custom)
+            }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
         }
     }
@@ -127,6 +153,10 @@ pub enum A2AMessageKinds {
     Credential,
     CredentialPreview,
     ProblemReport,
+    PresentationProposal,
+    PresentationPreview,
+    PresentationRequest,
+    Presentation,
 }
 
 impl A2AMessageKinds {
@@ -145,6 +175,10 @@ impl A2AMessageKinds {
             A2AMessageKinds::CredentialProposal => MessageFamilies::CredentialIssuance,
             A2AMessageKinds::CredentialRequest => MessageFamilies::CredentialIssuance,
             A2AMessageKinds::CredentialPreview => MessageFamilies::CredentialIssuance,
+            A2AMessageKinds::PresentationProposal => MessageFamilies::PresentProof,
+            A2AMessageKinds::PresentationPreview => MessageFamilies::PresentProof,
+            A2AMessageKinds::PresentationRequest => MessageFamilies::PresentProof,
+            A2AMessageKinds::Presentation => MessageFamilies::PresentProof,
         }
     }
 
@@ -163,6 +197,10 @@ impl A2AMessageKinds {
             A2AMessageKinds::CredentialPreview => "credential-preview".to_string(),
             A2AMessageKinds::CredentialOffer => "offer-credential".to_string(),
             A2AMessageKinds::CredentialRequest => "request-credential".to_string(),
+            A2AMessageKinds::PresentationProposal => "propose-presentation".to_string(),
+            A2AMessageKinds::PresentationPreview => "presentation-preview".to_string(),
+            A2AMessageKinds::PresentationRequest => "request-presentation".to_string(),
+            A2AMessageKinds::Presentation => "presentation".to_string(),
 
         }
     }
@@ -176,6 +214,7 @@ pub enum MessageFamilies {
     Signature,
     CredentialIssuance,
     ReportProblem,
+    PresentProof,
     Unknown(String)
 }
 
@@ -188,6 +227,7 @@ impl MessageFamilies {
             MessageFamilies::Signature => "1.0",
             MessageFamilies::CredentialIssuance => "1.0",
             MessageFamilies::ReportProblem => "1.0",
+            MessageFamilies::PresentProof => "1.0",
             MessageFamilies::Unknown(_) => "1.0"
         }
     }
@@ -202,6 +242,7 @@ impl From<String> for MessageFamilies {
             "notification" => MessageFamilies::Notification,
             "issue-credential" => MessageFamilies::CredentialIssuance,
             "report-problem" => MessageFamilies::ReportProblem,
+            "present-proof" => MessageFamilies::PresentProof,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -216,6 +257,7 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::Signature => "signature".to_string(),
             MessageFamilies::CredentialIssuance => "issue-credential".to_string(),
             MessageFamilies::ReportProblem => "report-problem".to_string(),
+            MessageFamilies::PresentProof => "present-proof".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }
