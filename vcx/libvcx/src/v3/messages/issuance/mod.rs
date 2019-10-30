@@ -6,7 +6,7 @@ pub mod credential_offer;
 pub mod credential_proposal;
 pub mod credential_request;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialPreviewData {
     #[serde(rename="@type")]
     pub _type: MessageType,
@@ -40,14 +40,14 @@ impl CredentialPreviewData {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(tag = "mime-type")]
 pub enum CredentialValue {
     #[serde(rename="text/plain")]
     String(CredentialValueData)
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialValueData {
     pub name: String,
     pub value: String

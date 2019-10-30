@@ -82,7 +82,7 @@ impl Credential {
         let prover_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidDid))?;
         let credential_offer = self.credential_offer.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredential))?;
 
-        let (req, req_meta, cred_def_id) = Credential::create_credential_request(&credential_offer.cred_def_id,
+        let (req, req_meta, cred_def_id, _) = Credential::create_credential_request(&credential_offer.cred_def_id,
                                                                     &prover_did,
                                                                     &credential_offer.libindy_offer)?;
 
@@ -99,7 +99,7 @@ impl Credential {
         })
     }
 
-    pub fn create_credential_request(cred_def_id: &str, prover_did: &str, cred_offer: &str) -> VcxResult<(String, String, String)> {
+    pub fn create_credential_request(cred_def_id: &str, prover_did: &str, cred_offer: &str) -> VcxResult<(String, String, String, String)> {
         let (cred_def_id, cred_def_json) = anoncreds::get_cred_def_json(&cred_def_id)?;
 
         /*
@@ -110,7 +110,7 @@ impl Credential {
         libindy_prover_create_credential_req(&prover_did,
                                              &cred_offer,
                                              &cred_def_json)
-            .map_err(|err| err.extend("Cannot create credential request")).map(|(s1, s2)| (s1, s2, cred_def_id))
+            .map_err(|err| err.extend("Cannot create credential request")).map(|(s1, s2)| (s1, s2, cred_def_id, cred_def_json))
     }
 
     fn generate_request_msg(&mut self, connection_handle: u32) -> VcxResult<String> {
