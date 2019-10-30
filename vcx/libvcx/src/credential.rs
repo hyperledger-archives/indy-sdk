@@ -1,6 +1,7 @@
 use serde_json;
 use serde_json::Value;
 
+use v3;
 use object_cache::ObjectCache;
 use api::VcxStateType;
 use issuer_credential::{CredentialOffer, CredentialMessage, PaymentInfo};
@@ -367,6 +368,11 @@ fn handle_err(err: VcxError) -> VcxError {
 pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u32> {
     trace!("credential_create_with_offer >>> source_id: {}, offer: {}", source_id, secret!(&offer));
 
+    // Initiate connection of new format -- redirect to v3 folder
+    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+        return v3::handlers::issuance::holder_create_credential(offer)
+    }
+
     let mut new_credential = _credential_create(source_id);
 
     let (offer, payment_info) = parse_json_offer(offer)?;
@@ -389,6 +395,9 @@ fn _credential_create(source_id: &str) -> Credential {
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
+    if v3::handlers::issuance::HOLD_CREDENTIAL_MAP.has_handle(handle) {
+        return v3::handlers::issuance::holder_update_status(handle, message)
+    }
     HANDLE_MAP.get_mut(handle, |obj| {
         debug!("updating state for credential {} with msg_id {:?}", obj.source_id, obj.msg_uid);
         obj.update_state(message.clone());
@@ -423,6 +432,9 @@ pub fn get_credential_id(handle: u32) -> VcxResult<String> {
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
+    if v3::handlers::issuance::HOLD_CREDENTIAL_MAP.has_handle(handle) {
+        return v3::handlers::issuance::holder_get_status(handle)
+    }
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_state())
     }).map_err(handle_err)
@@ -437,6 +449,9 @@ pub fn generate_credential_request_msg(handle: u32, connection_handle: u32) -> V
 }
 
 pub fn send_credential_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    if v3::handlers::issuance::HOLD_CREDENTIAL_MAP.has_handle(handle) {
+        return v3::handlers::issuance::holder_send_request(handle, connection_handle)
+    }
     HANDLE_MAP.get_mut(handle, |obj| {
         obj.send_request(connection_handle)
     }).map_err(handle_err)
