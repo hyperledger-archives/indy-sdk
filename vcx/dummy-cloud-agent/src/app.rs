@@ -11,7 +11,6 @@ use actix_web::web::{Data};
 pub struct AppData {
     pub forward_agent: Addr<ForwardAgent>,
     pub admin_agent: Addr<Admin>,
-    pub sometext: String,
 }
 
 #[derive(Deserialize)]
@@ -25,14 +24,14 @@ pub fn start_app_server(server_config: ServerConfig, app_config: AppConfig, forw
     let mut server = HttpServer::new(move || {
         info!("Starting App with config: {:?}", app_config);
         let app = App::new()
-            .data(AppData { admin_agent: admin_agent.clone(), forward_agent: forward_agent.clone(), sometext: "Footext".to_string() })
+            .data(AppData { admin_agent: admin_agent.clone(), forward_agent: forward_agent.clone() })
             .wrap(middleware::Logger::default())
             .service(
-                web::resource("/agency")
+                web::resource(&app_config.prefix)
                     .route(web::get().to(_get_endpoint_details))
             )
             .service(
-                web::resource("/agency/msg")
+                web::resource(&format!("{}/msg", app_config.prefix))
                     .route(web::post().to(_forward_message))
             );
         match app_config.enable_admin_api {
