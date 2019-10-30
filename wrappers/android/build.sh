@@ -74,7 +74,6 @@ copy_aar_to_wrappertest(){
 }
 
 
-# sh build-libindy-android.sh
 
 download_prebuilt_libindy
 copy_native_binaries

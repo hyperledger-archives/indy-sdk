@@ -6,6 +6,10 @@
 
 *.so
 
+android-sdk
+src/main/java/org
+aar
+
 # Files for the ART/Dalvik VM
 *.dex
 
