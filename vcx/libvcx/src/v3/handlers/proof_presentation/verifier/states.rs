@@ -4,6 +4,7 @@ use v3::messages::proof_presentation::presentation::{Presentation, PresentationS
 use v3::messages::error::ProblemReport;
 use v3::messages::ack::Ack;
 use messages::thread::Thread;
+use proof::Proof;
 
 use v3::handlers::connection;
 use error::prelude::*;
@@ -32,11 +33,11 @@ pub enum VerifierState {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum VerifierMessages {
-    SendPresentationRequest((PresentationRequest, u32)),
-    SendPresentationAck((Presentation, Ack)),
+    SendPresentationRequest(u32),
+    VerifyPresentation(Presentation),
     PresentationProposalReceived(PresentationProposal),
     PresentationRejectReceived(ProblemReport),
-    SendPresentationReject(ProblemReport),
+    SendPresentationReject(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -99,7 +100,22 @@ impl VerifierSM {
         let state = match state {
             VerifierState::Initiated(state) => {
                 match message {
-                    VerifierMessages::SendPresentationRequest((presentation_request, connection_handle)) => {
+                    VerifierMessages::SendPresentationRequest(connection_handle) => {
+                        let my_did = connection::get_pw_did(connection_handle)?;
+                        let remote_did = connection::get_their_pw_verkey(connection_handle)?;
+
+                        let presentation_request: PresentationRequestData =
+                            state.presentation_request_data.clone()
+                                .set_format_version_for_did(&my_did, &remote_did)?;
+
+                        let title = format!("{} wants you to share {}",
+                                            ::settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME)?, presentation_request.name);
+
+                        let presentation_request =
+                            PresentationRequest::create()
+                                .set_comment(title)
+                                .set_request_presentations_attach(&presentation_request)?;
+
                         connection::send_message(connection_handle, presentation_request.to_a2a_message())?;
                         VerifierState::PresentationRequestSent((state, presentation_request, connection_handle).into())
                     }
@@ -110,13 +126,24 @@ impl VerifierSM {
             }
             VerifierState::PresentationRequestSent(state) => {
                 match message {
-                    VerifierMessages::SendPresentationAck((presentation, ack)) => {
-                        let ack = ack.set_thread(presentation.thread.clone());
+                    VerifierMessages::VerifyPresentation(presentation) => {
+                        let valid = Proof::validate_indy_proof(&presentation.presentations_attach.content()?,
+                                                               &state.presentation_request.request_presentations_attach.content()?)?;
+
+                        if !valid {
+                            return Err(VcxError::from_msg(VcxErrorKind::InvalidProof, "Presentation verification failed"));
+                        }
+
+                        let ack = Ack::create().set_thread(presentation.thread.clone());
+
                         connection::send_message(state.connection_handle, ack.to_a2a_message())?;
                         VerifierState::Finished((state, presentation, ack).into())
                     }
-                    VerifierMessages::SendPresentationReject(problem_report) => {
-                        let problem_report = problem_report.set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()));
+                    VerifierMessages::SendPresentationReject(err) => {
+                        let problem_report =
+                            ProblemReport::create()
+                                .set_comment(err)
+                                .set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()));
                         connection::send_message(state.connection_handle, problem_report.to_a2a_message())?;
                         VerifierState::Finished((state, problem_report).into())
                     }
@@ -124,7 +151,11 @@ impl VerifierSM {
                         VerifierState::Finished((state, problem_report).into())
                     }
                     VerifierMessages::PresentationProposalReceived(presentation_proposal) => {
-                        let problem_report = ProblemReport::create().set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()));
+                        let problem_report =
+                            ProblemReport::create()
+                                .set_comment(String::from("PresentationProposal is not supported"))
+                                .set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()));
+
                         connection::send_message(state.connection_handle, problem_report.to_a2a_message())?;
                         VerifierState::Finished((state, problem_report).into())
                     }
@@ -183,11 +214,13 @@ impl VerifierSM {
         }
     }
 
-    pub fn presentation_request(&self) -> VcxResult<&PresentationRequest> {
+    pub fn presentation_request(&self) -> VcxResult<PresentationRequest> {
         match self.state {
-            VerifierState::Initiated(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
-            VerifierState::PresentationRequestSent(ref state) => Ok(&state.presentation_request),
-            VerifierState::Finished(ref state) => Ok(&state.presentation_request),
+            VerifierState::Initiated(ref state) => {
+                PresentationRequest::create().set_request_presentations_attach(&state.presentation_request_data)
+            }
+            VerifierState::PresentationRequestSent(ref state) => Ok(state.presentation_request.clone()),
+            VerifierState::Finished(ref state) => Ok(state.presentation_request.clone()),
         }
     }
 

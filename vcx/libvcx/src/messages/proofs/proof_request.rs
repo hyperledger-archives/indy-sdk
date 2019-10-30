@@ -281,15 +281,6 @@ impl ProofRequestData {
         self
     }
 
-    pub fn set_format_version_for_did(mut self, remote_did: &str) -> ProofRequestData {
-        if Qualifier::is_fully_qualified(&remote_did) {
-            self.ver = Some(ProofRequestVersion::V2)
-        } else {
-            self.ver = Some(ProofRequestVersion::V1)
-        }
-        self
-    }
-
     pub fn set_nonce(mut self) -> VcxResult<ProofRequestData> {
         self.nonce = anoncreds::generate_nonce()?;
         Ok(self)
@@ -331,18 +322,26 @@ impl ProofRequestData {
         Ok(self)
     }
 
-    pub fn to_string(&self) -> VcxResult<String> {
-        let mut proof_request_json = serde_json::to_string(&self)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequest: {:?}", err)))?;
+    pub fn set_format_version_for_did(mut self, my_did: &str, remote_did: &str) -> VcxResult<ProofRequestData> {
+        if Qualifier::is_fully_qualified(&my_did) && Qualifier::is_fully_qualified(&remote_did) {
+            self.ver = Some(ProofRequestVersion::V2)
+        } else {
+            let proof_request_json = serde_json::to_string(&self)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequestData: {:?}", err)))?;
 
-        match self.ver {
-            Some(ProofRequestVersion::V1) | None => {
-                proof_request_json = anoncreds::libindy_to_unqualified(&proof_request_json).unwrap();
-            }
-            _ => {}
-        };
+            let proof_request_json = anoncreds::libindy_to_unqualified(&proof_request_json)?;
 
-        Ok(proof_request_json)
+            self = serde_json::from_str(&proof_request_json)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ProofRequestData: {:?}", err)))?;
+
+            self.ver = Some(ProofRequestVersion::V1)
+        }
+        Ok(self)
+    }
+
+    pub fn to_json(&self) -> VcxResult<String> {
+        serde_json::to_string(&self)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequest: {:?}", err)))
     }
 }
 

@@ -22,7 +22,8 @@ pub struct ProblemReport {
     pub noticed_time: Option<String>,
     #[serde(rename = "where")]
     pub location: Option<String>,
-    pub problem_items: Option<HashMap<String, String>>
+    pub problem_items: Option<HashMap<String, String>>,
+    pub comment: Option<String>
 }
 
 impl ProblemReport {
@@ -42,7 +43,8 @@ impl ProblemReport {
             impact: None,
             noticed_time: None,
             location: None,
-            problem_items: None
+            problem_items: None,
+            comment: None,
         }
     }
 
@@ -51,6 +53,11 @@ impl ProblemReport {
             en: None,
             code
         };
+        self
+    }
+
+    pub fn set_comment(mut self, comment: String) -> Self {
+        self.comment = Some(comment);
         self
     }
 
