@@ -112,7 +112,7 @@ pub fn run_test<F, B>(f: F)
         Arbiter::spawn_fn(move || {
             future::ok(())
                 .and_then(move |_| {
-                    let admin = Admin::create();
+                    let admin = None;
                     ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config(), admin)
                 })
                 .and_then(f)

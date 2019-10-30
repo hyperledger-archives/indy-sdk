@@ -138,7 +138,7 @@ fn _start(config_path: &str) {
 
         ProtocolType::set(protocol_type_config);
 
-        let admin = Admin::create();
+        let admin = if app_config.enable_admin_api.unwrap_or(false) { Some(Admin::create()) } else { None };
         ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config, admin.clone())
             .map(move |forward_agent| {
                 start_app_server(server_config, app_config, forward_agent, admin)
