@@ -54,6 +54,11 @@ impl ProblemReport {
         self
     }
 
+    pub fn set_thread(mut self, thread: Thread) -> Self {
+        self.thread = thread;
+        self
+    }
+
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::CommonProblemReport(self.clone()) // TODO: THINK how to avoid clone
     }

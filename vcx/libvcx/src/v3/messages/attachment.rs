@@ -12,6 +12,15 @@ pub enum Attachment {
     Blank
 }
 
+impl Attachment {
+    pub fn content(&self) -> VcxResult<String> {
+        match self {
+            Attachment::JSON(ref attach) => attach.get_data(),
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "Unsupported Attachment type"))
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Json {
     #[serde(rename = "@id")]

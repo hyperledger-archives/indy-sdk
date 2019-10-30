@@ -1,4 +1,5 @@
 use v3::messages::{MessageId, MessageType, A2AMessageKinds};
+use messages::thread::Thread;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct PresentationProposal {
@@ -7,7 +8,9 @@ pub struct PresentationProposal {
     #[serde(rename = "@id")]
     pub id: MessageId,
     pub comment: String,
-    pub presentation_proposal: PresentationPreview
+    pub presentation_proposal: PresentationPreview,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -31,21 +34,9 @@ pub struct Attribute {
 pub struct Predicate {
     pub name: String,
     pub cred_def_id: Option<String>,
-    pub predicate: PredicateType,
+    pub predicate: String,
     pub threshold: i64,
     pub filter: Vec<::serde_json::Value>
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub enum PredicateType {
-    #[serde(rename = ">=")]
-    GE,
-    #[serde(rename = "<=")]
-    LE,
-    #[serde(rename = ">")]
-    GT,
-    #[serde(rename = "<")]
-    LT
 }
 
 impl PresentationProposal {
@@ -61,6 +52,7 @@ impl Default for PresentationProposal {
             id: MessageId::new(),
             comment: String::new(),
             presentation_proposal: PresentationPreview::default(),
+            thread: Thread::new(),
         }
     }
 }

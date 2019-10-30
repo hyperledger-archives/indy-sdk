@@ -3,7 +3,7 @@ pub mod states;
 use settings;
 use messages;
 use messages::{MessageStatusCode, ObjectWithVersion};
-use messages::update_message::{UIDsByConn, update_messages};
+use messages::update_message::{UIDsByConn, update_messages as update_messages_status};
 use messages::get_message::Message;
 use object_cache::ObjectCache;
 use error::prelude::*;
@@ -22,6 +22,8 @@ use v3::messages::ack::Ack;
 use v3::messages::connection::remote_info::RemoteConnectionInfo;
 use v3::messages::connection::agent_info::AgentInfo;
 use v3::utils::encryption_envelope::EncryptionEnvelope;
+
+use std::collections::HashMap;
 
 lazy_static! {
     pub static ref CONNECTION_MAP: ObjectCache<Connection> = Default::default();
@@ -131,12 +133,31 @@ impl Connection {
 
                 messages
                     .into_iter()
-                    .map(|message| self.handle_message(message))
+                    .map(|(_, message)| self.handle_message(message))
                     .collect::<VcxResult<Vec<u32>>>()?;
 
-                update_messages(MessageStatusCode::Reviewed, messages_to_update)?
+                update_messages_status(MessageStatusCode::Reviewed, messages_to_update)?
             }
         }
+
+        Ok(error::SUCCESS.code_num)
+    }
+
+    fn update_messages(&self, uids: Vec<String>) -> VcxResult<()> {
+        let messages_to_update = vec![UIDsByConn {
+            pairwise_did: self.agent_info().pw_did.clone(),
+            uids
+        }];
+
+        update_messages_status(MessageStatusCode::Reviewed, messages_to_update)
+    }
+
+    fn process_acceptance_message(&mut self, message: &Message) -> VcxResult<u32> {
+        trace!("Connection: process_acceptance_message: {:?}", message);
+
+        let message = self.decode_message(&message)?;
+
+        self.handle_message(message)?;
 
         Ok(error::SUCCESS.code_num)
     }
@@ -147,12 +168,14 @@ impl Connection {
         let message: Message = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
 
+        let message = self.decode_message(&message)?;
+
         self.handle_message(message)?;
 
         Ok(())
     }
 
-    fn get_messages(&self) -> VcxResult<(Vec<Message>, Vec<UIDsByConn>)> {
+    fn get_messages(&self) -> VcxResult<(HashMap<String, A2AMessage>, Vec<UIDsByConn>)> {
         trace!("Connection: get_messages");
 
         let mut messages_to_update: Vec<UIDsByConn> = vec![];
@@ -189,7 +212,13 @@ impl Connection {
             messages.append(&mut add_messages);
         }
 
-        Ok((messages, messages_to_update))
+        let mut a2a_messages: HashMap<String, A2AMessage> = HashMap::new();
+
+        for message in messages {
+            a2a_messages.insert(message.uid.clone(), self.decode_message(&message)?);
+        }
+
+        Ok((a2a_messages, messages_to_update))
     }
 
     fn get_message_by_id(&self, msg_id: &str) -> VcxResult<A2AMessage> {
@@ -214,10 +243,8 @@ impl Connection {
         Ok(message)
     }
 
-    fn handle_message(&mut self, message: Message) -> VcxResult<u32> {
+    fn handle_message(&mut self, message: A2AMessage) -> VcxResult<u32> {
         trace!("Connection: handle_message: {:?}", message);
-
-        let message = self.decode_message(&message)?;
 
         match self.state.state {
             ActorDidExchangeState::Inviter(DidExchangeState::Invited(ref state)) => {
@@ -413,9 +440,15 @@ pub fn get_state(handle: u32) -> u32 {
     }).unwrap_or(0)
 }
 
-pub fn get_messages(handle: u32) -> VcxResult<(Vec<Message>, Vec<UIDsByConn>)> {
+pub fn get_messages(handle: u32) -> VcxResult<(HashMap<String, A2AMessage>, Vec<UIDsByConn>)> {
     CONNECTION_MAP.get(handle, |connection| {
         connection.get_messages()
+    })
+}
+
+pub fn update_messages(handle: u32, uids: Vec<String>) -> VcxResult<()> {
+    CONNECTION_MAP.get(handle, |connection| {
+        connection.update_messages(uids.clone())
     })
 }
 
@@ -490,7 +523,7 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 // Actually it handles any message
 pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u32> {
     CONNECTION_MAP.get_mut(handle, |t| {
-        t.handle_message(message.clone())
+        t.process_acceptance_message(&message)
     })
 }
 
