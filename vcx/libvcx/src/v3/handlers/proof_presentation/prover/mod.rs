@@ -66,7 +66,7 @@ pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
 
 pub fn generate_presentation(handle: u32, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
     PROVER_MAP.get_mut(handle, |prover| {
-        prover.generate_presentation(&credentials, &self_attested_attrs)
+        prover.generate_presentation(credentials.clone(), self_attested_attrs.clone())
     })
 }
 

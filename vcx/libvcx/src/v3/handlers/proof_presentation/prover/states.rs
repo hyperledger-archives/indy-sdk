@@ -5,6 +5,8 @@ use v3::messages::ack::Ack;
 use v3::messages::error::ProblemReport;
 use messages::thread::Thread;
 
+use disclosed_proof::DisclosedProof;
+
 use error::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -34,7 +36,7 @@ pub enum ProverState {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ProverMessages {
     PresentationRequestReceived(PresentationRequestData),
-    PresentationPrepared(Presentation),
+    PreparePresentation((String, String)),
     SendPresentation(u32),
     PresentationAckReceived(Ack),
     PresentationRejectReceived(ProblemReport),
@@ -133,9 +135,14 @@ impl ProverSM {
         let state = match state {
             ProverState::Initiated(state) => {
                 match message {
-                    ProverMessages::PresentationPrepared(presentation) => {
-                        let presentation = presentation
-                            .set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()));
+                    ProverMessages::PreparePresentation((credentials, self_attested_attrs)) => {
+                        let presentation = DisclosedProof::generate_indy_proof(&credentials,
+                                                                               &self_attested_attrs,
+                                                                               &state.presentation_request.request_presentations_attach.content()?)?;
+
+                        let presentation = Presentation::create()
+                            .set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()))
+                            .set_presentations_attach(presentation)?;
 
                         ProverState::PresentationPrepared((state, presentation).into())
                     }
