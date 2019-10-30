@@ -1,4 +1,5 @@
-use v3::handlers::issuance::states::{HolderState, InitialHolderState};
+use api::VcxStateType;
+use v3::handlers::issuance::states::{HolderState, OfferReceivedState};
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::messages::issuance::{
     self,
@@ -10,10 +11,12 @@ use v3::messages::attachment::Attachment;
 use credential::Credential;
 use utils::error::Error;
 use error::{VcxError, VcxErrorKind, VcxResult};
-use v3::handlers::connection::{send_message, get_pw_did};
+use messages::update_message::{UIDsByConn, update_messages};
+use v3::handlers::connection::{send_message, get_messages, get_pw_did, decode_message};
 use v3::messages::A2AMessage;
 use v3::messages::ack::{Ack, AckStatus};
 use messages::thread::Thread;
+use messages::MessageStatusCode;
 use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
 
 pub struct HolderSM {
@@ -21,10 +24,61 @@ pub struct HolderSM {
 }
 
 impl HolderSM {
-    pub fn new() -> Self {
+    pub fn new(offer: CredentialOffer) -> Self {
         HolderSM {
-            state: HolderState::Initial(InitialHolderState::new())
+            state: HolderState::OfferReceived(OfferReceivedState::new(offer))
         }
+    }
+
+    pub fn get_status(&self) -> VcxStateType {
+        match self.state {
+            HolderState::OfferReceived(_) => VcxStateType::VcxStateRequestReceived,
+            HolderState::RequestSent(_) => VcxStateType::VcxStateOfferSent,
+            HolderState::Finished(_) => VcxStateType::VcxStateAccepted,
+        }
+    }
+
+    pub fn fetch_message(&self) -> VcxResult<Option<A2AMessage>> {
+        let conn_handle = self.state.get_connection_handle();
+        let last_id = self.state.get_last_id();
+        let (messages, _) = get_messages(conn_handle)?;
+
+        let res: Option<(String, A2AMessage)> = messages.into_iter()
+            .filter_map(|message| {
+                let a2a_message = decode_message(conn_handle, message).ok()?;
+                let thid = match &a2a_message {
+                    A2AMessage::CommonProblemReport(ref report) => {
+                        report.thread.thid.clone()
+                    }
+                    A2AMessage::Credential(ref credential) => {
+                        credential.thread.thid.clone()
+                    }
+                    _ => None
+                };
+                if thid == last_id {
+                    Some((thid?, a2a_message))
+                } else {
+                    None
+                }
+            })
+            .nth(0);
+
+        if let Some((uid, msg)) = res {
+            let messages_to_update = vec![UIDsByConn {
+                pairwise_did: get_pw_did(conn_handle)?,
+                uids: vec![uid]
+            }];
+
+            update_messages(MessageStatusCode::Reviewed, messages_to_update)?;
+
+            Ok(Some(msg))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn get_connection_handle(&self) -> u32 {
+        self.state.get_connection_handle()
     }
 
     pub fn step(state: HolderState) -> Self {
@@ -34,14 +88,14 @@ impl HolderSM {
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<HolderSM> {
         let HolderSM { state } = self;
         let state = match state {
-            HolderState::Initial(state_data) => match cim {
-                CredentialIssuanceMessage::CredentialOffer(offer, connection_handle) => {
+            HolderState::OfferReceived(state_data) => match cim {
+                CredentialIssuanceMessage::CredentialRequestSend(connection_handle) => {
                     let conn_handle = connection_handle;
-                    let offer_accepted = true;
-                    let request = _make_credential_request(conn_handle, offer);
+                    let request = _make_credential_request(conn_handle, &state_data.offer);
                     let (msg, state) = if let Ok((cred_request, req_meta, cred_def_json)) = request {
+                        let id = cred_request.id.clone();
                         let msg = A2AMessage::CredentialRequest(cred_request);
-                        (msg, HolderState::RequestSent((state_data, req_meta, cred_def_json).into()))
+                        (msg, HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle, id).into()))
                     } else {
                         let msg = A2AMessage::CommonProblemReport(
                             ProblemReport::create()
@@ -55,7 +109,7 @@ impl HolderSM {
                 }
                 _ => {
                     warn!("Credential Issuance can only start on holder side with Credential Offer");
-                    HolderState::Initial(state_data)
+                    HolderState::OfferReceived(state_data)
                 }
             },
             HolderState::RequestSent(state_data) => match cim {
@@ -150,9 +204,9 @@ fn _store_credential(credential: &issuance::credential::Credential,
                                     Some(&rev_reg_def_json))
 }
 
-fn _make_credential_request(conn_handle: u32, offer: CredentialOffer) -> VcxResult<(CredentialRequest, String, String)> {
+fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxResult<(CredentialRequest, String, String)> {
     let my_did = get_pw_did(conn_handle)?;
-    let cred_offer = if let Attachment::JSON(json) = offer.offers_attach {
+    let cred_offer = if let Attachment::JSON(json) = &offer.offers_attach {
         json.get_data()?
     } else {
         return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Wrong messages"));

@@ -12,8 +12,10 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub enum CredentialIssuanceMessage {
     CredentialInit(u32),
+    CredentialSend(),
     CredentialProposal(CredentialProposal, u32),
     CredentialOffer(CredentialOffer, u32),
+    CredentialRequestSend(u32),
     CredentialRequest(CredentialRequest, u32),
     Credential(Credential, u32),
     Ack(Ack),

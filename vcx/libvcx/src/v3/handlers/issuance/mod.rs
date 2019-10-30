@@ -8,6 +8,7 @@ use error::prelude::*;
 use messages::get_message::Message;
 use object_cache::ObjectCache;
 use v3::messages::A2AMessage;
+use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::handlers::connection;
 use v3::handlers::issuance::issuer::IssuerSM;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
@@ -18,15 +19,7 @@ lazy_static! {
 }
 
 lazy_static! {
-    pub static ref ISSUE_CREDENTIAL_INCOMING_MAP: ObjectCache<A2AMessage> = Default::default();
-}
-
-lazy_static! {
     pub static ref HOLD_CREDENTIAL_MAP: ObjectCache<HolderSM> = Default::default();
-}
-
-lazy_static! {
-    pub static ref HOLD_CREDENTIAL_INCOMING_MAP: ObjectCache<A2AMessage> = Default::default();
 }
 
 // Issuer
@@ -47,32 +40,91 @@ pub fn send_credential_offer(credential_handle: u32, connection_handle: u32) -> 
     })
 }
 
-pub fn update_status(credential_handle: u32, connection_handle: u32, msg: Option<String>) -> VcxResult<u32> {
-    match msg {
+pub fn issuer_update_status(credential_handle: u32, msg: Option<String>) -> VcxResult<u32> {
+    let msg = match msg {
         Some(msg) => {
             let message: Message = ::serde_json::from_str(&msg)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
-            //TODO: get rid of connection message, hide this into SM
-            let a2a_message = connection::decode_message(connection_handle, message)?;
-            ISSUE_CREDENTIAL_INCOMING_MAP.insert(credential_handle, a2a_message)?;
-            Ok(VcxStateType::VcxStateRequestReceived as u32)
+            Some(ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
+                connection::decode_message(issuer_sm.get_connection_handle(), message.clone())
+            })?)
         },
         None => {
             ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
-
-            })?;
-            Ok(VcxStateType::VcxStateOfferSent as u32)
+                issuer_sm.fetch_messages()
+            })?
         }
+    };
+
+    if let Some(sm_msg) = msg {
+        ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
+            issuer_sm.handle_message((&sm_msg, 0u32).into())
+        })?;
+        Ok(VcxStateType::VcxStateRequestReceived as u32)
+    } else {
+        Ok(VcxStateType::VcxStateOfferSent as u32)
     }
 }
 
 pub fn send_credential(credential_handle: u32, connection_handle: u32) -> VcxResult<()> {
-    ISSUE_CREDENTIAL_INCOMING_MAP.get(credential_handle, |msg| {
-        let sm_msg: CredentialIssuanceMessage = (msg, connection_handle).into();
-        ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
-            issuer_sm.handle_message(sm_msg.clone())
-        })
+    ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
+        issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend())
     })
 }
+
+pub fn issuer_get_status(credential_handle: u32) -> VcxResult<u32> {
+    ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
+        Ok(issuer_sm.get_status() as u32)
+    })
+}
+
+// Holder
+
+pub fn holder_create_credential(credential_offer: &str) -> VcxResult<u32> {
+    let cred_offer: CredentialOffer = ::serde_json::from_str(credential_offer)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+    let holder = HolderSM::new(cred_offer);
+    HOLD_CREDENTIAL_MAP.add(holder)
+        .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
+}
+
+pub fn holder_send_request(credential_handle: u32, connection_handle: u32) -> VcxResult<()> {
+    HOLD_CREDENTIAL_MAP.map(credential_handle, |holder_sm| {
+        holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(connection_handle))
+    })
+}
+
+pub fn holder_update_status(credential_handle: u32, msg: Option<String>) -> VcxResult<u32> {
+    let msg = match msg {
+        Some(msg) => {
+            let message: Message = ::serde_json::from_str(&msg)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+            Some(HOLD_CREDENTIAL_MAP.get(credential_handle, |holder_sm| {
+                connection::decode_message(holder_sm.get_connection_handle(), message.clone())
+            })?)
+        },
+        None => {
+            HOLD_CREDENTIAL_MAP.get(credential_handle, |holder_sm| {
+                holder_sm.fetch_message()
+            })?
+        }
+    };
+
+    if let Some(sm_msg) = msg {
+        HOLD_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
+            issuer_sm.handle_message((&sm_msg, 0u32).into())
+        })?;
+        Ok(VcxStateType::VcxStateRequestReceived as u32)
+    } else {
+        Ok(VcxStateType::VcxStateOfferSent as u32)
+    }
+}
+
+pub fn holder_get_status(credential_handle: u32) -> VcxResult<u32> {
+    HOLD_CREDENTIAL_MAP.get(credential_handle, |holder_sm| {
+        Ok(holder_sm.get_status() as u32)
+    })
+}
+
 
 

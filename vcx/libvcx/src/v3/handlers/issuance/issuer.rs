@@ -1,6 +1,7 @@
+use api::VcxStateType;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::states::{IssuerState, InitialState};
-use v3::handlers::connection::{send_message, get_messages, get_pw_did};
+use v3::handlers::connection::{send_message, get_messages, get_pw_did, decode_message};
 use messages::update_message::{UIDsByConn, update_messages};
 use v3::messages::A2AMessage;
 use v3::messages::issuance::{
@@ -14,7 +15,6 @@ use error::{VcxResult, VcxError, VcxErrorKind};
 use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer};
 use credential_def::{get_rev_reg_id, get_tails_file};
 use messages::MessageStatusCode;
-use v3::handlers::connection::decode_message;
 use messages::thread::Thread;
 
 pub struct IssuerSM {
@@ -33,49 +33,66 @@ impl IssuerSM {
             state
         }
     }
+    pub fn get_connection_handle(&self) -> u32 {
+        self.state.get_connection_handle()
+    }
 
-    pub fn fetch_messages(&self) -> VcxResult<Vec<A2AMessage>> {
+    pub fn fetch_messages(&self) -> VcxResult<Option<A2AMessage>> {
         let conn_handle = self.state.get_connection_handle();
         let last_id = self.state.get_last_id();
         let (messages, _) = get_messages(conn_handle)?;
 
-        let (uids, msgs): (Vec<String>, Vec<A2AMessage>) = messages.into_iter()
+        let res: Option<(String, A2AMessage)> = messages.into_iter()
             .filter_map(|message| {
                 let a2a_message = decode_message(conn_handle, message).ok()?;
-                let thid = match a2a_message {
-                    A2AMessage::Ack(ack) => {
-                        ack.thread.thid
+                let thid = match &a2a_message {
+                    A2AMessage::Ack(ref ack) => {
+                        ack.thread.thid.clone()
                     }
-                    A2AMessage::CommonProblemReport(report) => {
-                        report.thread.thid
+                    A2AMessage::CommonProblemReport(ref report) => {
+                        report.thread.thid.clone()
                     }
-                    A2AMessage::CredentialProposal(proposal) => {
-                        match proposal.thread.map(|thread| thread.thid.clone()) {
+                    A2AMessage::CredentialProposal(ref proposal) => {
+                        match proposal.thread.as_ref().map(|thread| thread.thid.clone()) {
                             Some(a) => a,
                             None => None
-                        }
+                        }.clone()
                     }
-                    A2AMessage::CredentialRequest(request) => {
-                        request.thread.thid
+                    A2AMessage::CredentialRequest(ref request) => {
+                        request.thread.thid.clone()
                     }
                     _ => None
                 };
                 if thid == last_id {
-                    Some((thid, a2a_message))
+                    Some((thid?, a2a_message))
                 } else {
                     None
                 }
             })
-            .unzip();
+            .nth(0);
 
-        let messages_to_update = vec![UIDsByConn {
-            pairwise_did: get_pw_did(conn_handle)?,
-            uids
-        }];
+        if let Some((uid, msg)) = res {
+            let messages_to_update = vec![UIDsByConn {
+                pairwise_did: get_pw_did(conn_handle)?,
+                uids: vec![uid]
+            }];
 
-        update_messages(MessageStatusCode::Reviewed, messages_to_update)?;
+            update_messages(MessageStatusCode::Reviewed, messages_to_update)?;
 
-        Ok(msgs)
+            Ok(Some(msg))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn get_status(&self) -> VcxStateType {
+        match self.state {
+            IssuerState::Initial(_) => VcxStateType::VcxStateInitialized,
+            IssuerState::OfferSent(_) => VcxStateType::VcxStateOfferSent,
+            IssuerState::RequestReceived(_) => VcxStateType::VcxStateRequestReceived,
+            IssuerState::CredentialSent(_) => VcxStateType::VcxStateAccepted,
+            IssuerState::Finished(_) => VcxStateType::VcxStateAccepted,
+        }
     }
 
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<IssuerSM> {
@@ -87,37 +104,19 @@ impl IssuerSM {
                     let cred_offer_msg = CredentialOffer::create()
                         .set_offers_attach(&cred_offer)?;
                     let cred_offer_msg = _append_credential_preview(cred_offer_msg, &state_data.credential_json)?;
+                    let id = cred_offer_msg.id.clone();
                     let msg = A2AMessage::CredentialOffer(cred_offer_msg);
                     send_message(connection_handle, msg)?;
-                    IssuerState::OfferSent((state_data, cred_offer, cred_offer_msg.id).into())
+                    IssuerState::OfferSent((state_data, cred_offer, connection_handle, id).into())
                 }
                 _ => {
                     warn!("Credential Issuance can only start on issuer side with init");
                     IssuerState::Initial(state_data)
                 }
-            },
+            }
             IssuerState::OfferSent(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequest(request, connection_handle) => {
-                    let credential_msg = _create_credential(&request, &state_data.rev_reg_id, &state_data.tails_file, &state_data.offer, &state_data.cred_data);
-                    let (msg, state) = match credential_msg {
-                        Ok(credential_msg) => {
-                            let msg = A2AMessage::Credential(
-                                credential_msg
-                            );
-                            (msg, IssuerState::CredentialSent((state_data, credential_msg.id).into()))
-                        },
-                        Err(_err) => {
-                            let msg = A2AMessage::CommonProblemReport(
-                                ProblemReport::create()
-                                    //TODO define some error codes inside RFC and use them here
-                                    .set_description(0)
-                                    .set_thread(Thread::new().set_thid(request.id.0))
-                            );
-                            (msg, IssuerState::Finished(state_data.into()))
-                        }
-                    };
-                    send_message(connection_handle, msg)?;
-                    state
+                    IssuerState::RequestReceived((state_data, request).into())
                 }
                 CredentialIssuanceMessage::CredentialProposal(proposal, connection_handle) => {
                     let msg = A2AMessage::CommonProblemReport(
@@ -135,6 +134,36 @@ impl IssuerSM {
                 _ => {
                     warn!("In this state Credential Issuance can accept only Request, Proposal and Problem Report");
                     IssuerState::OfferSent(state_data)
+                }
+            },
+            IssuerState::RequestReceived(state_data) => match cim {
+                CredentialIssuanceMessage::CredentialSend() => {
+                    let credential_msg = _create_credential(&state_data.request, &state_data.rev_reg_id, &state_data.tails_file, &state_data.offer, &state_data.cred_data);
+                    let conn_handle = state_data.connection_handle;
+                    let (msg, state) = match credential_msg {
+                        Ok(credential_msg) => {
+                            let id = credential_msg.id.clone();
+                            let msg = A2AMessage::Credential(
+                                credential_msg
+                            );
+                            (msg, IssuerState::CredentialSent((state_data, id).into()))
+                        },
+                        Err(_err) => {
+                            let msg = A2AMessage::CommonProblemReport(
+                                ProblemReport::create()
+                                    //TODO define some error codes inside RFC and use them here
+                                    .set_description(0)
+                                    .set_thread(Thread::new().set_thid(state_data.request.id.0.clone()))
+                            );
+                            (msg, IssuerState::Finished(state_data.into()))
+                        }
+                    };
+                    send_message(conn_handle, msg)?;
+                    state
+                }
+                _ => {
+                    warn!("In this state Credential Issuance can accept only CredentialSend");
+                    IssuerState::RequestReceived(state_data)
                 }
             }
             IssuerState::CredentialSent(state_data) => match cim {
