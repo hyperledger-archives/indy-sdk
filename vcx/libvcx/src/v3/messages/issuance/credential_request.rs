@@ -1,6 +1,7 @@
 use v3::messages::MessageId;
 use v3::messages::attachment::{Attachment, Json, ENCODING_BASE64};
 use error::{VcxError, VcxResult, VcxErrorKind};
+use messages::thread::Thread;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialRequest {
@@ -8,7 +9,8 @@ pub struct CredentialRequest {
     pub id: MessageId,
     pub comment: String,
     #[serde(rename="requests~attach")]
-    pub requests_attach: Attachment
+    pub requests_attach: Attachment,
+    pub thread: Thread
 }
 
 impl CredentialRequest {
@@ -16,7 +18,8 @@ impl CredentialRequest {
         CredentialRequest {
             id: MessageId::new(),
             comment: String::new(),
-            requests_attach: Attachment::Blank
+            requests_attach: Attachment::Blank,
+            thread: Thread::new()
         }
     }
 
@@ -33,5 +36,10 @@ impl CredentialRequest {
         )?;
         self.requests_attach = Attachment::JSON(json);
         Ok(self)
+    }
+
+    pub fn set_thread(mut self, thread: Thread) -> Self {
+        self.thread = thread;
+        self
     }
 }

@@ -3,14 +3,15 @@ pub mod states;
 pub mod messages;
 pub mod holder;
 
-use object_cache::ObjectCache;
+use api::VcxStateType;
 use error::prelude::*;
+use messages::get_message::Message;
+use object_cache::ObjectCache;
+use v3::messages::A2AMessage;
+use v3::handlers::connection;
 use v3::handlers::issuance::issuer::IssuerSM;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::holder::HolderSM;
-use v3::messages::A2AMessage;
-use v3::handlers::connection;
-use messages::get_message::Message;
 
 lazy_static! {
     pub static ref ISSUE_CREDENTIAL_MAP: ObjectCache<IssuerSM> = Default::default();
@@ -49,18 +50,18 @@ pub fn send_credential_offer(credential_handle: u32, connection_handle: u32) -> 
 pub fn update_status(credential_handle: u32, connection_handle: u32, msg: Option<String>) -> VcxResult<u32> {
     match msg {
         Some(msg) => {
-            let message: Message = ::serde_json::from_str(&message)
+            let message: Message = ::serde_json::from_str(&msg)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
             //TODO: get rid of connection message, hide this into SM
             let a2a_message = connection::decode_message(connection_handle, message)?;
-            ISSUER_CREDENTIAL_INCOMING_MAP.insert(credential_handle, a2a_message)?;
-            Ok(VcxStateType::VcxStateRequestReceived)
+            ISSUE_CREDENTIAL_INCOMING_MAP.insert(credential_handle, a2a_message)?;
+            Ok(VcxStateType::VcxStateRequestReceived as u32)
         },
         None => {
-            ISSUER_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
+            ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
 
             })?;
-            Ok(VcxStateType::VcxStateOfferSent)
+            Ok(VcxStateType::VcxStateOfferSent as u32)
         }
     }
 }

@@ -2,6 +2,7 @@ use v3::messages::MessageId;
 use v3::messages::issuance::{CredentialPreviewData, CredentialValueData, CredentialValue};
 use v3::messages::attachment::{Attachment, Json, ENCODING_BASE64};
 use error::{VcxError, VcxResult, VcxErrorKind};
+use messages::thread::Thread;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialOffer {
@@ -10,7 +11,8 @@ pub struct CredentialOffer {
     pub comment: String,
     pub credential_preview: CredentialPreviewData,
     #[serde(rename="offers~attach")]
-    pub offers_attach: Attachment
+    pub offers_attach: Attachment,
+    pub thread: Option<Thread>
 }
 
 impl CredentialOffer {
@@ -19,7 +21,8 @@ impl CredentialOffer {
             id: MessageId::new(),
             comment: String::new(),
             credential_preview: CredentialPreviewData::new(),
-            offers_attach: Attachment::Blank
+            offers_attach: Attachment::Blank,
+            thread: None
         }
     }
 
@@ -41,5 +44,10 @@ impl CredentialOffer {
     pub fn add_credential_preview_data(mut self, name: &str, value: &str, mime_type: &str) -> VcxResult<CredentialOffer> {
         self.credential_preview = self.credential_preview.add_value(name, value, mime_type)?;
         Ok(self)
+    }
+
+    pub fn set_thread(mut self, thread: Thread) -> Self {
+        self.thread = Some(thread);
+        self
     }
 }

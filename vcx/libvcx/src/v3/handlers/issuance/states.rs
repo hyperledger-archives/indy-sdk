@@ -1,3 +1,5 @@
+use v3::messages::MessageId;
+
 // Possible Transitions:
 // Initial -> OfferSent
 // Initial -> Finished
@@ -21,12 +23,21 @@ pub struct InitialState {
 }
 
 impl IssuerState {
-    pub fn get_connection_id(&self) -> u32 {
+    pub fn get_connection_handle(&self) -> u32 {
         match self {
             IssuerState::Initial(state) => 0,
             IssuerState::OfferSent(state) => state.connection_handle,
             IssuerState::CredentialSent(state) => state.connection_handle,
             IssuerState::Finished(state) => 0
+        }
+    }
+
+    pub fn get_last_id(&self) -> Option<String> {
+        match self {
+            IssuerState::Initial(state) => None,
+            IssuerState::OfferSent(state) => Some(state.last_id.0),
+            IssuerState::CredentialSent(state) => Some(state.last_id.0),
+            IssuerState::Finished(state) => None
         }
     }
 }
@@ -48,12 +59,14 @@ pub struct OfferSentState {
     pub cred_data: String,
     pub rev_reg_id: Option<String>,
     pub tails_file: Option<String>,
-    pub connection_handle: u32
+    pub connection_handle: u32,
+    pub last_id: MessageId
 }
 
 #[derive(Debug)]
 pub struct CredentialSentState {
-    pub connection_handle: u32
+    pub connection_handle: u32,
+    pub last_id: MessageId
 }
 
 #[derive(Debug)]
@@ -61,15 +74,16 @@ pub struct FinishedState {
     pub cred_id: Option<String>
 }
 
-impl From<(InitialState, String, u32)> for OfferSentState {
-    fn from((state, offer, connection_handle): (InitialState, String, u32)) -> Self {
+impl From<(InitialState, String, u32, MessageId)> for OfferSentState {
+    fn from((state, offer, connection_handle, sent_id): (InitialState, String, u32, MessageId)) -> Self {
         trace!("SM is now in OfferSent state");
         OfferSentState {
             offer,
             cred_data: state.credential_json,
             rev_reg_id: state.rev_reg_id,
             tails_file: state.tails_file,
-            connection_handle
+            connection_handle,
+            last_id: sent_id
         }
     }
 }
@@ -83,11 +97,12 @@ impl From<InitialState> for FinishedState {
     }
 }
 
-impl From<OfferSentState> for CredentialSentState {
-    fn from(state: OfferSentState) -> Self {
+impl From<(OfferSentState, MessageId)> for CredentialSentState {
+    fn from((state, sent_id): (OfferSentState, MessageId)) -> Self {
         trace!("SM is now in CredentialSent state");
         CredentialSentState {
-            connection_handle: state.connection_handle
+            connection_handle: state.connection_handle,
+            last_id: sent_id
         }
     }
 

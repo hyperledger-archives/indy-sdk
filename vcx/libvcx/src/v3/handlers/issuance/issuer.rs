@@ -13,6 +13,9 @@ use v3::messages::attachment::Attachment;
 use error::{VcxResult, VcxError, VcxErrorKind};
 use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer};
 use credential_def::{get_rev_reg_id, get_tails_file};
+use messages::MessageStatusCode;
+use v3::handlers::connection::decode_message;
+use messages::thread::Thread;
 
 pub struct IssuerSM {
     state: IssuerState,
@@ -32,17 +35,41 @@ impl IssuerSM {
     }
 
     pub fn fetch_messages(&self) -> VcxResult<Vec<A2AMessage>> {
-        let (messages, _) = get_messages(self.state.get_connection_handle())?;
+        let conn_handle = self.state.get_connection_handle();
+        let last_id = self.state.get_last_id();
+        let (messages, _) = get_messages(conn_handle)?;
 
         let (uids, msgs): (Vec<String>, Vec<A2AMessage>) = messages.into_iter()
             .filter_map(|message| {
-                //TODO: check if message is for this SM
-                //TODO: return the pair (uid, A2A message)
+                let a2a_message = decode_message(conn_handle, message).ok()?;
+                let thid = match a2a_message {
+                    A2AMessage::Ack(ack) => {
+                        ack.thread.thid
+                    }
+                    A2AMessage::CommonProblemReport(report) => {
+                        report.thread.thid
+                    }
+                    A2AMessage::CredentialProposal(proposal) => {
+                        match proposal.thread.map(|thread| thread.thid.clone()) {
+                            Some(a) => a,
+                            None => None
+                        }
+                    }
+                    A2AMessage::CredentialRequest(request) => {
+                        request.thread.thid
+                    }
+                    _ => None
+                };
+                if thid == last_id {
+                    Some((thid, a2a_message))
+                } else {
+                    None
+                }
             })
             .unzip();
 
         let messages_to_update = vec![UIDsByConn {
-            pairwise_did: get_pw_did(connection_handle)?,
+            pairwise_did: get_pw_did(conn_handle)?,
             uids
         }];
 
@@ -62,7 +89,7 @@ impl IssuerSM {
                     let cred_offer_msg = _append_credential_preview(cred_offer_msg, &state_data.credential_json)?;
                     let msg = A2AMessage::CredentialOffer(cred_offer_msg);
                     send_message(connection_handle, msg)?;
-                    IssuerState::OfferSent((state_data, cred_offer).into())
+                    IssuerState::OfferSent((state_data, cred_offer, cred_offer_msg.id).into())
                 }
                 _ => {
                     warn!("Credential Issuance can only start on issuer side with init");
@@ -77,13 +104,14 @@ impl IssuerSM {
                             let msg = A2AMessage::Credential(
                                 credential_msg
                             );
-                            (msg, IssuerState::CredentialSent(state_data.into()))
+                            (msg, IssuerState::CredentialSent((state_data, credential_msg.id).into()))
                         },
                         Err(_err) => {
                             let msg = A2AMessage::CommonProblemReport(
                                 ProblemReport::create()
                                     //TODO define some error codes inside RFC and use them here
                                     .set_description(0)
+                                    .set_thread(Thread::new().set_thid(request.id.0))
                             );
                             (msg, IssuerState::Finished(state_data.into()))
                         }
@@ -91,11 +119,12 @@ impl IssuerSM {
                     send_message(connection_handle, msg)?;
                     state
                 }
-                CredentialIssuanceMessage::CredentialProposal(_proposal, connection_handle) => {
+                CredentialIssuanceMessage::CredentialProposal(proposal, connection_handle) => {
                     let msg = A2AMessage::CommonProblemReport(
                         ProblemReport::create()
                             //TODO define some error codes inside RFC and use them here
                             .set_description(0)
+                            .set_thread(Thread::new().set_thid(proposal.id.0))
                     );
                     send_message(connection_handle, msg)?;
                     IssuerState::Finished(state_data.into())

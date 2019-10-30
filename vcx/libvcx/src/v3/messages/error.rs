@@ -9,7 +9,7 @@ pub struct ProblemReport {
     #[serde(rename = "@id")]
     id: MessageId,
     #[serde(rename = "~thread")]
-    pub thread: Option<Thread>,
+    pub thread: Thread,
     pub description: Description,
     pub who_retries: Option<WhoRetries>,
     #[serde(rename = "tracking-uri")]
@@ -30,7 +30,7 @@ impl ProblemReport {
         ProblemReport {
             msg_type: MessageType::build(A2AMessageKinds::ProblemReport),
             id: MessageId::new(),
-            thread: None,
+            thread: Thread::new(),
             description: Description {
                 en: None,
                 code: 0
@@ -56,6 +56,11 @@ impl ProblemReport {
 
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::CommonProblemReport(self.clone()) // TODO: THINK how to avoid clone
+    }
+
+    pub fn set_thread(mut self, thread: Thread) -> Self {
+        self.thread = thread;
+        self
     }
 }
 
