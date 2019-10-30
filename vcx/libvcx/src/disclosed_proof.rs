@@ -22,6 +22,8 @@ use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, R
 use utils::libindy::anoncreds;
 use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
 
+use v3::handlers::connection as v3_connection;
+use v3::handlers::proof_presentation::prover as v3_prover;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProof>  = Default::default();
@@ -471,6 +473,11 @@ fn handle_err(err: VcxError) -> VcxError {
 }
 
 pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
+    // Initiate proof of new format -- redirect to v3 folder
+    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+        return v3_prover::create_proof(source_id, proof_req);
+    }
+
     trace!("create_proof >>> source_id: {}, proof_req: {}", source_id, proof_req);
 
     debug!("creating disclosed proof with id: {}", source_id);
@@ -487,6 +494,10 @@ pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
+    if v3_prover::PROVER_MAP.has_handle(handle) {
+        return v3_prover::get_state(handle);
+    }
+
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_state())
     }).map_err(handle_err)
@@ -494,65 +505,96 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 
 // update_state is just the same as get_state for disclosed_proof
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
+    if v3_prover::PROVER_MAP.has_handle(handle) {
+        return v3_prover::update_state(handle, message);
+    }
+
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_state())
     })
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
+    if v3_prover::PROVER_MAP.has_handle(handle) {
+        return v3_prover::to_string(handle);
+    }
+
     HANDLE_MAP.get(handle, |obj| {
         DisclosedProof::to_string(&obj)
     })
 }
 
 pub fn from_string(proof_data: &str) -> VcxResult<u32> {
-    let derived_proof: DisclosedProof = DisclosedProof::from_str(proof_data)?;
-
-    let new_handle = HANDLE_MAP.add(derived_proof)?;
-
-    info!("inserting handle {} into proof table", new_handle);
-
-    Ok(new_handle)
+    if let Ok(derived_proof) = DisclosedProof::from_str(proof_data) {
+        HANDLE_MAP.add(derived_proof)
+    } else {
+        v3_prover::from_string(proof_data)
+    }
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
+    if v3_prover::PROVER_MAP.has_handle(handle) {
+        return v3_prover::release(handle);
+    }
+
     HANDLE_MAP.release(handle).map_err(handle_err)
 }
 
 pub fn release_all() {
     HANDLE_MAP.drain().ok();
+    v3_prover::release_all();
 }
 
 pub fn generate_proof_msg(handle: u32) -> VcxResult<String> {
+    if v3_prover::PROVER_MAP.has_handle(handle) {
+        return v3_prover::generate_proof_msg(handle);
+    }
+
     HANDLE_MAP.get_mut(handle, |obj| {
         obj.generate_proof_msg()
     })
 }
 
 pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    if v3_prover::PROVER_MAP.has_handle(handle) {
+        return v3_prover::send_proof(handle, connection_handle);
+    }
+
     HANDLE_MAP.get_mut(handle, |obj| {
         obj.send_proof(connection_handle)
     })
 }
 
 pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
+    if v3_prover::PROVER_MAP.has_handle(handle) {
+        return v3_prover::generate_presentation(handle, credentials, self_attested_attrs);
+    }
+
     HANDLE_MAP.get_mut(handle, |obj| {
         obj.generate_proof(&credentials, &self_attested_attrs)
     })
 }
 
 pub fn retrieve_credentials(handle: u32) -> VcxResult<String> {
+    if v3_prover::PROVER_MAP.has_handle(handle) {
+        return v3_prover::retrieve_credentials(handle);
+    }
+
     HANDLE_MAP.get_mut(handle, |obj| {
         obj.retrieve_credentials()
     })
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    HANDLE_MAP.has_handle(handle)
+    HANDLE_MAP.has_handle(handle) || v3_prover::PROVER_MAP.has_handle(handle)
 }
 
 //TODO one function with credential
 pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(connection_handle) {
+        return v3_prover::get_presentation_request(connection_handle, msg_id);
+    }
+
     trace!("get_proof_request >>> connection_handle: {}, msg_id: {}", connection_handle, msg_id);
 
     let my_did = connection::get_pw_did(connection_handle)?;
@@ -581,6 +623,10 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
 
 //TODO one function with credential
 pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(connection_handle) {
+        return v3_prover::get_presentation_request_messages(connection_handle, match_name);
+    }
+
     trace!("get_proof_request_messages >>> connection_handle: {}, match_name: {:?}", connection_handle, match_name);
 
     let my_did = connection::get_pw_did(connection_handle)?;
@@ -628,6 +674,10 @@ fn _parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<ProofRe
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
+    if v3_prover::PROVER_MAP.has_handle(handle) {
+        return v3_prover::get_source_id(handle);
+    }
+
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_source_id().clone())
     }).map_err(handle_err)

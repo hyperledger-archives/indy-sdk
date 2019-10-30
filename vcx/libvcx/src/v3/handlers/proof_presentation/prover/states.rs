@@ -1,9 +1,9 @@
 use v3::handlers::connection;
-use v3::handlers::proof_presentation::messages::PresentationState;
-use v3::messages::proof_presentation::presentation::Presentation;
-use v3::messages::proof_presentation::presentation_request::PresentationRequestData;
+use v3::messages::proof_presentation::presentation_request::{PresentationRequestData, PresentationRequest};
+use v3::messages::proof_presentation::presentation::{Presentation, PresentationStatus};
 use v3::messages::ack::Ack;
 use v3::messages::error::ProblemReport;
+use messages::thread::Thread;
 
 use error::prelude::*;
 
@@ -13,7 +13,7 @@ pub struct ProverSM {
 }
 
 impl ProverSM {
-    pub fn new(presentation_request: PresentationRequestData) -> ProverSM {
+    pub fn new(presentation_request: PresentationRequest) -> ProverSM {
         ProverSM { state: ProverState::Initiated(InitialState { presentation_request }) }
     }
 }
@@ -21,7 +21,7 @@ impl ProverSM {
 // Possible Transitions:
 //
 // Initial -> PresentationPrepared, Finished
-// PresentationPrepared -> PresentationSent, Finished
+// PresentationPrepared -> PresentationSent
 // PresentationSent -> Finished
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ProverState {
@@ -43,43 +43,48 @@ pub enum ProverMessages {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InitialState {
-    pub presentation_request: PresentationRequestData,
+    pub presentation_request: PresentationRequest,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationPreparedState {
+    pub presentation_request: PresentationRequest,
     pub presentation: Presentation,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationSentState {
     pub connection_handle: u32,
+    pub presentation_request: PresentationRequest,
     pub presentation: Presentation,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FinishedState {
     connection_handle: u32,
+    pub presentation_request: PresentationRequest,
     presentation: Presentation,
-    presentation_state: PresentationState
+    status: PresentationStatus
 }
 
 impl From<(InitialState, Presentation)> for PresentationPreparedState {
     fn from((state, presentation): (InitialState, Presentation)) -> Self {
         trace!("transit state from InitialState to PresentationPreparedState");
         PresentationPreparedState {
+            presentation_request: state.presentation_request,
             presentation,
         }
     }
 }
 
-impl From<InitialState> for FinishedState {
-    fn from(state: InitialState) -> Self {
+impl From<(InitialState, ProblemReport)> for FinishedState {
+    fn from((state, problem_report): (InitialState, ProblemReport)) -> Self {
         trace!("transit state from InitialState to FinishedState");
         FinishedState {
             connection_handle: 0,
+            presentation_request: state.presentation_request,
             presentation: Presentation::create(),
-            presentation_state: PresentationState::Undefined
+            status: PresentationStatus::Undefined
         }
     }
 }
@@ -88,19 +93,9 @@ impl From<(PresentationPreparedState, u32)> for PresentationSentState {
     fn from((state, connection_handle): (PresentationPreparedState, u32)) -> Self {
         trace!("transit state from PresentationPreparedState to PresentationSentState");
         PresentationSentState {
+            presentation_request: state.presentation_request,
             presentation: state.presentation,
             connection_handle
-        }
-    }
-}
-
-impl From<(PresentationPreparedState, ProblemReport)> for FinishedState {
-    fn from((state, problem_report): (PresentationPreparedState, ProblemReport)) -> Self {
-        trace!("transit state from PresentationPreparedState to FinishedState");
-        FinishedState {
-            presentation: state.presentation,
-            connection_handle: 0,
-            presentation_state: PresentationState::Undefined,
         }
     }
 }
@@ -110,8 +105,9 @@ impl From<(PresentationSentState, Ack)> for FinishedState {
         trace!("transit state from PresentationSentState to FinishedState");
         FinishedState {
             connection_handle: state.connection_handle,
+            presentation_request: state.presentation_request,
             presentation: state.presentation,
-            presentation_state: PresentationState::Verified,
+            status: PresentationStatus::Verified,
         }
     }
 }
@@ -121,8 +117,9 @@ impl From<(PresentationSentState, ProblemReport)> for FinishedState {
         trace!("transit state from PresentationSentState to FinishedState");
         FinishedState {
             connection_handle: state.connection_handle,
+            presentation_request: state.presentation_request,
             presentation: state.presentation,
-            presentation_state: PresentationState::Invalid(problem_report),
+            status: PresentationStatus::Invalid(problem_report),
         }
     }
 }
@@ -137,7 +134,13 @@ impl ProverSM {
             ProverState::Initiated(state) => {
                 match message {
                     ProverMessages::PresentationPrepared(presentation) => {
+                        let presentation = presentation
+                            .set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()));
+
                         ProverState::PresentationPrepared((state, presentation).into())
+                    }
+                    ProverMessages::SendPresentationReject(problem_report) => {
+                        ProverState::Finished((state, problem_report).into())
                     }
                     _ => {
                         ProverState::Initiated(state)
@@ -160,7 +163,7 @@ impl ProverSM {
                     ProverMessages::PresentationAckReceived(ack) => {
                         ProverState::Finished((state, ack).into())
                     }
-                    ProverMessages::SendPresentationReject(problem_report) => {
+                    ProverMessages::PresentationRejectReceived(problem_report) => {
                         ProverState::Finished((state, problem_report).into())
                     }
                     _ => {
@@ -183,13 +186,22 @@ impl ProverSM {
         }
     }
 
-    pub fn presentation_state(&self) -> u32 {
+    pub fn has_transitions(&self) -> bool {
+        match self.state {
+            ProverState::Initiated(_) => false,
+            ProverState::PresentationPrepared(_) => true,
+            ProverState::PresentationSent(_) => true,
+            ProverState::Finished(_) => false,
+        }
+    }
+
+    pub fn presentation_status(&self) -> u32 {
         match self.state {
             ProverState::Finished(ref state) =>
-                match state.presentation_state {
-                    PresentationState::Undefined => 0,
-                    PresentationState::Verified => 1,
-                    PresentationState::Invalid(_) => 2,
+                match state.status {
+                    PresentationStatus::Undefined => 0,
+                    PresentationStatus::Verified => 1,
+                    PresentationStatus::Invalid(_) => 2,
                 },
             _ => 0
         }
@@ -204,12 +216,12 @@ impl ProverSM {
         }
     }
 
-    pub fn presentation_request(&self) -> VcxResult<&PresentationRequestData> {
+    pub fn presentation_request(&self) -> &PresentationRequest {
         match self.state {
-            ProverState::Initiated(ref state) => Ok(&state.presentation_request),
-            ProverState::PresentationPrepared(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
-            ProverState::PresentationSent(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
-            ProverState::Finished(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            ProverState::Initiated(ref state) => &state.presentation_request,
+            ProverState::PresentationPrepared(ref state) => &state.presentation_request,
+            ProverState::PresentationSent(ref state) => &state.presentation_request,
+            ProverState::Finished(ref state) => &state.presentation_request,
         }
     }
 

@@ -35,9 +35,10 @@ impl PresentationRequest {
     }
 
     pub fn set_request_presentations_attach(mut self, request_presentations: String) -> VcxResult<PresentationRequest> {
-        let json: Json = Json::new(::serde_json::from_str(&request_presentations)
-                                       .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Presentations Request: {:?}", err)))?,
-                                   ENCODING_BASE64
+        let json: Json = Json::new(
+            ::serde_json::from_str(&request_presentations)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Presentations Request: {:?}", err)))?,
+            ENCODING_BASE64
         )?;
         self.request_presentations_attach = Attachment::JSON(json);
         Ok(self)

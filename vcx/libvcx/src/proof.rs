@@ -20,6 +20,9 @@ use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::openssl::encode;
 use utils::qualifier::Qualifier;
+use messages::proofs::proof_message::get_credential_info;
+
+use v3::handlers::proof_presentation::verifier as v3_verifier;
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proof> = Default::default();
@@ -205,12 +208,10 @@ impl Proof {
             .clone()
             .ok_or(VcxError::from(VcxErrorKind::InvalidProof))?;
 
-        let credential_data = proof_msg.get_credential_info()?;
-
         let proof_json = self.build_proof_json()?;
         let proof_req_json = self.build_proof_req_json()?;
 
-        let valid = Proof::validate_indy_proof(&credential_data, &proof_json, &proof_req_json).map_err(|err| {
+        let valid = Proof::validate_indy_proof(&proof_json, &proof_req_json).map_err(|err| {
             error!("Error: {}, Proof {} wasn't valid", err, self.source_id);
             self.proof_state = ProofStateType::ProofInvalid;
             err.map(VcxErrorKind::InvalidProof, error::INVALID_PROOF.message)
@@ -227,8 +228,10 @@ impl Proof {
         Ok(error::SUCCESS.code_num)
     }
 
-    pub fn validate_indy_proof(credential_data: &Vec<CredInfo>, proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
+    pub fn validate_indy_proof(proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
         Proof::validate_proof_revealed_attributes(&proof_json)?;
+
+        let credential_data = get_credential_info(&proof_json)?;
 
         let credential_defs_json = Proof::build_credential_defs_json(&credential_data)
             .unwrap_or(json!({}).to_string());
@@ -414,6 +417,11 @@ pub fn create_proof(source_id: String,
                     requested_predicates: String,
                     revocation_details: String,
                     name: String) -> VcxResult<u32> {
+    // Initiate proof of new format -- redirect to v3 folder
+    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+        return v3_verifier::create_proof(source_id, requested_attrs, requested_predicates, revocation_details, name);
+    }
+
     trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}", source_id, requested_attrs, requested_predicates, name);
 
     // TODO: Get this to actually validate as json, not just check length.
@@ -456,10 +464,14 @@ pub fn create_proof(source_id: String,
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    PROOF_MAP.has_handle(handle)
+    PROOF_MAP.has_handle(handle) || v3_verifier::VERIFIER_MAP.has_handle(handle)
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
+    if v3_verifier::VERIFIER_MAP.has_handle(handle) {
+        return v3_verifier::update_state(handle, message);
+    }
+
     PROOF_MAP.get_mut(handle, |p| {
         match p.update_state(message.clone()) {
             Ok(x) => Ok(x),
@@ -472,52 +484,81 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
+    if v3_verifier::VERIFIER_MAP.has_handle(handle) {
+        return Ok(v3_verifier::get_state(handle));
+    }
+
     PROOF_MAP.get(handle, |p| {
         Ok(p.get_state())
     })
 }
 
 pub fn get_proof_state(handle: u32) -> VcxResult<u32> {
+    if v3_verifier::VERIFIER_MAP.has_handle(handle) {
+        return v3_verifier::get_proof_state(handle);
+    }
+
     PROOF_MAP.get(handle, |p| {
         Ok(p.get_proof_state())
     })
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
+    if v3_verifier::VERIFIER_MAP.has_handle(handle) {
+        return v3_verifier::release(handle);
+    }
+
     PROOF_MAP.release(handle).or(Err(VcxError::from(VcxErrorKind::InvalidProofHandle)))
 }
 
 pub fn release_all() {
     PROOF_MAP.drain().ok();
+    v3_verifier::release_all();
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
+    if v3_verifier::VERIFIER_MAP.has_handle(handle) {
+        return v3_verifier::to_string(handle);
+    }
+
     PROOF_MAP.get(handle, |p| {
         Proof::to_string(&p)
     })
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
+    if v3_verifier::VERIFIER_MAP.has_handle(handle) {
+        return v3_verifier::get_source_id(handle);
+    }
+
     PROOF_MAP.get(handle, |p| {
         Ok(p.get_source_id().clone())
     })
 }
 
 pub fn from_string(proof_data: &str) -> VcxResult<u32> {
-    let derived_proof: Proof = Proof::from_str(proof_data)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Proof: {}", err)))?;
-
-    let source_id = derived_proof.source_id.clone();
-    PROOF_MAP.add(derived_proof)
+    if let Ok(derived_proof) = Proof::from_str(proof_data) {
+        PROOF_MAP.add(derived_proof)
+    } else {
+        v3_verifier::from_string(proof_data)
+    }
 }
 
 pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
+    if v3_verifier::VERIFIER_MAP.has_handle(handle) {
+        return v3_verifier::generate_presentation_request_msg(handle);
+    }
+
     PROOF_MAP.get_mut(handle, |p| {
         p.generate_proof_request_msg()
     })
 }
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    if v3_verifier::VERIFIER_MAP.has_handle(handle) {
+        return v3_verifier::send_presentation_request(handle, connection_handle);
+    }
+
     PROOF_MAP.get_mut(handle, |p| {
         p.send_proof_request(connection_handle)
     })
@@ -536,6 +577,10 @@ fn parse_proof_payload(payload: &str) -> VcxResult<ProofMessage> {
 }
 
 pub fn get_proof(handle: u32) -> VcxResult<String> {
+    if v3_verifier::VERIFIER_MAP.has_handle(handle) {
+        return v3_verifier::get_presentation(handle);
+    }
+
     PROOF_MAP.get(handle, |p| {
         p.get_proof()
     })

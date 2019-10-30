@@ -330,6 +330,20 @@ impl ProofRequestData {
 
         Ok(self)
     }
+
+    pub fn to_string(&self) -> VcxResult<String> {
+        let mut proof_request_json = serde_json::to_string(&self)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequest: {:?}", err)))?;
+
+        match self.ver {
+            Some(ProofRequestVersion::V1) | None => {
+                proof_request_json = anoncreds::libindy_to_unqualified(&proof_request_json).unwrap();
+            }
+            _ => {}
+        };
+
+        Ok(proof_request_json)
+    }
 }
 
 impl Default for ProofRequestData {
