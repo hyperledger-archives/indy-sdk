@@ -43,8 +43,7 @@ impl IssuerSM {
         let (messages, _) = get_messages(conn_handle)?;
 
         let res: Option<(String, A2AMessage)> = messages.into_iter()
-            .filter_map(|message| {
-                let a2a_message = decode_message(conn_handle, message).ok()?;
+            .filter_map(|(_, a2a_message)| {
                 let thid = match &a2a_message {
                     A2AMessage::Ack(ref ack) => {
                         ack.thread.thid.clone()
