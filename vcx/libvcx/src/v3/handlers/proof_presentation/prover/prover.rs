@@ -3,14 +3,16 @@ use serde_json;
 use messages::ObjectWithVersion;
 use messages::get_message::Message;
 use error::prelude::*;
-use utils::error;
 use utils::libindy::anoncreds;
+use std::convert::TryInto;
 
 use v3::handlers::proof_presentation::prover::states::{ProverSM, ProverState, ProverMessages};
 
 use v3::handlers::connection;
-use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::A2AMessage;
+
+use messages::proofs::proof_request::ProofRequestMessage;
+use messages::proofs::proof_message::ProofMessage;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Prover {
@@ -22,12 +24,12 @@ impl Prover {
     const SERIALIZE_VERSION: &'static str = "2.0";
 
     pub fn create(source_id: &str, presentation_request: &str) -> VcxResult<Prover> {
-        let presentation_request: PresentationRequest = serde_json::from_str(presentation_request)
+        let proof_request_message: ProofRequestMessage = serde_json::from_str(presentation_request)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize PresentationRequest: {}", err)))?;
 
         Ok(Prover {
             source_id: source_id.to_string(),
-            state: ProverSM::new(presentation_request),
+            state: ProverSM::new(proof_request_message.try_into()?),
         })
     }
 
@@ -40,24 +42,28 @@ impl Prover {
         anoncreds::libindy_prover_get_credentials_for_proof_req(&presentation_request)
     }
 
-    pub fn generate_presentation(&mut self, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
-        self.step(ProverMessages::PreparePresentation((credentials, self_attested_attrs)))?;
-        Ok(error::SUCCESS.code_num)
+    pub fn generate_presentation(&mut self, credentials: String, self_attested_attrs: String) -> VcxResult<()> {
+        match self.step(ProverMessages::PreparePresentation((credentials, self_attested_attrs))) {
+            Err(err) => {
+                self.step(ProverMessages::PreparePresentationFail(err.to_string()))
+            }
+            Ok(_) => Ok(())
+        }
     }
 
     pub fn generate_presentation_msg(&self) -> VcxResult<String> {
-        self.state.presentation()?.to_json()
+        let proof: ProofMessage = self.state.presentation()?.clone().try_into()?;
+
+        ::serde_json::to_string(&proof)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
-    pub fn send_proof(&mut self, connection_handle: u32) -> VcxResult<u32> {
-        self.step(ProverMessages::SendPresentation(connection_handle))?;
-        return Ok(error::SUCCESS.code_num);
+    pub fn send_presentation(&mut self, connection_handle: u32) -> VcxResult<()> {
+        self.step(ProverMessages::SendPresentation(connection_handle))
     }
 
-    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<u32> {
-        if !self.state.has_transitions() {
-            return Ok(self.state());
-        }
+    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
+        if !self.state.has_transitions() { return Ok(()); }
 
         match message {
             Some(message_) => {
@@ -80,7 +86,7 @@ impl Prover {
             }
         }
 
-        Ok(error::SUCCESS.code_num)
+        Ok(())
     }
 
     pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
@@ -108,6 +114,9 @@ impl Prover {
             ProverState::PresentationPrepared(_) => {
                 // do not process messages
             }
+            ProverState::PresentationPreparationFailed(_) => {
+                // do not process messages
+            }
             ProverState::PresentationSent(ref state) => {
                 let thid = state.presentation.thread.thid.clone().unwrap_or_default();
                 match message {
@@ -132,6 +141,36 @@ impl Prover {
         };
 
         Ok(None)
+    }
+
+    pub fn get_presentation_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
+        let message = connection::get_message_by_id(connection_handle, msg_id.to_string())?;
+
+        let presentation_request: ProofRequestMessage = match message {
+            A2AMessage::PresentationRequest(presentation_request) => presentation_request.try_into()?,
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Message has different type"))
+        };
+
+        serde_json::to_string_pretty(&presentation_request)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize message: {}", err)))
+    }
+
+    pub fn get_presentation_request_messages(connection_handle: u32, match_name: Option<&str>) -> VcxResult<String> {
+        let (messages, _) = connection::get_messages(connection_handle)?;
+
+        let presentation_requests: Vec<ProofRequestMessage> =
+            messages
+                .into_iter()
+                .filter_map(|(_, message)| {
+                    match message {
+                        A2AMessage::PresentationRequest(presentation_request) => presentation_request.try_into().ok(),
+                        _ => None,
+                    }
+                })
+                .collect();
+
+        serde_json::to_string_pretty(&presentation_requests)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))
     }
 
     pub fn get_source_id(&self) -> String { self.source_id.clone() }

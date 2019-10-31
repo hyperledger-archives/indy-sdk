@@ -3,14 +3,9 @@ pub mod prover;
 
 use self::prover::Prover;
 
-use serde_json;
-
 use object_cache::ObjectCache;
+use utils::error;
 use error::prelude::*;
-
-use v3::handlers::connection;
-use v3::messages::proof_presentation::presentation_request::PresentationRequest;
-use v3::messages::A2AMessage;
 
 lazy_static! {
     pub static ref PROVER_MAP: ObjectCache<Prover>  = Default::default();
@@ -29,7 +24,8 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     PROVER_MAP.get_mut(handle, |prover| {
-        prover.update_state(message.as_ref().map(String::as_str))
+        prover.update_state(message.as_ref().map(String::as_str))?;
+        Ok(error::SUCCESS.code_num)
     })
 }
 
@@ -60,13 +56,15 @@ pub fn generate_proof_msg(handle: u32) -> VcxResult<String> {
 
 pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     PROVER_MAP.get_mut(handle, |prover| {
-        prover.send_proof(connection_handle)
+        prover.send_presentation(connection_handle)?;
+        Ok(error::SUCCESS.code_num)
     })
 }
 
 pub fn generate_presentation(handle: u32, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
     PROVER_MAP.get_mut(handle, |prover| {
-        prover.generate_presentation(credentials.clone(), self_attested_attrs.clone())
+        prover.generate_presentation(credentials.clone(), self_attested_attrs.clone())?;
+        Ok(error::SUCCESS.code_num)
     })
 }
 
@@ -81,33 +79,11 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 pub fn get_presentation_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
-    let message = connection::get_message_by_id(connection_handle, msg_id.to_string())?;
-
-    match message {
-        A2AMessage::PresentationRequest(presentation_request) => {
-            serde_json::to_string_pretty(&presentation_request)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize message: {}", err)))
-        }
-        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Message has different type"))
-    }
+    Prover::get_presentation_request(connection_handle, msg_id)
 }
 
 pub fn get_presentation_request_messages(connection_handle: u32, match_name: Option<&str>) -> VcxResult<String> {
-    let (messages, _) = connection::get_messages(connection_handle)?;
-
-    let presentation_requests: Vec<PresentationRequest> =
-        messages
-            .into_iter()
-            .filter_map(|(_, message)| {
-                match message {
-                    A2AMessage::PresentationRequest(presentation_request) => Some(presentation_request),
-                    _ => None,
-                }
-            })
-            .collect();
-
-    serde_json::to_string_pretty(&presentation_requests)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))
+    Prover::get_presentation_request_messages(connection_handle, match_name)
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {

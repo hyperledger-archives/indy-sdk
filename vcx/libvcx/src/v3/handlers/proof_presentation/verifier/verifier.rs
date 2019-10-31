@@ -1,5 +1,6 @@
 use utils::error;
 use error::prelude::*;
+use std::convert::TryInto;
 
 use messages::ObjectWithVersion;
 use messages::get_message::Message;
@@ -10,6 +11,9 @@ use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::error::ProblemReport;
 use v3::handlers::proof_presentation::verifier::states::{VerifierSM, VerifierState, VerifierMessages};
+
+use messages::proofs::proof_request::ProofRequestMessage;
+use messages::proofs::proof_message::ProofMessage;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
@@ -49,12 +53,8 @@ impl Verifier {
         self.state.presentation_status()
     }
 
-    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<u32> {
-        trace!("Verifier: update_state");
-
-        if !self.state.has_transitions() {
-            return Ok(self.state());
-        }
+    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
+        if !self.state.has_transitions() { return Ok(()); }
 
         match message {
             Some(message_) => {
@@ -77,7 +77,7 @@ impl Verifier {
             }
         }
 
-        Ok(error::SUCCESS.code_num)
+        Ok(())
     }
 
     pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
@@ -103,7 +103,7 @@ impl Verifier {
                     A2AMessage::Presentation(presentation) => {
                         if presentation.thread.is_reply(&thid) {
                             if let Err(err) = self.verify_presentation(presentation) {
-                                self.send_problem_report()?
+                                self.send_problem_report(err)?
                             }
                             return Ok(Some(uid));
                         }
@@ -131,30 +131,30 @@ impl Verifier {
         Ok(None)
     }
 
-    pub fn verify_presentation(&mut self, presentation: Presentation) -> VcxResult<u32> {
-        self.step(VerifierMessages::VerifyPresentation(presentation))?;
-        Ok(error::SUCCESS.code_num)
+    pub fn verify_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
+        self.step(VerifierMessages::VerifyPresentation(presentation))
     }
 
-    pub fn send_problem_report(&mut self) -> VcxResult<()> {
-        let problem_report = ProblemReport::create();
-        self.step(VerifierMessages::SendPresentationReject(problem_report))?;
-        Ok(())
+    pub fn send_problem_report(&mut self, err: VcxError) -> VcxResult<()> {
+        self.step(VerifierMessages::SendPresentationReject(err.to_string()))
     }
 
-    pub fn send_presentation_request(&mut self, connection_handle: u32) -> VcxResult<u32> {
-        self.step(VerifierMessages::SendPresentationRequest(connection_handle))?;
-        Ok(error::SUCCESS.code_num)
+    pub fn send_presentation_request(&mut self, connection_handle: u32) -> VcxResult<()> {
+        self.step(VerifierMessages::SendPresentationRequest(connection_handle))
     }
 
     pub fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
-        self.state.presentation_request()?
-            .to_json()
+        let proof_request: ProofRequestMessage = self.state.presentation_request()?.try_into()?;
+
+        ::serde_json::to_string(&proof_request)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
     pub fn get_proof(&self) -> VcxResult<String> {
-        self.state.presentation()?
-            .to_json()
+        let proof: ProofMessage = self.state.presentation()?.try_into()?;
+
+        ::serde_json::to_string(&proof)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
     pub fn from_str(data: &str) -> VcxResult<Self> {

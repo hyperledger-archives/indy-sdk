@@ -4,6 +4,7 @@ mod verifier;
 use self::verifier::Verifier;
 
 use object_cache::ObjectCache;
+use utils::error;
 use error::prelude::*;
 
 lazy_static! {
@@ -33,7 +34,8 @@ pub fn is_valid_handle(handle: u32) -> bool {
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     VERIFIER_MAP.get_mut(handle, |verifier| {
-        verifier.update_state(message.as_ref().map(String::as_str))
+        verifier.update_state(message.as_ref().map(String::as_str))?;
+        Ok(error::SUCCESS.code_num)
     })
 }
 
@@ -70,7 +72,8 @@ pub fn release_all() {
 
 pub fn send_presentation_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     VERIFIER_MAP.get_mut(handle, |verifier| {
-        verifier.send_presentation_request(connection_handle)
+        verifier.send_presentation_request(connection_handle)?;
+        Ok(error::SUCCESS.code_num)
     })
 }
 
