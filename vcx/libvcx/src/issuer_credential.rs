@@ -571,7 +571,7 @@ pub fn issuer_credential_create(cred_def_handle: u32,
 
     // Initiate connection of new format -- redirect to v3 folder
     if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
-        return v3::handlers::issuance::create_issuer_credential(cred_def_handle, &credential_data)
+        return v3::handlers::issuance::issuer_create_credential(cred_def_handle, &credential_data, &source_id)
     }
 
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
@@ -651,7 +651,7 @@ pub fn release_all() {
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    ISSUER_CREDENTIAL_MAP.has_handle(handle)
+    ISSUER_CREDENTIAL_MAP.has_handle(handle) || v3::handlers::issuance::ISSUE_CREDENTIAL_MAP.has_handle(handle)
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
@@ -719,6 +719,9 @@ pub fn get_credential_attributes(handle: u32) -> VcxResult<String> {
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
+    if v3::handlers::issuance::ISSUE_CREDENTIAL_MAP.has_handle(handle) {
+        return v3::handlers::issuance::get_issuer_source_id(handle)
+    }
     ISSUER_CREDENTIAL_MAP.get(handle, |i| {
         Ok(i.get_source_id().to_string())
     })

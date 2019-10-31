@@ -19,20 +19,28 @@ use messages::thread::Thread;
 
 pub struct IssuerSM {
     state: IssuerState,
+    source_id: String
 }
 
 impl IssuerSM {
-    pub fn new(cred_def_id: &str, credential_data: &str, rev_reg_id: Option<String>, tails_file: Option<String>) -> Self {
+    pub fn new(cred_def_id: &str, credential_data: &str, rev_reg_id: Option<String>, tails_file: Option<String>, source_id: String) -> Self {
         IssuerSM {
-            state: IssuerState::Initial(InitialState::new(cred_def_id, credential_data, rev_reg_id, tails_file))
+            state: IssuerState::Initial(InitialState::new(cred_def_id, credential_data, rev_reg_id, tails_file)),
+            source_id
         }
     }
 
-    pub fn step(state: IssuerState) -> Self {
+    pub fn get_source_id(&self) -> String {
+        self.source_id.clone()
+    }
+
+    pub fn step(state: IssuerState, source_id: String) -> Self {
         IssuerSM {
-            state
+            state,
+            source_id
         }
     }
+
     pub fn get_connection_handle(&self) -> u32 {
         self.state.get_connection_handle()
     }
@@ -95,7 +103,7 @@ impl IssuerSM {
     }
 
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<IssuerSM> {
-        let IssuerSM { state } = self;
+        let IssuerSM { state, source_id } = self;
         let state = match state {
             IssuerState::Initial(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialInit(connection_handle) => {
@@ -184,7 +192,7 @@ impl IssuerSM {
                 IssuerState::Finished(state_data)
             }
         };
-        Ok(IssuerSM::step(state))
+        Ok(IssuerSM::step(state, source_id))
     }
 }
 

@@ -20,14 +20,20 @@ use messages::MessageStatusCode;
 use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
 
 pub struct HolderSM {
-    state: HolderState
+    state: HolderState,
+    source_id: String
 }
 
 impl HolderSM {
-    pub fn new(offer: CredentialOffer) -> Self {
+    pub fn new(offer: CredentialOffer, source_id: String) -> Self {
         HolderSM {
-            state: HolderState::OfferReceived(OfferReceivedState::new(offer))
+            state: HolderState::OfferReceived(OfferReceivedState::new(offer)),
+            source_id
         }
+    }
+
+    pub fn get_source_id(&self) -> String {
+        self.source_id.clone()
     }
 
     pub fn get_status(&self) -> VcxStateType {
@@ -80,12 +86,12 @@ impl HolderSM {
         self.state.get_connection_handle()
     }
 
-    pub fn step(state: HolderState) -> Self {
-        HolderSM { state }
+    pub fn step(state: HolderState, source_id: String) -> Self {
+        HolderSM { state, source_id }
     }
 
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<HolderSM> {
-        let HolderSM { state } = self;
+        let HolderSM { state, source_id } = self;
         let state = match state {
             HolderState::OfferReceived(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequestSend(connection_handle) => {
@@ -149,7 +155,7 @@ impl HolderSM {
                 HolderState::Finished(state_data)
             }
         };
-        Ok(HolderSM::step(state))
+        Ok(HolderSM::step(state, source_id))
     }
 
     pub fn is_terminal_state(&self) -> bool {

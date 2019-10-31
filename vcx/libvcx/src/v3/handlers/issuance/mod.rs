@@ -25,11 +25,11 @@ lazy_static! {
 
 // Issuer
 
-pub fn create_issuer_credential(cred_def_handle: u32, credential_data: &str) -> VcxResult<u32> {
+pub fn issuer_create_credential(cred_def_handle: u32, credential_data: &str, source_id: &str) -> VcxResult<u32> {
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
     let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle)?;
     let tails_file = ::credential_def::get_tails_file(cred_def_handle)?;
-    let credential = IssuerSM::new(&cred_def_id, credential_data, rev_reg_id, tails_file);
+    let credential = IssuerSM::new(&cred_def_id, credential_data, rev_reg_id, tails_file, source_id.to_string());
 
     ISSUE_CREDENTIAL_MAP.add(credential)
         .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
@@ -79,12 +79,18 @@ pub fn issuer_get_status(credential_handle: u32) -> VcxResult<u32> {
     })
 }
 
+pub fn get_issuer_source_id(handle: u32) -> VcxResult<String> {
+    ISSUE_CREDENTIAL_MAP.get(handle, |issuer_sm| {
+        Ok(issuer_sm.get_source_id())
+    })
+}
+
 // Holder
 
-pub fn holder_create_credential(credential_offer: &str) -> VcxResult<u32> {
+pub fn holder_create_credential(credential_offer: &str, source_id: &str) -> VcxResult<u32> {
     let cred_offer: CredentialOffer = ::serde_json::from_str(credential_offer)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
-    let holder = HolderSM::new(cred_offer);
+    let holder = HolderSM::new(cred_offer, source_id.to_string());
     HOLD_CREDENTIAL_MAP.add(holder)
         .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
 }
@@ -140,4 +146,9 @@ pub fn get_credential_offer_messages(conn_handle: u32) -> VcxResult<Vec<Credenti
 }
 
 
+pub fn get_holder_source_id(handle: u32) -> VcxResult<String> {
+    HOLD_CREDENTIAL_MAP.get(handle, |holder_sm| {
+        Ok(holder_sm.get_source_id())
+    })
+}
 
