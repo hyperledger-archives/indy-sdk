@@ -1,6 +1,3 @@
-use serde_json;
-
-use settings;
 use utils::error;
 use error::prelude::*;
 
@@ -12,10 +9,7 @@ use v3::messages::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::error::ProblemReport;
-use v3::messages::ack::Ack;
 use v3::handlers::proof_presentation::verifier::states::{VerifierSM, VerifierState, VerifierMessages};
-
-use proof::Proof;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
@@ -104,32 +98,27 @@ impl Verifier {
                 // do not process message
             }
             VerifierState::PresentationRequestSent(ref state) => {
-                // TODO: FIXME better way of reply check
-                let thread = match message {
-                    A2AMessage::Presentation(ref presentation) => &presentation.thread,
-                    A2AMessage::PresentationProposal(ref presentation) => &presentation.thread,
-                    A2AMessage::CommonProblemReport(ref presentation) => &presentation.thread,
-                    _ => { return Ok(None); }
-                };
-
-                if !thread.is_reply(&state.presentation_request.id.0) {
-                    return Ok(None);
-                }
-
+                let thid = &state.presentation_request.id.0;
                 match message {
                     A2AMessage::Presentation(presentation) => {
-                        if let Err(err) = self.verify_presentation(presentation) {
-                            self.send_problem_report()?
+                        if presentation.thread.is_reply(&thid) {
+                            if let Err(err) = self.verify_presentation(presentation) {
+                                self.send_problem_report()?
+                            }
+                            return Ok(Some(uid));
                         }
-                        return Ok(Some(uid));
                     }
                     A2AMessage::PresentationProposal(proposal) => {
-                        self.step(VerifierMessages::PresentationProposalReceived(proposal))?;
-                        return Ok(Some(uid));
+                        if proposal.thread.is_reply(&thid) {
+                            self.step(VerifierMessages::PresentationProposalReceived(proposal))?;
+                            return Ok(Some(uid));
+                        }
                     }
                     A2AMessage::CommonProblemReport(problem_report) => {
-                        self.step(VerifierMessages::PresentationRejectReceived(problem_report))?;
-                        return Ok(Some(uid));
+                        if problem_report.thread.is_reply(&thid) {
+                            self.step(VerifierMessages::PresentationRejectReceived(problem_report))?;
+                            return Ok(Some(uid));
+                        }
                     }
                     _ => {}
                 }
@@ -143,20 +132,7 @@ impl Verifier {
     }
 
     pub fn verify_presentation(&mut self, presentation: Presentation) -> VcxResult<u32> {
-        let presentation_json = presentation.presentations_attach.content()?;
-
-        let presentation_request_json = self.state.presentation_request()?.request_presentations_attach.content()?;
-
-        let valid = Proof::validate_indy_proof(&&presentation_json, &presentation_request_json)?;
-
-        if !valid {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidProof, error::INVALID_PROOF.message));
-        }
-
-        let ack = Ack::create();
-
-        self.step(VerifierMessages::SendPresentationAck((presentation, ack)))?;
-
+        self.step(VerifierMessages::VerifyPresentation(presentation))?;
         Ok(error::SUCCESS.code_num)
     }
 
@@ -167,48 +143,18 @@ impl Verifier {
     }
 
     pub fn send_presentation_request(&mut self, connection_handle: u32) -> VcxResult<u32> {
-        let remote_did = connection::get_their_pw_verkey(connection_handle)?;
-
-        let presentation_request = self.build_proof_request(Some(&remote_did))?;
-
-        self.step(VerifierMessages::SendPresentationRequest((presentation_request, connection_handle)))?;
-
+        self.step(VerifierMessages::SendPresentationRequest(connection_handle))?;
         Ok(error::SUCCESS.code_num)
     }
 
-    pub fn build_proof_request(&self, remote_did: Option<&str>) -> VcxResult<PresentationRequest> {
-        let presentation_request: PresentationRequestData =
-            self.state.presentation_request_data()?.clone()
-                .set_format_version_for_did(&remote_did.unwrap_or_default());
-
-        let title = format!("{} wants you to share {}",
-                            settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?, presentation_request.name);
-
-        PresentationRequest::create()
-            .set_comment(title)
-            .set_request_presentations_attach(presentation_request.to_string()?)
-    }
-
     pub fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
-        let presentation_request: PresentationRequest =
-            match self.state.presentation_request() {
-                Ok(presentation_request) => presentation_request.clone(),
-                Err(_) => self.build_proof_request(None)?
-            };
-
-        let proof_request_json = serde_json::to_string(&presentation_request)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize PresentationRequest: {:?}", err)))?;
-
-        Ok(proof_request_json)
+        self.state.presentation_request()?
+            .to_json()
     }
 
     pub fn get_proof(&self) -> VcxResult<String> {
-        let presentation: &Presentation = self.state.presentation()?;
-
-        let proof_request_json = serde_json::to_string(&presentation)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize Presentation: {:?}", err)))?;
-
-        Ok(proof_request_json)
+        self.state.presentation()?
+            .to_json()
     }
 
     pub fn from_str(data: &str) -> VcxResult<Self> {

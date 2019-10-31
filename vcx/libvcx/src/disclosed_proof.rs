@@ -348,7 +348,10 @@ impl DisclosedProof {
 
         let proof_req = self.proof_request.as_ref().ok_or(VcxError::from_msg(VcxErrorKind::CreateProof, "Cannot get proof request"))?;
 
-        let proof = DisclosedProof::generate_indy_proof(credentials, self_attested_attrs, &proof_req.proof_request_data)?;
+        let proof_req_data_json = serde_json::to_string(&proof_req.proof_request_data)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))?;
+
+        let proof = DisclosedProof::generate_indy_proof(credentials, self_attested_attrs, &proof_req_data_json)?;
 
         let mut proof_msg = ProofMessage::new();
         proof_msg.libindy_proof = proof;
@@ -357,9 +360,9 @@ impl DisclosedProof {
         Ok(error::SUCCESS.code_num)
     }
 
-    pub fn generate_indy_proof(credentials: &str, self_attested_attrs: &str, proof_request: &ProofRequestData) -> VcxResult<String> {
-        let proof_req_data_json = serde_json::to_string(&proof_request)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))?;
+    pub fn generate_indy_proof(credentials: &str, self_attested_attrs: &str, proof_req_data_json: &str) -> VcxResult<String> {
+        let proof_request: ProofRequestData = serde_json::from_str(&proof_req_data_json)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize proof request: {}", err)))?;
 
         let mut credentials_identifiers = credential_def_identifiers(credentials, &proof_request)?;
 

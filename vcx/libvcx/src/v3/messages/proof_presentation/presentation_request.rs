@@ -47,6 +47,11 @@ impl PresentationRequest {
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::PresentationRequest(self.clone()) // TODO: THINK how to avoid clone
     }
+
+    pub fn to_json(&self) -> VcxResult<String>{
+        serde_json::to_string(self)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize PresentationRequest: {}", err)))
+    }
 }
 
 pub type PresentationRequestData = ProofRequestData;
