@@ -191,11 +191,14 @@ fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<Option<Strin
     let parsed_credential: serde_json::Value = serde_json::from_str(credential)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Credential Json: {}, err: {:?}", credential, err)))?;
 
-    //    let rev_reg_id = parsed_credential.as_object()
-    //        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?
-    //        .get("rev_reg_id").as_str().clone();
+    let rev_reg_id = match parsed_credential.as_object()
+        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?
+        .get("rev_reg_id") {
+        None => None,
+        Some(a) => a.as_str().map(|s| s.to_string())
+    };
 
-    Ok(None)
+    Ok(rev_reg_id)
 }
 
 fn _store_credential(credential: &issuance::credential::Credential,

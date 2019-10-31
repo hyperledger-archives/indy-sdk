@@ -6,6 +6,7 @@ pub mod holder;
 use api::VcxStateType;
 use error::prelude::*;
 use messages::get_message::Message;
+use messages::update_message::{UIDsByConn, update_messages};
 use object_cache::ObjectCache;
 use v3::messages::A2AMessage;
 use v3::messages::issuance::credential_offer::CredentialOffer;
@@ -14,6 +15,7 @@ use v3::handlers::issuance::issuer::IssuerSM;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::holder::HolderSM;
 use utils::error;
+use messages::MessageStatusCode;
 
 lazy_static! {
     pub static ref ISSUE_CREDENTIAL_MAP: ObjectCache<IssuerSM> = Default::default();
@@ -135,14 +137,26 @@ pub fn holder_get_status(credential_handle: u32) -> VcxResult<u32> {
 
 pub fn get_credential_offer_messages(conn_handle: u32) -> VcxResult<Vec<CredentialOffer>> {
     let (messages, _) = connection::get_messages(conn_handle)?;
-    Ok(messages.into_iter().filter_map(|(_, a2a_message)| {
+    let (uids, msgs): (Vec<String>, Vec<CredentialOffer>) = messages.into_iter().filter_map(|(uid, a2a_message)| {
         match &a2a_message {
             A2AMessage::CredentialOffer(ref credential) => {
-                Some(credential.clone())
+                Some((uid, credential.clone()))
             }
             _ => None
         }
-    }).collect())
+    }).fold((vec![], vec![]), |(mut uids, mut msgs), (uid, msg)| {
+        uids.push(uid);
+        msgs.push(msg);
+        (uids, msgs)
+    });
+
+    let messages_to_update = vec![UIDsByConn {
+        pairwise_did: connection::get_pw_did(conn_handle)?,
+        uids
+    }];
+
+    update_messages(MessageStatusCode::Reviewed, messages_to_update)?;
+    Ok(msgs)
 }
 
 
