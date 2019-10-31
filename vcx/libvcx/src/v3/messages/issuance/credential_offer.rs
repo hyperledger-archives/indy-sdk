@@ -1,4 +1,4 @@
-use v3::messages::MessageId;
+use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
 use v3::messages::issuance::{CredentialPreviewData, CredentialValueData, CredentialValue};
 use v3::messages::attachment::{Attachment, Json, ENCODING_BASE64};
 use error::{VcxError, VcxResult, VcxErrorKind};
@@ -6,6 +6,8 @@ use messages::thread::Thread;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialOffer {
+    #[serde(rename = "@type")]
+    pub msg_type: MessageType,
     #[serde(rename="@id")]
     pub id: MessageId,
     pub comment: String,
@@ -18,11 +20,12 @@ pub struct CredentialOffer {
 impl CredentialOffer {
     pub fn create() -> Self {
         CredentialOffer {
+            msg_type: MessageType::build(A2AMessageKinds::CredentialOffer),
             id: MessageId::new(),
             comment: String::new(),
             credential_preview: CredentialPreviewData::new(),
             offers_attach: Attachment::Blank,
-            thread: None
+            thread: None,
         }
     }
 

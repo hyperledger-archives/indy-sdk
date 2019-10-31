@@ -16,6 +16,7 @@ use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer};
 use credential_def::{get_rev_reg_id, get_tails_file};
 use messages::MessageStatusCode;
 use messages::thread::Thread;
+use issuer_credential::encode_attributes;
 
 pub struct IssuerSM {
     state: IssuerState,
@@ -147,9 +148,11 @@ impl IssuerSM {
                 CredentialIssuanceMessage::CredentialSend() => {
                     let credential_msg = _create_credential(&state_data.request, &state_data.rev_reg_id, &state_data.tails_file, &state_data.offer, &state_data.cred_data);
                     let conn_handle = state_data.connection_handle;
+                    let thread = Thread::new().set_thid(state_data.request.id.0.clone());
                     let (msg, state) = match credential_msg {
                         Ok(credential_msg) => {
                             let id = credential_msg.id.clone();
+                            let credential_msg = credential_msg.set_thread(thread);
                             let msg = A2AMessage::Credential(
                                 credential_msg
                             );
@@ -160,7 +163,7 @@ impl IssuerSM {
                                 ProblemReport::create()
                                     //TODO define some error codes inside RFC and use them here
                                     .set_description(0)
-                                    .set_thread(Thread::new().set_thid(state_data.request.id.0.clone()))
+                                    .set_thread(thread)
                             );
                             (msg, IssuerState::Finished(state_data.into()))
                         }
@@ -218,15 +221,18 @@ fn _append_credential_preview(cred_offer_msg: CredentialOffer, credential_json: 
 }
 
 fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, tails_file: &Option<String>, offer: &str, cred_data: &str) -> VcxResult<Credential> {
+
     let request = if let Attachment::JSON(json) = &request.requests_attach {
         json.get_data()?
     } else {
         return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Wrong messages"));
     };
 
+    let cred_data = encode_attributes(cred_data)?;
+
     let (credential, cred_id, revoc_reg_delta) = anoncreds::libindy_issuer_create_credential(offer,
                                                                                              &request,
-                                                                                             cred_data,
+                                                                                             &cred_data,
                                                                                              rev_reg_id.clone(),
                                                                                              tails_file.clone())?;
     Credential::create()

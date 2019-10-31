@@ -97,17 +97,22 @@ impl HolderSM {
                 CredentialIssuanceMessage::CredentialRequestSend(connection_handle) => {
                     let conn_handle = connection_handle;
                     let request = _make_credential_request(conn_handle, &state_data.offer);
-                    let (msg, state) = if let Ok((cred_request, req_meta, cred_def_json)) = request {
-                        let id = cred_request.id.clone();
-                        let msg = A2AMessage::CredentialRequest(cred_request);
-                        (msg, HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle, id).into()))
-                    } else {
-                        let msg = A2AMessage::CommonProblemReport(
-                            ProblemReport::create()
-                                //TODO define some error codes inside RFC and use them here
-                                .set_description(0)
-                        );
-                        (msg, HolderState::Finished(state_data.into()))
+                    let (msg, state) = match request {
+                        Ok((cred_request, req_meta, cred_def_json)) => {
+                            let cred_request = cred_request.set_thread(Thread::new().set_thid(state_data.offer.id.0.clone()));
+                            let id = cred_request.id.clone();
+                            let msg = A2AMessage::CredentialRequest(cred_request);
+                            (msg, HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle, id).into()))
+                        }
+                        Err(err) => {
+                            println!("err {:?}", err);
+                            let msg = A2AMessage::CommonProblemReport(
+                                ProblemReport::create()
+                                    //TODO define some error codes inside RFC and use them here
+                                    .set_description(0)
+                            );
+                            (msg, HolderState::Finished(state_data.into()))
+                        }
                     };
                     send_message(conn_handle, msg)?;
                     state
@@ -120,26 +125,30 @@ impl HolderSM {
             HolderState::RequestSent(state_data) => match cim {
                 CredentialIssuanceMessage::Credential(credential, connection_handle) => {
                     let result = _store_credential(&credential, &state_data.req_meta, &state_data.cred_def_json);
-                    let (msg, cred_id) = if let Ok(cred_id) = result {
-                        (
-                            A2AMessage::Ack(
-                                Ack::create()
-                                    .set_status(AckStatus::Ok)
-                                    .set_thread(Thread::new().set_thid(credential.id.0.clone()))
-                            ),
-                            Some(cred_id)
-                        )
-                    } else {
-                        (
-                            A2AMessage::CommonProblemReport(
-                                ProblemReport::create()
-                                    //TODO define some error codes inside RFC and use them here
-                                    .set_description(0)
-                            ),
-                            None
-                        )
+                    let (msg, cred_id) = match result {
+                        Ok(cred_id) => {
+                            (
+                                A2AMessage::Ack(
+                                    Ack::create()
+                                        .set_status(AckStatus::Ok)
+                                        .set_thread(Thread::new().set_thid(credential.id.0.clone()))
+                                ),
+                                Some(cred_id)
+                            )
+                        }
+                        Err(_err) => {
+                            (
+                                A2AMessage::CommonProblemReport(
+                                    ProblemReport::create()
+                                        //TODO define some error codes inside RFC and use them here
+                                        .set_description(0)
+                                        .set_thread(Thread::new().set_thid(credential.id.0.clone()))
+                                ),
+                                None
+                            )
+                        }
                     };
-                    send_message(connection_handle, msg)?;
+                    send_message(state_data.connection_handle, msg)?;
                     HolderState::Finished((state_data, cred_id).into())
                 }
                 CredentialIssuanceMessage::ProblemReport(_report) => {
@@ -178,18 +187,15 @@ fn _parse_cred_def_from_cred_offer(cred_offer: &str) -> VcxResult<String> {
     Ok(cred_def_id.to_string())
 }
 
-fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<String> {
+fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<Option<String>> {
     let parsed_credential: serde_json::Value = serde_json::from_str(credential)
-        .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Credential Json: {}, err: {:?}", credential, err)))?;
 
-    let rev_reg_id = parsed_credential.as_object()
-        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?
-        .get("rev_reg_id")
-        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?
-        .as_str()
-        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?;
+    //    let rev_reg_id = parsed_credential.as_object()
+    //        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?
+    //        .get("rev_reg_id").as_str().clone();
 
-    Ok(rev_reg_id.to_string())
+    Ok(None)
 }
 
 fn _store_credential(credential: &issuance::credential::Credential,
@@ -200,13 +206,18 @@ fn _store_credential(credential: &issuance::credential::Credential,
         return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Wrong messages"));
     };
     let rev_reg_id = _parse_rev_reg_id_from_credential(&credential_json)?;
-    let (_, rev_reg_def_json) = anoncreds::get_rev_reg_def_json(&rev_reg_id)?;
+    let rev_reg_def_json = if let Some(rev_reg_id) = rev_reg_id {
+        let (_, json) = anoncreds::get_rev_reg_def_json(&rev_reg_id)?;
+        Some(json)
+    } else {
+        None
+    };
 
     libindy_prover_store_credential(None,
                                     req_meta,
                                     &credential_json,
                                     cred_def_json,
-                                    Some(&rev_reg_def_json))
+                                    rev_reg_def_json.as_ref().map(String::as_str))
 }
 
 fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxResult<(CredentialRequest, String, String)> {
@@ -218,6 +229,6 @@ fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxRes
     };
     let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
     let (req, req_meta, cred_def_id, cred_def_json) =
-        Credential::create_credential_request(&my_did, &cred_offer, &cred_def_id)?;
+        Credential::create_credential_request(&cred_def_id, &my_did, &cred_offer)?;
     Ok((CredentialRequest::create().set_requests_attach(req)?, req_meta, cred_def_json))
 }

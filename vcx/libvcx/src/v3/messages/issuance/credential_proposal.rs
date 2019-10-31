@@ -1,10 +1,12 @@
-use v3::messages::MessageId;
+use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
 use v3::messages::issuance::CredentialPreviewData;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialProposal {
+    #[serde(rename = "@type")]
+    pub msg_type: MessageType,
     #[serde(rename="@id")]
     pub id: MessageId,
     pub comment: String,
@@ -17,12 +19,13 @@ pub struct CredentialProposal {
 impl CredentialProposal {
     pub fn create() -> Self {
         CredentialProposal {
+            msg_type: MessageType::build(A2AMessageKinds::CredentialProposal),
             id: MessageId::new(),
             comment: String::new(),
             credential_proposal: CredentialPreviewData::new(),
             schema_id: String::new(),
             cred_def_id: String::new(),
-            thread: None
+            thread: None,
         }
     }
 

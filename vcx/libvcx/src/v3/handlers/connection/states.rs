@@ -103,6 +103,13 @@ impl From<(RequestedState, ProblemReport)> for NullState {
     }
 }
 
+impl From<RequestedState> for RespondedState {
+    fn from(state: RequestedState) -> RespondedState {
+        trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
+        RespondedState { response: Response::create(), remote_info: RemoteConnectionInfo::from(state.request.clone()), prev_agent_info: state.prev_agent_info }
+    }
+}
+
 impl From<(RequestedState, Response)> for RespondedState {
     fn from((state, response): (RequestedState, Response)) -> RespondedState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
@@ -224,7 +231,7 @@ impl DidExchangeStateSM {
                                     .encode(&prev_agent_info.pw_vk)?;
 
                                 send_message(&signed_response.to_a2a_message(), &state.remote_info, &agent_info.pw_vk)?;
-                                ActorDidExchangeState::Inviter(DidExchangeState::Responded((state, response).into()))
+                                ActorDidExchangeState::Inviter(DidExchangeState::Responded(state.into()))
                             }
                             Messages::ReceivedProblemReport(problem_report) => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
