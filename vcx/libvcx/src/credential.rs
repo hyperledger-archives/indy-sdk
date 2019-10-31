@@ -491,6 +491,14 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResu
 pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String> {
     trace!("Credential::get_credential_offer_messages >>> connection_handle: {}", connection_handle);
 
+    if v3::handlers::connection::CONNECTION_MAP.has_handle(connection_handle) {
+        let msgs = v3::handlers::issuance::get_credential_offer_messages(connection_handle)?;
+        return serde_json::to_string(&msgs).
+            map_err(|err| {
+                VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot serialize Offers")
+            });
+    }
+
     debug!("checking agent for credential offers from connection {}", connection::get_source_id(connection_handle).unwrap_or_default());
     let my_did = connection::get_pw_did(connection_handle)?;
     let my_vk = connection::get_pw_verkey(connection_handle)?;

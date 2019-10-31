@@ -666,6 +666,9 @@ pub fn from_string(credential_data: &str) -> VcxResult<u32> {
 }
 
 pub fn generate_credential_offer_msg(handle: u32, connection_handle: u32) -> VcxResult<(String, String)> {
+//    if v3::handlers::issuance::ISSUE_CREDENTIAL_MAP.has_handle(handle) {
+//        return v3::handlers::issuance::generate_credential_offer_msg(handle, connection_handle)
+//    }
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
         i.generate_credential_offer_msg(connection_handle)
     })

@@ -127,5 +127,17 @@ pub fn holder_get_status(credential_handle: u32) -> VcxResult<u32> {
     })
 }
 
+pub fn get_credential_offer_messages(conn_handle: u32) -> VcxResult<Vec<CredentialOffer>> {
+    let (messages, _) = connection::get_messages(conn_handle)?;
+    Ok(messages.into_iter().filter_map(|(_, a2a_message)| {
+        match &a2a_message {
+            A2AMessage::CredentialOffer(ref credential) => {
+                Some(credential.clone())
+            }
+            _ => None
+        }
+    }).collect())
+}
+
 
 
