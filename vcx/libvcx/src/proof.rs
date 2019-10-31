@@ -899,7 +899,7 @@ mod tests {
             timestamp: None
         };
         let credentials = vec![cred1, cred2];
-        let credential_json = proof.build_credential_defs_json(&credentials).unwrap();
+        let credential_json = Proof::build_credential_defs_json(&credentials).unwrap();
 
         let json: Value = serde_json::from_str(CRED_DEF_JSON).unwrap();
         let expected = json!({CRED_DEF_ID:json}).to_string();
@@ -923,7 +923,7 @@ mod tests {
             timestamp: None
         };
         let credentials = vec![cred1, cred2];
-        let schema_json = proof.build_schemas_json(&credentials).unwrap();
+        let schema_json = Proof::build_schemas_json(&credentials).unwrap();
 
         let json: Value = serde_json::from_str(SCHEMA_JSON).unwrap();
         let expected = json!({SCHEMA_ID:json}).to_string();
@@ -947,7 +947,7 @@ mod tests {
             timestamp: None
         };
         let credentials = vec![cred1, cred2];
-        let rev_reg_defs_json = proof.build_rev_reg_defs_json(&credentials).unwrap();
+        let rev_reg_defs_json = Proof::build_rev_reg_defs_json(&credentials).unwrap();
 
         let json: Value = serde_json::from_str(&rev_def_json()).unwrap();
         let expected = json!({REV_REG_ID:json}).to_string();
@@ -971,7 +971,7 @@ mod tests {
             timestamp: Some(2),
         };
         let credentials = vec![cred1, cred2];
-        let rev_reg_json = proof.build_rev_reg_json(&credentials).unwrap();
+        let rev_reg_json = Proof::build_rev_reg_json(&credentials).unwrap();
 
         let json: Value = serde_json::from_str(REV_REG_JSON).unwrap();
         let expected = json!({REV_REG_ID:{"1":json}}).to_string();

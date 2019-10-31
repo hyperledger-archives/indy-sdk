@@ -774,7 +774,7 @@ mod tests {
         init!("true");
 
         let proof: DisclosedProof = Default::default();
-        assert_eq!(proof.build_schemas_json(&Vec::new()).unwrap(), "{}".to_string());
+        assert_eq!(DisclosedProof::build_schemas_json(&Vec::new()).unwrap(), "{}".to_string());
 
         let cred1 = CredInfo {
             requested_attr: "height_1".to_string(),
@@ -800,7 +800,7 @@ mod tests {
         };
         let creds = vec![cred1, cred2];
 
-        let schemas = proof.build_schemas_json(&creds).unwrap();
+        let schemas = DisclosedProof::build_schemas_json(&creds).unwrap();
         assert!(schemas.len() > 0);
         assert!(schemas.contains(r#""id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","name":"test-licence""#));
     }
@@ -821,7 +821,7 @@ mod tests {
             timestamp: None,
         }];
         let proof: DisclosedProof = Default::default();
-        assert_eq!(proof.build_schemas_json(&credential_ids).unwrap_err().kind(), VcxErrorKind::InvalidSchema);
+        assert_eq!(DisclosedProof::build_schemas_json(&credential_ids).unwrap_err().kind(), VcxErrorKind::InvalidSchema);
     }
 
     #[test]
@@ -852,7 +852,7 @@ mod tests {
         let creds = vec![cred1, cred2];
 
         let proof: DisclosedProof = Default::default();
-        let credential_def = proof.build_cred_def_json(&creds).unwrap();
+        let credential_def = DisclosedProof::build_cred_def_json(&creds).unwrap();
         assert!(credential_def.len() > 0);
         assert!(credential_def.contains(r#""id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2471","schemaId":"2471""#));
     }
@@ -873,7 +873,7 @@ mod tests {
             timestamp: None,
         }];
         let proof: DisclosedProof = Default::default();
-        assert_eq!(proof.build_cred_def_json(&credential_ids).unwrap_err().kind(), VcxErrorKind::InvalidProofCredentialData);
+        assert_eq!(DisclosedProof::build_cred_def_json(&credential_ids).unwrap_err().kind(), VcxErrorKind::InvalidProofCredentialData);
     }
 
     #[test]
