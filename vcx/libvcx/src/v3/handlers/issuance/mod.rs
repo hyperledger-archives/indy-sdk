@@ -13,6 +13,7 @@ use v3::handlers::connection;
 use v3::handlers::issuance::issuer::IssuerSM;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::holder::HolderSM;
+use utils::error;
 
 lazy_static! {
     pub static ref ISSUE_CREDENTIAL_MAP: ObjectCache<IssuerSM> = Default::default();
@@ -34,10 +35,10 @@ pub fn create_issuer_credential(cred_def_handle: u32, credential_data: &str) -> 
         .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
 }
 
-pub fn send_credential_offer(credential_handle: u32, connection_handle: u32) -> VcxResult<()> {
+pub fn send_credential_offer(credential_handle: u32, connection_handle: u32) -> VcxResult<u32> {
     ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
         issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(connection_handle))
-    })
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn issuer_update_status(credential_handle: u32, msg: Option<String>) -> VcxResult<u32> {
@@ -66,10 +67,10 @@ pub fn issuer_update_status(credential_handle: u32, msg: Option<String>) -> VcxR
     }
 }
 
-pub fn send_credential(credential_handle: u32, connection_handle: u32) -> VcxResult<()> {
+pub fn send_credential(credential_handle: u32, connection_handle: u32) -> VcxResult<u32> {
     ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
         issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend())
-    })
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn issuer_get_status(credential_handle: u32) -> VcxResult<u32> {
@@ -88,10 +89,10 @@ pub fn holder_create_credential(credential_offer: &str) -> VcxResult<u32> {
         .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
 }
 
-pub fn holder_send_request(credential_handle: u32, connection_handle: u32) -> VcxResult<()> {
+pub fn holder_send_request(credential_handle: u32, connection_handle: u32) -> VcxResult<u32> {
     HOLD_CREDENTIAL_MAP.map(credential_handle, |holder_sm| {
         holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(connection_handle))
-    })
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn holder_update_status(credential_handle: u32, msg: Option<String>) -> VcxResult<u32> {

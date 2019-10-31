@@ -1,3 +1,4 @@
+use utils::error;
 use error::prelude::*;
 use std::convert::TryInto;
 
@@ -8,6 +9,7 @@ use v3::handlers::connection;
 use v3::messages::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
+use v3::messages::error::ProblemReport;
 use v3::handlers::proof_presentation::verifier::states::{VerifierSM, VerifierState, VerifierMessages};
 
 use messages::proofs::proof_request::ProofRequestMessage;
