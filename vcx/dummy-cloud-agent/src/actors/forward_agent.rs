@@ -31,7 +31,6 @@ impl ForwardAgent {
                              admin: Option<Addr<Admin>>) -> ResponseFuture<Addr<ForwardAgent>, Error> {
         debug!("ForwardAgent::create_or_restore >> {:?} {:?}", config, wallet_storage_config);
         let admin1 = admin.clone();
-        let admin2 = admin.clone();
         future::ok(())
             .and_then(move |_| {
                 // Ensure Forward Agent wallet created

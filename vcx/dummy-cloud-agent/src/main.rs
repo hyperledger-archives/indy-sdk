@@ -38,6 +38,7 @@ use std::env;
 use std::fs::File;
 use actors::admin::Admin;
 use app::start_app_server;
+use app_admin::start_app_admin_server;
 use indy::wallet_plugin::{load_storage_library, serialize_storage_plugin_configuration, finish_loading_postgres};
 
 #[macro_use]
@@ -45,6 +46,7 @@ pub(crate) mod utils;
 
 pub(crate) mod actors;
 pub(crate) mod app;
+pub(crate) mod app_admin;
 pub(crate) mod domain;
 pub(crate) mod indy;
 
@@ -107,7 +109,8 @@ fn _start(config_path: &str) {
         server: server_config,
         wallet_storage: wallet_storage_config,
         protocol_type: protocol_type_config,
-        indy_runtime
+        indy_runtime,
+        server_admin: server_admin_config
     } = File::open(config_path)
         .context("Can't open config file")
         .and_then(|reader| serde_json::from_reader(reader)
@@ -138,7 +141,14 @@ fn _start(config_path: &str) {
 
         ProtocolType::set(protocol_type_config);
 
-        let admin = if app_config.enable_admin_api.unwrap_or(false) { Some(Admin::create()) } else { None };
+        let admin = match &server_admin_config {
+            Some(server_admin_config) if server_admin_config.enabled => {
+                let admin = Admin::create();
+                start_app_admin_server(server_admin_config, admin.clone());
+                Some(admin)
+            },
+            _ => None
+        };
         ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config, admin.clone())
             .map(move |forward_agent| {
                 start_app_server(server_config, app_config, forward_agent, admin)
