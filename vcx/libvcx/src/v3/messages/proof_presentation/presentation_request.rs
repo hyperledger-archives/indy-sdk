@@ -50,16 +50,30 @@ impl PresentationRequest {
     }
 }
 
-impl Into<VcxResult<PresentationRequest>> for ProofRequestMessage {
-    fn into(self) -> VcxResult<PresentationRequest> {
+//impl Into<VcxResult<PresentationRequest>> for ProofRequestMessage {
+//    fn into(self) -> VcxResult<PresentationRequest> {
+//        let mut presentation_request = PresentationRequest::create();
+//        presentation_request = presentation_request.set_request_presentations_attach(&self.proof_request_data)?;
+//        Ok(presentation_request)
+//    }
+//}
+
+use std::convert::TryInto;
+
+impl TryInto<PresentationRequest> for ProofRequestMessage {
+    type Error = VcxError;
+
+    fn try_into(self) -> Result<PresentationRequest, Self::Error> {
         let mut presentation_request = PresentationRequest::create();
         presentation_request = presentation_request.set_request_presentations_attach(&self.proof_request_data)?;
         Ok(presentation_request)
     }
 }
 
-impl Into<VcxResult<ProofRequestMessage>> for PresentationRequest {
-    fn into(self) -> VcxResult<ProofRequestMessage> {
+impl TryInto<ProofRequestMessage> for PresentationRequest {
+    type Error = VcxError;
+
+    fn try_into(self) -> Result<ProofRequestMessage, Self::Error> {
         let proof_request = ProofRequestMessage::create()
             .set_proof_request_data(
                 ::serde_json::from_str(&self.request_presentations_attach.content()?

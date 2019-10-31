@@ -4,11 +4,11 @@ use messages::ObjectWithVersion;
 use messages::get_message::Message;
 use error::prelude::*;
 use utils::libindy::anoncreds;
+use std::convert::TryInto;
 
 use v3::handlers::proof_presentation::prover::states::{ProverSM, ProverState, ProverMessages};
 
 use v3::handlers::connection;
-use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::A2AMessage;
 
 use messages::proofs::proof_request::ProofRequestMessage;
@@ -27,11 +27,9 @@ impl Prover {
         let proof_request_message: ProofRequestMessage = serde_json::from_str(presentation_request)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize PresentationRequest: {}", err)))?;
 
-        let presentation_request: VcxResult<PresentationRequest> = proof_request_message.into();
-
         Ok(Prover {
             source_id: source_id.to_string(),
-            state: ProverSM::new(presentation_request?),
+            state: ProverSM::new(proof_request_message.try_into()?),
         })
     }
 
@@ -54,9 +52,9 @@ impl Prover {
     }
 
     pub fn generate_presentation_msg(&self) -> VcxResult<String> {
-        let proof: VcxResult<ProofMessage> = self.state.presentation()?.clone().into();
+        let proof: ProofMessage = self.state.presentation()?.clone().try_into()?;
 
-        ::serde_json::to_string(&proof?)
+        ::serde_json::to_string(&proof)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
@@ -149,10 +147,7 @@ impl Prover {
         let message = connection::get_message_by_id(connection_handle, msg_id.to_string())?;
 
         let presentation_request: ProofRequestMessage = match message {
-            A2AMessage::PresentationRequest(presentation_request) => {
-                let proof_request: VcxResult<ProofRequestMessage> = presentation_request.into();
-                proof_request?
-            }
+            A2AMessage::PresentationRequest(presentation_request) => presentation_request.try_into()?,
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Message has different type"))
         };
 
@@ -168,10 +163,7 @@ impl Prover {
                 .into_iter()
                 .filter_map(|(_, message)| {
                     match message {
-                        A2AMessage::PresentationRequest(presentation_request) => {
-                            let proof_request: VcxResult<ProofRequestMessage> = presentation_request.into();
-                            proof_request.ok()
-                        }
+                        A2AMessage::PresentationRequest(presentation_request) => presentation_request.try_into().ok(),
                         _ => None,
                     }
                 })

@@ -7,6 +7,7 @@ use v3::messages::attachment::{
     ENCODING_BASE64
 };
 use messages::proofs::proof_message::ProofMessage;
+use std::convert::TryInto;
 
 use error::prelude::*;
 
@@ -81,8 +82,10 @@ impl PresentationStatus {
     }
 }
 
-impl Into<VcxResult<ProofMessage>> for Presentation {
-    fn into(self) -> VcxResult<ProofMessage> {
+impl TryInto<ProofMessage> for Presentation {
+    type Error = VcxError;
+
+    fn try_into(self) -> Result<ProofMessage, Self::Error> {
         let mut proof = ProofMessage::new();
         proof.libindy_proof = self.presentations_attach.content().unwrap();
         Ok(proof)

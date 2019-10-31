@@ -1,4 +1,5 @@
 use error::prelude::*;
+use std::convert::TryInto;
 
 use messages::ObjectWithVersion;
 use messages::get_message::Message;
@@ -141,16 +142,16 @@ impl Verifier {
     }
 
     pub fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
-        let proof_request: VcxResult<ProofRequestMessage> = self.state.presentation_request()?.into();
+        let proof_request: ProofRequestMessage = self.state.presentation_request()?.try_into()?;
 
-        ::serde_json::to_string(&proof_request?)
+        ::serde_json::to_string(&proof_request)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
     pub fn get_proof(&self) -> VcxResult<String> {
-        let proof: VcxResult<ProofMessage> = self.state.presentation()?.into();
+        let proof: ProofMessage = self.state.presentation()?.try_into()?;
 
-        ::serde_json::to_string(&proof?)
+        ::serde_json::to_string(&proof)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
