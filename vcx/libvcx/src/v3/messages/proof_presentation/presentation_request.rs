@@ -50,11 +50,25 @@ impl PresentationRequest {
     }
 }
 
-impl From<ProofRequestMessage> for PresentationRequest {
-    fn from(proof_request: ProofRequestMessage) -> Self {
+impl Into<VcxResult<PresentationRequest>> for ProofRequestMessage {
+    fn into(self) -> VcxResult<PresentationRequest> {
         let mut presentation_request = PresentationRequest::create();
-        presentation_request = presentation_request.set_request_presentations_attach(&proof_request.proof_request_data).unwrap();
-        presentation_request
+        presentation_request = presentation_request.set_request_presentations_attach(&self.proof_request_data)?;
+        Ok(presentation_request)
+    }
+}
+
+impl Into<VcxResult<ProofRequestMessage>> for PresentationRequest {
+    fn into(self) -> VcxResult<ProofRequestMessage> {
+        let proof_request = ProofRequestMessage::create()
+            .set_proof_request_data(
+                ::serde_json::from_str(&self.request_presentations_attach.content()?
+                ).map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err))?
+            )?
+            .type_version("1.0")?
+            .proof_data_version("0.1")?
+            .clone();
+        Ok(proof_request)
     }
 }
 

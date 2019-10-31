@@ -244,6 +244,11 @@ impl ProofRequestMessage {
         Ok(self)
     }
 
+    pub fn set_proof_request_data(&mut self, proof_request_data: ProofRequestData) -> VcxResult<&mut Self> {
+        self.proof_request_data = proof_request_data;
+        Ok(self)
+    }
+
     pub fn serialize_message(&mut self) -> VcxResult<String> {
         serde_json::to_string(self)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))

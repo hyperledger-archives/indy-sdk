@@ -6,6 +6,7 @@ use v3::messages::attachment::{
     Json,
     ENCODING_BASE64
 };
+use messages::proofs::proof_message::ProofMessage;
 
 use error::prelude::*;
 
@@ -77,5 +78,13 @@ impl PresentationStatus {
             PresentationStatus::Verified => 1,
             PresentationStatus::Invalid(_) => 2,
         }
+    }
+}
+
+impl Into<VcxResult<ProofMessage>> for Presentation {
+    fn into(self) -> VcxResult<ProofMessage> {
+        let mut proof = ProofMessage::new();
+        proof.libindy_proof = self.presentations_attach.content().unwrap();
+        Ok(proof)
     }
 }

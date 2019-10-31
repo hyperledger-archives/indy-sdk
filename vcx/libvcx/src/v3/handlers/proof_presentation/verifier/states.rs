@@ -224,12 +224,12 @@ impl VerifierSM {
         }
     }
 
-    pub fn presentation(&self) -> VcxResult<&Presentation> {
+    pub fn presentation(&self) -> VcxResult<Presentation> {
         match self.state {
             VerifierState::Initiated(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
             VerifierState::PresentationRequestSent(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
             VerifierState::Finished(ref state) => {
-                state.presentation.as_ref()
+                state.presentation.clone()
                     .ok_or(VcxError::from(VcxErrorKind::InvalidProofHandle))
             }
         }

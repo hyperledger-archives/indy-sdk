@@ -9,6 +9,9 @@ use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::handlers::proof_presentation::verifier::states::{VerifierSM, VerifierState, VerifierMessages};
 
+use messages::proofs::proof_request::ProofRequestMessage;
+use messages::proofs::proof_message::ProofMessage;
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
     source_id: String,
@@ -138,13 +141,17 @@ impl Verifier {
     }
 
     pub fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
-        self.state.presentation_request()?
-            .to_json()
+        let proof_request: VcxResult<ProofRequestMessage> = self.state.presentation_request()?.into();
+
+        ::serde_json::to_string(&proof_request?)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
     pub fn get_proof(&self) -> VcxResult<String> {
-        self.state.presentation()?
-            .to_json()
+        let proof: VcxResult<ProofMessage> = self.state.presentation()?.into();
+
+        ::serde_json::to_string(&proof?)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
     pub fn from_str(data: &str) -> VcxResult<Self> {
