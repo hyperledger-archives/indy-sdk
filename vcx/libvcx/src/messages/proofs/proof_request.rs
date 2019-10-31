@@ -249,6 +249,12 @@ impl ProofRequestMessage {
         Ok(self)
     }
 
+
+    pub fn set_thread_id(&mut self, thid: String) -> VcxResult<&mut Self> {
+        self.thread_id = Some(thid);
+        Ok(self)
+    }
+
     pub fn serialize_message(&mut self) -> VcxResult<String> {
         serde_json::to_string(self)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))
@@ -331,13 +337,14 @@ impl ProofRequestData {
         if Qualifier::is_fully_qualified(&my_did) && Qualifier::is_fully_qualified(&remote_did) {
             self.ver = Some(ProofRequestVersion::V2)
         } else {
-            let proof_request_json = serde_json::to_string(&self)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequestData: {:?}", err)))?;
-
-            let proof_request_json = anoncreds::libindy_to_unqualified(&proof_request_json)?;
-
-            self = serde_json::from_str(&proof_request_json)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ProofRequestData: {:?}", err)))?;
+            // TODO: to unqualified
+//            let proof_request_json = serde_json::to_string(&self)
+//                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequestData: {:?}", err)))?;
+//
+//            let proof_request_json = anoncreds::libindy_to_unqualified(&proof_request_json)?;
+//
+//            self = serde_json::from_str(&proof_request_json)
+//                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ProofRequestData: {:?}", err)))?;
 
             self.ver = Some(ProofRequestVersion::V1)
         }

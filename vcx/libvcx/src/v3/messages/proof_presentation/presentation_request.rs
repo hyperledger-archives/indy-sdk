@@ -29,6 +29,11 @@ impl PresentationRequest {
         }
     }
 
+    pub fn set_id(mut self, id: String) -> Self {
+        self.id = MessageId(id);
+        self
+    }
+
     pub fn set_comment(mut self, comment: String) -> Self {
         self.comment = comment;
         self
@@ -50,22 +55,16 @@ impl PresentationRequest {
     }
 }
 
-//impl Into<VcxResult<PresentationRequest>> for ProofRequestMessage {
-//    fn into(self) -> VcxResult<PresentationRequest> {
-//        let mut presentation_request = PresentationRequest::create();
-//        presentation_request = presentation_request.set_request_presentations_attach(&self.proof_request_data)?;
-//        Ok(presentation_request)
-//    }
-//}
-
 use std::convert::TryInto;
 
 impl TryInto<PresentationRequest> for ProofRequestMessage {
     type Error = VcxError;
 
     fn try_into(self) -> Result<PresentationRequest, Self::Error> {
-        let mut presentation_request = PresentationRequest::create();
-        presentation_request = presentation_request.set_request_presentations_attach(&self.proof_request_data)?;
+        let presentation_request = PresentationRequest::create()
+            .set_id(self.thread_id.unwrap_or_default())
+            .set_request_presentations_attach(&self.proof_request_data)?;
+
         Ok(presentation_request)
     }
 }
@@ -74,14 +73,16 @@ impl TryInto<ProofRequestMessage> for PresentationRequest {
     type Error = VcxError;
 
     fn try_into(self) -> Result<ProofRequestMessage, Self::Error> {
-        let proof_request = ProofRequestMessage::create()
+        let proof_request: ProofRequestMessage = ProofRequestMessage::create()
             .set_proof_request_data(
                 ::serde_json::from_str(&self.request_presentations_attach.content()?
                 ).map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err))?
             )?
             .type_version("1.0")?
             .proof_data_version("0.1")?
+            .set_thread_id(self.id.0.clone())?
             .clone();
+
         Ok(proof_request)
     }
 }
