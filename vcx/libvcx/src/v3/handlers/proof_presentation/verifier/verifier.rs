@@ -1,4 +1,3 @@
-use utils::error;
 use error::prelude::*;
 use std::convert::TryInto;
 
@@ -9,7 +8,6 @@ use v3::handlers::connection;
 use v3::messages::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
-use v3::messages::error::ProblemReport;
 use v3::handlers::proof_presentation::verifier::states::{VerifierSM, VerifierState, VerifierMessages};
 
 use messages::proofs::proof_request::ProofRequestMessage;
@@ -29,7 +27,8 @@ impl Verifier {
                   requested_predicates: String,
                   revocation_details: String,
                   name: String) -> VcxResult<Verifier> {
-        trace!("Verifier::create >>> source_id: {}", source_id);
+        trace!("Verifier::create >>> source_id: {:?}, requested_attrs: {:?}, requested_predicates: {:?}, revocation_details: {:?}, name: {:?}",
+               source_id, requested_attrs, requested_predicates, revocation_details, name);
 
         let presentation_request =
             PresentationRequestData::create()
@@ -54,6 +53,8 @@ impl Verifier {
     }
 
     pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
+        trace!("Verifier::update_state >>> message: {:?}", message);
+
         if !self.state.has_transitions() { return Ok(()); }
 
         match message {
@@ -65,15 +66,15 @@ impl Verifier {
 
                 let (messages, _) = connection::get_messages(connection_handle)?;
 
-                let uids = messages
-                    .into_iter()
-                    .map(|(uid, message)| self.handle_message(uid, message))
-                    .collect::<VcxResult<Vec<Option<String>>>>()?
-                    .into_iter()
-                    .filter_map(|e| e)
-                    .collect::<Vec<String>>();
-
-                connection::update_messages(connection_handle, uids)?;
+                for (uid, message) in messages {
+                    match self.handle_message(message)? {
+                        Some(_) => {
+                            connection::update_message_status(connection_handle, uid)?;
+                            break;
+                        }
+                        None => {}
+                    }
+                }
             }
         }
 
@@ -84,15 +85,16 @@ impl Verifier {
         let message: Message = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
 
-        let uid = message.uid.clone();
         let message = connection::decode_message(self.state.connection_handle()?, message)?;
 
-        self.handle_message(uid, message)?;
+        self.handle_message(message)?;
 
         Ok(())
     }
 
-    pub fn handle_message(&mut self, uid: String, message: A2AMessage) -> VcxResult<Option<String>> {
+    pub fn handle_message(&mut self, message: A2AMessage) -> VcxResult<Option<()>> {
+        trace!("Verifier::handle_message >>> message: {:?}", message);
+
         match self.state.state {
             VerifierState::Initiated(ref state) => {
                 // do not process message
@@ -105,19 +107,19 @@ impl Verifier {
                             if let Err(err) = self.verify_presentation(presentation) {
                                 self.send_problem_report(err)?
                             }
-                            return Ok(Some(uid));
+                            return Ok(Some(()));
                         }
                     }
                     A2AMessage::PresentationProposal(proposal) => {
                         if proposal.thread.is_reply(&thid) {
                             self.step(VerifierMessages::PresentationProposalReceived(proposal))?;
-                            return Ok(Some(uid));
+                            return Ok(Some(()));
                         }
                     }
                     A2AMessage::CommonProblemReport(problem_report) => {
                         if problem_report.thread.is_reply(&thid) {
                             self.step(VerifierMessages::PresentationRejectReceived(problem_report))?;
-                            return Ok(Some(uid));
+                            return Ok(Some(()));
                         }
                     }
                     _ => {}
@@ -132,18 +134,23 @@ impl Verifier {
     }
 
     pub fn verify_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
+        trace!("Verifier::verify_presentation >>> presentation: {:?}", presentation);
         self.step(VerifierMessages::VerifyPresentation(presentation))
     }
 
     pub fn send_problem_report(&mut self, err: VcxError) -> VcxResult<()> {
+        trace!("Verifier::send_problem_report >>> err: {:?}", err);
         self.step(VerifierMessages::SendPresentationReject(err.to_string()))
     }
 
     pub fn send_presentation_request(&mut self, connection_handle: u32) -> VcxResult<()> {
+        trace!("Verifier::send_presentation_request >>> connection_handle: {:?}", connection_handle);
         self.step(VerifierMessages::SendPresentationRequest(connection_handle))
     }
 
     pub fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
+        trace!("Verifier::generate_proof_request_msg >>>");
+
         let proof_request: ProofRequestMessage = self.state.presentation_request()?.try_into()?;
 
         ::serde_json::to_string(&proof_request)
@@ -151,6 +158,8 @@ impl Verifier {
     }
 
     pub fn get_proof(&self) -> VcxResult<String> {
+        trace!("Verifier::get_proof >>>");
+
         let proof: ProofMessage = self.state.presentation()?.try_into()?;
 
         ::serde_json::to_string(&proof)

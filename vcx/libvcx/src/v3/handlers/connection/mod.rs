@@ -143,10 +143,10 @@ impl Connection {
         Ok(error::SUCCESS.code_num)
     }
 
-    fn update_messages(&self, uids: Vec<String>) -> VcxResult<()> {
+    fn update_message_status(&self, uid: String) -> VcxResult<()> {
         let messages_to_update = vec![UIDsByConn {
             pairwise_did: self.agent_info().pw_did.clone(),
-            uids
+            uids: vec![uid]
         }];
 
         update_messages_status(MessageStatusCode::Reviewed, messages_to_update)
@@ -446,9 +446,9 @@ pub fn get_messages(handle: u32) -> VcxResult<(HashMap<String, A2AMessage>, Vec<
     })
 }
 
-pub fn update_messages(handle: u32, uids: Vec<String>) -> VcxResult<()> {
+pub fn update_message_status(handle: u32, uid: String) -> VcxResult<()> {
     CONNECTION_MAP.get(handle, |connection| {
-        connection.update_messages(uids.clone())
+        connection.update_message_status(uid.clone())
     })
 }
 
