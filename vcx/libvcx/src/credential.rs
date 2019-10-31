@@ -573,6 +573,10 @@ pub fn parse_json_offer(offer: &str) -> VcxResult<(CredentialOffer, Option<Payme
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
+    if v3::handlers::issuance::HOLD_CREDENTIAL_MAP.has_handle(handle) {
+        return v3::handlers::issuance::HOLD_CREDENTIAL_MAP.release(handle)
+            .or(Err(VcxError::from(VcxErrorKind::InvalidCredentialHandle)))
+    }
     HANDLE_MAP.release(handle).map_err(handle_err)
 }
 
