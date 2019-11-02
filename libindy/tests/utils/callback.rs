@@ -17,7 +17,7 @@ lazy_static! {
 }
 
 pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
-                               Option<extern fn(command_handle: i32,
+                               Option<extern fn(command_handle: CommandHandle,
                                                 err: ErrorCode)>) {
     let (sender, receiver) = channel();
 
@@ -29,7 +29,7 @@ pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
         sender.send(err).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         cb(err)
@@ -43,7 +43,7 @@ pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
 }
 
 pub fn _closure_to_cb_ec_i32() -> (Receiver<(ErrorCode, i32)>, i32,
-                                   Option<extern fn(command_handle: i32, err: ErrorCode,
+                                   Option<extern fn(command_handle: CommandHandle, err: ErrorCode,
                                                     c_i32: i32)>) {
     let (sender, receiver) = channel();
 
@@ -55,7 +55,7 @@ pub fn _closure_to_cb_ec_i32() -> (Receiver<(ErrorCode, i32)>, i32,
         sender.send((err, val)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, c_i32: i32) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, c_i32: i32) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         cb(err, c_i32)
@@ -95,7 +95,7 @@ pub fn _closure_to_cb_ec_wallethandle() -> (Receiver<(ErrorCode, WalletHandle)>,
 }
 
 pub fn _closure_to_cb_ec_i32_usize() -> (Receiver<(ErrorCode, i32, usize)>, i32,
-                                         Option<extern fn(command_handle: i32, err: ErrorCode,
+                                         Option<extern fn(command_handle: CommandHandle, err: ErrorCode,
                                                           c_i32: i32, c_usize: usize)>) {
     let (sender, receiver) = channel();
 
@@ -107,7 +107,7 @@ pub fn _closure_to_cb_ec_i32_usize() -> (Receiver<(ErrorCode, i32, usize)>, i32,
         sender.send((err, val, val_2)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, c_i32: i32, c_usize: usize) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, c_i32: i32, c_usize: usize) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         cb(err, c_i32, c_usize)
@@ -121,7 +121,7 @@ pub fn _closure_to_cb_ec_i32_usize() -> (Receiver<(ErrorCode, i32, usize)>, i32,
 }
 
 pub fn _closure_to_cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, i32,
-                                    Option<extern fn(command_handle: i32, err: ErrorCode,
+                                    Option<extern fn(command_handle: CommandHandle, err: ErrorCode,
                                                      valid: bool)>) {
     let (sender, receiver) = channel();
 
@@ -133,7 +133,7 @@ pub fn _closure_to_cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, i32,
         sender.send((err, val)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, valid: bool) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, valid: bool) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         cb(err, valid)
@@ -147,7 +147,7 @@ pub fn _closure_to_cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, i32,
 }
 
 pub fn _closure_to_cb_ec_string() -> (Receiver<(ErrorCode, String)>, i32,
-                                      Option<extern fn(command_handle: i32,
+                                      Option<extern fn(command_handle: CommandHandle,
                                                        err: ErrorCode,
                                                        c_str: *const c_char)>) {
     let (sender, receiver) = channel();
@@ -160,7 +160,7 @@ pub fn _closure_to_cb_ec_string() -> (Receiver<(ErrorCode, String)>, i32,
         sender.send((err, val)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, c_str: *const c_char) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, c_str: *const c_char) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         let metadata = unsafe { CStr::from_ptr(c_str).to_str().unwrap().to_string() };
@@ -175,7 +175,7 @@ pub fn _closure_to_cb_ec_string() -> (Receiver<(ErrorCode, String)>, i32,
 }
 
 pub fn _closure_to_cb_ec_string_string() -> (Receiver<(ErrorCode, String, String)>, i32,
-                                             Option<extern fn(command_handle: i32,
+                                             Option<extern fn(command_handle: CommandHandle,
                                                               err: ErrorCode,
                                                               str1: *const c_char,
                                                               str2: *const c_char)>) {
@@ -189,7 +189,7 @@ pub fn _closure_to_cb_ec_string_string() -> (Receiver<(ErrorCode, String, String
         sender.send((err, val1, val2)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, str1: *const c_char, str2: *const c_char) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, str1: *const c_char, str2: *const c_char) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         let str1 = unsafe { CStr::from_ptr(str1).to_str().unwrap().to_string() };
@@ -205,7 +205,7 @@ pub fn _closure_to_cb_ec_string_string() -> (Receiver<(ErrorCode, String, String
 }
 
 pub fn _closure_to_cb_ec_string_string_string() -> (Receiver<(ErrorCode, String, String, String)>, i32,
-                                                    Option<extern fn(command_handle: i32,
+                                                    Option<extern fn(command_handle: CommandHandle,
                                                                      err: ErrorCode,
                                                                      str1: *const c_char,
                                                                      str2: *const c_char,
@@ -220,7 +220,7 @@ pub fn _closure_to_cb_ec_string_string_string() -> (Receiver<(ErrorCode, String,
         sender.send((err, val1, val2, val3)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, str1: *const c_char, str2: *const c_char, str3: *const c_char) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, str1: *const c_char, str2: *const c_char, str3: *const c_char) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         let str1 = unsafe { CStr::from_ptr(str1).to_str().unwrap().to_string() };
@@ -237,7 +237,7 @@ pub fn _closure_to_cb_ec_string_string_string() -> (Receiver<(ErrorCode, String,
 }
 
 pub fn _closure_to_cb_ec_opt_string() -> (Receiver<(ErrorCode, Option<String>)>, i32,
-                                          Option<extern fn(command_handle: i32,
+                                          Option<extern fn(command_handle: CommandHandle,
                                                            err: ErrorCode,
                                                            str1: *const c_char)>) {
     let (sender, receiver) = channel();
@@ -250,7 +250,7 @@ pub fn _closure_to_cb_ec_opt_string() -> (Receiver<(ErrorCode, Option<String>)>,
         sender.send((err, val1)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, str1: *const c_char) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, str1: *const c_char) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         let str1 = if !str1.is_null() {
@@ -267,7 +267,7 @@ pub fn _closure_to_cb_ec_opt_string() -> (Receiver<(ErrorCode, Option<String>)>,
 }
 
 pub fn _closure_to_cb_ec_string_opt_string() -> (Receiver<(ErrorCode, String, Option<String>)>, i32,
-                                                 Option<extern fn(command_handle: i32,
+                                                 Option<extern fn(command_handle: CommandHandle,
                                                                   err: ErrorCode,
                                                                   str1: *const c_char,
                                                                   str2: *const c_char)>) {
@@ -281,7 +281,7 @@ pub fn _closure_to_cb_ec_string_opt_string() -> (Receiver<(ErrorCode, String, Op
         sender.send((err, val1, val2)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, str1: *const c_char, str2: *const c_char) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, str1: *const c_char, str2: *const c_char) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         let str1 = unsafe { CStr::from_ptr(str1).to_str().unwrap().to_string() };
@@ -299,7 +299,7 @@ pub fn _closure_to_cb_ec_string_opt_string() -> (Receiver<(ErrorCode, String, Op
 }
 
 pub fn _closure_to_cb_ec_string_opt_string_opt_string() -> (Receiver<(ErrorCode, String, Option<String>, Option<String>)>, i32,
-                                                            Option<extern fn(command_handle: i32,
+                                                            Option<extern fn(command_handle: CommandHandle,
                                                                              err: ErrorCode,
                                                                              str1: *const c_char,
                                                                              str2: *const c_char,
@@ -314,7 +314,7 @@ pub fn _closure_to_cb_ec_string_opt_string_opt_string() -> (Receiver<(ErrorCode,
         sender.send((err, val1, val2, val3)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, str1: *const c_char, str2: *const c_char, str3: *const c_char) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, str1: *const c_char, str2: *const c_char, str3: *const c_char) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         let str1 = unsafe { CStr::from_ptr(str1).to_str().unwrap().to_string() };
@@ -335,7 +335,7 @@ pub fn _closure_to_cb_ec_string_opt_string_opt_string() -> (Receiver<(ErrorCode,
 }
 
 pub fn _closure_to_cb_ec_vec_u8() -> (Receiver<(ErrorCode, Vec<u8>)>, i32,
-                                      Option<extern fn(command_handle: i32,
+                                      Option<extern fn(command_handle: CommandHandle,
                                                        err: ErrorCode,
                                                        raw: *const u8,
                                                        len: u32)>) {
@@ -349,7 +349,7 @@ pub fn _closure_to_cb_ec_vec_u8() -> (Receiver<(ErrorCode, Vec<u8>)>, i32,
         sender.send((err, val1)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, raw: *const u8, len: u32) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         let vec = unsafe { slice::from_raw_parts(raw, len as usize) };
@@ -364,7 +364,7 @@ pub fn _closure_to_cb_ec_vec_u8() -> (Receiver<(ErrorCode, Vec<u8>)>, i32,
 }
 
 pub fn _closure_to_cb_ec_string_vec_u8() -> (Receiver<(ErrorCode, String, Vec<u8>)>, i32,
-                                             Option<extern fn(command_handle: i32,
+                                             Option<extern fn(command_handle: CommandHandle,
                                                               err: ErrorCode,
                                                               str: *const c_char,
                                                               raw: *const u8,
@@ -379,7 +379,7 @@ pub fn _closure_to_cb_ec_string_vec_u8() -> (Receiver<(ErrorCode, String, Vec<u8
         sender.send((err, val1, val2)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, str: *const c_char, raw: *const u8, len: u32) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, str: *const c_char, raw: *const u8, len: u32) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         let str = unsafe { CStr::from_ptr(str).to_str().unwrap().to_string() };
@@ -395,7 +395,7 @@ pub fn _closure_to_cb_ec_string_vec_u8() -> (Receiver<(ErrorCode, String, Vec<u8
 }
 
 pub fn _closure_to_cb_ec_string_string_u64() -> (Receiver<(ErrorCode, String, String, u64)>, i32,
-                                                 Option<extern fn(command_handle: i32,
+                                                 Option<extern fn(command_handle: CommandHandle,
                                                                   err: ErrorCode,
                                                                   str1: *const c_char,
                                                                   str2: *const c_char,
@@ -410,7 +410,7 @@ pub fn _closure_to_cb_ec_string_string_u64() -> (Receiver<(ErrorCode, String, St
         sender.send((err, val1, val2, val3)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, str1: *const c_char, str2: *const c_char, val: u64) {
+    extern "C" fn _callback(command_handle: CommandHandle, err: ErrorCode, str1: *const c_char, str2: *const c_char, val: u64) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         let str1 = unsafe { CStr::from_ptr(str1).to_str().unwrap().to_string() };
