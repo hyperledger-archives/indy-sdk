@@ -1,6 +1,9 @@
+use indy_api_types::{WalletHandle, CommandHandle};
+
 use super::*;
 
-use {CString, Error, CommandHandle, WalletHandle};
+use {CString, Error};
+
 
 extern {
 

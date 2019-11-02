@@ -3,7 +3,7 @@
 extern crate libc;
 extern crate indyrs as indy;
 
-use api::{WalletHandle, PoolHandle, INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
+use indy_api_types::{WalletHandle, PoolHandle, INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
 
 pub mod callback;
 
@@ -47,6 +47,7 @@ pub mod ctypes;
 pub mod qualifier;
 
 pub(crate) use indy::ErrorCode;
+
 #[path = "../../indy-utils/src/inmem_wallet.rs"]
 pub mod inmem_wallet;
 

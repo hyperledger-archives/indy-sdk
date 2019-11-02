@@ -6,9 +6,8 @@ use self::futures::Future;
 
 use crate::utils::{ledger, pool};
 use crate::utils::types::ResponseType;
-use crate::api::{WalletHandle, PoolHandle};
 use crate::utils::constants::DEFAULT_METHOD_NAME;
-
+use indy_api_types::{WalletHandle, PoolHandle};
 
 pub fn create_store_and_publish_did(wallet_handle: WalletHandle, pool_handle: PoolHandle, role: &str, method_name: Option<&str>) -> Result<(String, String), IndyError> {
     let my_did_json = json!({"method_name": method_name, "seed": crate::utils::constants::TRUSTEE_SEED}).to_string();

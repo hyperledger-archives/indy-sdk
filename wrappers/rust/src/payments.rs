@@ -13,7 +13,7 @@ use ffi::{ResponseStringCB,
           ResponseBoolCB};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
-use {WalletHandle, CommandHandle};
+use indy_api_types::{WalletHandle, CommandHandle};
 use futures::IntoFuture;
 
 /// Create the payment address for specified payment method

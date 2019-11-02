@@ -14,6 +14,8 @@ extern crate serde_json;
 
 extern crate indy_sys as ffi;
 
+extern crate indy_api_types;
+
 #[macro_use]
 mod macros;
 
@@ -40,23 +42,25 @@ use std::ffi::CStr;
 
 use failure::{Backtrace, Fail};
 
-pub use ffi::{
+pub use indy_api_types::{
     IndyHandle,
     CommandHandle,
     WalletHandle,
     PoolHandle,
     SearchHandle,
+    StorageHandle
+};
+
+pub use ffi::{
     RecordHandle,
     TailWriterHandle,
-    StorageHandle,
     BlobStorageReaderHandle,
     BlobStorageReaderCfgHandle,
     MetadataHandle,
     Timeout,
-    TailsWriterHandle,
+    TailsWriterHandle
 };
-
-pub use ffi::{INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE};
+pub use indy_api_types::{INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE};
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///
