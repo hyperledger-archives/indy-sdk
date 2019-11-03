@@ -85,7 +85,7 @@ pub mod tests {
     static mut CONSUMER_CONFIG: u32 = 0;
     use indy::ErrorCode;
 
-    static INIT_PLUGIN: std::sync::Once = std::sync::ONCE_INIT;
+    static INIT_PLUGIN: std::sync::Once = std::sync::Once::new();
 
     lazy_static! {
         static ref CONFIG_STRING: ObjectCache<String> = Default::default();

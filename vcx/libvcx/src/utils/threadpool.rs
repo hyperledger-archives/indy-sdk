@@ -4,7 +4,7 @@ extern crate futures;
 use self::tokio_threadpool::{Builder, ThreadPool};
 use self::futures::Future;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use std::sync::Mutex;
 use std::collections::HashMap;
 use std::thread;
@@ -14,7 +14,7 @@ lazy_static! {
     static ref THREADPOOL: Mutex<HashMap<u32, ThreadPool>> = Default::default();
 }
 
-static TP_INIT: Once = ONCE_INIT;
+static TP_INIT: Once = Once::new();
 
 pub static mut TP_HANDLE: u32 = 0;
 
