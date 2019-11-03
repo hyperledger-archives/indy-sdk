@@ -197,7 +197,7 @@ impl IssuerCredential {
         self.state = VcxStateType::VcxStateOfferSent;
 
         debug!("sent credential offer for: {}", self.source_id);
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     fn generate_credential_msg(&mut self, connection_handle: u32) -> VcxResult<String> {
@@ -258,7 +258,7 @@ impl IssuerCredential {
         self.state = VcxStateType::VcxStateAccepted;
 
         debug!("issued credential: {}", self.source_id);
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     pub fn create_attributes_encodings(&self) -> VcxResult<String> {

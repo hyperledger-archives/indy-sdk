@@ -299,7 +299,7 @@ pub fn validate_payment_method() -> VcxResult<()> {
             return Ok(());
         }
     }
-    return Err(VcxError::from(VcxErrorKind::MissingPaymentMethod));
+    Err(VcxError::from(VcxErrorKind::MissingPaymentMethod))
 }
 
 pub fn get_payment_method() -> String {

@@ -23,7 +23,6 @@ pub fn init() {
 
     if size == 0 {
         info!("no threadpool created, threadpool_size is 0");
-        return;
     } else {
         TP_INIT.call_once(|| {
             let pool = Builder::new().pool_size(size).build();

@@ -327,7 +327,7 @@ impl Proof {
 
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     fn get_proof(&self) -> VcxResult<String> {

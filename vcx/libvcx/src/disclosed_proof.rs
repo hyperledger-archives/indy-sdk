@@ -433,7 +433,7 @@ impl DisclosedProof {
             .map_err(|err| err.extend("Could not send proof"))?;
 
         self.state = VcxStateType::VcxStateAccepted;
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
