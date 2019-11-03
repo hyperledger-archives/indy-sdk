@@ -43,7 +43,7 @@ RUN apt-get install -y wget
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.36.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.38.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 WORKDIR /home/indy
