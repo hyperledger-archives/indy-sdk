@@ -173,7 +173,7 @@ pub fn test_indy_mode_enabled() -> bool {
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
         None => false,
-        Some(value) => if value == "true" { true } else { if value == "indy" { true } else { false } },
+        Some(value) => value == "true" ||  value == "indy"
     }
 }
 
@@ -195,7 +195,7 @@ pub fn test_agency_mode_enabled() -> bool {
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
         None => false,
-        Some(value) => if value == "true" { true } else { if value == "agency" { true } else { false } },
+        Some(value) => value == "true" || value == "agency"
     }
 }
 
@@ -303,9 +303,7 @@ pub fn validate_payment_method() -> VcxResult<()> {
 }
 
 pub fn get_payment_method() -> String {
-    let payment_method = get_config_value(CONFIG_PAYMENT_METHOD).unwrap_or(DEFAULT_PAYMENT_METHOD.to_string());
-
-    payment_method
+    get_config_value(CONFIG_PAYMENT_METHOD).unwrap_or(DEFAULT_PAYMENT_METHOD.to_string())
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

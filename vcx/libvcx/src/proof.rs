@@ -395,13 +395,11 @@ impl Proof {
 
     fn get_state(&self) -> u32 {
         trace!("Proof::get_state >>>");
-        let state = self.state as u32;
-        state
+        self.state as u32
     }
 
     fn get_proof_state(&self) -> u32 {
-        let state = self.proof_state as u32;
-        state
+        self.proof_state as u32
     }
 
     fn get_proof_uuid(&self) -> &String { &self.msg_uid }
