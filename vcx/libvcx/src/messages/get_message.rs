@@ -279,9 +279,9 @@ impl Message {
         if let Some(ref payload) = self.payload {
             let payload = match payload {
                 MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
-                    .map(|payload| Payloads::PayloadV1(payload)),
+                    .map(Payloads::PayloadV1),
                 MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
-                    .map(|payload| Payloads::PayloadV2(payload))
+                    .map(Payloads::PayloadV2)
             };
 
             new_message.decrypted_payload = match payload {

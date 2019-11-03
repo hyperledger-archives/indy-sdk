@@ -185,8 +185,8 @@ pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: u32,
                 trace!(target: "vcx", "vcx_credentialdef_prepare_for_endorser(command_handle: {}, rc: {}, handle: {}, cred_def_req: {}, cred_def_req: {:?}, cred_def_req: {:?}) source_id: {}",
                        command_handle, error::SUCCESS.message, handle, cred_def_req, rev_reg_def_req, rev_reg_entry_req, credential_def::get_source_id(handle).unwrap_or_default());
                 let cred_def_req = CStringUtils::string_to_cstring(cred_def_req);
-                let rev_reg_def_req = rev_reg_def_req.map(|def| CStringUtils::string_to_cstring(def));
-                let rev_reg_entry_req = rev_reg_entry_req.map(|entry| CStringUtils::string_to_cstring(entry));
+                let rev_reg_def_req = rev_reg_def_req.map(CStringUtils::string_to_cstring);
+                let rev_reg_entry_req = rev_reg_entry_req.map(CStringUtils::string_to_cstring);
 
                 cb(command_handle, error::SUCCESS.code_num, handle, cred_def_req.as_ptr(),
                    rev_reg_def_req.as_ref().map(|def| def.as_ptr()).unwrap_or(ptr::null()),
