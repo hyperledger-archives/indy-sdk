@@ -14,7 +14,7 @@ use self::super::THRESHOLD;
 use crate::commands::Command;
 use crate::commands::CommandExecutor;
 use crate::commands::ledger::LedgerCommand;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::ledger::merkletree::merkletree::MerkleTree;
 use crate::services::pool::catchup::{build_catchup_req, CatchupProgress, check_cons_proofs, check_nodes_responses_on_status};
 use crate::services::pool::events::NetworkerEvent;
@@ -31,7 +31,7 @@ use super::ursa::bls::Generator;
 
 use std::hash::{Hash, Hasher};
 use log_derive::logfn;
-use crate::api::CommandHandle;
+use indy_api_types::CommandHandle;
 use rust_base58::FromBase58;
 
 struct RequestSM<T: Networker> {
@@ -926,7 +926,7 @@ pub mod tests {
         default_nodes.insert(NODE.to_string(), None);
 
         let node_names = vec![NODE, NODE_2, "n3", "n4"];
-        let mut nodes: Nodes = HashMap::new();
+        let mut nodes: Nodes = HashMap::with_capacity(nodes_cnt);
 
         for i in 0..nodes_cnt {
             nodes.insert(node_names[i].to_string(), None);
@@ -1268,7 +1268,7 @@ pub mod tests {
 
         fn add_state_proof_parser() {
             use crate::services::pool::{PoolService, REGISTERED_SP_PARSERS};
-            use crate::api::ErrorCode;
+            use indy_api_types::ErrorCode;
             use libc::c_char;
             use std::ffi::CString;
 

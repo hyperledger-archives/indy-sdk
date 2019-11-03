@@ -1,4 +1,4 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 use crate::domain::anoncreds::credential::AttributeValues;
 use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, NonRevocedInterval};

@@ -836,7 +836,17 @@
     NSString *getNymResponse = [[LedgerUtils sharedInstance] submitRetry:getNymRequest
                                                               poolHandle:poolHandle];
 
-    // 8. Get GET_NYM response metadata
+    // 8. Get GET_NYM response data
+    NSString *getNymResponseDataJson = nil;
+    ret = [[LedgerUtils sharedInstance] parseGetNymResponse:getNymResponse
+                                                    nymData:&getNymResponseDataJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::parseGetNymResponse() failed");
+
+    NSDictionary *getNymResponseData = [NSDictionary fromString:getNymResponseDataJson];
+    XCTAssertEqual(myDid, getNymResponseData[@"did"], @"LedgerUtils::sendRequestWithPoolHandle() failed");
+    XCTAssertEqual(myVerKey, getNymResponseData[@"verkey"], @"LedgerUtils::sendRequestWithPoolHandle() failed");
+
+    // 9. Get GET_NYM response metadata
     NSString *getNymResponseMetadataJson = nil;
     ret = [[LedgerUtils sharedInstance] getResponseMetadata:getNymResponse
                                            responseMetadata:&getNymResponseMetadataJson];

@@ -8,16 +8,16 @@ use hex;
 
 use serde_json;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
-use crate::services::wallet::{RecordOptions, WalletService};
-use crate::api::{WalletHandle, CommandHandle};
+use indy_wallet::{RecordOptions, WalletService};
+use indy_api_types::{WalletHandle, CommandHandle};
 use crate::domain::ledger::auth_rule::AuthRule;
 use crate::domain::crypto::did::DidValue;
 
-use crate::api::next_command_handle;
+use indy_utils::next_command_handle;
 use crate::commands::BoxedCallbackStringStringSend;
 
 pub enum PaymentsCommand {

@@ -1,10 +1,10 @@
 use libc::{c_void, c_char};
 
-use crate::api::ErrorCode;
-use crate::errors::prelude::*;
+use indy_api_types::ErrorCode;
+use indy_api_types::errors::prelude::*;
 
 use crate::utils::logger::{EnabledCB, LogCB, FlushCB, LibindyLogger, LibindyDefaultLogger, LOGGER_STATE};
-use crate::utils::ctypes;
+use indy_utils::ctypes;
 
 /// Set custom logger implementation.
 ///

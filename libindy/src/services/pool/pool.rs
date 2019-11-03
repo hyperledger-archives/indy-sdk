@@ -14,7 +14,7 @@ use crate::commands::ledger::LedgerCommand;
 use crate::commands::pool::PoolCommand;
 use crate::domain::ledger::request::ProtocolVersion;
 use crate::domain::pool::PoolOpenConfig;
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::ledger::merkletree::merkletree::MerkleTree;
 use crate::services::pool::commander::Commander;
 use crate::services::pool::events::*;
@@ -27,7 +27,7 @@ use crate::utils::crypto::ed25519_sign;
 
 use super::ursa::bls::VerKey;
 use super::zmq;
-use crate::api::{PoolHandle, CommandHandle};
+use indy_api_types::{PoolHandle, CommandHandle};
 
 struct PoolSM<T: Networker, R: RequestHandler<T>> {
     pool_name: String,
@@ -769,13 +769,13 @@ mod tests {
     use crate::utils::test;
     use crate::utils::test::test_pool_create_poolfile;
 
-    use crate::api::next_command_handle;
+    use indy_utils::next_command_handle;
 
     use super::*;
 
     mod pool {
         use super::*;
-        use crate::services::pool::next_pool_handle;
+        use indy_utils::next_pool_handle;
 
         #[test]
         pub fn pool_new_works() {
@@ -804,7 +804,7 @@ mod tests {
         use serde_json;
 
         use super::*;
-        use crate::services::pool::next_pool_handle;
+        use indy_utils::next_pool_handle;
         use crate::domain::pool::NUMBER_READ_NODES;
 
         #[test]

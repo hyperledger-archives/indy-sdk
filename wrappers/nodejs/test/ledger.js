@@ -45,8 +45,10 @@ test('ledger', async function (t) {
   t.false(resMetadata.hasOwnProperty('lastSeqNo'))
 
   req = await indy.buildGetNymRequest(trusteeDid, myDid)
-  t.is(req.identifier, trusteeDid)
-  t.is(req.operation.dest, myDid)
+  res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
+  var data = await indy.parseGetNymResponse(res)
+  t.is(myDid, data['did'])
+  t.is(myVerkey, data['verkey'])
 
   // Schema
   req = await indy.buildSchemaRequest(myDid, schema)
@@ -55,7 +57,7 @@ test('ledger', async function (t) {
 
   req = await indy.buildGetSchemaRequest(myDid, schemaId)
   res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
-  var data = await indy.parseGetSchemaResponse(res)
+  data = await indy.parseGetSchemaResponse(res)
   t.is(data[0], schemaId)
   t.is(data[1].name, schema.name)
   req = await indy.buildGetTxnRequest(myDid, null, data[1].seqNo)

@@ -46,17 +46,18 @@ use crate::domain::anoncreds::revocation_registry_delta::{
 };
 use crate::domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1, SchemaId};
 use crate::domain::crypto::did::DidValue;
-use crate::domain::wallet::Tags;
-use crate::errors::prelude::*;
+use indy_api_types::domain::wallet::Tags;
+use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::anoncreds::helpers::parse_cred_rev_id;
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
 use crate::services::pool::PoolService;
-use crate::services::wallet::{RecordOptions, WalletService};
+use indy_wallet::{RecordOptions, WalletService};
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
-use crate::api::{WalletHandle, CommandHandle, next_command_handle};
+use indy_api_types::{WalletHandle, CommandHandle};
+use indy_utils::next_command_handle;
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -435,7 +436,7 @@ impl IssuerCommandExecutor {
             Err(err) => return cb(Err(err))
         };
 
-        let cb_id = crate::utils::sequence::get_next_id();
+        let cb_id = indy_utils::sequence::get_next_id();
         self.pending_str_callbacks.borrow_mut().insert(cb_id, cb);
 
         let support_revocation = cred_def_config.map(|config| config.support_revocation).unwrap_or_default();

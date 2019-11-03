@@ -10,11 +10,11 @@ use crate::commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecu
 use crate::services::anoncreds::AnoncredsService;
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::pool::PoolService;
-use crate::services::wallet::WalletService;
+use indy_wallet::WalletService;
 use crate::services::crypto::CryptoService;
 use crate::services::anoncreds::helpers::to_unqualified;
 
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 use std::rc::Rc;
 

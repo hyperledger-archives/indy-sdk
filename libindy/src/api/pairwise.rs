@@ -1,9 +1,9 @@
-use crate::api::{ErrorCode, CommandHandle, WalletHandle};
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle};
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::pairwise::PairwiseCommand;
-use crate::errors::prelude::*;
-use crate::utils::ctypes;
-use crate::utils::validation::Validatable;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
+use indy_api_types::validation::Validatable;
 use crate::domain::crypto::did::DidValue;
 
 use libc::c_char;
