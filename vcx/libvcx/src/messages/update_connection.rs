@@ -84,9 +84,7 @@ impl DeleteConnectionBuilder {
 
         let response = httpclient::post_u8(&data)?;
 
-        let response = self.parse_response(&response)?;
-
-        Ok(response)
+        self.parse_response(&response)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
