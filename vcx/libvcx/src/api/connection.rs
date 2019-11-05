@@ -3,7 +3,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use std::ptr;
-use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection, process_acceptance_message};
+use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection, process_acceptance_message, send_generic_message};
 
 use error::prelude::*;
 use messages::get_message::Message;
@@ -540,7 +540,7 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
            command_handle, connection_handle, msg, send_msg_options);
 
     spawn(move || {
-        match ::messages::send_message::send_generic_message(connection_handle, &msg, &send_msg_options) {
+        match send_generic_message(connection_handle, &msg, &send_msg_options) {
             Ok(x) => {
                 trace!("vcx_connection_send_message_cb(command_handle: {}, rc: {}, msg_id: {})",
                        command_handle, error::SUCCESS.message, x);
