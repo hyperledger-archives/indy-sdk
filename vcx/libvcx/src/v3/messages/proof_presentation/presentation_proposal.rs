@@ -7,7 +7,9 @@ pub struct PresentationProposal {
     pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     pub presentation_proposal: PresentationPreview,
     #[serde(rename = "~thread")]
     pub thread: Thread,
@@ -50,7 +52,7 @@ impl Default for PresentationProposal {
         PresentationProposal {
             msg_type: MessageType::build(A2AMessageKinds::PresentationProposal),
             id: MessageId::new(),
-            comment: String::new(),
+            comment: None,
             presentation_proposal: PresentationPreview::default(),
             thread: Thread::new(),
         }

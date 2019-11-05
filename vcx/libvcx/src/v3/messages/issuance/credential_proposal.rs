@@ -13,6 +13,7 @@ pub struct CredentialProposal {
     pub credential_proposal: CredentialPreviewData,
     pub schema_id: String,
     pub cred_def_id: String,
+    #[serde(rename = "~thread")]
     pub thread: Option<Thread>
 }
 

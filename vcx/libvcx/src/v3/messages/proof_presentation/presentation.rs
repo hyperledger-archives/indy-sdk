@@ -18,7 +18,9 @@ pub struct Presentation {
     pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     #[serde(rename = "presentations~attach")]
     pub presentations_attach: Attachments,
     #[serde(rename = "~thread")]
@@ -30,14 +32,14 @@ impl Presentation {
         Presentation {
             msg_type: MessageType::build(A2AMessageKinds::Presentation),
             id: MessageId::new(),
-            comment: String::new(),
+            comment: None,
             presentations_attach: Attachments::new(),
             thread: Thread::new(),
         }
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
-        self.comment = comment;
+        self.comment = Some(comment);
         self
     }
 

@@ -15,6 +15,7 @@ pub struct CredentialOffer {
     #[serde(rename = "offers~attach")]
     pub offers_attach: Attachments,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "~thread")]
     pub thread: Option<Thread>
 }
 
