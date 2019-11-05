@@ -203,11 +203,7 @@ fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<Option<Strin
 
 fn _store_credential(credential: &issuance::credential::Credential,
                      req_meta: &str, cred_def_json: &str) -> VcxResult<String> {
-    let credential_json = if let Attachment::JSON(json) = &credential.credentials_attach {
-        json.get_data()?
-    } else {
-        return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Wrong messages"));
-    };
+    let credential_json = credential.credentials_attach.content()?;
     let rev_reg_id = _parse_rev_reg_id_from_credential(&credential_json)?;
     let rev_reg_def_json = if let Some(rev_reg_id) = rev_reg_id {
         let (_, json) = anoncreds::get_rev_reg_def_json(&rev_reg_id)?;
@@ -225,11 +221,7 @@ fn _store_credential(credential: &issuance::credential::Credential,
 
 fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxResult<(CredentialRequest, String, String)> {
     let my_did = get_pw_did(conn_handle)?;
-    let cred_offer = if let Attachment::JSON(json) = &offer.offers_attach {
-        json.get_data()?
-    } else {
-        return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Wrong messages"));
-    };
+    let cred_offer = offer.offers_attach.content()?;
     let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
     let (req, req_meta, cred_def_id, cred_def_json) =
         Credential::create_credential_request(&cred_def_id, &my_did, &cred_offer)?;

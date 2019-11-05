@@ -8,7 +8,7 @@ pub mod credential_request;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialPreviewData {
-    #[serde(rename="@type")]
+    #[serde(rename = "@type")]
     pub _type: MessageType,
     pub attributes: Vec<CredentialValue>
 }
@@ -21,16 +21,15 @@ impl CredentialPreviewData {
         }
     }
 
-    pub fn add_value(mut self, name: &str, value: &str, mime_type: &str) -> VcxResult<CredentialPreviewData> {
+    pub fn add_value(mut self, name: &str, value: &str, mime_type: CredentialValueType) -> VcxResult<CredentialPreviewData> {
         let data_value = match mime_type {
-            "text/plain" => {
-                Ok(CredentialValue::String(
-                    CredentialValueData {
-                        name: name.to_string(),
-                        value: value.to_string()
-                    })
-                )
-            },
+            CredentialValueType::Plain => {
+                Ok(CredentialValue {
+                    name: name.to_string(),
+                    value: value.to_string(),
+                    _type: None,
+                })
+            }
             _ => {
                 Err(VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, "Invalid mime type of value in credential preview"))
             }
@@ -41,14 +40,15 @@ impl CredentialPreviewData {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-#[serde(tag = "mime-type")]
-pub enum CredentialValue {
-    #[serde(rename="text/plain")]
-    String(CredentialValueData)
+pub struct CredentialValue {
+    pub name: String,
+    pub value: String,
+    #[serde(rename = "mime-type")]
+    pub _type: Option<CredentialValueType>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct CredentialValueData {
-    pub name: String,
-    pub value: String
+pub enum CredentialValueType {
+    #[serde(rename = "text/plain")]
+    Plain
 }

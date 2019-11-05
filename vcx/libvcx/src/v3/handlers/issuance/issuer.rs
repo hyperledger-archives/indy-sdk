@@ -7,7 +7,8 @@ use v3::messages::A2AMessage;
 use v3::messages::issuance::{
     credential::Credential,
     credential_request::CredentialRequest,
-    credential_offer::CredentialOffer
+    credential_offer::CredentialOffer,
+    CredentialValueType
 };
 use v3::messages::error::ProblemReport;
 use v3::messages::attachment::Attachment;
@@ -214,7 +215,7 @@ fn _append_credential_preview(cred_offer_msg: CredentialOffer, credential_json: 
             key,
             value.as_str()
                 .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Preview Json".to_string()))?,
-            "text/plain",
+            CredentialValueType::Plain,
         )?;
     }
     Ok(new_offer)
@@ -222,11 +223,7 @@ fn _append_credential_preview(cred_offer_msg: CredentialOffer, credential_json: 
 
 fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, tails_file: &Option<String>, offer: &str, cred_data: &str) -> VcxResult<Credential> {
 
-    let request = if let Attachment::JSON(json) = &request.requests_attach {
-        json.get_data()?
-    } else {
-        return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Wrong messages"));
-    };
+    let request = &request.requests_attach.content()?;
 
     let cred_data = encode_attributes(cred_data)?;
 

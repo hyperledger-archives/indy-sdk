@@ -1,5 +1,5 @@
 use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
-use v3::messages::attachment::{Attachment, Json, ENCODING_BASE64};
+use v3::messages::attachment::{Attachments, Attachment, Json, AttachmentEncoding};
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
 
@@ -7,11 +7,11 @@ use messages::thread::Thread;
 pub struct CredentialRequest {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
-    #[serde(rename="@id")]
+    #[serde(rename = "@id")]
     pub id: MessageId,
     pub comment: String,
-    #[serde(rename="requests~attach")]
-    pub requests_attach: Attachment,
+    #[serde(rename = "requests~attach")]
+    pub requests_attach: Attachments,
     pub thread: Thread
 }
 
@@ -21,7 +21,7 @@ impl CredentialRequest {
             msg_type: MessageType::build(A2AMessageKinds::CredentialRequest),
             id: MessageId::new(),
             comment: String::new(),
-            requests_attach: Attachment::Blank,
+            requests_attach: Attachments::new(),
             thread: Thread::new(),
         }
     }
@@ -32,12 +32,8 @@ impl CredentialRequest {
     }
 
     pub fn set_requests_attach(mut self, credential_request: String) -> VcxResult<CredentialRequest> {
-        let json: Json = Json::new(
-            serde_json::from_str(&credential_request)
-                .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Request Json".to_string()))?,
-            ENCODING_BASE64
-        )?;
-        self.requests_attach = Attachment::JSON(json);
+        let json: Json = Json::new(::serde_json::Value::String(credential_request), AttachmentEncoding::Base64)?;
+        self.requests_attach.add(Attachment::JSON(json));
         Ok(self)
     }
 

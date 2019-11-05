@@ -2,9 +2,10 @@ use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
 use v3::messages::error::ProblemReport;
 use messages::thread::Thread;
 use v3::messages::attachment::{
+    Attachments,
     Attachment,
     Json,
-    ENCODING_BASE64
+    AttachmentEncoding
 };
 use messages::proofs::proof_message::ProofMessage;
 use std::convert::TryInto;
@@ -19,7 +20,7 @@ pub struct Presentation {
     pub id: MessageId,
     pub comment: String,
     #[serde(rename = "presentations~attach")]
-    pub presentations_attach: Attachment,
+    pub presentations_attach: Attachments,
     #[serde(rename = "~thread")]
     pub thread: Thread,
 }
@@ -30,7 +31,7 @@ impl Presentation {
             msg_type: MessageType::build(A2AMessageKinds::Presentation),
             id: MessageId::new(),
             comment: String::new(),
-            presentations_attach: Attachment::Blank,
+            presentations_attach: Attachments::new(),
             thread: Thread::new(),
         }
     }
@@ -41,12 +42,8 @@ impl Presentation {
     }
 
     pub fn set_presentations_attach(mut self, presentations: String) -> VcxResult<Presentation> {
-        let json: Json = Json::new(
-            ::serde_json::from_str(&presentations)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Presentations: {:?}", err)))?,
-            ENCODING_BASE64
-        )?;
-        self.presentations_attach = Attachment::JSON(json);
+        let json: Json = Json::new(::serde_json::Value::String(presentations), AttachmentEncoding::Base64)?;
+        self.presentations_attach.add(Attachment::JSON(json));
         Ok(self)
     }
 
@@ -59,7 +56,7 @@ impl Presentation {
         A2AMessage::Presentation(self.clone()) // TODO: THINK how to avoid clone
     }
 
-    pub fn to_json(&self) -> VcxResult<String>{
+    pub fn to_json(&self) -> VcxResult<String> {
         serde_json::to_string(self)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize Presentation: {}", err)))
     }

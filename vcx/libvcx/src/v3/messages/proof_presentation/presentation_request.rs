@@ -1,8 +1,9 @@
 use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
 use v3::messages::attachment::{
+    Attachments,
     Attachment,
     Json,
-    ENCODING_BASE64
+    AttachmentEncoding
 };
 use error::prelude::*;
 
@@ -16,7 +17,7 @@ pub struct PresentationRequest {
     pub id: MessageId,
     pub comment: String,
     #[serde(rename = "request_presentations~attach")]
-    pub request_presentations_attach: Attachment
+    pub request_presentations_attach: Attachments
 }
 
 impl PresentationRequest {
@@ -25,7 +26,7 @@ impl PresentationRequest {
             msg_type: MessageType::build(A2AMessageKinds::PresentationRequest),
             id: MessageId::new(),
             comment: String::new(),
-            request_presentations_attach: Attachment::Blank,
+            request_presentations_attach: Attachments::new(),
         }
     }
 
@@ -40,8 +41,8 @@ impl PresentationRequest {
     }
 
     pub fn set_request_presentations_attach(mut self, request_presentations: &PresentationRequestData) -> VcxResult<PresentationRequest> {
-        let json: Json = Json::new(json!(request_presentations), ENCODING_BASE64)?;
-        self.request_presentations_attach = Attachment::JSON(json);
+        let json: Json = Json::new(json!(request_presentations), AttachmentEncoding::Base64)?;
+        self.request_presentations_attach.add(Attachment::JSON(json));
         Ok(self)
     }
 

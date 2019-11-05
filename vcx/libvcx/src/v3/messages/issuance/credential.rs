@@ -1,8 +1,9 @@
 use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
 use v3::messages::attachment::{
+    Attachments,
     Attachment,
     Json,
-    ENCODING_BASE64
+    AttachmentEncoding
 };
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
@@ -11,11 +12,11 @@ use messages::thread::Thread;
 pub struct Credential {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
-    #[serde(rename="@id")]
+    #[serde(rename = "@id")]
     pub id: MessageId,
     pub comment: String,
-    #[serde(rename="credentials~attach")]
-    pub credentials_attach: Attachment,
+    #[serde(rename = "credentials~attach")]
+    pub credentials_attach: Attachments,
     pub thread: Thread
 }
 
@@ -25,7 +26,7 @@ impl Credential {
             msg_type: MessageType::build(A2AMessageKinds::Credential),
             id: MessageId::new(),
             comment: String::new(),
-            credentials_attach: Attachment::Blank,
+            credentials_attach: Attachments::new(),
             thread: Thread::new()
         }
     }
@@ -36,12 +37,8 @@ impl Credential {
     }
 
     pub fn set_credential(mut self, credential: String) -> VcxResult<Credential> {
-        let json: Json = Json::new(
-            serde_json::from_str(&credential)
-                .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?,
-            ENCODING_BASE64
-        )?;
-        self.credentials_attach = Attachment::JSON(json);
+        let json: Json = Json::new(::serde_json::Value::String(credential), AttachmentEncoding::Base64)?;
+        self.credentials_attach.add(Attachment::JSON(json));
         Ok(self)
     }
 

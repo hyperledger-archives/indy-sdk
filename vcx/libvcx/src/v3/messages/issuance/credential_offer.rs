@@ -1,6 +1,6 @@
 use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
-use v3::messages::issuance::{CredentialPreviewData, CredentialValueData, CredentialValue};
-use v3::messages::attachment::{Attachment, Json, ENCODING_BASE64};
+use v3::messages::issuance::{CredentialPreviewData, CredentialValue, CredentialValueType};
+use v3::messages::attachment::{Attachments, Attachment, Json, AttachmentEncoding};
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
 
@@ -8,12 +8,13 @@ use messages::thread::Thread;
 pub struct CredentialOffer {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
-    #[serde(rename="@id")]
+    #[serde(rename = "@id")]
     pub id: MessageId,
     pub comment: String,
     pub credential_preview: CredentialPreviewData,
-    #[serde(rename="offers~attach")]
-    pub offers_attach: Attachment,
+    #[serde(rename = "offers~attach")]
+    pub offers_attach: Attachments,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub thread: Option<Thread>
 }
 
@@ -24,7 +25,7 @@ impl CredentialOffer {
             id: MessageId::new(),
             comment: String::new(),
             credential_preview: CredentialPreviewData::new(),
-            offers_attach: Attachment::Blank,
+            offers_attach: Attachments::new(),
             thread: None,
         }
     }
@@ -35,16 +36,12 @@ impl CredentialOffer {
     }
 
     pub fn set_offers_attach(mut self, credential_offer: &str) -> VcxResult<CredentialOffer> {
-        let json: Json = Json::new(
-            serde_json::from_str(credential_offer)
-                .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Offer Json".to_string()))?,
-            ENCODING_BASE64
-        )?;
-        self.offers_attach = Attachment::JSON(json);
+        let json: Json = Json::new(::serde_json::Value::String(credential_offer.to_string()), AttachmentEncoding::Base64)?;
+        self.offers_attach.add(Attachment::JSON(json));
         Ok(self)
     }
 
-    pub fn add_credential_preview_data(mut self, name: &str, value: &str, mime_type: &str) -> VcxResult<CredentialOffer> {
+    pub fn add_credential_preview_data(mut self, name: &str, value: &str, mime_type: CredentialValueType) -> VcxResult<CredentialOffer> {
         self.credential_preview = self.credential_preview.add_value(name, value, mime_type)?;
         Ok(self)
     }
