@@ -21,7 +21,7 @@ impl EncryptionEnvelope {
                             remote_connection_info: &RemoteConnectionInfo) -> VcxResult<Vec<u8>> {
         let message = match message {
             A2AMessage::Generic(message_) => message_.to_string(),
-            message => json!(message).to_string().to_string()
+            message => json!(message).to_string()
         };
 
         let receiver_keys = json!(remote_connection_info.recipient_keys).to_string();
@@ -46,7 +46,7 @@ impl EncryptionEnvelope {
     fn wrap_into_forward(message: Vec<u8>,
                          to: &str,
                          routing_key: &str) -> VcxResult<Vec<u8>> {
-        let message = Forward::new(to.to_string(), message)?;
+        let message = A2AMessage::Forward(Forward::new(to.to_string(), message)?);
 
         let message = json!(message).to_string();
         let receiver_keys = json!(vec![routing_key]).to_string();

@@ -1,7 +1,7 @@
 use std::u8;
 use messages::message_type::parse_message_type;
 
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
 
 pub mod ack;
@@ -15,8 +15,9 @@ pub mod issuance;
 
 pub mod proof_presentation;
 
+use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
-use v3::messages::connection::response::{SignedResponse};
+use v3::messages::connection::response::SignedResponse;
 use v3::messages::connection::problem_report::ProblemReport as ConnectionProblemReport;
 use v3::messages::forward::Forward;
 use v3::messages::error::ProblemReport as CommonProblemReport;
@@ -32,13 +33,13 @@ use v3::messages::proof_presentation::presentation_proposal::PresentationProposa
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::proof_presentation::presentation::Presentation;
 
-#[derive(Debug, Serialize, PartialEq)]
-#[serde(untagged)]
+#[derive(Debug, PartialEq)]
 pub enum A2AMessage {
     /// routing
     Forward(Forward),
 
     /// DID Exchange
+    ConnectionInvitation(Invitation),
     ConnectionRequest(Request),
     ConnectionResponse(SignedResponse),
     ConnectionProblemReport(ConnectionProblemReport),
@@ -71,6 +72,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
             "forward" => {
                 Forward::deserialize(value)
                     .map(|msg| A2AMessage::Forward(msg))
+                    .map_err(de::Error::custom)
+            }
+            "invitation" => {
+                Invitation::deserialize(value)
+                    .map(|msg| A2AMessage::ConnectionInvitation(msg))
                     .map_err(de::Error::custom)
             }
             "request" => {
@@ -138,13 +144,46 @@ impl<'de> Deserialize<'de> for A2AMessage {
     }
 }
 
+fn set_a2a_message_type<T>(msg: T, kind: A2AMessageKinds) -> Result<serde_json::Value, serde_json::Error> where T: Serialize {
+    let mut value = ::serde_json::to_value(msg)?;
+    let type_ = ::serde_json::to_value(MessageType::build(kind))?;
+    value.as_object_mut().unwrap().insert("@type".into(), type_);
+    Ok(value)
+}
+
+impl Serialize for A2AMessage {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let value = match self {
+            A2AMessage::Forward(msg) => set_a2a_message_type(msg, A2AMessageKinds::Forward),
+            A2AMessage::ConnectionInvitation(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeInvitation),
+            A2AMessage::ConnectionRequest(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeRequest),
+            A2AMessage::ConnectionResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeResponse),
+            A2AMessage::ConnectionProblemReport(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeProblemReport),
+            A2AMessage::Ack(msg) => set_a2a_message_type(msg, A2AMessageKinds::Ack),
+            A2AMessage::CommonProblemReport(msg) => set_a2a_message_type(msg, A2AMessageKinds::ProblemReport),
+            A2AMessage::CredentialProposal(msg) => set_a2a_message_type(msg, A2AMessageKinds::CredentialProposal),
+            A2AMessage::CredentialOffer(msg) => set_a2a_message_type(msg, A2AMessageKinds::CredentialOffer),
+            A2AMessage::CredentialRequest(msg) => set_a2a_message_type(msg, A2AMessageKinds::CredentialRequest),
+            A2AMessage::Credential(msg) => set_a2a_message_type(msg, A2AMessageKinds::Credential),
+            A2AMessage::PresentationProposal(msg) => set_a2a_message_type(msg, A2AMessageKinds::PresentationProposal),
+            A2AMessage::PresentationRequest(msg) => set_a2a_message_type(msg, A2AMessageKinds::PresentationRequest),
+            A2AMessage::Presentation(msg) => set_a2a_message_type(msg, A2AMessageKinds::Presentation),
+            A2AMessage::Generic(msg) => {
+                ::serde_json::to_value(msg)
+            }
+        }.map_err(ser::Error::custom)?;
+
+        value.serialize(serializer)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub enum A2AMessageKinds {
     Forward,
-    Invitation,
-    Request,
-    Response,
-    ConnectionProblemReport,
+    ExchangeInvitation,
+    ExchangeRequest,
+    ExchangeResponse,
+    ExchangeProblemReport,
     Ed25519Signature,
     Ack,
     CredentialOffer,
@@ -163,10 +202,10 @@ impl A2AMessageKinds {
     pub fn family(&self) -> MessageFamilies {
         match self {
             A2AMessageKinds::Forward => MessageFamilies::Routing,
-            A2AMessageKinds::Invitation => MessageFamilies::DidExchange,
-            A2AMessageKinds::Request => MessageFamilies::DidExchange,
-            A2AMessageKinds::Response => MessageFamilies::DidExchange,
-            A2AMessageKinds::ConnectionProblemReport => MessageFamilies::DidExchange,
+            A2AMessageKinds::ExchangeInvitation => MessageFamilies::DidExchange,
+            A2AMessageKinds::ExchangeRequest => MessageFamilies::DidExchange,
+            A2AMessageKinds::ExchangeResponse => MessageFamilies::DidExchange,
+            A2AMessageKinds::ExchangeProblemReport => MessageFamilies::DidExchange,
             A2AMessageKinds::Ack => MessageFamilies::Notification,
             A2AMessageKinds::ProblemReport => MessageFamilies::ReportProblem,
             A2AMessageKinds::Ed25519Signature => MessageFamilies::Signature,
@@ -185,10 +224,10 @@ impl A2AMessageKinds {
     pub fn name(&self) -> String {
         match self {
             A2AMessageKinds::Forward => "forward".to_string(),
-            A2AMessageKinds::Invitation => "invitation".to_string(),
-            A2AMessageKinds::Request => "request".to_string(),
-            A2AMessageKinds::Response => "response".to_string(),
-            A2AMessageKinds::ConnectionProblemReport => "problem_report".to_string(),
+            A2AMessageKinds::ExchangeInvitation => "invitation".to_string(),
+            A2AMessageKinds::ExchangeRequest => "request".to_string(),
+            A2AMessageKinds::ExchangeResponse => "response".to_string(),
+            A2AMessageKinds::ExchangeProblemReport => "problem_report".to_string(),
             A2AMessageKinds::Ack => "ack".to_string(),
             A2AMessageKinds::ProblemReport => "problem-report".to_string(),
             A2AMessageKinds::Ed25519Signature => "ed25519Sha512_single".to_string(),

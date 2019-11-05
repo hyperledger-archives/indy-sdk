@@ -5,8 +5,6 @@ use messages::thread::Thread;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialProposal {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     #[serde(rename="@id")]
     pub id: MessageId,
     pub comment: String,
@@ -19,7 +17,6 @@ pub struct CredentialProposal {
 impl CredentialProposal {
     pub fn create() -> Self {
         CredentialProposal {
-            msg_type: MessageType::build(A2AMessageKinds::CredentialProposal),
             id: MessageId::new(),
             comment: String::new(),
             credential_proposal: CredentialPreviewData::new(),

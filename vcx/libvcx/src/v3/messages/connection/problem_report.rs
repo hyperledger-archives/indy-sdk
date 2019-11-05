@@ -1,10 +1,8 @@
-use v3::messages::{MessageType, MessageId, A2AMessage, A2AMessageKinds};
+use v3::messages::{MessageId, A2AMessage};
 use messages::thread::Thread;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProblemReport {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
     #[serde(rename = "problem-code")]
@@ -75,7 +73,6 @@ impl ProblemReport {
 impl Default for ProblemReport {
     fn default() -> ProblemReport {
         ProblemReport {
-            msg_type: MessageType::build(A2AMessageKinds::ConnectionProblemReport),
             id: MessageId::new(),
             problem_code: ProblemCode::Empty,
             explain: String::new(),
@@ -110,7 +107,6 @@ pub mod tests {
 
     fn _problem_report() -> ProblemReport {
         ProblemReport {
-            msg_type: MessageType::build(A2AMessageKinds::ConnectionProblemReport),
             id:  _id(),
             problem_code: _problem_code(),
             explain: _explain(),

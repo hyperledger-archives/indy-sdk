@@ -1,4 +1,4 @@
-use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
+use v3::messages::{MessageId, A2AMessage};
 use v3::messages::error::ProblemReport;
 use messages::thread::Thread;
 use v3::messages::attachment::{
@@ -14,8 +14,6 @@ use error::prelude::*;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Presentation {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
     pub comment: String,
@@ -28,7 +26,6 @@ pub struct Presentation {
 impl Presentation {
     pub fn create() -> Self {
         Presentation {
-            msg_type: MessageType::build(A2AMessageKinds::Presentation),
             id: MessageId::new(),
             comment: String::new(),
             presentations_attach: Attachments::new(),

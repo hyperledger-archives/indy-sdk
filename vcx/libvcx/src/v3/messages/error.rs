@@ -1,11 +1,9 @@
-use v3::messages::{MessageType, MessageId, A2AMessage, A2AMessageKinds};
+use v3::messages::{MessageId, A2AMessage};
 use messages::thread::Thread;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProblemReport {
-    #[serde(rename = "@type")]
-    msg_type: MessageType,
     #[serde(rename = "@id")]
     id: MessageId,
     #[serde(rename = "~thread")]
@@ -29,7 +27,6 @@ pub struct ProblemReport {
 impl ProblemReport {
     pub fn create() -> Self {
         ProblemReport {
-            msg_type: MessageType::build(A2AMessageKinds::ProblemReport),
             id: MessageId::new(),
             thread: Thread::new(),
             description: Description {

@@ -1,4 +1,4 @@
-use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
+use v3::messages::{MessageId, A2AMessage};
 use v3::messages::attachment::{
     Attachments,
     Attachment,
@@ -11,8 +11,6 @@ pub use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData,
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct PresentationRequest {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
     pub comment: String,
@@ -23,7 +21,6 @@ pub struct PresentationRequest {
 impl PresentationRequest {
     pub fn create() -> Self {
         PresentationRequest {
-            msg_type: MessageType::build(A2AMessageKinds::PresentationRequest),
             id: MessageId::new(),
             comment: String::new(),
             request_presentations_attach: Attachments::new(),

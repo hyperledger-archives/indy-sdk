@@ -10,8 +10,6 @@ use v3::messages::{MessageType, MessageId, A2AMessageKinds};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Response {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
     #[serde(rename = "~thread")]
@@ -27,8 +25,6 @@ pub struct ConnectionData {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct SignedResponse {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
     #[serde(rename = "~thread")]
@@ -80,7 +76,7 @@ impl Response {
     pub fn encode(&self, key: &str) -> VcxResult<SignedResponse> {
         let connection_data = json!(self.connection).to_string();
 
-        let now: u64 =  time::get_time().sec as u64;
+        let now: u64 = time::get_time().sec as u64;
 
         let mut sig_data = now.to_be_bytes().to_vec();
 
@@ -100,7 +96,6 @@ impl Response {
         };
 
         let signed_response = SignedResponse {
-            msg_type: self.msg_type.clone(),
             id: self.id.clone(),
             thread: self.thread.clone(),
             connection_sig,
@@ -128,7 +123,6 @@ impl SignedResponse {
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err.to_string()))?;
 
         Ok(Response {
-            msg_type: self.msg_type,
             id: self.id,
             thread: self.thread,
             connection,
@@ -143,7 +137,6 @@ impl SignedResponse {
 impl Default for Response {
     fn default() -> Response {
         Response {
-            msg_type: MessageType::build(A2AMessageKinds::Response),
             id: MessageId::new(),
             thread: Thread::new(),
             connection: ConnectionData {
@@ -178,7 +171,6 @@ pub mod tests {
 
     pub fn _response() -> Response {
         Response {
-            msg_type: MessageType::build(A2AMessageKinds::Response),
             id: _id(),
             thread: _thread(),
             connection: ConnectionData {
@@ -190,7 +182,6 @@ pub mod tests {
 
     fn _encoded_response() -> SignedResponse {
         SignedResponse {
-            msg_type: MessageType::build(A2AMessageKinds::Response),
             id: _id(),
             thread: _thread(),
             connection_sig: ConnectionSignature {

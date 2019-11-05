@@ -1,10 +1,8 @@
 use messages::thread::Thread;
-use v3::messages::{MessageType, MessageId, A2AMessage, A2AMessageKinds};
+use v3::messages::{MessageId, A2AMessage};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Ack {
-    #[serde(rename = "@type")]
-    msg_type: MessageType,
     #[serde(rename = "@id")]
     id: MessageId,
     status: AckStatus,
@@ -50,7 +48,6 @@ impl Ack {
 impl Default for Ack {
     fn default() -> Ack {
         Ack {
-            msg_type: MessageType::build(A2AMessageKinds::Ack),
             id: MessageId::new(),
             status: AckStatus::Ok,
             thread: Thread::new(),
@@ -69,7 +66,6 @@ pub mod tests {
 
     pub fn _ack() -> Ack {
         Ack {
-            msg_type: MessageType::build(A2AMessageKinds::Ack),
             id: _id(),
             status: AckStatus::Fail,
             thread: _thread(),

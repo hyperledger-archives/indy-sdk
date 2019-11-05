@@ -1,11 +1,9 @@
 use v3::messages::A2AMessage;
 use v3::messages::connection::did_doc::*;
-use v3::messages::{MessageType, MessageId, A2AMessageKinds};
+use v3::messages::MessageId;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Request {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
     pub label: String,
@@ -21,7 +19,6 @@ pub struct ConnectionData {
 impl Default for Request {
     fn default() -> Request {
         Request {
-            msg_type: MessageType::build(A2AMessageKinds::Request),
             id: MessageId::new(),
             label: String::new(),
             connection: ConnectionData {
@@ -83,7 +80,6 @@ pub mod tests {
 
     pub fn _request() -> Request {
         Request {
-            msg_type: MessageType::build(A2AMessageKinds::Request),
             id: _id(),
             label: _label(),
             connection: ConnectionData {

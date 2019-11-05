@@ -1,9 +1,7 @@
-use v3::messages::{MessageType, A2AMessageKinds, MessageId};
+use v3::messages::{A2AMessage, MessageId};
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Invitation {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
     pub label: String,
@@ -45,12 +43,15 @@ impl Invitation {
         self.routing_keys = routing_keys;
         self
     }
+
+    pub fn to_a2a_message(&self) -> A2AMessage {
+        A2AMessage::ConnectionInvitation(self.clone()) // TODO: THINK how to avoid clone
+    }
 }
 
 impl Default for Invitation {
     fn default() -> Invitation {
         Invitation {
-            msg_type: MessageType::build(A2AMessageKinds::Invitation),
             id: MessageId::new(),
             label: String::new(),
             service_endpoint: String::new(),
@@ -71,7 +72,6 @@ pub mod tests {
 
     pub fn _invitation() -> Invitation {
         Invitation {
-            msg_type: MessageType::build(A2AMessageKinds::Invitation),
             id: _id(),
             label: _label(),
             recipient_keys: _recipient_keys(),

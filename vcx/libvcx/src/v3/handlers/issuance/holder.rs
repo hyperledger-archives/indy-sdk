@@ -105,7 +105,6 @@ impl HolderSM {
                             (msg, HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle, id).into()))
                         }
                         Err(err) => {
-                            println!("err {:?}", err);
                             let msg = A2AMessage::CommonProblemReport(
                                 ProblemReport::create()
                                     //TODO define some error codes inside RFC and use them here

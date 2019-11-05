@@ -1,10 +1,7 @@
 use error::prelude::*;
-use v3::messages::{A2AMessageKinds, MessageType};
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct Forward {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     pub to: String,
     #[serde(rename = "msg")]
     pub msg: ::serde_json::Value,
@@ -16,7 +13,6 @@ impl Forward {
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
         Ok(Forward {
-            msg_type: MessageType::build(A2AMessageKinds::Forward),
             to,
             msg,
         })
@@ -38,7 +34,6 @@ pub mod tests {
 
     fn _forward() -> Forward {
         Forward {
-            msg_type: MessageType::build(A2AMessageKinds::Forward),
             to: _to(),
             msg: _msg(),
         }

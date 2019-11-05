@@ -72,7 +72,7 @@ impl Connection {
 
     pub fn get_invite_details(&self) -> VcxResult<String> {
         if let Some(invitation) = self.state.get_invitation() {
-            return Ok(json!(invitation).to_string());
+            return Ok(json!(invitation.to_a2a_message()).to_string());
         } else if let Some(remote_info) = self.state.remote_connection_info() {
             return Ok(json!(remote_info).to_string());
         } else {
