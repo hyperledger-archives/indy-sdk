@@ -26,10 +26,17 @@ struct ProofTopic {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum Restrictions {
+    V1(Vec<Filter>),
+    V2(::serde_json::Value)
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct AttrInfo {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub restrictions: Option<Vec<Filter>>,
+    pub restrictions: Option<Restrictions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub non_revoked: Option<NonRevokedInterval>
 }
@@ -51,7 +58,7 @@ pub struct PredicateInfo {
     pub p_type: String,
     pub p_value: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub restrictions: Option<Vec<Filter>>,
+    pub restrictions: Option<Restrictions>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub non_revoked: Option<NonRevokedInterval>
 }
@@ -211,27 +218,28 @@ impl ProofRequestMessage {
         Ok(self)
     }
 
-    fn process_restrictions(&self, restrictions: Option<Vec<Filter>>) -> Option<Vec<Filter>> {
-        if let Some(ProofRequestVersion::V2) = self.proof_request_data.ver.as_ref() {
-            return restrictions;
+    fn process_restrictions(&self, restrictions: Option<Restrictions>) -> Option<Restrictions> {
+        match restrictions {
+            Some(Restrictions::V2(restrictions)) => Some(Restrictions::V2(restrictions)),
+            Some(Restrictions::V1(restrictions)) => {
+                Some(Restrictions::V1(
+                    restrictions
+                        .into_iter()
+                        .map(|filter| {
+                            Filter {
+                                schema_id: filter.schema_id.as_ref().and_then(|schema_id| anoncreds::libindy_to_unqualified(&schema_id).ok()),
+                                schema_issuer_did: filter.schema_issuer_did.as_ref().and_then(|schema_issuer_did| anoncreds::libindy_to_unqualified(&schema_issuer_did).ok()),
+                                schema_name: filter.schema_name,
+                                schema_version: filter.schema_version,
+                                issuer_did: filter.issuer_did.as_ref().and_then(|issuer_did| anoncreds::libindy_to_unqualified(&issuer_did).ok()),
+                                cred_def_id: filter.cred_def_id.as_ref().and_then(|cred_def_id| anoncreds::libindy_to_unqualified(&cred_def_id).ok()),
+                            }
+                        })
+                        .collect()
+                ))
+            }
+            None => None
         }
-
-        restrictions
-            .map(|filters|
-                filters
-                    .into_iter()
-                    .map(|filter| {
-                        Filter {
-                            schema_id: filter.schema_id.as_ref().and_then(|schema_id| anoncreds::libindy_to_unqualified(&schema_id).ok()),
-                            schema_issuer_did: filter.schema_issuer_did.as_ref().and_then(|schema_issuer_did| anoncreds::libindy_to_unqualified(&schema_issuer_did).ok()),
-                            schema_name: filter.schema_name,
-                            schema_version: filter.schema_version,
-                            issuer_did: filter.issuer_did.as_ref().and_then(|issuer_did| anoncreds::libindy_to_unqualified(&issuer_did).ok()),
-                            cred_def_id: filter.cred_def_id.as_ref().and_then(|cred_def_id| anoncreds::libindy_to_unqualified(&cred_def_id).ok()),
-                        }
-                    })
-                    .collect()
-            )
     }
 
     pub fn from_timestamp(&mut self, from: Option<u64>) -> VcxResult<&mut Self> {
@@ -337,23 +345,17 @@ impl ProofRequestData {
         if Qualifier::is_fully_qualified(&my_did) && Qualifier::is_fully_qualified(&remote_did) {
             self.ver = Some(ProofRequestVersion::V2)
         } else {
-            // TODO: to unqualified
-//            let proof_request_json = serde_json::to_string(&self)
-//                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequestData: {:?}", err)))?;
-//
-//            let proof_request_json = anoncreds::libindy_to_unqualified(&proof_request_json)?;
-//
-//            self = serde_json::from_str(&proof_request_json)
-//                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ProofRequestData: {:?}", err)))?;
+            let proof_request_json = serde_json::to_string(&self)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequestData: {:?}", err)))?;
+
+            let proof_request_json = anoncreds::libindy_to_unqualified(&proof_request_json)?;
+
+            self = serde_json::from_str(&proof_request_json)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ProofRequestData: {:?}", err)))?;
 
             self.ver = Some(ProofRequestVersion::V1)
         }
         Ok(self)
-    }
-
-    pub fn to_json(&self) -> VcxResult<String> {
-        serde_json::to_string(&self)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequest: {:?}", err)))
     }
 }
 

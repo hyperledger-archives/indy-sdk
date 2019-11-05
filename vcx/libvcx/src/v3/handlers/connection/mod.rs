@@ -101,7 +101,7 @@ pub fn send_generic_message(handle: u32, msg: &str, msg_options: &str) -> VcxRes
 
 pub fn get_pw_did(handle: u32) -> VcxResult<String> {
     CONNECTION_MAP.get(handle, |connection| {
-        Ok(connection.agent_info().pw_did.to_string())
+        Ok(connection.agent_info().pw_vk.to_string())
     })
 }
 
