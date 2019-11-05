@@ -5,6 +5,8 @@ use messages::thread::Thread;
 pub struct PresentationProposal {
     #[serde(rename = "@id")]
     pub id: MessageId,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
     pub presentation_proposal: PresentationPreview,
     #[serde(rename = "~thread")]

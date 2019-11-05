@@ -13,7 +13,9 @@ pub use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData,
 pub struct PresentationRequest {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     #[serde(rename = "request_presentations~attach")]
     pub request_presentations_attach: Attachments
 }
@@ -22,7 +24,7 @@ impl PresentationRequest {
     pub fn create() -> Self {
         PresentationRequest {
             id: MessageId::new(),
-            comment: String::new(),
+            comment: None,
             request_presentations_attach: Attachments::new(),
         }
     }
@@ -33,7 +35,7 @@ impl PresentationRequest {
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
-        self.comment = comment;
+        self.comment = Some(comment);
         self
     }
 

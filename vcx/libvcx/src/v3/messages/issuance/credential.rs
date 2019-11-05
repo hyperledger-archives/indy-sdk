@@ -15,6 +15,7 @@ pub struct Credential {
     pub comment: String,
     #[serde(rename = "credentials~attach")]
     pub credentials_attach: Attachments,
+    #[serde(rename = "~thread")]
     pub thread: Thread
 }
 

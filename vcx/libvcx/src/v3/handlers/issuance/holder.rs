@@ -100,7 +100,7 @@ impl HolderSM {
                     let (msg, state) = match request {
                         Ok((cred_request, req_meta, cred_def_json)) => {
                             let cred_request = cred_request.set_thread(Thread::new().set_thid(state_data.offer.id.0.clone()));
-                            let id = cred_request.id.clone();
+                            let id = state_data.offer.id.clone();
                             let msg = A2AMessage::CredentialRequest(cred_request);
                             (msg, HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle, id).into()))
                         }
