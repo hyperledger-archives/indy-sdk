@@ -133,7 +133,7 @@ impl GetMessagesBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesResponse(res)) => Ok(res.msgs),
             A2AMessage::Version2(A2AMessageV2::GetMessagesResponse(res)) => Ok(res.msgs),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesResponse"))
         }
     }
 
@@ -279,9 +279,9 @@ impl Message {
         if let Some(ref payload) = self.payload {
             let payload = match payload {
                 MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
-                    .map(|payload| Payloads::PayloadV1(payload)),
+                    .map(Payloads::PayloadV1),
                 MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
-                    .map(|payload| Payloads::PayloadV2(payload))
+                    .map(Payloads::PayloadV2)
             };
 
             new_message.decrypted_payload = match payload {
@@ -333,7 +333,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
             // TODO: check returned verkey
             Ok((message[0].uid.clone(), payload.to_owned()))
         }
-        _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message")),
+        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message"))
     }
 }
 

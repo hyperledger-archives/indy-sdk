@@ -430,6 +430,45 @@ NAN_METHOD(issuerCreateAndStoreCredentialDef) {
   delete arg5;
 }
 
+void issuerRotateCredentialDefStart_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(issuerRotateCredentialDefStart) {
+  INDY_ASSERT_NARGS(issuerRotateCredentialDefStart, 4)
+  INDY_ASSERT_NUMBER(issuerRotateCredentialDefStart, 0, wh)
+  INDY_ASSERT_STRING(issuerRotateCredentialDefStart, 1, credDefId)
+  INDY_ASSERT_STRING(issuerRotateCredentialDefStart, 2, config)
+  INDY_ASSERT_FUNCTION(issuerRotateCredentialDefStart, 3)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  IndyCallback* icb = argToIndyCb(info[3]);
+  indyCalled(icb, indy_issuer_rotate_credential_def_start(icb->handle, arg0, arg1, arg2, issuerRotateCredentialDefStart_cb));
+  delete arg1;
+  delete arg2;
+}
+
+void issuerRotateCredentialDefApply_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(issuerRotateCredentialDefApply) {
+  INDY_ASSERT_NARGS(issuerRotateCredentialDefStart, 3)
+  INDY_ASSERT_NUMBER(issuerRotateCredentialDefStart, 0, wh)
+  INDY_ASSERT_STRING(issuerRotateCredentialDefStart, 1, credDefId)
+  INDY_ASSERT_FUNCTION(issuerRotateCredentialDefStart, 2)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  IndyCallback* icb = argToIndyCb(info[2]);
+  indyCalled(icb, indy_issuer_rotate_credential_def_apply(icb->handle, arg0, arg1, issuerRotateCredentialDefApply_cb));
+  delete arg1;
+}
+
 void issuerCreateAndStoreRevocReg_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1, const char* arg2) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -917,6 +956,23 @@ NAN_METHOD(generateNonce) {
   INDY_ASSERT_FUNCTION(generateNonce, 0)
   IndyCallback* icb = argToIndyCb(info[0]);
   indyCalled(icb, indy_generate_nonce(icb->handle, generateNonce_cb));
+}
+
+void toUnqualified_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+
+NAN_METHOD(toUnqualified) {
+  INDY_ASSERT_NARGS(toUnqualified, 2)
+  INDY_ASSERT_STRING(toUnqualified, 0, entity)
+  INDY_ASSERT_FUNCTION(toUnqualified, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_to_unqualified(icb->handle, arg0, toUnqualified_cb));
+  delete arg0;
 }
 
 void openBlobStorageReader_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {
@@ -1434,6 +1490,27 @@ NAN_METHOD(abbreviateVerkey) {
   delete arg1;
 }
 
+void qualifyDid_cb(indy_handle_t handle, indy_error_t xerr, const char *const arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(qualifyDid) {
+  INDY_ASSERT_NARGS(qualifyDid, 4)
+  INDY_ASSERT_NUMBER(qualifyDid, 0, wh)
+  INDY_ASSERT_STRING(qualifyDid, 1, did)
+  INDY_ASSERT_STRING(qualifyDid, 2, prefix)
+  INDY_ASSERT_FUNCTION(qualifyDid, 3)
+  indy_handle_t arg0 = argToInt32(info[0]);
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  IndyCallback* icb = argToIndyCb(info[3]);
+  indyCalled(icb, indy_qualify_did(icb->handle, arg0, arg1, arg2, qualifyDid_cb));
+  delete arg1;
+  delete arg2;
+}
+
 void signAndSubmitRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -1660,6 +1737,22 @@ NAN_METHOD(buildGetNymRequest) {
   indyCalled(icb, indy_build_get_nym_request(icb->handle, arg0, arg1, buildGetNymRequest_cb));
   delete arg0;
   delete arg1;
+}
+
+void parseGetNymResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(parseGetNymResponse) {
+  INDY_ASSERT_NARGS(parseGetNymResponse, 2)
+  INDY_ASSERT_STRING(parseGetNymResponse, 0, response)
+  INDY_ASSERT_FUNCTION(parseGetNymResponse, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_parse_get_nym_response(icb->handle, arg0, parseGetNymResponse_cb));
+  delete arg0;
 }
 
 void buildSchemaRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
@@ -3509,6 +3602,8 @@ NAN_METHOD(setDefaultLogger) {
 NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "issuerCreateSchema", issuerCreateSchema);
   Nan::Export(target, "issuerCreateAndStoreCredentialDef", issuerCreateAndStoreCredentialDef);
+  Nan::Export(target, "issuerRotateCredentialDefStart", issuerRotateCredentialDefStart);
+  Nan::Export(target, "issuerRotateCredentialDefApply", issuerRotateCredentialDefApply);
   Nan::Export(target, "issuerCreateAndStoreRevocReg", issuerCreateAndStoreRevocReg);
   Nan::Export(target, "issuerCreateCredentialOffer", issuerCreateCredentialOffer);
   Nan::Export(target, "issuerCreateCredential", issuerCreateCredential);
@@ -3531,6 +3626,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "createRevocationState", createRevocationState);
   Nan::Export(target, "updateRevocationState", updateRevocationState);
   Nan::Export(target, "generateNonce", generateNonce);
+  Nan::Export(target, "toUnqualified", toUnqualified);
   Nan::Export(target, "openBlobStorageReader", openBlobStorageReader);
   Nan::Export(target, "openBlobStorageWriter", openBlobStorageWriter);
   Nan::Export(target, "createKey", createKey);
@@ -3557,6 +3653,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "getMyDidWithMeta", getMyDidWithMeta);
   Nan::Export(target, "listMyDidsWithMeta", listMyDidsWithMeta);
   Nan::Export(target, "abbreviateVerkey", abbreviateVerkey);
+  Nan::Export(target, "qualifyDid", qualifyDid);
   Nan::Export(target, "signAndSubmitRequest", signAndSubmitRequest);
   Nan::Export(target, "submitRequest", submitRequest);
   Nan::Export(target, "submitAction", submitAction);
@@ -3567,6 +3664,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildAttribRequest", buildAttribRequest);
   Nan::Export(target, "buildGetAttribRequest", buildGetAttribRequest);
   Nan::Export(target, "buildGetNymRequest", buildGetNymRequest);
+  Nan::Export(target, "parseGetNymResponse", parseGetNymResponse);
   Nan::Export(target, "buildSchemaRequest", buildSchemaRequest);
   Nan::Export(target, "buildGetSchemaRequest", buildGetSchemaRequest);
   Nan::Export(target, "parseGetSchemaResponse", parseGetSchemaResponse);

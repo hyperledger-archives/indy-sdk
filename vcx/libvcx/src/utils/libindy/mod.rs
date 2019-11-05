@@ -49,11 +49,12 @@ pub fn init_pool() -> VcxResult<()>  {
     match pool::create_pool_ledger_config(&pool_name, &path) {
         Err(e) => {
             warn!("Pool Config Creation Error: {}", e);
-            return Err(e);
+            Err(e)
         },
         Ok(_) => {
             debug!("Pool Config Created Successfully");
-            pool::open_pool_ledger(&pool_name, None)?;
+            let pool_config: Option<String> = settings::get_config_value(settings::CONFIG_POOL_CONFIG).ok();
+            pool::open_pool_ledger(&pool_name, pool_config.as_ref().map(String::as_str))?;
             Ok(())
         }
     }

@@ -109,9 +109,14 @@ impl Default for SearchOptions {
 
 
 const _POSTGRES_DB: &str = "postgres";
+const _WALLETS_DB: &str = "wallets";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = $1";
 const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = $1";
-const _CREATE_WALLET_DATABASE: &str = "CREATE DATABASE $1";
+const _PLAIN_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_plaintext where item_id = $1 and wallet_id = $2";
+const _ENCRYPTED_TAGS_QUERY_MULTI: &str = "SELECT name, value from tags_encrypted where item_id = $1 and wallet_id = $2";
+const _CREATE_WALLET_DATABASE: &str = "CREATE DATABASE \"$1\"";
+const _CREATE_WALLETS_DATABASE: &str = "CREATE DATABASE wallets";
+// Note: wallet id length was constrained before by postgres database name length to 64 characters, keeping the same restrictions
 const _CREATE_SCHEMA: [&str; 12] = [
     "CREATE TABLE IF NOT EXISTS metadata (
         id BIGSERIAL PRIMARY KEY,
@@ -153,12 +158,66 @@ const _CREATE_SCHEMA: [&str; 12] = [
     "CREATE INDEX IF NOT EXISTS ix_tags_plaintext_value ON tags_plaintext(value)",
     "CREATE INDEX IF NOT EXISTS ix_tags_plaintext_item_id ON tags_plaintext(item_id)"
     ];
-const _DROP_WALLET_DATABASE: &str = "DROP DATABASE $1";
+const _CREATE_SCHEMA_MULTI: [&str; 14] = [
+    "CREATE TABLE IF NOT EXISTS metadata (
+        wallet_id VARCHAR(64) NOT NULL,
+        value BYTEA NOT NULL,
+        PRIMARY KEY(wallet_id)
+    )",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_metadata_wallet_id_id ON metadata(wallet_id)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_metadata_values ON metadata(wallet_id, value)",
+    "CREATE TABLE IF NOT EXISTS items(
+        wallet_id VARCHAR(64) NOT NULL,
+        id BIGSERIAL NOT NULL,
+        type BYTEA NOT NULL,
+        name BYTEA NOT NULL,
+        value BYTEA NOT NULL,
+        key BYTEA NOT NULL,
+        PRIMARY KEY(wallet_id, id)
+    )",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_items_wallet_id_id ON items(wallet_id, id)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_items_type_name ON items(wallet_id, type, name)",
+    "CREATE TABLE IF NOT EXISTS tags_encrypted(
+        wallet_id VARCHAR(64) NOT NULL,
+        name BYTEA NOT NULL,
+        value BYTEA NOT NULL,
+        item_id BIGINT NOT NULL,
+        PRIMARY KEY(wallet_id, name, item_id),
+        FOREIGN KEY(wallet_id, item_id)
+            REFERENCES items(wallet_id, id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+    )",
+    "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_name ON tags_encrypted(wallet_id, name)",
+    "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_value ON tags_encrypted(wallet_id, value)",
+    "CREATE INDEX IF NOT EXISTS ix_tags_encrypted_wallet_id_item_id ON tags_encrypted(wallet_id, item_id)",
+    "CREATE TABLE IF NOT EXISTS tags_plaintext(
+        wallet_id VARCHAR(64) NOT NULL,
+        name BYTEA NOT NULL,
+        value TEXT NOT NULL,
+        item_id BIGINT NOT NULL,
+        PRIMARY KEY(wallet_id, name, item_id),
+        FOREIGN KEY(wallet_id, item_id)
+            REFERENCES items(wallet_id, id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE
+    )",
+    "CREATE INDEX IF NOT EXISTS ix_tags_plaintext_name ON tags_plaintext(wallet_id, name)",
+    "CREATE INDEX IF NOT EXISTS ix_tags_plaintext_value ON tags_plaintext(wallet_id, value)",
+    "CREATE INDEX IF NOT EXISTS ix_tags_plaintext_wallet_id_item_id ON tags_plaintext(wallet_id, item_id)"
+    ];
+const _DROP_WALLET_DATABASE: &str = "DROP DATABASE \"$1\"";
 const _DROP_SCHEMA: [&str; 4] = [
     "DROP TABLE tags_plaintext",
     "DROP TABLE tags_encrypted",
     "DROP TABLE items",
     "DROP TABLE metadata"
+    ];
+const _DELETE_WALLET_MULTI: [&str; 4] = [
+    "DELETE FROM tags_plaintext WHERE wallet_id = $1",
+    "DELETE FROM tags_encrypted WHERE wallet_id = $1",
+    "DELETE FROM items WHERE wallet_id = $1",
+    "DELETE FROM metadata WHERE wallet_id = $1"
     ];
 
 
@@ -166,20 +225,26 @@ const _DROP_SCHEMA: [&str; 4] = [
 struct TagRetriever<'a> {
     plain_tags_stmt: postgres::stmt::Statement<'a>,
     encrypted_tags_stmt: postgres::stmt::Statement<'a>,
+    wallet_id: Option<String>,
 }
 
 type TagRetrieverOwned = OwningHandle<Rc<r2d2::PooledConnection<PostgresConnectionManager>>, Box<TagRetriever<'static>>>;
 
 impl<'a> TagRetriever<'a> {
-    fn new_owned(conn: Rc<r2d2::PooledConnection<PostgresConnectionManager>>) -> Result<TagRetrieverOwned, WalletStorageError> {
+    fn new_owned(conn: Rc<r2d2::PooledConnection<PostgresConnectionManager>>, wallet_id: Option<String>) -> Result<TagRetrieverOwned, WalletStorageError> {
         OwningHandle::try_new(conn.clone(), |conn| -> Result<_, postgres::Error> {
             let (plain_tags_stmt, encrypted_tags_stmt) = unsafe {
-                ((*conn).prepare(_PLAIN_TAGS_QUERY)?,
-                 (*conn).prepare(_ENCRYPTED_TAGS_QUERY)?)
+                match wallet_id {
+                    Some(_) => ((*conn).prepare(_PLAIN_TAGS_QUERY_MULTI)?,
+                                (*conn).prepare(_ENCRYPTED_TAGS_QUERY_MULTI)?),
+                    None => ((*conn).prepare(_PLAIN_TAGS_QUERY)?,
+                                (*conn).prepare(_ENCRYPTED_TAGS_QUERY)?)
+                }
             };
             let tr = TagRetriever {
                 plain_tags_stmt,
                 encrypted_tags_stmt,
+                wallet_id
             };
             Ok(Box::new(tr))
         }).map_err(WalletStorageError::from)
@@ -188,14 +253,20 @@ impl<'a> TagRetriever<'a> {
     fn retrieve(&mut self, id: i64) -> Result<Vec<Tag>, WalletStorageError> {
         let mut tags = Vec::new();
 
-        let plain_results = self.plain_tags_stmt.query(&[&id])?;
+        let plain_results = match self.wallet_id {
+            Some(ref w_id) => self.plain_tags_stmt.query(&[&id, &w_id])?,
+            None => self.plain_tags_stmt.query(&[&id])?
+        };
         let mut iter_plain = plain_results.iter();
         while let Some(res) = iter_plain.next() {
             let row = res;
             tags.push(Tag::PlainText(row.get(0), row.get(1)));
         }
 
-        let encrypted_results = self.encrypted_tags_stmt.query(&[&id])?;
+        let encrypted_results = match self.wallet_id {
+            Some(ref w_id) => self.encrypted_tags_stmt.query(&[&id, &w_id])?,
+            None => self.encrypted_tags_stmt.query(&[&id])?
+        };
         let mut iter_encrypted = encrypted_results.iter();
         while let Some(res) = iter_encrypted.next() {
             let row = res;
@@ -221,7 +292,7 @@ struct PostgresStorageIterator {
 
 impl PostgresStorageIterator {
     fn new(stmt: Option<OwningHandle<Rc<r2d2::PooledConnection<PostgresConnectionManager>>, Box<postgres::stmt::Statement<'static>>>>,
-           args: &[&postgres::types::ToSql],
+           args: &[&dyn postgres::types::ToSql],
            options: RecordOptions,
            tag_retriever: Option<TagRetrieverOwned>,
            total_count: Option<usize>) -> Result<PostgresStorageIterator, WalletStorageError> {
@@ -294,11 +365,11 @@ impl StorageIterator for PostgresStorageIterator {
 #[derive(Deserialize, Debug)]
 pub struct PostgresConfig {
     url: String,
-    // TODO add additional configuration options
-    tls: Option<String>,                // default off
+    tls: Option<String>,             // default off
     max_connections: Option<u32>,    // default 5
     min_idle_time: Option<u32>,      // default 0
     connection_timeout: Option<u64>, // default 5
+    wallet_scheme: Option<WalletScheme>,   // default DatabasePerWallet
 }
 
 impl PostgresConfig {
@@ -357,16 +428,368 @@ pub struct PostgresCredentials {
 #[derive(Debug)]
 pub struct PostgresStorage {
     pool: r2d2::Pool<PostgresConnectionManager>,
+    wallet_id: String
 }
 
 pub trait WalletStorageType {
+    fn init_storage(&self, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletStorageError>;
     fn create_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), WalletStorageError>;
     fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<PostgresStorage>, WalletStorageError>;
     fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletStorageError>;
 }
 
+#[derive(Deserialize, Debug)]
+#[derive(Copy, Clone)]
+enum WalletScheme {
+    DatabasePerWallet,
+    MultiWalletSingleTable,
+    MultiWalletMultiTable
+}
+
+trait WalletStrategy {
+    // initialize storage based on wallet storage strategy
+    fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError>;
+    // initialize a single wallet based on wallet storage strategy
+    fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError>;
+    // open a wallet based on wallet storage strategy
+    fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError>;
+    // delete a single wallet based on wallet storage strategy
+    fn delete_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError>;
+    // determine phyisical table name based on wallet strategy
+    fn table_name(&self, id: &str, base_name: &str) -> String;
+    // determine additional query parameters based on wallet strategy
+    fn query_qualifier(&self) -> Option<String>;
+}
+
 pub struct PostgresStorageType {}
 
+struct DatabasePerWalletStrategy {}
+struct MultiWalletSingleTableStrategy {}
+struct MultiWalletMultiTableStrategy {}
+
+impl WalletStrategy for DatabasePerWalletStrategy {
+    // initialize storage based on wallet storage strategy
+    fn init_storage(&self, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        // no-op
+        Ok(())
+    }
+    // initialize a single wallet based on wallet storage strategy
+    fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError> {
+        // create database for wallet
+        // if admin user and password aren't provided then bail
+        if credentials.admin_account == None || credentials.admin_password == None {
+            return Ok(())
+        }
+
+        let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
+        let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
+
+        let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
+
+        let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
+        let mut schema_result = match conn.execute(&create_db_sql, &[]) {
+            Ok(_) => Ok(()),
+            Err(_error) => {
+                Err(WalletStorageError::AlreadyExists)
+            }
+        };
+        conn.finish()?;
+
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
+            Ok(conn) => conn,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+
+        for sql in &_CREATE_SCHEMA {
+            match schema_result {
+                Ok(_) => schema_result = match conn.execute(sql, &[]) {
+                    Ok(_) => Ok(()),
+                    Err(error) => {
+                        Err(WalletStorageError::IOError(format!("Error occurred while creating wallet schema: {}", error)))
+                    }
+                },
+                _ => ()
+            }
+        };
+        let ret = match schema_result {
+            Ok(_) => {
+                match conn.execute("INSERT INTO metadata(value) VALUES($1)
+                                    ON CONFLICT (value) DO UPDATE SET value = excluded.value",
+                                    &[&metadata]) {
+                    Ok(_) => Ok(()),
+                    Err(error) => {
+                        //std::fs::remove_file(db_path)?;
+                        Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
+                    }
+                }
+            },
+            Err(error) => Err(error)
+        };
+        conn.finish()?;
+        ret
+    }
+    // open a wallet based on wallet storage strategy
+    fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
+
+        let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
+
+        // don't need a connection, but connect just to verify we can
+        let _conn = match postgres::Connection::connect(&url[..], config.tls()) {
+            Ok(conn) => conn,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        // TODO close _conn
+        
+        let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
+            Ok(manager) => manager,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+        let pool = match r2d2::Pool::builder().min_idle(Some(config.min_idle_time())).max_size(config.max_connections()).idle_timeout(Some(Duration::new(config.connection_timeout(), 0))).build(manager) {
+            Ok(pool) => pool,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        Ok(Box::new(PostgresStorage { 
+            pool: pool,
+            wallet_id: id.to_string()
+        }))
+    }
+    // delete a single wallet based on wallet storage strategy
+    fn delete_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        // if admin user and password aren't provided then bail
+        if credentials.admin_account == None || credentials.admin_password == None {
+            return Ok(())
+        }
+
+        let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
+        let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
+
+        match postgres::Connection::connect(&url[..], config.tls()) {
+            Ok(conn) => {
+                for sql in &_DROP_SCHEMA {
+                    match conn.execute(sql, &[]) {
+                        Ok(_) => (),
+                        Err(_) => ()
+                    };
+                }
+                let _ret = conn.finish();
+                ()
+            },
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        let conn = postgres::Connection::connect(url_base, config.tls())?;
+        let drop_db_sql = str::replace(_DROP_WALLET_DATABASE, "$1", id);
+        let ret = match conn.execute(&drop_db_sql, &[]) {
+            Ok(_) => Ok(()),
+            Err(_) => Ok(())
+        };
+        conn.finish()?;
+        ret
+    }
+    // determine phyisical table name based on wallet strategy
+    fn table_name(&self, _id: &str, base_name: &str) -> String {
+        // TODO
+        base_name.to_owned()
+    }
+    // determine additional query parameters based on wallet strategy
+    fn query_qualifier(&self) -> Option<String> {
+        // TODO
+        None
+    }
+}
+
+impl WalletStrategy for MultiWalletSingleTableStrategy {
+    // initialize storage based on wallet storage strategy
+    fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        // create database and tables for storage
+        // if admin user and password aren't provided then bail
+        if credentials.admin_account == None || credentials.admin_password == None {
+            return Ok(())
+        }
+
+        let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
+        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+
+        let conn = postgres::Connection::connect(&url_base[..], postgres::TlsMode::None)?;
+
+        if let Err(error) = conn.execute(&_CREATE_WALLETS_DATABASE, &[]) {
+            if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
+                conn.finish()?;
+                return Err(WalletStorageError::IOError(format!("Error occurred while creating the database: {}", error)))
+            } else {
+                // if database already exists, assume tables are created already and return
+                conn.finish()?;
+                return Ok(());
+            }
+        }
+        conn.finish()?;
+    
+        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+            Ok(conn) => conn,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+
+        for sql in &_CREATE_SCHEMA_MULTI {
+            if let Err(error) = conn.execute(sql, &[]) {
+                conn.finish()?;
+                return Err(WalletStorageError::IOError(format!("Error occurred while creating wallet schema: {}", error)));
+            }
+        }
+        conn.finish()?;
+        Ok(())
+    }
+    // initialize a single wallet based on wallet storage strategy
+    fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError> {
+        // insert metadata
+        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+
+        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+            Ok(conn) => conn,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+
+        // We allow error on conflict since this indicates AlreadyExists error
+        let ret = match conn.execute("INSERT INTO metadata(wallet_id, value) VALUES($1, $2)", &[&id, &metadata]) {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                if error.code() == Some(&postgres::error::UNIQUE_VIOLATION) {
+                    Err(WalletStorageError::AlreadyExists)
+                } else {
+                    Err(WalletStorageError::IOError(format!("Error occurred while inserting into metadata: {}", error)))
+                }    
+            }
+        };
+        conn.finish()?;
+        ret
+    }
+    // open a wallet based on wallet storage strategy
+    fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
+
+        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+
+        // don't need a connection, but connect just to verify we can
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
+            Ok(conn) => conn,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        // select metadata for this wallet to ensure it exists
+        let res: Result<Vec<u8>, WalletStorageError> = {
+            let mut rows = conn.query(
+                "SELECT value FROM metadata WHERE wallet_id = $1",
+                &[&id]);
+            match rows.as_mut().unwrap().iter().next() {
+                Some(row) => Ok(row.get(0)),
+                None => Err(WalletStorageError::ItemNotFound)
+            }
+        };
+
+        match res {
+            Ok(_entity) => (),
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        // TODO close conn
+
+        let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
+            Ok(manager) => manager,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+        let pool = match r2d2::Pool::builder().min_idle(Some(config.min_idle_time())).max_size(config.max_connections()).idle_timeout(Some(Duration::new(config.connection_timeout(), 0))).build(manager) {
+            Ok(pool) => pool,
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
+        Ok(Box::new(PostgresStorage { 
+            pool: pool,
+            wallet_id: id.to_string()
+        }))
+    }
+    // delete a single wallet based on wallet storage strategy
+    fn delete_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        let url = PostgresStorageType::_postgres_url(&_WALLETS_DB, &config, &credentials);
+
+        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+            Ok(conn) => conn,
+            Err(error) => {
+                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
+            }
+        };
+
+        let mut ret = Ok(());
+        for sql in &_DELETE_WALLET_MULTI {
+            ret = match conn.execute(sql, &[&id]) {
+                Ok(row_count) => {
+                    if row_count == 0 {
+                        Err(WalletStorageError::NotFound)
+                    } else {
+                        Ok(())
+                    }
+                },
+                Err(error) => {
+                    Err(WalletStorageError::IOError(format!("Error occurred while deleting wallet: {}", error)))
+                }
+            }
+        };
+        conn.finish()?;
+        return ret
+    }
+    // determine phyisical table name based on wallet strategy
+    fn table_name(&self, _id: &str, base_name: &str) -> String {
+        // TODO
+        base_name.to_owned()
+    }
+    // determine additional query parameters based on wallet strategy
+    fn query_qualifier(&self) -> Option<String> {
+        // TODO
+        Some("AND wallet_id = $$".to_owned())
+    }
+}
+
+impl WalletStrategy for MultiWalletMultiTableStrategy {
+    // initialize storage based on wallet storage strategy
+    fn init_storage(&self, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        // create database for storage
+        // TODO
+        Ok(())
+    }
+    // initialize a single wallet based on wallet storage strategy
+    fn create_wallet(&self, _id: &str, _config: &PostgresConfig, _credentials: &PostgresCredentials, _metadata: &[u8]) -> Result<(), WalletStorageError> {
+        // create tables for wallet storage
+        // TODO
+        Ok(())
+    }
+    // open a wallet based on wallet storage strategy
+    fn open_wallet(&self, _id: &str, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
+        // TODO
+        Err(WalletStorageError::NotFound)
+    }
+    // delete a single wallet based on wallet storage strategy
+    fn delete_wallet(&self, _id: &str, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        // TODO
+        Ok(())
+    }
+    // determine phyisical table name based on wallet strategy
+    fn table_name(&self, _id: &str, base_name: &str) -> String {
+        // TODO
+        base_name.to_owned()
+    }
+    // determine additional query parameters based on wallet strategy
+    fn query_qualifier(&self) -> Option<String> {
+        // TODO
+        None
+    }
+}
+
+static mut SELECTED_STRATEGY: &dyn WalletStrategy = &DatabasePerWalletStrategy{};
 
 impl PostgresStorageType {
     pub fn new() -> PostgresStorageType {
@@ -445,10 +868,18 @@ impl WalletStorage for PostgresStorage {
         };
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
         let res: Result<(i64, Vec<u8>, Vec<u8>), WalletStorageError> = {
-            let mut rows = conn.query(
-                "SELECT id, value, key FROM items where type = $1 AND name = $2",
-                &[&type_.to_vec(), &id.to_vec()]);
+            let mut rows = match query_qualifier {
+                Some(_) => conn.query(
+                    "SELECT id, value, key FROM items where type = $1 AND name = $2 AND wallet_id = $3",
+                    &[&type_.to_vec(), &id.to_vec(), &self.wallet_id]),
+                None => conn.query(
+                    "SELECT id, value, key FROM items where type = $1 AND name = $2",
+                    &[&type_.to_vec(), &id.to_vec()])
+            };
             match rows.as_mut().unwrap().iter().next() {
                 Some(row) => Ok((row.get(0), row.get(1), row.get(2))),
                 None => Err(WalletStorageError::ItemNotFound)
@@ -466,8 +897,16 @@ impl WalletStorage for PostgresStorage {
             let mut tags = Vec::new();
 
             // get all encrypted.
-            let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1")?;
-            let mut rows = stmt.query(&[&item.0])?;
+            let rows = match query_qualifier {
+                Some(_) => {
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1 AND wallet_id = $2")?;
+                    stmt.query(&[&item.0, &self.wallet_id])?
+                },
+                None => {
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_encrypted WHERE item_id = $1")?;
+                    stmt.query(&[&item.0])?
+                }
+            };
 
             let mut iter = rows.iter();
             while let Some(res) = iter.next() {
@@ -478,8 +917,16 @@ impl WalletStorage for PostgresStorage {
             }
 
             // get all plain
-            let mut stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1")?;
-            let mut rows = stmt.query(&[&item.0])?;
+            let rows = match query_qualifier {
+                Some(_) => {
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1 AND wallet_id = $2")?;
+                    stmt.query(&[&item.0, &self.wallet_id])?
+                },
+                None => {
+                    let stmt = conn.prepare_cached("SELECT name, value FROM tags_plaintext WHERE item_id = $1")?;
+                    stmt.query(&[&item.0])?
+                }
+            };
 
             let mut iter = rows.iter();
             while let Some(res) = iter.next() {
@@ -526,9 +973,16 @@ impl WalletStorage for PostgresStorage {
     fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
-        let res = tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES ($1, $2, $3, $4) RETURNING id")?
-            .query(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key]);
+        let res = match query_qualifier {
+            Some(_) => tx.prepare_cached("INSERT INTO items (type, name, value, key, wallet_id) VALUES ($1, $2, $3, $4, $5) RETURNING id")?
+                .query(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key, &self.wallet_id]),
+            None => tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES ($1, $2, $3, $4) RETURNING id")?
+                .query(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key])
+        };
 
         let item_id = match res {
             Ok(rows) => {
@@ -556,13 +1010,23 @@ impl WalletStorage for PostgresStorage {
         let item_id = item_id as i64;
 
         if !tags.is_empty() {
-            let stmt_e = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)")?;
-            let stmt_p = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)")?;
+            let stmt_e = match query_qualifier {
+                Some(_) => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
+                None => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)")?
+            };
+            let stmt_p = match query_qualifier {
+                Some(_) => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
+                None => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)")?
+            };
 
             for tag in tags {
                 match tag {
                     &Tag::Encrypted(ref tag_name, ref tag_data) => {
-                        match stmt_e.execute(&[&item_id, tag_name, tag_data]) {
+                        let res = match query_qualifier {
+                            Some(_) => stmt_e.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
+                            None => stmt_e.execute(&[&item_id, tag_name, tag_data])
+                        };
+                        match res {
                             Ok(_) => (),
                             Err(err) => {
                                 if err.code() == Some(&postgres::error::UNIQUE_VIOLATION) ||
@@ -575,7 +1039,11 @@ impl WalletStorage for PostgresStorage {
                         }
                     },
                     &Tag::PlainText(ref tag_name, ref tag_data) => {
-                        match stmt_p.execute(&[&item_id, tag_name, tag_data]) {
+                        let res = match query_qualifier {
+                            Some(_) => stmt_p.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
+                            None => stmt_p.execute(&[&item_id, tag_name, tag_data])
+                        };
+                        match res {
                             Ok(_) => (),
                             Err(err) => {
                                 if err.code() == Some(&postgres::error::UNIQUE_VIOLATION) ||
@@ -599,13 +1067,20 @@ impl WalletStorage for PostgresStorage {
     fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let res = conn.prepare_cached("UPDATE items SET value = $1, key = $2 WHERE type = $3 AND name = $4")?
-            .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec()]);
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
+        let res = match query_qualifier {
+            Some(_) => conn.prepare_cached("UPDATE items SET value = $1, key = $2 WHERE type = $3 AND name = $4 AND wallet_id = $5")?
+                .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec(), &self.wallet_id]),
+            None => conn.prepare_cached("UPDATE items SET value = $1, key = $2 WHERE type = $3 AND name = $4")?
+                .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec()])
+        };
 
         match res {
             Ok(1) => Ok(()),
             Ok(0) => Err(WalletStorageError::ItemNotFound),
-            Ok(count) => Err(WalletStorageError::CommonError(CommonError::InvalidState(format!("SQLite returned update row count: {}", count)))),
+            Ok(count) => Err(WalletStorageError::CommonError(CommonError::InvalidState(format!("Postgres returned update row count: {}", count)))),
             Err(err) => Err(WalletStorageError::from(err)),
         }
     }
@@ -613,14 +1088,27 @@ impl WalletStorage for PostgresStorage {
     fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
 
-        let res = {
-            let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2")?
-                .query(&[&type_.to_vec(), &id.to_vec()]);
-            match rows.as_mut().unwrap().iter().next() {
-                Some(row) => Ok(row.get(0)),
-                None => Err(WalletStorageError::ItemNotFound)
+        let res = match query_qualifier {
+            Some(_) => {
+                let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2")?
+                    .query(&[&type_.to_vec(), &id.to_vec()]);
+                match rows.as_mut().unwrap().iter().next() {
+                    Some(row) => Ok(row.get(0)),
+                    None => Err(WalletStorageError::ItemNotFound)
+                }
+            },
+            None => {
+                let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2")?
+                    .query(&[&type_.to_vec(), &id.to_vec()]);
+                match rows.as_mut().unwrap().iter().next() {
+                    Some(row) => Ok(row.get(0)),
+                    None => Err(WalletStorageError::ItemNotFound)
+                }
             }
         };
 
@@ -631,15 +1119,27 @@ impl WalletStorage for PostgresStorage {
         };
 
         if !tags.is_empty() {
-            let enc_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)
-                                                        ON CONFLICT (name, item_id) DO UPDATE SET value = excluded.value")?;
-            let plain_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)
-                                                        ON CONFLICT (name, item_id) DO UPDATE SET value = excluded.value")?;
+            let enc_tag_insert_stmt = match query_qualifier {
+                Some(_) => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)
+                                        ON CONFLICT (name, item_id, wallet_id) DO UPDATE SET value = excluded.value")?,
+                None => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)
+                                        ON CONFLICT (name, item_id) DO UPDATE SET value = excluded.value")?
+            };
+            let plain_tag_insert_stmt = match query_qualifier {
+                Some(_) => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)
+                                            ON CONFLICT (name, item_id, wallet_id) DO UPDATE SET value = excluded.value")?,
+                None => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)
+                                            ON CONFLICT (name, item_id) DO UPDATE SET value = excluded.value")?
+            };
 
             for tag in tags {
                 match tag {
                     &Tag::Encrypted(ref tag_name, ref tag_data) => {
-                        match enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data]) {
+                        let res = match query_qualifier {
+                            Some(_) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
+                            None => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])
+                        };
+                        match res {
                             Ok(_) => (),
                             Err(err) => {
                                 if err.code() == Some(&postgres::error::UNIQUE_VIOLATION) ||
@@ -652,7 +1152,11 @@ impl WalletStorage for PostgresStorage {
                         }
                     },
                     &Tag::PlainText(ref tag_name, ref tag_data) => {
-                        match plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data]) {
+                        let res = match query_qualifier {
+                            Some(_) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id]),
+                            None => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])
+                        };
+                        match res {
                             Ok(_) => (),
                             Err(err) => {
                                 if err.code() == Some(&postgres::error::UNIQUE_VIOLATION) ||
@@ -675,14 +1179,27 @@ impl WalletStorage for PostgresStorage {
     fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
 
-        let res = {
-            let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2")?
-                .query(&[&type_.to_vec(), &id.to_vec()]);
-            match rows.as_mut().unwrap().iter().next() {
-                Some(row) => Ok(row.get(0)),
-                None => Err(WalletStorageError::ItemNotFound)
+        let res = match query_qualifier {
+            Some(_) => {
+                let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2 AND wallet_id = $3")?
+                    .query(&[&type_.to_vec(), &id.to_vec(), &self.wallet_id]);
+                match rows.as_mut().unwrap().iter().next() {
+                    Some(row) => Ok(row.get(0)),
+                    None => Err(WalletStorageError::ItemNotFound)
+                }
+            },
+            None => {
+                let mut rows = tx.prepare_cached("SELECT id FROM items WHERE type = $1 AND name = $2")?
+                    .query(&[&type_.to_vec(), &id.to_vec()]);
+                match rows.as_mut().unwrap().iter().next() {
+                    Some(row) => Ok(row.get(0)),
+                    None => Err(WalletStorageError::ItemNotFound)
+                }
             }
         };
 
@@ -692,17 +1209,41 @@ impl WalletStorage for PostgresStorage {
             Ok(id) => id
         };
 
-        tx.execute("DELETE FROM tags_encrypted WHERE item_id = $1", &[&item_id])?;
-        tx.execute("DELETE FROM tags_plaintext WHERE item_id = $1", &[&item_id])?;
+        match query_qualifier {
+            Some(_) => {
+                tx.execute("DELETE FROM tags_encrypted WHERE item_id = $1 AND wallet_id = $2", &[&item_id, &self.wallet_id])?;
+                tx.execute("DELETE FROM tags_plaintext WHERE item_id = $1 AND wallet_id = $2", &[&item_id, &self.wallet_id])?;
+            },
+            None => {
+                tx.execute("DELETE FROM tags_encrypted WHERE item_id = $1", &[&item_id])?;
+                tx.execute("DELETE FROM tags_plaintext WHERE item_id = $1", &[&item_id])?;
+            }
+        };
 
         if !tags.is_empty() {
-            let enc_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)")?;
-            let plain_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)")?;
+            let enc_tag_insert_stmt = match query_qualifier {
+                Some(_) => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
+                None => tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)")?
+            };
+            let plain_tag_insert_stmt = match query_qualifier {
+                Some(_) => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value, wallet_id) VALUES ($1, $2, $3, $4)")?,
+                None => tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES ($1, $2, $3)")?
+            };
 
             for tag in tags {
-                match tag {
-                    &Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
-                    &Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
+                match query_qualifier {
+                    Some(_) => {
+                        match tag {
+                            &Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id])?,
+                            &Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data, &self.wallet_id])?
+                        }
+                    },
+                    None => {
+                        match tag {
+                            &Tag::Encrypted(ref tag_name, ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
+                            &Tag::PlainText(ref tag_name, ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
+                        }
+                    }
                 };
             }
         }
@@ -714,12 +1255,25 @@ impl WalletStorage for PostgresStorage {
     fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let res = {
-            let mut rows = conn.prepare_cached("SELECT id FROM items WHERE type =$1 AND name = $2")?
-                .query(&[&type_.to_vec(), &id.to_vec()]);
-            match rows.as_mut().unwrap().iter().next() {
-                Some(row) => Ok(row.get(0)),
-                None => Err(WalletStorageError::ItemNotFound)
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
+        let res = match query_qualifier {
+            Some(_) => {
+                let mut rows = conn.prepare_cached("SELECT id FROM items WHERE type =$1 AND name = $2 AND wallet_id = $3")?
+                    .query(&[&type_.to_vec(), &id.to_vec(), &self.wallet_id]);
+                match rows.as_mut().unwrap().iter().next() {
+                    Some(row) => Ok(row.get(0)),
+                    None => Err(WalletStorageError::ItemNotFound)
+                }
+            },
+                None => {
+                let mut rows = conn.prepare_cached("SELECT id FROM items WHERE type =$1 AND name = $2")?
+                    .query(&[&type_.to_vec(), &id.to_vec()]);
+                match rows.as_mut().unwrap().iter().next() {
+                    Some(row) => Ok(row.get(0)),
+                    None => Err(WalletStorageError::ItemNotFound)
+                }
             }
         };
 
@@ -731,13 +1285,27 @@ impl WalletStorage for PostgresStorage {
 
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
         {
-            let enc_tag_delete_stmt = tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = $1 AND name = $2")?;
-            let plain_tag_delete_stmt = tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = $1 AND name = $2")?;
+            let enc_tag_delete_stmt = match query_qualifier {
+                Some(_) => tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = $1 AND name = $2 AND wallet_id = $3")?,
+                None => tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = $1 AND name = $2")?
+            };
+            let plain_tag_delete_stmt = match query_qualifier {
+                Some(_) => tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = $1 AND name = $2 AND wallet_id = $3")?,
+                None => tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = $1 AND name = $2")?
+            };
 
             for tag_name in tag_names {
-                match tag_name {
-                    &TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(&[&item_id, tag_name])?,
-                    &TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(&[&item_id, tag_name])?,
+                match query_qualifier {
+                    Some(_) =>
+                        match tag_name {
+                            &TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(&[&item_id, tag_name, &self.wallet_id])?,
+                            &TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(&[&item_id, tag_name, &self.wallet_id])?,
+                        },
+                    None =>
+                        match tag_name {
+                            &TagName::OfEncrypted(ref tag_name) => enc_tag_delete_stmt.execute(&[&item_id, tag_name])?,
+                            &TagName::OfPlain(ref tag_name) => plain_tag_delete_stmt.execute(&[&item_id, tag_name])?,
+                        }
                 };
             }
         }
@@ -775,10 +1343,19 @@ impl WalletStorage for PostgresStorage {
     fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        let row_count = conn.execute(
-            "DELETE FROM items where type = $1 AND name = $2",
-            &[&type_.to_vec(), &id.to_vec()]
-        )?;
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
+        let row_count = match query_qualifier {
+            Some(_) => conn.execute(
+                "DELETE FROM items where type = $1 AND name = $2 AND wallet_id = $3",
+                &[&type_.to_vec(), &id.to_vec(), &self.wallet_id]
+            )?,
+            None => conn.execute(
+                "DELETE FROM items where type = $1 AND name = $2",
+                &[&type_.to_vec(), &id.to_vec()]
+            )?
+        };
         if row_count == 1 {
             Ok(())
         } else {
@@ -789,10 +1366,18 @@ impl WalletStorage for PostgresStorage {
     fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
         let res: Result<Vec<u8>, WalletStorageError> = {
-            let mut rows = conn.query(
-                "SELECT value FROM metadata",
-                &[]);
+            let mut rows = match query_qualifier {
+                Some(_) => conn.query(
+                    "SELECT value FROM metadata WHERE wallet_id = $1",
+                    &[&self.wallet_id]),
+                None => conn.query(
+                    "SELECT value FROM metadata",
+                    &[])
+            };
             match rows.as_mut().unwrap().iter().next() {
                 Some(row) => Ok(row.get(0)),
                 None => Err(WalletStorageError::ItemNotFound)
@@ -809,7 +1394,14 @@ impl WalletStorage for PostgresStorage {
     fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), WalletStorageError> {
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
-        match conn.execute("UPDATE metadata SET value = $1", &[&metadata.to_vec()]) {
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
+        let res = match query_qualifier {
+            Some(_) => conn.execute("UPDATE metadata SET value = $1 WHERE wallet_id = $2", &[&metadata.to_vec(), &self.wallet_id]),
+            None => conn.execute("UPDATE metadata SET value = $1", &[&metadata.to_vec()])
+        };
+        match res {
             Ok(_) => Ok(()),
             Err(error) => {
                 Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
@@ -817,21 +1409,33 @@ impl WalletStorage for PostgresStorage {
         }
     }
 
-    fn get_all(&self) -> Result<Box<StorageIterator>, WalletStorageError> {
-        let statement = self._prepare_statement("SELECT id, name, value, key, type FROM items")?;
+    fn get_all(&self) -> Result<Box<dyn StorageIterator>, WalletStorageError> {
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
+        let statement = match query_qualifier {
+            Some(_) => self._prepare_statement("SELECT id, name, value, key, type FROM items WHERE wallet_id = $1")?,
+            None => self._prepare_statement("SELECT id, name, value, key, type FROM items")?
+        };
         let fetch_options = RecordOptions {
             retrieve_type: true,
             retrieve_value: true,
             retrieve_tags: true,
         };
         let pool = self.pool.clone();
-        let tag_retriever = Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone())?);
+        let tag_retriever = match query_qualifier {
+            Some(_) => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+            None => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
+        };
 
-        let storage_iterator = PostgresStorageIterator::new(Some(statement), &[], fetch_options, tag_retriever, None)?;
+        let storage_iterator = match query_qualifier {
+            Some(_) => PostgresStorageIterator::new(Some(statement), &[&self.wallet_id], fetch_options, tag_retriever, None)?,
+            None => PostgresStorageIterator::new(Some(statement), &[], fetch_options, tag_retriever, None)?
+        };
         Ok(Box::new(storage_iterator))
     }
 
-    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<dyn StorageIterator>, WalletStorageError> {
         let type_ = type_.to_vec(); // FIXME
 
         let search_options = match options {
@@ -841,8 +1445,38 @@ impl WalletStorage for PostgresStorage {
 
         let pool = self.pool.clone();
         let conn = pool.get().unwrap();
+        let query_qualifier = unsafe {
+            SELECTED_STRATEGY.query_qualifier()
+        };
+        let wallet_id_arg = self.wallet_id.to_owned();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
-            let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
+            let (query_string, query_arguments) = match query_qualifier {
+                Some(_) => {
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql_count(&type_, query)?;
+                    query_arguments.push(&wallet_id_arg);
+                    let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
+                    query_string.push_str(&arg_str);
+                    let mut with_clause = false;
+                    if query_string.contains("tags_plaintext") {
+                        query_arguments.push(&wallet_id_arg);
+                        query_string = format!("tags_plaintext as (select * from tags_plaintext where wallet_id = ${}) {}", query_arguments.len(), query_string);
+                        with_clause = true;
+                    }
+                    if query_string.contains("tags_encrypted") {
+                        if with_clause {
+                            query_string = format!(", {}", query_string);
+                        }
+                        query_arguments.push(&wallet_id_arg);
+                        query_string = format!("tags_encrypted as (select * from tags_encrypted where wallet_id = ${}) {}", query_arguments.len(), query_string);
+                        with_clause = true;
+                    }
+                    if with_clause {
+                        query_string = format!("WITH {}", query_string);
+                    }
+                    (query_string, query_arguments)
+                },
+                None => query::wql_to_sql_count(&type_, query)?
+            };
 
             let mut rows = conn.query(
                 &query_string,
@@ -863,12 +1497,41 @@ impl WalletStorage for PostgresStorage {
                 retrieve_type: search_options.retrieve_type,
             };
 
-            let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
+            let (query_string, query_arguments) = match query_qualifier {
+                Some(_) => {
+                    let (mut query_string, mut query_arguments) = query::wql_to_sql(&type_, query, options)?;
+                    query_arguments.push(&wallet_id_arg);
+                    let arg_str = format!(" AND i.wallet_id = ${}", query_arguments.len());
+                    query_string.push_str(&arg_str);
+                    let mut with_clause = false;
+                    if query_string.contains("tags_plaintext") {
+                        query_arguments.push(&wallet_id_arg);
+                        query_string = format!("tags_plaintext as (select * from tags_plaintext where wallet_id = ${}) {}", query_arguments.len(), query_string);
+                        with_clause = true;
+                    }
+                    if query_string.contains("tags_encrypted") {
+                        if with_clause {
+                            query_string = format!(", {}", query_string);
+                        }
+                        query_arguments.push(&wallet_id_arg);
+                        query_string = format!("tags_encrypted as (select * from tags_encrypted where wallet_id = ${}) {}", query_arguments.len(), query_string);
+                        with_clause = true;
+                    }
+                    if with_clause {
+                        query_string = format!("WITH {}", query_string);
+                    }
+                    (query_string, query_arguments)
+                },
+                None => query::wql_to_sql(&type_, query, options)?
+            };
 
             let statement = self._prepare_statement(&query_string)?;
             let tag_retriever = if fetch_options.retrieve_tags {
                 let pool = self.pool.clone();
-                Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone())?)
+                match query_qualifier {
+                    Some(_) => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), Some(self.wallet_id.clone()))?),
+                    None => Some(TagRetriever::new_owned(Rc::new(pool.get().unwrap()).clone(), None)?)
+                }
             } else {
                 None
             };
@@ -881,9 +1544,7 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn close(&mut self) -> Result<(), WalletStorageError> {
-        //let pool = self.pool.clone();
-        //let conn = pool.get().unwrap();
-        //let _ret = conn.finish();
+        // TODO throws a borrow error if we try to close the connection here; temporary workaround is to rely on idle connection timeout
         Ok(())
     }
 }
@@ -902,13 +1563,72 @@ impl PostgresStorage {
 
 impl WalletStorageType for PostgresStorageType {
     ///
-    /// Deletes the SQLite database file with the provided id from the path specified in the
+    /// Initializes the wallets database and creates the necessary tables for all wallets
+    /// This needs to be called once at the very beginning, I'm not entirely sure the best way to enforce it
+    ///
+    /// # Arguments
+    ///
+    ///  * `storage_config` - config containing the location of Postgres DB files
+    ///  * `storage_credentials` - DB credentials
+    ///
+    /// # Returns
+    ///
+    /// Result that can be either:
+    ///
+    ///  * `()`
+    ///  * `WalletStorageError`
+    ///
+    /// # Errors
+    ///
+    /// Any of the following `WalletStorageError` type_ of errors can be throw by this method:
+    ///
+    ///  * `WalletStorageError::NotFound` - File with the provided id not found
+    ///  * `IOError(..)` - Deletion of the file form the file-system failed
+    ///
+    fn init_storage(&self, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletStorageError> {
+        let config = config
+            .map(serde_json::from_str::<PostgresConfig>)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
+        let credentials = credentials
+            .map(serde_json::from_str::<PostgresCredentials>)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize credentials: {:?}", err)))?;
+
+        let config = match config {
+            Some(config) => config,
+            None => return Err(WalletStorageError::ConfigError)
+        };
+        let credentials = match credentials {
+            Some(credentials) => credentials,
+            None => return Err(WalletStorageError::ConfigError)
+        };
+
+        unsafe {
+            match config.wallet_scheme {
+                Some(scheme) => match scheme {
+                    WalletScheme::DatabasePerWallet => SELECTED_STRATEGY = &DatabasePerWalletStrategy{},
+                    WalletScheme::MultiWalletSingleTable => SELECTED_STRATEGY = &MultiWalletSingleTableStrategy{},
+                    WalletScheme::MultiWalletMultiTable => SELECTED_STRATEGY = &MultiWalletMultiTableStrategy{}
+                },
+                None => ()
+            };
+        }
+
+        // initialize using the global SELECTED_STRATEGY object
+        unsafe {
+            return SELECTED_STRATEGY.init_storage(&config, &credentials);
+        }
+    }
+
+    ///
+    /// Deletes the Postgres database file with the provided id from the path specified in the
     /// config file.
     ///
     /// # Arguments
     ///
-    ///  * `id` - id of the SQLite DB file
-    ///  * `storage_config` - config containing the location of SQLite DB files
+    ///  * `id` - the wallet id
+    ///  * `storage_config` - Postgres DB connection config
     ///  * `storage_credentials` - DB credentials
     ///
     /// # Returns
@@ -944,36 +1664,9 @@ impl WalletStorageType for PostgresStorageType {
             None => return Err(WalletStorageError::ConfigError)
         };
 
-        // if admin user and password aren't provided then bail
-        if credentials.admin_account == None || credentials.admin_password == None {
-            return Ok(())
+        unsafe {
+            return SELECTED_STRATEGY.delete_wallet(id, &config, &credentials);
         }
-
-        let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
-        let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
-
-        match postgres::Connection::connect(&url[..], config.tls()) {
-            Ok(conn) => {
-                for sql in &_DROP_SCHEMA {
-                    match conn.execute(sql, &[]) {
-                        Ok(_) => (),
-                        Err(_) => ()
-                    };
-                }
-                let _ret = conn.finish();
-                ()
-            },
-            Err(_) => return Err(WalletStorageError::NotFound)
-        };
-
-        let conn = postgres::Connection::connect(url_base, config.tls())?;
-        let drop_db_sql = str::replace(_DROP_WALLET_DATABASE, "$1", id);
-        let ret = match conn.execute(&drop_db_sql, &[]) {
-            Ok(_) => Ok(()),
-            Err(_) => Ok(())
-        };
-        conn.finish()?;
-        ret
     }
 
     ///
@@ -1023,59 +1716,10 @@ impl WalletStorageType for PostgresStorageType {
             None => return Err(WalletStorageError::ConfigError)
         };
 
-        // if admin user and password aren't provided then bail
-        if credentials.admin_account == None || credentials.admin_password == None {
-            return Ok(())
+        // initialize using the global selected_strategy object
+        unsafe {
+            return SELECTED_STRATEGY.create_wallet(id, &config, &credentials, metadata);
         }
-
-        let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
-        let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
-
-        let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
-
-        let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
-        let mut schema_result = match conn.execute(&create_db_sql, &[]) {
-            Ok(_) => Ok(()),
-            Err(_error) => {
-                Err(WalletStorageError::AlreadyExists)
-            }
-        };
-        conn.finish()?;
-
-        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
-            Ok(conn) => conn,
-            Err(error) => {
-                return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
-            }
-        };
-
-        for sql in &_CREATE_SCHEMA {
-            match schema_result {
-                Ok(_) => schema_result = match conn.execute(sql, &[]) {
-                    Ok(_) => Ok(()),
-                    Err(error) => {
-                        Err(WalletStorageError::IOError(format!("Error occurred while creating wallet schema: {}", error)))
-                    }
-                },
-                _ => ()
-            }
-        };
-        let ret = match schema_result {
-            Ok(_) => {
-                match conn.execute("INSERT INTO metadata(value) VALUES($1)
-                                    ON CONFLICT (value) DO UPDATE SET value = excluded.value",
-                                    &[&metadata]) {
-                    Ok(_) => Ok(()),
-                    Err(error) => {
-                        //std::fs::remove_file(db_path)?;
-                        Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
-                    }
-                }
-            },
-            Err(error) => Err(error)
-        };
-        conn.finish()?;
-        ret
     }
 
     ///
@@ -1125,26 +1769,10 @@ impl WalletStorageType for PostgresStorageType {
             None => return Err(WalletStorageError::ConfigError)
         };
 
-        let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
-
-        // don't need a connection, but connect just to verify we can
-        let _conn = match postgres::Connection::connect(&url[..], config.tls()) {
-            Ok(conn) => conn,
-            Err(_) => return Err(WalletStorageError::NotFound)
-        };
-
-        let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
-            Ok(manager) => manager,
-            Err(_) => return Err(WalletStorageError::NotFound)
-        };
-        let pool = match r2d2::Pool::builder().min_idle(Some(config.min_idle_time())).max_size(config.max_connections()).idle_timeout(Some(Duration::new(config.connection_timeout(), 0))).build(manager) {
-            Ok(pool) => pool,
-            Err(_) => return Err(WalletStorageError::NotFound)
-        };
-
-        Ok(Box::new(PostgresStorage { 
-            pool: pool
-        }))
+        // initialize using the global selected_strategy object
+        unsafe {
+            return SELECTED_STRATEGY.open_wallet(id, &config, &credentials);
+        }
     }
 }
 
@@ -1152,6 +1780,7 @@ impl WalletStorageType for PostgresStorageType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
 
     use utils::test;
 
@@ -1621,6 +2250,8 @@ mod tests {
 
     fn _cleanup() {
         let storage_type = PostgresStorageType::new();
+
+        let _res = storage_type.init_storage(Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
         let _ret = storage_type.delete_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
         let res = test::cleanup_storage();
         res
@@ -1645,8 +2276,25 @@ mod tests {
     }
 
     fn _wallet_config() -> String {
+        let wallet_scheme = env::var("WALLET_SCHEME");
+        match wallet_scheme {
+            Ok(scheme) => {
+                if scheme == "MultiWalletSingleTable" {
+                    return _wallet_config_multi();
+                }
+            },
+            Err(_) => ()
+        };
         let config = json!({
             "url": "localhost:5432".to_owned()
+        }).to_string();
+        config
+    }
+
+    fn _wallet_config_multi() -> String {
+        let config = json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSingleTable".to_owned()
         }).to_string();
         config
     }

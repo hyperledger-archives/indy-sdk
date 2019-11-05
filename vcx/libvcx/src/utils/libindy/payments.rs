@@ -13,6 +13,7 @@ use settings;
 use error::prelude::*;
 
 static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "101":2, "10001":0, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":2, "114":2, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
+static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WalletInfo {
@@ -45,9 +46,11 @@ pub struct UTXO {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Output {
+    #[serde(skip_serializing_if = "Option::is_none")]
     source: Option<String>,
     recipient: String,
     amount: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     extra: Option<String>,
 }
 
@@ -98,6 +101,22 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
     payments::create_payment_address(get_wallet_handle() as i32, settings::get_payment_method().as_str(), &config)
         .wait()
         .map_err(map_rust_indy_sdk_error)
+}
+
+pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+
+    if settings::test_indy_mode_enabled() {return Ok(Vec::from(message).to_owned()); }
+
+    payments::sign_with_address(get_wallet_handle() as i32, address, message).wait().map_err(map_rust_indy_sdk_error)
+}
+
+pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> VcxResult<bool> {
+    trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
+
+    if settings::test_indy_mode_enabled() { return Ok(true); }
+
+    payments::verify_with_address(address, message, signature).wait().map_err(map_rust_indy_sdk_error)
 }
 
 pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
@@ -466,14 +485,14 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         None
     };
 
-    let (did_2, _) = add_new_trustee_did();
-    let (did_3, _) = add_new_trustee_did();
-    let (did_4, _) = add_new_trustee_did();
+    let (did_2, _) = add_new_did(Some("TRUSTEE"));
+    let (did_3, _) = add_new_did(Some("TRUSTEE"));
+    let (did_4, _) = add_new_did(Some("TRUSTEE"));
 
     let number_of_addresses = number_of_addresses.unwrap_or(1);
 
     if number_of_addresses > 0 {
-        let tokens_per_address: u64 = tokens_per_address.unwrap_or(50000000000);
+        let tokens_per_address: u64 = tokens_per_address.unwrap_or(50_000_000_000);
         let mut addresses = Vec::new();
 
         for n in 0..number_of_addresses {
@@ -521,13 +540,13 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
     Ok(())
 }
 
-fn add_new_trustee_did() -> (String, String) {
+pub fn add_new_did(role: Option<&str>) -> (String, String) {
     use indy::ledger;
 
     let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
     let (did, verkey) = ::utils::libindy::signus::create_and_store_my_did(None).unwrap();
-    let mut req_nym = ledger::build_nym_request(&institution_did, &did, Some(&verkey), None, Some("TRUSTEE")).wait().unwrap();
+    let mut req_nym = ledger::build_nym_request(&institution_did, &did, Some(&verkey), None, role).wait().unwrap();
 
     req_nym = append_txn_author_agreement_to_request(&req_nym).unwrap();
 
@@ -539,8 +558,9 @@ fn add_new_trustee_did() -> (String, String) {
 pub mod tests {
     use super::*;
 
-    pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>) {
-        mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, Some(DEFAULT_FEES.to_string()), None).unwrap();
+    pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>, use_zero_fees: bool) {
+        let fees = if use_zero_fees { ZERO_FEES } else { DEFAULT_FEES };
+        mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, Some(fees.to_string()), None).unwrap();
     }
 
     fn get_my_balance() -> u64 {
@@ -552,6 +572,21 @@ pub mod tests {
     fn test_create_address() {
         init!("true");
         create_address(None).unwrap();
+    }
+
+
+    #[test]
+    fn test_sign_with_address() {
+        init!("true");
+        let res = sign_with_address("test", &[1, 2, 3]).unwrap();
+        assert_eq!(res, vec![1, 2, 3])
+    }
+
+    #[test]
+    fn test_verify_with_address() {
+        init!("true");
+        let res = verify_with_address("test", &[1, 2, 3], &[1, 2, 3]).unwrap();
+        assert!(res)
     }
 
     #[test]
@@ -880,7 +915,7 @@ pub mod tests {
     fn test_custom_mint_tokens() {
         init!("ledger");
         //50000000000 comes from setup_ledger_env
-        token_setup(Some(4), Some(1430000));
+        token_setup(Some(4), Some(1430000), false);
 
         let start_wallet = get_wallet_token_info().unwrap();
         assert_eq!(start_wallet.balance, 50005720000);

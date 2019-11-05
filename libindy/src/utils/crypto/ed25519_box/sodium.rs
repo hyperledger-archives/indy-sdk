@@ -1,6 +1,6 @@
 extern crate sodiumoxide;
 
-use errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use self::sodiumoxide::crypto::box_;
 
 
@@ -39,8 +39,8 @@ pub fn gen_nonce() -> Nonce {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::crypto::ed25519_sign;
-    use utils::crypto::randombytes::randombytes;
+    use crate::utils::crypto::ed25519_sign;
+    use crate::utils::crypto::randombytes::randombytes;
 
     #[test]
     fn encrypt_decrypt_works() {

@@ -1,10 +1,10 @@
 use libc::{c_void, c_char};
 
-use api::ErrorCode;
-use errors::prelude::*;
+use indy_api_types::ErrorCode;
+use indy_api_types::errors::prelude::*;
 
-use utils::logger::{EnabledCB, LogCB, FlushCB, LibindyLogger, LibindyDefaultLogger, LOGGER_STATE};
-use utils::ctypes;
+use crate::utils::logger::{EnabledCB, LogCB, FlushCB, LibindyLogger, LibindyDefaultLogger, LOGGER_STATE};
+use indy_utils::ctypes;
 
 /// Set custom logger implementation.
 ///

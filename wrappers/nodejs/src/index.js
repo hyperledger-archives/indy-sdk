@@ -63,6 +63,20 @@ indy.issuerCreateAndStoreCredentialDef = function issuerCreateAndStoreCredential
   return cb.promise
 }
 
+indy.issuerRotateCredentialDefStart = function issuerRotateCredentialDefStart (wh, credDefId, config, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data[0])
+  })
+  capi.issuerRotateCredentialDefStart(wh, credDefId, toJson(config), cb)
+  return cb.promise
+}
+
+indy.issuerRotateCredentialDefApply = function issuerRotateCredentialDefApply (wh, credDefId, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.issuerRotateCredentialDefApply(wh, credDefId, cb)
+  return cb.promise
+}
+
 indy.issuerCreateAndStoreRevocReg = function issuerCreateAndStoreRevocReg (wh, issuerDid, revocDefType, tag, credDefId, config, tailsWriterHandle, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1]), fromJson(data[2])]
@@ -198,6 +212,12 @@ indy.updateRevocationState = function updateRevocationState (blobStorageReaderHa
 indy.generateNonce = function generateNonce (cb) {
   cb = wrapIndyCallback(cb)
   capi.generateNonce(cb)
+  return cb.promise
+}
+
+indy.toUnqualified = function toUnqualified (entity, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.toUnqualified(entity, cb)
   return cb.promise
 }
 
@@ -357,6 +377,12 @@ indy.abbreviateVerkey = function abbreviateVerkey (did, fullVerkey, cb) {
   return cb.promise
 }
 
+indy.qualifyDid = function qualifyDid (wh, did, method, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.qualifyDid(wh, did, method, cb)
+  return cb.promise
+}
+
 indy.signAndSubmitRequest = function signAndSubmitRequest (poolHandle, wh, submitterDid, request, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.signAndSubmitRequest(poolHandle, wh, submitterDid, toJson(request), cb)
@@ -414,6 +440,14 @@ indy.buildGetAttribRequest = function buildGetAttribRequest (submitterDid, targe
 indy.buildGetNymRequest = function buildGetNymRequest (submitterDid, targetDid, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildGetNymRequest(submitterDid, targetDid, cb)
+  return cb.promise
+}
+
+indy.parseGetNymResponse = function parseGetNymResponse (response, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data)
+  })
+  capi.parseGetNymResponse(toJson(response), cb)
   return cb.promise
 }
 

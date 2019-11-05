@@ -9,9 +9,9 @@ use self::indy_sys::payments as payments_sys;
 use std::collections::VecDeque;
 use std::ffi::CString;
 use super::libc::c_char;
-use std::sync::{Once, ONCE_INIT, Mutex};
+use std::sync::{Once, Mutex};
 
-use utils::callback;
+use crate::utils::callback;
 
 #[macro_export]
 macro_rules! mocked_handler {
@@ -165,7 +165,7 @@ type ParsePaymentSourcesCallback = extern fn(command_handle_: i32,
                                              next: i64) -> i32;
 
 lazy_static! {
-        static ref CREATE_PAYMENT_METHOD_INIT: Once = ONCE_INIT;
+        static ref CREATE_PAYMENT_METHOD_INIT: Once = Once::new();
 }
 
 pub mod mock_method {
@@ -359,11 +359,12 @@ pub fn add_request_fees(wallet_handle: i32, submitter_did: Option<&str>, req_jso
     payments::add_request_fees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra).wait()
 }
 
+#[allow(deprecated)]
 pub fn build_get_payment_sources_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str) -> Result<(String, String), IndyError> {
     payments::build_get_payment_sources_request(wallet_handle, submitter_did, payment_address).wait()
 }
 
-pub fn build_get_payment_sources_with_from_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str, from: Option<u64>) -> Result<(String, String), IndyError> {
+pub fn build_get_payment_sources_with_from_request(wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str, from: Option<i64>) -> Result<(String, String), IndyError> {
     payments::build_get_payment_sources_with_from_request(wallet_handle, submitter_did, payment_address, from).wait()
 }
 
@@ -375,11 +376,12 @@ pub fn parse_response_with_fees(payment_method: &str, resp_json: &str) -> Result
     payments::parse_response_with_fees(payment_method, resp_json).wait()
 }
 
+#[allow(deprecated)]
 pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str) -> Result<String, IndyError> {
     payments::parse_get_payment_sources_response(payment_method, resp_json).wait()
 }
 
-pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_json: &str) -> Result<(String, Option<u64>), IndyError> {
+pub fn parse_get_payment_sources_with_from_response(payment_method: &str, resp_json: &str) -> Result<(String, Option<i64>), IndyError> {
     payments::parse_get_payment_sources_with_from_response(payment_method, resp_json).wait()
 }
 

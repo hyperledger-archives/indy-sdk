@@ -31,17 +31,6 @@ public class CreatePoolTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testCreatePoolWorksForEmptyName() throws Exception {
-		thrown.expect(IllegalArgumentException.class);
-
-		File genesisTxnFile = PoolUtils.createGenesisTxnFile("genesis.txn");
-
-		PoolJSONParameters.CreatePoolLedgerConfigJSONParameter createPoolLedgerConfigJSONParameter
-				= new PoolJSONParameters.CreatePoolLedgerConfigJSONParameter(genesisTxnFile.getAbsolutePath());
-		Pool.createPoolLedgerConfig("", createPoolLedgerConfigJSONParameter.toJson()).get();
-	}
-
-	@Test
 	public void testCreatePoolWorksForTwice() throws Exception {
 		thrown.expectCause(isA(PoolLedgerConfigExistsException.class));
 

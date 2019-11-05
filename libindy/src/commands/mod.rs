@@ -7,26 +7,26 @@ use std::sync::{Mutex, MutexGuard};
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 
-use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
-use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
-use commands::crypto::{CryptoCommand, CryptoCommandExecutor};
-use commands::did::{DidCommand, DidCommandExecutor};
-use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
-use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
-use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
-use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
-use commands::pool::{PoolCommand, PoolCommandExecutor};
-use commands::wallet::{WalletCommand, WalletCommandExecutor};
-use commands::cache::{CacheCommand, CacheCommandExecutor};
-use domain::IndyConfig;
-use errors::prelude::*;
-use services::anoncreds::AnoncredsService;
-use services::blob_storage::BlobStorageService;
-use services::crypto::CryptoService;
-use services::ledger::LedgerService;
-use services::payments::PaymentsService;
-use services::pool::{PoolService, set_freshness_threshold};
-use services::wallet::WalletService;
+use crate::commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
+use crate::commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
+use crate::commands::crypto::{CryptoCommand, CryptoCommandExecutor};
+use crate::commands::did::{DidCommand, DidCommandExecutor};
+use crate::commands::ledger::{LedgerCommand, LedgerCommandExecutor};
+use crate::commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
+use crate::commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
+use crate::commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
+use crate::commands::pool::{PoolCommand, PoolCommandExecutor};
+use crate::commands::wallet::{WalletCommand, WalletCommandExecutor};
+use crate::commands::cache::{CacheCommand, CacheCommandExecutor};
+use crate::domain::IndyConfig;
+use indy_api_types::errors::prelude::*;
+use crate::services::anoncreds::AnoncredsService;
+use crate::services::blob_storage::BlobStorageService;
+use crate::services::crypto::CryptoService;
+use crate::services::ledger::LedgerService;
+use crate::services::payments::PaymentsService;
+use crate::services::pool::{PoolService, set_freshness_threshold};
+use indy_wallet::WalletService;
 
 use self::threadpool::ThreadPool;
 
@@ -41,6 +41,8 @@ pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
 pub mod cache;
+
+type BoxedCallbackStringStringSend = Box<dyn Fn(IndyResult<(String, String)>) + Send>;
 
 pub enum Command {
     Exit,
@@ -121,51 +123,51 @@ impl CommandExecutor {
                 loop {
                     match receiver.recv() {
                         Ok(Command::Anoncreds(cmd)) => {
-                            info!("AnoncredsCommand command received");
+                            debug!("AnoncredsCommand command received");
                             anoncreds_command_executor.execute(cmd);
                         }
                         Ok(Command::BlobStorage(cmd)) => {
-                            info!("BlobStorageCommand command received");
+                            debug!("BlobStorageCommand command received");
                             blob_storage_command_executor.execute(cmd);
                         }
                         Ok(Command::Crypto(cmd)) => {
-                            info!("CryptoCommand command received");
+                            debug!("CryptoCommand command received");
                             crypto_command_executor.execute(cmd);
                         }
                         Ok(Command::Ledger(cmd)) => {
-                            info!("LedgerCommand command received");
+                            debug!("LedgerCommand command received");
                             ledger_command_executor.execute(cmd);
                         }
                         Ok(Command::Pool(cmd)) => {
-                            info!("PoolCommand command received");
+                            debug!("PoolCommand command received");
                             pool_command_executor.execute(cmd);
                         }
                         Ok(Command::Did(cmd)) => {
-                            info!("DidCommand command received");
+                            debug!("DidCommand command received");
                             did_command_executor.execute(cmd);
                         }
                         Ok(Command::Wallet(cmd)) => {
-                            info!("WalletCommand command received");
+                            debug!("WalletCommand command received");
                             wallet_command_executor.execute(cmd);
                         }
                         Ok(Command::Pairwise(cmd)) => {
-                            info!("PairwiseCommand command received");
+                            debug!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
                         }
                         Ok(Command::NonSecrets(cmd)) => {
-                            info!("NonSecretCommand command received");
+                            debug!("NonSecretCommand command received");
                             non_secret_command_executor.execute(cmd);
                         }
                         Ok(Command::Payments(cmd)) => {
-                            info!("PaymentsCommand command received");
+                            debug!("PaymentsCommand command received");
                             payments_command_executor.execute(cmd);
                         }
                         Ok(Command::Cache(cmd)) => {
-                            info!("CacheCommand command received");
+                            debug!("CacheCommand command received");
                             cache_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
-                            info!("Exit command received");
+                            debug!("Exit command received");
                             break
                         }
                         Err(err) => {

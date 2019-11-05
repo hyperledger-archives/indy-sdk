@@ -119,16 +119,6 @@ public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 		Ledger.buildGetAttribRequest(null, DID_TRUSTEE, "endpoint", null, null).get();
 	}
 
-	@Test
-	public void testSendAttribRequestWorksWithoutSignature() throws Exception {
-		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String trusteeDid = trusteeDidResult.getDid();
-
-		String attribRequest = Ledger.buildAttribRequest(trusteeDidResult.getDid(), trusteeDid, null, endpoint, null).get();
-		String response = Ledger.submitRequest(pool, attribRequest).get();
-		checkResponseType(response, "REQNACK");
-	}
-
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testAttribRequestsWorksForRawValue() throws Exception {
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
@@ -149,54 +139,6 @@ public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 		String getAttribResponse = PoolUtils.ensurePreviousRequestApplied(pool, getAttribRequest, response -> {
 			JSONObject getAttribResponseObject = new JSONObject(response);
 			return endpoint.equals(getAttribResponseObject.getJSONObject("result").getString("data"));
-		});
-		assertNotNull(getAttribResponse);
-	}
-
-	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
-	public void testAttribRequestsWorksForHashValue() throws Exception {
-		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String trusteeDid = trusteeDidResult.getDid();
-
-		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-		String myVerkey = myDidResult.getVerkey();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
-
-		String attribRequest = Ledger.buildAttribRequest(myDid, myDid, hash, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, myDid, attribRequest).get();
-
-		String getAttribRequest = Ledger.buildGetAttribRequest(myDid, myDid, null, hash, null).get();
-
-		String getAttribResponse = PoolUtils.ensurePreviousRequestApplied(pool, getAttribRequest, response -> {
-			JSONObject getAttribResponseObject = new JSONObject(response);
-			return hash.equals(getAttribResponseObject.getJSONObject("result").getString("data"));
-		});
-		assertNotNull(getAttribResponse);
-	}
-
-	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
-	public void testAttribRequestsWorksForEncValue() throws Exception {
-		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String trusteeDid = trusteeDidResult.getDid();
-
-		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-		String myVerkey = myDidResult.getVerkey();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
-
-		String attribRequest = Ledger.buildAttribRequest(myDid, myDid, null, null, enc).get();
-		Ledger.signAndSubmitRequest(pool, wallet, myDid, attribRequest).get();
-
-		String getAttribRequest = Ledger.buildGetAttribRequest(myDid, myDid, null, null, enc).get();
-
-		String getAttribResponse = PoolUtils.ensurePreviousRequestApplied(pool, getAttribRequest, response -> {
-			JSONObject getAttribResponseObject = new JSONObject(response);
-			return enc.equals(getAttribResponseObject.getJSONObject("result").getString("data"));
 		});
 		assertNotNull(getAttribResponse);
 	}

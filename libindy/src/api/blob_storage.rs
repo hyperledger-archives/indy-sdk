@@ -1,9 +1,9 @@
 
-use api::{ErrorCode, IndyHandle, CommandHandle};
-use commands::{Command, CommandExecutor};
-use commands::blob_storage::BlobStorageCommand;
-use errors::prelude::*;
-use utils::ctypes;
+use indy_api_types::{ErrorCode, IndyHandle, CommandHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::blob_storage::BlobStorageCommand;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
 use libc::c_char;
 

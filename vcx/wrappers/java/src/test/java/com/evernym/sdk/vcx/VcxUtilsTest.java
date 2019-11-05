@@ -50,4 +50,11 @@ public class VcxUtilsTest {
         assert (price == 2);
 
     }
+
+    @Test
+    @DisplayName("endorse transaction")
+    void vcxEndorseTransaction() throws VcxException, ExecutionException, InterruptedException {
+        String transactionJson = "{\"req_id\":1, \"identifier\": \"EbP4aYNeTHL6q385GuVpRV\", \"signature\": \"gkVDhwe2\", \"endorser\": \"NcYxiDXkpYi6ov5FcYDi1e\"}";
+        TestHelper.getResultFromFuture(UtilsApi.vcxEndorseTransaction(transactionJson));
+    }
 }

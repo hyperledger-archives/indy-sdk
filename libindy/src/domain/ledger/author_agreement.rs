@@ -1,6 +1,8 @@
-use super::constants::{TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT, TXN_AUTHR_AGRMT_AML, GET_TXN_AUTHR_AGRMT_AML};
-
 use std::collections::HashMap;
+
+use indy_api_types::validation::Validatable;
+
+use super::constants::{GET_TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT_AML, TXN_AUTHR_AGRMT, TXN_AUTHR_AGRMT_AML};
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct TxnAuthorAgreementOperation {
@@ -27,6 +29,18 @@ pub struct GetTxnAuthorAgreementData {
     pub timestamp: Option<u64>,
 }
 
+impl Validatable for GetTxnAuthorAgreementData{
+    fn validate(&self) -> Result<(), String> {
+        match (self.digest.as_ref(), self.version.as_ref(), self.timestamp.as_ref()) {
+            (Some(_), None, None) => Ok(()),
+            (None, Some(_), None) => Ok(()),
+            (None, None, Some(_)) => Ok(()),
+            (None, None, None) => Ok(()),
+            (digest, version, timestamp) => Err(format!("Only one of field can be specified: digest: {:?}, version: {:?}, timestamp: {:?}", digest, version, timestamp))
+        }
+    }
+}
+
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetTxnAuthorAgreementOperation {
     #[serde(rename = "type")]
@@ -45,12 +59,29 @@ impl GetTxnAuthorAgreementOperation {
             _type: GET_TXN_AUTHR_AGRMT.to_string(),
             digest: data.as_ref().and_then(|d| d.digest.clone()),
             version: data.as_ref().and_then(|d| d.version.clone()),
-            timestamp: data.as_ref().and_then(|d| d.timestamp.clone()),
+            timestamp: data.as_ref().and_then(|d| d.timestamp),
         }
     }
 }
 
-pub type AcceptanceMechanisms = HashMap<String, ::serde_json::Value>;
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct AcceptanceMechanisms(pub HashMap<String, ::serde_json::Value>);
+
+impl AcceptanceMechanisms {
+    #[allow(dead_code)]
+    pub fn new() -> Self {
+        AcceptanceMechanisms(HashMap::new())
+    }
+}
+
+impl Validatable for AcceptanceMechanisms {
+    fn validate(&self) -> Result<(), String> {
+        if self.0.is_empty() {
+            return Err(String::from("Empty list of Acceptance Mechanisms has been passed"));
+        }
+        Ok(())
+    }
+}
 
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]

@@ -22,11 +22,3 @@ async def test_create_key_works_without_seed(wallet_handle):
 async def test_create_my_did_works_for_invalid_seed(wallet_handle):
     with pytest.raises(error.CommonInvalidStructure):
         await did.create_key(wallet_handle, json.dumps({'seed': 'invalidSeedLength'}))
-
-
-
-@pytest.mark.asyncio
-async def test_create_my_did_works_for_invalid_handle(wallet_handle):
-    with pytest.raises(error.WalletInvalidHandle):
-        invalid_wallet_handle = wallet_handle + 1
-        await did.create_key(invalid_wallet_handle, '{}')

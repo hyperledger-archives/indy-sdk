@@ -179,6 +179,25 @@
     }
 }
 
++ (void)parseGetNymResponse:(NSString *)response
+                 completion:(void (^)(NSError *error, NSString *nymDataJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_parse_get_nym_response(handle,
+            [response UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 // MARK: - Attribute request
 
 + (void)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid

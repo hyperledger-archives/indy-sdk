@@ -1,16 +1,16 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
-use commands::*;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
+use crate::commands::*;
 
 use indy::{ErrorCode, IndyError};
-use libindy::payment::Payment;
+use crate::libindy::payment::Payment;
 
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use utils::table::print_list_table;
+use crate::utils::table::print_list_table;
 
 
 pub mod group {
@@ -45,8 +45,14 @@ pub mod create_command {
         };
 
         let res = match Payment::create_payment_address(wallet_handle, payment_method, &config) {
-            Ok(payment_address) => Ok(println_succ!("Payment Address has been created \"{}\"", payment_address)),
-            Err(err) => Err(handle_payment_error(err, Some(payment_method))),
+            Ok(payment_address) => {
+                println_succ!("Payment Address has been created \"{}\"", payment_address);
+                Ok(())
+            },
+            Err(err) => {
+                handle_payment_error(err, Some(payment_method));
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -73,7 +79,7 @@ pub mod list_command {
                 let list_addresses =
                     payment_addresses.iter()
                         .map(|payment_address| {
-                            let parts = payment_address.split(":").collect::<Vec<&str>>();
+                            let parts = payment_address.split(':').collect::<Vec<&str>>();
                             json!({
                                 "address": payment_address,
                                 "method": parts.get(1).unwrap_or(&"Unknown payment method")
@@ -82,12 +88,15 @@ pub mod list_command {
                         .collect::<Vec<serde_json::Value>>();
 
                 print_list_table(&list_addresses,
-                                 &vec![("address", "Payment Address"),
+                                 &[("address", "Payment Address"),
                                        ("method", "Payment Method")],
                                  "There are no payment addresses");
                 Ok(())
             }
-            Err(err) => Err(handle_indy_error(err, None, None, None)),
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -99,7 +108,7 @@ pub mod sign_command {
     use super::*;
 
     command!(CommandMetadata::build("sign", "Create a proof of payment address control by signing an input and producing a signature.")
-                .add_required_param("address", "Payment address to use")
+                .add_required_param_with_dynamic_completion("address","Payment address to use", DynamicCompletionType::PaymentAddress)
                 .add_required_param("input", "The input data to be signed")
                 .add_example("payment-address sign address=pay:null:lUdSMj9AmoUbmRQ input=123456789")
                 .finalize());
@@ -133,7 +142,7 @@ pub mod verify_command {
     use super::*;
 
     command!(CommandMetadata::build("verify", "Verify a proof of payment address control by verifying a signature.")
-             .add_required_param("address", "Payment address to use")
+             .add_required_param_with_dynamic_completion("address","Payment address to use", DynamicCompletionType::PaymentAddress)
              .add_required_param("input", "The input data that was signed")
              .add_required_param("signature", "The signature generated from sign-with-address")
              .add_example("payment-address verify address=pay:null:lUdSMj9AmoUbmRQ input=123456789 signature=0x0006e83221cdaf70b3c01a613675274dd2064ea376bf35656cff8436e62cdf89")
@@ -222,8 +231,8 @@ pub fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
 #[cfg(feature = "nullpay_plugin")]
 pub mod tests {
     use super::*;
-    use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
-    use commands::did::tests::SEED_MY1;
+    use crate::commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
+    use crate::commands::did::tests::SEED_MY1;
 
     pub const INPUT: &str = "123456789";
 

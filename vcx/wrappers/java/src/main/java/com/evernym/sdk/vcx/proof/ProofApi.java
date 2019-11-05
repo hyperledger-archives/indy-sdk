@@ -249,13 +249,12 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
-    public static Integer proofRelease(
-            int proofHandle
-    ) throws VcxException {
+    public static int proofRelease(int proofHandle) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("proofRelease() called with: proofHandle = [" + proofHandle + "]");
 
         int result = LibVcx.api.vcx_proof_release(proofHandle);
+        checkResult(result);
 
         return result;
     }

@@ -137,6 +137,9 @@ to Indy distributed ledger.
 
 It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no to save compatibility with Ledger.
 
+Note: Use combination of `issuerRotateCredentialDefStart` and `indy_issuer_rotate_credential_def_apply` functions
+to generate new keys for an existing credential definition.
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `issuerDid`: String - a DID of the issuer signing cred\_def transaction to the Ledger
 * `schema`: Json - credential schema as a json
@@ -152,6 +155,35 @@ It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no 
     *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
 * __->__ [ `credDefId`: String, `credDef`: Json ] - cred\_def\_id: identifier of created credential definition
 cred\_def\_json: public part of created credential definition
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### issuerRotateCredentialDefStart \( wh, credDefId, config \) -&gt; credDef
+
+ Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+ 
+ Use `issuerRotateCredentialDefApply` function to set temporary keys as the main.
+ 
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+ 
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credDefId`: String - an identifier of created credential definition stored in the wallet
+* `config`: Json - \(optional\) type-specific configuration of credential definition as json:
+  *  'CL':
+    *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
+* __->__  `credDef`: Json - public part of temporary created credential definition
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### issuerRotateCredentialDefApply \( wh, credDefId \) -&gt; void
+
+ Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+ 
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+ 
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credDefId`: String - an identifier of created credential definition stored in the wallet
+* __->__  void
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
@@ -508,6 +540,10 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
                        // If specified prover must proof non-revocation
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
     }
 where
 ````
@@ -562,6 +598,10 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
                        // If specified prover must proof non-revocation
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
     }
 ````
 * `extraQuery`: Json - \(Optional\) List of extra queries that will be applied to correspondent attribute\/predicate:
@@ -631,7 +671,30 @@ The proof request also contains nonce.
 The proof contains either proof or self-attested attribute value for each requested attribute.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `proofReq`: Json
+* `proofReq`: Json - proof request json
+```
+  {
+      "name": string,
+      "version": string,
+      "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+      "requested_attributes": { // set of requested attributes
+           "<attr_referent>": <attr_info>, // see below
+           ...,
+      },
+      "requested_predicates": { // set of requested predicates
+           "<predicate_referent>": <predicate_info>, // see below
+           ...,
+       },
+      "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                     // If specified prover must proof non-revocation
+                     // for date in this interval for each attribute
+                     // (can be overridden on attribute level)
+      "ver": Optional<str>  - proof request version:
+          - omit to use unqualified identifiers for restrictions
+          - "1.0" to use unqualified identifiers for restrictions
+          - "2.0" to use fully qualified identifiers for restrictions
+  }
+````
 * `requestedCredentials`: Json - either a credential or self-attested attribute for each requested attribute
 ```
     {
@@ -720,6 +783,9 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 Verifies a proof \(of multiple credential\).
 All required schemas, public keys and revocation registries must be provided.
 
+IMPORTANT: You must use *_id's (`schema_id`, `cred_def_id`, `rev_reg_id`) listed in `proof[identifiers]`
+as the keys for corresponding `schemas`, `credentialDefsJsons`, `revRegDefs`, `revRegs` objects.
+
 * `proofRequest`: Json - proof request json
 ```
     {
@@ -738,6 +804,10 @@ All required schemas, public keys and revocation registries must be provided.
                        // If specified prover must proof non-revocation
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+          - omit to use unqualified identifiers for restrictions
+          - "1.0" to use unqualified identifiers for restrictions
+          - "2.0" to use fully qualified identifiers for restrictions
     }
 ````
 * `proof`: Json - created for request proof json
@@ -851,6 +921,18 @@ Generates 80-bit numbers that can be used as a nonce for proof request.
 * __->__ `nonce`: Json - generated number as a string
 
 Errors: `Common*`
+
+#### toUnqualified \( entity \) -&gt; res
+
+Get unqualified form (short form without method) of a fully qualified entity like DID.
+
+This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+1) Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+2) Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+3) another case when casting to unqualified form needed
+
+* `entity`: String - target entity to disqualify. Can be one of: Did, SchemaId, CredentialDefinitionId, RevocationRegistryId, Schema, CredentialDefinition, RevocationRegistryDefinition, CredentialOffer, CredentialRequest, ProofRequest.
+* __->__ `res`: Json - entity either in unqualified form or original if casting isn't possible
 
 ### blob_storage
 
@@ -1119,7 +1201,21 @@ Saves the Identity DID with keys in a secured Wallet, so that it can be used to 
 and encrypt transactions.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `did`: Json
+* `did`: Json - Identity information as json
+```
+{
+    "did": string, (optional;
+            if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
+            if not provided and cid is true then the full verkey will be used as a new DID;
+            if provided, then keys will be replaced - key rotation use case)
+    "seed": string, (optional) Seed that allows deterministic did creation (if not set random one will be created).
+                               Can be UTF-8, base64 or hex string.
+    "crypto_type": string, (optional; if not set then ed25519 curve is used;
+              currently only 'ed25519' value is supported for this field)
+    "cid": bool, (optional; if not set then false is used;)
+    "method_name": string, (optional) method name to create fully qualified did (Example:  `did:method_name:NcYxiDXkpYi6ov5FcYDi1e`).
+}
+```
 * __->__ [ `did`: String, `verkey`: String ] - did: DID generated and stored in the wallet
 verkey: The DIDs verification key
 
@@ -1289,6 +1385,21 @@ Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
+#### qualifyDid \( wh, did, method \) -&gt; fullQualifiedDid
+
+Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+   - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
+   - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
+
+Update DID related entities stored in the wallet.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `did`: String - target DID stored in the wallet.
+* `method`: String - method to apply to the DID.
+* __->__ `fullQualifiedDid`: String - fully qualified did
+
+Errors: `Common*`, `Wallet*`, `Crypto*`
+
 ### ledger
 
 #### signAndSubmitRequest \( poolHandle, wh, submitterDid, request \) -&gt; requestResult
@@ -1431,6 +1542,28 @@ Builds a GET\_NYM request. Request to get information about a DID \(NYM\).
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * __->__ `request`: Json
+
+Errors: `Common*`
+
+#### parseGetNymResponse \( response \) -&gt; nymData
+
+Parse a GET_NYM response to get NYM data.
+
+* `response`: String - response on GET_NYM request.
+* __->__ `nymData`: Json 
+```
+   {
+       did: DID as base58-encoded string for 16 or 32 bit DID value.
+       verkey: verification key as base58-encoded string.
+       role: Role associated number
+                               null (common USER)
+                               0 - TRUSTEE
+                               2 - STEWARD
+                               101 - TRUST_ANCHOR
+                               101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+                               201 - NETWORK_MONITOR
+   }
+```
 
 Errors: `Common*`
 
@@ -1980,7 +2113,7 @@ If all text, version and taaDigest parameters are specified, a check integrity o
 * `version`: String - \(Optional\) raw data about TAA from ledger.
      * `text` and `version` parameters should be passed together.
      * `text` and `version` parameters are required if taaDigest parameter is omitted.
-* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. Digest is sha256 hash calculated on concatenated strings: version || text. This parameter is required if text and version parameters are omitted.
 * `accMechType`: String - mechanism how user has accepted the TAA.
 * `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk. 
 
@@ -1997,7 +2130,7 @@ But it is expecting that the transaction will be sent by the specified Endorser.
 
 Note: Both Transaction Author and Endorser must sign output request after that.
 
-More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorder.md
+More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
 
 * `requestJson`: Json - original request data json.
@@ -2649,6 +2782,7 @@ if NULL, then default config will be used. Example:
     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
         Note: Not specified nodes will be placed in a random way.
+    "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
 }
 ````
 

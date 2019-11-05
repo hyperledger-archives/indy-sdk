@@ -1,11 +1,13 @@
 use libc::c_char;
-use api::{ErrorCode, CommandHandle, WalletHandle};
-use commands::{Command, CommandExecutor};
-use commands::payments::PaymentsCommand;
-use services::payments::PaymentsMethodCBs;
-use errors::prelude::*;
-use utils::ctypes;
-use services::payments::{RequesterInfo, Fees};
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::payments::PaymentsCommand;
+use crate::services::payments::PaymentsMethodCBs;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
+use crate::services::payments::{RequesterInfo, Fees};
+use crate::domain::crypto::did::DidValue;
+use indy_api_types::validation::Validatable;
 
 /// Create the payment address for this payment method.
 ///
@@ -120,7 +122,7 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: CommandHand
 /// resp_json: response for Indy request for getting sources list
 ///
 /// #Returns
-/// next - pointer to the next slice of payment address
+/// next - pointer to the next slice of payment sources
 /// sources_json - parsed (payment method and node version agnostic) sources info as json:
 ///   [{
 ///      source: <str>, // source input
@@ -491,12 +493,8 @@ pub extern fn indy_create_payment_address(command_handle: CommandHandle,
                     wallet_handle,
                     payment_method,
                     config,
-                    Box::new(move |result| {
-                        let (err, address) = prepare_result_1!(result, String::new());
-                        trace!("indy_create_payment_address: address: {:?}", address);
-                        let address = ctypes::string_to_cstring(address);
-                        cb(command_handle, err, address.as_ptr());
-                    }))
+                    boxed_callback_string!("indy_create_payment_address", cb, command_handle)
+                )
             ));
 
     let res = prepare_result!(result);
@@ -531,13 +529,10 @@ pub extern fn indy_list_payment_addresses(command_handle: CommandHandle,
             Command::Payments(
                 PaymentsCommand::ListAddresses(
                     wallet_handle,
-                    Box::new(move |result| {
-                        let (err, addresses_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_list_payment_address: addresses_json: {:?}", addresses_json);
-                        let addresses_json = ctypes::string_to_cstring(addresses_json);
-                        cb(command_handle, err, addresses_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_list_payment_address", cb, command_handle)
+                )
+            )
+        );
 
     let res = prepare_result!(result);
 
@@ -590,7 +585,7 @@ pub extern fn indy_add_request_fees(command_handle: CommandHandle,
                                                          payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_add_request_fees: >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam6);
@@ -659,13 +654,9 @@ pub extern fn indy_parse_response_with_fees(command_handle: CommandHandle,
         CommandExecutor::instance().send(
             Command::Payments(
                 PaymentsCommand::ParseResponseWithFees(
-                    payment_method, resp_json, Box::new(move |result| {
-                        let (err, receipts_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_parse_response_with_fees: receipts_json: {:?}", receipts_json);
-                        let receipts_json = ctypes::string_to_cstring(receipts_json);
-                        cb(command_handle, err, receipts_json.as_ptr());
-                    }))
-            ));
+                    payment_method,
+                    resp_json,
+                    boxed_callback_string!("indy_parse_response_with_fees", cb, command_handle))));
     let res = prepare_result!(result);
 
     trace!("indy_parse_response_with_fees: <<< res: {:?}", res);
@@ -696,7 +687,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: CommandHand
                                                                           get_sources_txn_json: *const c_char,
                                                                           payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_payment_sources_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -815,7 +806,7 @@ pub extern fn indy_build_payment_req(command_handle: CommandHandle,
                                                           payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_payment_req: >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, inputs_json, outputs_json, extra);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam6);
@@ -884,13 +875,7 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
                 PaymentsCommand::ParsePaymentResponse(
                     payment_method,
                     resp_json,
-                    Box::new(move |result| {
-                        let (err, receipts_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_parse_payment_response: receipts_json: {:?}", receipts_json);
-                        let receipts_json = ctypes::string_to_cstring(receipts_json);
-                        cb(command_handle, err, receipts_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_parse_payment_response", cb, command_handle))));
 
     let res = prepare_result!(result);
 
@@ -912,7 +897,9 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
 /// text and version - (optional) raw data about TAA from ledger.
 ///     These parameters should be passed together.
 ///     These parameters are required if taa_digest parameter is omitted.
-/// taa_digest - (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// taa_digest - (optional) digest on text and version.
+///     Digest is sha256 hash calculated on concatenated strings: version || text.
+///     This parameter is required if text and version parameters are omitted.
 /// mechanism - mechanism how user has accepted the TAA
 /// time - UTC timestamp when user has accepted the TAA
 /// cb: Callback that takes command result as parameter.
@@ -957,12 +944,7 @@ pub extern fn indy_prepare_payment_extra_with_acceptance_data(command_handle: Co
                 taa_digest,
                 mechanism,
                 time,
-                Box::new(move |result| {
-                    let (err, extra_with_acceptance) = prepare_result_1!(result, String::new());
-                    trace!("indy_prepare_payment_extra_with_acceptance_data: extra_with_acceptance: {:?}", extra_with_acceptance);
-                    let extra_with_acceptance = ctypes::string_to_cstring(extra_with_acceptance);
-                    cb(command_handle, err, extra_with_acceptance.as_ptr())
-                })
+                boxed_callback_string!("indy_prepare_payment_extra_with_acceptance_data", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -1000,7 +982,7 @@ pub extern fn indy_build_mint_req(command_handle: CommandHandle,
                                                        mint_req_json: *const c_char,
                                                        payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_mint_req: >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -1056,7 +1038,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: CommandHandle,
                                                                err: ErrorCode,
                                                                set_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_set_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(fees_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -1071,13 +1053,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: CommandHandle,
                     submitter_did,
                     payment_method,
                     fees_json,
-                    Box::new(move |result| {
-                        let (err, set_txn_fees_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_build_set_txn_fees_req: set_txn_fees_json: {:?}", set_txn_fees_json);
-                        let set_txn_fees_json = ctypes::string_to_cstring(set_txn_fees_json);
-                        cb(command_handle, err, set_txn_fees_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_build_set_txn_fees_req", cb, command_handle))));
 
     let res = prepare_result!(result);
 
@@ -1105,7 +1081,7 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: CommandHandle,
                                                                err: ErrorCode,
                                                                get_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1118,13 +1094,7 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: CommandHandle,
                     wallet_handle,
                     submitter_did,
                     payment_method,
-                    Box::new(move |result| {
-                        let (err, get_txn_fees_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_build_get_txn_fees_req: entities >>> get_txn_fees_json: {:?}", get_txn_fees_json);
-                        let get_txn_fees_json = ctypes::string_to_cstring(get_txn_fees_json);
-                        cb(command_handle, err, get_txn_fees_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_build_get_txn_fees_req", cb, command_handle))));
 
     let res = prepare_result!(result);
 
@@ -1167,13 +1137,7 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: CommandHandle,
                 PaymentsCommand::ParseGetTxnFeesResponse(
                     payment_method,
                     resp_json,
-                    Box::new(move |result| {
-                        let (err, fees_json) = prepare_result_1!(result, String::new());
-                        trace!("indy_parse_get_txn_fees_response: fees_json: {:?}", fees_json);
-                        let fees_json = ctypes::string_to_cstring(fees_json);
-                        cb(command_handle, err, fees_json.as_ptr());
-                    }))
-            ));
+                    boxed_callback_string!("indy_parse_get_txn_fees_response", cb, command_handle))));
 
     let res = prepare_result!(result);
 
@@ -1203,7 +1167,7 @@ pub extern fn indy_build_verify_payment_req(command_handle: CommandHandle,
                                                                  verify_txn_json: *const c_char,
                                                                  payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_verify_payment_req: >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(receipt, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1267,12 +1231,7 @@ pub extern fn indy_parse_verify_payment_response(command_handle: CommandHandle,
             PaymentsCommand::ParseVerifyPaymentResponse(
                 payment_method,
                 resp_json,
-                Box::new(move |result| {
-                    let (err, txn_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_parse_verify_payment_response: txn_json: {:?}", txn_json);
-                    let txn_json = ctypes::string_to_cstring(txn_json);
-                    cb(command_handle, err, txn_json.as_ptr());
-                })
+                boxed_callback_string!("indy_parse_verify_payment_response", cb, command_handle)
             )));
 
     let result = prepare_result!(result);
@@ -1337,12 +1296,7 @@ pub extern fn indy_get_request_info(command_handle: CommandHandle,
                 get_auth_rule_response_json,
                 requester_info_json,
                 fees_json,
-                Box::new(move |result| {
-                    let (err, request_info_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_get_request_info: request_info_json: {:?}", request_info_json);
-                    let request_info_json = ctypes::string_to_cstring(request_info_json);
-                    cb(command_handle, err, request_info_json.as_ptr());
-                })
+                boxed_callback_string!("indy_get_request_info", cb, command_handle)
             )));
 
     let result = prepare_result!(result);

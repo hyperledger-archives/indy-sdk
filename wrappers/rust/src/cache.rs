@@ -41,7 +41,7 @@ pub fn get_schema(pool_handle: PoolHandle,
                   wallet_handle: WalletHandle,
                   submitter_did: &str,
                   id: &str,
-                  options_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+                  options_json: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _get_schema(command_handle, pool_handle, wallet_handle, submitter_did, id, options_json, cb);
@@ -102,7 +102,7 @@ pub fn get_cred_def(pool_handle: PoolHandle,
                     wallet_handle: WalletHandle,
                     submitter_did: &str,
                     id: &str,
-                    options_json: &str) -> Box<Future<Item=String, Error=IndyError>> {
+                    options_json: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
     let err = _get_cred_def(command_handle, pool_handle, wallet_handle, submitter_did, id, options_json, cb);
@@ -139,7 +139,7 @@ pub fn _get_cred_def(command_handle: CommandHandle,
 ///  {
 ///    maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
 ///  }
-pub fn purge_schema_cache(wallet_handle: WalletHandle, options_json: &str) -> Box<Future<Item=(), Error=IndyError>> {
+pub fn purge_schema_cache(wallet_handle: WalletHandle, options_json: &str) -> Box<dyn Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
     let err = _purge_schema_cache(command_handle, wallet_handle, options_json, cb);
@@ -164,7 +164,7 @@ fn _purge_schema_cache(command_handle: CommandHandle, wallet_handle: WalletHandl
 ///  {
 ///    maxAge: (int, optional, -1 by default) Purge cached data if older than this many seconds. -1 means purge all.
 ///  }
-pub fn purge_cred_def_cache(wallet_handle: WalletHandle, options_json: &str) -> Box<Future<Item=(), Error=IndyError>> {
+pub fn purge_cred_def_cache(wallet_handle: WalletHandle, options_json: &str) -> Box<dyn Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
     let err = _purge_cred_def_cache(command_handle, wallet_handle, options_json, cb);

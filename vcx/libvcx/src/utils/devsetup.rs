@@ -26,7 +26,12 @@ macro_rules! init {
         "ledger" => {
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-            ::utils::devsetup::tests::setup_ledger_env();
+            ::utils::devsetup::tests::setup_ledger_env(false);
+        },
+        "ledger_zero_fees" => {
+            ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+            ::utils::devsetup::tests::setup_ledger_env(true);
         },
         "agency" => {
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
@@ -79,8 +84,9 @@ pub mod tests {
     static mut INSTITUTION_CONFIG: u32 = 0;
     static mut CONSUMER_CONFIG: u32 = 0;
     use indy::ErrorCode;
+    use std::sync::Once;
 
-    static INIT_PLUGIN: std::sync::Once = std::sync::ONCE_INIT;
+    static INIT_PLUGIN: std::sync::Once = std::sync::Once::new();
 
     lazy_static! {
         static ref CONFIG_STRING: ObjectCache<String> = Default::default();
@@ -170,7 +176,7 @@ pub mod tests {
         libloading::Library::new(library)
     }
 
-    pub fn setup_ledger_env() {
+    pub fn setup_ledger_env(use_zero_fees: bool) {
         match pool::get_pool_handle() {
             Ok(x) => pool::close().unwrap(),
             Err(x) => (),
@@ -193,7 +199,7 @@ pub mod tests {
         ::utils::libindy::anoncreds::libindy_prover_create_master_secret(settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
         set_trustee_did();
 
-        ::utils::libindy::payments::tests::token_setup(None, None);
+        ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
     }
 
     pub fn cleanup_local_env() {
@@ -305,10 +311,10 @@ pub mod tests {
 
         // as trustees, mint tokens into each wallet
         set_consumer();
-        ::utils::libindy::payments::tests::token_setup(None, None);
+        ::utils::libindy::payments::tests::token_setup(None, None, false);
 
         set_institution();
-        ::utils::libindy::payments::tests::token_setup(None, None);
+        ::utils::libindy::payments::tests::token_setup(None, None, false);
     }
 
     fn _config_with_wallet_handle(wallet_n: &str, config: &str) -> String {

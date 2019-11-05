@@ -1,12 +1,14 @@
-use api::CommandHandle;
-use api::WalletHandle;
-use api::ErrorCode;
+use indy_api_types::CommandHandle;
+use indy_api_types::WalletHandle;
+use indy_api_types::ErrorCode;
 use libc::c_char;
-use commands::CommandExecutor;
-use commands::Command;
-use commands::payments::PaymentsCommand;
-use utils::ctypes;
-use errors::prelude::*;
+use crate::commands::CommandExecutor;
+use crate::commands::Command;
+use crate::commands::payments::PaymentsCommand;
+use indy_utils::ctypes;
+use indy_api_types::errors::prelude::*;
+use crate::domain::crypto::did::DidValue;
+use indy_api_types::validation::Validatable;
 
 /// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
@@ -32,11 +34,11 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
                                                                                     get_sources_txn_json: *const c_char,
                                                                                     payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_payment_sources_with_from_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    let from: Option<u64> = if from == -1 { None } else { Some(from as u64) };
+    let from: Option<i64> = if from == -1 { None } else { Some(from) };
 
     trace!("indy_build_get_payment_sources_with_from_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}, from: {:?}", wallet_handle, submitter_did, payment_address, from);
 
@@ -72,7 +74,7 @@ pub extern fn indy_build_get_payment_sources_with_from_request(command_handle: C
 /// resp_json: response for Indy request for getting sources list
 ///
 /// #Returns
-/// next - pointer to the next slice of payment address
+/// next - pointer to the next slice of payment sources
 /// sources_json - parsed (payment method and node version agnostic) sources info as json:
 ///   [{
 ///      source: <str>, // source input

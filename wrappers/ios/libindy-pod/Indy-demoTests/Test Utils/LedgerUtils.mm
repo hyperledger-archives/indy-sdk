@@ -150,6 +150,27 @@
     return err;
 }
 
+
+- (NSError *)parseGetNymResponse:(NSString *)response
+                         nymData:(NSString **)nymData; {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *data = nil;
+
+    [IndyLedger parseGetNymResponse:response
+                         completion:^(NSError *error, NSString *json) {
+                             err = error;
+                             data = json;
+                             [completionExpectation fulfill];
+                         }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (nymData) {*nymData = data;}
+
+    return err;
+}
+
 // MARK: Build Attribute request
 
 - (NSError *)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid

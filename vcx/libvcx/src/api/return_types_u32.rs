@@ -54,7 +54,7 @@ pub struct Return_U32 {
 impl Return_U32 {
     pub fn new() -> Result<Return_U32, u32> {
         let (sender, receiver) = channel();
-        let closure: Box<FnMut(u32) + Send> = Box::new(move |err | {
+        let closure: Box<dyn FnMut(u32) + Send> = Box::new(move |err | {
             sender.send(err).unwrap_or_else(log_error);
         });
 
@@ -84,7 +84,7 @@ pub struct Return_U32_U32 {
 impl Return_U32_U32 {
     pub fn new() -> Result<Return_U32_U32, u32> {
         let (sender, receiver) = channel();
-        let closure: Box<FnMut(u32, u32) + Send> = Box::new(move |err, arg1 | {
+        let closure: Box<dyn FnMut(u32, u32) + Send> = Box::new(move |err, arg1 | {
             sender.send((err, arg1)).unwrap_or_else(log_error);
         });
 
@@ -115,7 +115,7 @@ pub struct Return_U32_STR {
 impl Return_U32_STR {
     pub fn new() -> Result<Return_U32_STR, u32> {
         let (sender, receiver) = channel();
-        let closure:Box<FnMut(u32, Option<String>) + Send> = Box::new(move |err, str | {
+        let closure:Box<dyn FnMut(u32, Option<String>) + Send> = Box::new(move |err, str | {
             sender.send((err, str)).unwrap_or_else(log_error);
         });
 
@@ -147,7 +147,7 @@ pub struct Return_U32_U32_STR {
 impl Return_U32_U32_STR {
     pub fn new() -> Result<Return_U32_U32_STR, u32> {
         let (sender, receiver) = channel();
-        let closure:Box<FnMut(u32, u32, Option<String>) + Send> = Box::new(move |err, arg1,  arg2 | {
+        let closure:Box<dyn FnMut(u32, u32, Option<String>) + Send> = Box::new(move |err, arg1,  arg2 | {
             sender.send((err, arg1, arg2)).unwrap_or_else(log_error);
         });
 
@@ -178,7 +178,7 @@ pub struct Return_U32_STR_STR {
 impl Return_U32_STR_STR {
     pub fn new() -> Result<Return_U32_STR_STR, u32> {
         let (sender, receiver) = channel();
-        let closure:Box<FnMut(u32, Option<String>, Option<String>) + Send> = Box::new(move |err, str1, str2 | {
+        let closure:Box<dyn FnMut(u32, Option<String>, Option<String>) + Send> = Box::new(move |err, str1, str2 | {
             sender.send((err, str1, str2)).unwrap_or_else(log_error);
         });
 
@@ -215,7 +215,7 @@ pub struct Return_U32_BOOL {
 impl Return_U32_BOOL {
     pub fn new() -> Result<Return_U32_BOOL, u32> {
         let (sender, receiver) = channel();
-        let closure: Box<FnMut(u32, bool) + Send> = Box::new(move |err, arg1 | {
+        let closure: Box<dyn FnMut(u32, bool) + Send> = Box::new(move |err, arg1 | {
             sender.send((err, arg1)).unwrap_or_else(log_error);
         });
 
@@ -248,7 +248,7 @@ pub struct Return_U32_BIN {
 impl Return_U32_BIN {
     pub fn new() -> Result<Return_U32_BIN, u32> {
         let (sender, receiver) = channel();
-        let closure: Box<FnMut(u32, Vec<u8>) + Send> = Box::new(move |err, arg1| {
+        let closure: Box<dyn FnMut(u32, Vec<u8>) + Send> = Box::new(move |err, arg1| {
             sender.send((err, arg1)).unwrap_or_else(log_error);
         });
 
@@ -280,7 +280,7 @@ pub struct Return_U32_OPTSTR_BIN {
 impl Return_U32_OPTSTR_BIN {
     pub fn new() -> Result<Return_U32_OPTSTR_BIN, u32> {
         let (sender, receiver) = channel();
-        let closure: Box<FnMut(u32, Option<String>, Vec<u8>) + Send> = Box::new(move |err, arg1, arg2| {
+        let closure: Box<dyn FnMut(u32, Option<String>, Vec<u8>) + Send> = Box::new(move |err, arg1, arg2| {
             sender.send((err, arg1, arg2)).unwrap_or_else(log_error);
         });
 
@@ -301,6 +301,38 @@ impl Return_U32_OPTSTR_BIN {
 
         arg2 = map_indy_error(arg2, err)?;
         Ok((arg1, arg2))
+    }
+}
+
+#[allow(non_camel_case_types)]
+pub struct Return_U32_U32_STR_STR_STR {
+    pub command_handle: u32,
+    receiver: Receiver<(u32, u32, Option<String>, Option<String>, Option<String>)>,
+}
+
+impl Return_U32_U32_STR_STR_STR {
+    pub fn new() -> Result<Return_U32_U32_STR_STR_STR, u32> {
+        let (sender, receiver) = channel();
+        let closure:Box<dyn FnMut(u32, u32, Option<String>, Option<String>, Option<String>) + Send> = Box::new(move |err, arg1,  arg2,  arg3,  arg4 | {
+            sender.send((err, arg1, arg2, arg3, arg4)).unwrap_or_else(log_error);
+        });
+
+        let command_handle = insert_closure(closure, callback::CALLBACKS_U32_U32_STR_STR_STR.deref());
+
+        Ok(Return_U32_U32_STR_STR_STR {
+            command_handle,
+            receiver,
+        })
+    }
+
+    pub fn get_callback(&self) -> extern fn(command_handle: u32, arg1: u32, arg2: u32, arg3: *const c_char, arg4: *const c_char, arg5: *const c_char) {
+        callback::call_cb_u32_u32_str_str_str
+    }
+
+    pub fn receive(&self, timeout: Option<Duration>) -> Result<(u32, Option<String>, Option<String>, Option<String>), u32> {
+        let (err, arg1, arg2, arg3, arg4) = receive(&self.receiver, timeout)?;
+
+        map_indy_error((arg1, arg2, arg3, arg4), err)
     }
 }
 
