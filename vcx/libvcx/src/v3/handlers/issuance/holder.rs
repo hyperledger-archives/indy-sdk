@@ -107,6 +107,7 @@ impl HolderSM {
                         Err(err) => {
                             let msg = A2AMessage::CommonProblemReport(
                                 ProblemReport::create()
+                                    .set_comment(err.to_string())
                                     //TODO define some error codes inside RFC and use them here
                                     .set_description(0)
                             );

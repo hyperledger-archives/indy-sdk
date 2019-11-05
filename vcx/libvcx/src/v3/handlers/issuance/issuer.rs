@@ -3,7 +3,7 @@ use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::states::{IssuerState, InitialState};
 use v3::handlers::connection::{send_message, get_messages, get_pw_did, decode_message};
 use messages::update_message::{UIDsByConn, update_messages};
-use v3::messages::A2AMessage;
+use v3::messages::{A2AMessage, MessageId};
 use v3::messages::issuance::{
     credential::Credential,
     credential_request::CredentialRequest,
@@ -149,16 +149,16 @@ impl IssuerSM {
                 CredentialIssuanceMessage::CredentialSend() => {
                     let credential_msg = _create_credential(&state_data.request, &state_data.rev_reg_id, &state_data.tails_file, &state_data.offer, &state_data.cred_data);
                     let conn_handle = state_data.connection_handle;
-                    let thread = Thread::new().set_thid(state_data.request.id.0.clone());
+                    let thread = state_data.request.thread.clone();
                     let (msg, state) = match credential_msg {
                         Ok(credential_msg) => {
-                            let id = credential_msg.id.clone();
+                            let id = MessageId(state_data.request.thread.thid.clone().unwrap_or_default());
                             let credential_msg = credential_msg.set_thread(thread);
                             let msg = A2AMessage::Credential(
                                 credential_msg
                             );
                             (msg, IssuerState::CredentialSent((state_data, id).into()))
-                        },
+                        }
                         Err(_err) => {
                             let msg = A2AMessage::CommonProblemReport(
                                 ProblemReport::create()
@@ -222,7 +222,6 @@ fn _append_credential_preview(cred_offer_msg: CredentialOffer, credential_json: 
 }
 
 fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, tails_file: &Option<String>, offer: &str, cred_data: &str) -> VcxResult<Credential> {
-
     let request = &request.requests_attach.content()?;
 
     let cred_data = encode_attributes(cred_data)?;
