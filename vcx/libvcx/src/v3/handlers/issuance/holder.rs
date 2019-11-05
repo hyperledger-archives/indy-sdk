@@ -108,8 +108,6 @@ impl HolderSM {
                             let msg = A2AMessage::CommonProblemReport(
                                 ProblemReport::create()
                                     .set_comment(err.to_string())
-                                    //TODO define some error codes inside RFC and use them here
-                                    .set_description(0)
                             );
                             (msg, HolderState::Finished(state_data.into()))
                         }
@@ -136,12 +134,11 @@ impl HolderSM {
                                 Some(cred_id)
                             )
                         }
-                        Err(_err) => {
+                        Err(err) => {
                             (
                                 A2AMessage::CommonProblemReport(
                                     ProblemReport::create()
-                                        //TODO define some error codes inside RFC and use them here
-                                        .set_description(0)
+                                        .set_comment(err.to_string())
                                         .set_thread(Thread::new().set_thid(credential.id.0.clone()))
                                 ),
                                 None

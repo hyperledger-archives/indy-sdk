@@ -1,5 +1,6 @@
 use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
-use v3::messages::issuance::{CredentialPreviewData, CredentialValueType};
+use v3::messages::issuance::CredentialPreviewData;
+use v3::messages::mime_type::MimeType;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
 
@@ -42,7 +43,7 @@ impl CredentialProposal {
         self
     }
 
-    pub fn add_credential_preview_data(mut self, name: &str, value: &str, mime_type: CredentialValueType) -> VcxResult<CredentialProposal> {
+    pub fn add_credential_preview_data(mut self, name: &str, value: &str, mime_type: MimeType) -> VcxResult<CredentialProposal> {
         self.credential_proposal = self.credential_proposal.add_value(name, value, mime_type)?;
         Ok(self)
     }

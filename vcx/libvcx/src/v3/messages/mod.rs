@@ -9,6 +9,7 @@ pub mod connection;
 pub mod error;
 pub mod forward;
 pub mod attachment;
+pub mod mime_type;
 
 #[allow(unused)] //FIXME:
 pub mod issuance;
@@ -19,6 +20,7 @@ use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::SignedResponse;
 use v3::messages::connection::problem_report::ProblemReport as ConnectionProblemReport;
+use v3::messages::connection::ping::Ping;
 use v3::messages::forward::Forward;
 use v3::messages::error::ProblemReport as CommonProblemReport;
 use v3::messages::issuance::credential_proposal::CredentialProposal;
@@ -43,6 +45,7 @@ pub enum A2AMessage {
     ConnectionRequest(Request),
     ConnectionResponse(SignedResponse),
     ConnectionProblemReport(ConnectionProblemReport),
+    Ping(Ping),
 
     /// notification
     Ack(Ack),
@@ -87,6 +90,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
             "response" => {
                 SignedResponse::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionResponse(msg))
+                    .map_err(de::Error::custom)
+            }
+            "ping" => {
+                Ping::deserialize(value)
+                    .map(|msg| A2AMessage::Ping(msg))
                     .map_err(de::Error::custom)
             }
             "problem_report" => {
@@ -159,6 +167,7 @@ impl Serialize for A2AMessage {
             A2AMessage::ConnectionRequest(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeRequest),
             A2AMessage::ConnectionResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeResponse),
             A2AMessage::ConnectionProblemReport(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeProblemReport),
+            A2AMessage::Ping(msg) => set_a2a_message_type(msg, A2AMessageKinds::Ping),
             A2AMessage::Ack(msg) => set_a2a_message_type(msg, A2AMessageKinds::Ack),
             A2AMessage::CommonProblemReport(msg) => set_a2a_message_type(msg, A2AMessageKinds::ProblemReport),
             A2AMessage::CredentialProposal(msg) => set_a2a_message_type(msg, A2AMessageKinds::CredentialProposal),
@@ -185,6 +194,7 @@ pub enum A2AMessageKinds {
     ExchangeResponse,
     ExchangeProblemReport,
     Ed25519Signature,
+    Ping,
     Ack,
     CredentialOffer,
     CredentialProposal,
@@ -206,6 +216,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::ExchangeRequest => MessageFamilies::DidExchange,
             A2AMessageKinds::ExchangeResponse => MessageFamilies::DidExchange,
             A2AMessageKinds::ExchangeProblemReport => MessageFamilies::DidExchange,
+            A2AMessageKinds::Ping => MessageFamilies::Notification,
             A2AMessageKinds::Ack => MessageFamilies::Notification,
             A2AMessageKinds::ProblemReport => MessageFamilies::ReportProblem,
             A2AMessageKinds::Ed25519Signature => MessageFamilies::Signature,
@@ -228,6 +239,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::ExchangeRequest => "request".to_string(),
             A2AMessageKinds::ExchangeResponse => "response".to_string(),
             A2AMessageKinds::ExchangeProblemReport => "problem_report".to_string(),
+            A2AMessageKinds::Ping => "ping".to_string(),
             A2AMessageKinds::Ack => "ack".to_string(),
             A2AMessageKinds::ProblemReport => "problem-report".to_string(),
             A2AMessageKinds::Ed25519Signature => "ed25519Sha512_single".to_string(),
@@ -254,6 +266,7 @@ pub enum MessageFamilies {
     CredentialIssuance,
     ReportProblem,
     PresentProof,
+    TrustPing,
     Unknown(String)
 }
 
@@ -267,6 +280,7 @@ impl MessageFamilies {
             MessageFamilies::CredentialIssuance => "1.0",
             MessageFamilies::ReportProblem => "1.0",
             MessageFamilies::PresentProof => "1.0",
+            MessageFamilies::TrustPing => "1.0",
             MessageFamilies::Unknown(_) => "1.0"
         }
     }
@@ -282,6 +296,7 @@ impl From<String> for MessageFamilies {
             "issue-credential" => MessageFamilies::CredentialIssuance,
             "report-problem" => MessageFamilies::ReportProblem,
             "present-proof" => MessageFamilies::PresentProof,
+            "trust_ping" => MessageFamilies::TrustPing,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -297,6 +312,7 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::CredentialIssuance => "issue-credential".to_string(),
             MessageFamilies::ReportProblem => "report-problem".to_string(),
             MessageFamilies::PresentProof => "present-proof".to_string(),
+            MessageFamilies::TrustPing => "trust_ping".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }

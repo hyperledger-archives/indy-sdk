@@ -8,7 +8,7 @@ pub struct ProblemReport {
     id: MessageId,
     #[serde(rename = "~thread")]
     pub thread: Thread,
-    pub description: Description,
+    pub description: Option<Description>,
     pub who_retries: Option<WhoRetries>,
     #[serde(rename = "tracking-uri")]
     pub tracking_uri: Option<String>,
@@ -29,10 +29,7 @@ impl ProblemReport {
         ProblemReport {
             id: MessageId::new(),
             thread: Thread::new(),
-            description: Description {
-                en: None,
-                code: 0
-            },
+            description: None,
             who_retries: None,
             tracking_uri: None,
             escalation_uri: None,
@@ -46,10 +43,10 @@ impl ProblemReport {
     }
 
     pub fn set_description(mut self, code: u32) -> Self {
-        self.description = Description {
+        self.description = Some(Description {
             en: None,
             code
-        };
+        });
         self
     }
 

@@ -48,32 +48,32 @@ pub enum ProverMessages {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InitialState {
-    pub presentation_request: PresentationRequest,
+    presentation_request: PresentationRequest,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationPreparedState {
-    pub presentation_request: PresentationRequest,
-    pub presentation: Presentation,
+    presentation_request: PresentationRequest,
+    presentation: Presentation,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationPreparationFailedState {
-    pub presentation_request: PresentationRequest,
-    pub problem_report: ProblemReport,
+    presentation_request: PresentationRequest,
+    problem_report: ProblemReport,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationSentState {
-    pub connection_handle: u32,
-    pub presentation_request: PresentationRequest,
-    pub presentation: Presentation,
+    connection_handle: u32,
+    presentation_request: PresentationRequest,
+    presentation: Presentation,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FinishedState {
     connection_handle: u32,
-    pub presentation_request: PresentationRequest,
+    presentation_request: PresentationRequest,
     presentation: Presentation,
     status: PresentationStatus
 }

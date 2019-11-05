@@ -94,13 +94,13 @@ impl Verifier {
 
     pub fn handle_message(&mut self, message: A2AMessage) -> VcxResult<Option<()>> {
         trace!("Verifier::handle_message >>> message: {:?}", message);
+        let thid = &self.state.presentation_request()?.id.0;
 
         match self.state.state {
             VerifierState::Initiated(ref state) => {
                 // do not process message
             }
             VerifierState::PresentationRequestSent(ref state) => {
-                let thid = &state.presentation_request.id.0;
                 match message {
                     A2AMessage::Presentation(presentation) => {
                         if presentation.thread.is_reply(&thid) {

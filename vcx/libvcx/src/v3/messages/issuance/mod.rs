@@ -1,4 +1,5 @@
 use v3::messages::{MessageType, A2AMessageKinds};
+use v3::messages::mime_type::MimeType;
 use error::{VcxError, VcxResult, VcxErrorKind};
 
 pub mod credential;
@@ -21,9 +22,9 @@ impl CredentialPreviewData {
         }
     }
 
-    pub fn add_value(mut self, name: &str, value: &str, mime_type: CredentialValueType) -> VcxResult<CredentialPreviewData> {
+    pub fn add_value(mut self, name: &str, value: &str, mime_type: MimeType) -> VcxResult<CredentialPreviewData> {
         let data_value = match mime_type {
-            CredentialValueType::Plain => {
+            MimeType::Plain => {
                 Ok(CredentialValue {
                     name: name.to_string(),
                     value: value.to_string(),
@@ -43,12 +44,5 @@ impl CredentialPreviewData {
 pub struct CredentialValue {
     pub name: String,
     pub value: String,
-    #[serde(rename = "mime-type")]
-    pub _type: Option<CredentialValueType>,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum CredentialValueType {
-    #[serde(rename = "text/plain")]
-    Plain
+    pub _type: Option<MimeType>,
 }

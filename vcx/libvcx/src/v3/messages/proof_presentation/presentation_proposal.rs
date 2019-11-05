@@ -1,4 +1,5 @@
 use v3::messages::MessageId;
+use v3::messages::mime_type::MimeType;
 use messages::thread::Thread;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -24,9 +25,8 @@ pub struct Attribute {
     pub name: String,
     pub cred_def_id: Option<String>,
     #[serde(rename = "mime-type")]
-    pub mime_type: Option<String>,
-    // TODO: FIXME
-    pub value: Option<String> // TODO: FIXME
+    pub mime_type: Option<MimeType>,
+    pub value: Option<String>
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]

@@ -42,14 +42,13 @@ pub enum VerifierMessages {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InitialState {
-    pub presentation_request_data: PresentationRequestData
+    presentation_request_data: PresentationRequestData
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PresentationRequestSentState {
     connection_handle: u32,
-    pub presentation_request: PresentationRequest,
-    // TODO: FIXME
+    presentation_request: PresentationRequest,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

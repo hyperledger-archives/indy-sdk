@@ -7,11 +7,11 @@ use v3::messages::{A2AMessage, MessageId};
 use v3::messages::issuance::{
     credential::Credential,
     credential_request::CredentialRequest,
-    credential_offer::CredentialOffer,
-    CredentialValueType
+    credential_offer::CredentialOffer
 };
 use v3::messages::error::ProblemReport;
 use v3::messages::attachment::Attachment;
+use v3::messages::mime_type::MimeType;
 use error::{VcxResult, VcxError, VcxErrorKind};
 use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer};
 use credential_def::{get_rev_reg_id, get_tails_file};
@@ -130,8 +130,7 @@ impl IssuerSM {
                 CredentialIssuanceMessage::CredentialProposal(proposal, connection_handle) => {
                     let msg = A2AMessage::CommonProblemReport(
                         ProblemReport::create()
-                            //TODO define some error codes inside RFC and use them here
-                            .set_description(0)
+                            .set_comment(String::from("CredentialProposal is not supported"))
                             .set_thread(Thread::new().set_thid(proposal.id.0))
                     );
                     send_message(connection_handle, msg)?;
@@ -159,11 +158,10 @@ impl IssuerSM {
                             );
                             (msg, IssuerState::CredentialSent((state_data, id).into()))
                         }
-                        Err(_err) => {
+                        Err(err) => {
                             let msg = A2AMessage::CommonProblemReport(
                                 ProblemReport::create()
-                                    //TODO define some error codes inside RFC and use them here
-                                    .set_description(0)
+                                    .set_comment(err.to_string())
                                     .set_thread(thread)
                             );
                             (msg, IssuerState::Finished(state_data.into()))
@@ -215,7 +213,7 @@ fn _append_credential_preview(cred_offer_msg: CredentialOffer, credential_json: 
             key,
             value.as_str()
                 .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Preview Json".to_string()))?,
-            CredentialValueType::Plain,
+            MimeType::Plain,
         )?;
     }
     Ok(new_offer)

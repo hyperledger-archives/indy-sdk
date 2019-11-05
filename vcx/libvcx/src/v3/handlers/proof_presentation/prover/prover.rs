@@ -116,6 +116,8 @@ impl Prover {
     pub fn handle_message(&mut self, message: A2AMessage) -> VcxResult<Option<()>> {
         trace!("Prover::handle_message >>> message: {:?}", message);
 
+        let thid = self.state.presentation_request().id.0.clone();
+
         match self.state.state {
             ProverState::Initiated(ref state) => {
                 match message {
@@ -132,7 +134,6 @@ impl Prover {
                 // do not process messages
             }
             ProverState::PresentationSent(ref state) => {
-                let thid = state.presentation.thread.thid.clone().unwrap_or_default();
                 match message {
                     A2AMessage::Ack(ack) => {
                         if ack.thread.is_reply(&thid) {

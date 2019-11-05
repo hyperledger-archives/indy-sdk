@@ -23,7 +23,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
     source_id: String,
-    state: DidExchangeStateSM
+    state: DidExchangeSM
 }
 
 impl Connection {
@@ -34,7 +34,7 @@ impl Connection {
 
         Ok(Connection {
             source_id: source_id.to_string(),
-            state: DidExchangeStateSM::new(actor),
+            state: DidExchangeSM::new(actor),
         })
     }
 
@@ -115,7 +115,7 @@ impl Connection {
             Some(message_) => self.update_state_with_message(message_),
             None => {
                 let (messages, messages_to_update) = self.get_messages()?;
-
+                
                 messages
                     .into_iter()
                     .map(|(_, message)| self.handle_message(message))
@@ -259,6 +259,10 @@ impl Connection {
                     A2AMessage::Ack(ack) => {
                         debug!("Ack message received");
                         self.step(Messages::AckReceived(ack))?;
+                    }
+                    A2AMessage::Ping(ping) => {
+                        debug!("Ping message received");
+                        self.step(Messages::PingReceived(ping))?;
                     }
                     A2AMessage::ConnectionProblemReport(problem_report) => {
                         debug!("ProblemReport message received");

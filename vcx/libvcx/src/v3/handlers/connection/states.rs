@@ -4,6 +4,7 @@ use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{Response, SignedResponse};
 use v3::messages::connection::problem_report::ProblemReport;
 use v3::messages::connection::remote_info::RemoteConnectionInfo;
+use v3::messages::connection::ping::Ping;
 use v3::messages::ack::Ack;
 use v3::messages::A2AMessage;
 
@@ -15,9 +16,9 @@ use messages::thread::Thread;
 use error::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DidExchangeStateSM {
+pub struct DidExchangeSM {
     agent_info: AgentInfo,
-    pub state: ActorDidExchangeState // TODO FIX public
+    pub state: ActorDidExchangeState
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -133,6 +134,13 @@ impl From<(RespondedState, Ack)> for CompleteState {
     }
 }
 
+impl From<(RespondedState, Ping)> for CompleteState {
+    fn from((state, ping): (RespondedState, Ping)) -> CompleteState {
+        trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
+        CompleteState { remote_info: state.remote_info }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Messages {
     SendInvitation(Invitation),
@@ -145,19 +153,20 @@ pub enum Messages {
     SendAck(Ack),
     SendProblemReport(ProblemReport),
     ReceivedProblemReport(ProblemReport),
+    PingReceived(Ping),
 }
 
-impl DidExchangeStateSM {
+impl DidExchangeSM {
     pub fn new(actor: Actor) -> Self {
         match actor {
             Actor::Inviter => {
-                DidExchangeStateSM {
+                DidExchangeSM {
                     state: ActorDidExchangeState::Inviter(DidExchangeState::Null(NullState {})),
                     agent_info: AgentInfo::default()
                 }
             }
             Actor::Invitee => {
-                DidExchangeStateSM {
+                DidExchangeSM {
                     state: ActorDidExchangeState::Invitee(DidExchangeState::Null(NullState {})),
                     agent_info: AgentInfo::default()
                 }
@@ -188,10 +197,10 @@ impl DidExchangeStateSM {
         }
     }
 
-    pub fn step(self, message: Messages) -> VcxResult<DidExchangeStateSM> {
+    pub fn step(self, message: Messages) -> VcxResult<DidExchangeSM> {
         trace!("DidExchangeStateSM::step >>> message: {:?}", message);
 
-        let DidExchangeStateSM { agent_info, state } = self;
+        let DidExchangeSM { agent_info, state } = self;
 
         let state = match state {
             ActorDidExchangeState::Inviter(state) => {
@@ -249,6 +258,14 @@ impl DidExchangeStateSM {
                         match message {
                             Messages::AckReceived(ack) => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ack).into()))
+                            }
+                            Messages::PingReceived(ping) => {
+                                if ping.response_requested {
+                                    let ping = Ping::create().set_thread(ping.thread.clone());
+                                    send_message(&ping.to_a2a_message(), &state.remote_info, &agent_info.pw_vk)?;
+                                }
+
+                                ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping).into()))
                             }
                             Messages::ReceivedProblemReport(problem_report) => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
@@ -333,7 +350,7 @@ impl DidExchangeStateSM {
                 }
             }
         };
-        Ok(DidExchangeStateSM { agent_info, state })
+        Ok(DidExchangeSM { agent_info, state })
     }
 
     pub fn remote_connection_info(&self) -> Option<RemoteConnectionInfo> {
