@@ -19,7 +19,9 @@ pub struct Response {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct ConnectionData {
+    #[serde(rename = "DID")]
     pub did: String,
+    #[serde(rename = "DIDDoc")]
     pub did_doc: DidDoc,
 }
 
