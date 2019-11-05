@@ -492,7 +492,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
     let number_of_addresses = number_of_addresses.unwrap_or(1);
 
     if number_of_addresses > 0 {
-        let tokens_per_address: u64 = tokens_per_address.unwrap_or(50000000000);
+        let tokens_per_address: u64 = tokens_per_address.unwrap_or(50_000_000_000);
         let mut addresses = Vec::new();
 
         for n in 0..number_of_addresses {

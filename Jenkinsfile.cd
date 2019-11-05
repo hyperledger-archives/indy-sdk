@@ -429,9 +429,10 @@ def linuxVcxBuild(file, env_name, network_name) {
             '''
 
             echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
+            // TODO in Rust 1.38.0 there was a problem with test name before "--". Temporary put test name after it.
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "pool_tests agency_v2" -- tests::test_real_proof_for_protocol_type_v2 --exact
             '''
         }
     }
@@ -1712,7 +1713,7 @@ def shell(command) {
 }
 
 def setupRust() {
-    shell("rustup default 1.36.0")
+    shell("rustup default 1.38.0")
 }
 
 def androidPublishing() {

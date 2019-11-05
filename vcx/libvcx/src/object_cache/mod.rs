@@ -47,9 +47,9 @@ impl<T> ObjectCache<T> {
         match store.get(&handle) {
             Some(m) => match m.lock() {
                 Ok(obj) => closure(obj.deref()),
-                Err(err) => return Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to lock Object Store")) //TODO better error
+                Err(err) => Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to lock Object Store")) //TODO better error
             },
-            None => return Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
+            None => Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
         }
     }
 
@@ -60,9 +60,9 @@ impl<T> ObjectCache<T> {
         match store.get_mut(&handle) {
             Some(m) => match m.lock() {
                 Ok(mut obj) => closure(obj.deref_mut()),
-                Err(err) => return Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to lock Object Store")) //TODO better error
+                Err(err) => Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to lock Object Store")) //TODO better error
             },
-            None => return Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
+            None => Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
         }
     }
 
@@ -87,7 +87,7 @@ impl<T> ObjectCache<T> {
         let mut store = self._lock_store()?;
         match store.remove(&handle) {
             Some(_) => Ok(()),
-            None => return Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
+            None => Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)))
         }
     }
 
