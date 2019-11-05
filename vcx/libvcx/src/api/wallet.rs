@@ -9,7 +9,7 @@ use utils::threadpool::spawn;
 use std::thread;
 use std::ptr::null;
 use error::prelude::*;
-use indy_sys::{CommandHandle, SearchHandle, WalletHandle};
+use indy::{CommandHandle, SearchHandle, WalletHandle};
 
 /// Get the total balance from all addresses contained in the configured wallet
 ///

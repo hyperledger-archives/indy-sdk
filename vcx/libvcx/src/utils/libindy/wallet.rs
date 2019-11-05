@@ -6,7 +6,7 @@ use utils::libindy::error_codes::map_rust_indy_sdk_error;
 
 use std::path::Path;
 use error::prelude::*;
-use indy_sys::{WalletHandle, INVALID_WALLET_HANDLE};
+use indy::{WalletHandle, INVALID_WALLET_HANDLE};
 
 pub static mut WALLET_HANDLE: WalletHandle = INVALID_WALLET_HANDLE;
 

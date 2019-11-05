@@ -7,7 +7,7 @@ use settings;
 use std::ffi::CString;
 use utils::threadpool::spawn;
 use error::prelude::*;
-use indy_sys::{INVALID_WALLET_HANDLE, CommandHandle};
+use indy::{INVALID_WALLET_HANDLE, CommandHandle};
 
 /// Initializes VCX with config settings
 ///
@@ -440,7 +440,7 @@ mod tests {
     use api::VcxStateType;
     use api::return_types_u32;
     use api::connection::vcx_connection_create;
-    use indy_sys::{WalletHandle};
+    use indy::{WalletHandle};
 
     fn create_config_util(logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
