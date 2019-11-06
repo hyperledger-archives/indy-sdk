@@ -1,18 +1,17 @@
-extern crate libc;
 
-use api::{ErrorCode, IndyHandle};
-use commands::{Command, CommandExecutor};
-use commands::blob_storage::BlobStorageCommand;
-use errors::prelude::*;
-use utils::ctypes;
+use indy_api_types::{ErrorCode, IndyHandle, CommandHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::blob_storage::BlobStorageCommand;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
-use self::libc::c_char;
+use libc::c_char;
 
 #[no_mangle]
-pub extern fn indy_open_blob_storage_reader(command_handle: IndyHandle,
+pub extern fn indy_open_blob_storage_reader(command_handle: CommandHandle,
                                             type_: *const c_char,
                                             config_json: *const c_char,
-                                            cb: Option<extern fn(command_handle_: IndyHandle,
+                                            cb: Option<extern fn(command_handle_: CommandHandle,
                                                                  err: ErrorCode,
                                                                  handle: IndyHandle)>) -> ErrorCode {
     trace!("indy_open_blob_storage_reader: >>> type_: {:?}, config_json: {:?}", type_, config_json);
@@ -42,10 +41,10 @@ pub extern fn indy_open_blob_storage_reader(command_handle: IndyHandle,
 }
 
 #[no_mangle]
-pub extern fn indy_open_blob_storage_writer(command_handle: IndyHandle,
+pub extern fn indy_open_blob_storage_writer(command_handle: CommandHandle,
                                             type_: *const c_char,
                                             config_json: *const c_char,
-                                            cb: Option<extern fn(command_handle_: IndyHandle,
+                                            cb: Option<extern fn(command_handle_: CommandHandle,
                                                                  err: ErrorCode,
                                                                  handle: IndyHandle)>) -> ErrorCode {
     trace!("indy_open_blob_storage_writer: >>> type_: {:?}, config_json: {:?}", type_, config_json);

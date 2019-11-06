@@ -1,15 +1,15 @@
-extern crate rust_base58;
-extern crate serde_json;
+use serde_json;
 
 use std::collections::HashMap;
 use std::vec::Vec;
-use utils::error;
+
 use messages::validation;
+use error::prelude::*;
+use utils::libindy::anoncreds;
 
 static PROOF_REQUEST: &str = "PROOF_REQUEST";
 static PROOF_DATA: &str = "proof_request_data";
-static REQUESTED_ATTRS: &str = "requested_attributes";
-static REQUESTED_PREDICATES: &str = "requested_predicates";
+pub const PROOF_REQUEST_V2: &str = "2.0";
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 struct ProofType {
@@ -67,28 +67,28 @@ pub struct NonRevokedInterval {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct ProofRequestData{
+pub struct ProofRequestData {
     nonce: String,
     name: String,
     #[serde(rename = "version")]
     data_version: String,
     pub requested_attributes: HashMap<String, AttrInfo>,
     pub requested_predicates: HashMap<String, PredicateInfo>,
-    pub non_revoked: Option<NonRevokedInterval>
+    pub non_revoked: Option<NonRevokedInterval>,
+    ver: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct ProofRequestMessage{
+pub struct ProofRequestMessage {
     #[serde(rename = "@type")]
     type_header: ProofType,
     #[serde(rename = "@topic")]
     topic: ProofTopic,
     pub proof_request_data: ProofRequestData,
-    #[serde(skip_serializing, default)]
-    validate_rc: u32,
     pub msg_ref_id: Option<String>,
     from_timestamp: Option<u64>,
-    to_timestamp: Option<u64>
+    to_timestamp: Option<u64>,
+    pub thread_id: Option<String>
 }
 
 impl ProofPredicates {
@@ -114,93 +114,90 @@ impl ProofRequestMessage {
                 nonce: String::new(),
                 name: String::new(),
                 data_version: String::new(),
-                requested_attributes:HashMap::new(),
+                requested_attributes: HashMap::new(),
                 requested_predicates: HashMap::new(),
-                non_revoked: None
+                non_revoked: None,
+                ver: None
             },
-            validate_rc: 0,
             msg_ref_id: None,
             from_timestamp: None,
             to_timestamp: None,
+            thread_id: None,
         }
     }
 
-    pub fn type_version(&mut self, version: &str) -> &mut Self {
+    pub fn type_version(&mut self, version: &str) -> VcxResult<&mut Self> {
         self.type_header.type_version = String::from(version);
-        self
+        Ok(self)
     }
 
-    pub fn tid(&mut self, tid: u32) -> &mut Self {
+    pub fn tid(&mut self, tid: u32) -> VcxResult<&mut Self> {
         self.topic.tid = tid;
-        self
+        Ok(self)
     }
 
-    pub fn mid(&mut self, mid: u32) -> &mut Self {
+    pub fn mid(&mut self, mid: u32) -> VcxResult<&mut Self> {
         self.topic.mid = mid;
-        self
+        Ok(self)
     }
 
-    pub fn nonce(&mut self, nonce: &str) -> &mut Self {
-        match validation::validate_nonce(nonce) {
-            Ok(x) => {
-                self.proof_request_data.nonce = x;
-                self
-            },
-            Err(x) => {
-                self.validate_rc = x;
-                self
-            },
-        }
+    pub fn nonce(&mut self, nonce: &str) -> VcxResult<&mut Self> {
+        let nonce = validation::validate_nonce(nonce)?;
+        self.proof_request_data.nonce = nonce;
+        Ok(self)
     }
 
-    pub fn proof_name(&mut self, name: &str) -> &mut Self {
+    pub fn proof_name(&mut self, name: &str) -> VcxResult<&mut Self> {
         self.proof_request_data.name = String::from(name);
-        self
+        Ok(self)
     }
 
-    pub fn proof_data_version(&mut self, version: &str) -> &mut Self {
+    pub fn proof_request_format_version(&mut self, version: Option<&str>) -> VcxResult<&mut Self> {
+        self.proof_request_data.ver = version.map(String::from);
+        Ok(self)
+    }
+
+    pub fn proof_data_version(&mut self, version: &str) -> VcxResult<&mut Self> {
         self.proof_request_data.data_version = String::from(version);
-        self
+        Ok(self)
     }
 
 
-    pub fn requested_attrs(&mut self, attrs: &str) -> &mut Self {
+    pub fn requested_attrs(&mut self, attrs: &str) -> VcxResult<&mut Self> {
         let mut check_req_attrs: HashMap<String, AttrInfo> = HashMap::new();
-        let proof_attrs:Vec<AttrInfo> = match serde_json::from_str(attrs) {
-            Ok(a) => a,
-            Err(e) => {
-                debug!("Cannot parse attributes: {}", e);
-                self.validate_rc = error::INVALID_JSON.code_num;
-                return self
-            }
-        };
+        let proof_attrs: Vec<AttrInfo> = serde_json::from_str(attrs)
+            .map_err(|err| {
+                debug!("Cannot parse attributes: {}", err);
+                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse attributes: {}", err))
+            })?;
 
         let mut index = 1;
-        for attr in proof_attrs {
+        for mut attr in proof_attrs.into_iter() {
+            attr.restrictions = self.process_restrictions(attr.restrictions);
+
             if check_req_attrs.contains_key(&attr.name) {
                 check_req_attrs.insert(format!("{}_{}", attr.name, index), attr);
             } else {
                 check_req_attrs.insert(attr.name.clone(), attr);
             }
-            index= index + 1;
+            index = index + 1;
         }
         self.proof_request_data.requested_attributes = check_req_attrs;
-        self
+        Ok(self)
     }
 
-    pub fn requested_predicates(&mut self, predicates: &str) -> &mut Self {
+    pub fn requested_predicates(&mut self, predicates: &str) -> VcxResult<&mut Self> {
         let mut check_predicates: HashMap<String, PredicateInfo> = HashMap::new();
-        let attr_values: Vec<PredicateInfo> = match serde_json::from_str(predicates) {
-            Ok(a) => a,
-            Err(e) => {
-                debug!("Cannot parse predicates: {}", e);
-                self.validate_rc = error::INVALID_JSON.code_num;
-                return self
-            },
-        };
+        let attr_values: Vec<PredicateInfo> = serde_json::from_str(predicates)
+            .map_err(|err| {
+                debug!("Cannot parse predicates: {}", err);
+                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse predicates: {}", err))
+            })?;
 
         let mut index = 1;
-        for attr in attr_values {
+        for mut attr in attr_values.into_iter() {
+            attr.restrictions = self.process_restrictions(attr.restrictions);
+
             if check_predicates.contains_key(&attr.name) {
                 check_predicates.insert(format!("{}_{}", attr.name, index), attr);
             } else {
@@ -210,39 +207,54 @@ impl ProofRequestMessage {
         }
 
         self.proof_request_data.requested_predicates = check_predicates;
-        self
+        Ok(self)
     }
 
-    pub fn from_timestamp(&mut self, from: Option<u64>) -> &mut Self {
+    fn process_restrictions(&self, restrictions: Option<Vec<Filter>>) -> Option<Vec<Filter>> {
+        if let Some(PROOF_REQUEST_V2) = self.proof_request_data.ver.as_ref().map(String::as_str) {
+            return restrictions;
+        }
+
+        restrictions
+            .map(|filters|
+                filters
+                    .into_iter()
+                    .map(|filter| {
+                        Filter {
+                            schema_id: filter.schema_id.as_ref().and_then(|schema_id| anoncreds::libindy_to_unqualified(&schema_id).ok()),
+                            schema_issuer_did: filter.schema_issuer_did.as_ref().and_then(|schema_issuer_did|  anoncreds::libindy_to_unqualified(&schema_issuer_did).ok()),
+                            schema_name: filter.schema_name,
+                            schema_version: filter.schema_version,
+                            issuer_did: filter.issuer_did.as_ref().and_then(|issuer_did| anoncreds::libindy_to_unqualified(&issuer_did).ok()),
+                            cred_def_id: filter.cred_def_id.as_ref().and_then(|cred_def_id| anoncreds::libindy_to_unqualified(&cred_def_id).ok()),
+                        }
+                    })
+                    .collect()
+            )
+    }
+
+    pub fn from_timestamp(&mut self, from: Option<u64>) -> VcxResult<&mut Self> {
         self.from_timestamp = from;
-        self
+        Ok(self)
     }
 
-    pub fn to_timestamp(&mut self, to: Option<u64>) -> &mut Self {
+    pub fn to_timestamp(&mut self, to: Option<u64>) -> VcxResult<&mut Self> {
         self.to_timestamp = to;
-        self
+        Ok(self)
     }
 
-    pub fn serialize_message(&mut self) -> Result<String, u32> {
-        if self.validate_rc != error::SUCCESS.code_num {
-            return Err(self.validate_rc)
-        }
-
-        match serde_json::to_string(self) {
-            Ok(x) => Ok(x),
-            Err(_) => Err(error::INVALID_JSON.code_num)
-        }
+    pub fn serialize_message(&mut self) -> VcxResult<String> {
+        serde_json::to_string(self)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))
     }
 
     pub fn get_proof_request_data(&self) -> String {
         json!(self)[PROOF_DATA].to_string()
     }
 
-    pub fn to_string(&self) -> Result<String, u32> {
-        match serde_json::to_string(&self){
-            Ok(s) => Ok(s),
-            Err(_) => Err(error::INVALID_JSON.code_num),
-        }
+    pub fn to_string(&self) -> VcxResult<String> {
+        serde_json::to_string(&self)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))
     }
 }
 
@@ -250,7 +262,7 @@ impl ProofRequestMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use messages::{proof_request};
+    use messages::proof_request;
     use utils::constants::{REQUESTED_ATTRS, REQUESTED_PREDICATES};
 
     #[test]
@@ -262,7 +274,8 @@ mod tests {
             data_version: String::new(),
             requested_attributes: HashMap::new(),
             requested_predicates: HashMap::new(),
-            non_revoked: None
+            non_revoked: None,
+            ver: None,
         };
         assert_eq!(request.proof_request_data, proof_data);
     }
@@ -279,16 +292,17 @@ mod tests {
         let mid = 98;
 
         let mut request = proof_request()
-            .type_version(version)
-            .tid(tid)
-            .mid(mid)
-            .nonce(nonce)
-            .proof_name(data_name)
-            .proof_data_version(data_version)
-            .requested_attrs(REQUESTED_ATTRS)
-            .requested_predicates(REQUESTED_PREDICATES)
-            .to_timestamp(Some(100))
-            .from_timestamp(Some(1))
+            .type_version(version).unwrap()
+            .tid(tid).unwrap()
+            .mid(mid).unwrap()
+            .nonce(nonce).unwrap()
+            .proof_request_format_version(Some(PROOF_REQUEST_V2)).unwrap()
+            .proof_name(data_name).unwrap()
+            .proof_data_version(data_version).unwrap()
+            .requested_attrs(REQUESTED_ATTRS).unwrap()
+            .requested_predicates(REQUESTED_PREDICATES).unwrap()
+            .to_timestamp(Some(100)).unwrap()
+            .from_timestamp(Some(1)).unwrap()
             .clone();
 
         let serialized_msg = request.serialize_message().unwrap();
@@ -299,6 +313,7 @@ mod tests {
         assert!(serialized_msg.contains(r#""age":{"name":"age","restrictions":[{"schema_id":"6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB","schema_name":"Faber Student Info","schema_version":"1.0","issuer_did":"8XFh8yBzrpJQmNyZzgoTqB","cred_def_id":"8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766"},{"schema_id":"5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB","schema_name":"BYU Student Info","schema_version":"1.0","issuer_did":"66Fh8yBzrpJQmNyZzgoTqB","cred_def_id":"66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}"#));
         assert!(serialized_msg.contains(r#""to_timestamp":100"#));
         assert!(serialized_msg.contains(r#""from_timestamp":1"#));
+        assert!(serialized_msg.contains(r#""ver":"2.0""#));
     }
 
     #[test]
@@ -310,7 +325,7 @@ mod tests {
         check_req_attrs.insert("age".to_string(), attr_info1);
         check_req_attrs.insert("name".to_string(), attr_info2);
 
-        let request = proof_request().requested_attrs(REQUESTED_ATTRS).clone();
+        let request = proof_request().requested_attrs(REQUESTED_ATTRS).unwrap().clone();
         assert_eq!(request.proof_request_data.requested_attributes, check_req_attrs);
     }
 
@@ -320,7 +335,7 @@ mod tests {
         let attr_info1: PredicateInfo = serde_json::from_str(r#"{ "name":"age","p_type":"GE","p_value":22, "restrictions":[ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }"#).unwrap();
         check_predicates.insert("age".to_string(), attr_info1);
 
-        let request = proof_request().requested_predicates(REQUESTED_PREDICATES).clone();
+        let request = proof_request().requested_predicates(REQUESTED_PREDICATES).unwrap().clone();
         assert_eq!(request.proof_request_data.requested_predicates, check_predicates);
     }
 

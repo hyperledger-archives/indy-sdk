@@ -1,28 +1,30 @@
 ## Legend
-There are some types of requests to Nodes in the Pool allowing to use StateProof optimization in Client-Node communication.
-Instead of sending requests to all nodes in the Pool, a client can send a request to a single Node and expect StateProof signed by BLS multi-signature.
+There are some types of requests to Nodes in the Pool which allow the use of StateProof (SP) optimization in
+Client-Node communication. Instead of sending requests to all nodes in the Pool, a client can send a request
+to a single Node and expect a StateProof signed by a Boneh–Lynn–Shacham (BLS) multi-signature.
 
-BLS multi-signature (BLS MS) guaranties that there was a consensus of Nodes which signed some State identified by State RootHash.
-StateProof (SP) is small amount of data which allows to verify particular values against RootHash.
-Combination of BLS MS and SP allows clients to be sure about response of single node is a part of State signed by enough Nodes. 
+BLS multi-signature (BLS MS) guaranties that there was a consensus of Nodes which signed some State
+identified by the State RootHash. StateProof (SP) is small amount of data which allows the verification of
+particular values against the RootHash. The combination of BLS MS and SP allows clients to be sure that
+the response of single node is a part of the State signed by a sufficient number of Nodes. 
 
 ## Goals
-Libindy allows to extend building of supported requests via plugged interface and send them.
+Libindy also allows the building and sending of supported requests via a plugable interface.
 It is nice to have a way to support BLS MS and SP verification for these plugged transactions.
 
-Implementation of math for SP verification is a bit complicate for plugin logic.
-Therefore libindy should perform all math calculation inside.
-A plugin should provide handler to parse custom reply to fixed data structure.
+The implementation of math for SP verification is a bit complicated to include in plugin logic.
+Therefore, libindy should perform all of the math calculations inside the SDK.
+A plugin should provide a handler to parse the custom reply to a fixed data structure.
 
 ## API
-The signature of the handler is described below together with custom `free` call to deallocate result data.
+The signature of the handler is described below together with the custom `free` call to deallocate result data.
 
 ```rust
 extern fn CustomTransactionParser(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode;
 extern fn CustomFree(data: *mut c_char) -> ErrorCode;
 ``` 
 
-Libindy API will contain call to register handler for specific transaction type:
+The libindy API will contain a call to register the handler for a specific transaction type:
 ```rust
 extern fn indy_register_transaction_parser_for_sp(command_handle: i32,
                                                   txn_type: *const c_char,
@@ -33,8 +35,9 @@ extern fn indy_register_transaction_parser_for_sp(command_handle: i32,
 
 ### Parsed Data structure
 
-A plugin should parse `reply_from_node` and return back to libindy parsed data as JSON string.
-Actually this data is array of entities each of them is describe SP Trie and set of key-value pairs to verify against this trie.
+A plugin should parse `reply_from_node` and return back to libindy the parsed data as JSON string.
+Actually this data is an array of entities, each of them is described as a SP Trie and a set of key-value pairs to
+verify against this trie.
 It can be represented as `Vec<ParsedSP>` serialized to JSON.
 
 
@@ -72,9 +75,33 @@ enum KeyValuesInSP {
 
  All required data already present in parent SP Trie (built from `proof_nodes`).
  `kvs` can be verified directly in parent trie
+
+ Encoding of `key` in `kvs` is defined by verification type
 */
-struct KeyValueSimpleData {
-    kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct KeyValueSimpleData {
+    pub kvs: Vec<(String /* key */, Option<String /* val */>)>,
+    #[serde(default)]
+    pub verification_type: KeyValueSimpleDataVerificationType
+}
+
+/**
+ Options of common state proof check process
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[serde(tag = "type")]
+pub enum KeyValueSimpleDataVerificationType {
+    /* key should be base64-encoded string */
+    Simple,
+    /* key should be plain string */
+    NumericalSuffixAscendingNoGaps(NumericalSuffixAscendingNoGapsData)
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct NumericalSuffixAscendingNoGapsData {
+    pub from: Option<u64>,
+    pub next: Option<u64>,
+    pub prefix: String
 }
 
 /**
@@ -91,24 +118,24 @@ struct KeyValuesSubTrieData {
 ```
 
 Expected libindy and plugin workflow is the following:
-1. Libindy receive reply from a Node, perform initial processing and pass raw reply to plugin.
-1. Plugin parse reply from the Node and specify one or more SP Trie with metadata and items for verification.
-1. Each SP Trie described by plugin as `ParsedSP`:
+1. Libindy receives a reply from a Node, performs initial processing and passes raw reply to plugin.
+1. Plugin parses reply from the Node and specifies one (or more) SP Trie with metadata and items for verification.
+1. Each SP Trie is described by the plugin as `ParsedSP`:
     1. Set of encoded nodes of the SP Trie, received from Node - `proof_nodes`. May be fetched from response "as is".
     1. RootHash of this Trie. May be fetched from the response "as is" also.
     1. BLS MS data. Again may be fetched from the response "as is".
-    1. Key-value items to verification. Here plugin should define correct keys (path in the trie) and corresponded values.
-1. Plugin return serialized as JSON array of `ParsedSP`
+    1. Key-value items for verification. Here the plugin should define the correct keys (path in the trie) and their corresponding values.
+1. Plugin returns serialized as JSON array of `ParsedSP`
 1. For each `ParsedSP` libindy:
     1. build base trie from `proof_nodes`
-    1. if items to verify is `SubTrie`, construct this subtrie from (key-suffix, value) pairs and merge it with trie from clause above
+    1. if item to verify is `SubTrie`, construct this subtrie from (key-suffix, value) pairs and merge it with trie from clause above
     1. iterate other key-value pairs and verify that trie (with signed `root_hash`) contains `value` at specified `key`
     1. verify multi-signature
-1. If any verification is failed, libindy ignore particular SP + BLS MS and try to request same data from another node,
-or collect consensus of same replies from enough count of Nodes.
+1. If any verification fails, libindy will ignore that particular SP + BLS MS and try to request the same data from another node,
+or collect a consensus of the same replies from a sufficient number of Nodes.
 
 
-Below is JSON structure for `Simple` case.
+Below is the JSON structure for `Simple` case.
 ```json
 [
  {
@@ -123,10 +150,12 @@ Below is JSON structure for `Simple` case.
 ]
 ```
 
-### Simple and SubTrie verification
+### Simple and SubTrie Verification
 
-Some use cases require verification multiply pairs of key-value in one Trie.
-Moreover there is possible situation when client would like to verify whole subtrie.
+Some use cases require verification of multiple of key-value pairs in one Trie.
+Moreover, there is possible situation when a client would like to verify the whole subtrie.
 In this case, the amount of data transferred from Node to Client can be significantly reduced.
-Instead of including all nodes for SP verification to `proof_nodes`, Node can include only prefix path down to subtrie.
-The entire subtrie to verification can be restored on Client side from key-value pairs and combined with prefix part.
+Instead of including all nodes for SP verification to `proof_nodes`, a Node can include only a prefix path down to
+a subtrie.
+The entire subtrie to be verified can be restored on the Client side from key-value pairs and combined with the
+prefix part.

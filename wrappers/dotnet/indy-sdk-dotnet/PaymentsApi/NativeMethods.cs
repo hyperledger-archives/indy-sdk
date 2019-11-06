@@ -119,59 +119,52 @@ namespace Hyperledger.Indy.PaymentsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_parse_payment_response(int command_handle, string payment_method, string resp_json, ParsePaymentResponseDelegate cb);
 
-        /// <summary>
-        /// Parse payment response delegate.
-        /// </summary>
-        public delegate void ParsePaymentResponseDelegate(int command_handle, int err, string receipts_json);
+        internal delegate void ParsePaymentResponseDelegate(int command_handle, int err, string receipts_json);
 
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
+        internal static extern int indy_prepare_payment_extra_with_acceptance_data(int command_handle, string extra_json, string text, string version, string taa_digest, string mechanism, ulong time, PreparePaymentExtraWithAcceptanceDataDelegate cb);
+
+        internal delegate void PreparePaymentExtraWithAcceptanceDataDelegate(int command_handle, int err, string extra_with_acceptance);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_build_mint_req(int command_handle, int wallet_handle, string submitter_did, string outputs_json, string extra, BuildMintReqDelegate cb);
 
-        /// <summary>
-        /// Build mint req delegate.
-        /// </summary>
-        public delegate void BuildMintReqDelegate(int command_handle, int err, string mint_req_json, string payment_method);
+        internal delegate void BuildMintReqDelegate(int command_handle, int err, string mint_req_json, string payment_method);
 
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_build_set_txn_fees_req(int command_handle, int wallet_handle, string submitter_did, string payment_method, string fees_json, BuildSetTxnFeesReqDelegate cb);
-        /// <summary>
-        /// Build set txn fees req delegate.
-        /// </summary>
-        public delegate void BuildSetTxnFeesReqDelegate(int command_handle, int err, string set_txn_fees_json);
+
+        internal delegate void BuildSetTxnFeesReqDelegate(int command_handle, int err, string set_txn_fees_json);
 
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_build_get_txn_fees_req(int command_handle, int wallet_handle, string submitter_did, string payment_method, BuildGetTxnFeesReqDelegate cb);
-        /// <summary>
-        /// Build get txn fees req delegate.
-        /// </summary>
-        public delegate void BuildGetTxnFeesReqDelegate(int command_handle, int err, string get_txn_fees_json);
 
+        public delegate void BuildGetTxnFeesReqDelegate(int command_handle, int err, string get_txn_fees_json);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_parse_get_txn_fees_response(int command_handle, string payment_method, string resp_json, ParseGetTxnFeesResponseDelegate cb);
-
-        /// <summary>
-        /// Parse get txn fees response delegate.
-        /// </summary>
         public delegate void ParseGetTxnFeesResponseDelegate(int command_handle, int err, string fees_json);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_build_verify_payment_req(int command_handle, int wallet_handle, string submitter_did, string receipt, BuildVerifyPaymentRequestDelegate cb);
-
-        /// <summary>
-        /// Build verify payment request delegate.
-        /// </summary>
         public delegate void BuildVerifyPaymentRequestDelegate(int command_handle, int err, string verify_txn_json, string payment_method);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_parse_verify_payment_response(int command_handle, string payment_method, string resp_json, ParseVerifyPaymentResponseDelegate cb);
-
-        /// <summary>
-        /// Parse verify payment request delegate.
-        /// </summary>
         public delegate void ParseVerifyPaymentResponseDelegate(int command_handle, int err, string txn_json);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
+        internal static extern int indy_get_request_info(int command_handle, string get_auth_rule_response_json, string requester_info_json, string fees_json, GetRequestInfoDelegate cb);
+        internal delegate void GetRequestInfoDelegate(int command_handle, int err, string request_info_json);
+                                                
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
+        internal static extern int indy_sign_with_address(int command_handle, int wallet_handle, string address, byte[] message_raw, uint message_len, SignWithAddressDelegate cb);
+        internal delegate void SignWithAddressDelegate(int command_handle, int err, IntPtr signature_raw, uint signature_len);
+    
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
+        internal static extern int indy_verify_with_address(int command_handle, string address, byte[] message_raw, uint message_len, byte[] signature_raw, uint signature_len, VerifyWithAddressDelegate cb);
+        internal delegate void VerifyWithAddressDelegate(int command_handle, int err, bool result);
     }
 }

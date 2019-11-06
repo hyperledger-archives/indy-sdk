@@ -18,15 +18,4 @@ public class PoolConfigNotCreatedException extends IndyException
 	{
 		super(message, ErrorCode.PoolLedgerNotCreatedError.value());
 	}
-
-	/**
-	 * Initializes a new PoolConfigNotCreatedException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public PoolConfigNotCreatedException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.PoolLedgerNotCreatedError.value(), sdkBacktrace);
-    }
 }

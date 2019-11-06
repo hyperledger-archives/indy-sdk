@@ -12,11 +12,10 @@ pub mod logger;
 
 pub mod error_codes;
 
-extern crate libc;
-
 use settings;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
+use error::prelude::*;
 
 lazy_static!{
     static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
@@ -26,7 +25,7 @@ pub fn mock_libindy_rc() -> u32 { NEXT_LIBINDY_RC.lock().unwrap().pop().unwrap_o
 
 pub fn set_libindy_rc(rc: u32) {NEXT_LIBINDY_RC.lock().unwrap().push(rc as i32);}
 
-static COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+static COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
 pub fn next_i32_command_handle() -> i32 {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
@@ -36,7 +35,7 @@ pub fn next_u32_command_handle() -> u32 {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32
 }
 
-pub fn init_pool() -> Result<(), u32>  {
+pub fn init_pool() -> VcxResult<()>  {
     trace!("init_pool >>>");
 
     if settings::test_indy_mode_enabled() {return Ok (()); }
@@ -50,11 +49,12 @@ pub fn init_pool() -> Result<(), u32>  {
     match pool::create_pool_ledger_config(&pool_name, &path) {
         Err(e) => {
             warn!("Pool Config Creation Error: {}", e);
-            return Err(e);
+            Err(e)
         },
         Ok(_) => {
             debug!("Pool Config Created Successfully");
-            pool::open_pool_ledger(&pool_name, None)?;
+            let pool_config: Option<String> = settings::get_config_value(settings::CONFIG_POOL_CONFIG).ok();
+            pool::open_pool_ledger(&pool_name, pool_config.as_ref().map(String::as_str))?;
             Ok(())
         }
     }

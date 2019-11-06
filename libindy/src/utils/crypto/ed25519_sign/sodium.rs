@@ -1,14 +1,11 @@
-extern crate sodiumoxide;
-extern crate libc;
+use indy_api_types::errors::prelude::*;
 
-use errors::prelude::*;
+use libc::c_int;
+use sodiumoxide::crypto::sign;
+use sodiumoxide::crypto::box_;
 
-use self::libc::c_int;
-use self::sodiumoxide::crypto::sign;
-use self::sodiumoxide::crypto::box_;
-
-use utils::crypto::ed25519_box;
-use utils::crypto::randombytes::randombytes;
+use super::ed25519_box;
+use super::randombytes::randombytes;
 
 pub const SEEDBYTES: usize = sign::SEEDBYTES;
 pub const SIG_PUBLICKEYBYTES: usize = sign::PUBLICKEYBYTES;
@@ -81,7 +78,7 @@ pub fn vk_to_curve25519(pk: &PublicKey) -> Result<ed25519_box::PublicKey, IndyEr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::crypto::ed25519_box;
+    use crate::utils::crypto::ed25519_box;
 
     #[test]
     fn signin_verify_works() {

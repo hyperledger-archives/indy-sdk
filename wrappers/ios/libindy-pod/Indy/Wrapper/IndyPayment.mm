@@ -120,6 +120,31 @@
     }
 }
 
++ (void)buildGetPaymentSourcesWithFromRequest:(IndyHandle)walletHandle
+                                 submitterDid:(NSString *)submitterDid
+                               paymentAddress:(NSString *)paymentAddress
+                                         from:(NSNumber *)from
+                                   completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+
+    ret = indy_build_get_payment_sources_with_from_request(handle,
+            walletHandle,
+            [submitterDid UTF8String],
+            [paymentAddress UTF8String],
+            [from intValue],
+            IndyWrapperCommonStringStringCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil);
+        });
+    }
+}
+
 + (void)parseGetPaymentSourcesResponse:(NSString *)responseJson
                          paymentMethod:(NSString *)paymentMethod
                             completion:(void (^)(NSError *error, NSString *sourcesJson))completion {
@@ -141,6 +166,26 @@
     }
 }
 
++ (void)parseGetPaymentSourcesWithFromResponse:(NSString *)responseJson
+                                 paymentMethod:(NSString *)paymentMethod
+                                    completion:(void (^)(NSError *error, NSString *sourcesJson, NSNumber *next))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_parse_get_payment_sources_with_from_response(handle,
+            [paymentMethod UTF8String],
+            [responseJson UTF8String],
+            IndyWrapperCommonStringNumber64Callback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil);
+        });
+    }
+}
 
 + (void)buildPaymentRequest:(IndyHandle)walletHandle
                submitterDid:(NSString *)submitterDid
@@ -179,6 +224,35 @@
     ret = indy_parse_payment_response(handle,
             [paymentMethod UTF8String],
             [responseJson UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)preparePaymentExtraWithAcceptanceData:(NSString *)extraJson
+                                         text:(NSString *)text
+                                      version:(NSString *)version
+                                    taaDigest:(NSString *)taaDigest
+                                  accMechType:(NSString *)accMechType
+                             timeOfAcceptance:(NSNumber *)timeOfAcceptance
+                                   completion:(void (^)(NSError *error, NSString *extraWithAcceptance))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prepare_payment_extra_with_acceptance_data(handle,
+            [extraJson UTF8String],
+            [text UTF8String],
+            [version UTF8String],
+            [taaDigest UTF8String],
+            [accMechType UTF8String],
+            [timeOfAcceptance unsignedLongLongValue],
             IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
@@ -327,4 +401,70 @@
         });
     }
 }
+
++ (void)getRequestInfoForRequester:(NSString *)requesterInfoJson
+           getAuthRuleResponseJson:(NSString *)getAuthRuleResponseJson
+                          feesJson:(NSString *)feesJson
+                        completion:(void (^)(NSError *error, NSString *requestInfoJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_get_request_info(handle,
+            [getAuthRuleResponseJson UTF8String],
+            [requesterInfoJson UTF8String],
+            [feesJson UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)signWithAddress:(NSString *)address
+                message:(NSData *)message
+           walletHandle:(IndyHandle)walletHandle
+             completion:(void (^)(NSError *error, NSData *signature))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    uint32_t messageLen = (uint32_t) [message length];
+    uint8_t *messageRaw = (uint8_t *) [message bytes];
+    indy_error_t ret = indy_sign_with_address(handle,
+            walletHandle,
+            [address UTF8String],
+            messageRaw,
+            messageLen,
+            IndyWrapperCommonDataCallback);
+
+    [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
+}
+
++ (void)verifyWithAddress:(NSString *)address
+                  message:(NSData *)message
+                signature:(NSData *)signature
+               completion:(void (^)(NSError *error, BOOL valid))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    uint32_t messageLen = (uint32_t) [message length];
+    uint8_t *messageRaw = (uint8_t *) [message bytes];
+    uint32_t signatureLen = (uint32_t) [signature length];
+    uint8_t *signatureRaw = (uint8_t *) [signature bytes];
+
+    indy_error_t ret = indy_verify_with_address(handle,
+            [address UTF8String],
+            messageRaw,
+            messageLen,
+            signatureRaw,
+            signatureLen,
+            IndyWrapperCommonBoolCallback);
+
+    [[IndyCallbacks sharedInstance] completeBool:completion forHandle:handle ifError:ret];
+}
+
 @end

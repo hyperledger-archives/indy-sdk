@@ -1,14 +1,10 @@
-extern crate libc;
-extern crate time;
-extern crate log;
+use libc::{c_void, c_char};
 
-use self::libc::{c_void, c_char};
+use indy_api_types::ErrorCode;
+use indy_api_types::errors::prelude::*;
 
-use api::ErrorCode;
-use errors::prelude::*;
-
-use utils::logger::{EnabledCB, LogCB, FlushCB, LibindyLogger, LibindyDefaultLogger, LOGGER_STATE};
-use utils::ctypes;
+use crate::utils::logger::{EnabledCB, LogCB, FlushCB, LibindyLogger, LibindyDefaultLogger, LOGGER_STATE};
+use indy_utils::ctypes;
 
 /// Set custom logger implementation.
 ///

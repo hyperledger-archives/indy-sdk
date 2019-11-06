@@ -18,7 +18,7 @@ extern crate serde_json;
 
 extern crate byteorder;
 extern crate indy;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate uuid;
 extern crate named_type;
 extern crate rmp_serde;
@@ -34,14 +34,14 @@ use indy::api as api;
 #[macro_use]
 mod utils;
 
-use utils::wallet::WalletUtils;
-use utils::non_secrets::NonSecretsUtils;
-use utils::test::TestUtils;
-use utils::constants::*;
+use crate::utils::wallet::WalletUtils;
+use crate::utils::non_secrets::NonSecretsUtils;
+use crate::utils::test::TestUtils;
+use crate::utils::constants::*;
 
 use criterion::{Criterion, Benchmark};
 
-use utils::sequence::SequenceUtils;
+use crate::utils::sequence::SequenceUtils;
 use rand::Rng;
 
 
@@ -236,7 +236,7 @@ mod delete {
 mod get_record {
     use super::*;
 
-    fn get_record(wallet_handle: i32, type_: &str, id: &str) {
+    fn get_record(wallet_handle: WalletHandle, type_: &str, id: &str) {
         NonSecretsUtils::get_wallet_record(wallet_handle, type_, id, "{}").unwrap();
     }
 
@@ -263,7 +263,7 @@ mod delete_record {
         }
     }
 
-    fn delete_record(wallet_handle: i32, type_: &str, id: &str) {
+    fn delete_record(wallet_handle: WalletHandle, type_: &str, id: &str) {
         NonSecretsUtils::delete_wallet_record(wallet_handle, type_, id).unwrap();
     }
 
@@ -290,7 +290,7 @@ mod add_record {
         }
     }
 
-    fn add_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags: &str) {
+    fn add_record(wallet_handle: WalletHandle, type_: &str, id: &str, value: &str, tags: &str) {
         NonSecretsUtils::add_wallet_record(wallet_handle, type_, id, value, Some(tags)).unwrap();
     }
 
@@ -315,7 +315,7 @@ mod add_record_tags {
         (type_, id, r#"{"tag_1": "value_1", "~tag_2": "value_2"}"#.to_string())
     }
 
-    fn add_record_tags(wallet_handle: i32, type_: &str, id: &str, tags: &str) {
+    fn add_record_tags(wallet_handle: WalletHandle, type_: &str, id: &str, tags: &str) {
         NonSecretsUtils::add_wallet_record_tags(wallet_handle, type_, id, tags).unwrap();
     }
 
@@ -340,7 +340,7 @@ mod delete_record_tags {
         (type_, id, r#"["tag_id_1"]"#.to_string())
     }
 
-    fn delete_record_tags(wallet_handle: i32, type_: &str, id: &str, tag_names: &str) {
+    fn delete_record_tags(wallet_handle: WalletHandle, type_: &str, id: &str, tag_names: &str) {
         NonSecretsUtils::delete_wallet_record_tags(wallet_handle, type_, id, tag_names).unwrap();
     }
 
@@ -360,7 +360,7 @@ mod delete_record_tags {
 mod search_records {
     use super::*;
 
-    fn open_search(wallet_handle: i32, query: &str) {
+    fn open_search(wallet_handle: WalletHandle, query: &str) {
         NonSecretsUtils::open_wallet_search(wallet_handle, TYPE_1, query, "{}").unwrap();
     }
 
@@ -469,7 +469,7 @@ fn _tags(suffix: usize) -> String {
         }).to_string()
 }
 
-fn add_records(wallet_handle: i32) {
+fn add_records(wallet_handle: WalletHandle) {
     for i in 0..COUNT {
         NonSecretsUtils::add_wallet_record(wallet_handle,
                                            &_type(i),

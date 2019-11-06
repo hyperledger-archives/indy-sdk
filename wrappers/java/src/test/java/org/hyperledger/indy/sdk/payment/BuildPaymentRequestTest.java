@@ -29,26 +29,10 @@ public class BuildPaymentRequestTest extends PaymentIntegrationTest {
 	}
 
 	@Test
-	public void testBuildPaymentRequestWorksForEmptyOutputs() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, inputs, emptyObject, null).get();
-	}
-
-	@Test
 	public void testBuildPaymentRequestWorksForIncompatiblePaymentMethods() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(IncompatiblePaymentException.class));
 
 		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, incompatibleInputs, outputs, null).get();
-	}
-
-	@Test
-	public void testBuildPaymentRequestWorksForInvalidInputs() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		Payments.buildPaymentRequest(wallet, DID_TRUSTEE, invalidInputs, outputs, null).get();
 	}
 }

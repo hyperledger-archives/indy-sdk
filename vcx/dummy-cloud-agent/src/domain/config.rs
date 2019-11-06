@@ -1,4 +1,5 @@
 use serde_json::Value;
+use domain::protocol_type::ProtocolTypes;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
@@ -6,6 +7,7 @@ pub struct Config {
     pub forward_agent: ForwardAgentConfig,
     pub server: ServerConfig,
     pub wallet_storage: WalletStorageConfig,
+    pub protocol_type: Option<ProtocolTypes>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -26,6 +28,8 @@ pub struct ForwardAgentConfig {
 pub struct AppConfig {
     // Http application prefix
     pub prefix: String,
+    // enable or disable http api for fetching information about agency status
+    pub enable_admin_api: Option<bool>
 }
 
 #[derive(Clone, Debug, Deserialize)]

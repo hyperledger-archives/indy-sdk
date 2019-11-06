@@ -18,15 +18,4 @@ public class InvalidPoolException extends IndyException
 	{
 		super(message, ErrorCode.PoolLedgerInvalidPoolHandle.value());
 	}
-
-	/**
-	 * Initializes a new PoolClosedException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public InvalidPoolException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.PoolLedgerInvalidPoolHandle.value(), sdkBacktrace);
-    }
 }

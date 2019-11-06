@@ -1,21 +1,19 @@
-extern crate time;
-extern crate zmq;
-
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use rand::{Rng, thread_rng};
+use rand::thread_rng;
+use rand::prelude::SliceRandom;
 use time::Tm;
 
-use errors::prelude::*;
-use services::pool::events::*;
-use services::pool::types::*;
-use utils::sequence;
+use indy_api_types::errors::prelude::*;
+use crate::services::pool::events::*;
+use crate::services::pool::types::*;
+use indy_utils::sequence;
 
 use super::time::Duration;
 
-use self::zmq::PollItem;
-use self::zmq::Socket as ZSocket;
+use super::zmq::PollItem;
+use super::zmq::Socket as ZSocket;
 
 pub trait Networker {
     fn new(active_timeout: i64, conn_limit: usize, preordered_nodes: Vec<String>) -> Self;
@@ -50,7 +48,7 @@ impl Networker for ZMQNetworker {
         let mut cnt = 0;
         self.pool_connections.iter().map(|(_, pc)| {
             let ocnt = cnt;
-            cnt = cnt + pc.sockets.iter().filter(|s| s.is_some()).count();
+            cnt += pc.sockets.iter().filter(|s| s.is_some()).count();
             pc.fetch_events(&poll_items[ocnt..cnt])
         }).flat_map(|v| v.into_iter()).collect()
     }
@@ -58,7 +56,7 @@ impl Networker for ZMQNetworker {
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         match pe.clone() {
             Some(NetworkerEvent::SendAllRequest(_, req_id, _, _)) | Some(NetworkerEvent::SendOneRequest(_, req_id, _)) | Some(NetworkerEvent::Resend(req_id, _)) => {
-                let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
+                let num = self.req_id_mappings.get(&req_id).copied().or_else(|| {
                     trace!("sending new request");
                     self.pool_connections.iter().next_back().and_then(|(pc_idx, pc)| {
                         if pc.is_active() && pc.req_cnt < self.conn_limit
@@ -182,7 +180,7 @@ impl PoolConnection {
     fn new(mut nodes: Vec<RemoteNode>, active_timeout: i64, preordered_nodes: Vec<String>) -> Self {
         trace!("PoolConnection::new: from nodes {:?}", nodes);
 
-        thread_rng().shuffle(nodes.as_mut());
+        nodes.shuffle(&mut thread_rng());
 
         if !preordered_nodes.is_empty() {
             nodes.sort_by_key(|node: &RemoteNode| -> usize {
@@ -192,7 +190,7 @@ impl PoolConnection {
             });
         }
 
-        let mut sockets: Vec<Option<ZSocket>> = Vec::new();
+        let mut sockets: Vec<Option<ZSocket>> = Vec::with_capacity(nodes.len());
 
         for _ in 0..nodes.len() { sockets.push(None); }
 
@@ -272,7 +270,7 @@ impl PoolConnection {
             }
             Some(NetworkerEvent::Resend(req_id, timeout)) => {
                 let resend = if let Some(&mut (ref mut cnt, ref req)) = self.resend.borrow_mut().get_mut(&req_id) {
-                    *cnt = *cnt + 1;
+                    *cnt += 1;
                     //TODO: FIXME: We can collect consensus just walking through if we are not collecting node aliases on the upper layer.
                     Some((*cnt % self.nodes.len(), req.clone()))
                 } else {
@@ -322,7 +320,7 @@ impl PoolConnection {
         trace!("_send_msg_to_one_node >> idx {}, req_id {}, req {}", idx, req_id, req);
         {
             let s = self._get_socket(idx)?;
-            s.send_str(&req, zmq::DONTWAIT)?;
+            s.send(&req, zmq::DONTWAIT)?;
         }
         self.timeouts.borrow_mut().insert((req_id, self.nodes[idx].name.clone()), time::now() + Duration::seconds(timeout));
         trace!("_send_msg_to_one_node <<");
@@ -342,13 +340,12 @@ impl PoolConnection {
 impl RemoteNode {
     fn connect(&self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> IndyResult<ZSocket> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
-        s.set_identity(key_pair.public_key.as_bytes())?;
+        s.set_identity(base64::encode(&key_pair.public_key).as_bytes())?;
         s.set_curve_secretkey(&key_pair.secret_key)?;
         s.set_curve_publickey(&key_pair.public_key)?;
-        s.set_curve_serverkey(
-            zmq::z85_encode(self.public_key.as_slice())
-                .to_indy(IndyErrorKind::InvalidStructure, "Can't encode server key as z85")? // FIXME: review kind
-                .as_str())?;
+        s.set_curve_serverkey(zmq::z85_encode(self.public_key.as_slice())
+            .to_indy(IndyErrorKind::InvalidStructure, "Can't encode server key as z85")? // FIXME: review kind
+            .as_bytes())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(&self.zaddr)?;
         Ok(s)
@@ -392,16 +389,16 @@ pub mod networker_tests {
     use std;
     use std::thread;
 
-    use domain::pool::{MAX_REQ_PER_POOL_CON, POOL_ACK_TIMEOUT, POOL_CON_ACTIVE_TO, POOL_REPLY_TIMEOUT};
-    use services::pool::rust_base58::FromBase58;
-    use services::pool::tests::nodes_emulator;
-    use utils::crypto::ed25519_sign;
+    use crate::domain::pool::{MAX_REQ_PER_POOL_CON, POOL_ACK_TIMEOUT, POOL_CON_ACTIVE_TO, POOL_REPLY_TIMEOUT};
+    use crate::services::pool::tests::nodes_emulator;
+    use crate::utils::crypto::ed25519_sign;
 
     use super::*;
+    use rust_base58::base58::FromBase58;
 
-    const REQ_ID: &'static str = "1";
-    const MESSAGE: &'static str = "msg";
-    const NODE_NAME: &'static str = "n1";
+    const REQ_ID: &str = "1";
+    const MESSAGE: &str = "msg";
+    const NODE_NAME: &str = "n1";
 
     pub fn _remote_node(txn: &NodeTransactionV1) -> RemoteNode {
         RemoteNode {

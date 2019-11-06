@@ -9,3 +9,5 @@ to simplify their transition to the next release of our API.
    migration-guide-1.3.0-1.4.0.md
    migration-guide-1.4.0-1.5.0.md
    migration-guide-1.5.0-1.6.0.md
+   migration-guide-1.6.0-1.7.0.md
+   migration-guide-1.7.0-1.8.0.md

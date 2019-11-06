@@ -7,7 +7,12 @@
         "build": "dist",
         "lib": "src"
     },
-    "author": "evernym",
+    "contributors": [
+        {
+            "name": "Hyperledger Indy Contributors",
+            "email": "hyperledger-indy@lists.hyperledger.org"
+        }
+    ],
     "bugs": {
         "url": "https://github.com/evernym/vcx/issues"
     },
@@ -20,7 +25,7 @@
         "url": "git+https://github.com/evernym/vcx.git",
         "type": "git"
     },
-    "version": "0.2.2",
+    "version": "0.4.2",
     "dependencies": {
         "@types/ffi": "0.0.19",
         "@types/node": "^8.0.47",
@@ -34,6 +39,13 @@
         "weak": "^1.0.1"
     },
     "scripts": {
+        "demo:notifyserver": "node notification-server.js",
+        "demo:alice": "babel-node demo/alice.js",
+        "demo:faber": "babel-node demo/faber.js",
+        "demo:alice:pg": "babel-node demo/alice.js --postgres",
+        "demo:faber:pg": "babel-node demo/faber.js --postgres",
+        "demo:alice:sign": "babel-node demo/alice-signature.js",
+        "demo:faber:verify": "babel-node demo/faber-verify-signature.js",
         "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",
         "lint": "./node_modules/.bin/tslint --type-check -c ./tslint.json -p ./tsconfig.json && ./node_modules/.bin/tslint --type-check -c ./test/tslint.json -p ./test/tsconfig.json",
         "doc-gen": "./node_modules/.bin/typedoc --out doc --excludePrivate --excludeProtected --ignoreCompilerErrors src",
@@ -41,23 +53,33 @@
         "test-logging": "export TS_NODE_PROJECT=\"./test/tsconfig.json\" export NODE_ENV='test'&& find ./test/suite3 -name '*.test.ts' -exec ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register \\{} \\;"
     },
     "devDependencies": {
+        "is-port-reachable": "^2.0.1",
         "@types/chai": "^4.1.4",
         "@types/lodash": "^4.14.109",
         "@types/mocha": "^5.2.3",
         "@types/sinon": "^5.0.1",
         "@types/weak": "^1.0.0",
         "app-module-path": "^2.2.0",
+        "babel-cli": "^6.26.0",
+        "babel-core": "^6.26.3",
+        "babel-loader": "6.2.4",
+        "babel-preset-es2015": "^6.24.1",
         "chai": "^4.1.2",
         "jsdoc": "^3.5.5",
         "mocha": "^5.2.0",
+        "readline-sync": "^1.4.9",
         "sinon": "^4.1.2",
+        "sleep-promise": "^8.0.1",
         "ts-node": "^6.1.2",
         "tslint": "^5.8.0",
         "tslint-config-standard": "^7.1.0",
         "typedoc": "0.11.1",
-        "typescript": "^2.9.1"
+        "typescript": "^3.0.0",
+        "winston": "^3.2.1",
+        "body-parser": "^1.19.0",
+        "express": "^4.17.1"
     },
-    "main": "dist/index.js",
+    "main": "dist/src/index.js",
     "homepage": "https://github.com/evernym/vcx#readme",
     "name": "node-vcx-wrapper"
 }

@@ -60,21 +60,6 @@
     XCTAssertTrue([myVerKey isEqualToString:[TestUtils myVerkey1]], @"wrong myVerKey!");
 }
 
-- (void)testCreateMyDidWorksWithPassedDid {
-    // 1. Obtain my did
-    NSString *myDid;
-    NSString *myVerKey;
-    NSString *myDidJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"seed\":\"%@\"}", [TestUtils myDid1], [TestUtils mySeed1]];
-
-    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                       myDidJson:myDidJson
-                                                        outMyDid:&myDid
-                                                     outMyVerkey:&myVerKey];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
-    XCTAssertTrue([myDid isEqualToString:[TestUtils myDid1]], @"wrong myDid!");
-    XCTAssertTrue([myVerKey isEqualToString:[TestUtils myVerkey1]], @"wrong myVerKey!");
-}
-
 // MARK: - Replace keys Start
 
 - (void)testReplaceKeysStartWorks {
@@ -94,27 +79,6 @@
                                                walletHandle:walletHandle
                                                 outMyVerKey:&newVerkey];
     XCTAssertFalse([myVerkey isEqualToString:newVerkey], @"verkey is the same!");
-}
-
-- (void)testReplaceKeysStartWorksForSeed {
-    // 1. create my did
-    NSString *myDid;
-    NSString *myVerkey;
-    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                       myDidJson:@"{}"
-                                                        outMyDid:&myDid
-                                                     outMyVerkey:&myVerkey];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() returned wrong error code");
-
-    // 2. replace keys
-    NSString *newVerkey;
-    ret = [[DidUtils sharedInstance] replaceKeysStartForDid:myDid
-                                               identityJson:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
-                                               walletHandle:walletHandle
-                                                outMyVerKey:&newVerkey];
-
-    XCTAssertEqual(ret.code, Success, @"DidUtils:replaceKeysStartForDid failed");
-    XCTAssertTrue([newVerkey isEqualToString:[TestUtils myVerkey1]], @"wrong newVerkey");
 }
 
 - (void)testReplaceKeysStartWorksForNotExistingDid {
@@ -253,23 +217,6 @@
                                                                    theirDid:[TestUtils trusteeDid]
                                                                 theirVerkey:[TestUtils trusteeVerkey]];
     XCTAssertEqual(ret.code, Success, @"DidUtils:storeTheirDid failed");
-}
-
-- (void)testStoreTheirDidWorksWithVerkey {
-    // 1. Store their did
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", [TestUtils trusteeDid], [TestUtils trusteeVerkey]];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                      identityJson:identityJson];
-    XCTAssertEqual(ret.code, Success, @"DidUtils:storeTheirDid() failed");
-}
-
-- (void)testStoretheirDidWorksWithoutDid {
-    // 1. Store their did
-    NSString *identityJson = [NSString stringWithFormat:@"{\"verkey\":\"%@\"}", [TestUtils trusteeVerkey]];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                      identityJson:identityJson];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"DidUtils:storeTheirDidWithWalletHandle() returned wrong code");
-
 }
 
 // MARK: - Key for Did
@@ -430,6 +377,57 @@
                                                verkey:&abbrVerkey];
     XCTAssertEqual(ret.code, Success, @"DidUtils::abbreviateVerkey() failed");
     XCTAssertFalse([verkey isEqualToString:abbrVerkey], @"Keys are equal");
+}
+
+// MARK: - Qualify did
+
+- (void)testQualifyDid {
+    // 1. Create did
+    NSString *did;
+    NSString *verkey;
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:&did
+                                                     outMyVerkey:&verkey];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
+
+    // 2. Qualify did
+    NSString *method = @"peer";
+    NSString *fullQualifiedDid;
+    ret = [[DidUtils sharedInstance] qualifyDid:did
+                                         method:method
+                                   walletHandle:walletHandle
+                               fullQualifiedDid:&fullQualifiedDid];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::abbreviateVerkey() failed");
+    NSString *expectedDid = [NSString stringWithFormat:@"did:%@:%@", method, did];
+    XCTAssertTrue([fullQualifiedDid isEqualToString:expectedDid], @"Did are equal");
+}
+
+// MARK: - List DIDs
+
+- (void)testListDids {
+    // 1. Create did1
+    NSString *did1;
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:&did1
+                                                     outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
+
+    // 2. Create did2
+    NSString *did2;
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:&did2
+                                                     outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
+
+    // 3. List DIDs in wallet
+    NSString *metadata;
+    ret = [[DidUtils sharedInstance] listMyDidsWithMeta:walletHandle metadata:&metadata];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::listMyDidsWithMeta() failed");
+    XCTAssertTrue([metadata containsString:did1], @"Metadata does not contain first DID");
+    XCTAssertTrue([metadata containsString:did2], @"Metadata does not contain second DID");
 }
 
 @end

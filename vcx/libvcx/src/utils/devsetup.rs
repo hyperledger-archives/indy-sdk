@@ -26,14 +26,26 @@ macro_rules! init {
         "ledger" => {
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-            ::utils::devsetup::tests::setup_ledger_env();
+            ::utils::devsetup::tests::setup_ledger_env(false);
+        },
+        "ledger_zero_fees" => {
+            ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+            ::utils::devsetup::tests::setup_ledger_env(true);
         },
         "agency" => {
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::pool::tests::delete_test_pool();
             ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-            ::utils::devsetup::tests::setup_local_env();
+            ::utils::devsetup::tests::setup_local_env("1.0");
+        },
+        "agency_2_0" => {
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
+            ::utils::libindy::pool::tests::delete_test_pool();
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+            ::utils::devsetup::tests::setup_local_env("2.0");
         },
         _ => {panic!("Invalid test mode");},
     };
@@ -72,8 +84,9 @@ pub mod tests {
     static mut INSTITUTION_CONFIG: u32 = 0;
     static mut CONSUMER_CONFIG: u32 = 0;
     use indy::ErrorCode;
+    use std::sync::Once;
 
-    static INIT_PLUGIN: std::sync::Once = std::sync::ONCE_INIT;
+    static INIT_PLUGIN: std::sync::Once = std::sync::Once::new();
 
     lazy_static! {
         static ref CONFIG_STRING: ObjectCache<String> = Default::default();
@@ -152,18 +165,18 @@ pub mod tests {
         });
     }
 
-    #[cfg(all(unix, test))]
+    #[cfg(all(unix, test, not(target_os = "android")))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
         libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE)
             .map(libloading::Library::from)
     }
 
-    #[cfg(any(not(unix), not(test)))]
+    #[cfg(any(not(unix), not(test), target_os = "android"))]
     fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
         libloading::Library::new(library)
     }
 
-    pub fn setup_ledger_env() {
+    pub fn setup_ledger_env(use_zero_fees: bool) {
         match pool::get_pool_handle() {
             Ok(x) => pool::close().unwrap(),
             Err(x) => (),
@@ -186,7 +199,7 @@ pub mod tests {
         ::utils::libindy::anoncreds::libindy_prover_create_master_secret(settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
         set_trustee_did();
 
-        ::utils::libindy::payments::tests::token_setup(None, None);
+        ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
     }
 
     pub fn cleanup_local_env() {
@@ -202,7 +215,7 @@ pub mod tests {
         unsafe {
             CONFIG_STRING.get(INSTITUTION_CONFIG, |t| {
                 settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
-                settings::process_config_string(&t)
+                settings::process_config_string(&t, true)
             }).unwrap();
         }
         change_wallet_handle();
@@ -213,7 +226,7 @@ pub mod tests {
         unsafe {
             CONFIG_STRING.get(CONSUMER_CONFIG, |t| {
                 settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
-                settings::process_config_string(&t)
+                settings::process_config_string(&t, true)
             }).unwrap();
         }
         change_wallet_handle();
@@ -224,7 +237,7 @@ pub mod tests {
         unsafe { wallet::WALLET_HANDLE = wallet_handle.parse::<i32>().unwrap() }
     }
 
-    pub fn setup_local_env() {
+    pub fn setup_local_env(protocol_type: &str) {
         use indy::ledger;
         use futures::Future;
 
@@ -246,6 +259,7 @@ pub mod tests {
             "name": "institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type,
         }).to_string();
         let enterprise_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
@@ -265,6 +279,7 @@ pub mod tests {
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type,
         }).to_string();
         let consumer_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
@@ -296,10 +311,10 @@ pub mod tests {
 
         // as trustees, mint tokens into each wallet
         set_consumer();
-        ::utils::libindy::payments::tests::token_setup(None, None);
+        ::utils::libindy::payments::tests::token_setup(None, None, false);
 
         set_institution();
-        ::utils::libindy::payments::tests::token_setup(None, None);
+        ::utils::libindy::payments::tests::token_setup(None, None, false);
     }
 
     fn _config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
@@ -379,7 +394,7 @@ pub mod tests {
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
         ::utils::devsetup::tests::set_institution();
         thread::sleep(Duration::from_millis(2000));
-        update_state(alice).unwrap();
+        update_state(alice, None).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(alice));
 
         teardown!("agency");

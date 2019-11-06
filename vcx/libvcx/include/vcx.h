@@ -1,6 +1,8 @@
 #ifndef __VCX_H
 #define __VCX_H
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -16,10 +18,11 @@ typedef unsigned int vcx_proof_handle_t;
 typedef unsigned int vcx_command_handle_t;
 typedef unsigned int vcx_payment_handle_t;
 typedef unsigned int vcx_wallet_search_handle_t;
-typedef unsigned int vcx_bool_t;
+typedef unsigned bool vcx_bool_t;
 typedef unsigned int count_t;
 typedef unsigned long vcx_price_t;
 typedef unsigned int vcx_u32_t;
+typedef unsigned long long vcx_u64_t;
 
 typedef enum
 {
@@ -441,6 +444,45 @@ vcx_error_t vcx_credentialdef_create(vcx_command_handle_t command_handle,
                                   vcx_payment_handle_t payment_handle,
                                   void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t));
 
+/// Create a new CredentialDef object that will be published by Endorser later.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the user.
+///
+/// credentialdef_name: Name of credential definition
+///
+/// schema_id: The schema id given during the creation of the schema
+///
+/// issuer_did: did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
+///
+/// tag: way to create a unique credential def with the same schema and issuer did.
+///
+/// revocation details: type-specific configuration of credential definition revocation
+///     support_revocation: true|false - Optional, by default its false
+///     tails_file: path to tails file - Optional if support_revocation is false
+///     max_creds: size of tails file - Optional if support_revocation is false
+///
+/// endorser: DID of the Endorser that will submit the transaction.
+///
+/// # Examples config ->  "{}" | "{"support_revocation":false}" | "{"support_revocation":true, "tails_file": "/tmp/tailsfile.txt", "max_creds": 1}"
+/// cb: Callback that provides CredentialDef handle, transactions (CredentialDef, Option<RevocRegDef>, Option<RevocRegEntry>) that should be passed to Endorser for publishing.
+///
+/// payment_handle: future use (currently uses any address in wallet)
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credentialdef_prepare_for_endorser(vcx_command_handle_t command_handle,
+                                                  const char *source_id,
+                                                  const char *credentialdef_name,
+                                                  const char *schema_id,
+                                                  const char *issuer_did,
+                                                  const char *tag,
+                                                  const char *config,
+                                                  const char *endorser,
+                                                  void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_credential_handle_t, const char*, const char*, const char*));
+
 // Takes a json string representing a credentialdef object and recreates an object matching the json
 //
 // #Params
@@ -514,6 +556,36 @@ vcx_error_t vcx_credentialdef_release(vcx_credential_handle_t credentialdef_hand
 vcx_error_t vcx_credentialdef_serialize(vcx_command_handle_t command_handle,
                                      vcx_credential_handle_t credentialdef_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/// Checks if credential definition is published on the Ledger and updates the the state
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credentialdef_handle: Credentialdef handle that was provided during creation. Used to access credentialdef object
+///
+/// cb: Callback that provides most current state of the credential definition and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credentialdef_update_state(vcx_command_handle_t command_handle,
+                                           credentialdef_handle connection_handle,
+                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Get the current state of the credential definition object
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credentialdef_handle: Credentialdef handle that was provided during creation. Used to access credentialdef object
+///
+/// cb: Callback that provides most current state of the credential definition and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_credentialdef_get_state(vcx_command_handle_t command_handle,
+                                        credentialdef_handle connection_handle,
+                                        void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
 
 // Create a proof for fulfilling a corresponding proof request
 //
@@ -1127,6 +1199,35 @@ vcx_error_t vcx_schema_create(vcx_command_handle_t command_handle,
                            vcx_payment_handle_t payment_handle,
                            void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_schema_handle_t));
 
+/// Create a new Schema object that will be published by Endorser later.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the user.
+///
+/// schema_name: Name of schema
+///
+/// version: version of schema
+///
+/// schema_data: list of attributes that will make up the schema (the number of attributes should be less or equal than 125)
+///
+/// endorser: DID of the Endorser that will submit the transaction.
+///
+/// # Example schema_data -> "["attr1", "attr2", "attr3"]"
+///
+/// cb: Callback that provides Schema handle and Schema transaction that should be passed to Endorser for publishing.
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_schema_prepare_for_endorser(vcx_command_handle_t command_handle,
+                                           const char *source_id,
+                                           const char *schema_name,
+                                           const char *version,
+                                           const char *schema_data,
+                                           const char *endorser,
+                                           void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_schema_handle_t, const char*));
+
 // Takes a json string representing a schema object and recreates an object matching the json
 //
 // #Params
@@ -1218,6 +1319,36 @@ vcx_error_t vcx_schema_release(vcx_schema_handle_t schema_handle);
 vcx_error_t vcx_schema_serialize(vcx_command_handle_t command_handle,
                               vcx_schema_handle_t schema_handle,
                               void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/// Checks if schema is published on the Ledger and updates the the state
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// schema_handle: Schema handle that was provided during creation. Used to access schema object
+///
+/// cb: Callback that provides most current state of the schema and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_schema_update_state(vcx_command_handle_t command_handle,
+                                    schema_handle connection_handle,
+                                    void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Get the current state of the schema object
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// schema_handle: Schema handle that was provided during creation. Used to access schema object
+///
+/// cb: Callback that provides most current state of the schema and error status of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_schema_get_state(vcx_command_handle_t command_handle,
+                                 credentialdef_handle connection_handle,
+                                 void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
 
 // Reset libvcx to a pre-configured state, releasing/deleting any handles and freeing memory
 //
@@ -1316,6 +1447,45 @@ vcx_error_t vcx_wallet_close_search(vcx_command_handle_t command_handle,
 vcx_error_t vcx_wallet_create_payment_address(vcx_command_handle_t command_handle,
                                            const char *seed,
                                            void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+// Signs a message with a payment address.
+//
+// # Params:
+// command_handle: command handle to map callback to user context.
+// address: payment address of message signer. The key must be created by calling vcx_wallet_create_address
+// message_raw: a pointer to first byte of message to be signed
+// message_len: a message length
+// cb: Callback that takes command result as parameter.
+//
+// # Returns:
+// a signature string
+
+vcx_error_t vcx_wallet_sign_with_address(vcx_command_handle_t command_handle,
+                                                 const char *payment_address,
+                                                 const unsigned short *message_raw,
+                                                 vcx_u32_t message_len,
+                                                 void (*cb)(vcx_command_handle_t, vcx_error_t, const unsigned short *, vcx_u32_t))
+
+// Verify a signature with a payment address.
+//
+// #Params
+// command_handle: command handle to map callback to user context.
+// address: payment address of the message signer
+// message_raw: a pointer to first byte of message that has been signed
+// message_len: a message length
+// signature_raw: a pointer to first byte of signature to be verified
+// signature_len: a signature length
+// cb: Callback that takes command result as parameter.
+//
+// #Returns
+// valid: true - if signature is valid, false - otherwise
+vcx_error_t vcx_wallet_verify_with_address(vcx_command_handle_t command_handle,
+                                                   const char *payment_address,
+                                                   const unsigned short *message_raw,
+                                                   vcx_u32_t message_len,
+                                                   const unsigned short *signature_raw,
+                                                   vcx_u32_t signature_len,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_bool_t))
 
 // Deletes an existing record.
 // Assumes there is an open wallet and that a type and id pair already exists.
@@ -1604,6 +1774,70 @@ vcx_error_t vcx_get_logger(const void*  vcx_get_logger,
                                           const char* file,
                                           vcx_u32_t line),
                            void (**flushFn)(const void*  context) );
+
+/// Get details for last occurred error.
+///
+/// This function should be called in two places to handle both cases of error occurrence:
+///     1) synchronous  - in the same application thread
+///     2) asynchronous - inside of function callback
+///
+/// NOTE: Error is stored until the next one occurs in the same execution thread or until asynchronous callback finished.
+///       Returning pointer has the same lifetime.
+///
+/// #Params
+/// * `error_json_p` - Reference that will contain error details (if any error has occurred before)
+///  in the format:
+/// {
+///     "backtrace": Optional<str> - error backtrace.
+///         Collecting of backtrace can be enabled by setting environment variable `RUST_BACKTRACE=1`
+///     "message": str - human-readable error description
+/// }
+///
+vcx_error_t vcx_get_current_error(const char ** error_json_p);
+
+/// Retrieve author agreement set on the Ledger
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_get_ledger_author_agreement(vcx_u32_t command_handle,
+                                            void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+/// Set some accepted agreement as active.
+///
+/// As result of succesfull call of this funciton appropriate metadata will be appended to each write request by `indy_append_txn_author_agreement_meta_to_request` libindy call.
+///
+/// #Params
+/// text and version - (optional) raw data about TAA from ledger.
+///     These parameters should be passed together.
+///     These parameters are required if hash parameter is ommited.
+/// hash - (optional) hash on text and version. This parameter is required if text and version parameters are ommited.
+/// acc_mech_type - mechanism how user has accepted the TAA
+/// time_of_acceptance - UTC timestamp when user has accepted the TAA
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_set_active_txn_author_agreement_meta(const char *text, const char *version, const char *hash, const char *acc_mech_type, vcx_u64_t type_);
+
+/// Endorse transaction to the ledger preserving an original author
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+/// transaction: transaction to endorse
+///
+/// cb: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_endorse_transaction(vcx_u32_t command_handle,
+                                    const char* transaction
+                                    void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 #ifdef __cplusplus
 } // extern "C"

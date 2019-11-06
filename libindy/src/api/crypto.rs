@@ -1,14 +1,14 @@
-extern crate libc;
 
-use api::{ErrorCode, IndyHandle};
-use commands::{Command, CommandExecutor};
-use commands::crypto::CryptoCommand;
-use domain::crypto::key::KeyInfo;
-use errors::prelude::*;
-use utils::ctypes;
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::crypto::CryptoCommand;
+use crate::domain::crypto::pack::JWE;
+use crate::domain::crypto::key::KeyInfo;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
 use serde_json;
-use self::libc::c_char;
+use libc::c_char;
 
 
 /// Creates keys pair and stores in the wallet.
@@ -36,10 +36,10 @@ use self::libc::c_char;
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_create_key(command_handle: IndyHandle,
-                              wallet_handle: IndyHandle,
+pub extern fn indy_create_key(command_handle: CommandHandle,
+                              wallet_handle: WalletHandle,
                               key_json: *const c_char,
-                              cb: Option<extern fn(command_handle_: IndyHandle,
+                              cb: Option<extern fn(command_handle_: CommandHandle,
                                                    err: ErrorCode,
                                                    verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_create_key: >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, key_json);
@@ -53,12 +53,7 @@ pub extern fn indy_create_key(command_handle: IndyHandle,
         .send(Command::Crypto(CryptoCommand::CreateKey(
             wallet_handle,
             key_json,
-            Box::new(move |result| {
-                let (err, verkey) = prepare_result_1!(result, String::new());
-                trace!("indy_create_key: verkey: {:?}", verkey);
-                let verkey = ctypes::string_to_cstring(verkey);
-                cb(command_handle, err, verkey.as_ptr())
-            })
+            boxed_callback_string!("indy_create_key", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -88,11 +83,11 @@ pub extern fn indy_create_key(command_handle: IndyHandle,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_set_key_metadata(command_handle: IndyHandle,
-                                     wallet_handle: IndyHandle,
+pub  extern fn indy_set_key_metadata(command_handle: CommandHandle,
+                                     wallet_handle: WalletHandle,
                                      verkey: *const c_char,
                                      metadata: *const c_char,
-                                     cb: Option<extern fn(command_handle_: IndyHandle,
+                                     cb: Option<extern fn(command_handle_: CommandHandle,
                                                           err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_key_metadata: >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}", wallet_handle, verkey, metadata);
 
@@ -141,10 +136,10 @@ pub  extern fn indy_set_key_metadata(command_handle: IndyHandle,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_get_key_metadata(command_handle: IndyHandle,
-                                     wallet_handle: IndyHandle,
+pub  extern fn indy_get_key_metadata(command_handle: CommandHandle,
+                                     wallet_handle: WalletHandle,
                                      verkey: *const c_char,
-                                     cb: Option<extern fn(command_handle_: IndyHandle,
+                                     cb: Option<extern fn(command_handle_: CommandHandle,
                                                           err: ErrorCode,
                                                           metadata: *const c_char)>) -> ErrorCode {
     trace!("indy_get_key_metadata: >>> wallet_handle: {:?}, verkey: {:?}", wallet_handle, verkey);
@@ -158,12 +153,7 @@ pub  extern fn indy_get_key_metadata(command_handle: IndyHandle,
         .send(Command::Crypto(CryptoCommand::GetKeyMetadata(
             wallet_handle,
             verkey,
-            Box::new(move |result| {
-                let (err, metadata) = prepare_result_1!(result, String::new());
-                trace!("indy_get_key_metadata: metadata: {:?}", metadata);
-                let metadata = ctypes::string_to_cstring(metadata);
-                cb(command_handle, err, metadata.as_ptr())
-            })
+            boxed_callback_string!("indy_get_key_metadata", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -194,12 +184,12 @@ pub  extern fn indy_get_key_metadata(command_handle: IndyHandle,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_sign(command_handle: IndyHandle,
-                                wallet_handle: IndyHandle,
+pub  extern fn indy_crypto_sign(command_handle: CommandHandle,
+                                wallet_handle: WalletHandle,
                                 signer_vk: *const c_char,
                                 message_raw: *const u8,
                                 message_len: u32,
-                                cb: Option<extern fn(command_handle_: IndyHandle,
+                                cb: Option<extern fn(command_handle_: CommandHandle,
                                                      err: ErrorCode,
                                                      signature_raw: *const u8,
                                                      signature_len: u32)>) -> ErrorCode {
@@ -256,13 +246,13 @@ pub  extern fn indy_crypto_sign(command_handle: IndyHandle,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_verify(command_handle: IndyHandle,
+pub  extern fn indy_crypto_verify(command_handle: CommandHandle,
                                   signer_vk: *const c_char,
                                   message_raw: *const u8,
                                   message_len: u32,
                                   signature_raw: *const u8,
                                   signature_len: u32,
-                                  cb: Option<extern fn(command_handle_: IndyHandle,
+                                  cb: Option<extern fn(command_handle_: CommandHandle,
                                                        err: ErrorCode,
                                                        valid: bool)>) -> ErrorCode {
     trace!("indy_crypto_verify: >>> signer_vk: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
@@ -325,13 +315,13 @@ pub  extern fn indy_crypto_verify(command_handle: IndyHandle,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_auth_crypt(command_handle: IndyHandle,
-                                      wallet_handle: IndyHandle,
+pub  extern fn indy_crypto_auth_crypt(command_handle: CommandHandle,
+                                      wallet_handle: WalletHandle,
                                       sender_vk: *const c_char,
                                       recipient_vk: *const c_char,
                                       msg_data: *const u8,
                                       msg_len: u32,
-                                      cb: Option<extern fn(command_handle_: IndyHandle,
+                                      cb: Option<extern fn(command_handle_: CommandHandle,
                                                            err: ErrorCode,
                                                            encrypted_msg: *const u8,
                                                            encrypted_len: u32)>) -> ErrorCode {
@@ -395,12 +385,12 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: IndyHandle,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
-                                        wallet_handle: IndyHandle,
+pub  extern fn indy_crypto_auth_decrypt(command_handle: CommandHandle,
+                                        wallet_handle: WalletHandle,
                                         recipient_vk: *const c_char,
                                         encrypted_msg: *const u8,
                                         encrypted_len: u32,
-                                        cb: Option<extern fn(command_handle_: IndyHandle,
+                                        cb: Option<extern fn(command_handle_: CommandHandle,
                                                              err: ErrorCode,
                                                              sender_vk: *const c_char,
                                                              msg_data: *const u8,
@@ -436,7 +426,6 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
     res
 }
 
-/// **** THIS FUNCTION WILL BE DEPRECATED USE indy_pack_message() INSTEAD ****
 /// Encrypts a message by anonymous-encryption scheme.
 ///
 /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
@@ -445,6 +434,8 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
 ///
 /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 /// for specific DID.
+///
+/// Note: use indy_pack_message() function for A2A goals.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -462,11 +453,11 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: IndyHandle,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
+pub  extern fn indy_crypto_anon_crypt(command_handle: CommandHandle,
                                       recipient_vk: *const c_char,
                                       msg_data: *const u8,
                                       msg_len: u32,
-                                      cb: Option<extern fn(command_handle_: IndyHandle,
+                                      cb: Option<extern fn(command_handle_: CommandHandle,
                                                            err: ErrorCode,
                                                            encrypted_msg: *const u8,
                                                            encrypted_len: u32)>) -> ErrorCode {
@@ -497,7 +488,6 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
     res
 }
 
-/// **** THIS FUNCTION WILL BE DEPRECATED USE indy_unpack_message() INSTEAD ****
 /// Decrypts a message by anonymous-encryption scheme.
 ///
 /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
@@ -506,6 +496,8 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
 ///
 /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 /// for specific DID.
+///
+/// Note: use indy_unpack_message() function for A2A goals.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -523,12 +515,12 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: IndyHandle,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
-                                        wallet_handle: IndyHandle,
+pub  extern fn indy_crypto_anon_decrypt(command_handle: CommandHandle,
+                                        wallet_handle: WalletHandle,
                                         recipient_vk: *const c_char,
                                         encrypted_msg: *const u8,
                                         encrypted_len: u32,
-                                        cb: Option<extern fn(command_handle_: IndyHandle,
+                                        cb: Option<extern fn(command_handle_: CommandHandle,
                                                              err: ErrorCode,
                                                              msg_data: *const u8,
                                                              msg_len: u32)>) -> ErrorCode {
@@ -630,13 +622,13 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: IndyHandle,
 /// Crypto*
 #[no_mangle]
 pub extern fn indy_pack_message(
-    command_handle: IndyHandle,
-    wallet_handle: IndyHandle,
+    command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
     message: *const u8,
     message_len: u32,
     receiver_keys: *const c_char,
     sender: *const c_char,
-    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
+    cb: Option<extern fn(xcommand_handle: CommandHandle, err: ErrorCode, jwe_data: *const u8, jwe_len: u32)>,
 ) -> ErrorCode {
     trace!("indy_pack_message: >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
             receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
@@ -649,9 +641,23 @@ pub extern fn indy_pack_message(
     trace!("indy_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, message_len {:?},\
             receiver_keys: {:?}, sender: {:?}", wallet_handle, message, message_len, receiver_keys, sender);
 
+    //parse json array of keys
+    let receiver_list = match serde_json::from_str::<Vec<String>>(&receiver_keys) {
+        Ok(x) => x,
+        Err(_) => {
+            return ErrorCode::CommonInvalidParam4;
+        },
+    };
+
+    //break early and error out if no receivers keys are provided
+    if receiver_list.is_empty() {
+        return ErrorCode::CommonInvalidParam4;
+    }
+
+
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PackMessage(
         message,
-        receiver_keys,
+        receiver_list,
         sender,
         wallet_handle,
         Box::new(move |result| {
@@ -703,13 +709,13 @@ pub extern fn indy_pack_message(
 /// Crypto*
 #[no_mangle]
 pub extern fn indy_unpack_message(
-    command_handle: i32,
-    wallet_handle: i32,
+    command_handle: CommandHandle,
+    wallet_handle: WalletHandle,
     jwe_data: *const u8,
     jwe_len: u32,
     cb: Option<
         extern fn(
-            xcommand_handle: i32,
+            xcommand_handle: CommandHandle,
             err: ErrorCode,
             res_json_data : *const u8,
             res_json_len : u32
@@ -733,8 +739,14 @@ pub extern fn indy_unpack_message(
         jwe_len
     );
 
+    //serialize JWE to struct
+    let jwe_struct: JWE = match serde_json::from_slice(jwe_data.as_slice()) {
+        Ok(x) => x,
+        Err(_) => return ErrorCode::CommonInvalidParam3
+    };
+
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::UnpackMessage(
-        jwe_data,
+        jwe_struct,
         wallet_handle,
         Box::new(move |result| {
             let (err, res_json) = prepare_result_1!(result, Vec::new());

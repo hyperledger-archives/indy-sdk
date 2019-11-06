@@ -1,7 +1,6 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, RouteA2AMsg};
+use actors::{AddA2ARoute, Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, RouteA2AMsg, AdminRegisterForwardAgent, HandleAdminMessage};
 use actors::forward_agent_connection::ForwardAgentConnection;
-use actors::requester::Requester;
 use actors::router::Router;
 use domain::a2a::*;
 use domain::config::{ForwardAgentConfig, WalletStorageConfig};
@@ -12,6 +11,8 @@ use indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet};
 use serde_json;
 use std::convert::Into;
 use utils::futures::*;
+use actors::admin::Admin;
+use domain::admin_message::{ResAdminQuery, ResQueryForwardAgent};
 
 pub struct ForwardAgent {
     wallet_handle: i32,
@@ -20,15 +21,16 @@ pub struct ForwardAgent {
     router: Addr<Router>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
+    admin: Addr<Admin>,
 }
 
 impl ForwardAgent {
     pub fn create_or_restore(config: ForwardAgentConfig,
-                             wallet_storage_config: WalletStorageConfig) -> ResponseFuture<Addr<ForwardAgent>, Error> {
+                             wallet_storage_config: WalletStorageConfig,
+                             admin: Addr<Admin>) -> ResponseFuture<Addr<ForwardAgent>, Error> {
         trace!("ForwardAgent::create_or_restore >> {:?} {:?}", config, wallet_storage_config);
-        let request = Requester::new().start();
-        let router = Router::new(request).start();
-
+        let admin1 = admin.clone();
+        let admin2 = admin.clone();
         future::ok(())
             .and_then(move |_| {
                 // Ensure Forward Agent wallet created
@@ -61,7 +63,7 @@ impl ForwardAgent {
             })
             .and_then(move |(wallet_handle, config, wallet_storage_config)| {
                 #[cfg(test)]
-                unsafe {
+                    unsafe {
                     ::utils::tests::FORWARD_AGENT_WALLET_HANDLE = wallet_handle;
                 }
 
@@ -88,7 +90,12 @@ impl ForwardAgent {
                     .map(move |verkey| (wallet_handle, config.did, verkey, config.endpoint, wallet_storage_config))
                     .map_err(|err| err.context("Can't get Forward Agent did key").into())
             })
-            .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config)| {
+            .and_then(|(wallet_handle, did, verkey, endpoint, wallet_storage_config)| {
+                Router::new(admin1)
+                    .map(move |router| (wallet_handle, did, verkey, endpoint, wallet_storage_config, router))
+                    .map_err(|err| err.context("Can't create Router.").into())
+            })
+            .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config, router)| {
                 // Resolve information about existing connections from the wallet
                 // and start Forward Agent Connection actor for each exists connection
 
@@ -101,12 +108,14 @@ impl ForwardAgent {
                 Self::_restore_connections(wallet_handle,
                                            forward_agent_detail.clone(),
                                            wallet_storage_config.clone(),
-                                           router.clone())
+                                           router.clone(),
+                                           admin.clone(),
+                )
                     .map(move |_| (wallet_handle, did, verkey,
-                                   router, wallet_storage_config, forward_agent_detail))
+                                   router, wallet_storage_config, forward_agent_detail, admin))
             })
             .and_then(|(wallet_handle, did, verkey, router,
-                           wallet_storage_config, forward_agent_detail)| {
+                           wallet_storage_config, forward_agent_detail, admin)| {
                 let forward_agent = ForwardAgent {
                     wallet_handle,
                     did: did.clone(),
@@ -114,6 +123,7 @@ impl ForwardAgent {
                     router: router.clone(),
                     wallet_storage_config,
                     forward_agent_detail,
+                    admin: admin.clone(),
                 };
 
                 let forward_agent = forward_agent.start();
@@ -124,13 +134,20 @@ impl ForwardAgent {
                     .map(move |_| forward_agent)
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent").into())
             })
+            .and_then(move |forward_agent| {
+                admin2.send(AdminRegisterForwardAgent(forward_agent.clone().recipient()))
+                    .from_err()
+                    .map(move |_| forward_agent)
+                    .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into())
+            })
             .into_box()
     }
 
     fn _restore_connections(wallet_handle: i32,
                             forward_agent_detail: ForwardAgentDetail,
                             wallet_storage_config: WalletStorageConfig,
-                            router: Addr<Router>) -> ResponseFuture<(), Error> {
+                            router: Addr<Router>,
+                            admin: Addr<Admin>) -> ResponseFuture<(), Error> {
         trace!("ForwardAgent::_restore_connections >> {:?}", wallet_handle);
 
         future::ok(())
@@ -160,7 +177,8 @@ impl ForwardAgent {
                                                         pairwise.their_did.clone(),
                                                         forward_agent_detail.clone(),
                                                         wallet_storage_config.clone(),
-                                                        router.clone())
+                                                        router.clone(),
+                                                        admin.clone())
                     })
                     .collect();
 
@@ -176,6 +194,16 @@ impl ForwardAgent {
         (self.did.clone(), self.verkey.clone())
     }
 
+    fn _get_forward_agent_details(&self) -> (String, Vec<String>, i32) {
+        trace!("ForwardAgent::_get_forward_agent_details >>");
+        let endpoint = self.forward_agent_detail.endpoint.clone();
+        let wallet_handle = self.wallet_handle.clone();
+        let pairwise_list_string = pairwise::list_pairwise(wallet_handle).wait().expect("Couldn't resolve pairwise list");
+        let pairwise_list = serde_json::from_str::<Vec<String>>(&pairwise_list_string)
+            .expect("Couldn't pair list of pairwises");
+        (endpoint, pairwise_list, wallet_handle)
+    }
+
     fn _forward_a2a_msg(&mut self,
                         msg: Vec<u8>) -> ResponseActFuture<Self, Vec<u8>, Error> {
         trace!("ForwardAgent::_forward_a2a_msg >> {:?}", msg);
@@ -183,19 +211,28 @@ impl ForwardAgent {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_anoncrypted(slf.wallet_handle, &slf.verkey, &msg)
+                A2AMessage::parse_anoncrypted(slf.wallet_handle, &slf.verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
             .and_then(move |mut msgs, slf, _| {
+                let send_to_router = |fwd: String, msg: Vec<u8>| {
+                    slf.router
+                        .send(RouteA2AMsg(fwd, msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .into_actor(slf)
+                        .into_box()
+                };
+
+
                 match msgs.pop() {
-                    Some(A2AMessage::Forward(msg)) => {
-                        slf.router
-                            .send(RouteA2AMsg(msg.fwd, msg.msg))
-                            .from_err()
-                            .and_then(|res| res)
-                            .into_actor(slf)
-                            .into_box()
+                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) => {
+                        send_to_router(msg.fwd, msg.msg)
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        send_to_router(msg.fwd, msg_)
                     }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
@@ -210,14 +247,17 @@ impl ForwardAgent {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
+                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
             .and_then(move |(sender_vk, mut msgs), slf, _| {
                 match msgs.pop() {
-                    Some(A2AMessage::Connect(msg)) => {
-                        slf._connect(sender_vk, msg)
+                    Some(A2AMessage::Version1(A2AMessageV1::Connect(msg))) => {
+                        slf._connect_v1(sender_vk, msg)
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::Connect(msg))) => {
+                        slf._connect_v2(sender_vk, msg)
                     }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
@@ -225,12 +265,53 @@ impl ForwardAgent {
             .into_box()
     }
 
-    fn _connect(&mut self,
-                sender_vk: String,
-                msg: Connect) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgent::_connect >> {:?}, {:?}", sender_vk, msg);
+    fn _connect_v1(&mut self,
+                   sender_vk: String,
+                   msg: Connect) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgent::_connect_v1 >> {:?}, {:?}", sender_vk, msg);
 
         let Connect { from_did: their_did, from_did_verkey: their_verkey } = msg;
+
+        self._connect(sender_vk.clone(), their_did.clone(), their_verkey.clone())
+            .and_then(move |(my_did, my_verkey), slf, _| {
+                let msgs = vec![A2AMessage::Version1(A2AMessageV1::Connected(Connected {
+                    with_pairwise_did: my_did,
+                    with_pairwise_did_verkey: my_verkey,
+                }))];
+
+                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.verkey, &their_verkey, &msgs)
+                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
+                    .into_actor(slf)
+            })
+            .into_box()
+    }
+
+    fn _connect_v2(&mut self,
+                   sender_vk: String,
+                   msg: Connect) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgent::_connect_v2 >> {:?}, {:?}", sender_vk, msg);
+
+        let Connect { from_did: their_did, from_did_verkey: their_verkey, .. } = msg;
+
+        self._connect(sender_vk.clone(), their_did.clone(), their_verkey.clone())
+            .and_then(move |(my_did, my_verkey), slf, _| {
+                let msg = A2AMessageV2::Connected(Connected {
+                    with_pairwise_did: my_did,
+                    with_pairwise_did_verkey: my_verkey,
+                });
+
+                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.verkey), &their_verkey, &msg)
+                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
+                    .into_actor(slf)
+            })
+            .into_box()
+    }
+
+    fn _connect(&mut self,
+                sender_vk: String,
+                their_did: String,
+                their_verkey: String) -> ResponseActFuture<Self, (String, String), Error> {
+        trace!("ForwardAgent::_connect >> {:?}, {:?}, {:?}", sender_vk, their_did, their_verkey);
 
         if their_verkey != sender_vk {
             return err_act!(self, err_msg("Inconsistent sender and connection verkeys"));
@@ -244,19 +325,9 @@ impl ForwardAgent {
                                                their_verkey.clone(),
                                                slf.router.clone(),
                                                slf.forward_agent_detail.clone(),
-                                               slf.wallet_storage_config.clone())
-                    .map(|(my_did, my_verkey)| (my_did, my_verkey, their_verkey))
+                                               slf.wallet_storage_config.clone(),
+                                               slf.admin.clone())
                     .map_err(|err| err.context("Can't create Forward Agent Connection.").into())
-                    .into_actor(slf)
-            })
-            .and_then(move |(my_did, my_verkey, their_verkey), slf, _| {
-                let msgs = vec![A2AMessage::Connected(Connected {
-                    with_pairwise_did: my_did,
-                    with_pairwise_did_verkey: my_verkey,
-                })];
-
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.verkey, &their_verkey, &msgs)
-                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
                     .into_actor(slf)
             })
             .into_box()
@@ -283,6 +354,16 @@ impl Handler<GetEndpoint> for ForwardAgent {
         trace!("Handler<GetEndpoint>::handle >> {:?}", _msg);
         let (did, verkey) = self._get_endpoint();
         Ok(Endpoint { did, verkey })
+    }
+}
+
+impl Handler<HandleAdminMessage> for ForwardAgent {
+    type Result = Result<ResAdminQuery, Error>;
+
+    fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
+        trace!("Forward Agent Handler<HandleAdminMessage>::handle >>", );
+        let (endpoint, pairwise_list, wallet_handle) = self._get_forward_agent_details();
+        Ok(ResAdminQuery::ForwardAgent(ResQueryForwardAgent { endpoint, pairwise_list, wallet_handle }))
     }
 }
 

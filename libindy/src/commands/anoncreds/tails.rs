@@ -1,16 +1,11 @@
-extern crate digest;
-extern crate indy_crypto;
-extern crate sha2;
-extern crate rust_base58;
+use indy_api_types::errors::prelude::*;
+use crate::services::blob_storage::BlobStorageService;
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
-use errors::prelude::*;
-use services::blob_storage::BlobStorageService;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use ursa::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
+use ursa::errors::prelude::{UrsaCryptoError, UrsaCryptoErrorKind};
 
-use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
-use self::indy_crypto::errors::prelude::{IndyCryptoError, IndyCryptoErrorKind};
-
-use self::rust_base58::{ToBase58, FromBase58};
+use rust_base58::{ToBase58, FromBase58};
 
 use std::rc::Rc;
 
@@ -51,7 +46,7 @@ impl Drop for SDKTailsAccessor {
 }
 
 impl RevocationTailsAccessor for SDKTailsAccessor {
-    fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), IndyCryptoError> {
+    fn access_tail(&self, tail_id: u32, accessor: &mut dyn FnMut(&Tail)) -> Result<(), UrsaCryptoError> {
         debug!("access_tail >>> tail_id: {:?}", tail_id);
 
         let tail_bytes = self.tails_service
@@ -59,14 +54,13 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
                   TAIL_SIZE,
                   TAIL_SIZE * tail_id as usize + TAILS_BLOB_TAG_SZ as usize)
             .map_err(|_|
-                IndyCryptoError::from_msg(IndyCryptoErrorKind::InvalidState, "Can't read tail bytes from blob storage"))?; // FIXME: IO error should be returned
+                UrsaCryptoError::from_msg(UrsaCryptoErrorKind::InvalidState, "Can't read tail bytes from blob storage"))?; // FIXME: IO error should be returned
 
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
         accessor(&tail);
 
-        let res = ();
-        debug!("access_tail <<< res: {:?}", res);
-        Ok(res)
+        debug!("access_tail <<< res: ()");
+        Ok(())
     }
 }
 
@@ -80,7 +74,7 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
     let version = vec![0u8, TAILS_BLOB_TAG_SZ];
     service.append(blob_handle, version.as_slice())?;
 
-    while let Some(tail) = rtg.next()? {
+    while let Some(tail) = rtg.try_next()? {
         let tail_bytes = tail.to_bytes()?;
         service.append(blob_handle, tail_bytes.as_slice())?;
     }

@@ -7,18 +7,64 @@ foundation for self-sovereign identity. It provides the commands to:
 * Manage DIDs
 * Sending transactions to distributed ledger
 
-### Binaries
-Pre-Built binaries can be downloaded from https://repo.sovrin.org/:
-* sdk/lib/apt/xenial/{master,stable,rc} - Ubuntu deb packages. Note that it depends on [libindy](../README.md) package
-* windows/indy-cli/{master,stable,rc} - Windows zip-archive with executable file and all required DLLs
+### Installing the Indy-CLI
 
-On Ubuntu it is recommended to install packages with APT (change stable to `master` or `rc` if needed):
-```
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
-sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable"
-sudo apt-get update
-sudo apt-get install -y indy-cli
-```
+#### Release channels
+The Indy SDK release process defines the following release channels:
+
+* `master` - development builds for each push to master branch.
+* `rc` - release candidates.
+* `stable` - stable releases.
+
+Please refer to our [release workflow](../docs/contributors/release-workflow.md) for more details.
+
+#### Ubuntu based distributions (Ubuntu 16.04 and 18.04)
+It is recommended to install the Indy-CLI with APT:
+
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
+    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) {release channel}"
+    sudo apt-get update
+    sudo apt-get install -y indy-cli
+    indy-cli
+
+* (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
+* {release channel} must be replaced with master, rc or stable to define corresponded release channel.
+
+#### Windows
+1. Go to https://repo.sovrin.org/windows/indy-cli/{release-channel}.
+2. Download last version of indy-cli.
+3. Unzip archives to the directory where you want to save working library.
+4. After unzip you will get next structure of files:
+
+* `Your working directory`
+    * `indy-cli.exe`
+    * `indy.dll`
+    * `libeay32md.dll`
+    * `libsodium.dll`
+    * `libzmq.dll`
+    * `ssleay32md.dll`
+
+5. Add path to the directory to PATH environment variable.
+6. Run `indy-cli.exe` to start Indy-CLI.
+ 
+#### MacOS
+1. Go to https://repo.sovrin.org/macos/indy-cli/{release-channel}.
+2. Download last version of indy-cli.
+3. Unzip archives to the directory where you want to save working library.
+4. After unzip you will get next structure of files:
+    * `Your working directory`
+        * `indy-cli` executable file
+5. Install Libindy
+   1. Download and unzip libindy from https://repo.sovrin.org/macos/libindy/{release-channel}.
+   2. After unzip you will get `lib` folder which contains libindy binary.
+   3. Either add directory path to `LIBRARY_PATH` env variable or move `libindy.dylib` to `/usr/lib` folder.
+6. Run `indy-cli` to start Indy-CLI.
+
+#### Centos
+1. Go to https://repo.sovrin.org/rpm/indy-cli/{release-channel}.
+2. Download and unzip the last version of library.
+3. Install with `rpm -i indy-cli-version.rpm`.
+4. Run `indy-cli` to start Indy-CLI.
 
 ### Execution modes
 CLI supports 2 execution modes:
@@ -32,12 +78,16 @@ by beginning the line with a `#`.
 
 ### Getting help
 The most simple way is just start cli by `indy-cli` command and put `help` command. Also you can look to
-[Indy CLI Design](../doc/design/001-cli) doc that contains the list of commands and architecture overview.
+[Indy CLI Design](https://github.com/hyperledger/indy-sdk/tree/master/docs/design/001-cli) doc that contains the list of commands and architecture overview.
 
 ### Options
 * -h and --help - Print usage.
 * --logger-config - Init logger according to a config file (default no logger initialized).
 * --plugins - Load plugins in Libindy (usage: <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>).
+* --config - Define config file for CLI initialization. A config file can contain the following fields:
+    * plugins - a list of plugins to load in Libindy (is equal to usage of "--plugins" option).
+    * loggerConfig - path to a logger config file (is equal to usage of "--logger-config" option).
+    * taaAcceptanceMechanism - transaction author agreement acceptance mechanism to be used when sending write transactions to the Ledger.
 
 ### Old python-based CLI migration
 It is possible to import did's stored in the wallet of deprecated python-based CLI tool.
@@ -59,3 +109,12 @@ By default, this file creates in current folder and has the following name:
     ```
     did import <path to the file created on first step>
     ```
+
+
+### Notes
+Indy-CLI depends on `term` rust library that has a system dependency on terminfo database. 
+That is why CLI Debian package additionally installs `libncursesw5-dev` library.
+More about it read [here](https://crates.io/crates/term) at `Packaging and Distributing` section.
+
+
+

@@ -11,6 +11,8 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.hyperledger.indy.sdk.Callbacks.boolCallback;
+
 /**
  * crypto.rs API
  */
@@ -89,22 +91,6 @@ public class Crypto extends IndyJava.API {
 
 			byte[] result = new byte[signature_len];
 			signature_raw.read(0, result, 0, signature_len);
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when cryptoVerify completes.
-	 */
-	private static Callback cryptoVerifyCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, boolean valid) {
-
-			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
-			if (! checkResult(future, err)) return;
-
-			Boolean result = Boolean.valueOf(valid);
 			future.complete(result);
 		}
 	};
@@ -375,7 +361,7 @@ public class Crypto extends IndyJava.API {
 				message.length,
 				signature,
 				signature.length,
-				cryptoVerifyCb);
+				boolCallback);
 
 		checkResult(future, result);
 
@@ -383,6 +369,8 @@ public class Crypto extends IndyJava.API {
 	}
 
 	/**
+	 * **** THIS FUNCTION WILL BE DEPRECATED USE packMessage INSTEAD ****
+	 *
 	 * Encrypt a message by authenticated-encryption scheme.
 	 *
 	 * Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -435,6 +423,8 @@ public class Crypto extends IndyJava.API {
 	}
 
 	/**
+	 * **** THIS FUNCTION WILL BE DEPRECATED USE unpackMessage INSTEAD ****
+	 *
 	 * Decrypt a message by authenticated-encryption scheme.
 	 *
 	 * Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
@@ -492,6 +482,8 @@ public class Crypto extends IndyJava.API {
 	 * Note to use DID keys with this function you can call keyForDid to get key id (verkey)
 	 * for specific DID.
 	 *
+	 * Note: use packMessage function for A2A goals.
+	 *
 	 * @param recipientVk verkey of message recipient
 	 * @param message a message to be signed
 	 * @return A future that resolves to an encrypted message as an array of bytes.
@@ -528,6 +520,8 @@ public class Crypto extends IndyJava.API {
 	 *
 	 * Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 	 * for specific DID.
+	 *
+	 * Note: use unpackMessage function for A2A goals.
 	 *
 	 * @param wallet       The wallet.
 	 * @param recipientVk  Id (verkey) of my key. The key must be created by calling createKey or createAndStoreMyDid

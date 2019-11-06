@@ -15,15 +15,4 @@ public class InvalidStructureException extends IndyException
 	{
 		super(message, ErrorCode.CommonInvalidStructure.value());
 	}
-
-	/**
-	 * Initializes a new InvalidStructureException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public InvalidStructureException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.CommonInvalidStructure.value(), sdkBacktrace);
-    }
 }

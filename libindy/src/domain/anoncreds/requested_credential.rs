@@ -1,6 +1,6 @@
-extern crate indy_crypto;
-
 use std::collections::HashMap;
+
+use indy_api_types::validation::Validatable;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedCredentials {
@@ -20,4 +20,13 @@ pub struct RequestedAttribute {
 pub struct ProvingCredentialKey {
     pub cred_id: String,
     pub timestamp: Option<u64>
+}
+
+impl Validatable for RequestedCredentials {
+    fn validate(&self) -> Result<(), String> {
+        if self.self_attested_attributes.is_empty() && self.requested_attributes.is_empty() && self.requested_predicates.is_empty() {
+            return Err(String::from("Requested Credentials validation failed: `self_attested_attributes` and `requested_attributes` and `requested_predicates` are empty"));
+        }
+        Ok(())
+    }
 }

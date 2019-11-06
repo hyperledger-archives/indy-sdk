@@ -63,6 +63,50 @@
     }
 }
 
++ (void)issuerRotateCredentialDefStartForId:(NSString *)credDefId
+                                 configJSON:(NSString *)configJSON
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error, NSString *credDefJSON))completion; {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_issuer_rotate_credential_def_start(handle,
+            walletHandle,
+            [credDefId UTF8String],
+            [configJSON UTF8String],
+            IndyWrapperCommonStringCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)issuerRotateCredentialDefApplyForId:(NSString *)credDefId
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error))completion; {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_issuer_rotate_credential_def_apply(handle,
+            walletHandle,
+            [credDefId UTF8String],
+            IndyWrapperCommonCallback
+    );
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret]);
+        });
+    }
+}
+
 + (void)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefId
                                              issuerDID:(NSString *)issuerDID
                                                   type:(NSString *)type
@@ -586,6 +630,42 @@
             [revRegDeltaJSON UTF8String],
             [timestamp unsignedIntValue],
             [credRevID UTF8String],
+            IndyWrapperCommonStringCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)generateNonce:(void (^)(NSError *error, NSString *nonce))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_generate_nonce(handle,
+            IndyWrapperCommonStringCallback
+    );
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)toUnqualified:(NSString *)entity
+           completion:(void (^)(NSError *error, NSString *res))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_to_unqualified(handle,
+            [entity UTF8String],
             IndyWrapperCommonStringCallback
     );
     if (ret != Success) {

@@ -23,14 +23,19 @@ extern crate base64;
 extern crate rand;
 extern crate hyper;
 extern crate indyrs;
+extern crate regex;
+#[macro_use]
+extern crate lazy_static;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;
 use domain::config::Config;
+use domain::protocol_type::ProtocolType;
 use failure::*;
-use futures::*;
 use std::env;
 use std::fs::File;
+use actors::admin::Admin;
+use app::start_app_server;
 
 #[macro_use]
 pub(crate) mod utils;
@@ -39,7 +44,6 @@ pub(crate) mod actors;
 pub(crate) mod app;
 pub(crate) mod domain;
 pub(crate) mod indy;
-pub(crate) mod server;
 
 fn main() {
     indy::logger::set_default_logger(None)
@@ -73,6 +77,7 @@ fn _start(config_path: &str) {
         forward_agent: forward_agent_config,
         server: server_config,
         wallet_storage: wallet_storage_config,
+        protocol_type: protocol_type_config,
     } = File::open(config_path)
         .context("Can't open config file")
         .and_then(|reader| serde_json::from_reader(reader)
@@ -84,17 +89,12 @@ fn _start(config_path: &str) {
     Arbiter::spawn_fn(move || {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);
 
-        ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config)
+        ProtocolType::set(protocol_type_config);
+
+        let admin = Admin::create();
+        ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config, admin.clone())
             .map(move |forward_agent| {
-                info!("Forward Agent started");
-                info!("Starting Server with config: {:?}", server_config);
-
-                server::start(server_config, move || {
-                    info!("Starting App with config: {:?}", app_config);
-                    app::new(app_config.clone(), forward_agent.clone())
-                });
-
-                info!("Server started");
+                start_app_server(server_config, app_config, forward_agent, admin)
             })
             .map(|_| ()) // TODO: Expose server addr for graceful shutdown support
             .map_err(|err| panic!("Can't start Indy Dummy Agent: {}!", err))
@@ -102,6 +102,7 @@ fn _start(config_path: &str) {
 
     let _ = sys.run();
 }
+
 
 fn _print_help() {
     println!("Hyperledger Indy Dummy Agent");
@@ -114,3 +115,5 @@ fn _print_help() {
     println!("\t\tindy-dummy-agent --help");
     println!();
 }
+
+

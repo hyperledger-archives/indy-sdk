@@ -10,6 +10,10 @@ use actors::RemoteMsg;
 use futures::*;
 use utils::futures::*;
 
+lazy_static! {
+    pub static ref REQWEST_CLIENT : reqwest::r#async::Client = reqwest::r#async::Client::new();
+}
+
 pub struct Requester {
     client: Client<HttpConnector>,
 }
@@ -62,7 +66,7 @@ impl Handler<RemoteMsg> for Requester {
     type Result = ResponseFuture<(), Error>;
 
     fn handle(&mut self, msg: RemoteMsg, _: &mut Self::Context) -> Self::Result {
-        trace!("Handler<RemoteMessage>::handle >> {:?}", msg);
+        trace!("Handler<SendRemoteMessage>::handle >> {:?}", msg);
         self.send_message(msg.body, msg.endpoint)
     }
 }

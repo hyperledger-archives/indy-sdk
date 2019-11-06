@@ -1,8 +1,7 @@
-from indy import ledger
-from indy.error import ErrorCode, IndyError
-
 import json
 import pytest
+
+from indy import ledger, error
 
 
 @pytest.mark.asyncio
@@ -10,14 +9,13 @@ async def test_build_node_request_works_for_missed_fields_in_data_json(did_trust
     destination = "destination"
     data = { }
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await ledger.build_node_request(did_trustee, destination, json.dumps(data))
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_build_node_request_works_for_correct_data_json(did_trustee):
-    destination = "destination"
+    destination = "VsKV7grR1BUE29mG2Fm2kX"
     data = {
         "node_ip": "ip",
         "node_port": 1,

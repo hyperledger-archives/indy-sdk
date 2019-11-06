@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg, RouteA2AMsg, RouteA2ConnMsg};
+use actors::{AddA2ARoute, HandleA2AMsg, RouteA2AMsg, RouteA2ConnMsg, AdminRegisterAgent, HandleAdminMessage};
 use actors::agent_connection::{AgentConnection, AgentConnectionConfig};
 use actors::router::Router;
 use domain::a2a::*;
@@ -14,6 +14,8 @@ use std::collections::HashMap;
 use utils::futures::*;
 use utils::rand;
 use serde_json;
+use actors::admin::Admin;
+use domain::admin_message::{ResAdminQuery, ResQueryAgent};
 
 #[allow(unused)] //FIXME:
 pub struct Agent {
@@ -24,7 +26,8 @@ pub struct Agent {
     verkey: String,
     forward_agent_detail: ForwardAgentDetail,
     router: Addr<Router>,
-    configs: HashMap<String, String>
+    admin: Addr<Admin>,
+    configs: HashMap<String, String>,
 }
 
 impl Agent {
@@ -32,11 +35,12 @@ impl Agent {
                   owner_verkey: &str,
                   router: Addr<Router>,
                   forward_agent_detail: ForwardAgentDetail,
-                  wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(String, String, String, String), Error> {
+                  wallet_storage_config: WalletStorageConfig,
+                  admin: Addr<Admin>) -> BoxedFuture<(String, String, String, String), Error> {
         trace!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
                owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
-        let wallet_id = rand::rand_string(10);
+        let wallet_id = format!("dummy_{}_{}", owner_did, rand::rand_string(10));
         let wallet_key = rand::rand_string(10);
 
         let wallet_config = json!({
@@ -76,8 +80,9 @@ impl Agent {
                     owner_did,
                     owner_verkey,
                     router: router.clone(),
+                    admin: admin.clone(),
                     forward_agent_detail,
-                    configs: HashMap::new()
+                    configs: HashMap::new(),
                 };
 
                 let agent = agent.start();
@@ -85,8 +90,14 @@ impl Agent {
                 router
                     .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
                     .from_err()
-                    .map(move |_| (wallet_id, wallet_key, did, verkey))
+                    .map(move |_| (wallet_id, wallet_key, did, verkey, admin, agent))
                     .map_err(|err: Error| err.context("Can't add route for Agent").into())
+            })
+            .and_then(move |(wallet_id, wallet_key, did, verkey, admin, agent)| {
+                admin.send(AdminRegisterAgent(did.clone(), agent.clone().recipient()))
+                    .from_err()
+                    .map(move |_| (wallet_id, wallet_key, did, verkey))
+                    .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into())
             })
             .into_box()
     }
@@ -98,7 +109,8 @@ impl Agent {
                    owner_verkey: &str,
                    router: Addr<Router>,
                    forward_agent_detail: ForwardAgentDetail,
-                   wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(), Error> {
+                   wallet_storage_config: WalletStorageConfig,
+                   admin: Addr<Admin>) -> BoxedFuture<(), Error> {
         trace!("Agent::restore >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
                wallet_id, did, owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
@@ -147,11 +159,11 @@ impl Agent {
                                             &owner_verkey,
                                             &forward_agent_detail,
                                             router.clone(),
+                                            admin.clone(),
                                             configs.clone())
-                    .map(move |_| (wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, configs))
+                    .map(move |_| (wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, admin, configs))
             })
-            .and_then(move |(wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, configs)| {
-
+            .and_then(move |(wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, admin, configs)| {
                 let agent = Agent {
                     wallet_handle,
                     verkey: verkey.clone(),
@@ -159,16 +171,24 @@ impl Agent {
                     owner_did,
                     owner_verkey,
                     router: router.clone(),
+                    admin: admin.clone(),
                     forward_agent_detail,
-                    configs
+                    configs,
                 };
 
                 let agent = agent.start();
 
                 router
                     .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
+                    .map(move |_| (admin, agent, did))
                     .from_err()
                     .map_err(|err: Error| err.context("Can't add route for Agent.").into())
+            })
+            .and_then(move |(admin, agent, agent_did)| {
+                admin.send(AdminRegisterAgent(agent_did.clone(), agent.clone().recipient()))
+                    .from_err()
+                    .map(|_| ())
+                    .map_err(|err: Error| err.context("Can't register Agent in Admin").into())
             })
             .into_box()
     }
@@ -178,6 +198,7 @@ impl Agent {
                             owner_verkey: &str,
                             forward_agent_detail: &ForwardAgentDetail,
                             router: Addr<Router>,
+                            admin: Addr<Admin>,
                             agent_configs: HashMap<String, String>) -> ResponseFuture<(), Error> {
         trace!("Agent::_restore_connections >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, owner_verkey, forward_agent_detail);
@@ -200,6 +221,7 @@ impl Agent {
                                                  &pairwise.metadata,
                                                  &forward_agent_detail,
                                                  router.clone(),
+                                                 admin.clone(),
                                                  agent_configs.clone())
                     })
                     .collect();
@@ -218,15 +240,24 @@ impl Agent {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
+                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
             .and_then(|(sender_vk, mut msgs), slf, _| {
                 match msgs.pop() {
-                    Some(A2AMessage::Forward(msg)) => {
+                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) => {
                         slf.router
                             .send(RouteA2AMsg(msg.fwd, msg.msg))
+                            .from_err()
+                            .and_then(|res| res)
+                            .into_actor(slf)
+                            .into_box()
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        slf.router
+                            .send(RouteA2AMsg(msg.fwd, msg_))
                             .from_err()
                             .and_then(|res| res)
                             .into_actor(slf)
@@ -244,41 +275,92 @@ impl Agent {
                         msg: A2AMessage) -> ResponseActFuture<Self, Vec<u8>, Error> {
         trace!("Agent::handle_agent_msg >> {:?}, {:?}", sender_vk, msg);
 
-        future::ok(())
-            .into_actor(self)
-            .and_then(move |_, slf, _|
-                match msg {
-                    A2AMessage::CreateKey(msg) => {
-                        slf.handle_create_key(msg)
-                    }
-                    A2AMessage::GetMessagesByConnections(msg) => {
-                        slf.handle_get_messages_by_connections(msg)
-                    }
-                    A2AMessage::UpdateMessageStatusByConnections(msg) => {
-                        slf.handle_update_messages_by_connections(msg)
-                    }
-                    A2AMessage::UpdateConfigs(msg) => {
-                        slf.handle_update_configs(msg)
-                    }
-                    A2AMessage::GetConfigs(msg) => {
-                        slf.handle_get_configs(msg)
-                    }
-                    A2AMessage::RemoveConfigs(msg) => {
-                        slf.handle_remove_configs(msg)
-                    }
-                    _ => err_act!(slf, err_msg("Unsupported message"))
-                }
-            )
+        match msg {
+            A2AMessage::Version1(msg) => self.handle_agent_msg_v1(sender_vk, msg),
+            A2AMessage::Version2(msg) => self.handle_agent_msg_v2(sender_vk, msg)
+        }
+    }
+
+    fn handle_agent_msg_v1(&mut self,
+                           sender_vk: String,
+                           msg: A2AMessageV1) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        debug!("Agent::handle_agent_msg_v1 >> {:?}, {:?}", sender_vk, msg);
+
+        match msg {
+            A2AMessageV1::CreateKey(msg) => self.handle_create_key_v1(msg),
+            A2AMessageV1::GetMessagesByConnections(msg) => self.handle_get_messages_by_connections_v1(msg),
+            A2AMessageV1::UpdateMessageStatusByConnections(msg) => self.handle_update_messages_by_connections_v1(msg),
+            A2AMessageV1::UpdateConfigs(msg) => self.handle_update_configs_v1(msg),
+            A2AMessageV1::GetConfigs(msg) => self.handle_get_configs_v1(msg),
+            A2AMessageV1::RemoveConfigs(msg) => self.handle_remove_configs_v1(msg),
+            A2AMessageV1::UpdateComMethod(msg) => self.handle_update_com_method_v1(msg),
+            _ => err_act!(self, err_msg("Unsupported message"))
+        }
             .and_then(move |msgs, slf, _|
                 A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.verkey, &sender_vk, &msgs)
                     .map_err(|err| err.context("Can't bundle and authcrypt message.").into())
                     .into_actor(slf)
+                    .into_box()
             )
             .into_box()
     }
 
+    fn handle_agent_msg_v2(&mut self,
+                           sender_vk: String,
+                           msg: A2AMessageV2) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        debug!("Agent::handle_agent_msg_v2 >> {:?}, {:?}", sender_vk, msg);
+
+        match msg {
+            A2AMessageV2::CreateKey(msg) => self.handle_create_key_v2(msg),
+            A2AMessageV2::GetMessagesByConnections(msg) => self.handle_get_messages_by_connections_v2(msg),
+            A2AMessageV2::UpdateMessageStatusByConnections(msg) => self.handle_update_messages_by_connections_v2(msg),
+            A2AMessageV2::UpdateConfigs(msg) => self.handle_update_configs_v2(msg),
+            A2AMessageV2::GetConfigs(msg) => self.handle_get_configs_v2(msg),
+            A2AMessageV2::RemoveConfigs(msg) => self.handle_remove_configs_v2(msg),
+            _ => err_act!(self, err_msg("Unsupported message"))
+        }
+            .and_then(move |msg, slf, _|
+                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.verkey), &sender_vk, &msg)
+                    .map_err(|err| err.context("Can't pack message.").into())
+                    .into_actor(slf)
+                    .into_box()
+            )
+            .into_box()
+    }
+
+    fn handle_get_messages_by_connections_v1(&mut self,
+                                             msg: GetMessagesByConnections) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        trace!("Agent::handle_get_messages_by_connections_v1 >> {:?}", msg);
+
+        self.handle_get_messages_by_connections(msg)
+            .map(|msgs: Vec<A2ConnMessage>| {
+                vec![A2AMessage::Version1(A2AMessageV1::MessagesByConnections(
+                    MessagesByConnections {
+                        msgs: msgs.into_iter().map(|msg| msg.into()).collect()
+                    }))]
+            })
+            .into_actor(self)
+            .into_box()
+    }
+
+
+    fn handle_get_messages_by_connections_v2(&mut self,
+                                             msg: GetMessagesByConnections) -> ResponseActFuture<Self, A2AMessageV2, Error> {
+        trace!("Agent::handle_get_messages_by_connections_v2 >> {:?}", msg);
+
+        self.handle_get_messages_by_connections(msg)
+            .map(|msgs: Vec<A2ConnMessage>| {
+                A2AMessageV2::MessagesByConnections(
+                    MessagesByConnections {
+                        msgs: msgs.into_iter().map(|msg| msg.into()).collect()
+                    })
+            })
+            .into_actor(self)
+            .into_box()
+    }
+
     fn handle_get_messages_by_connections(&mut self,
-                                          msg: GetMessagesByConnections) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+                                          msg: GetMessagesByConnections) -> ResponseFuture<Vec<A2ConnMessage>, Error> {
         trace!("Agent::handle_get_messages_by_connections >> {:?}", msg);
 
         let GetMessagesByConnections { exclude_payload, uids, status_codes, pairwise_dids } = msg;
@@ -312,21 +394,46 @@ impl Agent {
                     .collect();
 
                 future::join_all(futures)
-                    .map(|msgs: Vec<A2ConnMessage>| {
-                        vec![A2AMessage::MessagesByConnections(
-                            MessagesByConnections {
-                                msgs: msgs.into_iter().map(|msg| msg.into()).collect()
-                            })]
-                    })
                     .map_err(|err| err.context("Can't get Agent Connection messages").into())
                     .into_box()
+            })
+            .into_box()
+    }
+
+    fn handle_update_messages_by_connections_v1(&mut self,
+                                                msg: UpdateMessageStatusByConnections) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        trace!("Agent::handle_update_messages_by_connections_v1 >> {:?}", msg);
+
+        self.handle_update_messages_by_connections(msg)
+            .map(|uids_by_conn: Vec<A2ConnMessage>| {
+                vec![A2AMessage::Version1(A2AMessageV1::MessageStatusUpdatedByConnections(
+                    MessageStatusUpdatedByConnections {
+                        updated_uids_by_conn: uids_by_conn.into_iter().map(|msg| msg.into()).collect(),
+                        failed: Vec::new(),
+                    }))]
+            })
+            .into_actor(self)
+            .into_box()
+    }
+
+    fn handle_update_messages_by_connections_v2(&mut self,
+                                                msg: UpdateMessageStatusByConnections) -> ResponseActFuture<Self, A2AMessageV2, Error> {
+        trace!("Agent::handle_update_messages_by_connections_v2 >> {:?}", msg);
+
+        self.handle_update_messages_by_connections(msg)
+            .map(|uids_by_conn: Vec<A2ConnMessage>| {
+                A2AMessageV2::MessageStatusUpdatedByConnections(
+                    MessageStatusUpdatedByConnections {
+                        updated_uids_by_conn: uids_by_conn.into_iter().map(|msg| msg.into()).collect(),
+                        failed: Vec::new(),
+                    })
             })
             .into_actor(self)
             .into_box()
     }
 
     fn handle_update_messages_by_connections(&mut self,
-                                             msg: UpdateMessageStatusByConnections) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+                                             msg: UpdateMessageStatusByConnections) -> ResponseFuture<Vec<A2ConnMessage>, Error> {
         trace!("Agent::handle_update_messages_by_connections >> {:?}", msg);
 
         let UpdateMessageStatusByConnections { uids_by_conn, status_code } = msg;
@@ -356,16 +463,8 @@ impl Agent {
                     .collect();
 
                 future::join_all(futures)
-                    .map(|uids_by_conn: Vec<A2ConnMessage>| {
-                        vec![A2AMessage::MessageStatusUpdatedByConnections(
-                            MessageStatusUpdatedByConnections {
-                                updated_uids_by_conn: uids_by_conn.into_iter().map(|msg| msg.into()).collect(),
-                                failed: Vec::new(), // TODO: FIXME
-                            })]
-                    })
                     .map_err(|err| err.context("Can't get Agent Connection messages").into())
             })
-            .into_actor(self)
             .into_box()
     }
 
@@ -390,11 +489,45 @@ impl Agent {
             .into_box()
     }
 
-    fn handle_create_key(&mut self,
-                         msg: CreateKey) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("Agent::handle_create_key >> {:?}", msg);
+    fn handle_create_key_v1(&mut self,
+                            msg: CreateKey) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        trace!("Agent::handle_create_key_v1 >> {:?}", msg);
 
         let CreateKey { for_did, for_did_verkey } = msg;
+
+        self.handle_create_key(&for_did, &for_did_verkey)
+            .map(|(pairwise_did, pairwise_did_verkey), _, _| {
+                vec![A2AMessage::Version1(A2AMessageV1::KeyCreated(KeyCreated {
+                    with_pairwise_did: pairwise_did,
+                    with_pairwise_did_verkey: pairwise_did_verkey,
+                }))]
+            })
+            .into_box()
+    }
+
+    fn handle_create_key_v2(&mut self,
+                            msg: CreateKey) -> ResponseActFuture<Self, A2AMessageV2, Error> {
+        trace!("Agent::handle_create_key_v2 >> {:?}", msg);
+
+        let CreateKey { for_did, for_did_verkey, .. } = msg;
+
+        self.handle_create_key(&for_did, &for_did_verkey)
+            .map(|(pairwise_did, pairwise_did_verkey), _, _| {
+                A2AMessageV2::KeyCreated(KeyCreated {
+                    with_pairwise_did: pairwise_did,
+                    with_pairwise_did_verkey: pairwise_did_verkey,
+                })
+            })
+            .into_box()
+    }
+
+    fn handle_create_key(&mut self,
+                         for_did: &str,
+                         for_did_verkey: &str) -> ResponseActFuture<Self, (String, String), Error> {
+        trace!("Agent::handle_create_key >> {:?}, {:?}", for_did, for_did_verkey);
+
+        let for_did = for_did.to_string();
+        let for_did_verkey = for_did_verkey.to_string();
 
         let their_did_info = json!({
             "did": for_did,
@@ -439,25 +572,43 @@ impl Agent {
                     forward_agent_detail: slf.forward_agent_detail.clone(),
                 };
 
-                AgentConnection::create(config, slf.router.clone())
+                AgentConnection::create(config, slf.router.clone(), slf.admin.clone())
                     .map(|_| (pairwise_did, pairwise_did_verkey))
                     .into_actor(slf)
-            })
-            .map(|(pairwise_did, pairwise_did_verkey), _, _| {
-                vec![A2AMessage::KeyCreated(KeyCreated {
-                    with_pairwise_did: pairwise_did,
-                    with_pairwise_did_verkey: pairwise_did_verkey,
-                })]
             })
             .into_box()
     }
 
-    fn handle_update_configs(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+    fn handle_update_com_method_v1(&mut self, _msg: UpdateComMethod) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        trace!("UpdateComMethod: {:?}", _msg);
+        let messages = vec![A2AMessage::Version1(A2AMessageV1::ComMethodUpdated(ComMethodUpdated { id: "123".to_string() }))];
+        ok_act!(self,  messages)
+    }
 
+    fn handle_update_configs_v1(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        self.handle_update_configs(msg)
+            .map(|_, _, _| {
+                vec![A2AMessage::Version1(A2AMessageV1::ConfigsUpdated(ConfigsUpdated {}))]
+            })
+            .into_box()
+    }
+
+    fn handle_update_configs_v2(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, A2AMessageV2, Error> {
+        self.handle_update_configs(msg)
+            .map(|_, _, _| {
+                A2AMessageV2::ConfigsUpdated(ConfigsUpdated {})
+            })
+            .into_box()
+    }
+
+    fn handle_update_configs(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, (), Error> {
         for config_option in msg.configs {
             match config_option.name.as_str() {
-                "name" | "logo_url" => self.configs.insert(config_option.name, config_option.value),
-                _ => continue
+                "name" | "logoUrl" | "notificationWebhookUrl" => self.configs.insert(config_option.name, config_option.value),
+                _ => {
+                    warn!("Agent was trying to set up unsupported agent configuration option {}", config_option.name.as_str());
+                    continue
+                }
             };
         }
 
@@ -465,39 +616,61 @@ impl Agent {
 
         future::ok(())
             .into_actor(self)
-            .and_then( move |_, slf, _| {
+            .and_then(move |_, slf, _| {
                 did::set_did_metadata(slf.wallet_handle, &slf.did, config_metadata.to_string().as_str())
                     .map_err(|err| err.context("Can't store config data as DID metadata.").into())
                     .into_actor(slf)
-            })
-            .map( |_, _, _| {
-                vec![A2AMessage::ConfigsUpdated( ConfigsUpdated {} )]
             })
             .into_box()
     }
 
-    fn handle_get_configs(&mut self, msg: GetConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+    fn handle_get_configs_v1(&mut self, msg: GetConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        let configs: Vec<ConfigOption> = self.handle_get_configs(msg);
 
-        let configs: Vec<ConfigOption> = self.configs.iter().filter( |(k, _)| msg.configs.contains(k) ).map( |(k, v)| ConfigOption{ name: k.clone(), value: v.clone()} ).collect();
-
-        let messages = vec![A2AMessage::Configs( Configs { configs } )];
+        let messages = vec![A2AMessage::Version1(A2AMessageV1::Configs(Configs { configs }))];
         ok_act!(self,  messages)
     }
 
-    fn handle_remove_configs(&mut self, msg: RemoveConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+    fn handle_get_configs_v2(&mut self, msg: GetConfigs) -> ResponseActFuture<Self, A2AMessageV2, Error> {
+        let configs: Vec<ConfigOption> = self.handle_get_configs(msg);
 
-        self.configs.retain( |k, _| !msg.configs.contains(k) );
+        let messages = A2AMessageV2::Configs(Configs { configs });
+        ok_act!(self,  messages)
+    }
+
+    fn handle_get_configs(&mut self, msg: GetConfigs) -> Vec<ConfigOption> {
+        self.configs.iter()
+            .filter(|(k, _)| msg.configs.contains(k))
+            .map(|(k, v)| ConfigOption { name: k.clone(), value: v.clone() })
+            .collect()
+    }
+
+    fn handle_remove_configs_v1(&mut self, msg: RemoveConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        self.handle_remove_configs(msg)
+            .map(|_, _, _| {
+                vec![A2AMessage::Version1(A2AMessageV1::ConfigsRemoved(ConfigsRemoved {}))]
+            })
+            .into_box()
+    }
+
+    fn handle_remove_configs_v2(&mut self, msg: RemoveConfigs) -> ResponseActFuture<Self, A2AMessageV2, Error> {
+        self.handle_remove_configs(msg)
+            .map(|_, _, _| {
+                A2AMessageV2::ConfigsRemoved(ConfigsRemoved {})
+            })
+            .into_box()
+    }
+
+    fn handle_remove_configs(&mut self, msg: RemoveConfigs) -> ResponseActFuture<Self, (), Error> {
+        self.configs.retain(|k, _| !msg.configs.contains(k));
         let config_metadata = ftry_act!(self, serde_json::to_string(&self.configs));
 
         future::ok(())
             .into_actor(self)
-            .and_then( move |_, slf, _| {
+            .and_then(move |_, slf, _| {
                 did::set_did_metadata(slf.wallet_handle, &slf.did, config_metadata.to_string().as_str())
                     .map_err(|err| err.context("Can't store config data as DID metadata.").into())
                     .into_actor(slf)
-            })
-            .map( |_, _, _| {
-                vec![A2AMessage::ConfigsRemoved( ConfigsRemoved {} )]
             })
             .into_box()
     }
@@ -527,6 +700,21 @@ impl Handler<HandleA2AMsg> for Agent {
     fn handle(&mut self, msg: HandleA2AMsg, _: &mut Self::Context) -> Self::Result {
         trace!("Handler<AgentMsgsBundle>::handle >> {:?}", msg);
         self.handle_a2a_msg(msg.0)
+    }
+}
+
+impl Handler<HandleAdminMessage> for Agent {
+    type Result = Result<ResAdminQuery, Error>;
+
+    fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
+        trace!("Agent Handler<HandleAdminMessage>::handle >>");
+        Ok(ResAdminQuery::Agent(ResQueryAgent {
+            owner_did: self.owner_did.clone(),
+            owner_verkey: self.owner_verkey.clone(),
+            did: self.did.clone(),
+            verkey: self.verkey.clone(),
+            configs: self.configs.iter().map(|(key, value)| (key.clone(), value.clone())).collect(),
+        }))
     }
 }
 
@@ -577,7 +765,7 @@ mod tests {
                                                              &agent_verkey,
                                                              &agent_pw_did,
                                                              &agent_pw_vk,
-                                                             MessageType::CredOffer).wait().unwrap();
+                                                             RemoteMessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -611,8 +799,8 @@ mod tests {
                             uid: msg_uid,
                             status_code: MessageStatusCode::Created,
                             sender_did: EDGE_PAIRWISE_DID.to_string(),
-                            type_: MessageType::CredOffer,
-                            payload: Some(to_i8(&PAYLOAD.to_vec())),
+                            type_: RemoteMessageType::CredOffer,
+                            payload: Some(MessageDetailPayload::V1(to_i8(&PAYLOAD.to_vec()))),
                             ref_msg_id: None,
                         }]
                     };
@@ -653,12 +841,12 @@ mod tests {
                     let configs = decompose_configs(e_wallet_handle, &resp).wait().unwrap();
 
                     assert_eq!(configs.len(), 2);
-                    assert!(configs.contains( &ConfigOption {name: "name".to_string(), value: "super agent".to_string()} ));
-                    assert!(configs.contains( &ConfigOption {name: "logo_url".to_string(), value: "http://logo.url".to_string()} ));
+                    assert!(configs.contains(&ConfigOption { name: "name".to_string(), value: "super agent".to_string() }));
+                    assert!(configs.contains(&ConfigOption { name: "logoUrl".to_string(), value: "http://logo.url".to_string() }));
 
                     let msg = compose_remove_configs(e_wallet_handle,
-                                                  &agent_did,
-                                                  &agent_verkey).wait().unwrap();
+                                                     &agent_did,
+                                                     &agent_verkey).wait().unwrap();
                     forward_agent
                         .send(ForwardA2AMsg(msg))
                         .from_err()
@@ -679,12 +867,11 @@ mod tests {
                     let configs = decompose_configs(e_wallet_handle, &resp).wait().unwrap();
 
                     assert_eq!(configs.len(), 1);
-                    assert!(!configs.contains( &ConfigOption {name: "name".to_string(), value: "super agent".to_string()} ));
-                    assert!(configs.contains( &ConfigOption {name: "logo_url".to_string(), value: "http://logo.url".to_string()} ));
+                    assert!(!configs.contains(&ConfigOption { name: "name".to_string(), value: "super agent".to_string() }));
+                    assert!(configs.contains(&ConfigOption { name: "logoUrl".to_string(), value: "http://logo.url".to_string() }));
 
                     wallet::close_wallet(e_wallet_handle).wait().unwrap();
                 })
         });
     }
-
 }

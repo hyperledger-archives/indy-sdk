@@ -1,7 +1,11 @@
 pub mod config;
 pub mod a2a;
 pub mod a2connection;
+pub mod admin_message;
 pub mod invite;
 pub mod key_deligation_proof;
 pub mod status;
 pub mod internal_message;
+pub mod message_type;
+pub mod payload;
+pub mod protocol_type;

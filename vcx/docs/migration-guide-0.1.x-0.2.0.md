@@ -431,3 +431,52 @@ libvcx sets the same log function for libindy as well.
 ## Libvcx 0.2.0 to 0.2.1 migration Guide
 
 The Libvcx 0.2.1 release contains fixes that don't affect API functions. 
+
+## Libvcx 0.2.1 to 0.2.2 migration Guide
+
+The Libvcx 0.2.2 release contains fixes that don't affect API functions. 
+
+## Libvcx 0.2.2 to 0.2.3 migration Guide
+
+#### Changes
+* Migrated Libvcx to *failure* crate for better handling and error chaining.
+* Added synchronous `vcx_get_current_error` API function that returns details for last occurred error. 
+* Updated Libvcx wrappers for automatic getting error details:
+    * Python - added `sdk_error_full_message`, `sdk_error_cause` and `sdk_error_backtrace` fields to `VcxError` object.
+    * Java - added `sdkMessage`, `sdkFullMessage`, `sdkCause`  and `sdkBacktrace` fields to `VcxException`.
+    * Objective-C - added `error`, `message`, `cause`, `backtrace` fields to `userInfo` dictionary in `NSError` object.
+* Updated Libvcx to support community A2A protocol. 
+Added `protocol_type` field to VCX provisioning config with indicates A2A message format will be used.
+    * `1.0` means the current protocol.
+    * `2.0` means community (IN PROGRESS) protocol which in the current state includes draft implementation of the following HIPEs:
+        * [Message Types](https://github.com/hyperledger/indy-hipe/tree/master/text/0021-message-types)
+        * [Message Threading](https://github.com/hyperledger/indy-hipe/tree/master/text/0027-message-id-and-threading)
+        * [Wire Message](https://github.com/hyperledger/indy-hipe/tree/master/text/0028-wire-message-format).
+
+* Bugfixes
+
+<table>
+    <tr>  
+      <th>v0.2.2 - Libvcx API</th>
+      <th>v0.2.3 - Libvcx API</th>
+    </tr>
+    <tr>
+      <th colspan="2">
+          <a href="https://github.com/hyperledger/indy-sdk/blob/v1.8.2/vcx/libvcx/src/api/vcx.rs#L272">
+              Get details for last occurred error.
+          </a>
+      </th>
+    <tr>
+    <tr>
+      <td>
+          <b>NEW</b>
+      </td>
+      <td>
+<pre>vcx_get_current_error(error_json_p: *mut *const c_char)</pre>
+      </td>
+    </tr>
+</table>
+
+## Libvcx 0.2.2 to 0.2.3 migration Guide
+
+The Libvcx 0.2.3 release contains fixes that don't affect API functions. 

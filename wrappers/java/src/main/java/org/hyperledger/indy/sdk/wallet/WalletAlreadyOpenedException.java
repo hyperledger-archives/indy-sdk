@@ -18,15 +18,4 @@ public class WalletAlreadyOpenedException extends IndyException
 	{
 		super(message, ErrorCode.WalletAlreadyOpenedError.value());
 	}
-
-	/**
-	 * Initializes a new WalletAlreadyOpenedException.
-	 *
-	 * @param sdkMessage The SDK error message.
-	 * @param sdkBacktrace The SDK error backtrace.
-	 */
-	public WalletAlreadyOpenedException(String sdkMessage, String sdkBacktrace)
-    {
-    	super(sdkMessage, ErrorCode.WalletAlreadyOpenedError.value(), sdkBacktrace);
-    }
 }

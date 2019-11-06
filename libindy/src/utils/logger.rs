@@ -3,7 +3,6 @@ extern crate log_panics;
 extern crate log;
 #[cfg(target_os = "android")]
 extern crate android_logger;
-extern crate libc;
 
 use self::env_logger::Builder as EnvLoggerBuilder;
 use self::log::{LevelFilter, Level};
@@ -13,12 +12,12 @@ use std::io::Write;
 use self::android_logger::Filter;
 use log::{Record, Metadata};
 
-use self::libc::{c_void, c_char};
+use libc::{c_void, c_char};
 use std::ffi::CString;
 use std::ptr;
 
-use errors::prelude::*;
-use utils::ctypes;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
 
@@ -137,7 +136,7 @@ pub struct LibindyDefaultLogger;
 
 impl LibindyDefaultLogger {
     pub fn init(pattern: Option<String>) -> Result<(), IndyError> {
-        let pattern = pattern.or(env::var("RUST_LOG").ok());
+        let pattern = pattern.or_else(|| env::var("RUST_LOG").ok());
 
         log_panics::init(); //Logging of panics is essential for android. As android does not log to stdout for native code
 
@@ -163,7 +162,7 @@ impl LibindyDefaultLogger {
             EnvLoggerBuilder::new()
                 .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
                 .filter(None, LevelFilter::Off)
-                .parse(pattern.as_ref().map(String::as_str).unwrap_or(""))
+                .parse_filters(pattern.as_ref().map(String::as_str).unwrap_or(""))
                 .try_init()?;
         }
         unsafe { LOGGER_STATE = LoggerState::Default };

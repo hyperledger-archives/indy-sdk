@@ -86,4 +86,15 @@
 - (NSError *)abbreviateVerkey:(NSString *)did
                    fullVerkey:(NSString *)fullVerkey
                        verkey:(NSString **)verkey;
+
+- (NSError *)listMyDidsWithMeta:(IndyHandle)walletHandle
+                       metadata:(NSString **)metadata;
+
+
+
+- (NSError *)qualifyDid:(NSString *)did
+                 method:(NSString *)method
+           walletHandle:(IndyHandle)walletHandle
+       fullQualifiedDid:(NSString **)fullQualifiedDid;
+
 @end

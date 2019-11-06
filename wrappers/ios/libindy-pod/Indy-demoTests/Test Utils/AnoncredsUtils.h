@@ -15,6 +15,10 @@
 
 - (NSString *)getGvtSchemaId;
 
+- (NSString *)credDefId;
+
+- (NSString *)revRegId;
+
 - (NSString *)getGvtSchemaJson;
 
 - (NSString *)getIssuer1GvtCredDefId;
@@ -48,6 +52,14 @@
                                            walletHandle:(IndyHandle)walletHandle
                                               credDefId:(NSString **)credentialDefId
                                             credDefJson:(NSString **)credentialDefJson;
+
+- (NSError *)issuerRotateCredentialDefStartForId:(NSString *)credDefId
+                                      configJSON:(NSString *)configJSON
+                                    walletHandle:(IndyHandle)walletHandle
+                                     credDefJson:(NSString **)credentialDefJson;
+
+- (NSError *)issuerRotateCredentialDefApplyForId:(NSString *)credDefId
+                                    walletHandle:(IndyHandle)walletHandle;
 
 - (NSError *)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefID
                                                   issuerDID:(NSString *)issuerDID
@@ -178,6 +190,8 @@
                           revocRegsJSON:(NSString *)revocRegsJSON
                                 isValid:(BOOL *)isValid;
 
+- (NSError *)generateNonce:(NSString **)nonce;
+
 - (NSError *)initializeCommonWalletAndReturnHandle:(IndyHandle *)walletHandle
                                  credentialDefJson:(NSString **)credentialDefJson
                                credentialOfferJson:(NSString **)credentialOfferJson
@@ -185,5 +199,8 @@
                                     credentialJson:(NSString **)credentialfJson;
 
 - (NSString *)toJson:(NSDictionary *)dictionary;
+
+- (NSError *)toUnqualified:(NSString *)entity
+                       res:(NSString **)res;
 
 @end

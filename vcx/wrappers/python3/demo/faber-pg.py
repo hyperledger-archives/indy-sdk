@@ -74,7 +74,7 @@ async def main():
     print("#3 Create a new schema and cred def on the ledger")
     schema_uuid = 'schema_uuid'
     schema_name = 'degree schema'
-    schema_attrs = ['name', 'date', 'degree']
+    schema_attrs = ['name', 'date', 'degree', 'age']
     creddef_uuid = 'credef_uuid'
     creddef_name = 'degree'
     cred_def_json = await create_schema_and_cred_def(schema_uuid, schema_name, schema_attrs, creddef_uuid, creddef_name)
@@ -121,6 +121,7 @@ async def main():
                 'name': 'alice',
                 'date': '05-2018',
                 'degree': 'maths',
+                'age': '24',
             }
             cred_tag = 'alice_degree'
             cred_name = 'cred'
@@ -131,12 +132,14 @@ async def main():
             proof_attrs = [
                 {'name': 'name', 'restrictions': [{'issuer_did': config['institution_did']}]},
                 {'name': 'date', 'restrictions': [{'issuer_did': config['institution_did']}]},
-                {'name': 'degree', 'restrictions': [{'issuer_did': config['institution_did']}]}
+                {'name': 'degree', 'restrictions': [{'issuer_did': config['institution_did']}]},
+                {'name': 'self_attested_thing'}
             ]
+            proof_predicates = [{'name':'age', 'p_type':'>=', 'p_value':18},]
             proof_uuid = 'proof_uuid'
             proof_name = 'proof_from_alice'
 
-            await send_proof_request(my_connection, config['institution_did'], proof_attrs, proof_uuid, proof_name)
+            await send_proof_request(my_connection, config['institution_did'], proof_attrs, proof_uuid, proof_name, proof_predicates)
 
         elif option == '3':
             await handle_messages(my_connection, handled_offers, handled_requests)

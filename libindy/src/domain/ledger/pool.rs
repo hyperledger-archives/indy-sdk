@@ -1,7 +1,3 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
 use super::constants::{POOL_CONFIG, POOL_UPGRADE, POOL_RESTART};
 
 use std::collections::HashMap;
@@ -83,3 +79,5 @@ impl PoolUpgradeOperation {
         }
     }
 }
+
+pub type Schedule = HashMap<String, String>;

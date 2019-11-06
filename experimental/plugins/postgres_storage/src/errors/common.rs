@@ -1,5 +1,5 @@
 extern crate zmq;
-extern crate indy_crypto;
+extern crate ursa;
 extern crate log;
 
 use std::cell::{BorrowError, BorrowMutError};
@@ -8,8 +8,6 @@ use std::{fmt, io};
 
 use libindy::ErrorCode;
 use errors::ToErrorCode;
-
-use self::indy_crypto::errors::IndyCryptoError;
 
 #[derive(Debug)]
 pub enum CommonError {
@@ -83,7 +81,7 @@ impl Error for CommonError {
         }
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match *self {
             CommonError::InvalidParam1(_) |
             CommonError::InvalidParam2(_) |
@@ -147,26 +145,6 @@ impl From<BorrowMutError> for CommonError {
 impl From<log::SetLoggerError> for CommonError {
     fn from(err: log::SetLoggerError) -> CommonError{
         CommonError::InvalidState(err.description().to_owned())
-    }
-}
-
-impl From<indy_crypto::errors::IndyCryptoError> for CommonError {
-    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
-        match err {
-            IndyCryptoError::InvalidParam1(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::InvalidParam2(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::InvalidParam3(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::InvalidParam4(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::InvalidParam5(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::InvalidParam6(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::InvalidParam7(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::InvalidParam8(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::InvalidParam9(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::InvalidState(err) => CommonError::InvalidState(err),
-            IndyCryptoError::InvalidStructure(err) => CommonError::InvalidStructure(err),
-            IndyCryptoError::IOError(err) => CommonError::IOError(err),
-            _ => CommonError::InvalidStructure("Invalid error code".to_string())
-        }
     }
 }
 

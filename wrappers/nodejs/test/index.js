@@ -12,34 +12,35 @@ test.before('test getCurrentError before any errors', function (t) {
 test('wrapper essentials', async function (t) {
   t.is(await indy.abbreviateVerkey(did, verkey), abbrVerkey)
 
-  var err = await t.throws(indy.abbreviateVerkey())
+  var err = await t.throwsAsync(indy.abbreviateVerkey())
   t.is(err.message, 'CommonInvalidParam3')
   t.is(err.indyCode, 102)
   t.is(err.indyName, 'CommonInvalidParam3')
-  t.is(err.indyMessage, 'Error: Invalid parameter 3\n  Caused by: Invalid pointer has been passed\n')
+  // t.is(err.indyMessage, 'Error: Invalid parameter 3\n  Caused by: Invalid pointer has been passed\n')
+  // We removed the check of text because of https://jira.hyperledger.org/browse/IS-1197
   t.is(err.indyBacktrace, '')
   t.is(typeof err.indyCurrentErrorJson, 'string')
   t.is(err.indyCurrentErrorJson[0], '{')
 
-  err = await t.throws(function () {
+  err = t.throws(function () {
     indy.abbreviateVerkey(1, verkey)
   }, Error)
   t.is(err.message, 'abbreviateVerkey expects String or null for did')
 
-  err = await t.throws(function () {
+  err = t.throws(function () {
     indy.abbreviateVerkey(did, [1, 2, 3])
   }, Error)
   t.is(err.message, 'abbreviateVerkey expects String or null for fullVerkey')
 
-  err = await t.throws(indy.abbreviateVerkey(null, verkey))
+  err = await t.throwsAsync(indy.abbreviateVerkey(null, verkey))
   t.is(err.indyName, 'CommonInvalidParam3')
-  err = await t.throws(indy.abbreviateVerkey(void 0, verkey))
+  err = await t.throwsAsync(indy.abbreviateVerkey(void 0, verkey))
   t.is(err.indyName, 'CommonInvalidParam3')
 
-  err = await t.throws(indy.abbreviateVerkey(did, null))
+  err = await t.throwsAsync(indy.abbreviateVerkey(did, null))
   t.is(err.indyName, 'CommonInvalidParam4')
 
-  err = await t.throws(indy.abbreviateVerkey('?', verkey))
+  err = await t.throwsAsync(indy.abbreviateVerkey('?', verkey))
   t.is(err + '', 'IndyError: CommonInvalidStructure')
   t.is(err.indyCode, 113)
   t.is(err.indyName, 'CommonInvalidStructure')

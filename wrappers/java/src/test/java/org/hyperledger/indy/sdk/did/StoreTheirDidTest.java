@@ -22,17 +22,4 @@ public class StoreTheirDidTest extends IndyIntegrationTestWithSingleWallet {
 
 		Did.storeTheirDid(this.wallet, "{\"field\":\"value\"}").get();
 	}
-
-	@Test
-	public void testStoreTheirDidWorksWithVerkey() throws Exception {
-		Did.storeTheirDid(this.wallet, String.format(IDENTITY_JSON_TEMPLATE, DID, VERKEY)).get();
-	}
-
-	@Test
-	public void testStoreTheirDidWorksWithoutDid() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		Did.storeTheirDid(this.wallet, String.format("{\"verkey\":\"%s\"}", VERKEY)).get();
-	}
 }

@@ -1,8 +1,8 @@
-use errors::IndyError;
+use indy_api_types::errors::IndyError;
 use super::CryptoType;
-use utils::crypto::ed25519_box;
-use utils::crypto::ed25519_sign;
-use utils::crypto::sealedbox;
+use crate::utils::crypto::ed25519_box;
+use crate::utils::crypto::ed25519_sign;
+use crate::utils::crypto::sealedbox;
 
 
 pub struct ED25519CryptoType {}

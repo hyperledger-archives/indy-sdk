@@ -1,0 +1,70 @@
+%global __os_install_post %{nil}
+%define _rpmdir @result_dir@
+%define _rpmfilename %%{NAME}.%%{VERSION}.rpm
+
+Summary: Official SDK for Hyperledger Indy
+Name: libindy
+Version: @version@
+Release: @release@
+License: Apache License 2.0
+Group: System Environment/Libraries
+Source: https://github.com/hyperledger/indy-sdk/
+Requires: sqlite openssl libsodium
+BuildRequires: sqlite-devel openssl-devel libsodium-devel
+
+%description
+This is the official SDK for Hyperledger Indy, which provides a
+distributed-ledger-based foundation for self-sovereign identity.
+The major artifact of the SDK is a c-callable library; there are
+also convenience wrappers for various programming languages.
+
+All bugs, stories, and backlog for this project are managed through
+Hyperledger's Jira in project IS (note that regular Indy tickets are
+in the INDY project instead...). Also, join us on Jira's Rocket.Chat
+at #indy-sdk to discuss.
+
+%package devel
+Summary: Development files for Hyperledger Indy
+Group: Development/Libraries
+Requires: %{name} = %{version}-%{release}
+
+%description devel
+This is the official SDK for Hyperledger Indy, which provides a
+distributed-ledger-based foundation for self-sovereign identity.
+The major artifact of the SDK is a c-callable library; there are
+also convenience wrappers for various programming languages.
+
+All bugs, stories, and backlog for this project are managed through
+Hyperledger's Jira in project IS (note that regular Indy tickets are
+in the INDY project instead...). Also, join us on Jira's Rocket.Chat
+at #indy-sdk to discuss.
+
+%prep
+%build
+
+%install
+rm -rf ${RPM_BUILD_ROOT}
+
+install -dm0755 $RPM_BUILD_ROOT/%{_includedir}/indy
+install -dm0755 $RPM_BUILD_ROOT/%{_libdir}
+cp -a @dir@/include/*.h $RPM_BUILD_ROOT/%{_includedir}/indy/
+install -Dm0644 @dir@/target/release/libindy.a $RPM_BUILD_ROOT/%{_libdir}/libindy.a
+install -Dm0644 @dir@/target/release/libindy.so $RPM_BUILD_ROOT/%{_libdir}/libindy.so
+
+%clean
+rm -rf ${RPM_BUILD_ROOT}
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%files
+%defattr(755,root,root)
+%{_libdir}/libindy.so
+
+%files devel
+%defattr(755,root,root)
+%{_libdir}/libindy.a
+%{_includedir}/indy/*.h
+
+%changelog

@@ -1,12 +1,12 @@
-extern crate libc;
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::pairwise::PairwiseCommand;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
+use indy_api_types::validation::Validatable;
+use crate::domain::crypto::did::DidValue;
 
-use api::{ErrorCode, IndyHandle};
-use commands::{Command, CommandExecutor};
-use commands::pairwise::PairwiseCommand;
-use errors::prelude::*;
-use utils::ctypes;
-
-use self::libc::c_char;
+use libc::c_char;
 
 
 /// Check if pairwise is exists.
@@ -24,14 +24,14 @@ use self::libc::c_char;
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_is_pairwise_exists(command_handle: IndyHandle,
-                                       wallet_handle: IndyHandle,
+pub  extern fn indy_is_pairwise_exists(command_handle: CommandHandle,
+                                       wallet_handle: WalletHandle,
                                        their_did: *const c_char,
-                                       cb: Option<extern fn(command_handle_: IndyHandle,
+                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                             err: ErrorCode, exists: bool)>) -> ErrorCode {
     trace!("indy_is_pairwise_exists: >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
-    check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(their_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_is_pairwise_exists: entities >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
@@ -72,17 +72,17 @@ pub  extern fn indy_is_pairwise_exists(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_create_pairwise(command_handle: IndyHandle,
-                                    wallet_handle: IndyHandle,
+pub  extern fn indy_create_pairwise(command_handle: CommandHandle,
+                                    wallet_handle: WalletHandle,
                                     their_did: *const c_char,
                                     my_did: *const c_char,
                                     metadata: *const c_char,
-                                    cb: Option<extern fn(command_handle_: IndyHandle,
+                                    cb: Option<extern fn(command_handle_: CommandHandle,
                                                          err: ErrorCode)>) -> ErrorCode {
     trace!("indy_create_pairwise: >>> wallet_handle: {:?}, their_did: {:?}, my_did: {:?}, metadata: {:?}", wallet_handle, their_did, my_did, metadata);
 
-    check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam4);
+    check_useful_validatable_string!(their_did, ErrorCode::CommonInvalidParam3, DidValue);
+    check_useful_validatable_string!(my_did, ErrorCode::CommonInvalidParam4, DidValue);
     check_useful_opt_c_str!(metadata, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
@@ -122,9 +122,9 @@ pub  extern fn indy_create_pairwise(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_list_pairwise(command_handle: IndyHandle,
-                                  wallet_handle: IndyHandle,
-                                  cb: Option<extern fn(command_handle_: IndyHandle,
+pub  extern fn indy_list_pairwise(command_handle: CommandHandle,
+                                  wallet_handle: WalletHandle,
+                                  cb: Option<extern fn(command_handle_: CommandHandle,
                                                        err: ErrorCode,
                                                        list_pairwise: *const c_char)>) -> ErrorCode {
     trace!("indy_list_pairwise: >>> wallet_handle: {:?}", wallet_handle);
@@ -136,12 +136,7 @@ pub  extern fn indy_list_pairwise(command_handle: IndyHandle,
     let result = CommandExecutor::instance()
         .send(Command::Pairwise(PairwiseCommand::ListPairwise(
             wallet_handle,
-            Box::new(move |result| {
-                let (err, list_pairwise) = prepare_result_1!(result, String::new());
-                trace!("indy_list_pairwise: list_pairwise: {:?}", list_pairwise);
-                let list_pairwise = ctypes::string_to_cstring(list_pairwise);
-                cb(command_handle, err, list_pairwise.as_ptr())
-            })
+            boxed_callback_string!("indy_list_pairwise", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -166,15 +161,15 @@ pub  extern fn indy_list_pairwise(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_get_pairwise(command_handle: IndyHandle,
-                                 wallet_handle: IndyHandle,
+pub  extern fn indy_get_pairwise(command_handle: CommandHandle,
+                                 wallet_handle: WalletHandle,
                                  their_did: *const c_char,
-                                 cb: Option<extern fn(command_handle_: IndyHandle,
+                                 cb: Option<extern fn(command_handle_: CommandHandle,
                                                       err: ErrorCode,
                                                       pairwise_info_json: *const c_char)>) -> ErrorCode {
     trace!("indy_get_pairwise: >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
-    check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(their_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_get_pairwise: entities >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
@@ -183,12 +178,7 @@ pub  extern fn indy_get_pairwise(command_handle: IndyHandle,
         .send(Command::Pairwise(PairwiseCommand::GetPairwise(
             wallet_handle,
             their_did,
-            Box::new(move |result| {
-                let (err, pairwise_info_json) = prepare_result_1!(result, String::new());
-                trace!("indy_get_pairwise: pairwise_info_json: {:?}", pairwise_info_json);
-                let pairwise_info_json = ctypes::string_to_cstring(pairwise_info_json);
-                cb(command_handle, err, pairwise_info_json.as_ptr())
-            })
+            boxed_callback_string!("indy_get_pairwise", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -214,15 +204,15 @@ pub  extern fn indy_get_pairwise(command_handle: IndyHandle,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub  extern fn indy_set_pairwise_metadata(command_handle: IndyHandle,
-                                          wallet_handle: IndyHandle,
+pub  extern fn indy_set_pairwise_metadata(command_handle: CommandHandle,
+                                          wallet_handle: WalletHandle,
                                           their_did: *const c_char,
                                           metadata: *const c_char,
-                                          cb: Option<extern fn(command_handle_: IndyHandle,
+                                          cb: Option<extern fn(command_handle_: CommandHandle,
                                                                err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_pairwise_metadata: >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
 
-    check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(their_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_opt_c_str!(metadata, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 

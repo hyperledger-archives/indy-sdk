@@ -4,8 +4,8 @@ pub mod merkletree;
 
 use self::tree::*;
 use self::merkletree::*;
-use errors::prelude::*;
-use utils::crypto::hash::Hash;
+use indy_api_types::errors::prelude::*;
+use indy_utils::crypto::hash::Hash;
 
 impl MerkleTree {
     fn count_bits(v: usize) -> usize {
@@ -15,43 +15,43 @@ impl MerkleTree {
             val &= val - 1;
             ret += 1;
         }
-        return ret;
+        ret
     }
 
     pub fn find_hash<'a>(from: &'a Tree, required_hash: &Vec<u8>) -> Option<&'a Tree> {
-        match from {
-            &Tree::Empty { .. } => {
+        match *from {
+            Tree::Empty { .. } => {
                 assert!(false);
-                return None;
+                None
             }
-            &Tree::Node { ref left, ref right, ref hash, .. } => {
+            Tree::Node { ref left, ref right, ref hash, .. } => {
                 if hash == required_hash {
-                    return Some(from);
+                    Some(from)
                 } else {
                     let right = MerkleTree::find_hash(right, required_hash);
                     match right {
                         Some(r) => {
-                            return Some(r);
+                            Some(r)
                         }
                         None => {
                             let left = MerkleTree::find_hash(left, required_hash);
                             match left {
                                 Some(r) => {
-                                    return Some(r);
+                                    Some(r)
                                 }
                                 None => {
-                                    return None;
+                                    None
                                 }
                             }
                         }
                     }
                 }
             }
-            &Tree::Leaf { ref hash, .. } => {
+            Tree::Leaf { ref hash, .. } => {
                 if hash == required_hash {
-                    return Some(from);
+                    Some(from)
                 } else {
-                    return None;
+                    None
                 }
             }
         }
@@ -78,8 +78,8 @@ impl MerkleTree {
         let mut new_node = new_size - 1;
 
         while old_node % 2 != 0 {
-            old_node = old_node / 2;
-            new_node = new_node / 2;
+            old_node /= 2;
+            new_node /= 2;
         }
 
         let mut proofs = proof.iter();
@@ -103,14 +103,14 @@ impl MerkleTree {
                 new_hash = Hash::hash_nodes(&new_hash,
                                             unwrap_opt_or_return!(proofs.next(), Ok(false)))?.to_vec();
             }
-            old_node = old_node / 2;
-            new_node = new_node / 2;
+            old_node /= 2;
+            new_node /= 2;
         }
 
         while new_node != 0 {
             let n = unwrap_opt_or_return!(proofs.next(), Ok(false));
             new_hash = Hash::hash_nodes(&new_hash, n)?.to_vec();
-            new_node = new_node / 2;
+            new_node /= 2;
         }
 
         if new_hash != *new_root_hash {
@@ -123,7 +123,7 @@ impl MerkleTree {
             return Ok(false);
         }
 
-        return Ok(true);
+        Ok(true)
     }
 
     pub fn append(&mut self, node: TreeLeafData) -> IndyResult<()> {
@@ -197,10 +197,8 @@ impl MerkleTree {
 
 #[cfg(test)]
 mod tests {
-    extern crate rust_base58;
-
     use super::*;
-    use self::rust_base58::FromBase58;
+    use rust_base58::FromBase58;
 
     #[test]
     fn append_works() {

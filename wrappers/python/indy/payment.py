@@ -90,12 +90,12 @@ async def add_request_fees(wallet_handle: int,
     """
     Modifies Indy request by adding information how to pay fees for this transaction
     according to this payment method.
-   
+
     This method consumes set of inputs and outputs. The difference between inputs balance
     and outputs balance is the fee for this transaction.
-   
+
     Not that this method also produces correct fee signatures.
-   
+
     Format of inputs is specific for payment method. Usually it should reference payment transaction
     with at least one output that corresponds to payment address that user owns.
 
@@ -199,6 +199,7 @@ async def build_get_payment_sources_request(wallet_handle: int,
     """
     Builds Indy request for getting sources list for payment address
     according to this payment method.
+    Deprecated. This function will be most likely be removed with Indy SDK 2.0 version
 
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did : (Option) DID of request sender
@@ -230,6 +231,89 @@ async def build_get_payment_sources_request(wallet_handle: int,
 
     logger.debug("build_get_payment_sources_request: <<< res: %r", res)
     return res
+
+
+async def build_get_payment_sources_with_from_request(wallet_handle: int,
+                                                      submitter_did: str,
+                                                      payment_address: str,
+                                                      from_seqno: int = -1) -> (str, str):
+    """
+    Builds Indy request for getting sources list for payment address
+    according to this payment method.
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param submitter_did : (Option) DID of request sender
+    :param payment_address: target payment address
+    :param from_seqno: shift to the next slice of payment sources
+    :return: get_sources_txn_json: Indy request for getting sources list for payment address
+             payment_method: used payment method
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_payment_sources_with_from_request: >>> wallet_handle: %r, submitter_did: %r, payment_address: %r",
+                 wallet_handle,
+                 submitter_did,
+                 payment_address)
+
+    if not hasattr(build_get_payment_sources_with_from_request, "cb"):
+        logger.debug("build_get_payment_sources_with_from_request: Creating callback")
+        build_get_payment_sources_with_from_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
+    c_payment_address = c_char_p(payment_address.encode('utf-8'))
+    c_from_seqno = c_int64(from_seqno)
+
+    (get_sources_txn_json, payment_method) = await do_call('indy_build_get_payment_sources_with_from_request',
+                                                           c_wallet_handle,
+                                                           c_submitter_did,
+                                                           c_payment_address,
+                                                           c_from_seqno,
+                                                           build_get_payment_sources_with_from_request.cb)
+    res = (get_sources_txn_json.decode(), payment_method.decode())
+
+    logger.debug("build_get_payment_sources_with_from_request: <<< res: %r", res)
+    return res
+
+
+async def parse_get_payment_sources_with_from_response(payment_method: str,
+                                                       resp_json: str) -> str:
+    """
+    Parses response for Indy request for getting sources list.
+
+    :param payment_method: Payment method to use (for example, 'sov').
+    :param resp_json: resp_json: response for Indy request for getting sources list
+                      Note: this param will be used to determine payment_method
+    :return: sources_json: parsed (payment method and node version agnostic) sources info as json:
+      [{
+         source: <str>, // source input
+         paymentAddress: <str>, //payment address for this source
+         amount: <int>, // amount
+         extra: <str>, // optional data from payment transaction
+      }],
+      next: pointer to the next slice of payment sources
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("parse_get_payment_sources_with_fromresponse: >>> payment_method: %r, resp_json: %r",
+                 payment_method,
+                 resp_json)
+
+    if not hasattr(parse_get_payment_sources_with_from_response, "cb"):
+        logger.debug("parse_get_payment_sources_with_from_response: Creating callback")
+        parse_get_payment_sources_with_from_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_int64))
+
+    c_payment_method = c_char_p(payment_method.encode('utf-8'))
+    c_resp_json = c_char_p(resp_json.encode('utf-8'))
+
+    sources_json, next_seqno = await do_call('indy_parse_get_payment_sources_with_from_response',
+                                       c_payment_method,
+                                       c_resp_json,
+                                       parse_get_payment_sources_with_from_response.cb)
+
+    res = sources_json.decode()
+    logger.debug("parse_get_payment_sources_with_from_response: <<< res: %r", res)
+    return res, next_seqno
 
 
 async def parse_get_payment_sources_response(payment_method: str,
@@ -369,6 +453,68 @@ async def parse_payment_response(payment_method: str,
 
     res = receipts_json.decode()
     logger.debug("parse_payment_response: <<< res: %r", res)
+    return res
+
+
+async def prepare_payment_extra_with_acceptance_data(extra_json: Optional[str],
+                                                     text: Optional[str],
+                                                     version: Optional[str],
+                                                     taa_digest: Optional[str],
+                                                     mechanism: str,
+                                                     time: int) -> str:
+    """
+    Append payment extra JSON with TAA acceptance data
+   
+    EXPERIMENTAL
+   
+    This function may calculate digest by itself or consume it as a parameter.
+    If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+
+    :param extra_json: (Optional) original extra json.
+    :param text and version: (Optional) raw data about TAA from ledger.
+               These parameters should be passed together.
+               These parameters are required if taa_digest parameter is omitted.
+    :param taa_digest: (Optional) digest on text and version.
+                       Digest is sha256 hash calculated on concatenated strings: version || text.
+                       This parameter is required if text and version parameters are omitted.
+    :param mechanism: mechanism how user has accepted the TAA
+    :param time: UTC timestamp when user has accepted the TAA
+
+    :return: Updated request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug(
+        "prepare_payment_extra_with_acceptance_data: >>> extra_json: %r, text: %r, version: %r, hash: %r, "
+        "acc_mech_type: %r, time_of_acceptance: %r",
+        extra_json,
+        text,
+        version,
+        taa_digest,
+        mechanism,
+        time)
+
+    if not hasattr(prepare_payment_extra_with_acceptance_data, "cb"):
+        logger.debug("prepare_payment_extra_with_acceptance_data: Creating callback")
+        prepare_payment_extra_with_acceptance_data.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_extra_json = c_char_p(extra_json.encode('utf-8')) if extra_json is not None else None
+    c_text = c_char_p(text.encode('utf-8')) if text is not None else None
+    c_version = c_char_p(version.encode('utf-8')) if version is not None else None
+    c_taa_digest = c_char_p(taa_digest.encode('utf-8')) if taa_digest is not None else None
+    c_mechanism = c_char_p(mechanism.encode('utf-8'))
+
+    request_json = await do_call('indy_prepare_payment_extra_with_acceptance_data',
+                                 c_extra_json,
+                                 c_text,
+                                 c_version,
+                                 c_taa_digest,
+                                 c_mechanism,
+                                 c_uint64(time),
+                                 prepare_payment_extra_with_acceptance_data.cb)
+
+    res = request_json.decode()
+    logger.debug("prepare_payment_extra_with_acceptance_data: <<< res: %r", res)
     return res
 
 
@@ -621,4 +767,141 @@ async def parse_verify_payment_response(payment_method: str,
 
     res = receipts_json.decode()
     logger.debug("parse_verify_payment_response: <<< res: %r", res)
+    return res
+
+
+async def get_request_info(get_auth_rule_response_json: str,
+                           requester_info_json: str,
+                           fees_json: str) -> str:
+    """
+    Gets request requirements (with minimal price) correspondent to specific auth rule
+    in case the requester can perform this action.
+ 
+    EXPERIMENTAL
+ 
+    If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
+
+    :param get_auth_rule_response_json: response on GET_AUTH_RULE request returning action constraints set on the ledger.
+    :param requester_info_json: {
+        "role": string (optional) - role of a user which can sign a transaction.
+        "sig_count": u64 - number of signers.
+        "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+        "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
+    }
+    :param fees_json: fees set on the ledger (result of `parse_get_txn_fees_response`).
+
+    :return: request_info_json: request info if a requester match to the action constraints.
+    {
+       "price": u64 - fee required for the action performing,
+       "requirements": [{
+           "role": string (optional) - role of users who should sign,
+           "sig_count": u64 - number of signers,
+           "need_to_be_owner": bool (optional) - if requester need to be owner,
+           "off_ledger_signature": bool (optional) - allow signature of unknow for ledger did (false by default).
+       }]
+    }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("get_request_info: >>> get_auth_rule_response_json: %r, requester_info_json: %r, fees_json: %r",
+                 get_auth_rule_response_json,
+                 requester_info_json,
+                 fees_json)
+
+    if not hasattr(get_request_info, "cb"):
+        logger.debug("get_request_info: Creating callback")
+        get_request_info.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_get_auth_rule_response_json = c_char_p(get_auth_rule_response_json.encode('utf-8'))
+    c_requester_info_json = c_char_p(requester_info_json.encode('utf-8'))
+    c_fees_json = c_char_p(fees_json.encode('utf-8'))
+
+    request_info_json = await do_call('indy_get_request_info',
+                                      c_get_auth_rule_response_json,
+                                      c_requester_info_json,
+                                      c_fees_json,
+                                      get_request_info.cb)
+
+    res = request_info_json.decode()
+    logger.debug("get_request_info: <<< res: %r", res)
+    return res
+
+
+async def sign_with_address(wallet_handle: int,
+                            address: str,
+                            msg: bytes) -> bytes:
+    """
+    Signs a message with a payment address.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param address:  payment address of message signer. The key must be created by calling create_payment_address
+    :param msg: a message to be signed
+    :return: a signature string
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("sign_with_address: >>> wallet_handle: %r, address: %r, msg: %r",
+                 wallet_handle,
+                 address,
+                 msg)
+
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len]),
+
+
+    if not hasattr(sign_with_address, "cb"):
+        logger.debug("sign_with_address: Creating callback")
+        sign_with_address.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_address = c_char_p(address.encode('utf-8'))
+    c_msg_len = c_uint32(len(msg))
+
+    signature = await do_call('indy_sign_with_address',
+                              c_wallet_handle,
+                              c_address,
+                              msg,
+                              c_msg_len,
+                              sign_with_address.cb)
+
+    logger.debug("sign_with_address: <<< res: %r", signature)
+    return signature
+
+
+async def verify_with_address(address: str,
+                              msg: bytes,
+                              signature: bytes) -> bool:
+    """
+    Verify a signature with a payment address.
+
+    :param address: payment address of the message signer
+    :param msg: message that has been signed
+    :param signature: a signature to be verified
+    :return: valid: true - if signature is valid, false - otherwise
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("verify_with_address: >>> address: %r, signed_msg: %r, signature: %r",
+                 address,
+                 msg,
+                 signature)
+
+    if not hasattr(verify_with_address, "cb"):
+        logger.debug("verify_with_address: Creating callback")
+        verify_with_address.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_bool))
+
+    c_address = c_char_p(address.encode('utf-8'))
+    c_msg_len = c_uint32(len(msg))
+    c_signature_len = c_uint32(len(signature))
+
+    res = await do_call('indy_verify_with_address',
+                        c_address,
+                        msg,
+                        c_msg_len,
+                        signature,
+                        c_signature_len,
+                        verify_with_address.cb)
+
+    logger.debug("verify_with_address: <<< res: %r", res)
     return res

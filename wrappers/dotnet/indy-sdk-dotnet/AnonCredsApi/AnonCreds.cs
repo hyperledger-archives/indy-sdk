@@ -50,6 +50,24 @@ namespace Hyperledger.Indy.AnonCredsApi
         private static IssuerCreateAndStoreCredentialDefCompletedDelegate IssuerCreateAndStoreClaimDefCallback = IssuerCreateAndStoreClaimDefCallbackMethod;
 
         /// <summary>
+        /// Gets the callback to use when the IssuerCreateAndStoreClaimDefAsync command completes.
+        /// </summary>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IssuerRotateCredentialDefStartCompletedDelegate))]
+#endif
+        private static void IssuerRotateCredentialDefStartCallbackMethod(int xcommand_handle, int err, string cred_def_json)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(cred_def_json);
+        }              
+        private static IssuerRotateCredentialDefStartCompletedDelegate IssuerRotateCredentialDefStartCallback = IssuerRotateCredentialDefStartCallbackMethod;
+
+
+        /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimRevocRegAsync command completes.
         /// </summary>
 #if __IOS__
@@ -364,6 +382,34 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
         private static UpdateRevocationStateCompletedDelegate UpdateRevocationStateCallback = UpdateRevocationStateCallbackMethod;
 
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GenerateNonceCompletedDelegate))]
+#endif
+        private static void GenerateNonceCallbackMethod(int xcommand_handle, int err, string nonce)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(nonce);
+        }
+        private static GenerateNonceCompletedDelegate GenerateNonceCallback = GenerateNonceCallbackMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ToUnqualifiedCompletedDelegate))]
+#endif
+        private static void ToUnqualifiedCallbackMethod(int xcommand_handle, int err, string res)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(res);
+        }
+        private static ToUnqualifiedCompletedDelegate ToUnqualifiedCallback = ToUnqualifiedCallbackMethod;
+
         /// <summary>
         /// Create credential schema entity that describes credential attributes list and allows credentials
         /// interoperability.
@@ -448,6 +494,88 @@ namespace Hyperledger.Indy.AnonCredsApi
                 type,
                 configJson,
                 IssuerCreateAndStoreClaimDefCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+        ///
+        /// Use `indy_issuer_rotate_credential_def_apply` function to set generated temporary keys as the main.
+        ///
+        /// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+        /// </summary>
+        /// <param name="wallet">Wallet handle</param>
+        /// <param name="credDefId">An identifier of created credential definition stored in the wallet</param>
+        /// <param name="configJson">
+        /// (optional) type-specific configuration of credential definition as json:
+        /// - 'CL':
+        ///     {
+        ///         "support_revocation" - bool (optional, default false) whether to request non-revocation credential
+        ///     }
+        /// </param>
+        /// <returns>
+        /// cred_def_json: public part of temporary created credential definition
+        /// {
+        ///     id: string - identifier of credential definition
+        ///     schemaId: string - identifier of stored in ledger schema
+        ///     type: string - type of the credential definition. CL is the only supported type now.
+        ///     tag: string - allows to distinct between credential definitions for the same issuer and schema
+        ///     value: Dictionary with Credential Definition's data is depended on the signature type: {
+        ///         primary: primary credential public key,
+        ///         Optional&lt;revocation>: revocation credential public key
+        ///     }, - only this field differs from the original credential definition
+        ///     ver: Version of the CredDef json
+        /// }
+        /// 
+        /// Note: `primary` and `revocation` fields of credential definition are complex opaque types that contain data structures internal to Ursa.
+        /// They should not be parsed and are likely to change in future versions.
+        /// </returns>
+        public static Task<string> IssuerRotateCredentialDefStartAsync(Wallet wallet, string credDefId, string configJson)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(credDefId, "credDefId");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_issuer_rotate_credential_def_start(
+                commandHandle,
+                wallet.Handle,
+                credDefId,
+                configJson,
+                IssuerRotateCredentialDefStartCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+        ///
+        /// WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+        /// </summary>
+        /// <param name="wallet">Wallet handle</param>
+        /// <param name="credDefId">An identifier of created credential definition stored in the wallet</param>
+        /// <returns></returns>
+        public static Task IssuerRotateCredentialDefApplyAsync(Wallet wallet, string credDefId)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(credDefId, "credDefId");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_issuer_rotate_credential_def_apply(
+                commandHandle,
+                wallet.Handle,
+                credDefId,
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -733,6 +861,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         ///      "nonce": string
         ///    }
         /// cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
+        ///      Note: cred_req_metadata_json mustn't be shared with Issuer.
         ///</returns>
         /// <param name="wallet">Wallet.</param>
         /// <param name="proverDid">a DID of the prover.</param>
@@ -873,6 +1002,32 @@ namespace Hyperledger.Indy.AnonCredsApi
                 wallet.Handle,
                 filterJson,
                 ProverGetCredentialsCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Deletes credential with the given identifier.
+        /// </summary>
+        /// <param name="wallet">The wallet</param>
+        /// <param name="credentialId">The credential identifier</param>
+        /// <returns></returns>
+        public static Task ProverDeleteCredentialAsync(Wallet wallet, string credentialId)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(credentialId, "credentialId");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_delete_credential(
+                commandHandle,
+                wallet.Handle,
+                credentialId,
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -1252,7 +1407,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
         /// There is also aggregated proof part common for all credential proofs.
         ///     {
-        ///         "requested": {
+        ///         "requested_proof": {
         ///             "revealed_attrs": {
         ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
         ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1394,7 +1549,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="proof">
         /// proof_json: created for request proof json
         ///     {
-        ///         "requested": {
+        ///         "requested_proof": {
         ///             "revealed_attrs": {
         ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
         ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
@@ -1556,6 +1711,59 @@ namespace Hyperledger.Indy.AnonCredsApi
                 timestamp,
                 credRevId,
                 UpdateRevocationStateCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Generates 80-bit numbers that can be used as a nonce for proof request.
+        /// </summary>
+        /// <returns>Generated number as a string</returns>
+        public static Task<string> GenerateNonceAsync()
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_generate_nonce(
+                commandHandle,
+                GenerateNonceCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Get unqualified form (short form without method) of a fully qualified entity like DID.
+        ///
+        /// This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+        ///     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+        ///     Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+        ///     another case when casting to unqualified form needed
+        /// </summary>
+        /// <param name="entity">
+        /// target entity to disqualify. Can be one of:
+        ///             Did
+        ///             SchemaId
+        ///             CredentialDefinitionId
+        ///             RevocationRegistryId
+        ///             CredentialOffer
+        ///             ProofRequest
+        /// </param>
+        /// <returns></returns>
+        public static Task<string> ToUnqualifiedAsync(string entity)
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_to_unqualified(
+                commandHandle,
+                entity,
+                ToUnqualifiedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

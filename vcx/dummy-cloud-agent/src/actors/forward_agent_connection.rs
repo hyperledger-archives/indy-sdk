@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg};
+use actors::{AddA2ARoute, HandleA2AMsg, AdminRegisterForwardAgentConnection, HandleAdminMessage};
 use actors::agent::Agent;
 use actors::router::Router;
 use domain::a2a::*;
@@ -11,6 +11,8 @@ use indy::{did, pairwise, pairwise::PairwiseInfo};
 use serde_json;
 use std::convert::Into;
 use utils::futures::*;
+use actors::admin::Admin;
+use domain::admin_message::{ResAdminQuery};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ForwardAgentConnectionState {
@@ -26,6 +28,7 @@ pub struct ForwardAgentConnection {
     my_verkey: String,
     state: ForwardAgentConnectionState,
     router: Addr<Router>,
+    admin: Addr<Admin>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
 }
@@ -36,7 +39,8 @@ impl ForwardAgentConnection {
                   their_verkey: String,
                   router: Addr<Router>,
                   forward_agent_detail: ForwardAgentDetail,
-                  wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(String, String), Error> {
+                  wallet_storage_config: WalletStorageConfig,
+                  admin: Addr<Admin>) -> BoxedFuture<(String, String), Error> {
         trace!("ForwardAgentConnection::create >> {:?}, {:?}, {:?}, {:?}, {:?}",
                wallet_handle, their_did, their_verkey, forward_agent_detail, wallet_storage_config);
 
@@ -81,6 +85,7 @@ impl ForwardAgentConnection {
                     my_verkey: my_verkey.clone(),
                     state,
                     router: router.clone(),
+                    admin: admin.clone(),
                     forward_agent_detail,
                     wallet_storage_config,
                 };
@@ -90,8 +95,14 @@ impl ForwardAgentConnection {
                 router
                     .send(AddA2ARoute(my_did.clone(), forward_agent_connection.clone().recipient()))
                     .from_err()
-                    .map(move |_| (my_did, my_verkey))
+                    .map(move |_| (my_did, my_verkey, forward_agent_connection, admin))
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
+            })
+            .and_then(move |(my_did, my_verkey, forward_agent_connection, admin)| {
+                admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
+                    .from_err()
+                    .map(move |_| (my_did, my_verkey))
+                    .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into())
             })
             .into_box()
     }
@@ -100,7 +111,8 @@ impl ForwardAgentConnection {
                    their_did: String,
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
-                   router: Addr<Router>) -> BoxedFuture<(), Error> {
+                   router: Addr<Router>,
+                   admin: Addr<Admin>) -> BoxedFuture<(), Error> {
         trace!("ForwardAgentConnection::restore >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, their_did, forward_agent_detail, wallet_storage_config);
 
@@ -142,17 +154,18 @@ impl ForwardAgentConnection {
                                    &their_verkey,
                                    router.clone(),
                                    forward_agent_detail.clone(),
-                                   wallet_storage_config.clone())
+                                   wallet_storage_config.clone(),
+                                    admin.clone())
                         .into_box()
                 } else {
                     ok!(())
                 }
                     .map(|_| (my_did, my_verkey, their_did, their_verkey, state,
-                              router, forward_agent_detail, wallet_storage_config))
+                              router, admin, forward_agent_detail, wallet_storage_config))
                     .map_err(|err| err.context("Can't start Agent for Forward Agent Connection.").into())
             })
             .and_then(move |(my_did, my_verkey, their_did, their_verkey, state,
-                                router, forward_agent_detail, wallet_storage_config)| {
+                                router, admin, forward_agent_detail, wallet_storage_config)| {
                 let forward_agent_connection = ForwardAgentConnection {
                     wallet_handle,
                     their_did,
@@ -160,8 +173,9 @@ impl ForwardAgentConnection {
                     my_verkey,
                     state,
                     router: router.clone(),
+                    admin: admin.clone(),
                     forward_agent_detail,
-                    wallet_storage_config,
+                    wallet_storage_config
                 };
 
                 let forward_agent_connection = forward_agent_connection.start();
@@ -169,7 +183,14 @@ impl ForwardAgentConnection {
                 router
                     .send(AddA2ARoute(my_did.clone(), forward_agent_connection.clone().recipient()))
                     .from_err()
+                    .map(move |_| (forward_agent_connection, my_did, admin))
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
+            })
+            .and_then(move |(forward_agent_connection, my_did, admin )| {
+                admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
+                    .from_err()
+                    .map(|_| ())
+                    .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into())
             })
             .into_box()
     }
@@ -181,7 +202,7 @@ impl ForwardAgentConnection {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_authcrypted(slf.wallet_handle, &slf.my_verkey, &msg)
+                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.my_verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle a2a message.").into())
                     .into_actor(slf)
             })
@@ -191,20 +212,74 @@ impl ForwardAgentConnection {
                 };
 
                 match msgs.pop() {
-                    Some(A2AMessage::SignUp(msg)) => {
-                        slf._sign_up(msg)
-                    }
-                    Some(A2AMessage::CreateAgent(msg)) => {
-                        slf._create_agent(msg)
-                    }
+                    Some(A2AMessage::Version1(msg)) => slf._handle_a2a_msg_v1(msg),
+                    Some(A2AMessage::Version2(msg)) => slf._handle_a2a_msg_v2(msg),
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
             })
             .into_box()
     }
 
-    fn _sign_up(&mut self, msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgentConnection::_sign_up >> {:?}", msg);
+    fn _handle_a2a_msg_v1(&mut self,
+                          msg: A2AMessageV1) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgentConnection::_handle_a2a_msg_v1 >> {:?}", msg);
+
+        match msg {
+            A2AMessageV1::SignUp(msg) => {
+                self._sign_up_v1(msg)
+            }
+            A2AMessageV1::CreateAgent(msg) => {
+                self._create_agent_v1(msg)
+            }
+            _ => err_act!(self, err_msg("Unsupported message"))
+        }
+    }
+
+    fn _handle_a2a_msg_v2(&mut self,
+                          msg: A2AMessageV2) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgentConnection::_handle_a2a_msg_v2 >> {:?}", msg);
+
+        match msg {
+            A2AMessageV2::SignUp(msg) => {
+                self._sign_up_v2(msg)
+            }
+            A2AMessageV2::CreateAgent(msg) => {
+                self._create_agent_v2(msg)
+            }
+            _ => err_act!(self, err_msg("Unsupported message"))
+        }
+    }
+
+    fn _sign_up_v1(&mut self, msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgentConnection::_sign_up_v1 >> {:?}", msg);
+
+        self._sign_up()
+            .and_then(|_, slf, _| {
+                let msgs = vec![A2AMessage::Version1(A2AMessageV1::SignedUp(SignedUp {}))];
+
+                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.my_verkey, &slf.their_verkey, &msgs)
+                    .map_err(|err| err.context("Can't bundle and authcrypt signed up message.").into())
+                    .into_actor(slf)
+            })
+            .into_box()
+    }
+
+    fn _sign_up_v2(&mut self, msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgentConnection::_sign_up_v2 >> {:?}", msg);
+
+        self._sign_up()
+            .and_then(|_, slf, _| {
+                let msg = A2AMessageV2::SignedUp(SignedUp { });
+
+                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.my_verkey), &slf.their_verkey, &msg)
+                    .map_err(|err| err.context("Can't pack signed up message.").into())
+                    .into_actor(slf)
+            })
+            .into_box()
+    }
+
+    fn _sign_up(&mut self) -> ResponseActFuture<Self, (), Error> {
+        trace!("ForwardAgentConnection::_sign_up >>");
 
         if self.state.is_signed_up {
             return err_act!(self, err_msg("Already signed up"));
@@ -225,18 +300,45 @@ impl ForwardAgentConnection {
                     .into_actor(slf)
                     .into_box()
             })
-            .and_then(|_, slf, _| {
-                let msgs = vec![A2AMessage::SignedUp(SignedUp {})];
+            .into_box()
+    }
+
+    fn _create_agent_v1(&mut self, msg: CreateAgent) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgentConnection::_create_agent_v1 >> {:?}", msg);
+
+        self._create_agent()
+            .and_then(|(did, verkey), slf, _| {
+                let msgs = vec![A2AMessage::Version1(A2AMessageV1::AgentCreated(AgentCreated {
+                    with_pairwise_did: did,
+                    with_pairwise_did_verkey: verkey,
+                }))];
 
                 A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.my_verkey, &slf.their_verkey, &msgs)
-                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
+                    .map_err(|err| err.context("Can't bundle and authcrypt agent created message.").into())
                     .into_actor(slf)
             })
             .into_box()
     }
 
-    fn _create_agent(&mut self, msg: CreateAgent) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgentConnection::_create_agent >> {:?}", msg);
+    fn _create_agent_v2(&mut self, msg: CreateAgent) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("ForwardAgentConnection::_create_agent_v2 >> {:?}", msg);
+
+        self._create_agent()
+            .and_then(|(did, verkey), slf, _| {
+                let msg = A2AMessageV2::AgentCreated(AgentCreated {
+                    with_pairwise_did: did,
+                    with_pairwise_did_verkey: verkey,
+                });
+
+                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.my_verkey), &slf.their_verkey, &msg)
+                    .map_err(|err| err.context("Can't pack agent created message.").into())
+                    .into_actor(slf)
+            })
+            .into_box()
+    }
+
+    fn _create_agent(&mut self) -> ResponseActFuture<Self, (String, String), Error> {
+        trace!("ForwardAgentConnection::_create_agent >> ");
 
         if !self.state.is_signed_up {
             return err_act!(self, err_msg("Sign up is required."));
@@ -253,7 +355,9 @@ impl ForwardAgentConnection {
                               &slf.their_verkey,
                               slf.router.clone(),
                               slf.forward_agent_detail.clone(),
-                              slf.wallet_storage_config.clone())
+                              slf.wallet_storage_config.clone(),
+                              slf.admin.clone()
+                )
                     .into_actor(slf)
                     .into_box()
             })
@@ -271,16 +375,6 @@ impl ForwardAgentConnection {
                     .into_actor(slf)
                     .into_box()
             })
-            .and_then(|(did, verkey), slf, _| {
-                let msgs = vec![A2AMessage::AgentCreated(AgentCreated {
-                    with_pairwise_did: did,
-                    with_pairwise_did_verkey: verkey,
-                })];
-
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.my_verkey, &slf.their_verkey, &msgs)
-                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
-                    .into_actor(slf)
-            })
             .into_box()
     }
 }
@@ -295,6 +389,15 @@ impl Handler<HandleA2AMsg> for ForwardAgentConnection {
     fn handle(&mut self, msg: HandleA2AMsg, _: &mut Self::Context) -> Self::Result {
         trace!("Handler<HandleA2AMsg>::handle >> {:?}", msg);
         self._handle_a2a_msg(msg.0)
+    }
+}
+
+impl Handler<HandleAdminMessage> for ForwardAgentConnection {
+    type Result = Result<ResAdminQuery, Error>;
+
+    fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
+        trace!("Forward Agent Connection Handler<HandleAdminMessage>::handle >>",);
+        Ok(ResAdminQuery::ForwardAgentConn)
     }
 }
 

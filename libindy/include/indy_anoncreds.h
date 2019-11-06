@@ -30,6 +30,24 @@ extern "C" {
                                                                                          const char*   cred_def_id,
                                                                                          const char*   cred_def_json)
                                                                     );
+
+    extern indy_error_t indy_issuer_rotate_credential_def_start(indy_handle_t command_handle,
+                                                                indy_handle_t wallet_handle,
+                                                                const char *  cred_def_id,
+                                                                const char *  config_json,
+
+                                                                void           (*cb)(indy_handle_t command_handle_,
+                                                                                     indy_error_t  err,
+                                                                                     const char*   cred_def_json)
+                                                                );
+
+    extern indy_error_t indy_issuer_rotate_credential_def_apply(indy_handle_t command_handle,
+                                                                indy_handle_t wallet_handle,
+                                                                const char *  cred_def_id,
+
+                                                                void           (*cb)(indy_handle_t command_handle_,
+                                                                                     indy_error_t  err)
+                                                                );
     
     extern indy_error_t indy_issuer_create_and_store_revoc_reg(indy_handle_t command_handle,
                                                                indy_handle_t wallet_handle,
@@ -138,7 +156,15 @@ extern "C" {
                                                                           indy_error_t  err,
                                                                           const char*   out_cred_id)
                                                      );
-    
+
+    extern indy_error_t indy_prover_delete_credential(indy_handle_t command_handle,
+                                                      indy_handle_t wallet_handle,
+                                                      const char *  cred_id,
+
+                                                      void          (*cb)(indy_handle_t command_handle_,
+                                                                          indy_error_t        err)
+                                                      );
+
     extern indy_error_t indy_prover_get_credentials(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,
                                                     const char *  filter_json,
@@ -274,6 +300,20 @@ extern "C" {
                                                                           indy_error_t  err,
                                                                           const char*   updated_rev_state_json)
                                                      );
+
+
+    extern indy_error_t indy_generate_nonce(indy_handle_t command_handle,
+                                            void           (*cb)(indy_handle_t command_handle_,
+                                                                 indy_error_t  err,
+                                                                 const char*   nonce)
+                                            );
+
+    extern indy_error_t indy_to_unqualified(indy_handle_t command_handle,
+                                            const char *  entity,
+                                            void           (*cb)(indy_handle_t command_handle_,
+                                                                 indy_error_t  err,
+                                                                 const char*   res)
+                                            );
 
 #ifdef __cplusplus
 }

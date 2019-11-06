@@ -157,4 +157,23 @@
     [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }
 
++ (void)listMyDidsWithMeta:(IndyHandle)walletHandle
+                completion:(void (^)(NSError *error, NSString *metadata))completion {
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    indy_error_t ret = indy_list_my_dids_with_meta(handle, walletHandle, IndyWrapperCommonStringCallback);
+    [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
+}
+
+
++ (void)qualifyDid:(NSString *)did
+            method:(NSString *)method
+      walletHandle:(IndyHandle)walletHandle
+        completion:(void (^)(NSError *error, NSString *fullQualifiedDid))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    indy_error_t ret = indy_qualify_did(handle, walletHandle, [did UTF8String], [method UTF8String], IndyWrapperCommonStringCallback);
+
+    [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
+}
+
 @end

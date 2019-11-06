@@ -198,6 +198,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
 
   protected _releaseFn = rustAPI().vcx_disclosed_proof_release
   protected _updateStFn = rustAPI().vcx_disclosed_proof_update_state
+  protected _updateStWithMessageFn = rustAPI().vcx_disclosed_proof_update_state_with_message
   protected _getStFn = rustAPI().vcx_disclosed_proof_get_state
   protected _serializeFn = rustAPI().vcx_disclosed_proof_serialize
   protected _deserializeFn = rustAPI().vcx_disclosed_proof_deserialize
@@ -282,7 +283,49 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Generates the proof message for sending.
+   *
+   * Example:
+   * ```
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * { attrs } = await disclosedProof.getCredentials()
+   * valSelfAttested = 'testSelfAttestedVal'
+   * await disclosedProof.generateProof({
+   *    {},
+   *    mapValues(attrs, () => valSelfAttested)
+   *  })
+   * await disclosedProof.getProofMsg(connection)
+   * ```
+   */
+  public async getProofMessage (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_disclosed_proof_get_proof_msg(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`proof ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
   /**
    * Generates the proof
    *

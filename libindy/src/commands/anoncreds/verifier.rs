@@ -1,24 +1,26 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::rc::Rc;
 
-use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1};
-use domain::anoncreds::proof::Proof;
-use domain::anoncreds::proof_request::ProofRequest;
-use domain::anoncreds::revocation_registry::{rev_regs_map_to_rev_regs_local_map, RevocationRegistry, RevocationRegistryV1};
-use domain::anoncreds::revocation_registry_definition::{rev_reg_defs_map_to_rev_reg_defs_v1_map, RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
-use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map, SchemaV1};
-use errors::prelude::*;
-use services::anoncreds::AnoncredsService;
+use crate::domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
+use crate::domain::anoncreds::proof::Proof;
+use crate::domain::anoncreds::proof_request::{ProofRequest, ProofRequestPayload};
+use crate::domain::anoncreds::revocation_registry::{rev_regs_map_to_rev_regs_local_map, RevocationRegistryV1, RevocationRegistries};
+use crate::domain::anoncreds::revocation_registry_definition::{rev_reg_defs_map_to_rev_reg_defs_v1_map, RevocationRegistryDefinitionV1, RevocationRegistryId, RevocationRegistryDefinitions};
+use crate::domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
+use indy_api_types::errors::prelude::*;
+use crate::services::anoncreds::AnoncredsService;
 
 pub enum VerifierCommand {
     VerifyProof(
         ProofRequest, // proof request
         Proof, // proof
-        HashMap<String, Schema>, // credential schemas
-        HashMap<String, CredentialDefinition>, // credential defs
-        HashMap<String, RevocationRegistryDefinition>, // rev reg defs
-        HashMap<String, HashMap<u64, RevocationRegistry>>, // rev reg entries
-        Box<Fn(IndyResult<bool>) + Send>)
+        Schemas, // credential schemas
+        CredentialDefinitions, // credential defs
+        RevocationRegistryDefinitions, // rev reg defs
+        RevocationRegistries, // rev reg entries
+        Box<dyn Fn(IndyResult<bool>) + Send>),
+    GenerateNonce(
+        Box<dyn Fn(IndyResult<String>) + Send>)
 }
 
 pub struct VerifierCommandExecutor {
@@ -35,86 +37,30 @@ impl VerifierCommandExecutor {
     pub fn execute(&self, command: VerifierCommand) {
         match command {
             VerifierCommand::VerifyProof(proof_request, proof, schemas, credential_defs, rev_reg_defs, rev_regs, cb) => {
-                info!(target: "verifier_command_executor", "VerifyProof command received");
-                cb(self.verify_proof(proof_request, proof,
+                debug!(target: "verifier_command_executor", "VerifyProof command received");
+                cb(self.verify_proof(&proof_request.value(), proof,
                                      &schemas_map_to_schemas_v1_map(schemas),
                                      &cred_defs_map_to_cred_defs_v1_map(credential_defs),
                                      &rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs),
                                      &rev_regs_map_to_rev_regs_local_map(rev_regs)));
             }
+            VerifierCommand::GenerateNonce(cb) => {
+                debug!(target: "verifier_command_executor", "GenerateNonce command received");
+                cb(self.generate_nonce());
+            }
         };
     }
 
     fn verify_proof(&self,
-                    proof_req: ProofRequest,
+                    proof_req: &ProofRequestPayload,
                     proof: Proof,
-                    schemas: &HashMap<String, SchemaV1>,
-                    cred_defs: &HashMap<String, CredentialDefinitionV1>,
-                    rev_reg_defs: &HashMap<String, RevocationRegistryDefinitionV1>,
-                    rev_regs: &HashMap<String, HashMap<u64, RevocationRegistryV1>>) -> IndyResult<bool> {
+                    schemas: &HashMap<SchemaId, SchemaV1>,
+                    cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinitionV1>,
+                    rev_reg_defs: &HashMap<RevocationRegistryId, RevocationRegistryDefinitionV1>,
+                    rev_regs: &HashMap<RevocationRegistryId, HashMap<u64, RevocationRegistryV1>>) -> IndyResult<bool> {
         debug!("verify_proof >>> proof_req: {:?}, proof: {:?}, schemas: {:?}, cred_defs: {:?},  \
                rev_reg_defs: {:?}, rev_regs: {:?}",
                proof_req, proof, schemas, cred_defs, rev_reg_defs, rev_regs);
-
-        let requested_attrs: HashSet<String> =
-            proof_req.requested_attributes
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_revealed_attrs: HashSet<String> =
-            proof.requested_proof.revealed_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_unrevealed_attrs: HashSet<String> =
-            proof.requested_proof.unrevealed_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_self_attested_attrs: HashSet<String> =
-            proof.requested_proof.self_attested_attrs
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_attrs = received_revealed_attrs
-            .union(&received_unrevealed_attrs)
-            .cloned()
-            .collect::<HashSet<String>>()
-            .union(&received_self_attested_attrs)
-            .cloned()
-            .collect::<HashSet<String>>();
-
-        if requested_attrs != received_attrs {
-            return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs)));
-        }
-
-        let requested_predicates: HashSet<String> =
-            proof_req.requested_predicates
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        let received_predicates: HashSet<String> =
-            proof.requested_proof.predicates
-                .keys()
-                .cloned()
-                .into_iter()
-                .collect::<HashSet<String>>();
-
-        if requested_predicates != received_predicates {
-            return Err(err_msg(IndyErrorKind::InvalidStructure,
-                               format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates)));
-        }
 
         let result = self.anoncreds_service.verifier.verify(&proof,
                                                             &proof_req,
@@ -124,6 +70,19 @@ impl VerifierCommandExecutor {
                                                             rev_regs)?;
 
         debug!("verify_proof <<< result: {:?}", result);
+
+        Ok(result)
+    }
+
+    fn generate_nonce(&self) -> IndyResult<String> {
+        debug!("generate_nonce >>> ");
+
+        let nonce = self.anoncreds_service.verifier.generate_nonce()?;
+
+        let result = nonce.to_dec()
+            .to_indy(IndyErrorKind::InvalidState, "Cannot serialize Nonce")?;
+
+        debug!("generate_nonce <<< result: {:?}", result);
 
         Ok(result)
     }
