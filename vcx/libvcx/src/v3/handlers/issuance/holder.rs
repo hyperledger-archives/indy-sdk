@@ -6,6 +6,7 @@ use v3::messages::issuance::{
     credential_offer::CredentialOffer,
     credential_request::CredentialRequest,
 };
+use v3::handlers::connection::update_message_status;
 use v3::messages::error::ProblemReport;
 use v3::messages::attachment::Attachment;
 use credential::Credential;
@@ -18,6 +19,7 @@ use v3::messages::ack::{Ack, AckStatus};
 use messages::thread::Thread;
 use messages::MessageStatusCode;
 use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
+use v3::handlers::connection;
 
 pub struct HolderSM {
     state: HolderState,
@@ -47,10 +49,10 @@ impl HolderSM {
     pub fn fetch_message(&self) -> VcxResult<Option<A2AMessage>> {
         let conn_handle = self.state.get_connection_handle();
         let last_id = self.state.get_last_id();
-        let (messages, _) = get_messages(conn_handle)?;
+        let messages = get_messages(conn_handle)?;
 
         let res: Option<(String, A2AMessage)> = messages.into_iter()
-            .filter_map(|(_, a2a_message)| {
+            .filter_map(|(uid, a2a_message)| {
                 let thid = match &a2a_message {
                     A2AMessage::CommonProblemReport(ref report) => {
                         report.thread.thid.clone()
@@ -61,7 +63,7 @@ impl HolderSM {
                     _ => None
                 };
                 if thid == last_id {
-                    Some((thid?, a2a_message))
+                    Some((uid, a2a_message))
                 } else {
                     None
                 }
@@ -69,13 +71,7 @@ impl HolderSM {
             .nth(0);
 
         if let Some((uid, msg)) = res {
-            let messages_to_update = vec![UIDsByConn {
-                pairwise_did: get_pw_did(conn_handle)?,
-                uids: vec![uid]
-            }];
-
-            update_messages(MessageStatusCode::Reviewed, messages_to_update)?;
-
+            update_message_status(conn_handle, uid)?;
             Ok(Some(msg))
         } else {
             Ok(None)
@@ -102,6 +98,7 @@ impl HolderSM {
                             let cred_request = cred_request.set_thread(Thread::new().set_thid(state_data.offer.id.0.clone()));
                             let id = state_data.offer.id.clone();
                             let msg = A2AMessage::CredentialRequest(cred_request);
+                            connection::remove_pending_message(conn_handle, &state_data.offer.id)?;
                             (msg, HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle, id).into()))
                         }
                         Err(err) => {

@@ -3,14 +3,13 @@ pub mod connection;
 
 use self::connection::*;
 
-use messages::update_message::UIDsByConn;
 use messages::get_message::Message;
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::error;
 
 use v3::handlers::connection::states::*;
-use v3::messages::A2AMessage;
+use v3::messages::{A2AMessage, MessageId};
 use v3::messages::connection::invite::Invitation;
 
 use std::collections::HashMap;
@@ -20,16 +19,16 @@ lazy_static! {
 }
 
 pub fn create_connection(source_id: &str) -> VcxResult<u32> {
-    let connection = Connection::create(source_id, Actor::Inviter)?;
+    let connection = Connection::create(source_id, Actor::Inviter);
 
     CONNECTION_MAP.add(connection)
         .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
 }
 
 pub fn create_connection_with_invite(source_id: &str, invitation: Invitation) -> VcxResult<u32> {
-    let mut connection: Connection = Connection::create(source_id, Actor::Invitee)?;
+    let mut connection: Connection = Connection::create(source_id, Actor::Invitee);
 
-    connection.process_invite(invitation)?;
+    connection = connection.process_invite(invitation)?;
 
     CONNECTION_MAP.add(connection)
         .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
@@ -38,17 +37,15 @@ pub fn create_connection_with_invite(source_id: &str, invitation: Invitation) ->
 pub fn connect(handle: u32, _options: Option<String>) -> VcxResult<u32> {
     // Do we need it now????
     // let options_obj: ConnectionOptions = ConnectionOptions::from_opt_str(options)?;
-    CONNECTION_MAP.get_mut(handle, |connection| {
-        connection.connect()?;
-        Ok(error::SUCCESS.code_num)
-    })
+    CONNECTION_MAP.map(handle, |connection| {
+        connection.connect()
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
-        connection.update_state(message.as_ref().map(String::as_str))?;
-        Ok(error::SUCCESS.code_num)
-    })
+    CONNECTION_MAP.map(handle, |connection| {
+        connection.update_state(message.as_ref().map(String::as_str))
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn get_state(handle: u32) -> u32 {
@@ -57,7 +54,7 @@ pub fn get_state(handle: u32) -> u32 {
     }).unwrap_or(0)
 }
 
-pub fn get_messages(handle: u32) -> VcxResult<(HashMap<String, A2AMessage>, Vec<UIDsByConn>)> {
+pub fn get_messages(handle: u32) -> VcxResult<HashMap<String, A2AMessage>> {
     CONNECTION_MAP.get(handle, |connection| {
         connection.get_messages()
     })
@@ -129,8 +126,8 @@ pub fn release(handle: u32) -> VcxResult<()> {
 }
 
 pub fn delete_connection(handle: u32) -> VcxResult<u32> {
-    CONNECTION_MAP.get_mut(handle, |t| {
-        t.delete()?;
+    CONNECTION_MAP.get_mut(handle, |connection| {
+        connection.delete()?;
         Ok(error::SUCCESS.code_num)
     })
         .or(Err(VcxError::from(VcxErrorKind::DeleteConnection)))
@@ -140,10 +137,9 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
 
 // Actually it handles any message
 pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u32> {
-    CONNECTION_MAP.get_mut(handle, |t| {
-        t.update_state(Some(&json!(message).to_string()))?;
-        Ok(error::SUCCESS.code_num)
-    })
+    CONNECTION_MAP.map(handle, |connection| {
+        connection.update_state(Some(&json!(message).to_string()))
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
@@ -155,4 +151,16 @@ pub fn to_string(handle: u32) -> VcxResult<String> {
 pub fn from_string(connection_data: &str) -> VcxResult<u32> {
     let connection: Connection = Connection::from_str(connection_data)?;
     CONNECTION_MAP.add(connection)
+}
+
+pub fn add_pending_messages(handle: u32, messages: HashMap<MessageId, String>) -> VcxResult<()> {
+    CONNECTION_MAP.get_mut(handle, |connection| {
+        connection.add_pending_messages(messages.clone())
+    })
+}
+
+pub fn remove_pending_message(handle: u32, id: &MessageId) -> VcxResult<()> {
+    CONNECTION_MAP.get_mut(handle, |connection| {
+        connection.remove_pending_message(id.clone())
+    })
 }

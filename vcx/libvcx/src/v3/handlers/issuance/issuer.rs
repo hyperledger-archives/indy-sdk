@@ -3,6 +3,7 @@ use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::states::{IssuerState, InitialState};
 use v3::handlers::connection::{send_message, get_messages, get_pw_did, decode_message};
 use messages::update_message::{UIDsByConn, update_messages};
+use v3::handlers::connection::update_message_status;
 use v3::messages::{A2AMessage, MessageId};
 use v3::messages::issuance::{
     credential::Credential,
@@ -48,12 +49,16 @@ impl IssuerSM {
     }
 
     pub fn fetch_messages(&self) -> VcxResult<Option<A2AMessage>> {
+        if let IssuerState::Finished(_) = self.state {
+            return Ok(None)
+        }
+
         let conn_handle = self.state.get_connection_handle();
         let last_id = self.state.get_last_id();
-        let (messages, _) = get_messages(conn_handle)?;
+        let messages = get_messages(conn_handle)?;
 
         let res: Option<(String, A2AMessage)> = messages.into_iter()
-            .filter_map(|(_, a2a_message)| {
+            .filter_map(|(uid, a2a_message)| {
                 let thid = match &a2a_message {
                     A2AMessage::Ack(ref ack) => {
                         ack.thread.thid.clone()
@@ -73,7 +78,7 @@ impl IssuerSM {
                     _ => None
                 };
                 if thid == last_id {
-                    Some((thid?, a2a_message))
+                    Some((uid, a2a_message))
                 } else {
                     None
                 }
@@ -81,13 +86,7 @@ impl IssuerSM {
             .nth(0);
 
         if let Some((uid, msg)) = res {
-            let messages_to_update = vec![UIDsByConn {
-                pairwise_did: get_pw_did(conn_handle)?,
-                uids: vec![uid]
-            }];
-
-            update_messages(MessageStatusCode::Reviewed, messages_to_update)?;
-
+            update_message_status(conn_handle, uid)?;
             Ok(Some(msg))
         } else {
             Ok(None)

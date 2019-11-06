@@ -3,12 +3,13 @@ pub mod states;
 pub mod messages;
 pub mod holder;
 
+use std::collections::{HashSet, HashMap};
 use api::VcxStateType;
 use error::prelude::*;
 use messages::get_message::Message;
 use messages::update_message::{UIDsByConn, update_messages};
 use object_cache::ObjectCache;
-use v3::messages::A2AMessage;
+use v3::messages::{A2AMessage, MessageId};
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::handlers::connection;
 use v3::handlers::issuance::issuer::IssuerSM;
@@ -51,7 +52,7 @@ pub fn issuer_update_status(credential_handle: u32, msg: Option<String>) -> VcxR
             Some(ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
                 connection::decode_message(issuer_sm.get_connection_handle(), message.clone())
             })?)
-        },
+        }
         None => {
             ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
                 issuer_sm.fetch_messages()
@@ -63,10 +64,16 @@ pub fn issuer_update_status(credential_handle: u32, msg: Option<String>) -> VcxR
         ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
             issuer_sm.handle_message((&sm_msg, 0u32).into())
         })?;
-        Ok(VcxStateType::VcxStateRequestReceived as u32)
+        get_state(credential_handle)
     } else {
-        Ok(VcxStateType::VcxStateOfferSent as u32)
+        get_state(credential_handle)
     }
+}
+
+pub fn get_state(handle: u32) -> VcxResult<u32> {
+    ISSUE_CREDENTIAL_MAP.get(handle, |obj| {
+        Ok(obj.get_status() as u32)
+    })
 }
 
 pub fn send_credential(credential_handle: u32, connection_handle: u32) -> VcxResult<u32> {
@@ -111,7 +118,7 @@ pub fn holder_update_status(credential_handle: u32, msg: Option<String>) -> VcxR
             Some(HOLD_CREDENTIAL_MAP.get(credential_handle, |holder_sm| {
                 connection::decode_message(holder_sm.get_connection_handle(), message.clone())
             })?)
-        },
+        }
         None => {
             HOLD_CREDENTIAL_MAP.get(credential_handle, |holder_sm| {
                 holder_sm.fetch_message()
@@ -136,26 +143,22 @@ pub fn holder_get_status(credential_handle: u32) -> VcxResult<u32> {
 }
 
 pub fn get_credential_offer_messages(conn_handle: u32) -> VcxResult<Vec<CredentialOffer>> {
-    let (messages, _) = connection::get_messages(conn_handle)?;
-    let (uids, msgs): (Vec<String>, Vec<CredentialOffer>) = messages.into_iter().filter_map(|(uid, a2a_message)| {
+    let messages = connection::get_messages(conn_handle)?;
+    let (uids, msgs): (HashMap<MessageId, String>, Vec<CredentialOffer>) = messages.into_iter().filter_map(|(uid, a2a_message)| {
         match &a2a_message {
             A2AMessage::CredentialOffer(ref credential) => {
                 Some((uid, credential.clone()))
             }
             _ => None
         }
-    }).fold((vec![], vec![]), |(mut uids, mut msgs), (uid, msg)| {
-        uids.push(uid);
+    }).fold((HashMap::new(), vec![]), |(mut uids, mut msgs), (uid, msg)| {
+        uids.insert(msg.id.clone(), uid);
         msgs.push(msg);
         (uids, msgs)
     });
 
-    let messages_to_update = vec![UIDsByConn {
-        pairwise_did: connection::get_pw_did(conn_handle)?,
-        uids
-    }];
+    connection::add_pending_messages(conn_handle, uids)?;
 
-    update_messages(MessageStatusCode::Reviewed, messages_to_update)?;
     Ok(msgs)
 }
 

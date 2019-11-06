@@ -11,12 +11,13 @@ use error::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProverSM {
+    source_id: String,
     pub state: ProverState
 }
 
 impl ProverSM {
-    pub fn new(presentation_request: PresentationRequest) -> ProverSM {
-        ProverSM { state: ProverState::Initiated(InitialState { presentation_request }) }
+    pub fn new(presentation_request: PresentationRequest, source_id: String) -> ProverSM {
+        ProverSM { source_id, state: ProverState::Initiated(InitialState { presentation_request }) }
     }
 }
 
@@ -39,7 +40,6 @@ pub enum ProverState {
 pub enum ProverMessages {
     PresentationRequestReceived(PresentationRequestData),
     PreparePresentation((String, String)),
-    PreparePresentationFail(String),
     SendPresentation(u32),
     PresentationAckReceived(Ack),
     PresentationRejectReceived(ProblemReport),
@@ -145,33 +145,41 @@ impl From<(PresentationSentState, ProblemReport)> for FinishedState {
     }
 }
 
+impl InitialState {
+    fn build_presentation(&self, credentials: &str, self_attested_attrs: &str) -> VcxResult<Presentation> {
+        let presentation = DisclosedProof::generate_indy_proof(credentials,
+                                                               self_attested_attrs,
+                                                               &self.presentation_request.request_presentations_attach.content()?)?;
+
+        Presentation::create()
+            .set_thread(Thread::new().set_thid(self.presentation_request.id.0.clone()))
+            .set_presentations_attach(presentation)
+    }
+}
+
 impl ProverSM {
     pub fn step(self, message: ProverMessages) -> VcxResult<ProverSM> {
         trace!("ProverSM::step >>> message: {:?}", message);
 
-        let ProverSM { state } = self;
+        let ProverSM { source_id, state } = self;
 
         let state = match state {
             ProverState::Initiated(state) => {
                 match message {
                     ProverMessages::PreparePresentation((credentials, self_attested_attrs)) => {
-                        let presentation = DisclosedProof::generate_indy_proof(&credentials,
-                                                                               &self_attested_attrs,
-                                                                               &state.presentation_request.request_presentations_attach.content()?)?;
+                        match state.build_presentation(&credentials, &self_attested_attrs) {
+                            Ok(presentation) => {
+                                ProverState::PresentationPrepared((state, presentation).into())
+                            }
+                            Err(err) => {
+                                let problem_report =
+                                    ProblemReport::create()
+                                        .set_comment(err.to_string())
+                                        .set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()));
 
-                        let presentation = Presentation::create()
-                            .set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()))
-                            .set_presentations_attach(presentation)?;
-
-                        ProverState::PresentationPrepared((state, presentation).into())
-                    }
-                    ProverMessages::PreparePresentationFail(err) => {
-                        let problem_report =
-                            ProblemReport::create()
-                                .set_comment(err.to_string())
-                                .set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()));
-
-                        ProverState::PresentationPreparationFailed((state, problem_report).into())
+                                ProverState::PresentationPreparationFailed((state, problem_report).into())
+                            }
+                        }
                     }
                     _ => {
                         ProverState::Initiated(state)
@@ -182,6 +190,7 @@ impl ProverSM {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
                         connection::send_message(connection_handle, state.presentation.to_a2a_message())?;
+                        connection::remove_pending_message(connection_handle, &state.presentation_request.id)?;
                         ProverState::PresentationSent((state, connection_handle).into())
                     }
                     _ => {
@@ -216,8 +225,10 @@ impl ProverSM {
             ProverState::Finished(state) => ProverState::Finished(state)
         };
 
-        Ok(ProverSM { state })
+        Ok(ProverSM { source_id, state })
     }
+
+    pub fn source_id(&self) -> String { self.source_id.clone() }
 
     pub fn state(&self) -> u32 {
         match self.state {

@@ -23,10 +23,9 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    PROVER_MAP.get_mut(handle, |prover| {
-        prover.update_state(message.as_ref().map(String::as_str))?;
-        Ok(error::SUCCESS.code_num)
-    })
+    PROVER_MAP.map(handle, |prover| {
+        prover.update_state(message.as_ref().map(String::as_str))
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
@@ -49,27 +48,25 @@ pub fn release_all() {
 }
 
 pub fn generate_proof_msg(handle: u32) -> VcxResult<String> {
-    PROVER_MAP.get_mut(handle, |prover| {
+    PROVER_MAP.get(handle, |prover| {
         prover.generate_presentation_msg()
     })
 }
 
 pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    PROVER_MAP.get_mut(handle, |prover| {
-        prover.send_presentation(connection_handle)?;
-        Ok(error::SUCCESS.code_num)
-    })
+    PROVER_MAP.map(handle, |prover| {
+        prover.send_presentation(connection_handle)
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn generate_presentation(handle: u32, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
-    PROVER_MAP.get_mut(handle, |prover| {
-        prover.generate_presentation(credentials.clone(), self_attested_attrs.clone())?;
-        Ok(error::SUCCESS.code_num)
-    })
+    PROVER_MAP.map(handle, |prover| {
+        prover.generate_presentation(credentials.clone(), self_attested_attrs.clone())
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn retrieve_credentials(handle: u32) -> VcxResult<String> {
-    PROVER_MAP.get_mut(handle, |prover| {
+    PROVER_MAP.get(handle, |prover| {
         prover.retrieve_credentials()
     })
 }

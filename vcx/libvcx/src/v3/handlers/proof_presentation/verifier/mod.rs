@@ -33,10 +33,9 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    VERIFIER_MAP.get_mut(handle, |verifier| {
-        verifier.update_state(message.as_ref().map(String::as_str))?;
-        Ok(error::SUCCESS.code_num)
-    })
+    VERIFIER_MAP.map(handle, |verifier| {
+        verifier.update_state(message.as_ref().map(String::as_str))
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn get_state(handle: u32) -> u32 {
@@ -71,14 +70,13 @@ pub fn release_all() {
 }
 
 pub fn send_presentation_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    VERIFIER_MAP.get_mut(handle, |verifier| {
-        verifier.send_presentation_request(connection_handle)?;
-        Ok(error::SUCCESS.code_num)
-    })
+    VERIFIER_MAP.map(handle, |verifier| {
+        verifier.send_presentation_request(connection_handle)
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn generate_presentation_request_msg(handle: u32) -> VcxResult<String> {
-    VERIFIER_MAP.get_mut(handle, |verifier| {
+    VERIFIER_MAP.get(handle, |verifier| {
         verifier.generate_proof_request_msg()
     })
 }

@@ -1,5 +1,6 @@
 use error::prelude::*;
 use std::convert::TryInto;
+use std::collections::HashMap;
 
 use messages::ObjectWithVersion;
 use messages::get_message::Message;
@@ -15,7 +16,6 @@ use messages::proofs::proof_message::ProofMessage;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
-    source_id: String,
     state: VerifierSM
 }
 
@@ -39,12 +39,11 @@ impl Verifier {
                 .set_nonce()?;
 
         Ok(Verifier {
-            source_id,
-            state: VerifierSM::new(presentation_request),
+            state: VerifierSM::new(presentation_request, source_id),
         })
     }
 
-    pub fn get_source_id(&self) -> String { self.source_id.clone() }
+    pub fn get_source_id(&self) -> String { self.state.source_id() }
 
     pub fn state(&self) -> u32 { self.state.state() }
 
@@ -52,103 +51,101 @@ impl Verifier {
         self.state.presentation_status()
     }
 
-    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
+    pub fn update_state(mut self, message: Option<&str>) -> VcxResult<Verifier> {
         trace!("Verifier::update_state >>> message: {:?}", message);
 
-        if !self.state.has_transitions() { return Ok(()); }
+        if !self.state.has_transitions() { return Ok(self); }
 
         match message {
             Some(message_) => {
-                self.update_state_with_message(message_)?;
+                self = self.update_state_with_message(message_)?
             }
             None => {
                 let connection_handle = self.state.connection_handle()?;
+                let messages = connection::get_messages(connection_handle)?;
 
-                let (messages, _) = connection::get_messages(connection_handle)?;
-
-                for (uid, message) in messages {
-                    match self.handle_message(message)? {
-                        Some(_) => {
-                            connection::update_message_status(connection_handle, uid)?;
-                            break;
-                        }
-                        None => {}
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
-        let message: Message = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
-
-        let message = connection::decode_message(self.state.connection_handle()?, message)?;
-
-        self.handle_message(message)?;
-
-        Ok(())
-    }
-
-    pub fn handle_message(&mut self, message: A2AMessage) -> VcxResult<Option<()>> {
-        trace!("Verifier::handle_message >>> message: {:?}", message);
-        let thid = &self.state.presentation_request()?.id.0;
-
-        match self.state.state {
-            VerifierState::Initiated(ref state) => {
-                // do not process message
-            }
-            VerifierState::PresentationRequestSent(ref state) => {
-                match message {
-                    A2AMessage::Presentation(presentation) => {
-                        if presentation.thread.is_reply(&thid) {
-                            if let Err(err) = self.verify_presentation(presentation) {
-                                self.send_problem_report(err)?
-                            }
-                            return Ok(Some(()));
-                        }
-                    }
-                    A2AMessage::PresentationProposal(proposal) => {
-                        if proposal.thread.is_reply(&thid) {
-                            self.step(VerifierMessages::PresentationProposalReceived(proposal))?;
-                            return Ok(Some(()));
-                        }
-                    }
-                    A2AMessage::CommonProblemReport(problem_report) => {
-                        if problem_report.thread.is_reply(&thid) {
-                            self.step(VerifierMessages::PresentationRejectReceived(problem_report))?;
-                            return Ok(Some(()));
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            VerifierState::Finished(ref state) => {
-                // do not process message
+                if let Some((uid, message)) = self.find_message_to_handle(messages) {
+                    self = self.handle_message(message)?;
+                    connection::update_message_status(connection_handle, uid)?;
+                };
             }
         };
 
-        Ok(None)
+        Ok(self)
     }
 
-    pub fn verify_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
+    pub fn update_state_with_message(mut self, message: &str) -> VcxResult<Verifier> {
+        let message: Message = ::serde_json::from_str(&message)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+
+        let connection_handle = self.state.connection_handle()?;
+
+        let mut messages: HashMap<String, A2AMessage> = HashMap::new();
+        messages.insert(message.uid.clone(), connection::decode_message(connection_handle, message)?);
+
+        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+            self = self.handle_message(message)?;
+            connection::update_message_status(connection_handle, uid)?;
+        }
+
+        Ok(self)
+    }
+
+    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, VerifierMessages)> {
+        trace!("Verifier::get_message_to_handle >>> messages: {:?}", messages);
+
+        let thid = &self.state.presentation_request().map(|request| request.id.0.clone()).unwrap_or_default();
+
+        for (uid, message) in messages {
+            match self.state.state {
+                VerifierState::Initiated(ref state) => {
+                    // do not process message
+                }
+                VerifierState::PresentationRequestSent(ref state) => {
+                    match message {
+                        A2AMessage::Presentation(presentation) => {
+                            if presentation.thread.is_reply(&thid) {
+                                return Some((uid, VerifierMessages::VerifyPresentation(presentation)));
+                            }
+                        }
+                        A2AMessage::PresentationProposal(proposal) => {
+                            if proposal.thread.is_reply(&thid) {
+                                return Some((uid, VerifierMessages::PresentationProposalReceived(proposal)));
+                            }
+                        }
+                        A2AMessage::CommonProblemReport(problem_report) => {
+                            if problem_report.thread.is_reply(&thid) {
+                                return Some((uid, VerifierMessages::PresentationRejectReceived(problem_report)));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                VerifierState::Finished(ref state) => {
+                    // do not process message
+                }
+            };
+        }
+
+        None
+    }
+
+    pub fn handle_message(self, message: VerifierMessages) -> VcxResult<Verifier> {
+        trace!("Prover::handle_message >>> message: {:?}", message);
+        self.step(message)
+    }
+
+    pub fn verify_presentation(self, presentation: Presentation) -> VcxResult<Verifier> {
         trace!("Verifier::verify_presentation >>> presentation: {:?}", presentation);
         self.step(VerifierMessages::VerifyPresentation(presentation))
     }
 
-    pub fn send_problem_report(&mut self, err: VcxError) -> VcxResult<()> {
-        trace!("Verifier::send_problem_report >>> err: {:?}", err);
-        self.step(VerifierMessages::SendPresentationReject(err.to_string()))
-    }
-
-    pub fn send_presentation_request(&mut self, connection_handle: u32) -> VcxResult<()> {
+    pub fn send_presentation_request(self, connection_handle: u32) -> VcxResult<Verifier> {
         trace!("Verifier::send_presentation_request >>> connection_handle: {:?}", connection_handle);
         self.step(VerifierMessages::SendPresentationRequest(connection_handle))
     }
 
-    pub fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
+    pub fn generate_proof_request_msg(&self) -> VcxResult<String> {
         trace!("Verifier::generate_proof_request_msg >>>");
 
         let proof_request: ProofRequestMessage = self.state.presentation_request()?.try_into()?;
@@ -178,8 +175,8 @@ impl Verifier {
             .map_err(|err| err.extend("Cannot serialize Connection"))
     }
 
-    pub fn step(&mut self, message: VerifierMessages) -> VcxResult<()> {
-        self.state = self.state.clone().step(message)?;
-        Ok(())
+    pub fn step(mut self, message: VerifierMessages) -> VcxResult<Verifier> {
+        self.state = self.state.step(message)?;
+        Ok(self)
     }
 }
