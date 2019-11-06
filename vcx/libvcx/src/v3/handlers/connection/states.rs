@@ -261,7 +261,9 @@ impl DidExchangeSM {
                             }
                             Messages::PingReceived(ping) => {
                                 if ping.response_requested {
-                                    let ping = Ping::create().set_thread(ping.thread.clone());
+                                    let ping = Ping::create().set_thread(
+                                        ping.thread.clone()
+                                            .unwrap_or(Thread::new().set_thid(ping.id.0.clone())));
                                     send_message(&ping.to_a2a_message(), &state.remote_info, &agent_info.pw_vk)?;
                                 }
 

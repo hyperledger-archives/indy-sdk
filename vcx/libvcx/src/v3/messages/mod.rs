@@ -34,6 +34,8 @@ use v3::messages::issuance::credential::Credential;
 use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::proof_presentation::presentation::Presentation;
+use v3::messages::A2AMessage::Generic;
+use v3::handlers::connection::states::Messages::AckReceived;
 
 #[derive(Debug, PartialEq)]
 pub enum A2AMessage {
@@ -147,7 +149,10 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::Presentation(msg))
                     .map_err(de::Error::custom)
             }
-            _ => Err(de::Error::custom("Unexpected @type field structure."))
+            other_type => {
+                warn!("Unexpected @type field structure: {}", other_type);
+                Ok(A2AMessage::Generic(value.to_string()))
+            }
         }
     }
 }

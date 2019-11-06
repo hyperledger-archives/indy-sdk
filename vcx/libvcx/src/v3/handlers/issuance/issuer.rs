@@ -156,7 +156,7 @@ impl IssuerSM {
                             let msg = A2AMessage::Credential(
                                 credential_msg
                             );
-                            (msg, IssuerState::CredentialSent((state_data, id).into()))
+                            (msg, IssuerState::Finished(state_data.into()))
                         }
                         Err(err) => {
                             let msg = A2AMessage::CommonProblemReport(

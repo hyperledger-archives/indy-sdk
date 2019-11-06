@@ -44,5 +44,7 @@ impl CredentialPreviewData {
 pub struct CredentialValue {
     pub name: String,
     pub value: String,
+    #[serde(rename = "mime-type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub _type: Option<MimeType>,
 }

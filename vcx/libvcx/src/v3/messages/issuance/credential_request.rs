@@ -7,7 +7,8 @@ use messages::thread::Thread;
 pub struct CredentialRequest {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    pub comment: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
     #[serde(rename = "requests~attach")]
     pub requests_attach: Attachments,
     #[serde(rename = "~thread")]
@@ -18,14 +19,14 @@ impl CredentialRequest {
     pub fn create() -> Self {
         CredentialRequest {
             id: MessageId::new(),
-            comment: String::new(),
+            comment: None,
             requests_attach: Attachments::new(),
             thread: Thread::new(),
         }
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
-        self.comment = comment;
+        self.comment = Some(comment);
         self
     }
 

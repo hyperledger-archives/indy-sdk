@@ -4,12 +4,12 @@ use v3::messages::{MessageId, A2AMessage};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Ping {
     #[serde(rename = "@id")]
-    id: MessageId,
+    pub id: MessageId,
     #[serde(default)]
     pub response_requested: bool,
     comment: Option<String>,
     #[serde(rename = "~thread")]
-    pub thread: Thread,
+    pub thread: Option<Thread>,
 }
 
 impl Ping {
@@ -23,7 +23,7 @@ impl Ping {
     }
 
     pub fn set_thread(mut self, thread: Thread) -> Ping {
-        self.thread = thread;
+        self.thread = Some(thread);
         self
     }
 
@@ -38,7 +38,7 @@ impl Default for Ping {
             id: MessageId::new(),
             response_requested: false,
             comment: None,
-            thread: Thread::new(),
+            thread: None,
         }
     }
 }

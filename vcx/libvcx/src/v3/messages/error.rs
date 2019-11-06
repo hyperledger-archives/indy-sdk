@@ -8,6 +8,7 @@ pub struct ProblemReport {
     id: MessageId,
     #[serde(rename = "~thread")]
     pub thread: Thread,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<Description>,
     pub who_retries: Option<WhoRetries>,
     #[serde(rename = "tracking-uri")]
