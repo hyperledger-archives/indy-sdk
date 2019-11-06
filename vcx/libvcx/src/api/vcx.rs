@@ -132,7 +132,8 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
                 Ok(_) => (),
                 Err(e) => {
                     error!("Init Pool Error {}.", e);
-                    return Ok(cb(command_handle, e.into()));
+                    cb(command_handle, e.into());
+                    return Ok(());
                 }
             }
         }

@@ -6,7 +6,7 @@ use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, Proo
 use crate::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
 use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use crate::services::anoncreds::helpers::*;
 
 
@@ -103,7 +103,7 @@ impl Verifier {
             let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
             let predicates_for_credential = Verifier::_get_predicates_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
 
-            let credential_schema = build_credential_schema(&schema.attr_names)?;
+            let credential_schema = build_credential_schema(&schema.attr_names.0)?;
             let sub_proof_request = build_sub_proof_request(&attrs_for_credential, &predicates_for_credential)?;
 
             let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;

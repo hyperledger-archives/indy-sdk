@@ -125,7 +125,7 @@ impl UpdateProfileDataBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(res)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateConfigsResponse(res)) => Ok(()),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConfigsResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConfigsResponse"))
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use rust_base58::{FromBase58, ToBase58};
 use crate::services::crypto::DEFAULT_CRYPTO_TYPE;
 

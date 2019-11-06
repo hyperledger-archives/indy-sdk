@@ -10,7 +10,7 @@ extern crate libc;
 use self::libc::c_char;
 use std::ffi::CStr;
 use std::ffi::CString;
-use std::sync::{Arc, Mutex, Once, ONCE_INIT};
+use std::sync::{Arc, Mutex, Once};
 use std::time::Duration;
 use std::{str, mem, thread};
 //use futures::Future;

@@ -20,7 +20,7 @@ pub fn encode(s: &str ) -> VcxResult<String> {
                 Ok(s) => Ok(s.to_string()),
                 Err(err) => {
                     warn!("{}", BIG_NUMBER_ERROR.message);
-                    return Err(VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot encode string: {}", err)))
+                    Err(VcxError::from_msg(VcxErrorKind::EncodeError, format!("Cannot encode string: {}", err)))
                 }
             }
         }
