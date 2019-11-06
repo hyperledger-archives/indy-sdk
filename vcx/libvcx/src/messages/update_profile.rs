@@ -61,6 +61,15 @@ impl UpdateProfileDataBuilder {
         Ok(self)
     }
 
+    pub fn webhook_url(&mut self, url: &Option<String>) -> VcxResult<&mut Self> {
+        if let Some(x) = url {
+            validation::validate_url(x)?;
+            let config = ConfigOption { name: "notificationWebhookUrl".to_string(), value: x.to_string() };
+            self.configs.push(config);
+        }
+        Ok(self)
+    }
+
     pub fn use_public_did(&mut self, did: &Option<String>) -> VcxResult<&mut Self> {
         if let Some(x) = did {
             let config = ConfigOption { name: "publicDid".to_string(), value: x.to_string() };

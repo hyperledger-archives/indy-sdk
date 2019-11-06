@@ -604,8 +604,11 @@ impl Agent {
     fn handle_update_configs(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, (), Error> {
         for config_option in msg.configs {
             match config_option.name.as_str() {
-                "name" | "logoUrl" => self.configs.insert(config_option.name, config_option.value),
-                _ => continue
+                "name" | "logoUrl" | "notificationWebhookUrl" => self.configs.insert(config_option.name, config_option.value),
+                _ => {
+                    warn!("Agent was trying to set up unsupported agent configuration option {}", config_option.name.as_str());
+                    continue
+                }
             };
         }
 

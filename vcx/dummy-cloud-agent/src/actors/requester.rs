@@ -10,6 +10,10 @@ use actors::RemoteMsg;
 use futures::*;
 use utils::futures::*;
 
+lazy_static! {
+    pub static ref REQWEST_CLIENT : reqwest::r#async::Client = reqwest::r#async::Client::new();
+}
+
 pub struct Requester {
     client: Client<HttpConnector>,
 }

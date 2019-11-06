@@ -1,6 +1,7 @@
 import {CredentialDef} from "../dist/src/api/credential-def";
 import {IssuerCredential} from "../dist/src/api/issuer-credential";
 import {Proof} from "../dist/src/api/proof";
+import {vcxUpdateWebhookUrl} from "../dist/src/api/utils";
 import {Connection} from "../dist/src/api/connection";
 import {Schema} from "./../dist/src/api/schema";
 import {StateType, ProofState} from "../dist/src";
@@ -8,8 +9,11 @@ import sleepPromise from 'sleep-promise'
 import * as demoCommon from "./common";
 import {getRandomInt} from "./common";
 import logger from './logger'
+import url from 'url'
+import isPortReachable from 'is-port-reachable';
 
 const utime = Math.floor(new Date() / 1000);
+const optionalWebhook =  "http://localhost:7209/notifications/faber"
 
 const provisionConfig = {
     'agency_url': 'http://localhost:8080',
@@ -18,7 +22,7 @@ const provisionConfig = {
     'wallet_name': `node_vcx_demo_faber_wallet_${utime}`,
     'wallet_key': '123',
     'payment_method': 'null',
-    'enterprise_seed': '000000000000000000000000Trustee1'
+    'enterprise_seed': '000000000000000000000000Trustee1',
 };
 
 const logLevel = 'error';
@@ -40,6 +44,13 @@ async function run() {
         provisionConfig['wallet_type'] = 'postgres_storage'
         provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
         provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
+    }
+    
+    if (await isPortReachable(url.parse(optionalWebhook).port, {host: url.parse(optionalWebhook).hostname})) {
+        provisionConfig['webhook_url'] = optionalWebhook
+        logger.info(`Webhook server available! Will use webhook: ${optionalWebhook}`)
+    } else {
+        logger.info(`Webhook url will not be used`)
     }
 
     logger.info(`#1 Config used to provision agent in agency: ${JSON.stringify(provisionConfig, null, 2)}`);
@@ -82,7 +93,7 @@ async function run() {
 
     logger.info("#5 Create a connection to alice and print out the invite details");
     const connectionToAlice = await Connection.create({id: 'alice'});
-    await connectionToAlice.connect('{"use_public_did": true}');
+    await connectionToAlice.connect('{}');
     await connectionToAlice.updateState();
     const details = await connectionToAlice.inviteDetails(false);
     logger.info("\n\n**invite details**");
@@ -138,7 +149,7 @@ async function run() {
     await credentialForAlice.updateState();
     credential_state = await credentialForAlice.getState();
     while (credential_state !== StateType.Accepted) {
-        sleepPromise(2000);
+        await sleepPromise(2000);
         await credentialForAlice.updateState();
         credential_state = await credentialForAlice.getState();
     }
@@ -163,7 +174,7 @@ async function run() {
     logger.info("#21 Poll agency and wait for alice to provide proof");
     let proofState = await proof.getState();
     while (proofState !== StateType.Accepted) {
-        sleepPromise(2000);
+        await sleepPromise(2000);
         await proof.updateState();
         proofState = await proof.getState();
     }
@@ -178,6 +189,5 @@ async function run() {
         logger.info("Could not verify proof")
     }
 }
-
 
 run();
