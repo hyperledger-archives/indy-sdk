@@ -3,20 +3,18 @@ pub mod states;
 pub mod messages;
 pub mod holder;
 
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 use api::VcxStateType;
 use error::prelude::*;
 use messages::get_message::Message;
-use messages::update_message::{UIDsByConn, update_messages};
 use object_cache::ObjectCache;
 use v3::messages::{A2AMessage, MessageId};
-use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::handlers::connection;
 use v3::handlers::issuance::issuer::IssuerSM;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::holder::HolderSM;
 use utils::error;
-use messages::MessageStatusCode;
+use v3::messages::issuance::credential_offer::CredentialOffer;
 
 lazy_static! {
     pub static ref ISSUE_CREDENTIAL_MAP: ObjectCache<IssuerSM> = Default::default();
@@ -96,10 +94,9 @@ pub fn get_issuer_source_id(handle: u32) -> VcxResult<String> {
 
 // Holder
 
-pub fn holder_create_credential(credential_offer: &str, source_id: &str) -> VcxResult<u32> {
-    let cred_offer: CredentialOffer = ::serde_json::from_str(credential_offer)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
-    let holder = HolderSM::new(cred_offer, source_id.to_string());
+pub fn holder_create_credential(credential_offer: CredentialOffer, source_id: &str) -> VcxResult<u32> {
+    let holder = HolderSM::new(credential_offer, source_id.to_string());
+
     HOLD_CREDENTIAL_MAP.add(holder)
         .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
 }
@@ -144,15 +141,17 @@ pub fn holder_get_status(credential_handle: u32) -> VcxResult<u32> {
 
 pub fn get_credential_offer_messages(conn_handle: u32) -> VcxResult<Vec<CredentialOffer>> {
     let messages = connection::get_messages(conn_handle)?;
-    let (uids, msgs): (HashMap<MessageId, String>, Vec<CredentialOffer>) = messages.into_iter().filter_map(|(uid, a2a_message)| {
-        match &a2a_message {
-            A2AMessage::CredentialOffer(ref credential) => {
-                Some((uid, credential.clone()))
+    let (uids, msgs): (HashMap<MessageId, String>, Vec<CredentialOffer>) = messages
+        .into_iter()
+        .filter_map(|(uid, a2a_message)| {
+            match a2a_message {
+                A2AMessage::CredentialOffer(credential_offer) => {
+                    Some((uid, credential_offer.id.clone(), credential_offer))
+                }
+                _ => None
             }
-            _ => None
-        }
-    }).fold((HashMap::new(), vec![]), |(mut uids, mut msgs), (uid, msg)| {
-        uids.insert(msg.id.clone(), uid);
+        }).fold((HashMap::new(), vec![]), |(mut uids, mut msgs), (uid, id, msg)| {
+        uids.insert(id, uid);
         msgs.push(msg);
         (uids, msgs)
     });

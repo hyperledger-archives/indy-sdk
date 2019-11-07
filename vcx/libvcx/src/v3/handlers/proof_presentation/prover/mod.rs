@@ -7,11 +7,13 @@ use object_cache::ObjectCache;
 use utils::error;
 use error::prelude::*;
 
+use v3::messages::proof_presentation::presentation_request::PresentationRequest;
+
 lazy_static! {
     pub static ref PROVER_MAP: ObjectCache<Prover>  = Default::default();
 }
 
-pub fn create_proof(source_id: &str, presentation_request: &str) -> VcxResult<u32> {
+pub fn create_presentation(source_id: &str, presentation_request: PresentationRequest) -> VcxResult<u32> {
     let prover: Prover = Prover::create(source_id, presentation_request)?;
     PROVER_MAP.add(prover)
 }
@@ -75,11 +77,11 @@ pub fn is_valid_handle(handle: u32) -> bool {
     PROVER_MAP.has_handle(handle)
 }
 
-pub fn get_presentation_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
+pub fn get_presentation_request(connection_handle: u32, msg_id: &str) -> VcxResult<PresentationRequest> {
     Prover::get_presentation_request(connection_handle, msg_id)
 }
 
-pub fn get_presentation_request_messages(connection_handle: u32, match_name: Option<&str>) -> VcxResult<String> {
+pub fn get_presentation_request_messages(connection_handle: u32, match_name: Option<&str>) -> VcxResult<Vec<PresentationRequest>> {
     Prover::get_presentation_request_messages(connection_handle, match_name)
 }
 

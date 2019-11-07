@@ -1,3 +1,4 @@
+pub mod agent;
 pub mod states;
 pub mod connection;
 
@@ -126,9 +127,8 @@ pub fn release(handle: u32) -> VcxResult<()> {
 }
 
 pub fn delete_connection(handle: u32) -> VcxResult<u32> {
-    CONNECTION_MAP.get_mut(handle, |connection| {
-        connection.delete()?;
-        Ok(error::SUCCESS.code_num)
+    CONNECTION_MAP.get(handle, |connection| {
+        connection.delete()
     })
         .or(Err(VcxError::from(VcxErrorKind::DeleteConnection)))
         .and(release(handle))

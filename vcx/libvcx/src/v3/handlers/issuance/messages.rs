@@ -1,4 +1,3 @@
-use v3::messages::MessageId;
 use v3::messages::ack::Ack;
 use v3::messages::error::ProblemReport;
 use v3::messages::issuance::credential_proposal::CredentialProposal;
@@ -7,7 +6,6 @@ use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential::Credential;
 use v3::messages::A2AMessage;
 
-use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum CredentialIssuanceMessage {

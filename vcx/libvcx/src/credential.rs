@@ -20,6 +20,7 @@ use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 use utils::error;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use error::prelude::*;
+use std::convert::TryInto;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credential>  = Default::default();
@@ -370,7 +371,17 @@ pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u
 
     // Initiate connection of new format -- redirect to v3 folder
     if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
-        return v3::handlers::issuance::holder_create_credential(offer, source_id)
+        let cred_offer: CredentialOffer =
+            ::serde_json::from_str::<Vec<::serde_json::Value>>(offer)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?
+                .pop()
+                .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))
+                .and_then(|message|
+                    ::serde_json::from_value(message)
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))
+                )?;
+
+        return v3::handlers::issuance::holder_create_credential(cred_offer.try_into()?, source_id)
     }
 
     let mut new_credential = _credential_create(source_id);
@@ -492,7 +503,16 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
     trace!("Credential::get_credential_offer_messages >>> connection_handle: {}", connection_handle);
 
     if v3::handlers::connection::CONNECTION_MAP.has_handle(connection_handle) {
-        let msgs = v3::handlers::issuance::get_credential_offer_messages(connection_handle)?;
+        let credential_offers = v3::handlers::issuance::get_credential_offer_messages(connection_handle)?;
+
+        let msgs: Vec<Vec<::serde_json::Value>> = credential_offers
+            .into_iter()
+            .map(|credential_offer| credential_offer.try_into())
+            .collect::<VcxResult<Vec<CredentialOffer>>>()?
+            .into_iter()
+            .map(|msg| vec![json!(msg)])
+            .collect();
+
         return serde_json::to_string(&msgs).
             map_err(|err| {
                 VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot serialize Offers")

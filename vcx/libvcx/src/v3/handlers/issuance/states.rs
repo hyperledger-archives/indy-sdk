@@ -28,13 +28,13 @@ impl IssuerState {
         }
     }
 
-    pub fn get_last_id(&self) -> Option<String> {
+    pub fn get_thread_id(&self) -> Option<String> {
         match self {
             IssuerState::Initial(state) => None,
-            IssuerState::OfferSent(state) => Some(state.last_id.0.clone()),
-            IssuerState::RequestReceived(state) => None,
-            IssuerState::CredentialSent(state) => Some(state.last_id.0.clone()),
-            IssuerState::Finished(state) => None
+            IssuerState::OfferSent(state) => Some(state.thread_id.clone()),
+            IssuerState::RequestReceived(state) => Some(state.thread_id.clone()),
+            IssuerState::CredentialSent(state) => Some(state.thread_id.clone()),
+            IssuerState::Finished(state) => Some(state.thread_id.clone()),
         }
     }
 }
@@ -65,7 +65,7 @@ pub struct OfferSentState {
     pub rev_reg_id: Option<String>,
     pub tails_file: Option<String>,
     pub connection_handle: u32,
-    pub last_id: MessageId
+    pub thread_id: String
 }
 
 #[derive(Debug)]
@@ -75,18 +75,20 @@ pub struct RequestReceivedState {
     pub rev_reg_id: Option<String>,
     pub tails_file: Option<String>,
     pub connection_handle: u32,
-    pub request: CredentialRequest
+    pub request: CredentialRequest,
+    pub thread_id: String
 }
 
 #[derive(Debug)]
 pub struct CredentialSentState {
     pub connection_handle: u32,
-    pub last_id: MessageId
+    pub thread_id: String
 }
 
 #[derive(Debug)]
 pub struct FinishedState {
-    pub cred_id: Option<String>
+    pub cred_id: Option<String>,
+    pub thread_id: String
 }
 
 impl From<(InitialState, String, u32, MessageId)> for OfferSentState {
@@ -98,7 +100,7 @@ impl From<(InitialState, String, u32, MessageId)> for OfferSentState {
             rev_reg_id: state.rev_reg_id,
             tails_file: state.tails_file,
             connection_handle,
-            last_id: sent_id
+            thread_id: sent_id.0,
         }
     }
 }
@@ -107,7 +109,8 @@ impl From<InitialState> for FinishedState {
     fn from(state: InitialState) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {
-            cred_id: None
+            cred_id: None,
+            thread_id: String::new(),
         }
     }
 }
@@ -121,7 +124,8 @@ impl From<(OfferSentState, CredentialRequest)> for RequestReceivedState {
             rev_reg_id: state.rev_reg_id,
             tails_file: state.tails_file,
             connection_handle: state.connection_handle,
-            request
+            request,
+            thread_id: state.thread_id,
         }
     }
 }
@@ -131,34 +135,37 @@ impl From<(RequestReceivedState, MessageId)> for CredentialSentState {
         trace!("SM is now in CredentialSent state");
         CredentialSentState {
             connection_handle: state.connection_handle,
-            last_id: sent_id
+            thread_id: state.thread_id,
         }
     }
 }
 
 impl From<OfferSentState> for FinishedState {
-    fn from(_state: OfferSentState) -> Self {
+    fn from(state: OfferSentState) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {
-            cred_id: None
+            cred_id: None,
+            thread_id: state.thread_id,
         }
     }
 }
 
 impl From<RequestReceivedState> for FinishedState {
-    fn from(_state: RequestReceivedState) -> Self {
+    fn from(state: RequestReceivedState) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {
-            cred_id: None
+            cred_id: None,
+            thread_id: state.thread_id,
         }
     }
 }
 
 impl From<CredentialSentState> for FinishedState {
-    fn from(_state: CredentialSentState) -> Self {
+    fn from(state: CredentialSentState) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {
-            cred_id: None
+            cred_id: None,
+            thread_id: state.thread_id,
         }
     }
 }
@@ -179,10 +186,10 @@ impl HolderState {
         }
     }
 
-    pub fn get_last_id(&self) -> Option<String> {
+    pub fn get_thread_id(&self) -> Option<String> {
         match self {
-            HolderState::OfferReceived(state) => None,
-            HolderState::RequestSent(state) => Some(state.last_id.0.clone()),
+            HolderState::OfferReceived(state) => Some(state.thread_id.clone()),
+            HolderState::RequestSent(state) => Some(state.thread_id.clone()),
             HolderState::Finished(state) => None
         }
     }
@@ -193,18 +200,20 @@ pub struct RequestSentState {
     pub req_meta: String,
     pub cred_def_json: String,
     pub connection_handle: u32,
-    pub last_id: MessageId
+    pub thread_id: String
 }
 
 #[derive(Debug)]
 pub struct OfferReceivedState {
-    pub offer: CredentialOffer
+    pub offer: CredentialOffer,
+    pub thread_id: String
 }
 
 impl OfferReceivedState {
     pub fn new(offer: CredentialOffer) -> Self {
         OfferReceivedState {
-            offer
+            thread_id: offer.id.0.clone(),
+            offer,
         }
     }
 }
@@ -222,7 +231,7 @@ impl From<(OfferReceivedState, String, String, u32, MessageId)> for RequestSentS
             req_meta,
             cred_def_json,
             connection_handle,
-            last_id
+            thread_id: state.thread_id
         }
     }
 }

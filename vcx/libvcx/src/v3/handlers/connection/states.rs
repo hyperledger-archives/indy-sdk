@@ -1,8 +1,5 @@
-use messages::update_message::{UIDsByConn, update_messages as update_messages_status};
-use messages::MessageStatusCode;
-use messages::get_message::{Message, get_connection_messages};
 
-use v3::messages::connection::agent_info::AgentInfo;
+use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{Response, SignedResponse};
@@ -10,17 +7,10 @@ use v3::messages::connection::problem_report::{ProblemReport, ProblemCode};
 use v3::messages::connection::remote_info::RemoteConnectionInfo;
 use v3::messages::connection::ping::Ping;
 use v3::messages::ack::Ack;
-use v3::messages::A2AMessage;
-
-use v3::utils::encryption_envelope::EncryptionEnvelope;
 
 use std::collections::HashMap;
 use v3::messages::MessageId;
 
-use connection::create_agent_keys;
-use utils::httpclient;
-use utils::libindy::signus::create_my_did;
-use settings;
 use messages::thread::Thread;
 use error::prelude::*;
 
@@ -150,7 +140,7 @@ impl From<(RespondedState, Ping)> for CompleteState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Messages {
+pub enum DidExchangeMessages {
     SendInvitation(),
     SendExchangeRequest(),
     InvitationReceived(Invitation),
@@ -180,7 +170,7 @@ impl InvitedState {
             .set_thread(Thread::new().set_thid(request.id.0.clone()))
             .encode(&prev_agent_info.pw_vk)?;
 
-        send_message(&signed_response.to_a2a_message(), &RemoteConnectionInfo::from(request.clone()), &new_agent_info.pw_vk)?;
+        new_agent_info.send_message(&signed_response.to_a2a_message(), &RemoteConnectionInfo::from(request.clone()))?;
 
         Ok((signed_response, new_agent_info))
     }
@@ -194,7 +184,7 @@ impl RequestedState {
         let response: Response = response.decode(&remote_vk)?;
 
         let ack = Ack::create().set_thread(response.thread.clone());
-        send_message(&ack.to_a2a_message(), &RemoteConnectionInfo::from(response.clone()), &agent_info.pw_vk)?;
+        agent_info.send_message(&ack.to_a2a_message(), &RemoteConnectionInfo::from(response.clone()))?;
 
         Ok(response)
     }
@@ -247,7 +237,7 @@ impl DidExchangeSM {
         }
     }
 
-    pub fn step(self, message: Messages) -> VcxResult<DidExchangeSM> {
+    pub fn step(self, message: DidExchangeMessages) -> VcxResult<DidExchangeSM> {
         trace!("DidExchangeStateSM::step >>> message: {:?}", message);
 
         let DidExchangeSM { source_id, mut agent_info, state } = self;
@@ -257,7 +247,7 @@ impl DidExchangeSM {
                 match state {
                     DidExchangeState::Null(state) => {
                         match message {
-                            Messages::SendInvitation() => {
+                            DidExchangeMessages::SendInvitation() => {
                                 agent_info = agent_info.create_agent()?;
 
                                 let invite: Invitation = Invitation::create()
@@ -275,7 +265,7 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Invited(state) => {
                         match message {
-                            Messages::ExchangeRequestReceived(request) => {
+                            DidExchangeMessages::ExchangeRequestReceived(request) => {
                                 match state.handle_connection_request(&request, &agent_info) {
                                     Ok((response, new_agent_info)) => {
                                         let prev_agent_info = agent_info.clone();
@@ -288,12 +278,12 @@ impl DidExchangeSM {
                                             .set_explain(err.to_string())
                                             .set_thread(Thread::new().set_thid(request.id.0.clone()));
 
-                                        send_message(&problem_report.to_a2a_message(), &RemoteConnectionInfo::from(request), &agent_info.pw_vk)?;
+                                        agent_info.send_message(&problem_report.to_a2a_message(), &RemoteConnectionInfo::from(request))?;
                                         ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
                                     }
                                 }
                             }
-                            Messages::ProblemReportReceived(problem_report) => {
+                            DidExchangeMessages::ProblemReportReceived(problem_report) => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
                             }
                             _ => {
@@ -306,20 +296,20 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Responded(state) => {
                         match message {
-                            Messages::AckReceived(ack) => {
+                            DidExchangeMessages::AckReceived(ack) => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ack).into()))
                             }
-                            Messages::PingReceived(ping) => {
+                            DidExchangeMessages::PingReceived(ping) => {
                                 if ping.response_requested {
                                     let ping = Ping::create().set_thread(
                                         ping.thread.clone()
                                             .unwrap_or(Thread::new().set_thid(ping.id.0.clone())));
-                                    send_message(&ping.to_a2a_message(), &state.remote_info, &agent_info.pw_vk)?;
+                                    agent_info.send_message(&ping.to_a2a_message(), &state.remote_info)?;
                                 }
 
                                 ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping).into()))
                             }
-                            Messages::ProblemReportReceived(problem_report) => {
+                            DidExchangeMessages::ProblemReportReceived(problem_report) => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
                             }
                             _ => {
@@ -336,7 +326,7 @@ impl DidExchangeSM {
                 match state {
                     DidExchangeState::Null(state) => {
                         match message {
-                            Messages::InvitationReceived(invitation) => {
+                            DidExchangeMessages::InvitationReceived(invitation) => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Invited((state, invitation).into()))
                             }
                             _ => {
@@ -346,7 +336,7 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Invited(state) => {
                         match message {
-                            Messages::SendExchangeRequest() => {
+                            DidExchangeMessages::SendExchangeRequest() => {
                                 agent_info = agent_info.create_agent()?;
 
                                 let request = Request::create()
@@ -355,10 +345,10 @@ impl DidExchangeSM {
                                     .set_service_endpoint(agent_info.agency_endpoint()?)
                                     .set_keys(agent_info.recipient_keys(), agent_info.routing_keys()?);
 
-                                send_message(&request.to_a2a_message(), &RemoteConnectionInfo::from(state.invitation.clone()), &agent_info.pw_vk)?;
+                                agent_info.send_message(&request.to_a2a_message(), &RemoteConnectionInfo::from(state.invitation.clone()))?;
                                 ActorDidExchangeState::Invitee(DidExchangeState::Requested((state, request).into()))
                             }
-                            Messages::ProblemReportReceived(problem_report) => {
+                            DidExchangeMessages::ProblemReportReceived(problem_report) => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report).into()))
                             }
                             _ => {
@@ -368,7 +358,7 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Requested(state) => {
                         match message {
-                            Messages::ExchangeResponseReceived(response) => {
+                            DidExchangeMessages::ExchangeResponseReceived(response) => {
                                 match state.handle_connection_response(response, &agent_info) {
                                     Ok(response) => {
                                         ActorDidExchangeState::Invitee(DidExchangeState::Completed((state, response).into()))
@@ -379,12 +369,12 @@ impl DidExchangeSM {
                                             .set_explain(err.to_string())
                                             .set_thread(Thread::new().set_thid(state.request.id.0.clone()));
 
-                                        send_message(&problem_report.to_a2a_message(), &state.remote_info, &agent_info.pw_vk)?;
+                                        agent_info.send_message(&problem_report.to_a2a_message(), &state.remote_info)?;
                                         ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
                                     }
                                 }
                             }
-                            Messages::ProblemReportReceived(problem_report) => {
+                            DidExchangeMessages::ProblemReportReceived(problem_report) => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report).into()))
                             }
                             _ => {
@@ -466,13 +456,6 @@ impl DidExchangeSM {
         }
     }
 
-    pub fn send_message(&self, message: &A2AMessage) -> VcxResult<()> {
-        let remote_connection_info = self.remote_connection_info()
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get Remote Connection information"))?;
-
-        send_message(message, &remote_connection_info, &self.agent_info.pw_vk)
-    }
-
     pub fn add_pending_messages(&mut self, messages: HashMap<MessageId, String>) {
         match self.state {
             ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref mut state)) |
@@ -495,72 +478,6 @@ impl DidExchangeSM {
         };
         Ok(())
     }
-}
-
-impl AgentInfo {
-    pub fn create_agent(&self) -> VcxResult<AgentInfo> {
-        let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
-        let (pw_did, pw_vk) = create_my_did(None, method_name.as_ref().map(String::as_str))?;
-
-        /*
-            Create User Pairwise Agent in old way.
-            Send Messages corresponding to V2 Protocol to avoid code changes on Agency side.
-        */
-        let (agent_did, agent_vk) = create_agent_keys("", &pw_did, &pw_vk)?;
-
-        Ok(AgentInfo { pw_did, pw_vk, agent_did, agent_vk })
-    }
-
-    fn agency_endpoint(&self) -> VcxResult<String> {
-        settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)
-            .map(|str| format!("{}/agency/msg", str))
-    }
-
-    fn routing_keys(&self) -> VcxResult<Vec<String>> {
-        let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
-        Ok(vec![self.agent_vk.to_string(), agency_vk])
-    }
-
-    fn recipient_keys(&self) -> Vec<String> {
-        vec![self.pw_vk.to_string()]
-    }
-
-    pub fn update_message_status(&self, uid: String) -> VcxResult<()> {
-        let messages_to_update = vec![UIDsByConn {
-            pairwise_did: self.pw_did.clone(),
-            uids: vec![uid]
-        }];
-
-        update_messages_status(MessageStatusCode::Reviewed, messages_to_update)
-    }
-
-    pub fn get_messages(&self) -> VcxResult<HashMap<String, A2AMessage>> {
-        let messages = get_connection_messages(&self.pw_did,
-                                               &self.pw_vk,
-                                               &self.agent_did,
-                                               &self.agent_vk,
-                                               None,
-                                               Some(vec![MessageStatusCode::Received]))?;
-
-
-        let mut a2a_messages: HashMap<String, A2AMessage> = HashMap::new();
-
-        for message in messages {
-            a2a_messages.insert(message.uid.clone(), self.decode_message(&message)?);
-        }
-
-        Ok(a2a_messages)
-    }
-
-    pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
-        EncryptionEnvelope::open(&self.pw_vk, message.payload()?)
-    }
-}
-
-fn send_message(message: &A2AMessage, remote_connection_info: &RemoteConnectionInfo, pw_vk: &str) -> VcxResult<()> {
-    let envelope = EncryptionEnvelope::create(&message, &pw_vk, &remote_connection_info)?;
-    httpclient::post_message(&envelope.0, &remote_connection_info.service_endpoint)?;
-    Ok(())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

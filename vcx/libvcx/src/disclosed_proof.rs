@@ -24,6 +24,7 @@ use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
 
 use v3::handlers::connection as v3_connection;
 use v3::handlers::proof_presentation::prover as v3_prover;
+use std::convert::TryInto;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProof>  = Default::default();
@@ -478,7 +479,10 @@ fn handle_err(err: VcxError) -> VcxError {
 pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
     // Initiate proof of new format -- redirect to v3 folder
     if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
-        return v3_prover::create_proof(source_id, proof_req);
+        let proof_request_message: ProofRequestMessage = serde_json::from_str(proof_req)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize PresentationRequest: {}", err)))?;
+
+        return v3_prover::create_presentation(source_id, proof_request_message.try_into()?);
     }
 
     trace!("create_proof >>> source_id: {}, proof_req: {}", source_id, proof_req);
@@ -595,7 +599,11 @@ pub fn is_valid_handle(handle: u32) -> bool {
 //TODO one function with credential
 pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
     if v3_connection::CONNECTION_MAP.has_handle(connection_handle) {
-        return v3_prover::get_presentation_request(connection_handle, msg_id);
+        let presentation_request = v3_prover::get_presentation_request(connection_handle, msg_id)?;
+        let proof_request: ProofRequestMessage = presentation_request.try_into()?;
+
+        return serde_json::to_string_pretty(&proof_request)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize message: {}", err)))
     }
 
     trace!("get_proof_request >>> connection_handle: {}, msg_id: {}", connection_handle, msg_id);
@@ -627,7 +635,17 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
 //TODO one function with credential
 pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> VcxResult<String> {
     if v3_connection::CONNECTION_MAP.has_handle(connection_handle) {
-        return v3_prover::get_presentation_request_messages(connection_handle, match_name);
+        let presentation_requests = v3_prover::get_presentation_request_messages(connection_handle, match_name)?;
+
+        let msgs: Vec<ProofRequestMessage> = presentation_requests
+            .into_iter()
+            .map(|presentation_request| presentation_request.try_into())
+            .collect::<VcxResult<Vec<ProofRequestMessage>>>()?;
+
+        return serde_json::to_string(&msgs).
+            map_err(|err| {
+                VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot serialize ProofRequestMessage")
+            });
     }
 
     trace!("get_proof_request_messages >>> connection_handle: {}, match_name: {:?}", connection_handle, match_name);

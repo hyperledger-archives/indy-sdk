@@ -230,6 +230,8 @@ impl ProverSM {
 
     pub fn source_id(&self) -> String { self.source_id.clone() }
 
+    pub fn thread_id(&self) -> String { self.presentation_request().id.0.clone() }
+
     pub fn state(&self) -> u32 {
         match self.state {
             ProverState::Initiated(_) => 1,

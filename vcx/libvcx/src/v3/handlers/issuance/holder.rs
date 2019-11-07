@@ -1,25 +1,21 @@
 use api::VcxStateType;
+
 use v3::handlers::issuance::states::{HolderState, OfferReceivedState};
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
-use v3::messages::issuance::{
-    self,
-    credential_offer::CredentialOffer,
-    credential_request::CredentialRequest,
-};
-use v3::handlers::connection::update_message_status;
+use v3::messages::issuance::credential::Credential;
+use v3::messages::issuance::credential_offer::CredentialOffer;
+use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::error::ProblemReport;
-use v3::messages::attachment::Attachment;
-use credential::Credential;
-use utils::error::Error;
-use error::{VcxError, VcxErrorKind, VcxResult};
-use messages::update_message::{UIDsByConn, update_messages};
-use v3::handlers::connection::{send_message, get_messages, get_pw_did, decode_message};
+use v3::handlers::connection::{send_message, get_messages, get_pw_did, update_message_status};
 use v3::messages::A2AMessage;
 use v3::messages::ack::{Ack, AckStatus};
-use messages::thread::Thread;
-use messages::MessageStatusCode;
-use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
 use v3::handlers::connection;
+
+use messages::thread::Thread;
+use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
+use error::prelude::*;
+
+use credential;
 
 pub struct HolderSM {
     state: HolderState,
@@ -47,8 +43,10 @@ impl HolderSM {
     }
 
     pub fn fetch_message(&self) -> VcxResult<Option<A2AMessage>> {
+        if self.is_terminal_state() { return Ok(None) }
+
         let conn_handle = self.state.get_connection_handle();
-        let last_id = self.state.get_last_id();
+        let thread_id = self.state.get_thread_id();
         let messages = get_messages(conn_handle)?;
 
         let res: Option<(String, A2AMessage)> = messages.into_iter()
@@ -62,7 +60,7 @@ impl HolderSM {
                     }
                     _ => None
                 };
-                if thid == last_id {
+                if thid == thread_id {
                     Some((uid, a2a_message))
                 } else {
                     None
@@ -195,7 +193,7 @@ fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<Option<Strin
     Ok(rev_reg_id)
 }
 
-fn _store_credential(credential: &issuance::credential::Credential,
+fn _store_credential(credential: &Credential,
                      req_meta: &str, cred_def_json: &str) -> VcxResult<String> {
     let credential_json = credential.credentials_attach.content()?;
     let rev_reg_id = _parse_rev_reg_id_from_credential(&credential_json)?;
@@ -218,6 +216,6 @@ fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxRes
     let cred_offer = offer.offers_attach.content()?;
     let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
     let (req, req_meta, cred_def_id, cred_def_json) =
-        Credential::create_credential_request(&cred_def_id, &my_did, &cred_offer)?;
+        credential::Credential::create_credential_request(&cred_def_id, &my_did, &cred_offer)?;
     Ok((CredentialRequest::create().set_requests_attach(req)?, req_meta, cred_def_json))
 }

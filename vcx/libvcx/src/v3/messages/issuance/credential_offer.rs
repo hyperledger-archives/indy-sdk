@@ -4,6 +4,10 @@ use v3::messages::attachment::{Attachments, Attachment, Json, AttachmentEncoding
 use v3::messages::mime_type::MimeType;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
+use issuer_credential::CredentialOffer as CredentialOfferV1;
+use messages::payload::PayloadKinds;
+use std::collections::HashMap;
+use std::convert::TryInto;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialOffer {
@@ -29,6 +33,11 @@ impl CredentialOffer {
         }
     }
 
+    pub fn set_id(mut self, id: String) -> Self {
+        self.id = MessageId(id);
+        self
+    }
+
     pub fn set_comment(mut self, comment: String) -> Self {
         self.comment = comment;
         self
@@ -40,6 +49,11 @@ impl CredentialOffer {
         Ok(self)
     }
 
+    pub fn set_credential_preview_data(mut self, credential_preview: CredentialPreviewData) -> VcxResult<CredentialOffer> {
+        self.credential_preview = credential_preview;
+        Ok(self)
+    }
+
     pub fn add_credential_preview_data(mut self, name: &str, value: &str, mime_type: MimeType) -> VcxResult<CredentialOffer> {
         self.credential_preview = self.credential_preview.add_value(name, value, mime_type)?;
         Ok(self)
@@ -48,5 +62,59 @@ impl CredentialOffer {
     pub fn set_thread(mut self, thread: Thread) -> Self {
         self.thread = Some(thread);
         self
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct IndyCredentialOffer {
+    pub schema_id: String,
+    pub cred_def_id: String,
+}
+
+impl TryInto<CredentialOffer> for CredentialOfferV1 {
+    type Error = VcxError;
+
+    fn try_into(self) -> Result<CredentialOffer, Self::Error> {
+        let mut credential_preview = CredentialPreviewData::new();
+
+        for (key, value) in self.credential_attrs {
+            credential_preview = credential_preview.add_value(&key, &value.as_str().unwrap_or_default(), MimeType::Plain)?;
+        }
+
+        CredentialOffer::create()
+            .set_id(self.thread_id.unwrap_or_default())
+            .set_credential_preview_data(credential_preview)?
+            .set_offers_attach(&self.libindy_offer)
+    }
+}
+
+impl TryInto<CredentialOfferV1> for CredentialOffer {
+    type Error = VcxError;
+
+    fn try_into(self) -> Result<CredentialOfferV1, Self::Error> {
+        let indy_cred_offer_json = self.offers_attach.content()?;
+        let indy_cred_offer: IndyCredentialOffer = ::serde_json::from_str(&indy_cred_offer_json)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Indy Offer: {:?}", err)))?;
+
+        let mut credential_attrs: ::serde_json::Map<String, ::serde_json::Value> = ::serde_json::Map::new();
+
+        for attr in self.credential_preview.attributes {
+            credential_attrs.insert(attr.name.clone(), ::serde_json::Value::String(attr.value.clone()));
+        }
+
+        Ok(CredentialOfferV1 {
+            msg_type: PayloadKinds::CredOffer.name().to_string(),
+            version: String::from("0.1"),
+            to_did: String::new(),
+            from_did: String::new(),
+            credential_attrs,
+            schema_seq_no: 0,
+            claim_name: String::new(),
+            claim_id: String::new(),
+            msg_ref_id: None,
+            cred_def_id: indy_cred_offer.cred_def_id,
+            libindy_offer: indy_cred_offer_json,
+            thread_id: Some(self.id.0.clone()),
+        })
     }
 }

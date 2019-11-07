@@ -77,13 +77,13 @@ pub fn send_presentation_request(handle: u32, connection_handle: u32) -> VcxResu
 
 pub fn generate_presentation_request_msg(handle: u32) -> VcxResult<String> {
     VERIFIER_MAP.get(handle, |verifier| {
-        verifier.generate_proof_request_msg()
+        verifier.generate_presentation_request_msg()
     })
 }
 
 pub fn get_presentation(handle: u32) -> VcxResult<String> {
     VERIFIER_MAP.get(handle, |verifier| {
-        verifier.get_proof()
+        verifier.get_presentation()
     })
 }
 

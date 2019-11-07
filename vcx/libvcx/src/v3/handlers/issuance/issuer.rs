@@ -1,22 +1,16 @@
 use api::VcxStateType;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::states::{IssuerState, InitialState};
-use v3::handlers::connection::{send_message, get_messages, get_pw_did, decode_message};
-use messages::update_message::{UIDsByConn, update_messages};
+use v3::handlers::connection::{send_message, get_messages};
 use v3::handlers::connection::update_message_status;
 use v3::messages::{A2AMessage, MessageId};
-use v3::messages::issuance::{
-    credential::Credential,
-    credential_request::CredentialRequest,
-    credential_offer::CredentialOffer
-};
+use v3::messages::issuance::credential_offer::CredentialOffer;
+use v3::messages::issuance::credential_request::CredentialRequest;
+use v3::messages::issuance::credential::Credential;
 use v3::messages::error::ProblemReport;
-use v3::messages::attachment::Attachment;
 use v3::messages::mime_type::MimeType;
 use error::{VcxResult, VcxError, VcxErrorKind};
 use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer};
-use credential_def::{get_rev_reg_id, get_tails_file};
-use messages::MessageStatusCode;
 use messages::thread::Thread;
 use issuer_credential::encode_attributes;
 
@@ -49,12 +43,10 @@ impl IssuerSM {
     }
 
     pub fn fetch_messages(&self) -> VcxResult<Option<A2AMessage>> {
-        if let IssuerState::Finished(_) = self.state {
-            return Ok(None)
-        }
+        if self.is_terminal_state() { return Ok(None); }
 
         let conn_handle = self.state.get_connection_handle();
-        let last_id = self.state.get_last_id();
+        let thread_id = self.state.get_thread_id();
         let messages = get_messages(conn_handle)?;
 
         let res: Option<(String, A2AMessage)> = messages.into_iter()
@@ -77,7 +69,7 @@ impl IssuerSM {
                     }
                     _ => None
                 };
-                if thid == last_id {
+                if thid == thread_id {
                     Some((uid, a2a_message))
                 } else {
                     None
@@ -194,6 +186,13 @@ impl IssuerSM {
             }
         };
         Ok(IssuerSM::step(state, source_id))
+    }
+
+    pub fn is_terminal_state(&self) -> bool {
+        match self.state {
+            IssuerState::Finished(_) => true,
+            _ => false
+        }
     }
 }
 

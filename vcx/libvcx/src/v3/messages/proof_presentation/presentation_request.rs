@@ -6,6 +6,7 @@ use v3::messages::attachment::{
     AttachmentEncoding
 };
 use error::prelude::*;
+use std::convert::TryInto;
 
 pub use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, ProofRequestVersion};
 
@@ -54,8 +55,6 @@ impl PresentationRequest {
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize PresentationRequest: {}", err)))
     }
 }
-
-use std::convert::TryInto;
 
 impl TryInto<PresentationRequest> for ProofRequestMessage {
     type Error = VcxError;

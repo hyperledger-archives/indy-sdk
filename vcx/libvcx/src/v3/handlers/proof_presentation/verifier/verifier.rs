@@ -45,9 +45,13 @@ impl Verifier {
 
     pub fn get_source_id(&self) -> String { self.state.source_id() }
 
-    pub fn state(&self) -> u32 { self.state.state() }
+    pub fn state(&self) -> u32 {
+        trace!("Verifier::state >>>");
+        self.state.state()
+    }
 
     pub fn presentation_state(&self) -> u32 {
+        trace!("Verifier::presentation_state >>>");
         self.state.presentation_status()
     }
 
@@ -75,13 +79,14 @@ impl Verifier {
     }
 
     pub fn update_state_with_message(mut self, message: &str) -> VcxResult<Verifier> {
+        trace!("Verifier::update_state_with_message >>> message: {:?}", message);
+
         let message: Message = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
 
         let connection_handle = self.state.connection_handle()?;
 
-        let mut messages: HashMap<String, A2AMessage> = HashMap::new();
-        messages.insert(message.uid.clone(), connection::decode_message(connection_handle, message)?);
+        let messages: HashMap<String, A2AMessage> = map!{ message.uid.clone() => connection::decode_message(connection_handle, message)? };
 
         if let Some((uid, message)) = self.find_message_to_handle(messages) {
             self = self.handle_message(message)?;
@@ -92,9 +97,7 @@ impl Verifier {
     }
 
     pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, VerifierMessages)> {
-        trace!("Verifier::get_message_to_handle >>> messages: {:?}", messages);
-
-        let thid = &self.state.presentation_request().map(|request| request.id.0.clone()).unwrap_or_default();
+        trace!("Verifier::find_message_to_handle >>> messages: {:?}", messages);
 
         for (uid, message) in messages {
             match self.state.state {
@@ -104,17 +107,17 @@ impl Verifier {
                 VerifierState::PresentationRequestSent(ref state) => {
                     match message {
                         A2AMessage::Presentation(presentation) => {
-                            if presentation.thread.is_reply(&thid) {
+                            if presentation.thread.is_reply(&self.state.thread_id()) {
                                 return Some((uid, VerifierMessages::VerifyPresentation(presentation)));
                             }
                         }
                         A2AMessage::PresentationProposal(proposal) => {
-                            if proposal.thread.is_reply(&thid) {
+                            if proposal.thread.is_reply(&self.state.thread_id()) {
                                 return Some((uid, VerifierMessages::PresentationProposalReceived(proposal)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&thid) {
+                            if problem_report.thread.is_reply(&self.state.thread_id()) {
                                 return Some((uid, VerifierMessages::PresentationRejectReceived(problem_report)));
                             }
                         }
@@ -131,7 +134,7 @@ impl Verifier {
     }
 
     pub fn handle_message(self, message: VerifierMessages) -> VcxResult<Verifier> {
-        trace!("Prover::handle_message >>> message: {:?}", message);
+        trace!("Verifier::handle_message >>> message: {:?}", message);
         self.step(message)
     }
 
@@ -145,8 +148,8 @@ impl Verifier {
         self.step(VerifierMessages::SendPresentationRequest(connection_handle))
     }
 
-    pub fn generate_proof_request_msg(&self) -> VcxResult<String> {
-        trace!("Verifier::generate_proof_request_msg >>>");
+    pub fn generate_presentation_request_msg(&self) -> VcxResult<String> {
+        trace!("Verifier::generate_presentation_request_msg >>>");
 
         let proof_request: ProofRequestMessage = self.state.presentation_request()?.try_into()?;
 
@@ -154,8 +157,8 @@ impl Verifier {
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
-    pub fn get_proof(&self) -> VcxResult<String> {
-        trace!("Verifier::get_proof >>>");
+    pub fn get_presentation(&self) -> VcxResult<String> {
+        trace!("Verifier::get_presentation >>>");
 
         let proof: ProofMessage = self.state.presentation()?.try_into()?;
 
