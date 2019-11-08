@@ -90,3 +90,9 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
         Ok(prover.get_source_id().clone())
     })
 }
+
+pub fn get_presentation_status(handle: u32) -> VcxResult<u32> {
+    PROVER_MAP.get(handle, |prover| {
+        Ok(prover.presentation_status())
+    })
+}

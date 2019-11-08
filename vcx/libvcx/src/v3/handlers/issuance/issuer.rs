@@ -3,7 +3,7 @@ use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::states::{IssuerState, InitialState};
 use v3::handlers::connection::{send_message, get_messages};
 use v3::handlers::connection::update_message_status;
-use v3::messages::{A2AMessage, MessageId};
+use v3::messages::A2AMessage;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential::Credential;
@@ -13,7 +13,9 @@ use error::{VcxResult, VcxError, VcxErrorKind};
 use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer};
 use messages::thread::Thread;
 use issuer_credential::encode_attributes;
+use v3::messages::status::Status;
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct IssuerSM {
     state: IssuerState,
     source_id: String
@@ -85,7 +87,7 @@ impl IssuerSM {
         }
     }
 
-    pub fn get_status(&self) -> VcxStateType {
+    pub fn get_state(&self) -> VcxStateType {
         match self.state {
             IssuerState::Initial(_) => VcxStateType::VcxStateInitialized,
             IssuerState::OfferSent(_) => VcxStateType::VcxStateOfferSent,
@@ -104,10 +106,8 @@ impl IssuerSM {
                     let cred_offer_msg = CredentialOffer::create()
                         .set_offers_attach(&cred_offer)?;
                     let cred_offer_msg = _append_credential_preview(cred_offer_msg, &state_data.credential_json)?;
-                    let id = cred_offer_msg.id.clone();
-                    let msg = A2AMessage::CredentialOffer(cred_offer_msg);
-                    send_message(connection_handle, msg)?;
-                    IssuerState::OfferSent((state_data, cred_offer, connection_handle, id).into())
+                    send_message(connection_handle, cred_offer_msg.to_a2a_message())?;
+                    IssuerState::OfferSent((state_data, cred_offer, connection_handle, cred_offer_msg.id).into())
                 }
                 _ => {
                     warn!("Credential Issuance can only start on issuer side with init");
@@ -119,16 +119,15 @@ impl IssuerSM {
                     IssuerState::RequestReceived((state_data, request).into())
                 }
                 CredentialIssuanceMessage::CredentialProposal(proposal, connection_handle) => {
-                    let msg = A2AMessage::CommonProblemReport(
-                        ProblemReport::create()
-                            .set_comment(String::from("CredentialProposal is not supported"))
-                            .set_thread(Thread::new().set_thid(proposal.id.0))
-                    );
-                    send_message(connection_handle, msg)?;
-                    IssuerState::Finished(state_data.into())
+                    let problem_report = ProblemReport::create()
+                        .set_comment(String::from("CredentialProposal is not supported"))
+                        .set_thread(Thread::new().set_thid(state_data.thread_id.clone()));
+
+                    send_message(connection_handle, problem_report.to_a2a_message())?;
+                    IssuerState::Finished((state_data, problem_report).into())
                 }
-                CredentialIssuanceMessage::ProblemReport(_problem_report) => {
-                    IssuerState::Finished(state_data.into())
+                CredentialIssuanceMessage::ProblemReport(problem_report) => {
+                    IssuerState::Finished((state_data, problem_report).into())
                 }
                 _ => {
                     warn!("In this state Credential Issuance can accept only Request, Proposal and Problem Report");
@@ -140,26 +139,21 @@ impl IssuerSM {
                     let credential_msg = _create_credential(&state_data.request, &state_data.rev_reg_id, &state_data.tails_file, &state_data.offer, &state_data.cred_data);
                     let conn_handle = state_data.connection_handle;
                     let thread = state_data.request.thread.clone();
-                    let (msg, state) = match credential_msg {
+                    match credential_msg {
                         Ok(credential_msg) => {
-                            let id = MessageId(state_data.request.thread.thid.clone().unwrap_or_default());
                             let credential_msg = credential_msg.set_thread(thread);
-                            let msg = A2AMessage::Credential(
-                                credential_msg
-                            );
-                            (msg, IssuerState::Finished(state_data.into()))
+                            send_message(conn_handle, credential_msg.to_a2a_message())?;
+                            IssuerState::Finished(state_data.into())
                         }
                         Err(err) => {
-                            let msg = A2AMessage::CommonProblemReport(
-                                ProblemReport::create()
-                                    .set_comment(err.to_string())
-                                    .set_thread(thread)
-                            );
-                            (msg, IssuerState::Finished(state_data.into()))
+                            let problem_report = ProblemReport::create()
+                                .set_comment(err.to_string())
+                                .set_thread(thread);
+
+                            send_message(conn_handle, problem_report.to_a2a_message())?;
+                            IssuerState::Finished((state_data, problem_report).into())
                         }
-                    };
-                    send_message(conn_handle, msg)?;
-                    state
+                    }
                 }
                 _ => {
                     warn!("In this state Credential Issuance can accept only CredentialSend");
@@ -186,6 +180,13 @@ impl IssuerSM {
             }
         };
         Ok(IssuerSM::step(state, source_id))
+    }
+
+    pub fn credential_status(&self) -> u32 {
+        match self.state {
+            IssuerState::Finished(ref state) => state.status.code(),
+            _ => Status::Undefined.code()
+        }
     }
 
     pub fn is_terminal_state(&self) -> bool {

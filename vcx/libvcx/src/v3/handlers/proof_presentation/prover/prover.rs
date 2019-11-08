@@ -37,7 +37,7 @@ impl Prover {
 
     pub fn state(&self) -> u32 { self.state.state() }
 
-    pub fn presentation_state(&self) -> u32 {
+    pub fn presentation_status(&self) -> u32 {
         trace!("Prover::presentation_state >>>");
         self.state.presentation_status()
     }

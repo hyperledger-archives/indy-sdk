@@ -14,7 +14,9 @@ use v3::handlers::issuance::issuer::IssuerSM;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::holder::HolderSM;
 use utils::error;
+use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
+use messages::ObjectWithVersion;
 
 lazy_static! {
     pub static ref ISSUE_CREDENTIAL_MAP: ObjectCache<IssuerSM> = Default::default();
@@ -23,6 +25,9 @@ lazy_static! {
 lazy_static! {
     pub static ref HOLD_CREDENTIAL_MAP: ObjectCache<HolderSM> = Default::default();
 }
+
+const SERIALIZE_VERSION: &'static str = "2.0";
+
 
 // Issuer
 
@@ -70,7 +75,7 @@ pub fn issuer_update_status(credential_handle: u32, msg: Option<String>) -> VcxR
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
     ISSUE_CREDENTIAL_MAP.get(handle, |obj| {
-        Ok(obj.get_status() as u32)
+        Ok(obj.get_state() as u32)
     })
 }
 
@@ -82,7 +87,7 @@ pub fn send_credential(credential_handle: u32, connection_handle: u32) -> VcxRes
 
 pub fn issuer_get_status(credential_handle: u32) -> VcxResult<u32> {
     ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
-        Ok(issuer_sm.get_status() as u32)
+        Ok(issuer_sm.get_state() as u32)
     })
 }
 
@@ -90,6 +95,28 @@ pub fn get_issuer_source_id(handle: u32) -> VcxResult<String> {
     ISSUE_CREDENTIAL_MAP.get(handle, |issuer_sm| {
         Ok(issuer_sm.get_source_id())
     })
+}
+
+pub fn get_issuer_credential_status(handle: u32) -> VcxResult<u32> {
+    ISSUE_CREDENTIAL_MAP.get(handle, |issuer_sm| {
+        Ok(issuer_sm.credential_status())
+    })
+}
+
+pub fn issuer_to_string(handle: u32) -> VcxResult<String> {
+    ISSUE_CREDENTIAL_MAP.get(handle, |issuer_sm| {
+        ObjectWithVersion::new(SERIALIZE_VERSION, issuer_sm.to_owned())
+            .serialize()
+            .map_err(|err| err.extend("Cannot serialize IssuerSM"))
+    })
+}
+
+pub fn issuer_from_string(issuer_data: &str) -> VcxResult<u32> {
+    let issuer: IssuerSM = ObjectWithVersion::deserialize(issuer_data)
+        .map(|obj: ObjectWithVersion<IssuerSM>| obj.data)
+        .map_err(|err| err.extend("Cannot deserialize IssuerSM"))?;
+
+    ISSUE_CREDENTIAL_MAP.add(issuer)
 }
 
 // Holder
@@ -135,8 +162,21 @@ pub fn holder_update_status(credential_handle: u32, msg: Option<String>) -> VcxR
 
 pub fn holder_get_status(credential_handle: u32) -> VcxResult<u32> {
     HOLD_CREDENTIAL_MAP.get(credential_handle, |holder_sm| {
-        Ok(holder_sm.get_status() as u32)
+        Ok(holder_sm.get_state() as u32)
     })
+}
+
+pub fn get_credential_offer_message(connection_handle: u32, msg_id: &str) -> VcxResult<CredentialOffer> {
+    let message = connection::get_message_by_id(connection_handle, msg_id.to_string())?;
+
+    let (id, credential_offer): (MessageId, CredentialOffer) = match message {
+        A2AMessage::CredentialOffer(credential_offer) => (credential_offer.id.clone(), credential_offer),
+        _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Message has different type"))
+    };
+
+    connection::add_pending_messages(connection_handle, map! { id => msg_id.to_string() })?;
+
+    Ok(credential_offer)
 }
 
 pub fn get_credential_offer_messages(conn_handle: u32) -> VcxResult<Vec<CredentialOffer>> {
@@ -161,10 +201,36 @@ pub fn get_credential_offer_messages(conn_handle: u32) -> VcxResult<Vec<Credenti
     Ok(msgs)
 }
 
-
 pub fn get_holder_source_id(handle: u32) -> VcxResult<String> {
     HOLD_CREDENTIAL_MAP.get(handle, |holder_sm| {
         Ok(holder_sm.get_source_id())
     })
 }
 
+pub fn holder_get_credential(handle: u32) -> VcxResult<(String, Credential)> {
+    HOLD_CREDENTIAL_MAP.get(handle, |holder_sm| {
+        holder_sm.get_credential()
+    })
+}
+
+pub fn get_holder_credential_status(handle: u32) -> VcxResult<u32> {
+    HOLD_CREDENTIAL_MAP.get(handle, |holder_sm| {
+        Ok(holder_sm.credential_status())
+    })
+}
+
+pub fn holder_to_string(handle: u32) -> VcxResult<String> {
+    HOLD_CREDENTIAL_MAP.get(handle, |holder_sm| {
+        ObjectWithVersion::new(SERIALIZE_VERSION, holder_sm.to_owned())
+            .serialize()
+            .map_err(|err| err.extend("Cannot serialize HolderSM"))
+    })
+}
+
+pub fn holder_from_string(holder_data: &str) -> VcxResult<u32> {
+    let holder: HolderSM = ObjectWithVersion::deserialize(holder_data)
+        .map(|obj: ObjectWithVersion<HolderSM>| obj.data)
+        .map_err(|err| err.extend("Cannot deserialize HolderSM"))?;
+
+    HOLD_CREDENTIAL_MAP.add(holder)
+}

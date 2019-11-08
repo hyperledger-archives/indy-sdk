@@ -1,5 +1,4 @@
 use v3::messages::{MessageId, A2AMessage};
-use v3::messages::error::ProblemReport;
 use messages::thread::Thread;
 use v3::messages::attachment::{
     Attachments,
@@ -58,23 +57,6 @@ impl Presentation {
     pub fn to_json(&self) -> VcxResult<String> {
         serde_json::to_string(self)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize Presentation: {}", err)))
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum PresentationStatus {
-    Undefined,
-    Verified,
-    Invalid(ProblemReport),
-}
-
-impl PresentationStatus {
-    pub fn status(&self) -> u32 {
-        match self {
-            PresentationStatus::Undefined => 0,
-            PresentationStatus::Verified => 1,
-            PresentationStatus::Invalid(_) => 2,
-        }
     }
 }
 

@@ -10,6 +10,7 @@ pub mod error;
 pub mod forward;
 pub mod attachment;
 pub mod mime_type;
+pub mod status;
 
 #[allow(unused)] //FIXME:
 pub mod issuance;

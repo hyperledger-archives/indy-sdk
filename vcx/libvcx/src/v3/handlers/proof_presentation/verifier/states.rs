@@ -1,8 +1,9 @@
 use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
 use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
-use v3::messages::proof_presentation::presentation::{Presentation, PresentationStatus};
+use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::error::ProblemReport;
 use v3::messages::ack::Ack;
+use v3::messages::status::Status;
 use messages::thread::Thread;
 use proof::Proof;
 
@@ -56,7 +57,7 @@ pub struct FinishedState {
     connection_handle: u32,
     presentation_request: PresentationRequest,
     presentation: Option<Presentation>,
-    presentation_state: PresentationStatus
+    status: Status
 }
 
 impl From<(InitialState, PresentationRequest, u32)> for PresentationRequestSentState {
@@ -73,7 +74,7 @@ impl From<(PresentationRequestSentState, Presentation)> for FinishedState {
             connection_handle: state.connection_handle,
             presentation_request: state.presentation_request,
             presentation: Some(presentation),
-            presentation_state: PresentationStatus::Verified,
+            status: Status::Success,
         }
     }
 }
@@ -85,7 +86,7 @@ impl From<(PresentationRequestSentState, ProblemReport)> for FinishedState {
             connection_handle: state.connection_handle,
             presentation_request: state.presentation_request,
             presentation: None,
-            presentation_state: PresentationStatus::Invalid(problem_report),
+            status: Status::Failed(problem_report),
         }
     }
 }
@@ -203,13 +204,8 @@ impl VerifierSM {
 
     pub fn presentation_status(&self) -> u32 {
         match self.state {
-            VerifierState::Finished(ref state) =>
-                match state.presentation_state {
-                    PresentationStatus::Undefined => 0,
-                    PresentationStatus::Verified => 1,
-                    PresentationStatus::Invalid(_) => 2,
-                },
-            _ => 0
+            VerifierState::Finished(ref state) => state.status.code(),
+            _ => Status::Undefined.code()
         }
     }
 

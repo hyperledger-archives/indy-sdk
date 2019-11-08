@@ -1,9 +1,11 @@
 use v3::handlers::connection;
 use v3::messages::proof_presentation::presentation_request::{PresentationRequestData, PresentationRequest};
-use v3::messages::proof_presentation::presentation::{Presentation, PresentationStatus};
+use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::ack::Ack;
 use v3::messages::error::ProblemReport;
+use v3::messages::status::Status;
 use messages::thread::Thread;
+
 
 use disclosed_proof::DisclosedProof;
 
@@ -75,7 +77,7 @@ pub struct FinishedState {
     connection_handle: u32,
     presentation_request: PresentationRequest,
     presentation: Presentation,
-    status: PresentationStatus
+    status: Status
 }
 
 impl From<(InitialState, Presentation)> for PresentationPreparedState {
@@ -116,7 +118,7 @@ impl From<(PresentationPreparationFailedState, u32)> for FinishedState {
             presentation_request: state.presentation_request,
             presentation: Presentation::create(),
             connection_handle,
-            status: PresentationStatus::Invalid(state.problem_report),
+            status: Status::Failed(state.problem_report),
         }
     }
 }
@@ -128,7 +130,7 @@ impl From<(PresentationSentState, Ack)> for FinishedState {
             connection_handle: state.connection_handle,
             presentation_request: state.presentation_request,
             presentation: state.presentation,
-            status: PresentationStatus::Verified,
+            status: Status::Success,
         }
     }
 }
@@ -140,7 +142,7 @@ impl From<(PresentationSentState, ProblemReport)> for FinishedState {
             connection_handle: state.connection_handle,
             presentation_request: state.presentation_request,
             presentation: state.presentation,
-            status: PresentationStatus::Invalid(problem_report),
+            status: Status::Failed(problem_report),
         }
     }
 }
@@ -254,13 +256,8 @@ impl ProverSM {
 
     pub fn presentation_status(&self) -> u32 {
         match self.state {
-            ProverState::Finished(ref state) =>
-                match state.status {
-                    PresentationStatus::Undefined => 0,
-                    PresentationStatus::Verified => 1,
-                    PresentationStatus::Invalid(_) => 2,
-                },
-            _ => 0
+            ProverState::Finished(ref state) => state.status.code(),
+            _ => Status::Undefined.code()
         }
     }
 

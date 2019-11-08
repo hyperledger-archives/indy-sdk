@@ -44,9 +44,9 @@ pub fn get_state(handle: u32) -> u32 {
     }).unwrap_or(0)
 }
 
-pub fn get_proof_state(handle: u32) -> VcxResult<u32> {
+pub fn get_presentation_status(handle: u32) -> VcxResult<u32> {
     VERIFIER_MAP.get(handle, |p| {
-        Ok(p.presentation_state())
+        Ok(p.presentation_status())
     })
 }
 

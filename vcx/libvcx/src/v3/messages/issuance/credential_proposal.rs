@@ -53,4 +53,7 @@ impl CredentialProposal {
         self
     }
 
+    pub fn to_a2a_message(&self) -> A2AMessage {
+        A2AMessage::CredentialProposal(self.clone()) // TODO: THINK how to avoid clone
+    }
 }

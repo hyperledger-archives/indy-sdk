@@ -40,4 +40,8 @@ impl CredentialRequest {
         self.thread = thread;
         self
     }
+
+    pub fn to_a2a_message(&self) -> A2AMessage {
+        A2AMessage::CredentialRequest(self.clone()) // TODO: THINK how to avoid clone
+    }
 }

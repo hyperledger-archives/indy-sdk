@@ -495,7 +495,7 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 
 pub fn get_proof_state(handle: u32) -> VcxResult<u32> {
     if v3_verifier::VERIFIER_MAP.has_handle(handle) {
-        return v3_verifier::get_proof_state(handle);
+        return v3_verifier::get_presentation_status(handle);
     }
 
     PROOF_MAP.get(handle, |p| {

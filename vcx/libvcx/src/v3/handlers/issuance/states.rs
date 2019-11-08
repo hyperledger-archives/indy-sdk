@@ -1,6 +1,9 @@
 use v3::messages::MessageId;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential_offer::CredentialOffer;
+use v3::messages::issuance::credential::Credential;
+use v3::messages::status::Status;
+use v3::messages::error::ProblemReport;
 
 // Possible Transitions:
 // Initial -> OfferSent
@@ -8,7 +11,7 @@ use v3::messages::issuance::credential_offer::CredentialOffer;
 // OfferSent -> CredentialSent
 // OfferSent -> Finished
 // CredentialSent -> Finished
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum IssuerState {
     Initial(InitialState),
     OfferSent(OfferSentState),
@@ -50,7 +53,7 @@ impl InitialState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InitialState {
     pub cred_def_id: String,
     pub credential_json: String,
@@ -58,7 +61,7 @@ pub struct InitialState {
     pub tails_file: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OfferSentState {
     pub offer: String,
     pub cred_data: String,
@@ -68,7 +71,7 @@ pub struct OfferSentState {
     pub thread_id: String
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequestReceivedState {
     pub offer: String,
     pub cred_data: String,
@@ -79,16 +82,17 @@ pub struct RequestReceivedState {
     pub thread_id: String
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CredentialSentState {
     pub connection_handle: u32,
     pub thread_id: String
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FinishedState {
     pub cred_id: Option<String>,
-    pub thread_id: String
+    pub thread_id: String,
+    pub status: Status
 }
 
 impl From<(InitialState, String, u32, MessageId)> for OfferSentState {
@@ -111,6 +115,7 @@ impl From<InitialState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: String::new(),
+            status: Status::Undefined,
         }
     }
 }
@@ -146,6 +151,18 @@ impl From<OfferSentState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
+            status: Status::Undefined,
+        }
+    }
+}
+
+impl From<(OfferSentState, ProblemReport)> for FinishedState {
+    fn from ((state, err): (OfferSentState, ProblemReport)) -> Self {
+        trace!("SM is now in Finished state");
+        FinishedState {
+            cred_id: None,
+            thread_id: state.thread_id,
+            status: Status::Failed(err),
         }
     }
 }
@@ -156,6 +173,18 @@ impl From<RequestReceivedState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
+            status: Status::Success,
+        }
+    }
+}
+
+impl From<(RequestReceivedState, ProblemReport)> for FinishedState {
+    fn from ((state, err): (RequestReceivedState, ProblemReport)) -> Self {
+        trace!("SM is now in Finished state");
+        FinishedState {
+            cred_id: None,
+            thread_id: state.thread_id,
+            status: Status::Failed(err),
         }
     }
 }
@@ -166,11 +195,12 @@ impl From<CredentialSentState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
+            status: Status::Success,
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum HolderState {
     OfferReceived(OfferReceivedState),
     RequestSent(RequestSentState),
@@ -195,7 +225,7 @@ impl HolderState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequestSentState {
     pub req_meta: String,
     pub cred_def_json: String,
@@ -203,7 +233,7 @@ pub struct RequestSentState {
     pub thread_id: String
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OfferReceivedState {
     pub offer: CredentialOffer,
     pub thread_id: String
@@ -219,13 +249,15 @@ impl OfferReceivedState {
 }
 
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FinishedHolderState {
-    pub cred_id: Option<String>
+    pub cred_id: Option<String>,
+    pub credential: Option<Credential>,
+    pub status: Status,
 }
 
-impl From<(OfferReceivedState, String, String, u32, MessageId)> for RequestSentState {
-    fn from((state, req_meta, cred_def_json, connection_handle, last_id): (OfferReceivedState, String, String, u32, MessageId)) -> Self {
+impl From<(OfferReceivedState, String, String, u32)> for RequestSentState {
+    fn from((state, req_meta, cred_def_json, connection_handle): (OfferReceivedState, String, String, u32)) -> Self {
         trace!("SM is now in RequestSent state");
         RequestSentState {
             req_meta,
@@ -236,20 +268,35 @@ impl From<(OfferReceivedState, String, String, u32, MessageId)> for RequestSentS
     }
 }
 
-impl From<(RequestSentState, Option<String>)> for FinishedHolderState {
-    fn from((_, cred_id): (RequestSentState, Option<String>)) -> Self {
+impl From<(RequestSentState, String, Credential)> for FinishedHolderState {
+    fn from((_, cred_id, credential): (RequestSentState, String, Credential)) -> Self {
         trace!("SM is now in Finished state");
         FinishedHolderState {
-            cred_id
+            cred_id: Some(cred_id),
+            credential: Some(credential),
+            status: Status::Success,
         }
     }
 }
 
-impl From<OfferReceivedState> for FinishedHolderState {
-    fn from (_state: OfferReceivedState) -> Self {
+impl From<(RequestSentState, ProblemReport)> for FinishedHolderState {
+    fn from((_, problem_report): (RequestSentState, ProblemReport)) -> Self {
         trace!("SM is now in Finished state");
         FinishedHolderState {
-            cred_id: None
+            cred_id: None,
+            credential: None,
+            status: Status::Failed(problem_report),
+        }
+    }
+}
+
+impl From<(OfferReceivedState, ProblemReport)> for FinishedHolderState {
+    fn from ((_state, problem_report): (OfferReceivedState, ProblemReport)) -> Self {
+        trace!("SM is now in Finished state");
+        FinishedHolderState {
+            cred_id: None,
+            credential: None,
+            status: Status::Failed(problem_report),
         }
     }
 }

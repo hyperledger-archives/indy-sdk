@@ -555,6 +555,10 @@ pub fn get_offer_uid(handle: u32) -> VcxResult<String> {
 }
 
 pub fn get_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
+    if v3::handlers::issuance::ISSUE_CREDENTIAL_MAP.has_handle(handle) {
+        return Err(VcxError::from(VcxErrorKind::NoPaymentInformation))
+    }
+
     ISSUER_CREDENTIAL_MAP.get(handle, |i| {
         i.get_payment_txn()
     })
@@ -659,14 +663,21 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
+    if v3::handlers::issuance::ISSUE_CREDENTIAL_MAP.has_handle(handle) {
+        return v3::handlers::issuance::issuer_to_string(handle);
+    }
+
     ISSUER_CREDENTIAL_MAP.get(handle, |i| {
         i.to_string()
     })
 }
 
 pub fn from_string(credential_data: &str) -> VcxResult<u32> {
-    let schema: IssuerCredential = IssuerCredential::from_str(credential_data)?;
-    ISSUER_CREDENTIAL_MAP.add(schema)
+    if let Ok(credential) = IssuerCredential::from_str(credential_data) {
+        ISSUER_CREDENTIAL_MAP.add(credential)
+    } else {
+        v3::handlers::issuance::issuer_from_string(credential_data)
+    }
 }
 
 pub fn generate_credential_offer_msg(handle: u32, connection_handle: u32) -> VcxResult<(String, String)> {
@@ -703,6 +714,10 @@ pub fn send_credential(handle: u32, connection_handle: u32) -> VcxResult<u32> {
 }
 
 pub fn revoke_credential(handle: u32) -> VcxResult<()> {
+    if v3::handlers::issuance::ISSUE_CREDENTIAL_MAP.has_handle(handle) {
+        return Err(VcxError::from(VcxErrorKind::NotReady))
+    }
+
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
         i.revoke_cred()
     })

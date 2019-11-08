@@ -63,12 +63,10 @@ impl CredentialOffer {
         self.thread = Some(thread);
         self
     }
-}
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct IndyCredentialOffer {
-    pub schema_id: String,
-    pub cred_def_id: String,
+    pub fn to_a2a_message(&self) -> A2AMessage {
+        A2AMessage::CredentialOffer(self.clone()) // TODO: THINK how to avoid clone
+    }
 }
 
 impl TryInto<CredentialOffer> for CredentialOfferV1 {
@@ -93,7 +91,7 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
 
     fn try_into(self) -> Result<CredentialOfferV1, Self::Error> {
         let indy_cred_offer_json = self.offers_attach.content()?;
-        let indy_cred_offer: IndyCredentialOffer = ::serde_json::from_str(&indy_cred_offer_json)
+        let indy_cred_offer: ::serde_json::Value = ::serde_json::from_str(&indy_cred_offer_json)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Indy Offer: {:?}", err)))?;
 
         let mut credential_attrs: ::serde_json::Map<String, ::serde_json::Value> = ::serde_json::Map::new();
@@ -112,7 +110,7 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
             claim_name: String::new(),
             claim_id: String::new(),
             msg_ref_id: None,
-            cred_def_id: indy_cred_offer.cred_def_id,
+            cred_def_id: indy_cred_offer["cred_def_id"].as_str().map(String::from).unwrap_or_default(),
             libindy_offer: indy_cred_offer_json,
             thread_id: Some(self.id.0.clone()),
         })
