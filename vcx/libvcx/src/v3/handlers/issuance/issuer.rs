@@ -3,7 +3,7 @@ use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::states::{IssuerState, InitialState};
 use v3::handlers::connection::{send_message, get_messages};
 use v3::handlers::connection::update_message_status;
-use v3::messages::A2AMessage;
+use v3::messages::a2a::A2AMessage;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential::Credential;

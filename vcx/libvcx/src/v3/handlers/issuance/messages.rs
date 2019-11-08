@@ -4,7 +4,7 @@ use v3::messages::issuance::credential_proposal::CredentialProposal;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential::Credential;
-use v3::messages::A2AMessage;
+use v3::messages::a2a::A2AMessage;
 
 
 #[derive(Debug, Clone)]

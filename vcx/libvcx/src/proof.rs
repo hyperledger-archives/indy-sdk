@@ -229,6 +229,8 @@ impl Proof {
     }
 
     pub fn validate_indy_proof(proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
+        if settings::test_indy_mode_enabled() { return Ok(true); }
+
         Proof::validate_proof_revealed_attributes(&proof_json)?;
 
         let credential_data = get_credential_info(&proof_json)?;

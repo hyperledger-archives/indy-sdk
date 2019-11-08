@@ -4,7 +4,7 @@ use messages::get_message::{Message, get_connection_messages};
 use messages::update_connection::send_delete_connection_message;
 
 use v3::messages::connection::remote_info::RemoteConnectionInfo;
-use v3::messages::A2AMessage;
+use v3::messages::a2a::A2AMessage;
 
 use v3::utils::encryption_envelope::EncryptionEnvelope;
 

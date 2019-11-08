@@ -10,7 +10,7 @@ use error::prelude::*;
 use utils::error;
 
 use v3::handlers::connection::states::*;
-use v3::messages::{A2AMessage, MessageId};
+use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::invite::Invitation;
 
 use std::collections::HashMap;
@@ -163,4 +163,178 @@ pub fn remove_pending_message(handle: u32, id: &MessageId) -> VcxResult<()> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         connection.remove_pending_message(id.clone())
     })
+}
+
+#[cfg(feature = "aries")]
+#[cfg(test)]
+mod test {
+    use super::*;
+    use v3::test::{Faber, Alice};
+    use v3::messages::connection::invite::tests::_invitation;
+    use v3::messages::ack::tests::_ack;
+
+    fn _source_id() -> &'static str {
+        "test connection"
+    }
+
+    fn actor(handle: u32) -> VcxResult<Actor> {
+        CONNECTION_MAP.get(handle, |connection| {
+            Ok(connection.actor())
+        })
+    }
+
+    #[test]
+    fn test_create_connection_works() {
+        let connection_handle = create_connection(_source_id()).unwrap();
+        assert!(CONNECTION_MAP.has_handle(connection_handle));
+        assert_eq!(Actor::Inviter, actor(connection_handle).unwrap());
+        assert_eq!(1, get_state(connection_handle));
+    }
+
+    #[test]
+    fn test_create_connection_with_invite_works() {
+        let connection_handle = create_connection_with_invite(_source_id(), _invitation()).unwrap();
+        assert!(CONNECTION_MAP.has_handle(connection_handle));
+        assert_eq!(Actor::Invitee, actor(connection_handle).unwrap());
+        assert_eq!(2, get_state(connection_handle));
+    }
+
+    #[test]
+    fn test_get_connection_state_works() {
+        let connection_handle = create_connection(_source_id()).unwrap();
+        assert_eq!(1, get_state(connection_handle));
+    }
+
+    #[test]
+    fn test_connection_send_works() {
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        let invite = faber.create_invite();
+        alice.accept_invite(&invite);
+
+        faber.update_state(5);
+        alice.update_state(4);
+        faber.update_state(4);
+
+        let mut uid: String;
+        let message = _ack();
+
+        // Send Message works
+        {
+            faber.activate();
+            send_message(faber.connection_handle, message.to_a2a_message()).unwrap();
+        }
+
+        {
+            // Get Messages works
+            alice.activate();
+
+            let messages = get_messages(alice.connection_handle).unwrap();
+            assert_eq!(1, messages.len());
+
+            uid = messages.keys().next().unwrap().clone();
+            let received_message = messages.values().next().unwrap().clone();
+
+            match received_message {
+                A2AMessage::Ack(received_message) => assert_eq!(message, received_message.clone()),
+                _ => assert!(false)
+            }
+        }
+
+        // Get Message by id works
+        {
+            alice.activate();
+
+            let message = get_message_by_id(alice.connection_handle, uid.clone()).unwrap();
+
+            match message {
+                A2AMessage::Ack(ack) => assert_eq!(_ack(), ack),
+                _ => assert!(false)
+            }
+        }
+
+        // Update Message Status works
+        {
+            alice.activate();
+
+            update_message_status(alice.connection_handle, uid).unwrap();
+            let messages = get_messages(alice.connection_handle).unwrap();
+            assert_eq!(0, messages.len());
+        }
+
+        // Send Generic Message works
+        {
+            faber.activate();
+
+            let generic_message = "some message";
+            send_generic_message(faber.connection_handle, generic_message, "").unwrap();
+
+            alice.activate();
+
+            let messages = get_messages(alice.connection_handle).unwrap();
+            assert_eq!(1, messages.len());
+
+            let uid = messages.keys().next().unwrap().clone();
+            let message = messages.values().next().unwrap().clone();
+
+            match message {
+                A2AMessage::Generic(message) => assert_eq!(generic_message, message),
+                _ => assert!(false)
+            }
+            update_message_status(alice.connection_handle, uid).unwrap();
+        }
+
+        // Pending Message
+        {
+            faber.activate();
+
+            let message = _ack();
+            send_message(faber.connection_handle, message.to_a2a_message()).unwrap();
+
+            alice.activate();
+
+            let messages = get_messages(alice.connection_handle).unwrap();
+            assert_eq!(1, messages.len());
+            let uid = messages.keys().next().unwrap().clone();
+
+            add_pending_messages(alice.connection_handle, map!( message.id.clone() => uid )).unwrap();
+
+            remove_pending_message(alice.connection_handle, &message.id).unwrap();
+
+            let messages = get_messages(alice.connection_handle).unwrap();
+            assert_eq!(0, messages.len());
+        }
+
+        // Helpers
+        {
+            faber.activate();
+
+            get_pw_did(faber.connection_handle).unwrap();
+            get_pw_verkey(faber.connection_handle).unwrap();
+            get_their_pw_verkey(faber.connection_handle).unwrap();
+            get_source_id(faber.connection_handle).unwrap();
+        }
+    }
+
+    #[test]
+    fn test_connection_delete(){
+        let connection_handle = create_connection(_source_id()).unwrap();
+        assert!(CONNECTION_MAP.has_handle(connection_handle));
+
+        release(connection_handle).unwrap();
+        assert!(!CONNECTION_MAP.has_handle(connection_handle));
+    }
+
+    #[test]
+    fn test_connection_serialization_works(){
+        let connection_handle = create_connection(_source_id()).unwrap();
+        assert!(CONNECTION_MAP.has_handle(connection_handle));
+
+        let connection_json = to_string(connection_handle).unwrap();
+        println!("{}", connection_json);
+
+        let connection_handle_2 = from_string(&connection_json).unwrap();
+        assert!(CONNECTION_MAP.has_handle(connection_handle_2));
+    }
 }

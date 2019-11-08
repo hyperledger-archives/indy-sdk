@@ -1,4 +1,4 @@
-use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
+use v3::messages::a2a::{MessageId, A2AMessage};
 use v3::messages::attachment::{
     Attachments,
     Attachment,

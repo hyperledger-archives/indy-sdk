@@ -1,6 +1,6 @@
-use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
+use v3::messages::a2a::{MessageId, A2AMessage};
 use v3::messages::attachment::{Attachments, Attachment, Json, AttachmentEncoding};
-use error::{VcxError, VcxResult, VcxErrorKind};
+use error::VcxResult;
 use messages::thread::Thread;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]

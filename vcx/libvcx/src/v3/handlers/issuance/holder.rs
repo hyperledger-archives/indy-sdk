@@ -7,7 +7,7 @@ use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::error::ProblemReport;
 use v3::handlers::connection::{send_message, get_messages, get_pw_did, update_message_status};
-use v3::messages::A2AMessage;
+use v3::messages::a2a::A2AMessage;
 use v3::messages::ack::Ack;
 use v3::handlers::connection;
 use v3::messages::status::Status;

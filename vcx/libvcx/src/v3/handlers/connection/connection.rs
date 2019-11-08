@@ -3,7 +3,7 @@ use messages::get_message::Message;
 use error::prelude::*;
 
 use v3::handlers::connection::states::*;
-use v3::messages::{A2AMessage, MessageId};
+use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::invite::Invitation;
 use v3::handlers::connection::agent::AgentInfo;
 
@@ -52,10 +52,14 @@ impl Connection {
         }
     }
 
+    pub fn actor(&self) -> Actor {
+        self.state.actor()
+    }
+
     pub fn connect(self) -> VcxResult<Connection> {
         trace!("Connection::connect >>> source_id: {}", self.state.source_id());
 
-        let message = match self.state.actor() {
+        let message = match self.actor() {
             Actor::Inviter => DidExchangeMessages::SendInvitation(),
             Actor::Invitee => DidExchangeMessages::SendExchangeRequest()
         };

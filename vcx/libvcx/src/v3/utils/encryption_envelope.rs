@@ -1,7 +1,7 @@
 use utils::libindy::crypto;
 
 use error::prelude::*;
-use v3::messages::A2AMessage;
+use v3::messages::a2a::A2AMessage;
 use v3::messages::connection::remote_info::RemoteConnectionInfo;
 use v3::messages::forward::Forward;
 
@@ -68,7 +68,8 @@ impl EncryptionEnvelope {
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
 
         let message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))
+            .unwrap_or_else(|_|A2AMessage::Generic(message));
 
         Ok(message)
     }

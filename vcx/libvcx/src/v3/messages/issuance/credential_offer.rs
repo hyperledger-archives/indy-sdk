@@ -1,12 +1,11 @@
-use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
-use v3::messages::issuance::{CredentialPreviewData, CredentialValue};
+use v3::messages::a2a::{MessageId, A2AMessage};
+use v3::messages::issuance::CredentialPreviewData;
 use v3::messages::attachment::{Attachments, Attachment, Json, AttachmentEncoding};
 use v3::messages::mime_type::MimeType;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
 use issuer_credential::CredentialOffer as CredentialOfferV1;
 use messages::payload::PayloadKinds;
-use std::collections::HashMap;
 use std::convert::TryInto;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]

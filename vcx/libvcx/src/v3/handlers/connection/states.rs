@@ -9,7 +9,7 @@ use v3::messages::connection::ping::Ping;
 use v3::messages::ack::Ack;
 
 use std::collections::HashMap;
-use v3::messages::MessageId;
+use v3::messages::a2a::MessageId;
 
 use messages::thread::Thread;
 use error::prelude::*;
@@ -480,7 +480,7 @@ impl DidExchangeSM {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Actor {
     Inviter,
     Invitee

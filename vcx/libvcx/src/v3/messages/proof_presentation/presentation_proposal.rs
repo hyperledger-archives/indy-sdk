@@ -1,4 +1,4 @@
-use v3::messages::MessageId;
+use v3::messages::a2a::MessageId;
 use v3::messages::mime_type::MimeType;
 use messages::thread::Thread;
 

@@ -1,12 +1,12 @@
-use v3::messages::{MessageId, MessageType, A2AMessage, A2AMessageKinds};
+use v3::messages::a2a::{MessageId, A2AMessage};
 use v3::messages::issuance::CredentialPreviewData;
 use v3::messages::mime_type::MimeType;
-use error::{VcxError, VcxResult, VcxErrorKind};
+use error::VcxResult;
 use messages::thread::Thread;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialProposal {
-    #[serde(rename="@id")]
+    #[serde(rename = "@id")]
     pub id: MessageId,
     pub comment: String,
     pub credential_proposal: CredentialPreviewData,

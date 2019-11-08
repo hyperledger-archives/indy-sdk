@@ -8,12 +8,11 @@ use std::collections::HashMap;
 use v3::handlers::proof_presentation::prover::states::{ProverSM, ProverState, ProverMessages};
 
 use v3::handlers::connection;
-use v3::messages::A2AMessage;
+use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 
 use messages::proofs::proof_message::ProofMessage;
 
-use v3::messages::MessageId;
 use std::sync::Mutex;
 
 lazy_static! {

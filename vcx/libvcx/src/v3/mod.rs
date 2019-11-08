@@ -5,26 +5,49 @@ pub mod messages;
 
 #[cfg(feature = "aries")]
 #[cfg(test)]
-mod test {
+pub mod test {
     use rand;
     use rand::Rng;
     use utils::devsetup::tests::{init_plugin, config_with_wallet_handle};
     use messages::agent_utils::connect_register_provision;
     use utils::libindy::wallet::*;
 
-    struct Faber {
-        wallet_name: String,
-        wallet_handle: i32,
-        connection_handle: u32,
-        config: String,
-        schema_handle: u32,
-        cred_def_handle: u32,
-        credential_handle: u32,
-        presentation_handle: u32,
+    pub struct PaymentPlugin {}
+
+    impl PaymentPlugin {
+        pub fn load() {
+            init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
+        }
+    }
+
+    pub struct Pool {}
+
+    impl Pool {
+        pub fn open() -> Pool {
+            ::utils::libindy::pool::tests::open_sandbox_pool();
+            Pool {}
+        }
+    }
+
+    impl Drop for Pool {
+        fn drop(&mut self) {
+            ::utils::libindy::pool::tests::delete_test_pool();
+        }
+    }
+
+    pub struct Faber {
+        pub wallet_name: String,
+        pub wallet_handle: i32,
+        pub connection_handle: u32,
+        pub config: String,
+        pub schema_handle: u32,
+        pub cred_def_handle: u32,
+        pub credential_handle: u32,
+        pub presentation_handle: u32,
     }
 
     impl Faber {
-        fn setup() -> Faber {
+        pub fn setup() -> Faber {
             let wallet_name = "faber_wallet";
 
             let config = json!({
@@ -55,13 +78,13 @@ mod test {
             }
         }
 
-        fn activate(&self) {
+        pub fn activate(&self) {
             ::settings::clear_config();
             ::settings::process_config_string(&self.config, false).unwrap();
             set_wallet_handle(self.wallet_handle);
         }
 
-        fn create_schema(&mut self) {
+        pub fn create_schema(&mut self) {
             self.activate();
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
             let data = r#"["name","date","degree"]"#.to_string();
@@ -71,7 +94,7 @@ mod test {
             self.schema_handle = ::schema::create_and_publish_schema("test_schema", did.clone(), name, version, data).unwrap();
         }
 
-        fn create_credential_definition(&mut self) {
+        pub fn create_credential_definition(&mut self) {
             self.activate();
 
             let schema_id = ::schema::get_schema_id(self.schema_handle).unwrap();
@@ -82,7 +105,7 @@ mod test {
             self.cred_def_handle = ::credential_def::create_and_publish_credentialdef(String::from("test_cred_def"), name, did.clone(), schema_id, tag, String::from("{}")).unwrap();
         }
 
-        fn create_presentation_request(&self) -> u32 {
+        pub fn create_presentation_request(&self) -> u32 {
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
             let requested_attrs = json!([
                 {"name": "name"},
@@ -97,7 +120,7 @@ mod test {
                                   String::from("proof_from_alice")).unwrap()
         }
 
-        fn create_invite(&mut self) -> String {
+        pub fn create_invite(&mut self) -> String {
             self.activate();
             self.connection_handle = ::connection::create_connection("alice").unwrap();
             ::connection::connect(self.connection_handle, None).unwrap();
@@ -107,13 +130,13 @@ mod test {
             ::connection::get_invite_details(self.connection_handle, false).unwrap()
         }
 
-        fn update_state(&self, expected_state: u32) {
+        pub fn update_state(&self, expected_state: u32) {
             self.activate();
             ::connection::update_state(self.connection_handle, None).unwrap();
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
-        fn offer_credential(&mut self) {
+        pub fn offer_credential(&mut self) {
             self.activate();
 
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
@@ -135,7 +158,7 @@ mod test {
             assert_eq!(2, ::issuer_credential::get_state(self.credential_handle).unwrap());
         }
 
-        fn send_credential(&self) {
+        pub fn send_credential(&self) {
             self.activate();
             ::issuer_credential::update_state(self.credential_handle, None).unwrap();
             assert_eq!(4, ::connection::get_state(self.connection_handle)); // TODO: WHY it already sends credential ????
@@ -146,7 +169,7 @@ mod test {
             assert_eq!(::v3::messages::status::Status::Success.code(), ::v3::handlers::issuance::get_issuer_credential_status(self.credential_handle).unwrap());
         }
 
-        fn request_presentation(&mut self) {
+        pub fn request_presentation(&mut self) {
             self.activate();
             self.presentation_handle = self.create_presentation_request();
             assert_eq!(1, ::proof::get_state(self.presentation_handle).unwrap());
@@ -157,7 +180,7 @@ mod test {
             assert_eq!(2, ::proof::get_state(self.presentation_handle).unwrap());
         }
 
-        fn verify_presentation(&self) {
+        pub fn verify_presentation(&self) {
             self.activate();
 
             ::proof::update_state(self.presentation_handle, None).unwrap();
@@ -165,24 +188,24 @@ mod test {
             assert_eq!(::v3::messages::status::Status::Success.code(), ::proof::get_proof_state(self.presentation_handle).unwrap());
         }
 
-        fn teardown(&self) {
+        pub fn teardown(&self) {
             self.activate();
             close_wallet().unwrap();
             delete_wallet(&self.wallet_name, None, None, None).unwrap();
         }
     }
 
-    struct Alice {
-        wallet_name: String,
-        wallet_handle: i32,
-        connection_handle: u32,
-        config: String,
-        credential_handle: u32,
-        presentation_handle: u32,
+    pub struct Alice {
+        pub wallet_name: String,
+        pub wallet_handle: i32,
+        pub connection_handle: u32,
+        pub config: String,
+        pub credential_handle: u32,
+        pub presentation_handle: u32,
     }
 
     impl Alice {
-        fn setup() -> Alice {
+        pub fn setup() -> Alice {
             let wallet_name = "alice_wallet";
 
             let config = json!({
@@ -210,13 +233,13 @@ mod test {
             }
         }
 
-        fn activate(&self) {
+        pub fn activate(&self) {
             ::settings::clear_config();
             ::settings::process_config_string(&self.config, false).unwrap();
             set_wallet_handle(self.wallet_handle);
         }
 
-        fn accept_invite(&mut self, invite: &str) {
+        pub fn accept_invite(&mut self, invite: &str) {
             self.activate();
             self.connection_handle = ::connection::create_connection_with_invite("faber", invite).unwrap();
             ::connection::connect(self.connection_handle, None).unwrap();
@@ -224,13 +247,13 @@ mod test {
             assert_eq!(3, ::connection::get_state(self.connection_handle));
         }
 
-        fn update_state(&self, expected_state: u32) {
+        pub fn update_state(&self, expected_state: u32) {
             self.activate();
             ::connection::update_state(self.connection_handle, None).unwrap();
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
-        fn accept_offer(&mut self) {
+        pub fn accept_offer(&mut self) {
             self.activate();
             let offers = ::credential::get_credential_offer_messages(self.connection_handle).unwrap();
             let offer = ::serde_json::from_str::<Vec<::serde_json::Value>>(&offers).unwrap()[0].clone();
@@ -243,14 +266,14 @@ mod test {
             assert_eq!(2, ::credential::get_state(self.credential_handle).unwrap());
         }
 
-        fn accept_credential(&self) {
+        pub fn accept_credential(&self) {
             self.activate();
             ::credential::update_state(self.credential_handle, None).unwrap();
             assert_eq!(4, ::connection::get_state(self.connection_handle));
             assert_eq!(::v3::messages::status::Status::Success.code(), ::v3::handlers::issuance::get_holder_credential_status(self.credential_handle).unwrap());
         }
 
-        fn send_presentation(&mut self) {
+        pub fn send_presentation(&mut self) {
             self.activate();
             let presentation_requests = ::disclosed_proof::get_proof_request_messages(self.connection_handle, None).unwrap();
             let presentation_request = ::serde_json::from_str::<Vec<::serde_json::Value>>(&presentation_requests).unwrap()[0].clone();
@@ -277,13 +300,23 @@ mod test {
             assert_eq!(2, ::disclosed_proof::get_state(self.presentation_handle).unwrap());
         }
 
-        fn ensure_presentation_verified(&self) {
+        pub fn ensure_presentation_verified(&self) {
             self.activate();
             ::disclosed_proof::update_state(self.presentation_handle, None).unwrap();
             assert_eq!(::v3::messages::status::Status::Success.code(), ::v3::handlers::proof_presentation::prover::get_presentation_status(self.presentation_handle).unwrap());
         }
+    }
 
-        fn teardown(&self) {
+    impl Drop for Faber {
+        fn drop(&mut self) {
+            self.activate();
+            close_wallet().unwrap();
+            delete_wallet(&self.wallet_name, None, None, None).unwrap();
+        }
+    }
+
+    impl Drop for Alice {
+        fn drop(&mut self) {
             self.activate();
             close_wallet().unwrap();
             delete_wallet(&self.wallet_name, None, None, None).unwrap();
@@ -292,8 +325,8 @@ mod test {
 
     #[test]
     fn aries_demo() {
-        init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-        ::utils::libindy::pool::tests::open_sandbox_pool();
+        PaymentPlugin::load();
+        let _pool = Pool::open();
 
         let mut faber = Faber::setup();
         let mut alice = Alice::setup();
@@ -324,11 +357,6 @@ mod test {
         alice.send_presentation();
         faber.verify_presentation();
         alice.ensure_presentation_verified();
-
-        faber.teardown();
-        alice.teardown();
-
-        ::utils::libindy::pool::tests::delete_test_pool();
     }
 }
 

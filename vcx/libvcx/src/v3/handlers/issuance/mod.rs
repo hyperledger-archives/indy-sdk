@@ -8,7 +8,7 @@ use api::VcxStateType;
 use error::prelude::*;
 use messages::get_message::Message;
 use object_cache::ObjectCache;
-use v3::messages::{A2AMessage, MessageId};
+use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::handlers::connection;
 use v3::handlers::issuance::issuer::IssuerSM;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;

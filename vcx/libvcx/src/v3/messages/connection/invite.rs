@@ -1,4 +1,4 @@
-use v3::messages::{A2AMessage, MessageId};
+use v3::messages::a2a::{A2AMessage, MessageId};
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Invitation {

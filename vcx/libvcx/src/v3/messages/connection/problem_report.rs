@@ -1,4 +1,4 @@
-use v3::messages::{MessageId, A2AMessage};
+use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

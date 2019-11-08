@@ -2,7 +2,7 @@ use std::str::from_utf8;
 use serde_json;
 
 use error::{VcxResult, VcxError, VcxErrorKind};
-use v3::messages::MessageId;
+use v3::messages::a2a::MessageId;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Attachments(pub Vec<Attachment>);

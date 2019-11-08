@@ -1,6 +1,5 @@
-use v3::messages::A2AMessage;
+use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::did_doc::*;
-use v3::messages::MessageId;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Request {
