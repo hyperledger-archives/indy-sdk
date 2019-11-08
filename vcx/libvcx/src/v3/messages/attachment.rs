@@ -2,38 +2,63 @@ use std::str::from_utf8;
 use serde_json;
 
 use error::{VcxResult, VcxError, VcxErrorKind};
-use v3::messages::MessageId;
+use v3::messages::a2a::MessageId;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Attachments(pub Vec<Attachment>);
+
+impl Attachments {
+    pub fn new() -> Attachments {
+        Attachments(Vec::new())
+    }
+
+    pub fn get(&self) -> Option<&Attachment> {
+        self.0.get(0)
+    }
+
+    pub fn add(&mut self, attachment: Attachment) {
+        self.0.push(attachment);
+    }
+
+    pub fn content(&self) -> VcxResult<String> {
+        match self.get() {
+            Some(Attachment::JSON(ref attach)) => attach.get_data(),
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "Unsupported Attachment type"))
+        }
+    }
+}
 
 #[serde(tag = "mime-type")]
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Attachment {
     #[serde(rename = "application/json")]
     JSON(Json),
     Blank
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Json {
     #[serde(rename = "@id")]
     id: MessageId,
     data: AttachmentData
 }
 
-pub static ENCODING_BASE64: &str = "base64";
-
 impl Json {
-    pub fn new(json: serde_json::Value, encoding: &str) -> VcxResult<Json> {
+    pub fn new(json: serde_json::Value, encoding: AttachmentEncoding) -> VcxResult<Json> {
         let data: AttachmentData = match encoding {
-            "base64" => {
+            AttachmentEncoding::Base64 => {
                 AttachmentData::Base64(
-                    base64::encode(
-                        &serde_json::to_string(&json)
-                            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Attachment Json".to_string()))?
+                    base64::encode(&
+                        match json {
+                            ::serde_json::Value::Object(obj) => {
+                                serde_json::to_string(&obj)
+                                    .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Attachment Json".to_string()))?
+                            }
+                            ::serde_json::Value::String(str) => str,
+                            val => return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Unsupported Json value: {:?}", val)))
+                        }
                     )
                 )
-            }
-            _ => {
-                return Err(VcxError::from_msg(VcxErrorKind::IOError, "Unknown encoding"))
             }
         };
         Ok(Json {
@@ -50,7 +75,12 @@ impl Json {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub enum AttachmentEncoding {
+    Base64
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AttachmentData {
     #[serde(rename = "base64")]
     Base64(String)

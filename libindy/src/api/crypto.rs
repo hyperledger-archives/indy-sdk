@@ -645,15 +645,14 @@ pub extern fn indy_pack_message(
     let receiver_list = match serde_json::from_str::<Vec<String>>(&receiver_keys) {
         Ok(x) => x,
         Err(_) => {
-            return ErrorCode::CommonInvalidParam4;
+            return IndyError::from_msg(IndyErrorKind::InvalidParam(4), "Invalid RecipientKeys has been passed").into();
         },
     };
 
     //break early and error out if no receivers keys are provided
     if receiver_list.is_empty() {
-        return ErrorCode::CommonInvalidParam4;
+        return IndyError::from_msg(IndyErrorKind::InvalidParam(4), "Empty RecipientKeys has been passed").into();
     }
-
 
     let result = CommandExecutor::instance().send(Command::Crypto(CryptoCommand::PackMessage(
         message,

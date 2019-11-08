@@ -1,10 +1,11 @@
 use utils::libindy::crypto;
 
 use error::prelude::*;
-use v3::messages::A2AMessage;
+use v3::messages::a2a::A2AMessage;
 use v3::messages::connection::remote_info::RemoteConnectionInfo;
 use v3::messages::forward::Forward;
 
+#[derive(Debug)]
 pub struct EncryptionEnvelope(pub Vec<u8>);
 
 impl EncryptionEnvelope {
@@ -21,7 +22,7 @@ impl EncryptionEnvelope {
                             remote_connection_info: &RemoteConnectionInfo) -> VcxResult<Vec<u8>> {
         let message = match message {
             A2AMessage::Generic(message_) => message_.to_string(),
-            message => json!(message).to_string().to_string()
+            message => json!(message).to_string()
         };
 
         let receiver_keys = json!(remote_connection_info.recipient_keys).to_string();
@@ -46,7 +47,7 @@ impl EncryptionEnvelope {
     fn wrap_into_forward(message: Vec<u8>,
                          to: &str,
                          routing_key: &str) -> VcxResult<Vec<u8>> {
-        let message = Forward::new(to.to_string(), message)?;
+        let message = A2AMessage::Forward(Forward::new(to.to_string(), message)?);
 
         let message = json!(message).to_string();
         let receiver_keys = json!(vec![routing_key]).to_string();
@@ -67,7 +68,8 @@ impl EncryptionEnvelope {
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
 
         let message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))
+            .unwrap_or_else(|_|A2AMessage::Generic(message));
 
         Ok(message)
     }
@@ -82,7 +84,24 @@ pub mod tests {
     use utils::libindy::crypto::create_key;
 
     #[test]
-    fn test_encryption_envelope_recipient_only_works() {
+    fn test_encryption_envelope_works_for_no_keys() {
+        let setup = test_setup::key();
+
+        let info = RemoteConnectionInfo {
+            label: _label(),
+            recipient_keys: vec![],
+            routing_keys: vec![],
+            service_endpoint: _service_endpoint(),
+        };
+
+        let message = A2AMessage::Ack(_ack());
+
+        let res = EncryptionEnvelope::create(&message, &setup.key, &info);
+        assert_eq!(res.unwrap_err().kind(), VcxErrorKind::InvalidLibindyParam);
+    }
+
+    #[test]
+    fn test_encryption_envelope_works_for_recipient_only() {
         let setup = test_setup::key();
 
         let info = RemoteConnectionInfo {
@@ -99,7 +118,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_encryption_envelope_works() {
+    fn test_encryption_envelope_works_for_routing_keys() {
         let setup = test_setup::key();
         let key_1 = create_key().unwrap();
         let key_2 = create_key().unwrap();

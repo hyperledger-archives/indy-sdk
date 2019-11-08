@@ -521,6 +521,14 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> VcxResult<Sen
     }
 }
 
+pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str) -> VcxResult<String> {
+    if v3_connection::CONNECTION_MAP.has_handle(connection_handle) {
+        return v3_connection::send_generic_message(connection_handle, msg, msg_options);
+    }
+
+    ::messages::send_message::send_generic_message(connection_handle, &msg, &msg_options)
+}
+
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     if v3_connection::CONNECTION_MAP.has_handle(handle) {
         return v3_connection::update_state(handle, message);

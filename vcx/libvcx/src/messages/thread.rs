@@ -30,4 +30,8 @@ impl Thread {
             .and_modify(|e| *e += 1)
             .or_insert(0);
     }
+
+    pub fn is_reply(&self, id: &str) -> bool {
+        self.thid.clone().unwrap_or_default() == id.to_string()
+    }
 }

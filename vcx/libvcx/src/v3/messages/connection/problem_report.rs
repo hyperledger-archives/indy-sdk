@@ -1,17 +1,18 @@
-use v3::messages::{MessageType, MessageId, A2AMessage, A2AMessageKinds};
+use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProblemReport {
-    #[serde(rename = "@type")]
-    pub msg_type: MessageType,
     #[serde(rename = "@id")]
     pub id: MessageId,
     #[serde(rename = "problem-code")]
-    pub problem_code: ProblemCode,
-    pub explain: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub problem_code: Option<ProblemCode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub explain: Option<String>,
     #[serde(rename = "~l10n")]
-    pub localization: Localization,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub localization: Option<Localization>,
     #[serde(rename = "~thread")]
     pub thread: Thread
 }
@@ -53,12 +54,12 @@ impl ProblemReport {
     }
 
     pub fn set_problem_code(mut self, problem_code: ProblemCode) -> ProblemReport {
-        self.problem_code = problem_code;
+        self.problem_code = Some(problem_code);
         self
     }
 
     pub fn set_explain(mut self, explain: String) -> ProblemReport {
-        self.explain = explain;
+        self.explain = Some(explain);
         self
     }
 
@@ -75,11 +76,10 @@ impl ProblemReport {
 impl Default for ProblemReport {
     fn default() -> ProblemReport {
         ProblemReport {
-            msg_type: MessageType::build(A2AMessageKinds::ConnectionProblemReport),
             id: MessageId::new(),
-            problem_code: ProblemCode::Empty,
-            explain: String::new(),
-            localization: Localization::default(),
+            problem_code: None,
+            explain: None,
+            localization: None,
             thread: Thread::new(),
         }
     }
@@ -110,11 +110,10 @@ pub mod tests {
 
     fn _problem_report() -> ProblemReport {
         ProblemReport {
-            msg_type: MessageType::build(A2AMessageKinds::ConnectionProblemReport),
             id:  _id(),
-            problem_code: _problem_code(),
-            explain: _explain(),
-            localization: Localization::default(),
+            problem_code: Some(_problem_code()),
+            explain: Some(_explain()),
+            localization: None,
             thread: _thread(),
         }
     }

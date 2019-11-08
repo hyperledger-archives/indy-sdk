@@ -1,18 +1,15 @@
-use v3::messages::MessageId;
-use v3::messages::MessageType;
+use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 use std::collections::HashMap;
-use v3::messages::A2AMessageKinds;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProblemReport {
-    #[serde(rename = "@type")]
-    msg_type: MessageType,
     #[serde(rename = "@id")]
     id: MessageId,
     #[serde(rename = "~thread")]
-    pub thread: Option<Thread>,
-    pub description: Description,
+    pub thread: Thread,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<Description>,
     pub who_retries: Option<WhoRetries>,
     #[serde(rename = "tracking-uri")]
     pub tracking_uri: Option<String>,
@@ -24,19 +21,16 @@ pub struct ProblemReport {
     pub noticed_time: Option<String>,
     #[serde(rename = "where")]
     pub location: Option<String>,
-    pub problem_items: Option<HashMap<String, String>>
+    pub problem_items: Option<HashMap<String, String>>,
+    pub comment: Option<String>
 }
 
 impl ProblemReport {
     pub fn create() -> Self {
         ProblemReport {
-            msg_type: MessageType::build(A2AMessageKinds::ProblemReport),
             id: MessageId::new(),
-            thread: None,
-            description: Description {
-                en: None,
-                code: 0
-            },
+            thread: Thread::new(),
+            description: None,
             who_retries: None,
             tracking_uri: None,
             escalation_uri: None,
@@ -44,16 +38,31 @@ impl ProblemReport {
             impact: None,
             noticed_time: None,
             location: None,
-            problem_items: None
+            problem_items: None,
+            comment: None,
         }
     }
 
     pub fn set_description(mut self, code: u32) -> Self {
-        self.description = Description {
+        self.description = Some(Description {
             en: None,
             code
-        };
+        });
         self
+    }
+
+    pub fn set_comment(mut self, comment: String) -> Self {
+        self.comment = Some(comment);
+        self
+    }
+
+    pub fn set_thread(mut self, thread: Thread) -> Self {
+        self.thread = thread;
+        self
+    }
+
+    pub fn to_a2a_message(&self) -> A2AMessage {
+        A2AMessage::CommonProblemReport(self.clone()) // TODO: THINK how to avoid clone
     }
 }
 

@@ -96,6 +96,14 @@ async def main():
     print("#26 Send the proof to faber")
     await proof.send_proof(connection_to_faber)
 
+    proof_state = await proof.get_state()
+    while proof_state != State.Accepted:
+        sleep(2)
+        await proof.update_state()
+        proof_state = await proof.get_state()
+
+    print("proof is verified!!")
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

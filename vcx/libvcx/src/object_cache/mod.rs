@@ -7,7 +7,7 @@ use std::ops::DerefMut;
 
 use error::prelude::*;
 
-pub struct ObjectCache<T>{
+pub struct ObjectCache<T> {
     pub store: Mutex<HashMap<u32, Mutex<T>>>,
 }
 
@@ -40,7 +40,7 @@ impl<T> ObjectCache<T> {
         store.contains_key(&handle)
     }
 
-    pub fn get<F,R>(&self, handle:u32, closure: F) -> VcxResult<R>
+    pub fn get<F, R>(&self, handle: u32, closure: F) -> VcxResult<R>
         where F: Fn(&T) -> VcxResult<R> {
 
         let store = self._lock_store()?;
@@ -53,7 +53,7 @@ impl<T> ObjectCache<T> {
         }
     }
 
-    pub fn get_mut<F, R>(&self, handle:u32, closure: F) -> VcxResult<R>
+    pub fn get_mut<F, R>(&self, handle: u32, closure: F) -> VcxResult<R>
         where F: Fn(&mut T) -> VcxResult<R> {
 
         let mut store = self._lock_store()?;
@@ -66,24 +66,52 @@ impl<T> ObjectCache<T> {
         }
     }
 
-    pub fn add(&self, obj:T) -> VcxResult<u32> {
+    pub fn add(&self, obj: T) -> VcxResult<u32> {
         let mut store = self._lock_store()?;
 
         let mut new_handle = rand::thread_rng().gen::<u32>();
         loop {
-            if !store.contains_key(&new_handle){
+            if !store.contains_key(&new_handle) {
                 break;
             }
             new_handle = rand::thread_rng().gen::<u32>();
         }
 
-        match store.insert(new_handle, Mutex::new(obj)){
+        match store.insert(new_handle, Mutex::new(obj)) {
             Some(_) => Ok(new_handle),
             None => Ok(new_handle)
         }
     }
 
-    pub fn release(&self, handle:u32) -> VcxResult<()> {
+    pub fn insert(&self, handle: u32, obj: T) -> VcxResult<()> {
+        let mut store = self._lock_store()?;
+
+        match store.insert(handle, Mutex::new(obj)) {
+            _ => Ok(()),
+        }
+    }
+
+    pub fn map<F>(&self, handle: u32, mut mapper: F) -> VcxResult<()>
+        where F: FnMut(T) -> VcxResult<T> {
+        let mut store = self._lock_store()?;
+        let obj: Option<Mutex<T>> = store.remove(&handle);
+        let result = match obj {
+            Some(m) => {
+                let obj = m.into_inner()
+                    .map_err(|_| VcxError::from_msg(VcxErrorKind::Common(10), "Can't obtain object"))?;
+                mapper(obj)
+            }
+            None => {
+                return Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)));
+            }
+        }?;
+        match store.insert(handle, Mutex::new(result)) {
+            None => Ok(()),
+            Some(_) => Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to insert to map"))
+        }
+    }
+
+    pub fn release(&self, handle: u32) -> VcxResult<()> {
         let mut store = self._lock_store()?;
         match store.remove(&handle) {
             Some(_) => Ok(()),
@@ -98,17 +126,17 @@ impl<T> ObjectCache<T> {
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use object_cache::ObjectCache;
 
     #[test]
-    fn create_test(){
-        let c:ObjectCache<u32> = Default::default();
+    fn create_test() {
+        let c: ObjectCache<u32> = Default::default();
     }
 
     #[test]
-    fn get_closure(){
-        let test:ObjectCache<u32> = Default::default();
+    fn get_closure() {
+        let test: ObjectCache<u32> = Default::default();
         let handle = test.add(2222).unwrap();
         let rtn = test.get(handle, |obj| Ok(obj.clone()));
         assert_eq!(2222, rtn.unwrap())
@@ -117,26 +145,26 @@ mod tests{
 
     #[test]
     fn to_string_test() {
-        let test:ObjectCache<u32> = Default::default();
+        let test: ObjectCache<u32> = Default::default();
         let handle = test.add(2222).unwrap();
-        let string: String = test.get(handle, |obj|{
-           Ok(String::from("TEST"))
+        let string: String = test.get(handle, |obj| {
+            Ok(String::from("TEST"))
         }).unwrap();
 
         assert_eq!("TEST", string);
 
     }
 
-    fn mut_object_test(){
-        let test:ObjectCache<String> = Default::default();
+    fn mut_object_test() {
+        let test: ObjectCache<String> = Default::default();
         let handle = test.add(String::from("TEST")).unwrap();
 
-        test.get_mut(handle, |obj|{
+        test.get_mut(handle, |obj| {
             obj.to_lowercase();
             Ok(())
         }).unwrap();
 
-        let string: String = test.get(handle, |obj|{
+        let string: String = test.get(handle, |obj| {
             Ok(obj.clone())
         }).unwrap();
 

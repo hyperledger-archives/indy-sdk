@@ -17,6 +17,7 @@ default = []
 pool_tests = []
 agency = []
 agency_v2 = []
+aries = []
 # Causes the build to fail on all warnings
 fatal_warnings = []
 
