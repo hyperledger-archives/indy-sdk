@@ -370,7 +370,7 @@ pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u
     trace!("credential_create_with_offer >>> source_id: {}, offer: {}", source_id, secret!(&offer));
 
     let offer_message = ::serde_json::from_str::<Vec<::serde_json::Value>>(offer)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Message: {:?}", err)))?
         .pop()
         .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?;
 
