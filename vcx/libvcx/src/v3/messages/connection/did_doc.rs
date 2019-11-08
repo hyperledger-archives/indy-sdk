@@ -103,7 +103,7 @@ impl DidDoc {
 
                 self.authentication.push(
                     Authentication {
-                        type_: String::from(KEY_TYPE),
+                        type_: String::from(KEY_AUTHENTICATION_TYPE),
                         public_key: key_reference.clone()
                     });
 

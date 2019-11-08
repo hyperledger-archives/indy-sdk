@@ -113,7 +113,7 @@ pub mod tests {
             id:  _id(),
             problem_code: Some(_problem_code()),
             explain: Some(_explain()),
-            localization: Some(Localization::default()),
+            localization: None,
             thread: _thread(),
         }
     }
