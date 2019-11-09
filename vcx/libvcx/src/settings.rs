@@ -27,6 +27,7 @@ pub static CONFIG_INSTITUTION_DID: &str = "institution_did";
 pub static CONFIG_INSTITUTION_VERKEY: &str = "institution_verkey"; // functionally not used
 pub static CONFIG_INSTITUTION_NAME: &str = "institution_name";
 pub static CONFIG_INSTITUTION_LOGO_URL: &str = "institution_logo_url";
+pub static CONFIG_WEBHOOK_URL: &str = "webhook_url";
 pub static CONFIG_ENABLE_TEST_MODE: &str = "enable_test_mode";
 pub static CONFIG_GENESIS_PATH: &str = "genesis_path";
 pub static CONFIG_LOG_CONFIG: &str = "log_config";
@@ -105,6 +106,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_INSTITUTION_DID.to_string(), DEFAULT_DID.to_string());
     settings.insert(CONFIG_INSTITUTION_NAME.to_string(), DEFAULT_DEFAULT.to_string());
     settings.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(), DEFAULT_URL.to_string());
+    settings.insert(CONFIG_WEBHOOK_URL.to_string(), DEFAULT_URL.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(), DEFAULT_DID.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(), DEFAULT_VERKEY.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_ROLE.to_string(), DEFAULT_ROLE.to_string());
@@ -144,6 +146,8 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
 
     validate_optional_config_val(config.get(CONFIG_AGENCY_ENDPOINT), VcxErrorKind::InvalidUrl, Url::parse)?;
     validate_optional_config_val(config.get(CONFIG_INSTITUTION_LOGO_URL), VcxErrorKind::InvalidUrl, Url::parse)?;
+
+    validate_optional_config_val(config.get(CONFIG_WEBHOOK_URL), VcxErrorKind::InvalidUrl, Url::parse)?;
 
     Ok(error::SUCCESS.code_num)
 }
@@ -549,6 +553,11 @@ pub mod tests {
 
         config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(), invalid.to_string());
+        assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidUrl);
+        config.drain();
+
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        config.insert(CONFIG_WEBHOOK_URL.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidUrl);
         config.drain();
     }

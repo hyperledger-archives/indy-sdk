@@ -232,11 +232,14 @@ impl Connection {
             self.public_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?);
         };
 
+        let webhook_url = settings::get_config_value(settings::CONFIG_WEBHOOK_URL).ok();
+
         if let Ok(name) = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
             messages::update_data()
                 .to(&self.pw_did)?
                 .name(&name)?
                 .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL)?)?
+                .webhook_url(&webhook_url)?
                 .use_public_did(&self.public_did)?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot update agent profile"))?;

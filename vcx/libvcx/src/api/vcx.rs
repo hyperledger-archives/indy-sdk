@@ -290,6 +290,18 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
     error::SUCCESS.code_num
 }
 
+#[no_mangle]
+pub extern fn vcx_update_webhook_url(notification_webhook_url: *const c_char) -> u32 {
+    info!("vcx_update_webhook >>>");
+
+    check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidConfiguration);
+    trace!("vcx_update_webhook(webhook_url: {})", notification_webhook_url);
+
+    settings::set_config_value(::settings::CONFIG_WEBHOOK_URL, &notification_webhook_url);
+
+    error::SUCCESS.code_num
+}
+
 /// Retrieve author agreement and acceptance mechanisms set on the Ledger
 ///
 /// #params
@@ -908,6 +920,19 @@ mod tests {
 
         assert_eq!(new_name, &settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME).unwrap());
         assert_eq!(new_url, &settings::get_config_value(::settings::CONFIG_INSTITUTION_LOGO_URL).unwrap());
+        ::settings::set_defaults();
+    }
+
+
+    #[test]
+    fn test_vcx_update_institution_webhook() {
+        init!("true");
+        let webhook_url = "http://www.evernym.com";
+        assert_ne!(webhook_url, &settings::get_config_value(::settings::CONFIG_WEBHOOK_URL).unwrap());
+
+        assert_eq!(error::SUCCESS.code_num, vcx_update_webhook_url(CString::new(webhook_url.to_string()).unwrap().into_raw()));
+
+        assert_eq!(webhook_url, &settings::get_config_value(::settings::CONFIG_WEBHOOK_URL).unwrap());
         ::settings::set_defaults();
     }
 
