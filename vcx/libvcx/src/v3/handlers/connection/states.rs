@@ -1,12 +1,11 @@
-
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{Response, SignedResponse};
 use v3::messages::connection::problem_report::{ProblemReport, ProblemCode};
-use v3::messages::connection::remote_info::RemoteConnectionInfo;
 use v3::messages::connection::ping::Ping;
 use v3::messages::ack::Ack;
+use v3::messages::connection::did_doc::DidDoc;
 
 use std::collections::HashMap;
 use v3::messages::a2a::MessageId;
@@ -58,19 +57,19 @@ pub struct InvitedState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestedState {
     pub request: Request,
-    pub remote_info: RemoteConnectionInfo,
+    pub did_doc: DidDoc,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RespondedState {
     pub response: SignedResponse,
-    pub remote_info: RemoteConnectionInfo,
+    pub did_doc: DidDoc,
     pub prev_agent_info: AgentInfo
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteState {
-    pub remote_info: RemoteConnectionInfo,
+    pub did_doc: DidDoc,
     pub pending_messages: HashMap<MessageId, String>
 }
 
@@ -91,14 +90,14 @@ impl From<(InvitedState, ProblemReport)> for NullState {
 impl From<(InvitedState, Request)> for RequestedState {
     fn from((state, request): (InvitedState, Request)) -> RequestedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
-        RequestedState { request, remote_info: RemoteConnectionInfo::from(state.invitation) }
+        RequestedState { request, did_doc: DidDoc::from(state.invitation) }
     }
 }
 
 impl From<(InvitedState, Request, SignedResponse, AgentInfo)> for RespondedState {
     fn from((state, request, response, prev_agent_info): (InvitedState, Request, SignedResponse, AgentInfo)) -> RespondedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
-        RespondedState { response, remote_info: RemoteConnectionInfo::from(request), prev_agent_info }
+        RespondedState { response, did_doc: request.connection.did_doc, prev_agent_info }
     }
 }
 
@@ -112,9 +111,7 @@ impl From<(RequestedState, ProblemReport)> for NullState {
 impl From<(RequestedState, Response)> for CompleteState {
     fn from((state, response): (RequestedState, Response)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
-        let mut remote_info = RemoteConnectionInfo::from(response);
-        remote_info.set_label(state.remote_info.label);
-        CompleteState { remote_info, pending_messages: HashMap::new() }
+        CompleteState { did_doc: response.connection.did_doc, pending_messages: HashMap::new() }
     }
 }
 
@@ -128,21 +125,20 @@ impl From<(RespondedState, ProblemReport)> for NullState {
 impl From<(RespondedState, Ack)> for CompleteState {
     fn from((state, ack): (RespondedState, Ack)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { remote_info: state.remote_info, pending_messages: HashMap::new() }
+        CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new() }
     }
 }
 
 impl From<(RespondedState, Ping)> for CompleteState {
     fn from((state, ping): (RespondedState, Ping)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { remote_info: state.remote_info, pending_messages: HashMap::new() }
+        CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new() }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DidExchangeMessages {
-    SendInvitation(),
-    SendExchangeRequest(),
+    Connect(),
     InvitationReceived(Invitation),
     ExchangeRequestReceived(Request),
     ExchangeResponseReceived(SignedResponse),
@@ -170,7 +166,7 @@ impl InvitedState {
             .set_thread(Thread::new().set_thid(request.id.0.clone()))
             .encode(&prev_agent_info.pw_vk)?;
 
-        new_agent_info.send_message(&signed_response.to_a2a_message(), &RemoteConnectionInfo::from(request.clone()))?;
+        new_agent_info.send_message(&signed_response.to_a2a_message(), &request.connection.did_doc)?;
 
         Ok((signed_response, new_agent_info))
     }
@@ -178,13 +174,13 @@ impl InvitedState {
 
 impl RequestedState {
     fn handle_connection_response(&self, response: SignedResponse, agent_info: &AgentInfo) -> VcxResult<Response> {
-        let remote_vk: String = self.remote_info.recipient_keys.get(0).cloned()
+        let remote_vk: String = self.did_doc.recipient_keys().get(0).cloned()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Remote Verkey not found"))?;
 
         let response: Response = response.decode(&remote_vk)?;
 
         let ack = Ack::create().set_thread(response.thread.clone());
-        agent_info.send_message(&ack.to_a2a_message(), &RemoteConnectionInfo::from(response.clone()))?;
+        agent_info.send_message(&ack.to_a2a_message(), &response.connection.did_doc)?;
 
         Ok(response)
     }
@@ -247,7 +243,7 @@ impl DidExchangeSM {
                 match state {
                     DidExchangeState::Null(state) => {
                         match message {
-                            DidExchangeMessages::SendInvitation() => {
+                            DidExchangeMessages::Connect() => {
                                 agent_info = agent_info.create_agent()?;
 
                                 let invite: Invitation = Invitation::create()
@@ -278,7 +274,7 @@ impl DidExchangeSM {
                                             .set_explain(err.to_string())
                                             .set_thread(Thread::new().set_thid(request.id.0.clone()));
 
-                                        agent_info.send_message(&problem_report.to_a2a_message(), &RemoteConnectionInfo::from(request))?;
+                                        agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc)?;
                                         ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
                                     }
                                 }
@@ -304,7 +300,7 @@ impl DidExchangeSM {
                                     let ping = Ping::create().set_thread(
                                         ping.thread.clone()
                                             .unwrap_or(Thread::new().set_thid(ping.id.0.clone())));
-                                    agent_info.send_message(&ping.to_a2a_message(), &state.remote_info)?;
+                                    agent_info.send_message(&ping.to_a2a_message(), &state.did_doc)?;
                                 }
 
                                 ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping).into()))
@@ -336,7 +332,7 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Invited(state) => {
                         match message {
-                            DidExchangeMessages::SendExchangeRequest() => {
+                            DidExchangeMessages::Connect() => {
                                 agent_info = agent_info.create_agent()?;
 
                                 let request = Request::create()
@@ -345,7 +341,7 @@ impl DidExchangeSM {
                                     .set_service_endpoint(agent_info.agency_endpoint()?)
                                     .set_keys(agent_info.recipient_keys(), agent_info.routing_keys()?);
 
-                                agent_info.send_message(&request.to_a2a_message(), &RemoteConnectionInfo::from(state.invitation.clone()))?;
+                                agent_info.send_message(&request.to_a2a_message(), &DidDoc::from(state.invitation.clone()))?;
                                 ActorDidExchangeState::Invitee(DidExchangeState::Requested((state, request).into()))
                             }
                             DidExchangeMessages::ProblemReportReceived(problem_report) => {
@@ -369,7 +365,7 @@ impl DidExchangeSM {
                                             .set_explain(err.to_string())
                                             .set_thread(Thread::new().set_thid(state.request.id.0.clone()));
 
-                                        agent_info.send_message(&problem_report.to_a2a_message(), &state.remote_info)?;
+                                        agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc)?;
                                         ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
                                     }
                                 }
@@ -394,23 +390,23 @@ impl DidExchangeSM {
         Ok(DidExchangeSM { source_id, agent_info, state })
     }
 
-    pub fn remote_connection_info(&self) -> Option<RemoteConnectionInfo> {
+    pub fn did_doc(&self) -> Option<DidDoc> {
         match self.state {
             ActorDidExchangeState::Inviter(ref state) =>
                 match state {
                     DidExchangeState::Null(_) => None,
-                    DidExchangeState::Invited(ref state) => Some(RemoteConnectionInfo::from(state.invitation.clone())),
-                    DidExchangeState::Requested(ref state) => Some(state.remote_info.clone()),
-                    DidExchangeState::Responded(ref state) => Some(state.remote_info.clone()),
-                    DidExchangeState::Completed(ref state) => Some(state.remote_info.clone()),
+                    DidExchangeState::Invited(ref state) => Some(DidDoc::from(state.invitation.clone())),
+                    DidExchangeState::Requested(ref state) => Some(state.did_doc.clone()),
+                    DidExchangeState::Responded(ref state) => Some(state.did_doc.clone()),
+                    DidExchangeState::Completed(ref state) => Some(state.did_doc.clone()),
                 },
             ActorDidExchangeState::Invitee(ref state) =>
                 match state {
                     DidExchangeState::Null(_) => None,
-                    DidExchangeState::Invited(ref state) => Some(RemoteConnectionInfo::from(state.invitation.clone())),
-                    DidExchangeState::Requested(ref state) => Some(state.remote_info.clone()),
-                    DidExchangeState::Responded(ref state) => Some(state.remote_info.clone()),
-                    DidExchangeState::Completed(ref state) => Some(state.remote_info.clone()),
+                    DidExchangeState::Invited(ref state) => Some(DidDoc::from(state.invitation.clone())),
+                    DidExchangeState::Requested(ref state) => Some(state.did_doc.clone()),
+                    DidExchangeState::Responded(ref state) => Some(state.did_doc.clone()),
+                    DidExchangeState::Completed(ref state) => Some(state.did_doc.clone()),
                 }
         }
     }
@@ -437,8 +433,8 @@ impl DidExchangeSM {
     }
 
     pub fn remote_vk(&self) -> VcxResult<String> {
-        self.remote_connection_info()
-            .and_then(|remote_info| remote_info.recipient_keys.get(0).cloned())
+        self.did_doc()
+            .and_then(|did_doc| did_doc.recipient_keys().get(0).cloned())
             .ok_or(VcxError::from(VcxErrorKind::NotReady))
     }
 

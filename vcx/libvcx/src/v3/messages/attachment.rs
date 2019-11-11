@@ -20,6 +20,12 @@ impl Attachments {
         self.0.push(attachment);
     }
 
+    pub fn add_json_attachment(&mut self, json: serde_json::Value, encoding: AttachmentEncoding) -> VcxResult<()> {
+        let json: Json = Json::new(json, encoding)?;
+        self.add(Attachment::JSON(json));
+        Ok(())
+    }
+
     pub fn content(&self) -> VcxResult<String> {
         match self.get() {
             Some(Attachment::JSON(ref attach)) => attach.get_data(),
@@ -92,6 +98,42 @@ impl AttachmentData {
             AttachmentData::Base64(s) => {
                 base64::decode(s).map_err(|_| VcxError::from_msg(VcxErrorKind::IOError, "Wrong bytes in attachment"))
             }
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    fn _json() -> serde_json::Value {
+        json!({"field": "value"})
+    }
+
+    #[test]
+    fn test_create_json_attachment_works() {
+        let json_attachment: Json = Json::new(_json(), AttachmentEncoding::Base64).unwrap();
+        assert_eq!(vec![123, 34, 102, 105, 101, 108, 100, 34, 58, 34, 118, 97, 108, 117, 101, 34, 125], json_attachment.data.get_bytes().unwrap());
+        assert_eq!(_json().to_string(), json_attachment.get_data().unwrap());
+    }
+
+    #[test]
+    fn test_attachments_works() {
+        {
+            let mut attachments = Attachments::new();
+            assert_eq!(0, attachments.0.len());
+
+            let json: Json = Json::new(_json(), AttachmentEncoding::Base64).unwrap();
+            attachments.add(Attachment::JSON(json));
+            assert_eq!(1, attachments.0.len());
+
+            assert_eq!(_json().to_string(), attachments.content().unwrap());
+        }
+
+        {
+            let mut attachments = Attachments::new();
+            attachments.add_json_attachment(_json(), AttachmentEncoding::Base64).unwrap();
+            assert_eq!(_json().to_string(), attachments.content().unwrap());
         }
     }
 }

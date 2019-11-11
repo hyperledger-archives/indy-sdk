@@ -13,6 +13,7 @@ use v3::handlers::proof_presentation::verifier::states::{VerifierSM, VerifierSta
 
 use messages::proofs::proof_request::ProofRequestMessage;
 use messages::proofs::proof_message::ProofMessage;
+use v3::SERIALIZE_VERSION;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
@@ -20,8 +21,6 @@ pub struct Verifier {
 }
 
 impl Verifier {
-    const SERIALIZE_VERSION: &'static str = "2.0";
-
     pub fn create(source_id: String,
                   requested_attrs: String,
                   requested_predicates: String,
@@ -60,19 +59,16 @@ impl Verifier {
 
         if !self.state.has_transitions() { return Ok(self); }
 
-        match message {
-            Some(message_) => {
-                self = self.update_state_with_message(message_)?
-            }
-            None => {
-                let connection_handle = self.state.connection_handle()?;
-                let messages = connection::get_messages(connection_handle)?;
+        if let Some(message_) = message {
+            return self.update_state_with_message(message_);
+        }
 
-                if let Some((uid, message)) = self.find_message_to_handle(messages) {
-                    self = self.handle_message(message)?;
-                    connection::update_message_status(connection_handle, uid)?;
-                };
-            }
+        let connection_handle = self.state.connection_handle()?;
+        let messages = connection::get_messages(connection_handle)?;
+
+        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+            self = self.handle_message(message)?;
+            connection::update_message_status(connection_handle, uid)?;
         };
 
         Ok(self)
@@ -173,7 +169,7 @@ impl Verifier {
     }
 
     pub fn to_string(&self) -> VcxResult<String> {
-        ObjectWithVersion::new(Self::SERIALIZE_VERSION, self.to_owned())
+        ObjectWithVersion::new(SERIALIZE_VERSION, self.to_owned())
             .serialize()
             .map_err(|err| err.extend("Cannot serialize Connection"))
     }

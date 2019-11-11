@@ -17,6 +17,7 @@ use utils::error;
 use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use messages::ObjectWithVersion;
+use v3::SERIALIZE_VERSION;
 
 lazy_static! {
     pub static ref ISSUE_CREDENTIAL_MAP: ObjectCache<IssuerSM> = Default::default();
@@ -25,9 +26,6 @@ lazy_static! {
 lazy_static! {
     pub static ref HOLD_CREDENTIAL_MAP: ObjectCache<HolderSM> = Default::default();
 }
-
-const SERIALIZE_VERSION: &'static str = "2.0";
-
 
 // Issuer
 

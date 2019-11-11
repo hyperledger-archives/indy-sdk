@@ -14,7 +14,6 @@ use v3::messages::error::ProblemReport as CommonProblemReport;
 use v3::messages::issuance::credential_proposal::CredentialProposal;
 use v3::messages::ack::Ack;
 
-use utils::uuid;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential::Credential;
@@ -243,7 +242,6 @@ impl A2AMessageKinds {
             A2AMessageKinds::PresentationPreview => "presentation-preview".to_string(),
             A2AMessageKinds::PresentationRequest => "request-presentation".to_string(),
             A2AMessageKinds::Presentation => "presentation".to_string(),
-
         }
     }
 }
@@ -361,7 +359,19 @@ impl Serialize for MessageType {
 pub struct MessageId(pub String);
 
 impl MessageId {
+    #[cfg(test)]
+    pub fn id() -> MessageId {
+        MessageId(String::from("testid"))
+    }
+
+    #[cfg(test)]
     pub fn new() -> MessageId {
+        MessageId::id()
+    }
+
+    #[cfg(not(test))]
+    pub fn new() -> MessageId {
+        use utils::uuid;
         MessageId(uuid::uuid())
     }
 }

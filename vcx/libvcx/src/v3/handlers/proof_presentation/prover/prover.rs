@@ -12,6 +12,7 @@ use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 
 use messages::proofs::proof_message::ProofMessage;
+use v3::SERIALIZE_VERSION;
 
 use std::sync::Mutex;
 
@@ -25,8 +26,6 @@ pub struct Prover {
 }
 
 impl Prover {
-    const SERIALIZE_VERSION: &'static str = "2.0";
-
     pub fn create(source_id: &str, presentation_request: PresentationRequest) -> VcxResult<Prover> {
         trace!("Prover::create >>> source_id: {}, presentation_request: {:?}", source_id, presentation_request);
         Ok(Prover {
@@ -71,19 +70,16 @@ impl Prover {
 
         if !self.state.has_transitions() { return Ok(self); }
 
-        match message {
-            Some(message_) => {
-                self = self.update_state_with_message(message_)?
-            }
-            None => {
-                let connection_handle = self.state.connection_handle()?;
-                let messages = connection::get_messages(connection_handle)?;
+        if let Some(message_) = message {
+            return self.update_state_with_message(message_);
+        }
 
-                if let Some((uid, message)) = self.find_message_to_handle(messages) {
-                    self = self.handle_message(message)?;
-                    connection::update_message_status(connection_handle, uid)?;
-                };
-            }
+        let connection_handle = self.state.connection_handle()?;
+        let messages = connection::get_messages(connection_handle)?;
+
+        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+            self = self.handle_message(message)?;
+            connection::update_message_status(connection_handle, uid)?;
         };
 
         Ok(self)
@@ -195,7 +191,7 @@ impl Prover {
     pub fn get_source_id(&self) -> String { self.state.source_id() }
 
     pub fn to_string(&self) -> VcxResult<String> {
-        ObjectWithVersion::new(Self::SERIALIZE_VERSION, self.to_owned())
+        ObjectWithVersion::new(SERIALIZE_VERSION, self.to_owned())
             .serialize()
             .map_err(|err| err.extend("Cannot serialize DisclosedProof"))
     }

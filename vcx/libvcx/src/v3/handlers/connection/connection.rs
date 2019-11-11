@@ -2,6 +2,7 @@ use messages::ObjectWithVersion;
 use messages::get_message::Message;
 use error::prelude::*;
 
+use v3::SERIALIZE_VERSION;
 use v3::handlers::connection::states::*;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::invite::Invitation;
@@ -16,8 +17,6 @@ pub struct Connection {
 }
 
 impl Connection {
-    const SERIALIZE_VERSION: &'static str = "2.0";
-
     pub fn create(source_id: &str, actor: Actor) -> Connection {
         trace!("Connection::create >>> source_id: {}, actor: {:?}", source_id, actor);
 
@@ -45,8 +44,8 @@ impl Connection {
     pub fn get_invite_details(&self) -> VcxResult<String> {
         if let Some(invitation) = self.state.get_invitation() {
             return Ok(json!(invitation.to_a2a_message()).to_string());
-        } else if let Some(remote_info) = self.state.remote_connection_info() {
-            return Ok(json!(remote_info).to_string());
+        } else if let Some(did_doc) = self.state.did_doc() {
+            return Ok(json!(Invitation::from(did_doc)).to_string());
         } else {
             Ok(json!({}).to_string())
         }
@@ -58,41 +57,32 @@ impl Connection {
 
     pub fn connect(self) -> VcxResult<Connection> {
         trace!("Connection::connect >>> source_id: {}", self.state.source_id());
-
-        let message = match self.actor() {
-            Actor::Inviter => DidExchangeMessages::SendInvitation(),
-            Actor::Invitee => DidExchangeMessages::SendExchangeRequest()
-        };
-
-        self.step(message)
+        self.step(DidExchangeMessages::Connect())
     }
 
     pub fn update_state(mut self, message: Option<&str>) -> VcxResult<Connection> {
         trace!("Connection: update_state");
 
-        match message {
-            Some(message_) => {
-                self = self.update_state_with_message(message_)?
-            }
-            None => {
-                let messages = self.get_messages()?;
-                let agent_info = self.agent_info().clone();
+        if let Some(message_) = message {
+            return self.update_state_with_message(message_);
+        }
 
-                if let Some((uid, message)) = self.find_message_to_handle(messages) {
-                    self = self.handle_message(message)?;
-                    agent_info.update_message_status(uid)?;
-                };
+        let messages = self.get_messages()?;
+        let agent_info = self.agent_info().clone();
 
-                if let Some(prev_agent_info) = self.state.prev_agent_info().cloned() {
-                    let messages = prev_agent_info.get_messages()?;
-
-                    if let Some((uid, message)) = self.find_message_to_handle(messages) {
-                        self = self.handle_message(message)?;
-                        prev_agent_info.update_message_status(uid)?;
-                    }
-                }
-            }
+        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+            self = self.handle_message(message)?;
+            agent_info.update_message_status(uid)?;
         };
+
+        if let Some(prev_agent_info) = self.state.prev_agent_info().cloned() {
+            let messages = prev_agent_info.get_messages()?;
+
+            if let Some((uid, message)) = self.find_message_to_handle(messages) {
+                self = self.handle_message(message)?;
+                prev_agent_info.update_message_status(uid)?;
+            }
+        }
 
         Ok(self)
     }
@@ -200,10 +190,10 @@ impl Connection {
     }
 
     pub fn send_message(&self, message: &A2AMessage) -> VcxResult<()> {
-        let remote_connection_info = self.state.remote_connection_info()
+        let did_doc = self.state.did_doc()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get Remote Connection information"))?;
 
-        self.agent_info().send_message(message, &remote_connection_info)
+        self.agent_info().send_message(message, &did_doc)
     }
 
     pub fn send_generic_message(&self, message: &str, _message_options: &str) -> VcxResult<String> {
@@ -222,7 +212,7 @@ impl Connection {
     }
 
     pub fn to_string(&self) -> VcxResult<String> {
-        ObjectWithVersion::new(Self::SERIALIZE_VERSION, self.to_owned())
+        ObjectWithVersion::new(SERIALIZE_VERSION, self.to_owned())
             .serialize()
             .map_err(|err| err.extend("Cannot serialize Connection"))
     }

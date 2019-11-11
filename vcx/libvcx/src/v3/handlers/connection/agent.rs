@@ -3,7 +3,7 @@ use messages::MessageStatusCode;
 use messages::get_message::{Message, get_connection_messages};
 use messages::update_connection::send_delete_connection_message;
 
-use v3::messages::connection::remote_info::RemoteConnectionInfo;
+use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::a2a::A2AMessage;
 
 use v3::utils::encryption_envelope::EncryptionEnvelope;
@@ -112,9 +112,9 @@ impl AgentInfo {
         EncryptionEnvelope::open(&self.pw_vk, message.payload()?)
     }
 
-    pub fn send_message(&self, message: &A2AMessage, remote_connection_info: &RemoteConnectionInfo) -> VcxResult<()> {
-        let envelope = EncryptionEnvelope::create(&message, &self.pw_vk, &remote_connection_info)?;
-        httpclient::post_message(&envelope.0, &remote_connection_info.service_endpoint)?;
+    pub fn send_message(&self, message: &A2AMessage, did_dod: &DidDoc) -> VcxResult<()> {
+        let envelope = EncryptionEnvelope::create(&message, &self.pw_vk, &did_dod)?;
+        httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
         Ok(())
     }
 
