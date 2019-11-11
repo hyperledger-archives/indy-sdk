@@ -1,6 +1,6 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 use v3::messages::issuance::CredentialPreviewData;
-use v3::messages::attachment::{Attachments, Attachment, Json, AttachmentEncoding};
+use v3::messages::attachment::{Attachments, AttachmentEncoding};
 use v3::messages::mime_type::MimeType;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
@@ -43,8 +43,7 @@ impl CredentialOffer {
     }
 
     pub fn set_offers_attach(mut self, credential_offer: &str) -> VcxResult<CredentialOffer> {
-        let json: Json = Json::new(::serde_json::Value::String(credential_offer.to_string()), AttachmentEncoding::Base64)?;
-        self.offers_attach.add(Attachment::JSON(json));
+        self.offers_attach.add_json_attachment(::serde_json::Value::String(credential_offer.to_string()), AttachmentEncoding::Base64)?;
         Ok(self)
     }
 

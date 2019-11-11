@@ -212,6 +212,16 @@ impl DidDoc {
         (recipient_keys, routing_keys)
     }
 
+    pub fn recipient_keys(&self) -> Vec<String> {
+        let (recipient_keys, _) = self.resolve_keys();
+        recipient_keys
+    }
+
+    pub fn routing_keys(&self) -> Vec<String> {
+        let (_, routing_keys) = self.resolve_keys();
+        routing_keys
+    }
+
     pub fn get_endpoint(&self) -> String {
         match self.service.get(0) {
             Some(service) => service.service_endpoint.to_string(),
@@ -237,9 +247,35 @@ impl DidDoc {
     }
 }
 
+use v3::messages::connection::invite::Invitation;
+
+impl From<Invitation> for DidDoc {
+    fn from(invite: Invitation) -> DidDoc {
+        let mut did_doc: DidDoc = DidDoc::default();
+        did_doc.set_id(invite.id.0.clone());
+        did_doc.set_service_endpoint(invite.service_endpoint.clone());
+        did_doc.set_keys(invite.recipient_keys, invite.routing_keys);
+        did_doc
+    }
+}
+
+impl From<DidDoc> for Invitation {
+    fn from(did_doc: DidDoc) -> Invitation {
+        let (recipient_keys, routing_keys) = did_doc.resolve_keys();
+
+        Invitation::create()
+            .set_id(did_doc.id.clone())
+            .set_service_endpoint(did_doc.get_endpoint())
+            .set_recipient_keys(recipient_keys)
+            .set_routing_keys(routing_keys)
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use v3::messages::a2a::MessageId;
+    use v3::messages::connection::invite::tests::_invitation;
 
     pub fn _key_1() -> String {
         String::from("GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL")
@@ -354,6 +390,27 @@ pub mod tests {
         }
     }
 
+    pub fn _did_doc_4() -> DidDoc {
+        DidDoc {
+            context: String::from(CONTEXT),
+            id: _id(),
+            public_key: vec![
+                PublicKey { id: _key_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+            ],
+            authentication: vec![
+                Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_1() }
+            ],
+            service: vec![Service {
+                id: String::from("did:example:123456789abcdefghi;did-communication"),
+                type_: String::from("did-communication"),
+                priority: 0,
+                service_endpoint: _service_endpoint(),
+                recipient_keys: vec![_key_1()],
+                routing_keys: vec![],
+            }],
+        }
+    }
+
     #[test]
     fn test_did_doc_build_works() {
         let mut did_doc: DidDoc = DidDoc::default();
@@ -369,6 +426,7 @@ pub mod tests {
         _did_doc().validate().unwrap();
         _did_doc_2().validate().unwrap();
         _did_doc_3().validate().unwrap();
+        _did_doc_4().validate().unwrap();
     }
 
     #[test]
@@ -392,5 +450,15 @@ pub mod tests {
     fn test_did_doc_parse_key_reference_works() {
         assert_eq!(String::from("1"), DidDoc::_parse_key_reference(&_key_reference_1()));
         assert_eq!(_key_1(), DidDoc::_parse_key_reference(&_key_1()));
+    }
+
+    #[test]
+    fn test_did_doc_from_invitation_works() {
+        let mut did_doc = DidDoc::default();
+        did_doc.set_id(MessageId::id().0);
+        did_doc.set_service_endpoint(_service_endpoint());
+        did_doc.set_keys(_recipient_keys(), _routing_keys());
+
+        assert_eq!(did_doc, DidDoc::from(_invitation()))
     }
 }

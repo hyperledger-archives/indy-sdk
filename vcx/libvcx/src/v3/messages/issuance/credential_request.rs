@@ -1,5 +1,5 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
-use v3::messages::attachment::{Attachments, Attachment, Json, AttachmentEncoding};
+use v3::messages::attachment::{Attachments, AttachmentEncoding};
 use error::VcxResult;
 use messages::thread::Thread;
 
@@ -31,8 +31,7 @@ impl CredentialRequest {
     }
 
     pub fn set_requests_attach(mut self, credential_request: String) -> VcxResult<CredentialRequest> {
-        let json: Json = Json::new(::serde_json::Value::String(credential_request), AttachmentEncoding::Base64)?;
-        self.requests_attach.add(Attachment::JSON(json));
+        self.requests_attach.add_json_attachment(::serde_json::Value::String(credential_request), AttachmentEncoding::Base64)?;
         Ok(self)
     }
 

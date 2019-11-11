@@ -17,13 +17,13 @@ impl Ping {
         Ping::default()
     }
 
-    pub fn set_id(mut self, id: MessageId) -> Ping {
-        self.id = id;
+    pub fn set_thread(mut self, thread: Thread) -> Ping {
+        self.thread = Some(thread);
         self
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Ping {
-        self.thread = Some(thread);
+    pub fn set_comment(mut self, comment: String) -> Ping {
+        self.comment = Some(comment);
         self
     }
 
@@ -40,5 +40,33 @@ impl Default for Ping {
             comment: None,
             thread: None,
         }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use v3::messages::connection::response::tests::*;
+
+    fn _comment() -> String {
+        String::from("comment")
+    }
+
+    pub fn _ping() -> Ping {
+        Ping {
+            id: MessageId::id(),
+            response_requested: false,
+            thread: Some(_thread()),
+            comment: Some(_comment()),
+        }
+    }
+
+    #[test]
+    fn test_ping_build_works() {
+        let ping: Ping = Ping::default()
+            .set_comment(_comment())
+            .set_thread(_thread());
+
+        assert_eq!(_ping(), ping);
     }
 }

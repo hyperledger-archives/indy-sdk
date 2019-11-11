@@ -3,6 +3,8 @@ pub mod utils;
 pub mod handlers;
 pub mod messages;
 
+pub const SERIALIZE_VERSION: &'static str = "2.0";
+
 #[cfg(feature = "aries")]
 #[cfg(test)]
 pub mod test {
