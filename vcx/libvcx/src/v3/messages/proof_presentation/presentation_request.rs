@@ -95,20 +95,26 @@ pub type PresentationRequestData = ProofRequestData;
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use messages::thread::Thread;
 
-    fn _data() -> ProofRequestData {
-        ProofRequestData::default()
+    pub fn _presentation_request_data() -> PresentationRequestData {
+        PresentationRequestData::default()
+            .set_requested_attributes(json!([{"name": "name"}]).to_string()).unwrap()
     }
 
     fn _attachment() -> ::serde_json::Value {
-        json!(_data())
+        json!(_presentation_request_data())
     }
 
     fn _comment() -> String {
         String::from("comment")
     }
 
-    fn _presentation_request() -> PresentationRequest {
+    pub fn thread() -> Thread {
+        Thread::new().set_thid(_presentation_request().id.0)
+    }
+
+    pub fn _presentation_request() -> PresentationRequest {
         let mut attachment = Attachments::new();
         attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
 
@@ -123,7 +129,7 @@ pub mod tests {
     fn test_presentation_request_build_works() {
         let presentation_request: PresentationRequest = PresentationRequest::default()
             .set_comment(_comment())
-            .set_request_presentations_attach(&_data()).unwrap();
+            .set_request_presentations_attach(&_presentation_request_data()).unwrap();
 
         assert_eq!(_presentation_request(), presentation_request);
     }

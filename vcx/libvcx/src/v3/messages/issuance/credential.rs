@@ -80,3 +80,43 @@ impl TryInto<CredentialMessage> for Credential {
         })
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use v3::messages::issuance::credential_offer::tests::thread;
+
+    fn _attachment() -> ::serde_json::Value {
+        json!({
+            "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
+            "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG1",
+            "values":{"name":{"raw":"Name","encoded":"1139481716457488690172217916278103335"}}
+        })
+    }
+
+    fn _comment() -> String {
+        String::from("comment")
+    }
+
+    pub fn _credential() -> Credential {
+        let mut attachment = Attachments::new();
+        attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
+
+        Credential {
+            id: MessageId::id(),
+            comment: _comment(),
+            thread: thread(),
+            credentials_attach: attachment,
+        }
+    }
+
+    #[test]
+    fn test_credential_build_works() {
+        let credential: Credential = Credential::create()
+            .set_comment(_comment())
+            .set_thread(thread())
+            .set_credential(_attachment().to_string()).unwrap();
+
+        assert_eq!(_credential(), credential);
+    }
+}

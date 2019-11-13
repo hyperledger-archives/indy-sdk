@@ -12,12 +12,7 @@ pub struct Thread {
 
 impl Thread {
     pub fn new() -> Thread {
-        Thread {
-            thid: None,
-            pthid: None,
-            sender_order: 0,
-            received_orders: HashMap::new(),
-        }
+        Thread::default()
     }
 
     pub fn set_thid(mut self, thid: String) -> Thread {
@@ -33,5 +28,16 @@ impl Thread {
 
     pub fn is_reply(&self, id: &str) -> bool {
         self.thid.clone().unwrap_or_default() == id.to_string()
+    }
+}
+
+impl Default for Thread {
+    fn default() -> Thread {
+        Thread {
+            thid: None,
+            pthid: None,
+            sender_order: 0,
+            received_orders: HashMap::new(),
+        }
     }
 }

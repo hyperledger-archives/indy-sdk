@@ -411,7 +411,7 @@ fn _credential_create(source_id: &str) -> Credential {
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     if v3::handlers::issuance::HOLD_CREDENTIAL_MAP.has_handle(handle) {
-        return v3::handlers::issuance::holder_update_status(handle, message);
+        return v3::handlers::issuance::holder_update_state(handle, message);
     }
     HANDLE_MAP.get_mut(handle, |obj| {
         debug!("updating state for credential {} with msg_id {:?}", obj.source_id, obj.msg_uid);

@@ -172,7 +172,7 @@ pub mod tests {
         }
     }
 
-    fn _encoded_response() -> SignedResponse {
+    pub fn _signed_response() -> SignedResponse {
         SignedResponse {
             id: MessageId::id(),
             thread: _thread(),

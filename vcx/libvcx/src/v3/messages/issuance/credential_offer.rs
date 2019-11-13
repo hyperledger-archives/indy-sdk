@@ -114,3 +114,58 @@ impl TryInto<CredentialOfferV1> for CredentialOffer {
         })
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use v3::messages::connection::response::tests::*;
+
+    fn _attachment() -> ::serde_json::Value {
+        json!({
+            "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
+            "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG1"
+        })
+    }
+
+    fn _comment() -> String {
+        String::from("comment")
+    }
+
+    pub fn _value() -> (&'static str, &'static str) {
+        ("attribute", "value")
+    }
+
+    pub fn _preview_data() -> CredentialPreviewData {
+        let (name, value)  = _value();
+        CredentialPreviewData::new()
+            .add_value(name, value, MimeType::Plain).unwrap()
+    }
+
+    pub fn thread() -> Thread {
+        Thread::new().set_thid(_credential_offer().id.0)
+    }
+
+    pub fn _credential_offer() -> CredentialOffer {
+        let mut attachment = Attachments::new();
+        attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
+
+        CredentialOffer {
+            id: MessageId::id(),
+            comment: _comment(),
+            credential_preview: _preview_data(),
+            offers_attach: attachment,
+            thread: Some(_thread()),
+        }
+    }
+
+    #[test]
+    fn test_credential_offer_build_works() {
+        let credential_offer: CredentialOffer = CredentialOffer::create()
+            .set_comment(_comment())
+            .set_thread(_thread())
+            .set_credential_preview_data(_preview_data()).unwrap()
+            .set_offers_attach(&_attachment().to_string()).unwrap();
+
+        assert_eq!(_credential_offer(), credential_offer);
+    }
+}

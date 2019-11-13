@@ -63,12 +63,17 @@ pub fn init_pool() -> VcxResult<()> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use futures::Future;
+
+    pub fn create_key(wallet_handle: i32, seed: Option<&str>) -> String {
+        let key_config = json!({"seed": seed}).to_string();
+        indy::crypto::create_key(::utils::libindy::wallet::get_wallet_handle(), Some(&key_config)).wait().unwrap()
+    }
 
     pub mod test_setup {
         use super::*;
         use indy;
         use rand::Rng;
-        use futures::Future;
 
         pub const TRUSTEE_SEED: &'static str = "000000000000000000000000Trustee1";
         pub const WALLET_CREDENTIALS: &'static str = r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;

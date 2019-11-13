@@ -14,6 +14,77 @@ pub mod test {
     use messages::agent_utils::connect_register_provision;
     use utils::libindy::wallet::*;
 
+    pub fn source_id() -> String {
+        String::from("test source id")
+    }
+
+    pub mod setup {
+        pub fn base_config() -> ::serde_json::Value {
+            json!({
+                "agency_did":"VsKV7grR1BUE29mG2Fm2kX",
+                "agency_endpoint":"http://localhost:8080",
+                "agency_verkey":"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
+                "genesis_path":"<CHANGE_ME>",
+                "institution_did":"V4SGRU86Z58d6TV7PBUe6f",
+                "institution_logo_url":"<CHANGE_ME>",
+                "institution_name":"<CHANGE_ME>",
+                "institution_verkey":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+                "protocol_type":"2.0",
+                "remote_to_sdk_did":"LjC6xZPeYPeL5AjuRByMDA",
+                "remote_to_sdk_verkey":"Bkd9WFmCydMCvLKL8x47qyQTN1nbyQ8rUK8JTsQRtLGE",
+                "sdk_to_remote_did":"Mi3bbeWQDVpQCmGFBqWeYa",
+                "sdk_to_remote_verkey":"CHcPnSn48wfrUhekmcFZAmx8NvhHCh72J73WToNiK9EX",
+                "wallet_key":"123",
+                "wallet_name":"test_wallet",
+                "communication_method":"aries",
+            })
+        }
+
+        pub struct TestModeSetup {}
+
+        impl TestModeSetup {
+            pub fn init() -> TestModeSetup {
+                let mut config = base_config();
+                config["enable_test_mode"] = json!("true");
+                ::settings::process_config_string(&config.to_string(), false).unwrap();
+                TestModeSetup {}
+            }
+        }
+
+        pub struct AgencyModeSetup {
+            pub wallet_name: String,
+            pub wallet_handle: i32,
+        }
+
+        impl AgencyModeSetup {
+            pub fn init() -> AgencyModeSetup {
+                let wallet_name = "wallet_name";
+
+                let mut config = base_config();
+                config["wallet_name"] = json!(wallet_name);
+                config["enable_test_mode"] = json!("agency");
+
+                ::settings::process_config_string(&config.to_string(), false).unwrap();
+
+                ::utils::libindy::wallet::create_wallet(wallet_name, None, None, None).unwrap();
+                let config = ::utils::devsetup::tests::config_with_wallet_handle(wallet_name, &config.to_string());
+
+                ::settings::process_config_string(&config.to_string(), false).unwrap();
+
+                AgencyModeSetup {
+                    wallet_name: wallet_name.to_string(),
+                    wallet_handle: ::utils::libindy::wallet::get_wallet_handle(),
+                }
+            }
+        }
+
+        impl Drop for AgencyModeSetup {
+            fn drop(&mut self) {
+                ::utils::libindy::wallet::delete_wallet(&self.wallet_name, None, None, None).unwrap();
+            }
+        }
+    }
+
     pub struct PaymentPlugin {}
 
     impl PaymentPlugin {
@@ -50,6 +121,7 @@ pub mod test {
 
     impl Faber {
         pub fn setup() -> Faber {
+            ::settings::clear_config();
             let wallet_name = "faber_wallet";
 
             let config = json!({
@@ -66,6 +138,44 @@ pub mod test {
 
             let config = connect_register_provision(&config).unwrap();
 
+            let config = config_with_wallet_handle(wallet_name, &config);
+
+            Faber {
+                config,
+                wallet_name: wallet_name.to_string(),
+                schema_handle: 0,
+                cred_def_handle: 0,
+                connection_handle: 0,
+                wallet_handle: get_wallet_handle(),
+                credential_handle: 0,
+                presentation_handle: 0
+            }
+        }
+
+        pub fn setup_local() -> Faber {
+            let wallet_name = "faber_wallet";
+
+            let config = json!({
+                "agency_did":"VsKV7grR1BUE29mG2Fm2kX",
+                "agency_endpoint":"http://localhost:8080",
+                "agency_verkey":"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
+                "communication_method":"aries",
+                "genesis_path":"<CHANGE_ME>",
+                "institution_did":"V4SGRU86Z58d6TV7PBUe6f",
+                "institution_logo_url":"<CHANGE_ME>",
+                "institution_name":"<CHANGE_ME>",
+                "institution_verkey":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+                "protocol_type":"2.0",
+                "remote_to_sdk_did":"LjC6xZPeYPeL5AjuRByMDA",
+                "remote_to_sdk_verkey":"Bkd9WFmCydMCvLKL8x47qyQTN1nbyQ8rUK8JTsQRtLGE",
+                "sdk_to_remote_did":"Mi3bbeWQDVpQCmGFBqWeYa",
+                "sdk_to_remote_verkey":"CHcPnSn48wfrUhekmcFZAmx8NvhHCh72J73WToNiK9EX",
+                "wallet_key":"123",
+                "wallet_name":"faber_wallet"
+            }).to_string();
+
+            ::settings::process_config_string(&config, false).unwrap();
+            ::utils::libindy::wallet::create_wallet(wallet_name, None, None, None).unwrap();
             let config = config_with_wallet_handle(wallet_name, &config);
 
             Faber {
@@ -163,11 +273,11 @@ pub mod test {
         pub fn send_credential(&self) {
             self.activate();
             ::issuer_credential::update_state(self.credential_handle, None).unwrap();
-            assert_eq!(4, ::connection::get_state(self.connection_handle)); // TODO: WHY it already sends credential ????
+            assert_eq!(3, ::issuer_credential::get_state(self.credential_handle).unwrap());
 
             ::issuer_credential::send_credential(self.credential_handle, self.connection_handle).unwrap();
             ::issuer_credential::update_state(self.credential_handle, None).unwrap();
-            assert_eq!(4, ::connection::get_state(self.connection_handle));
+            assert_eq!(4, ::issuer_credential::get_state(self.credential_handle).unwrap());
             assert_eq!(::v3::messages::status::Status::Success.code(), ::v3::handlers::issuance::get_issuer_credential_status(self.credential_handle).unwrap());
         }
 
@@ -208,6 +318,7 @@ pub mod test {
 
     impl Alice {
         pub fn setup() -> Alice {
+            ::settings::clear_config();
             let wallet_name = "alice_wallet";
 
             let config = json!({
@@ -271,7 +382,7 @@ pub mod test {
         pub fn accept_credential(&self) {
             self.activate();
             ::credential::update_state(self.credential_handle, None).unwrap();
-            assert_eq!(4, ::connection::get_state(self.connection_handle));
+            assert_eq!(4, ::credential::get_state(self.credential_handle).unwrap());
             assert_eq!(::v3::messages::status::Status::Success.code(), ::v3::handlers::issuance::get_holder_credential_status(self.credential_handle).unwrap());
         }
 
@@ -282,7 +393,6 @@ pub mod test {
             let presentation_request_json = ::serde_json::to_string(&presentation_request).unwrap();
 
             self.presentation_handle = ::disclosed_proof::create_proof("degree", &presentation_request_json).unwrap();
-
 
             let credentials = ::disclosed_proof::retrieve_credentials(self.presentation_handle).unwrap();
             let credentials: ::std::collections::HashMap<String, ::serde_json::Value> = ::serde_json::from_str(&credentials).unwrap();
@@ -344,7 +454,7 @@ pub mod test {
         let invite = faber.create_invite();
         alice.accept_invite(&invite);
 
-        faber.update_state(5);
+        faber.update_state(3);
         alice.update_state(4);
         faber.update_state(4);
 
