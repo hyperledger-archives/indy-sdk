@@ -1,3 +1,5 @@
+extern crate log;
+extern crate env_logger;
 extern crate owning_ref;
 extern crate sodiumoxide;
 extern crate r2d2;
@@ -605,38 +607,49 @@ impl WalletStrategy for DatabasePerWalletStrategy {
 impl WalletStrategy for MultiWalletSingleTableStrategy {
     // initialize storage based on wallet storage strategy
     fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        env_logger::init();
+        debug!("Entering init_storage");
         // create database and tables for storage
         // if admin user and password aren't provided then bail
         if credentials.admin_account == None || credentials.admin_password == None {
             return Ok(())
         }
 
+        debug!("setting up the admin_postgres_url");
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
         let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
 
+        debug!("connecting to postgres");
         let conn = postgres::Connection::connect(&url_base[..], postgres::TlsMode::None)?;
 
+        debug!("creating wallets database");
         if let Err(error) = conn.execute(&_CREATE_WALLETS_DATABASE, &[]) {
             if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
+                debug!("error creating database, Error: {}", error);
                 conn.finish()?;
                 return Err(WalletStorageError::IOError(format!("Error occurred while creating the database: {}", error)))
             } else {
                 // if database already exists, assume tables are created already and return
+                debug!("database already exists");
                 conn.finish()?;
                 return Ok(());
             }
         }
         conn.finish()?;
     
+        debug!("connecting to wallet storage");
         let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
             Ok(conn) => conn,
             Err(error) => {
+                debug!("error connecting to wallet storage, Error: {}", error);
                 return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
             }
         };
 
+        debug!("setting up multi schema");
         for sql in &_CREATE_SCHEMA_MULTI {
             if let Err(error) = conn.execute(sql, &[]) {
+                debug!("error creating wallet schema, Error: {}", error);
                 conn.finish()?;
                 return Err(WalletStorageError::IOError(format!("Error occurred while creating wallet schema: {}", error)));
             }
