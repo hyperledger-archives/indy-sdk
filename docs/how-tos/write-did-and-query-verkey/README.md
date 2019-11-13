@@ -115,7 +115,7 @@ any number of additional identities to the ledger, with just a handful of
 lines of code. Try creating some.
 
 You might try the ["Rotate a Key"](../rotate-key/README.md)
-how-to, which can be done in only one step one you complete this one.
+how-to, which can be done in only one step once you have complete this one.
 
 You could also try to create a new steward identity without a seed, or
 with a different seed, and see what kind of error you get. Only identities
