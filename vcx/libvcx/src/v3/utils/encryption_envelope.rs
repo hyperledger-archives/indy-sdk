@@ -12,6 +12,8 @@ impl EncryptionEnvelope {
     pub fn create(message: &A2AMessage,
                   pw_verkey: &str,
                   did_doc: &DidDoc) -> VcxResult<EncryptionEnvelope> {
+        if ::settings::test_indy_mode_enabled() { return Ok(EncryptionEnvelope(vec![])); }
+
         EncryptionEnvelope::encrypt_for_pairwise(message, pw_verkey, did_doc)
             .and_then(|message| EncryptionEnvelope::wrap_into_forward_messages(message, did_doc))
             .map(|message| EncryptionEnvelope(message))
@@ -68,7 +70,7 @@ impl EncryptionEnvelope {
 
         let message: A2AMessage = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))
-            .unwrap_or_else(|_|A2AMessage::Generic(message));
+            .unwrap_or_else(|_| A2AMessage::Generic(message));
 
         Ok(message)
     }

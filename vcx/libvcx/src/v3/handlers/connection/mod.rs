@@ -167,11 +167,17 @@ pub fn remove_pending_message(handle: u32, id: &MessageId) -> VcxResult<()> {
 
 #[cfg(feature = "aries")]
 #[cfg(test)]
-mod test {
+pub mod test {
     use super::*;
     use v3::test::{Faber, Alice};
     use v3::messages::connection::invite::tests::_invitation;
     use v3::messages::ack::tests::_ack;
+
+    pub fn mock_connection() -> u32 {
+        let connection_handle = create_connection_with_invite("source_id", _invitation()).unwrap();
+        connect(connection_handle, None).unwrap();
+        connection_handle
+    }
 
     fn _source_id() -> &'static str {
         "test connection"
@@ -213,7 +219,7 @@ mod test {
         let invite = faber.create_invite();
         alice.accept_invite(&invite);
 
-        faber.update_state(5);
+        faber.update_state(3);
         alice.update_state(4);
         faber.update_state(4);
 
@@ -318,7 +324,7 @@ mod test {
     }
 
     #[test]
-    fn test_connection_delete(){
+    fn test_connection_delete() {
         let connection_handle = create_connection(_source_id()).unwrap();
         assert!(CONNECTION_MAP.has_handle(connection_handle));
 
@@ -327,12 +333,11 @@ mod test {
     }
 
     #[test]
-    fn test_connection_serialization_works(){
+    fn test_connection_serialization_works() {
         let connection_handle = create_connection(_source_id()).unwrap();
         assert!(CONNECTION_MAP.has_handle(connection_handle));
 
         let connection_json = to_string(connection_handle).unwrap();
-        println!("{}", connection_json);
 
         let connection_handle_2 = from_string(&connection_json).unwrap();
         assert!(CONNECTION_MAP.has_handle(connection_handle_2));

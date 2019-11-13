@@ -70,7 +70,7 @@ impl Connection {
         let messages = self.get_messages()?;
         let agent_info = self.agent_info().clone();
 
-        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
             self = self.handle_message(message)?;
             agent_info.update_message_status(uid)?;
         };
@@ -78,76 +78,13 @@ impl Connection {
         if let Some(prev_agent_info) = self.state.prev_agent_info().cloned() {
             let messages = prev_agent_info.get_messages()?;
 
-            if let Some((uid, message)) = self.find_message_to_handle(messages) {
+            if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
                 self = self.handle_message(message)?;
                 prev_agent_info.update_message_status(uid)?;
             }
         }
 
         Ok(self)
-    }
-
-    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, DidExchangeMessages)> {
-        trace!("Prover::get_message_to_handle >>> messages: {:?}", messages);
-
-        for (uid, message) in messages {
-            match self.state.state {
-                ActorDidExchangeState::Inviter(DidExchangeState::Invited(ref state)) => {
-                    match message {
-                        A2AMessage::ConnectionRequest(request) => {
-                            debug!("Inviter received ConnectionRequest message");
-                            return Some((uid, DidExchangeMessages::ExchangeRequestReceived(request)));
-                        }
-                        A2AMessage::ConnectionProblemReport(problem_report) => {
-                            debug!("Inviter received ProblemReport message");
-                            return Some((uid, DidExchangeMessages::ProblemReportReceived(problem_report)));
-                        }
-                        message @ _ => {
-                            debug!("Inviter received unexpected message: {:?}", message);
-                        }
-                    }
-                }
-                ActorDidExchangeState::Invitee(DidExchangeState::Requested(ref state)) => {
-                    match message {
-                        A2AMessage::ConnectionResponse(response) => {
-                            debug!("Invitee received ConnectionResponse message");
-                            return Some((uid, DidExchangeMessages::ExchangeResponseReceived(response)));
-                        }
-                        A2AMessage::ConnectionProblemReport(problem_report) => {
-                            debug!("Invitee received ProblemReport message");
-                            return Some((uid, DidExchangeMessages::ProblemReportReceived(problem_report)));
-                        }
-                        message @ _ => {
-                            debug!("Invitee received unexpected message: {:?}", message);
-                        }
-                    }
-                }
-                ActorDidExchangeState::Inviter(DidExchangeState::Responded(ref state)) => {
-                    match message {
-                        A2AMessage::Ack(ack) => {
-                            debug!("Ack message received");
-                            return Some((uid, DidExchangeMessages::AckReceived(ack)));
-                        }
-                        A2AMessage::Ping(ping) => {
-                            debug!("Ping message received");
-                            return Some((uid, DidExchangeMessages::PingReceived(ping)));
-                        }
-                        A2AMessage::ConnectionProblemReport(problem_report) => {
-                            debug!("ProblemReport message received");
-                            return Some((uid, DidExchangeMessages::ProblemReportReceived(problem_report)));
-                        }
-                        message @ _ => {
-                            debug!("Unexpected message received in Responded state: {:?}", message);
-                        }
-                    }
-                }
-                _ => {
-                    debug!("Unexpected message received: message: {:?}", message);
-                }
-            }
-        }
-
-        None
     }
 
     pub fn update_message_status(&self, uid: String) -> VcxResult<()> {
@@ -162,7 +99,7 @@ impl Connection {
 
         let messages: HashMap<String, A2AMessage> = map! { message.uid.clone() => self.decode_message(&message)? };
 
-        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
             self = self.handle_message(message)?;
             self.update_message_status(uid)?;
         }

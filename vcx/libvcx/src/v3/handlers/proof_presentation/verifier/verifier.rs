@@ -9,7 +9,7 @@ use v3::handlers::connection;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
-use v3::handlers::proof_presentation::verifier::states::{VerifierSM, VerifierState, VerifierMessages};
+use v3::handlers::proof_presentation::verifier::states::{VerifierSM, VerifierMessages};
 
 use messages::proofs::proof_request::ProofRequestMessage;
 use messages::proofs::proof_message::ProofMessage;
@@ -66,7 +66,7 @@ impl Verifier {
         let connection_handle = self.state.connection_handle()?;
         let messages = connection::get_messages(connection_handle)?;
 
-        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
             self = self.handle_message(message)?;
             connection::update_message_status(connection_handle, uid)?;
         };
@@ -82,51 +82,14 @@ impl Verifier {
 
         let connection_handle = self.state.connection_handle()?;
 
-        let messages: HashMap<String, A2AMessage> = map!{ message.uid.clone() => connection::decode_message(connection_handle, message)? };
+        let messages: HashMap<String, A2AMessage> = map! { message.uid.clone() => connection::decode_message(connection_handle, message)? };
 
-        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
             self = self.handle_message(message)?;
             connection::update_message_status(connection_handle, uid)?;
         }
 
         Ok(self)
-    }
-
-    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, VerifierMessages)> {
-        trace!("Verifier::find_message_to_handle >>> messages: {:?}", messages);
-
-        for (uid, message) in messages {
-            match self.state.state {
-                VerifierState::Initiated(ref state) => {
-                    // do not process message
-                }
-                VerifierState::PresentationRequestSent(ref state) => {
-                    match message {
-                        A2AMessage::Presentation(presentation) => {
-                            if presentation.thread.is_reply(&self.state.thread_id()) {
-                                return Some((uid, VerifierMessages::VerifyPresentation(presentation)));
-                            }
-                        }
-                        A2AMessage::PresentationProposal(proposal) => {
-                            if proposal.thread.is_reply(&self.state.thread_id()) {
-                                return Some((uid, VerifierMessages::PresentationProposalReceived(proposal)));
-                            }
-                        }
-                        A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.state.thread_id()) {
-                                return Some((uid, VerifierMessages::PresentationRejectReceived(problem_report)));
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                VerifierState::Finished(ref state) => {
-                    // do not process message
-                }
-            };
-        }
-
-        None
     }
 
     pub fn handle_message(self, message: VerifierMessages) -> VcxResult<Verifier> {

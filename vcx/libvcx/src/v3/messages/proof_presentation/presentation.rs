@@ -29,11 +29,6 @@ impl Presentation {
         self
     }
 
-    pub fn set_id(mut self, id: MessageId) -> Self {
-        self.id = id;
-        self
-    }
-
     pub fn set_presentations_attach(mut self, presentations: String) -> VcxResult<Presentation> {
         self.presentations_attach.add_json_attachment(::serde_json::Value::String(presentations), AttachmentEncoding::Base64)?;
         Ok(self)
@@ -74,7 +69,7 @@ impl TryInto<ProofMessage> for Presentation {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::connection::response::tests::*;
+    use v3::messages::proof_presentation::presentation_request::tests::thread;
 
     fn _attachment() -> ::serde_json::Value {
         json!({"presentation": {}})
@@ -84,7 +79,7 @@ pub mod tests {
         String::from("comment")
     }
 
-    fn _presentation() -> Presentation {
+    pub fn _presentation() -> Presentation {
         let mut attachment = Attachments::new();
         attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
 
@@ -92,7 +87,7 @@ pub mod tests {
             id: MessageId::id(),
             comment: Some(_comment()),
             presentations_attach: attachment,
-            thread: _thread(),
+            thread: thread(),
         }
     }
 
@@ -100,7 +95,7 @@ pub mod tests {
     fn test_presentation_build_works() {
         let presentation: Presentation = Presentation::default()
             .set_comment(_comment())
-            .set_thread(_thread())
+            .set_thread(thread())
             .set_presentations_attach(_attachment().to_string()).unwrap();
 
         assert_eq!(_presentation(), presentation);

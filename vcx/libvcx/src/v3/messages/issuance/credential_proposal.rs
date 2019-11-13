@@ -57,3 +57,53 @@ impl CredentialProposal {
         A2AMessage::CredentialProposal(self.clone()) // TODO: THINK how to avoid clone
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use v3::messages::issuance::credential_offer::tests::{thread, _value};
+
+    fn _attachment() -> ::serde_json::Value {
+        json!({"credential offer": {}})
+    }
+
+    fn _comment() -> String {
+        String::from("comment")
+    }
+
+    fn _schema_id() -> String { String::from("schema:id") }
+
+    fn _cred_def_id() -> String { String::from("cred_def_id:id") }
+
+    fn _credential_preview_data() -> CredentialPreviewData {
+        let (name, value) = _value();
+
+        CredentialPreviewData::new()
+            .add_value(name, value, MimeType::Plain).unwrap()
+    }
+
+    pub fn _credential_proposal() -> CredentialProposal {
+        CredentialProposal {
+            id: MessageId::id(),
+            comment: _comment(),
+            credential_proposal: _credential_preview_data(),
+            schema_id: _schema_id(),
+            thread: Some(thread()),
+            cred_def_id: _cred_def_id(),
+        }
+    }
+
+    #[test]
+    fn test_credential_proposal_build_works() {
+        let (name, value) = _value();
+
+        let credential_proposal: CredentialProposal = CredentialProposal::create()
+            .set_comment(_comment())
+            .set_thread(thread())
+            .set_cred_def_id(_cred_def_id())
+            .set_schema_id(_schema_id())
+            .add_credential_preview_data(name, value, MimeType::Plain).unwrap();
+
+        assert_eq!(_credential_proposal(), credential_proposal);
+    }
+}

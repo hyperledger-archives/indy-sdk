@@ -5,7 +5,7 @@ use utils::libindy::anoncreds;
 use std::convert::TryInto;
 use std::collections::HashMap;
 
-use v3::handlers::proof_presentation::prover::states::{ProverSM, ProverState, ProverMessages};
+use v3::handlers::proof_presentation::prover::states::{ProverSM, ProverMessages};
 
 use v3::handlers::connection;
 use v3::messages::a2a::{A2AMessage, MessageId};
@@ -77,7 +77,7 @@ impl Prover {
         let connection_handle = self.state.connection_handle()?;
         let messages = connection::get_messages(connection_handle)?;
 
-        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
             self = self.handle_message(message)?;
             connection::update_message_status(connection_handle, uid)?;
         };
@@ -91,57 +91,14 @@ impl Prover {
 
         let connection_handle = self.state.connection_handle()?;
 
-        let messages: HashMap<String, A2AMessage> = map!{ message.uid.clone() => connection::decode_message(connection_handle, message)? };
+        let messages: HashMap<String, A2AMessage> = map! { message.uid.clone() => connection::decode_message(connection_handle, message)? };
 
-        if let Some((uid, message)) = self.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
             self = self.handle_message(message)?;
             connection::update_message_status(connection_handle, uid)?;
         }
 
         Ok(self)
-    }
-
-    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, ProverMessages)> {
-        trace!("Prover::get_message_to_handle >>> messages: {:?}", messages);
-
-        for (uid, message) in messages {
-            match self.state.state {
-                ProverState::Initiated(ref state) => {
-                    match message {
-                        A2AMessage::PresentationRequest(presentation_request) => {
-                            // ignore it here??
-                        }
-                        _ => {}
-                    }
-                }
-                ProverState::PresentationPrepared(_) => {
-                    // do not process messages
-                }
-                ProverState::PresentationPreparationFailed(_) => {
-                    // do not process messages
-                }
-                ProverState::PresentationSent(ref state) => {
-                    match message {
-                        A2AMessage::Ack(ack) => {
-                            if ack.thread.is_reply(&self.state.thread_id()) {
-                                return Some((uid, ProverMessages::PresentationAckReceived(ack)));
-                            }
-                        }
-                        A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.state.thread_id()) {
-                                return Some((uid, ProverMessages::PresentationRejectReceived(problem_report)));
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                ProverState::Finished(ref state) => {
-                    // do not process messages
-                }
-            };
-        }
-
-        None
     }
 
     pub fn handle_message(self, message: ProverMessages) -> VcxResult<Prover> {
@@ -159,7 +116,7 @@ impl Prover {
             _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Message has different type"))
         };
 
-        connection::add_pending_messages(connection_handle, map!{ id => msg_id.to_string() })?;
+        connection::add_pending_messages(connection_handle, map! { id => msg_id.to_string() })?;
 
         Ok(presentation_request)
     }
@@ -174,14 +131,14 @@ impl Prover {
                     match message {
                         A2AMessage::PresentationRequest(presentation_request) => {
                             Some((uid, presentation_request.id.clone(), presentation_request))
-                        },
+                        }
                         _ => None,
                     }
                 }).fold((HashMap::new(), Vec::new()), |(mut uids, mut messages), (uid, id, presentation_request)| {
-                    uids.insert(id, uid);
-                    messages.push(presentation_request);
-                    (uids, messages)
-                });
+                uids.insert(id, uid);
+                messages.push(presentation_request);
+                (uids, messages)
+            });
 
         connection::add_pending_messages(connection_handle, uids)?;
 

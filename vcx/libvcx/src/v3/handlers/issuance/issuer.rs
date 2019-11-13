@@ -14,6 +14,7 @@ use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer};
 use messages::thread::Thread;
 use issuer_credential::encode_attributes;
 use v3::messages::status::Status;
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct IssuerSM {
@@ -22,10 +23,10 @@ pub struct IssuerSM {
 }
 
 impl IssuerSM {
-    pub fn new(cred_def_id: &str, credential_data: &str, rev_reg_id: Option<String>, tails_file: Option<String>, source_id: String) -> Self {
+    pub fn new(cred_def_id: &str, credential_data: &str, rev_reg_id: Option<String>, tails_file: Option<String>, source_id: &str) -> Self {
         IssuerSM {
             state: IssuerState::Initial(InitialState::new(cred_def_id, credential_data, rev_reg_id, tails_file)),
-            source_id
+            source_id: source_id.to_string()
         }
     }
 
@@ -44,56 +45,85 @@ impl IssuerSM {
         self.state.get_connection_handle()
     }
 
-    pub fn fetch_messages(&self) -> VcxResult<Option<A2AMessage>> {
-        if self.is_terminal_state() { return Ok(None); }
+    pub fn update_state(self) -> VcxResult<Self> {
+        if self.is_terminal_state() { return Ok(self); }
 
         let conn_handle = self.state.get_connection_handle();
-        let thread_id = self.state.get_thread_id();
         let messages = get_messages(conn_handle)?;
 
-        let res: Option<(String, A2AMessage)> = messages.into_iter()
-            .filter_map(|(uid, a2a_message)| {
-                let thid = match &a2a_message {
-                    A2AMessage::Ack(ref ack) => {
-                        ack.thread.thid.clone()
-                    }
-                    A2AMessage::CommonProblemReport(ref report) => {
-                        report.thread.thid.clone()
-                    }
-                    A2AMessage::CredentialProposal(ref proposal) => {
-                        match proposal.thread.as_ref().map(|thread| thread.thid.clone()) {
-                            Some(a) => a,
-                            None => None
-                        }.clone()
-                    }
-                    A2AMessage::CredentialRequest(ref request) => {
-                        request.thread.thid.clone()
-                    }
-                    _ => None
-                };
-                if thid == thread_id {
-                    Some((uid, a2a_message))
-                } else {
-                    None
-                }
-            })
-            .nth(0);
-
-        if let Some((uid, msg)) = res {
-            update_message_status(conn_handle, uid)?;
-            Ok(Some(msg))
-        } else {
-            Ok(None)
+        match self.find_message_to_handle(messages) {
+            Some((uid, msg)) => {
+                update_message_status(conn_handle, uid)?;
+                self.handle_message((&msg, 0u32).into())
+            }
+            None => Ok(self)
         }
     }
 
-    pub fn get_state(&self) -> VcxStateType {
+
+
+    fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
+        for (uid, message) in messages {
+            match self.state {
+                IssuerState::Initial(ref state) => {
+                    // do not process messages
+                }
+                IssuerState::OfferSent(ref state) => {
+                    match message {
+                        A2AMessage::CredentialRequest(credential) => {
+                            if credential.thread.is_reply(&self.state.thread_id()) {
+                                return Some((uid, A2AMessage::CredentialRequest(credential)));
+                            }
+                        }
+                        A2AMessage::CredentialProposal(credential_proposal) => {
+                            if let Some(ref thread) = credential_proposal.thread {
+                                if thread.is_reply(&self.state.thread_id()) {
+                                    return Some((uid, A2AMessage::CredentialProposal(credential_proposal)));
+                                }
+                            }
+                        }
+                        A2AMessage::CommonProblemReport(problem_report) => {
+                            if problem_report.thread.is_reply(&self.state.thread_id()) {
+                                return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                IssuerState::RequestReceived(ref state) => {
+                    // do not process messages
+                }
+                IssuerState::CredentialSent(ref state) => {
+                    match message {
+                        A2AMessage::Ack(ack) => {
+                            if ack.thread.is_reply(&self.state.thread_id()) {
+                                return Some((uid, A2AMessage::Ack(ack)));
+                            }
+                        }
+                        A2AMessage::CommonProblemReport(problem_report) => {
+                            if problem_report.thread.is_reply(&self.state.thread_id()) {
+                                return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                IssuerState::Finished(ref state) => {
+                    // do not process messages
+                }
+            };
+        }
+
+        None
+    }
+
+    pub fn state(&self) -> u32 {
         match self.state {
-            IssuerState::Initial(_) => VcxStateType::VcxStateInitialized,
-            IssuerState::OfferSent(_) => VcxStateType::VcxStateOfferSent,
-            IssuerState::RequestReceived(_) => VcxStateType::VcxStateRequestReceived,
-            IssuerState::CredentialSent(_) => VcxStateType::VcxStateAccepted,
-            IssuerState::Finished(_) => VcxStateType::VcxStateAccepted,
+            IssuerState::Initial(_) => VcxStateType::VcxStateInitialized as u32,
+            IssuerState::OfferSent(_) => VcxStateType::VcxStateOfferSent as u32,
+            IssuerState::RequestReceived(_) => VcxStateType::VcxStateRequestReceived as u32,
+            IssuerState::CredentialSent(_) => VcxStateType::VcxStateAccepted as u32,
+            IssuerState::Finished(_) => VcxStateType::VcxStateAccepted as u32,
         }
     }
 
@@ -179,6 +209,7 @@ impl IssuerSM {
                 IssuerState::Finished(state_data)
             }
         };
+
         Ok(IssuerSM::step(state, source_id))
     }
 
@@ -230,4 +261,354 @@ fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, 
                                                                                              tails_file.clone())?;
     Credential::create()
         .set_credential(credential)
+}
+
+#[cfg(feature = "aries")]
+#[cfg(test)]
+pub mod test {
+    use super::*;
+
+    use v3::test::source_id;
+    use v3::test::setup::TestModeSetup;
+    use v3::handlers::connection::test::mock_connection;
+    use v3::messages::issuance::test::{_ack, _problem_report};
+    use v3::messages::issuance::credential::tests::_credential;
+    use v3::messages::issuance::credential_request::tests::_credential_request;
+    use v3::messages::issuance::credential_proposal::tests::_credential_proposal;
+    use v3::messages::issuance::credential_offer::tests::_credential_offer;
+
+    fn _issuer_sm() -> IssuerSM {
+        IssuerSM::new("test", &json!({"name": "alice"}).to_string(), None, None, &source_id())
+    }
+
+    impl IssuerSM {
+        fn to_offer_sent_state(mut self) -> IssuerSM {
+            self = self.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            self
+        }
+
+        fn to_request_received_state(mut self) -> IssuerSM {
+            self = self.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            self = self.handle_message(CredentialIssuanceMessage::CredentialRequest(_credential_request(), mock_connection())).unwrap();
+            self
+        }
+
+        fn to_finished_state(mut self) -> IssuerSM {
+            self = self.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            self = self.handle_message(CredentialIssuanceMessage::CredentialRequest(_credential_request(), mock_connection())).unwrap();
+            self = self.handle_message(CredentialIssuanceMessage::CredentialSend()).unwrap();
+            self
+        }
+    }
+
+    mod new {
+        use super::*;
+
+        #[test]
+        fn test_issuer_new() {
+            let _setup = TestModeSetup::init();
+
+            let issuer_sm = _issuer_sm();
+
+            assert_match!(IssuerState::Initial(_), issuer_sm.state);
+            assert_eq!(source_id(), issuer_sm.get_source_id());
+        }
+    }
+
+    mod handle_message {
+        use super::*;
+
+        #[test]
+        fn test_issuer_init() {
+            let _setup = TestModeSetup::init();
+
+            let issuer_sm = _issuer_sm();
+
+            assert_match!(IssuerState::Initial(_), issuer_sm.state);
+        }
+
+        #[test]
+        fn test_issuer_handle_credential_init_message_from_initial_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+
+            assert_match!(IssuerState::OfferSent(_), issuer_sm.state);
+        }
+
+        #[test]
+        fn test_issuer_handle_other_messages_from_initial_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::Credential(_credential(), mock_connection())).unwrap();
+            assert_match!(IssuerState::Initial(_), issuer_sm.state);
+
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialRequest(_credential_request(), mock_connection())).unwrap();
+            assert_match!(IssuerState::Initial(_), issuer_sm.state);
+        }
+
+        #[test]
+        fn test_issuer_handle_credential_request_message_from_offer_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialRequest(_credential_request(), mock_connection())).unwrap();
+
+            assert_match!(IssuerState::RequestReceived(_), issuer_sm.state);
+        }
+
+        #[test]
+        fn test_issuer_handle_credential_proposal_message_from_offer_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialProposal(_credential_proposal(), mock_connection())).unwrap();
+
+            assert_match!(IssuerState::Finished(_), issuer_sm.state);
+            assert_eq!(Status::Failed(ProblemReport::default()).code(), issuer_sm.credential_status());
+        }
+
+        #[test]
+        fn test_issuer_handle_problem_report_message_from_offer_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::ProblemReport(_problem_report())).unwrap();
+
+            assert_match!(IssuerState::Finished(_), issuer_sm.state);
+            assert_eq!(Status::Failed(ProblemReport::default()).code(), issuer_sm.credential_status());
+        }
+
+        #[test]
+        fn test_issuer_handle_other_messages_from_offer_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::Credential(_credential(), mock_connection())).unwrap();
+
+            assert_match!(IssuerState::OfferSent(_), issuer_sm.state);
+        }
+
+        #[test]
+        fn test_issuer_handle_credential_send_message_from_request_received_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialRequest(_credential_request(), mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend()).unwrap();
+
+            assert_match!(IssuerState::Finished(_), issuer_sm.state);
+            assert_eq!(Status::Success.code(), issuer_sm.credential_status());
+        }
+
+        #[test]
+        fn test_issuer_handle_credential_send_message_from_request_received_state_with_invalid_request() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialRequest(CredentialRequest::create(), mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend()).unwrap();
+
+            assert_match!(IssuerState::Finished(_), issuer_sm.state);
+            assert_eq!(Status::Failed(ProblemReport::default()).code(), issuer_sm.credential_status());
+        }
+
+        #[test]
+        fn test_issuer_handle_other_messages_from_request_received_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialRequest(_credential_request(), mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend()).unwrap();
+
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend()).unwrap();
+            assert_match!(IssuerState::Finished(_), issuer_sm.state);
+
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::Ack(_ack())).unwrap();
+            assert_match!(IssuerState::Finished(_), issuer_sm.state);
+        }
+
+        // TRANSITIONS TO/FROM CREDENTIAL SENT STATE AREN'T POSSIBLE NOW
+
+        #[test]
+        fn test_issuer_handle_messages_from_finished_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut issuer_sm = _issuer_sm();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialRequest(_credential_request(), mock_connection())).unwrap();
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialSend()).unwrap();
+
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
+            assert_match!(IssuerState::Finished(_), issuer_sm.state);
+
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialRequest(_credential_request(), mock_connection())).unwrap();
+            assert_match!(IssuerState::Finished(_), issuer_sm.state);
+
+            issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::Credential(_credential(), mock_connection())).unwrap();
+            assert_match!(IssuerState::Finished(_), issuer_sm.state);
+        }
+    }
+
+    mod find_message_to_handle {
+        use super::*;
+
+        #[test]
+        fn test_issuer_find_message_to_handle_from_initial_state() {
+            let _setup = TestModeSetup::init();
+
+            let issuer = _issuer_sm();
+
+            // No messages
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request()),
+                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal()),
+                    "key_4".to_string() => A2AMessage::Credential(_credential()),
+                    "key_5".to_string() => A2AMessage::Ack(_ack()),
+                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                assert!(issuer.find_message_to_handle(messages).is_none());
+            }
+        }
+
+        #[test]
+        fn test_issuer_find_message_to_handle_from_offer_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let issuer = _issuer_sm().to_offer_sent_state();
+
+            // CredentialRequest
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::Credential(_credential()),
+                    "key_3".to_string() => A2AMessage::CredentialRequest(_credential_request())
+                );
+
+                let (uid, message) = issuer.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CredentialRequest(_), message);
+            }
+
+            // CredentialProposal
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::Ack(_ack()),
+                    "key_3".to_string() => A2AMessage::Credential(_credential()),
+                    "key_4".to_string() => A2AMessage::CredentialProposal(_credential_proposal())
+                );
+
+                let (uid, message) = issuer.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_4", uid);
+                assert_match!(A2AMessage::CredentialProposal(_), message);
+            }
+
+            // Problem Report
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::Ack(_ack()),
+                    "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = issuer.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
+            }
+
+            // No messages for different Thread ID
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer().set_thread(Thread::new())),
+                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request().set_thread(Thread::new())),
+                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal().set_thread(Thread::new())),
+                    "key_4".to_string() => A2AMessage::Credential(_credential().set_thread(Thread::new())),
+                    "key_5".to_string() => A2AMessage::Ack(_ack().set_thread(Thread::new())),
+                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread(Thread::new()))
+                );
+
+                assert!(issuer.find_message_to_handle(messages).is_none());
+            }
+
+            // No messages
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::Ack(_ack())
+                );
+
+                assert!(issuer.find_message_to_handle(messages).is_none());
+            }
+        }
+
+        #[test]
+        fn test_issuer_find_message_to_handle_from_request_state() {
+            let _setup = TestModeSetup::init();
+
+            let issuer = _issuer_sm().to_finished_state();
+
+            // No messages
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request()),
+                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal()),
+                    "key_4".to_string() => A2AMessage::Credential(_credential()),
+                    "key_5".to_string() => A2AMessage::Ack(_ack()),
+                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                assert!(issuer.find_message_to_handle(messages).is_none());
+            }
+        }
+
+        #[test]
+        fn test_issuer_find_message_to_handle_from_credential_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let issuer = _issuer_sm().to_finished_state();
+
+            // No messages
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
+                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request()),
+                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal()),
+                    "key_4".to_string() => A2AMessage::Credential(_credential()),
+                    "key_5".to_string() => A2AMessage::Ack(_ack()),
+                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                assert!(issuer.find_message_to_handle(messages).is_none());
+            }
+        }
+    }
+
+    mod get_state {
+        use super::*;
+
+        #[test]
+        fn test_get_state() {
+            let _setup = TestModeSetup::init();
+
+            assert_eq!(VcxStateType::VcxStateInitialized as u32, _issuer_sm().state());
+            assert_eq!(VcxStateType::VcxStateOfferSent as u32, _issuer_sm().to_offer_sent_state().state());
+            assert_eq!(VcxStateType::VcxStateRequestReceived as u32, _issuer_sm().to_request_received_state().state());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, _issuer_sm().to_finished_state().state());
+        }
+    }
 }

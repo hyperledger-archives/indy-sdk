@@ -118,7 +118,7 @@ pub mod tests {
         String::from("test comment")
     }
 
-    fn _problem_report() -> ProblemReport {
+    pub fn _problem_report() -> ProblemReport {
         ProblemReport {
             id: MessageId::id(),
             thread: _thread(),

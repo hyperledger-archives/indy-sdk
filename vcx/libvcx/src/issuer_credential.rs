@@ -638,7 +638,7 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
     if v3::handlers::issuance::ISSUE_CREDENTIAL_MAP.has_handle(handle) {
-        return v3::handlers::issuance::issuer_get_status(handle)
+        return v3::handlers::issuance::issuer_get_state(handle)
     }
     ISSUER_CREDENTIAL_MAP.get(handle, |i| {
         Ok(i.get_state())

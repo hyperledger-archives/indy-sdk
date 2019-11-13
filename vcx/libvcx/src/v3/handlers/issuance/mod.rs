@@ -4,7 +4,6 @@ pub mod messages;
 pub mod holder;
 
 use std::collections::HashMap;
-use api::VcxStateType;
 use error::prelude::*;
 use messages::get_message::Message;
 use object_cache::ObjectCache;
@@ -33,7 +32,7 @@ pub fn issuer_create_credential(cred_def_handle: u32, credential_data: &str, sou
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
     let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle)?;
     let tails_file = ::credential_def::get_tails_file(cred_def_handle)?;
-    let credential = IssuerSM::new(&cred_def_id, credential_data, rev_reg_id, tails_file, source_id.to_string());
+    let credential = IssuerSM::new(&cred_def_id, credential_data, rev_reg_id, tails_file, source_id);
 
     ISSUE_CREDENTIAL_MAP.add(credential)
         .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
@@ -46,35 +45,23 @@ pub fn send_credential_offer(credential_handle: u32, connection_handle: u32) -> 
 }
 
 pub fn issuer_update_status(credential_handle: u32, msg: Option<String>) -> VcxResult<u32> {
-    let msg = match msg {
+    match msg {
         Some(msg) => {
             let message: Message = ::serde_json::from_str(&msg)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
-            Some(ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
-                connection::decode_message(issuer_sm.get_connection_handle(), message.clone())
-            })?)
+
+            ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
+                let message = connection::decode_message(issuer_sm.get_connection_handle(), message.clone())?;
+                issuer_sm.handle_message((&message, 0u32).into())
+            })?
         }
         None => {
-            ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
-                issuer_sm.fetch_messages()
+            ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
+                issuer_sm.update_state()
             })?
         }
     };
-
-    if let Some(sm_msg) = msg {
-        ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
-            issuer_sm.handle_message((&sm_msg, 0u32).into())
-        })?;
-        get_state(credential_handle)
-    } else {
-        get_state(credential_handle)
-    }
-}
-
-pub fn get_state(handle: u32) -> VcxResult<u32> {
-    ISSUE_CREDENTIAL_MAP.get(handle, |obj| {
-        Ok(obj.get_state() as u32)
-    })
+    issuer_get_state(credential_handle)
 }
 
 pub fn send_credential(credential_handle: u32, connection_handle: u32) -> VcxResult<u32> {
@@ -83,9 +70,9 @@ pub fn send_credential(credential_handle: u32, connection_handle: u32) -> VcxRes
     }).map(|_| error::SUCCESS.code_num)
 }
 
-pub fn issuer_get_status(credential_handle: u32) -> VcxResult<u32> {
+pub fn issuer_get_state(credential_handle: u32) -> VcxResult<u32> {
     ISSUE_CREDENTIAL_MAP.get(credential_handle, |issuer_sm| {
-        Ok(issuer_sm.get_state() as u32)
+        Ok(issuer_sm.state())
     })
 }
 
@@ -132,35 +119,29 @@ pub fn holder_send_request(credential_handle: u32, connection_handle: u32) -> Vc
     }).map(|_| error::SUCCESS.code_num)
 }
 
-pub fn holder_update_status(credential_handle: u32, msg: Option<String>) -> VcxResult<u32> {
-    let msg = match msg {
+pub fn holder_update_state(credential_handle: u32, msg: Option<String>) -> VcxResult<u32> {
+    match msg {
         Some(msg) => {
             let message: Message = ::serde_json::from_str(&msg)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
-            Some(HOLD_CREDENTIAL_MAP.get(credential_handle, |holder_sm| {
-                connection::decode_message(holder_sm.get_connection_handle(), message.clone())
-            })?)
+
+            HOLD_CREDENTIAL_MAP.map(credential_handle, |holder_sm| {
+                let message = connection::decode_message(holder_sm.get_connection_handle(), message.clone())?;
+                holder_sm.handle_message((&message, 0u32).into())
+            })?
         }
         None => {
-            HOLD_CREDENTIAL_MAP.get(credential_handle, |holder_sm| {
-                holder_sm.fetch_message()
+            HOLD_CREDENTIAL_MAP.map(credential_handle, |holder_sm| {
+                holder_sm.update_state()
             })?
         }
     };
-
-    if let Some(sm_msg) = msg {
-        HOLD_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
-            issuer_sm.handle_message((&sm_msg, 0u32).into())
-        })?;
-        Ok(VcxStateType::VcxStateRequestReceived as u32)
-    } else {
-        Ok(VcxStateType::VcxStateOfferSent as u32)
-    }
+    holder_get_status(credential_handle)
 }
 
 pub fn holder_get_status(credential_handle: u32) -> VcxResult<u32> {
     HOLD_CREDENTIAL_MAP.get(credential_handle, |holder_sm| {
-        Ok(holder_sm.get_state() as u32)
+        Ok(holder_sm.state())
     })
 }
 

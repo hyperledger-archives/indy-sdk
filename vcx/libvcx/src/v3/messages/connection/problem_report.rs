@@ -99,7 +99,7 @@ pub mod tests {
         String::from("test explanation")
     }
 
-    fn _problem_report() -> ProblemReport {
+    pub fn _problem_report() -> ProblemReport {
         ProblemReport {
             id: MessageId::id(),
             problem_code: Some(_problem_code()),

@@ -1,3 +1,6 @@
+use api::VcxStateType;
+
+use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
 use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
 use v3::messages::proof_presentation::presentation::Presentation;
@@ -7,13 +10,14 @@ use v3::messages::status::Status;
 use messages::thread::Thread;
 use proof::Proof;
 
+use std::collections::HashMap;
 use v3::handlers::connection;
 use error::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct VerifierSM {
     source_id: String,
-    pub state: VerifierState
+    state: VerifierState
 }
 
 impl VerifierSM {
@@ -109,6 +113,41 @@ impl PresentationRequestSentState {
 }
 
 impl VerifierSM {
+    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, VerifierMessages)> {
+        for (uid, message) in messages {
+            match self.state {
+                VerifierState::Initiated(ref state) => {
+                    // do not process message
+                }
+                VerifierState::PresentationRequestSent(ref state) => {
+                    match message {
+                        A2AMessage::Presentation(presentation) => {
+                            if presentation.thread.is_reply(&self.thread_id()) {
+                                return Some((uid, VerifierMessages::VerifyPresentation(presentation)));
+                            }
+                        }
+                        A2AMessage::PresentationProposal(proposal) => {
+                            if proposal.thread.is_reply(&self.thread_id()) {
+                                return Some((uid, VerifierMessages::PresentationProposalReceived(proposal)));
+                            }
+                        }
+                        A2AMessage::CommonProblemReport(problem_report) => {
+                            if problem_report.thread.is_reply(&self.thread_id()) {
+                                return Some((uid, VerifierMessages::PresentationRejectReceived(problem_report)));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                VerifierState::Finished(ref state) => {
+                    // do not process message
+                }
+            };
+        }
+
+        None
+    }
+
     pub fn step(self, message: VerifierMessages) -> VcxResult<VerifierSM> {
         trace!("VerifierSM::step >>> message: {:?}", message);
 
@@ -188,9 +227,9 @@ impl VerifierSM {
 
     pub fn state(&self) -> u32 {
         match self.state {
-            VerifierState::Initiated(_) => 1,
-            VerifierState::PresentationRequestSent(_) => 2,
-            VerifierState::Finished(_) => 4,
+            VerifierState::Initiated(_) => VcxStateType::VcxStateInitialized as u32,
+            VerifierState::PresentationRequestSent(_) => VcxStateType::VcxStateOfferSent as u32,
+            VerifierState::Finished(_) => VcxStateType::VcxStateAccepted as u32,
         }
     }
 
@@ -243,6 +282,285 @@ impl VerifierSM {
                 state.presentation.clone()
                     .ok_or(VcxError::from(VcxErrorKind::InvalidProofHandle))
             }
+        }
+    }
+}
+
+#[cfg(feature = "aries")]
+#[cfg(test)]
+pub mod test {
+    use super::*;
+
+    use v3::test::source_id;
+    use v3::test::setup::TestModeSetup;
+    use v3::handlers::connection::test::mock_connection;
+    use v3::messages::proof_presentation::presentation_request::tests::_presentation_request;
+    use v3::messages::proof_presentation::presentation_request::tests::_presentation_request_data;
+    use v3::messages::proof_presentation::presentation::tests::_presentation;
+    use v3::messages::proof_presentation::presentation_proposal::tests::_presentation_proposal;
+    use v3::messages::proof_presentation::test::{_ack, _problem_report};
+
+    pub fn _verifier_sm() -> VerifierSM {
+        VerifierSM::new(_presentation_request_data(), source_id())
+    }
+
+    impl VerifierSM {
+        fn to_presentation_request_sent_state(mut self) -> VerifierSM {
+            self = self.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+            self
+        }
+
+        fn to_finished_state(mut self) -> VerifierSM {
+            self = self.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+            self = self.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+            self
+        }
+    }
+
+    mod new {
+        use super::*;
+
+        #[test]
+        fn test_verifier_new() {
+            let _setup = TestModeSetup::init();
+
+            let verifier_sm = _verifier_sm();
+
+            assert_match!(VerifierState::Initiated(_), verifier_sm.state);
+            assert_eq!(source_id(), verifier_sm.source_id());
+        }
+    }
+
+    mod step {
+        use super::*;
+
+        #[test]
+        fn test_verifier_init() {
+            let _setup = TestModeSetup::init();
+
+            let verifier_sm = _verifier_sm();
+            assert_match!(VerifierState::Initiated(_), verifier_sm.state);
+        }
+
+        #[test]
+        fn test_prover_handle_send_presentation_request_message_from_initiated_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut verifier_sm = _verifier_sm();
+            verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+
+            assert_match!(VerifierState::PresentationRequestSent(_), verifier_sm.state);
+        }
+
+        #[test]
+        fn test_prover_handle_other_messages_from_initiated_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut verifier_sm = _verifier_sm();
+
+            verifier_sm = verifier_sm.step(VerifierMessages::PresentationRejectReceived(_problem_report())).unwrap();
+            assert_match!(VerifierState::Initiated(_), verifier_sm.state);
+
+            verifier_sm = verifier_sm.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+            assert_match!(VerifierState::Initiated(_), verifier_sm.state);
+        }
+
+        #[test]
+        fn test_prover_handle_verify_presentation_message_from_presentation_request_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut verifier_sm = _verifier_sm();
+            verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+            verifier_sm = verifier_sm.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+
+            assert_match!(VerifierState::Finished(_), verifier_sm.state);
+            assert_eq!(Status::Success.code(), verifier_sm.presentation_status());
+        }
+
+        //    #[test]
+        //    fn test_prover_handle_verify_presentation_message_from_presentation_request_sent_state_for_invalid_presentation() {
+        //        let _setup = Setup::init();
+        //
+        //        let mut verifier_sm = _verifier_sm();
+        //        verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+        //        verifier_sm = verifier_sm.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+        //
+        //        assert_match!(VerifierState::Finished(_), verifier_sm.state);
+        //        assert_eq!(Status::Failed(_problem_report()).code(), verifier_sm.presentation_status());
+        //    }
+
+        #[test]
+        fn test_prover_handle_presentation_proposal_message_from_presentation_request_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut verifier_sm = _verifier_sm();
+            verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+            verifier_sm = verifier_sm.step(VerifierMessages::PresentationProposalReceived(_presentation_proposal())).unwrap();
+
+            assert_match!(VerifierState::Finished(_), verifier_sm.state);
+            assert_eq!(Status::Failed(_problem_report()).code(), verifier_sm.presentation_status());
+        }
+
+        #[test]
+        fn test_prover_handle_presentation_reject_message_from_presentation_request_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut verifier_sm = _verifier_sm();
+            verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+            verifier_sm = verifier_sm.step(VerifierMessages::PresentationRejectReceived(_problem_report())).unwrap();
+
+            assert_match!(VerifierState::Finished(_), verifier_sm.state);
+            assert_eq!(Status::Failed(_problem_report()).code(), verifier_sm.presentation_status());
+        }
+
+        #[test]
+        fn test_prover_handle_other_messages_from_presentation_request_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut verifier_sm = _verifier_sm();
+            verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+
+            verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+            assert_match!(VerifierState::PresentationRequestSent(_), verifier_sm.state);
+        }
+
+        #[test]
+        fn test_prover_handle_messages_from_presentation_finished_state() {
+            let _setup = TestModeSetup::init();
+
+            let mut verifier_sm = _verifier_sm();
+            verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
+            verifier_sm = verifier_sm.step(VerifierMessages::VerifyPresentation(_presentation())).unwrap();
+
+            verifier_sm = verifier_sm.step(VerifierMessages::PresentationRejectReceived(_problem_report())).unwrap();
+            assert_match!(VerifierState::Finished(_), verifier_sm.state);
+
+            verifier_sm = verifier_sm.step(VerifierMessages::PresentationProposalReceived(_presentation_proposal())).unwrap();
+            assert_match!(VerifierState::Finished(_), verifier_sm.state);
+        }
+    }
+
+    mod find_message_to_handle {
+        use super::*;
+
+        #[test]
+        fn test_verifier_find_message_to_handle_from_initiated_state() {
+            let _setup = TestModeSetup::init();
+
+            let verifier = _verifier_sm();
+
+            // No messages
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation()),
+                    "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                assert!(verifier.find_message_to_handle(messages).is_none());
+            }
+        }
+
+        #[test]
+        fn test_verifier_find_message_to_handle_from_presentation_request_sent_state() {
+            let _setup = TestModeSetup::init();
+
+            let verifier = _verifier_sm().to_presentation_request_sent_state();
+
+            // Presentation
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation()),
+                    "key_3".to_string() => A2AMessage::Ack(_ack())
+                );
+
+                let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_2", uid);
+                assert_match!(VerifierMessages::VerifyPresentation(_), message);
+            }
+
+            // Presentation Proposal
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_2".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_3".to_string() => A2AMessage::Ack(_ack())
+                );
+
+                let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_2", uid);
+                assert_match!(VerifierMessages::PresentationProposalReceived(_), message);
+            }
+
+            // Problem Report
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_2".to_string() => A2AMessage::Ack(_ack()),
+                    "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
+                assert_eq!("key_3", uid);
+                assert_match!(VerifierMessages::PresentationRejectReceived(_), message);
+            }
+
+            // No messages for different Thread ID
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread(Thread::new())),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread(Thread::new())),
+                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread(Thread::new())),
+                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread(Thread::new()))
+                );
+
+                assert!(verifier.find_message_to_handle(messages).is_none());
+            }
+
+            // No messages
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request())
+                );
+
+                assert!(verifier.find_message_to_handle(messages).is_none());
+            }
+        }
+
+        #[test]
+        fn test_verifier_find_message_to_handle_from_finished_state() {
+            let _setup = TestModeSetup::init();
+
+            let verifier = _verifier_sm().to_finished_state();
+
+            // No messages
+            {
+                let messages = map!(
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation()),
+                    "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
+
+                assert!(verifier.find_message_to_handle(messages).is_none());
+            }
+        }
+    }
+
+    mod get_state {
+        use super::*;
+
+        #[test]
+        fn test_get_state() {
+            let _setup = TestModeSetup::init();
+
+            assert_eq!(VcxStateType::VcxStateInitialized as u32, _verifier_sm().state());
+            assert_eq!(VcxStateType::VcxStateOfferSent as u32, _verifier_sm().to_presentation_request_sent_state().state());
+            assert_eq!(VcxStateType::VcxStateAccepted as u32, _verifier_sm().to_finished_state().state());
         }
     }
 }

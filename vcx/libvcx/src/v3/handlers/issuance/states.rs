@@ -31,13 +31,13 @@ impl IssuerState {
         }
     }
 
-    pub fn get_thread_id(&self) -> Option<String> {
+    pub fn thread_id(&self) -> String {
         match self {
-            IssuerState::Initial(state) => None,
-            IssuerState::OfferSent(state) => Some(state.thread_id.clone()),
-            IssuerState::RequestReceived(state) => Some(state.thread_id.clone()),
-            IssuerState::CredentialSent(state) => Some(state.thread_id.clone()),
-            IssuerState::Finished(state) => Some(state.thread_id.clone()),
+            IssuerState::Initial(state) => String::new(),
+            IssuerState::OfferSent(state) => state.thread_id.clone(),
+            IssuerState::RequestReceived(state) => state.thread_id.clone(),
+            IssuerState::CredentialSent(state) => state.thread_id.clone(),
+            IssuerState::Finished(state) => state.thread_id.clone(),
         }
     }
 }
@@ -157,7 +157,7 @@ impl From<OfferSentState> for FinishedState {
 }
 
 impl From<(OfferSentState, ProblemReport)> for FinishedState {
-    fn from ((state, err): (OfferSentState, ProblemReport)) -> Self {
+    fn from((state, err): (OfferSentState, ProblemReport)) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {
             cred_id: None,
@@ -179,7 +179,7 @@ impl From<RequestReceivedState> for FinishedState {
 }
 
 impl From<(RequestReceivedState, ProblemReport)> for FinishedState {
-    fn from ((state, err): (RequestReceivedState, ProblemReport)) -> Self {
+    fn from((state, err): (RequestReceivedState, ProblemReport)) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {
             cred_id: None,
@@ -216,11 +216,11 @@ impl HolderState {
         }
     }
 
-    pub fn get_thread_id(&self) -> Option<String> {
+    pub fn thread_id(&self) -> String {
         match self {
-            HolderState::OfferReceived(state) => Some(state.thread_id.clone()),
-            HolderState::RequestSent(state) => Some(state.thread_id.clone()),
-            HolderState::Finished(state) => None
+            HolderState::OfferReceived(state) => state.thread_id.clone(),
+            HolderState::RequestSent(state) => state.thread_id.clone(),
+            HolderState::Finished(state) => String::new()
         }
     }
 }
@@ -291,7 +291,7 @@ impl From<(RequestSentState, ProblemReport)> for FinishedHolderState {
 }
 
 impl From<(OfferReceivedState, ProblemReport)> for FinishedHolderState {
-    fn from ((_state, problem_report): (OfferReceivedState, ProblemReport)) -> Self {
+    fn from((_state, problem_report): (OfferReceivedState, ProblemReport)) -> Self {
         trace!("SM is now in Finished state");
         FinishedHolderState {
             cred_id: None,
