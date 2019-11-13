@@ -274,9 +274,10 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn payload<'a>(&'a self) -> VcxResult<&'a ::serde_json::Value>{
+    pub fn payload<'a>(&'a self) -> VcxResult<Vec<u8>>{
         match self.payload {
-            Some(MessagePayload::V2(ref payload)) => Ok(payload),
+            Some(MessagePayload::V1(ref payload)) => Ok(to_u8(payload)),
+            Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload).map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, err)),
             _ => Err(VcxError::from(VcxErrorKind::InvalidState)),
         }
     }

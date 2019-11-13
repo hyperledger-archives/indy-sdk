@@ -55,10 +55,7 @@ impl EncryptionEnvelope {
         crypto::pack_message(None, &receiver_keys, message.as_bytes())
     }
 
-    pub fn open(my_vk: &str, message: &::serde_json::Value) -> VcxResult<A2AMessage> {
-        let payload = ::serde_json::to_vec(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
-
+    pub fn open(my_vk: &str, payload: Vec<u8>) -> VcxResult<A2AMessage> {
         let unpacked_msg = crypto::unpack_message(&payload)?;
 
         let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
@@ -114,7 +111,7 @@ pub mod tests {
         let message = A2AMessage::Ack(_ack());
 
         let envelope = EncryptionEnvelope::create(&message, &setup.key, &info).unwrap();
-        assert_eq!(message, EncryptionEnvelope::open(&_key_1(), &::serde_json::from_slice(&envelope.0).unwrap()).unwrap());
+        assert_eq!(message, EncryptionEnvelope::open(&_key_1(), envelope.0).unwrap());
     }
 
     #[test]
@@ -134,26 +131,26 @@ pub mod tests {
 
         let envelope = EncryptionEnvelope::create(&ack, &setup.key, &info).unwrap();
 
-        let message_1 = EncryptionEnvelope::open(&key_1, &::serde_json::from_slice(&envelope.0).unwrap()).unwrap();
+        let message_1 = EncryptionEnvelope::open(&key_1, envelope.0).unwrap();
 
         let message_1 = match message_1 {
             A2AMessage::Forward(forward) => {
                 assert_eq!(key_1, forward.to);
-                forward.msg
+                serde_json::to_vec(&forward.msg).unwrap()
             },
             _ => return assert!(false)
         };
 
-        let message_2 = EncryptionEnvelope::open(&key_2, &message_1).unwrap();
+        let message_2 = EncryptionEnvelope::open(&key_2, message_1).unwrap();
 
         let message_2 = match message_2 {
             A2AMessage::Forward(forward) => {
                 assert_eq!(_key_1(), forward.to);
-                forward.msg
+                serde_json::to_vec(&forward.msg).unwrap()
             },
             _ => return assert!(false)
         };
 
-        assert_eq!(ack, EncryptionEnvelope::open(&_key_1(), &message_2).unwrap());
+        assert_eq!(ack, EncryptionEnvelope::open(&_key_1(), message_2).unwrap());
     }
 }
