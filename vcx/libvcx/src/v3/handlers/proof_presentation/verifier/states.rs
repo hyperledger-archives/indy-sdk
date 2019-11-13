@@ -1,7 +1,7 @@
 use api::VcxStateType;
 
+use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 use v3::messages::a2a::A2AMessage;
-use v3::messages::proof_presentation::presentation_proposal::PresentationProposal;
 use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::error::ProblemReport;
@@ -35,14 +35,6 @@ pub enum VerifierState {
     Initiated(InitialState),
     PresentationRequestSent(PresentationRequestSentState),
     Finished(FinishedState)
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub enum VerifierMessages {
-    SendPresentationRequest(u32),
-    VerifyPresentation(Presentation),
-    PresentationProposalReceived(PresentationProposal),
-    PresentationRejectReceived(ProblemReport),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -113,7 +105,9 @@ impl PresentationRequestSentState {
 }
 
 impl VerifierSM {
-    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, VerifierMessages)> {
+    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
+        trace!("VerifierSM::find_message_to_handle >>> messages: {:?}", messages);
+
         for (uid, message) in messages {
             match self.state {
                 VerifierState::Initiated(ref state) => {
@@ -123,17 +117,17 @@ impl VerifierSM {
                     match message {
                         A2AMessage::Presentation(presentation) => {
                             if presentation.thread.is_reply(&self.thread_id()) {
-                                return Some((uid, VerifierMessages::VerifyPresentation(presentation)));
+                                return Some((uid, A2AMessage::Presentation(presentation)));
                             }
                         }
                         A2AMessage::PresentationProposal(proposal) => {
                             if proposal.thread.is_reply(&self.thread_id()) {
-                                return Some((uid, VerifierMessages::PresentationProposalReceived(proposal)));
+                                return Some((uid, A2AMessage::PresentationProposal(proposal)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
                             if problem_report.thread.is_reply(&self.thread_id()) {
-                                return Some((uid, VerifierMessages::PresentationRejectReceived(problem_report)));
+                                return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
                         _ => {}
@@ -276,8 +270,8 @@ impl VerifierSM {
 
     pub fn presentation(&self) -> VcxResult<Presentation> {
         match self.state {
-            VerifierState::Initiated(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
-            VerifierState::PresentationRequestSent(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            VerifierState::Initiated(ref state) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
+            VerifierState::PresentationRequestSent(ref state) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
             VerifierState::Finished(ref state) => {
                 state.presentation.clone()
                     .ok_or(VcxError::from(VcxErrorKind::InvalidProofHandle))
@@ -479,7 +473,7 @@ pub mod test {
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
                 assert_eq!("key_2", uid);
-                assert_match!(VerifierMessages::VerifyPresentation(_), message);
+                assert_match!(A2AMessage::Presentation(_), message);
             }
 
             // Presentation Proposal
@@ -492,7 +486,7 @@ pub mod test {
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
                 assert_eq!("key_2", uid);
-                assert_match!(VerifierMessages::PresentationProposalReceived(_), message);
+                assert_match!(A2AMessage::PresentationProposal(_), message);
             }
 
             // Problem Report
@@ -505,7 +499,7 @@ pub mod test {
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
                 assert_eq!("key_3", uid);
-                assert_match!(VerifierMessages::PresentationRejectReceived(_), message);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
             }
 
             // No messages for different Thread ID

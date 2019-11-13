@@ -46,6 +46,8 @@ impl HolderSM {
     }
 
     pub fn update_state(self) -> VcxResult<Self> {
+        trace!("Holder::update_state >>> ");
+
         if self.is_terminal_state() { return Ok(self); }
 
         let conn_handle = self.state.get_connection_handle();
@@ -54,13 +56,15 @@ impl HolderSM {
         match self.find_message_to_handle(messages) {
             Some((uid, msg)) => {
                 update_message_status(conn_handle, uid)?;
-                self.handle_message((&msg, 0u32).into())
+                self.handle_message(msg.into())
             }
             None => Ok(self)
         }
     }
 
     fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
+        trace!("Holder::find_message_to_handle >>> messages: {:?}", messages);
+
         for (uid, message) in messages {
             match self.state {
                 HolderState::OfferReceived(ref state) => {
@@ -99,6 +103,8 @@ impl HolderSM {
     }
 
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<HolderSM> {
+        trace!("Holder::handle_message >>> cim: {:?}", cim);
+
         let HolderSM { state, source_id } = self;
         let state = match state {
             HolderState::OfferReceived(state_data) => match cim {
@@ -128,7 +134,7 @@ impl HolderSM {
                 }
             },
             HolderState::RequestSent(state_data) => match cim {
-                CredentialIssuanceMessage::Credential(credential, connection_handle) => {
+                CredentialIssuanceMessage::Credential(credential) => {
                     let result = _store_credential(&credential, &state_data.req_meta, &state_data.cred_def_json);
                     match result {
                         Ok(cred_id) => {
@@ -181,43 +187,42 @@ impl HolderSM {
     pub fn get_credential(&self) -> VcxResult<(String, Credential)> {
         match self.state {
             HolderState::Finished(ref state) => {
-                let cred_id = state.cred_id.clone().ok_or(VcxError::from(VcxErrorKind::InvalidState))?;
-                let credential = state.credential.clone().ok_or(VcxError::from(VcxErrorKind::InvalidState))?;
+                let cred_id = state.cred_id.clone().ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get credential: Credential Id not found"))?;
+                let credential = state.credential.clone().ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot get credential: Credential not found"))?;
                 Ok((cred_id, credential))
             }
-            _ => Err(VcxError::from(VcxErrorKind::InvalidState))
+            _ => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot get credential: Credential Issuance is not finished yet"))
         }
     }
 }
 
 fn _parse_cred_def_from_cred_offer(cred_offer: &str) -> VcxResult<String> {
+    trace!("Holder::_parse_cred_def_from_cred_offer >>> cred_offer: {:?}", cred_offer);
+
     let parsed_offer: serde_json::Value = serde_json::from_str(cred_offer)
-        .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Offer Json".to_string()))?;
-    let cred_def_id = parsed_offer.as_object()
-        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Offer Json".to_string()))?
-        .get("cred_def_id")
-        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Offer Json".to_string()))?
-        .as_str()
-        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Offer Json".to_string()))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Credential Offer Json: {:?}", err)))?;
+
+    let cred_def_id = parsed_offer["cred_def_id"].as_str()
+        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Offer Json: cred_def_id not found"))?;
+
     Ok(cred_def_id.to_string())
 }
 
 fn _parse_rev_reg_id_from_credential(credential: &str) -> VcxResult<Option<String>> {
+    trace!("Holder::_parse_rev_reg_id_from_credential >>>");
+
     let parsed_credential: serde_json::Value = serde_json::from_str(credential)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Credential Json: {}, err: {:?}", credential, err)))?;
 
-    let rev_reg_id = match parsed_credential.as_object()
-        .ok_or_else(|| VcxError::from_msg(VcxErrorKind::InvalidJson, "Invalid Credential Json".to_string()))?
-        .get("rev_reg_id") {
-        None => None,
-        Some(a) => a.as_str().map(|s| s.to_string())
-    };
+    let rev_reg_id = parsed_credential["rev_reg_id"].as_str().map(String::from);
 
     Ok(rev_reg_id)
 }
 
 fn _store_credential(credential: &Credential,
                      req_meta: &str, cred_def_json: &str) -> VcxResult<String> {
+    trace!("Holder::_store_credential >>>");
+
     let credential_json = credential.credentials_attach.content()?;
     let rev_reg_id = _parse_rev_reg_id_from_credential(&credential_json)?;
     let rev_reg_def_json = if let Some(rev_reg_id) = rev_reg_id {
@@ -235,6 +240,8 @@ fn _store_credential(credential: &Credential,
 }
 
 fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxResult<(CredentialRequest, String, String)> {
+    trace!("Holder::_make_credential_request >>> conn_handle: {:?}, offer: {:?}", conn_handle, offer);
+
     let my_did = get_pw_did(conn_handle)?;
     let cred_offer = offer.offers_attach.content()?;
     let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
@@ -269,7 +276,7 @@ mod test {
 
         fn to_finished_state(mut self) -> HolderSM {
             self = self.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
-            self = self.handle_message(CredentialIssuanceMessage::Credential(_credential(), mock_connection())).unwrap();
+            self = self.handle_message(CredentialIssuanceMessage::Credential(_credential())).unwrap();
             self
         }
     }
@@ -341,7 +348,7 @@ mod test {
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(_credential(), mock_connection())).unwrap();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(_credential())).unwrap();
 
             assert_match!(HolderState::Finished(_), holder_sm.state);
             assert_eq!(Status::Success.code(), holder_sm.credential_status());
@@ -353,7 +360,7 @@ mod test {
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(Credential::create(), mock_connection())).unwrap();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(Credential::create())).unwrap();
 
             assert_match!(HolderState::Finished(_), holder_sm.state);
             assert_eq!(Status::Failed(ProblemReport::default()).code(), holder_sm.credential_status());
@@ -378,7 +385,7 @@ mod test {
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
 
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialOffer(_credential_offer(), mock_connection())).unwrap();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialOffer(_credential_offer())).unwrap();
             assert_match!(HolderState::RequestSent(_), holder_sm.state);
 
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Ack(_ack())).unwrap();
@@ -391,12 +398,12 @@ mod test {
 
             let mut holder_sm = _holder_sm();
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialRequestSend(mock_connection())).unwrap();
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(_credential(), mock_connection())).unwrap();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(_credential())).unwrap();
 
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialOffer(_credential_offer(), mock_connection())).unwrap();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialOffer(_credential_offer())).unwrap();
             assert_match!(HolderState::Finished(_), holder_sm.state);
 
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(_credential(), mock_connection())).unwrap();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(_credential())).unwrap();
             assert_match!(HolderState::Finished(_), holder_sm.state);
 
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Ack(_ack())).unwrap();

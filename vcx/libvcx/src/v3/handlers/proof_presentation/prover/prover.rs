@@ -5,8 +5,8 @@ use utils::libindy::anoncreds;
 use std::convert::TryInto;
 use std::collections::HashMap;
 
-use v3::handlers::proof_presentation::prover::states::{ProverSM, ProverMessages};
-
+use v3::handlers::proof_presentation::prover::states::ProverSM;
+use v3::handlers::proof_presentation::prover::messages::ProverMessages;
 use v3::handlers::connection;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
@@ -78,7 +78,7 @@ impl Prover {
         let messages = connection::get_messages(connection_handle)?;
 
         if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
-            self = self.handle_message(message)?;
+            self = self.handle_message(message.into())?;
             connection::update_message_status(connection_handle, uid)?;
         };
 
@@ -86,17 +86,18 @@ impl Prover {
     }
 
     pub fn update_state_with_message(mut self, message: &str) -> VcxResult<Prover> {
+        trace!("Prover::update_state_with_message >>> message: {:?}", message);
+
         let message: Message = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot updated state with message: Message deserialization failed: {:?}", err)))?;
 
         let connection_handle = self.state.connection_handle()?;
 
-        let messages: HashMap<String, A2AMessage> = map! { message.uid.clone() => connection::decode_message(connection_handle, message)? };
+        let uid = message.uid.clone();
+        let a2a_message = connection::decode_message(connection_handle, message)?;
 
-        if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
-            self = self.handle_message(message)?;
-            connection::update_message_status(connection_handle, uid)?;
-        }
+        self = self.handle_message(a2a_message.into())?;
+        connection::update_message_status(connection_handle, uid)?;
 
         Ok(self)
     }
@@ -113,7 +114,7 @@ impl Prover {
 
         let (id, presentation_request): (MessageId, PresentationRequest) = match message {
             A2AMessage::PresentationRequest(presentation_request) => (presentation_request.id.clone(), presentation_request),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Message has different type"))
+            msg => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, format!("Message of different type was received: {:?}", msg)))
         };
 
         connection::add_pending_messages(connection_handle, map! { id => msg_id.to_string() })?;
@@ -148,12 +149,16 @@ impl Prover {
     pub fn get_source_id(&self) -> String { self.state.source_id() }
 
     pub fn to_string(&self) -> VcxResult<String> {
+        trace!("Prover::to_string >>>");
+
         ObjectWithVersion::new(SERIALIZE_VERSION, self.to_owned())
             .serialize()
             .map_err(|err| err.extend("Cannot serialize DisclosedProof"))
     }
 
     pub fn from_str(data: &str) -> VcxResult<Prover> {
+        trace!("Prover::from_str >>> data: {:?}", data);
+
         ObjectWithVersion::deserialize(data)
             .map(|obj: ObjectWithVersion<Prover>| obj.data)
             .map_err(|err| err.extend("Cannot deserialize Prover"))

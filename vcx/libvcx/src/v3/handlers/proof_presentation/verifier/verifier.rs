@@ -1,15 +1,14 @@
 use error::prelude::*;
 use std::convert::TryInto;
-use std::collections::HashMap;
 
 use messages::ObjectWithVersion;
 use messages::get_message::Message;
 
 use v3::handlers::connection;
-use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::*;
 use v3::messages::proof_presentation::presentation::Presentation;
-use v3::handlers::proof_presentation::verifier::states::{VerifierSM, VerifierMessages};
+use v3::handlers::proof_presentation::verifier::states::VerifierSM;
+use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 
 use messages::proofs::proof_request::ProofRequestMessage;
 use messages::proofs::proof_message::ProofMessage;
@@ -67,7 +66,7 @@ impl Verifier {
         let messages = connection::get_messages(connection_handle)?;
 
         if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
-            self = self.handle_message(message)?;
+            self = self.handle_message(message.into())?;
             connection::update_message_status(connection_handle, uid)?;
         };
 
@@ -78,16 +77,15 @@ impl Verifier {
         trace!("Verifier::update_state_with_message >>> message: {:?}", message);
 
         let message: Message = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state with message: Message deserialization failed: {:?}", err)))?;
 
         let connection_handle = self.state.connection_handle()?;
 
-        let messages: HashMap<String, A2AMessage> = map! { message.uid.clone() => connection::decode_message(connection_handle, message)? };
+        let uid =  message.uid.clone();
+        let a2a_message = connection::decode_message(connection_handle, message)?;
 
-        if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
-            self = self.handle_message(message)?;
-            connection::update_message_status(connection_handle, uid)?;
-        }
+        self = self.handle_message(a2a_message.into())?;
+        connection::update_message_status(connection_handle, uid)?;
 
         Ok(self)
     }
@@ -126,12 +124,16 @@ impl Verifier {
     }
 
     pub fn from_str(data: &str) -> VcxResult<Self> {
+        trace!("Verifier::from_str >>> data: {:?}", data);
+
         ObjectWithVersion::deserialize(data)
             .map(|obj: ObjectWithVersion<Self>| obj.data)
             .map_err(|err| err.extend("Cannot deserialize Connection"))
     }
 
     pub fn to_string(&self) -> VcxResult<String> {
+        trace!("Verifier::to_string >>>");
+
         ObjectWithVersion::new(SERIALIZE_VERSION, self.to_owned())
             .serialize()
             .map_err(|err| err.extend("Cannot serialize Connection"))

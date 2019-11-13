@@ -12,6 +12,8 @@ impl EncryptionEnvelope {
     pub fn create(message: &A2AMessage,
                   pw_verkey: &str,
                   did_doc: &DidDoc) -> VcxResult<EncryptionEnvelope> {
+        trace!("EncryptionEnvelope::create >>> message: {:?}, pw_verkey: {:?}, did_doc: {:?}", message, pw_verkey, did_doc);
+
         if ::settings::test_indy_mode_enabled() { return Ok(EncryptionEnvelope(vec![])); }
 
         EncryptionEnvelope::encrypt_for_pairwise(message, pw_verkey, did_doc)
@@ -38,7 +40,7 @@ impl EncryptionEnvelope {
 
         let mut to = recipient_keys.get(0)
             .map(String::from)
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Recipient Key not found"))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConnectionHandle, format!("Recipient Key not found in DIDDoc: {:?}", did_doc)))?;
 
         for routing_key in routing_keys.iter() {
             message = EncryptionEnvelope::wrap_into_forward(message, &to, &routing_key)?;
@@ -69,7 +71,7 @@ impl EncryptionEnvelope {
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
 
         let message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))
             .unwrap_or_else(|_| A2AMessage::Generic(message));
 
         Ok(message)

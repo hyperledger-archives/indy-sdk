@@ -29,6 +29,8 @@ lazy_static! {
 // Issuer
 
 pub fn issuer_create_credential(cred_def_handle: u32, credential_data: &str, source_id: &str) -> VcxResult<u32> {
+    trace!("Issuer::issuer_create_credential >>> cred_def_handle: {:?}, credential_data: {:?}, source_id: {:?}", cred_def_handle, credential_data, source_id);
+
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
     let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle)?;
     let tails_file = ::credential_def::get_tails_file(cred_def_handle)?;
@@ -52,7 +54,7 @@ pub fn issuer_update_status(credential_handle: u32, msg: Option<String>) -> VcxR
 
             ISSUE_CREDENTIAL_MAP.map(credential_handle, |issuer_sm| {
                 let message = connection::decode_message(issuer_sm.get_connection_handle(), message.clone())?;
-                issuer_sm.handle_message((&message, 0u32).into())
+                issuer_sm.handle_message(message.into())
             })?
         }
         None => {
@@ -107,6 +109,8 @@ pub fn issuer_from_string(issuer_data: &str) -> VcxResult<u32> {
 // Holder
 
 pub fn holder_create_credential(credential_offer: CredentialOffer, source_id: &str) -> VcxResult<u32> {
+    trace!("Holder::holder_create_credential >>> credential_offer: {:?}, source_id: {:?}", credential_offer, source_id);
+
     let holder = HolderSM::new(credential_offer, source_id.to_string());
 
     HOLD_CREDENTIAL_MAP.add(holder)
@@ -123,11 +127,11 @@ pub fn holder_update_state(credential_handle: u32, msg: Option<String>) -> VcxRe
     match msg {
         Some(msg) => {
             let message: Message = ::serde_json::from_str(&msg)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot update state: Message deserialization failed: {:?}", err)))?;
 
             HOLD_CREDENTIAL_MAP.map(credential_handle, |holder_sm| {
                 let message = connection::decode_message(holder_sm.get_connection_handle(), message.clone())?;
-                holder_sm.handle_message((&message, 0u32).into())
+                holder_sm.handle_message(message.into())
             })?
         }
         None => {
@@ -150,7 +154,7 @@ pub fn get_credential_offer_message(connection_handle: u32, msg_id: &str) -> Vcx
 
     let (id, credential_offer): (MessageId, CredentialOffer) = match message {
         A2AMessage::CredentialOffer(credential_offer) => (credential_offer.id.clone(), credential_offer),
-        _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Message has different type"))
+        msg => return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, format!("Message of different type was received: {:?}", msg)))
     };
 
     connection::add_pending_messages(connection_handle, map! { id => msg_id.to_string() })?;

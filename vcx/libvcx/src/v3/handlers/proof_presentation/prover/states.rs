@@ -1,8 +1,9 @@
 use api::VcxStateType;
 
 use v3::handlers::connection;
+use v3::handlers::proof_presentation::prover::messages::ProverMessages;
 use v3::messages::a2a::A2AMessage;
-use v3::messages::proof_presentation::presentation_request::{PresentationRequestData, PresentationRequest};
+use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::ack::Ack;
 use v3::messages::error::ProblemReport;
@@ -39,16 +40,6 @@ pub enum ProverState {
     PresentationPreparationFailed(PresentationPreparationFailedState),
     PresentationSent(PresentationSentState),
     Finished(FinishedState)
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub enum ProverMessages {
-    PresentationRequestReceived(PresentationRequestData),
-    PreparePresentation((String, String)),
-    SendPresentation(u32),
-    PresentationAckReceived(Ack),
-    PresentationRejectReceived(ProblemReport),
-    SendPresentationReject(ProblemReport),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -163,12 +154,14 @@ impl InitialState {
 }
 
 impl ProverSM {
-    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, ProverMessages)> {
+    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
+        trace!("Prover::find_message_to_handle >>> messages: {:?}", messages);
+
         for (uid, message) in messages {
             match self.state {
                 ProverState::Initiated(ref state) => {
                     match message {
-                        A2AMessage::PresentationRequest(presentation_request) => {
+                        A2AMessage::PresentationRequest(_) => {
                             // ignore it here??
                         }
                         _ => {}
@@ -184,12 +177,12 @@ impl ProverSM {
                     match message {
                         A2AMessage::Ack(ack) => {
                             if ack.thread.is_reply(&self.thread_id()) {
-                                return Some((uid, ProverMessages::PresentationAckReceived(ack)));
+                                return Some((uid, A2AMessage::Ack(ack)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
                             if problem_report.thread.is_reply(&self.thread_id()) {
-                                return Some((uid, ProverMessages::PresentationRejectReceived(problem_report)));
+                                return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
                         _ => {}
@@ -327,9 +320,9 @@ impl ProverSM {
 
     pub fn presentation(&self) -> VcxResult<&Presentation> {
         match self.state {
-            ProverState::Initiated(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            ProverState::Initiated(ref state) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
             ProverState::PresentationPrepared(ref state) => Ok(&state.presentation),
-            ProverState::PresentationPreparationFailed(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            ProverState::PresentationPreparationFailed(ref state) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
             ProverState::PresentationSent(ref state) => Ok(&state.presentation),
             ProverState::Finished(ref state) => Ok(&state.presentation),
         }
@@ -559,9 +552,6 @@ pub mod test {
 
             prover_sm = prover_sm.step(ProverMessages::PresentationRejectReceived(_problem_report())).unwrap();
             assert_match!(ProverState::Finished(_), prover_sm.state);
-
-            prover_sm = prover_sm.step(ProverMessages::SendPresentationReject(_problem_report())).unwrap();
-            assert_match!(ProverState::Finished(_), prover_sm.state);
         }
     }
 
@@ -624,7 +614,7 @@ pub mod test {
 
                 let (uid, message) = prover.find_message_to_handle(messages).unwrap();
                 assert_eq!("key_3", uid);
-                assert_match!(ProverMessages::PresentationAckReceived(_), message);
+                assert_match!(A2AMessage::Ack(_), message);
             }
 
             // Problem Report
@@ -637,7 +627,7 @@ pub mod test {
 
                 let (uid, message) = prover.find_message_to_handle(messages).unwrap();
                 assert_eq!("key_3", uid);
-                assert_match!(ProverMessages::PresentationRejectReceived(_), message);
+                assert_match!(A2AMessage::CommonProblemReport(_), message);
             }
 
             // No messages for different Thread ID

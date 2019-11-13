@@ -1,5 +1,6 @@
 use api::VcxStateType;
 
+use v3::handlers::connection::messages::DidExchangeMessages;
 use v3::messages::a2a::A2AMessage;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation;
@@ -151,20 +152,11 @@ impl From<(RespondedState, Ping)> for CompleteState {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum DidExchangeMessages {
-    Connect(),
-    InvitationReceived(Invitation),
-    ExchangeRequestReceived(Request),
-    ExchangeResponseReceived(SignedResponse),
-    AckReceived(Ack),
-    ProblemReportReceived(ProblemReport),
-    PingReceived(Ping),
-}
-
 impl InvitedState {
     fn handle_connection_request(&self, request: &Request,
                                  agent_info: &AgentInfo) -> VcxResult<(SignedResponse, AgentInfo)> {
+        trace!("InvitedState:handle_connection_request >>> request: {:?}, agent_info: {:?}", request, agent_info);
+
         request.connection.did_doc.validate()?;
 
         let prev_agent_info = agent_info.clone();
@@ -189,8 +181,10 @@ impl InvitedState {
 
 impl RequestedState {
     fn handle_connection_response(&self, response: SignedResponse, agent_info: &AgentInfo) -> VcxResult<Response> {
+        trace!("RequestedState:handle_connection_response >>> response: {:?}, agent_info: {:?}", response, agent_info);
+
         let remote_vk: String = self.did_doc.recipient_keys().get(0).cloned()
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Remote Verkey not found"))?;
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot handle Response: Remote Verkey not found"))?;
 
         let response: Response = response.decode(&remote_vk)?;
 
@@ -235,18 +229,20 @@ impl DidExchangeSM {
         }
     }
 
-    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, DidExchangeMessages)> {
+    pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
+        trace!("DidExchangeSM::find_message_to_handle >>> messages: {:?}", messages);
+
         for (uid, message) in messages {
             match self.state {
                 ActorDidExchangeState::Inviter(DidExchangeState::Invited(ref state)) => {
                     match message {
-                        A2AMessage::ConnectionRequest(request) => {
+                        request @ A2AMessage::ConnectionRequest(_) => {
                             debug!("Inviter received ConnectionRequest message");
-                            return Some((uid, DidExchangeMessages::ExchangeRequestReceived(request)));
+                            return Some((uid, request));
                         }
-                        A2AMessage::ConnectionProblemReport(problem_report) => {
+                        problem_report @ A2AMessage::ConnectionProblemReport(_) => {
                             debug!("Inviter received ProblemReport message");
-                            return Some((uid, DidExchangeMessages::ProblemReportReceived(problem_report)));
+                            return Some((uid, problem_report));
                         }
                         message @ _ => {
                             debug!("Inviter received unexpected message: {:?}", message);
@@ -255,13 +251,13 @@ impl DidExchangeSM {
                 }
                 ActorDidExchangeState::Invitee(DidExchangeState::Requested(ref state)) => {
                     match message {
-                        A2AMessage::ConnectionResponse(response) => {
+                        response @ A2AMessage::ConnectionResponse(_) => {
                             debug!("Invitee received ConnectionResponse message");
-                            return Some((uid, DidExchangeMessages::ExchangeResponseReceived(response)));
+                            return Some((uid, response));
                         }
-                        A2AMessage::ConnectionProblemReport(problem_report) => {
+                        problem_report @ A2AMessage::ConnectionProblemReport(_) => {
                             debug!("Invitee received ProblemReport message");
-                            return Some((uid, DidExchangeMessages::ProblemReportReceived(problem_report)));
+                            return Some((uid, problem_report));
                         }
                         message @ _ => {
                             debug!("Invitee received unexpected message: {:?}", message);
@@ -270,17 +266,17 @@ impl DidExchangeSM {
                 }
                 ActorDidExchangeState::Inviter(DidExchangeState::Responded(ref state)) => {
                     match message {
-                        A2AMessage::Ack(ack) => {
+                        ack @ A2AMessage::Ack(_) => {
                             debug!("Ack message received");
-                            return Some((uid, DidExchangeMessages::AckReceived(ack)));
+                            return Some((uid, ack));
                         }
-                        A2AMessage::Ping(ping) => {
+                        ping @ A2AMessage::Ping(_) => {
                             debug!("Ping message received");
-                            return Some((uid, DidExchangeMessages::PingReceived(ping)));
+                            return Some((uid, ping));
                         }
-                        A2AMessage::ConnectionProblemReport(problem_report) => {
+                        problem_report @ A2AMessage::ConnectionProblemReport(_) => {
                             debug!("ProblemReport message received");
-                            return Some((uid, DidExchangeMessages::ProblemReportReceived(problem_report)));
+                            return Some((uid, problem_report));
                         }
                         message @ _ => {
                             debug!("Unexpected message received in Responded state: {:?}", message);
@@ -485,7 +481,7 @@ impl DidExchangeSM {
     pub fn remote_vk(&self) -> VcxResult<String> {
         self.did_doc()
             .and_then(|did_doc| did_doc.recipient_keys().get(0).cloned())
-            .ok_or(VcxError::from(VcxErrorKind::NotReady))
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection Verkey is not set"))
     }
 
     pub fn prev_agent_info(&self) -> Option<&AgentInfo> {
@@ -790,7 +786,7 @@ pub mod test {
 
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_2", uid);
-                    assert_match!(DidExchangeMessages::ExchangeRequestReceived(_), message);
+                    assert_match!(A2AMessage::ConnectionRequest(_), message);
                 }
 
                 // Connection Problem Report
@@ -803,7 +799,7 @@ pub mod test {
 
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_3", uid);
-                    assert_match!(DidExchangeMessages::ProblemReportReceived(_), message);
+                    assert_match!(A2AMessage::ConnectionProblemReport(_), message);
                 }
 
                 // No messages
@@ -833,7 +829,7 @@ pub mod test {
 
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_1", uid);
-                    assert_match!(DidExchangeMessages::PingReceived(_), message);
+                    assert_match!(A2AMessage::Ping(_), message);
                 }
 
                 // Ack
@@ -846,7 +842,7 @@ pub mod test {
 
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_2", uid);
-                    assert_match!(DidExchangeMessages::AckReceived(_), message);
+                    assert_match!(A2AMessage::Ack(_), message);
                 }
 
                 // Connection Problem Report
@@ -858,7 +854,7 @@ pub mod test {
 
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_2", uid);
-                    assert_match!(DidExchangeMessages::ProblemReportReceived(_), message);
+                    assert_match!(A2AMessage::ConnectionProblemReport(_), message);
                 }
 
                 // No messages
@@ -1155,7 +1151,7 @@ pub mod test {
 
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_3", uid);
-                    assert_match!(DidExchangeMessages::ExchangeResponseReceived(_), message);
+                    assert_match!(A2AMessage::ConnectionResponse(_), message);
                 }
 
                 // Connection Problem Report
@@ -1168,7 +1164,7 @@ pub mod test {
 
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_3", uid);
-                    assert_match!(DidExchangeMessages::ProblemReportReceived(_), message);
+                    assert_match!(A2AMessage::ConnectionProblemReport(_), message);
                 }
 
                 // No messages

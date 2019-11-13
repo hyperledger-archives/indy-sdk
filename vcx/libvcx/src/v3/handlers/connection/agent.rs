@@ -37,6 +37,8 @@ impl Default for AgentInfo {
 
 impl AgentInfo {
     pub fn create_agent(&self) -> VcxResult<AgentInfo> {
+        trace!("Agent::create_agent >>>");
+
         let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
         let (pw_did, pw_vk) = create_my_did(None, method_name.as_ref().map(String::as_str))?;
 
@@ -64,6 +66,8 @@ impl AgentInfo {
     }
 
     pub fn update_message_status(&self, uid: String) -> VcxResult<()> {
+        trace!("Agent::update_message_status >>> uid: {:?}", uid);
+
         let messages_to_update = vec![UIDsByConn {
             pairwise_did: self.pw_did.clone(),
             uids: vec![uid]
@@ -73,6 +77,8 @@ impl AgentInfo {
     }
 
     pub fn get_messages(&self) -> VcxResult<HashMap<String, A2AMessage>> {
+        trace!("Agent::get_messages >>>");
+
         let messages = get_connection_messages(&self.pw_did,
                                                &self.pw_vk,
                                                &self.agent_did,
@@ -91,6 +97,8 @@ impl AgentInfo {
     }
 
     pub fn get_message_by_id(&self, msg_id: &str) -> VcxResult<A2AMessage> {
+        trace!("Agent::get_message_by_id >>> msg_id: {:?}", msg_id);
+
         let mut messages = get_connection_messages(&self.pw_did,
                                                    &self.pw_vk,
                                                    &self.agent_did,
@@ -109,16 +117,20 @@ impl AgentInfo {
     }
 
     pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
+        trace!("Agent::decode_message >>>");
+
         EncryptionEnvelope::open(&self.pw_vk, message.payload()?)
     }
 
     pub fn send_message(&self, message: &A2AMessage, did_dod: &DidDoc) -> VcxResult<()> {
+        trace!("Agent::send_message >>> message: {:?}, did_doc: {:?}", message, did_dod);
         let envelope = EncryptionEnvelope::create(&message, &self.pw_vk, &did_dod)?;
         httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
         Ok(())
     }
 
     pub fn delete(&self) -> VcxResult<()> {
+        trace!("Agent::delete >>>");
         send_delete_connection_message(&self.pw_did, &self.pw_vk, &self.agent_did, &self.agent_vk)
     }
 }

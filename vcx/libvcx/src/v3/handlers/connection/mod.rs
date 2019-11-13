@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod states;
 pub mod connection;
+pub mod messages;
 
 use self::connection::*;
 

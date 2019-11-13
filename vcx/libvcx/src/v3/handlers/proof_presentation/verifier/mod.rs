@@ -1,5 +1,6 @@
 mod states;
 mod verifier;
+mod messages;
 
 use self::verifier::Verifier;
 

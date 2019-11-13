@@ -1,5 +1,6 @@
 pub mod states;
 pub mod prover;
+pub mod messages;
 
 use self::prover::Prover;
 
