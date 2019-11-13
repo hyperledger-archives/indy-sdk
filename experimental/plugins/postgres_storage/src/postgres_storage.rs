@@ -811,8 +811,8 @@ impl PostgresStorageType {
 
     fn _admin_postgres_url(config: &PostgresConfig, credentials: &PostgresCredentials) -> String {
         let mut url_base = "postgresql://".to_owned();
-        debug!("_admin_postgres_url, credentials.admin_account: {:?}", &credentials.admin_account[..]);
-        debug!("_admin_postgres_url, credentials.admin_password: {:?}", &credentials.admin_password[..]);
+        debug!("_admin_postgres_url, credentials.admin_account: {:?}", credentials.account);
+        debug!("_admin_postgres_url, credentials.admin_password: {:?}", credentials.password);
 
         match credentials.admin_account {
             Some(ref account) => url_base.push_str(&account[..]),
