@@ -55,10 +55,7 @@ impl EncryptionEnvelope {
         crypto::pack_message(None, &receiver_keys, message.as_bytes())
     }
 
-    pub fn open(my_vk: &str, message: &::serde_json::Value) -> VcxResult<A2AMessage> {
-        let payload = ::serde_json::to_vec(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
-
+    pub fn open(my_vk: &str, payload: Vec<u8>) -> VcxResult<A2AMessage> {
         let unpacked_msg = crypto::unpack_message(&payload)?;
 
         let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
