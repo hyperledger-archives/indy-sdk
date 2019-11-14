@@ -215,34 +215,23 @@ impl HolderState {
             HolderState::Finished(state) => 0
         }
     }
-
-    pub fn thread_id(&self) -> String {
-        match self {
-            HolderState::OfferReceived(state) => state.thread_id.clone(),
-            HolderState::RequestSent(state) => state.thread_id.clone(),
-            HolderState::Finished(state) => String::new()
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequestSentState {
     pub req_meta: String,
     pub cred_def_json: String,
-    pub connection_handle: u32,
-    pub thread_id: String
+    pub connection_handle: u32
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OfferReceivedState {
-    pub offer: CredentialOffer,
-    pub thread_id: String
+    pub offer: CredentialOffer
 }
 
 impl OfferReceivedState {
     pub fn new(offer: CredentialOffer) -> Self {
         OfferReceivedState {
-            thread_id: offer.id.0.clone(),
             offer,
         }
     }
@@ -263,7 +252,6 @@ impl From<(OfferReceivedState, String, String, u32)> for RequestSentState {
             req_meta,
             cred_def_json,
             connection_handle,
-            thread_id: state.thread_id
         }
     }
 }

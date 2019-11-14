@@ -110,6 +110,10 @@ pub mod tests {
         String::from("comment")
     }
 
+    pub fn thread_id() -> String {
+        _presentation_request().id.0
+    }
+
     pub fn thread() -> Thread {
         Thread::new().set_thid(_presentation_request().id.0)
     }

@@ -34,8 +34,8 @@ impl Presentation {
         Ok(self)
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Self {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -69,7 +69,7 @@ impl TryInto<ProofMessage> for Presentation {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::proof_presentation::presentation_request::tests::thread;
+    use v3::messages::proof_presentation::presentation_request::tests::{thread, thread_id};
 
     fn _attachment() -> ::serde_json::Value {
         json!({"presentation": {}})
@@ -95,7 +95,7 @@ pub mod tests {
     fn test_presentation_build_works() {
         let presentation: Presentation = Presentation::default()
             .set_comment(_comment())
-            .set_thread(thread())
+            .set_thread_id(thread_id())
             .set_presentations_attach(_attachment().to_string()).unwrap();
 
         assert_eq!(_presentation(), presentation);

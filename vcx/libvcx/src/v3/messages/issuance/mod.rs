@@ -49,16 +49,15 @@ pub struct CredentialValue {
 
 #[cfg(test)]
 pub mod test {
-    use messages::thread::Thread;
     use v3::messages::ack;
     use v3::messages::error;
     use v3::messages::issuance::credential_offer::tests::_credential_offer;
 
     pub fn _ack() -> ack::Ack {
-        ack::tests::_ack().set_thread(Thread::new().set_thid(_credential_offer().id.clone().0))
+        ack::tests::_ack().set_thread_id(_credential_offer().id.clone().0)
     }
 
     pub fn _problem_report() -> error::ProblemReport {
-        error::tests::_problem_report().set_thread(Thread::new().set_thid(_credential_offer().id.clone().0))
+        error::tests::_problem_report().set_thread_id(_credential_offer().id.clone().0)
     }
 }

@@ -35,8 +35,8 @@ impl CredentialRequest {
         Ok(self)
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Self {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -48,7 +48,7 @@ impl CredentialRequest {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::issuance::credential_offer::tests::thread;
+    use v3::messages::issuance::credential_offer::tests::{thread, thread_id};
 
     fn _attachment() -> ::serde_json::Value {
         json!({
@@ -77,7 +77,7 @@ pub mod tests {
     fn test_credential_request_build_works() {
         let credential_request: CredentialRequest = CredentialRequest::create()
             .set_comment(_comment())
-            .set_thread(thread())
+            .set_thread_id(thread_id())
             .set_requests_attach(_attachment().to_string()).unwrap();
 
         assert_eq!(_credential_request(), credential_request);

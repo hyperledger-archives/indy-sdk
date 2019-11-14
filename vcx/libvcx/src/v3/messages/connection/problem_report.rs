@@ -58,8 +58,8 @@ impl ProblemReport {
         self
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> ProblemReport {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -114,7 +114,7 @@ pub mod tests {
         let report: ProblemReport = ProblemReport::default()
             .set_problem_code(_problem_code())
             .set_explain(_explain())
-            .set_thread(_thread());
+            .set_thread_id(_thread_id());
 
         assert_eq!(_problem_report(), report);
     }

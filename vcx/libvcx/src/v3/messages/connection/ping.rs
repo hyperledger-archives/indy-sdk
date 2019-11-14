@@ -17,8 +17,8 @@ impl Ping {
         Ping::default()
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Ping {
-        self.thread = Some(thread);
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread = Some(Thread::new().set_thid(id));
         self
     }
 
@@ -65,7 +65,7 @@ pub mod tests {
     fn test_ping_build_works() {
         let ping: Ping = Ping::default()
             .set_comment(_comment())
-            .set_thread(_thread());
+            .set_thread_id(_thread_id());
 
         assert_eq!(_ping(), ping);
     }

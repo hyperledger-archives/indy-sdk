@@ -14,7 +14,6 @@ use v3::messages::connection::did_doc::DidDoc;
 use std::collections::HashMap;
 use v3::messages::a2a::MessageId;
 
-use messages::thread::Thread;
 use error::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -170,7 +169,7 @@ impl InvitedState {
             .set_keys(new_agent_info.recipient_keys(), new_agent_info.routing_keys()?);
 
         let signed_response = response.clone()
-            .set_thread(Thread::new().set_thid(request.id.0.clone()))
+            .set_thread_id(request.id.0.clone())
             .encode(&prev_agent_info.pw_vk)?;
 
         new_agent_info.send_message(&signed_response.to_a2a_message(), &request.connection.did_doc)?;
@@ -188,7 +187,7 @@ impl RequestedState {
 
         let response: Response = response.decode(&remote_vk)?;
 
-        let ack = Ack::create().set_thread(response.thread.clone());
+        let ack = Ack::create().set_thread_id(response.thread.thid.clone().unwrap_or_default());
         agent_info.send_message(&ack.to_a2a_message(), &response.connection.did_doc)?;
 
         Ok(response)
@@ -331,7 +330,7 @@ impl DidExchangeSM {
                                         let problem_report = ProblemReport::create()
                                             .set_problem_code(ProblemCode::RequestProcessingError)
                                             .set_explain(err.to_string())
-                                            .set_thread(Thread::new().set_thid(request.id.0.clone()));
+                                            .set_thread_id(request.id.0.clone());
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc).ok();
                                         ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
@@ -356,9 +355,8 @@ impl DidExchangeSM {
                             }
                             DidExchangeMessages::PingReceived(ping) => {
                                 if ping.response_requested {
-                                    let ping = Ping::create().set_thread(
-                                        ping.thread.clone()
-                                            .unwrap_or(Thread::new().set_thid(ping.id.0.clone())));
+                                    let ping = Ping::create().set_thread_id(
+                                        ping.thread.as_ref().and_then(|thread| thread.thid.clone()).unwrap_or(ping.id.0.clone()));
                                     agent_info.send_message(&ping.to_a2a_message(), &state.did_doc)?;
                                 }
 
@@ -422,7 +420,7 @@ impl DidExchangeSM {
                                         let problem_report = ProblemReport::create()
                                             .set_problem_code(ProblemCode::ResponseProcessingError)
                                             .set_explain(err.to_string())
-                                            .set_thread(Thread::new().set_thid(state.request.id.0.clone()));
+                                            .set_thread_id(state.request.id.0.clone());
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc)?;
                                         ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report).into()))

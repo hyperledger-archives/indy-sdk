@@ -73,8 +73,8 @@ impl PresentationProposal {
         self
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Self {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -87,7 +87,7 @@ impl PresentationProposal {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::proof_presentation::presentation_request::tests::thread;
+    use v3::messages::proof_presentation::presentation_request::tests::{thread, thread_id};
 
     fn _attachment() -> ::serde_json::Value {
         json!({"presentation": {}})
@@ -122,7 +122,7 @@ pub mod tests {
     fn test_presentation_proposal_build_works() {
         let presentation_proposal: PresentationProposal = PresentationProposal::default()
             .set_comment(_comment())
-            .set_thread(thread())
+            .set_thread_id(thread_id())
             .set_presentation_preview(_presentation_preview());
 
         assert_eq!(_presentation_proposal(), presentation_proposal);

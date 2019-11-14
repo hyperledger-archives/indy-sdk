@@ -48,8 +48,8 @@ impl CredentialProposal {
         Ok(self)
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Self {
-        self.thread = Some(thread);
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread = Some(Thread::new().set_thid(id));
         self
     }
 
@@ -61,7 +61,7 @@ impl CredentialProposal {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::issuance::credential_offer::tests::{thread, _value};
+    use v3::messages::issuance::credential_offer::tests::{thread, thread_id, _value};
 
     fn _attachment() -> ::serde_json::Value {
         json!({"credential offer": {}})
@@ -99,7 +99,7 @@ pub mod tests {
 
         let credential_proposal: CredentialProposal = CredentialProposal::create()
             .set_comment(_comment())
-            .set_thread(thread())
+            .set_thread_id(thread_id())
             .set_cred_def_id(_cred_def_id())
             .set_schema_id(_schema_id())
             .add_credential_preview_data(name, value, MimeType::Plain).unwrap();

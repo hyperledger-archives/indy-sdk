@@ -38,8 +38,8 @@ impl Credential {
         Ok(self)
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Self {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -53,7 +53,7 @@ impl TryInto<Credential> for CredentialMessage {
 
     fn try_into(self) -> Result<Credential, Self::Error> {
         Credential::create()
-            .set_thread(Thread::new().set_thid(self.claim_offer_id))
+            .set_thread_id(self.claim_offer_id)
             .set_credential(self.libindy_cred)
     }
 }
@@ -84,7 +84,7 @@ impl TryInto<CredentialMessage> for Credential {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use v3::messages::issuance::credential_offer::tests::thread;
+    use v3::messages::issuance::credential_offer::tests::{thread, thread_id};
 
     fn _attachment() -> ::serde_json::Value {
         json!({
@@ -114,7 +114,7 @@ pub mod tests {
     fn test_credential_build_works() {
         let credential: Credential = Credential::create()
             .set_comment(_comment())
-            .set_thread(thread())
+            .set_thread_id(thread_id())
             .set_credential(_attachment().to_string()).unwrap();
 
         assert_eq!(_credential(), credential);

@@ -30,8 +30,8 @@ impl Ack {
         self
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Ack {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -67,7 +67,7 @@ pub mod tests {
     fn test_ack_build_works() {
         let ack: Ack = Ack::default()
             .set_status(AckStatus::Fail)
-            .set_thread(_thread());
+            .set_thread_id(_thread_id());
 
         assert_eq!(_ack(), ack);
     }

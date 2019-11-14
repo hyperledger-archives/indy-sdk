@@ -65,8 +65,8 @@ impl Response {
         self
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Response {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -164,6 +164,10 @@ pub mod tests {
         Thread::new().set_thid(String::from("test_id"))
     }
 
+    pub fn _thread_id() -> String {
+        _thread().thid.unwrap()
+    }
+
     pub fn _response() -> Response {
         Response {
             id: MessageId::id(),
@@ -192,7 +196,7 @@ pub mod tests {
     fn test_response_build_works() {
         let response: Response = Response::default()
             .set_did(_did())
-            .set_thread(_thread())
+            .set_thread_id(_thread_id())
             .set_service_endpoint(_service_endpoint())
             .set_keys(_recipient_keys(), _routing_keys());
 

@@ -12,7 +12,6 @@ use v3::messages::ack::Ack;
 use v3::handlers::connection;
 use v3::messages::status::Status;
 
-use messages::thread::Thread;
 use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
 use error::prelude::*;
 use std::collections::HashMap;
@@ -22,14 +21,16 @@ use credential;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HolderSM {
     state: HolderState,
-    source_id: String
+    source_id: String,
+    thread_id: String
 }
 
 impl HolderSM {
     pub fn new(offer: CredentialOffer, source_id: String) -> Self {
         HolderSM {
+            thread_id: offer.id.0.clone(),
             state: HolderState::OfferReceived(OfferReceivedState::new(offer)),
-            source_id
+            source_id,
         }
     }
 
@@ -73,12 +74,12 @@ impl HolderSM {
                 HolderState::RequestSent(ref state) => {
                     match message {
                         A2AMessage::Credential(credential) => {
-                            if credential.thread.is_reply(&self.state.thread_id()) {
+                            if credential.thread.is_reply(&self.thread_id) {
                                 return Some((uid, A2AMessage::Credential(credential)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.state.thread_id()) {
+                            if problem_report.thread.is_reply(&self.thread_id) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -98,14 +99,14 @@ impl HolderSM {
         self.state.get_connection_handle()
     }
 
-    pub fn step(state: HolderState, source_id: String) -> Self {
-        HolderSM { state, source_id }
+    pub fn step(state: HolderState, source_id: String, thread_id: String) -> Self {
+        HolderSM { state, source_id, thread_id }
     }
 
     pub fn handle_message(self, cim: CredentialIssuanceMessage) -> VcxResult<HolderSM> {
         trace!("Holder::handle_message >>> cim: {:?}", cim);
 
-        let HolderSM { state, source_id } = self;
+        let HolderSM { state, source_id, thread_id } = self;
         let state = match state {
             HolderState::OfferReceived(state_data) => match cim {
                 CredentialIssuanceMessage::CredentialRequestSend(connection_handle) => {
@@ -114,7 +115,7 @@ impl HolderSM {
                     match request {
                         Ok((cred_request, req_meta, cred_def_json)) => {
                             let cred_request = cred_request
-                                .set_thread(Thread::new().set_thid(state_data.offer.id.0.clone()));
+                                .set_thread_id(thread_id.clone());
                             connection::remove_pending_message(conn_handle, &state_data.offer.id)?;
                             send_message(conn_handle, cred_request.to_a2a_message())?;
                             HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle).into())
@@ -122,7 +123,7 @@ impl HolderSM {
                         Err(err) => {
                             let problem_report = ProblemReport::create()
                                 .set_comment(err.to_string())
-                                .set_thread(Thread::new().set_thid(state_data.offer.id.0.clone()));
+                                .set_thread_id(thread_id.clone());
                             send_message(conn_handle, problem_report.to_a2a_message())?;
                             HolderState::Finished((state_data, problem_report).into())
                         }
@@ -139,7 +140,7 @@ impl HolderSM {
                     match result {
                         Ok(cred_id) => {
                             let ack = Ack::create()
-                                .set_thread(Thread::new().set_thid(state_data.thread_id.clone()));
+                                .set_thread_id(thread_id.clone());
 
                             send_message(state_data.connection_handle, ack.to_a2a_message())?;
                             HolderState::Finished((state_data, cred_id, credential).into())
@@ -147,7 +148,7 @@ impl HolderSM {
                         Err(err) => {
                             let problem_report = ProblemReport::create()
                                 .set_comment(err.to_string())
-                                .set_thread(Thread::new().set_thid(state_data.thread_id.clone()));
+                                .set_thread_id(thread_id.clone());
 
                             send_message(state_data.connection_handle, problem_report.to_a2a_message())?;
                             HolderState::Finished((state_data, problem_report).into())
@@ -167,7 +168,7 @@ impl HolderSM {
                 HolderState::Finished(state_data)
             }
         };
-        Ok(HolderSM::step(state, source_id))
+        Ok(HolderSM::step(state, source_id, thread_id))
     }
 
     pub fn credential_status(&self) -> u32 {
@@ -474,12 +475,12 @@ mod test {
             // No messages for different Thread ID
             {
                 let messages = map!(
-                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer().set_thread(Thread::new())),
-                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request().set_thread(Thread::new())),
-                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal().set_thread(Thread::new())),
-                    "key_4".to_string() => A2AMessage::Credential(_credential().set_thread(Thread::new())),
-                    "key_5".to_string() => A2AMessage::Ack(_ack().set_thread(Thread::new())),
-                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread(Thread::new()))
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer().set_thread_id(String::new())),
+                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request().set_thread_id(String::new())),
+                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal().set_thread_id(String::new())),
+                    "key_4".to_string() => A2AMessage::Credential(_credential().set_thread_id(String::new())),
+                    "key_5".to_string() => A2AMessage::Ack(_ack().set_thread_id(String::new())),
+                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(String::new()))
                 );
 
                 assert!(holder.find_message_to_handle(messages).is_none());

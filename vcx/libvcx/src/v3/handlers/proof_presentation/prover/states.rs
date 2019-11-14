@@ -8,7 +8,6 @@ use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::ack::Ack;
 use v3::messages::error::ProblemReport;
 use v3::messages::status::Status;
-use messages::thread::Thread;
 
 use std::collections::HashMap;
 use disclosed_proof::DisclosedProof;
@@ -18,12 +17,13 @@ use error::prelude::*;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProverSM {
     source_id: String,
+    thread_id: String,
     state: ProverState
 }
 
 impl ProverSM {
     pub fn new(presentation_request: PresentationRequest, source_id: String) -> ProverSM {
-        ProverSM { source_id, state: ProverState::Initiated(InitialState { presentation_request }) }
+        ProverSM { source_id, thread_id: presentation_request.id.0.clone(), state: ProverState::Initiated(InitialState { presentation_request }) }
     }
 }
 
@@ -142,14 +142,10 @@ impl From<(PresentationSentState, ProblemReport)> for FinishedState {
 }
 
 impl InitialState {
-    fn build_presentation(&self, credentials: &str, self_attested_attrs: &str) -> VcxResult<Presentation> {
-        let presentation = DisclosedProof::generate_indy_proof(credentials,
-                                                               self_attested_attrs,
-                                                               &self.presentation_request.request_presentations_attach.content()?)?;
-
-        Presentation::create()
-            .set_thread(Thread::new().set_thid(self.presentation_request.id.0.clone()))
-            .set_presentations_attach(presentation)
+    fn build_presentation(&self, credentials: &str, self_attested_attrs: &str) -> VcxResult<String> {
+        DisclosedProof::generate_indy_proof(credentials,
+                                            self_attested_attrs,
+                                            &self.presentation_request.request_presentations_attach.content()?)
     }
 }
 
@@ -176,12 +172,12 @@ impl ProverSM {
                 ProverState::PresentationSent(ref state) => {
                     match message {
                         A2AMessage::Ack(ack) => {
-                            if ack.thread.is_reply(&self.thread_id()) {
+                            if ack.thread.is_reply(&self.thread_id) {
                                 return Some((uid, A2AMessage::Ack(ack)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.thread_id()) {
+                            if problem_report.thread.is_reply(&self.thread_id) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -200,7 +196,7 @@ impl ProverSM {
     pub fn step(self, message: ProverMessages) -> VcxResult<ProverSM> {
         trace!("ProverSM::step >>> message: {:?}", message);
 
-        let ProverSM { source_id, state } = self;
+        let ProverSM { source_id, state, thread_id } = self;
 
         let state = match state {
             ProverState::Initiated(state) => {
@@ -208,13 +204,17 @@ impl ProverSM {
                     ProverMessages::PreparePresentation((credentials, self_attested_attrs)) => {
                         match state.build_presentation(&credentials, &self_attested_attrs) {
                             Ok(presentation) => {
+                                let presentation = Presentation::create()
+                                    .set_thread_id(thread_id.clone())
+                                    .set_presentations_attach(presentation)?;
+
                                 ProverState::PresentationPrepared((state, presentation).into())
                             }
                             Err(err) => {
                                 let problem_report =
                                     ProblemReport::create()
                                         .set_comment(err.to_string())
-                                        .set_thread(Thread::new().set_thid(state.presentation_request.id.0.clone()));
+                                        .set_thread_id(thread_id.clone());
 
                                 ProverState::PresentationPreparationFailed((state, problem_report).into())
                             }
@@ -264,12 +264,10 @@ impl ProverSM {
             ProverState::Finished(state) => ProverState::Finished(state)
         };
 
-        Ok(ProverSM { source_id, state })
+        Ok(ProverSM { source_id, state, thread_id })
     }
 
     pub fn source_id(&self) -> String { self.source_id.clone() }
-
-    pub fn thread_id(&self) -> String { self.presentation_request().id.0.clone() }
 
     pub fn state(&self) -> u32 {
         match self.state {
@@ -633,10 +631,10 @@ pub mod test {
             // No messages for different Thread ID
             {
                 let messages = map!(
-                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread(Thread::new())),
-                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread(Thread::new())),
-                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread(Thread::new())),
-                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread(Thread::new()))
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id(String::new())),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id(String::new())),
+                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id(String::new())),
+                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(String::new()))
                 );
 
                 assert!(prover.find_message_to_handle(messages).is_none());
