@@ -472,6 +472,7 @@ struct MultiWalletMultiTableStrategy {}
 impl WalletStrategy for DatabasePerWalletStrategy {
     // initialize storage based on wallet storage strategy
     fn init_storage(&self, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        env_logger::init();
         // no-op
         Ok(())
     }
