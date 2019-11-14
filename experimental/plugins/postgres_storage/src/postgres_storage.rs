@@ -620,7 +620,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
 
         debug!("connecting to postgres, url_base: {:?}", url_base);
-        let conn = postgres::Connection::connect(&url_base[..], postgres::TlsMode::None)?;
+        let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
         debug!("creating wallets database");
         if let Err(error) = conn.execute(&_CREATE_WALLETS_DATABASE, &[]) {
