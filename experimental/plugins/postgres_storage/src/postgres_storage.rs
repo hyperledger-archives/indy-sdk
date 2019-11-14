@@ -483,11 +483,15 @@ impl WalletStrategy for DatabasePerWalletStrategy {
             return Ok(())
         }
 
+        debug!("Entering create_wallet");
+        debug!("setting up the admin_postgres_url");
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
         let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
 
+        debug!("connecting to postgres, url_base: {:?}", url_base);
         let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
+        debug!("creating wallets DB");
         let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
         let mut schema_result = match conn.execute(&create_db_sql, &[]) {
             Ok(_) => Ok(()),
@@ -497,6 +501,7 @@ impl WalletStrategy for DatabasePerWalletStrategy {
         };
         conn.finish()?;
 
+        debug!("connecting to wallet as user");
         let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(error) => {
@@ -504,6 +509,7 @@ impl WalletStrategy for DatabasePerWalletStrategy {
             }
         };
 
+        debug!("setting up multi schema");
         for sql in &_CREATE_SCHEMA {
             match schema_result {
                 Ok(_) => schema_result = match conn.execute(sql, &[]) {
@@ -515,6 +521,7 @@ impl WalletStrategy for DatabasePerWalletStrategy {
                 _ => ()
             }
         };
+        debug!("inserting the keys");
         let ret = match schema_result {
             Ok(_) => {
                 match conn.execute("INSERT INTO metadata(value) VALUES($1)
@@ -622,7 +629,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         debug!("connecting to postgres, url_base: {:?}", url_base);
         let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
-        debug!("creating wallets database");
+        debug!("creating wallets DB");
         if let Err(error) = conn.execute(&_CREATE_WALLETS_DATABASE, &[]) {
             if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
                 debug!("error creating database, Error: {}", error);
