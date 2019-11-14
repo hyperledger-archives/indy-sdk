@@ -5,7 +5,8 @@ use time;
 
 use messages::thread::Thread;
 use v3::messages::connection::did_doc::*;
-use v3::messages::a2a::{A2AMessage, MessageType, MessageId, A2AMessageKinds};
+use v3::messages::a2a::{A2AMessage, MessageId, A2AMessageKinds};
+use v3::messages::a2a::message_type::MessageType;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Response {

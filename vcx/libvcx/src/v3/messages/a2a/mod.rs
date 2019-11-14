@@ -1,5 +1,8 @@
-use std::u8;
-use messages::message_type::parse_message_type;
+pub mod message_family;
+pub mod message_type;
+
+use self::message_type::MessageType;
+use self::message_family::MessageFamilies;
 
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
@@ -243,115 +246,6 @@ impl A2AMessageKinds {
             A2AMessageKinds::PresentationRequest => "request-presentation".to_string(),
             A2AMessageKinds::Presentation => "presentation".to_string(),
         }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub enum MessageFamilies {
-    Routing,
-    DidExchange,
-    Notification,
-    Signature,
-    CredentialIssuance,
-    ReportProblem,
-    PresentProof,
-    TrustPing,
-    Unknown(String)
-}
-
-impl MessageFamilies {
-    pub fn version(&self) -> &'static str {
-        match self {
-            MessageFamilies::Routing => "1.0",
-            MessageFamilies::DidExchange => "1.0",
-            MessageFamilies::Notification => "1.0",
-            MessageFamilies::Signature => "1.0",
-            MessageFamilies::CredentialIssuance => "1.0",
-            MessageFamilies::ReportProblem => "1.0",
-            MessageFamilies::PresentProof => "1.0",
-            MessageFamilies::TrustPing => "1.0",
-            MessageFamilies::Unknown(_) => "1.0"
-        }
-    }
-}
-
-impl From<String> for MessageFamilies {
-    fn from(family: String) -> Self {
-        match family.as_str() {
-            "routing" => MessageFamilies::Routing,
-            "connections" => MessageFamilies::DidExchange, // TODO: should be didexchange
-            "signature" => MessageFamilies::Signature,
-            "notification" => MessageFamilies::Notification,
-            "issue-credential" => MessageFamilies::CredentialIssuance,
-            "report-problem" => MessageFamilies::ReportProblem,
-            "present-proof" => MessageFamilies::PresentProof,
-            "trust_ping" => MessageFamilies::TrustPing,
-            family @ _ => MessageFamilies::Unknown(family.to_string())
-        }
-    }
-}
-
-impl ::std::string::ToString for MessageFamilies {
-    fn to_string(&self) -> String {
-        match self {
-            MessageFamilies::Routing => "routing".to_string(),
-            MessageFamilies::DidExchange => "connections".to_string(), // TODO: should be didexchange
-            MessageFamilies::Notification => "notification".to_string(),
-            MessageFamilies::Signature => "signature".to_string(),
-            MessageFamilies::CredentialIssuance => "issue-credential".to_string(),
-            MessageFamilies::ReportProblem => "report-problem".to_string(),
-            MessageFamilies::PresentProof => "present-proof".to_string(),
-            MessageFamilies::TrustPing => "trust_ping".to_string(),
-            MessageFamilies::Unknown(family) => family.to_string()
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct MessageType {
-    pub did: String,
-    pub family: MessageFamilies,
-    pub version: String,
-    pub type_: String,
-}
-
-impl MessageType {
-    const DID: &'static str = "did:sov:BzCbsNYhMrjHiqZDTUASHg";
-
-    pub fn build(kind: A2AMessageKinds) -> MessageType {
-        MessageType {
-            did: Self::DID.to_string(),
-            family: kind.family(),
-            version: kind.family().version().to_string(),
-            type_: kind.name(),
-        }
-    }
-}
-
-
-impl<'de> Deserialize<'de> for MessageType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-        let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
-
-        match value.as_str() {
-            Some(type_) => {
-                let (did, family, version, type_) = parse_message_type(type_).map_err(de::Error::custom)?;
-                Ok(MessageType {
-                    did,
-                    family: MessageFamilies::from(family),
-                    version,
-                    type_,
-                })
-            }
-            _ => Err(de::Error::custom("Unexpected @type field structure."))
-        }
-    }
-}
-
-impl Serialize for MessageType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let value = Value::String(format!("{};spec/{}/{}/{}", self.did, self.family.to_string(), self.version, self.type_));
-        value.serialize(serializer)
     }
 }
 

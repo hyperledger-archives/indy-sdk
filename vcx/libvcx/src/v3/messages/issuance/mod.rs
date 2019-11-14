@@ -1,4 +1,5 @@
-use v3::messages::a2a::{MessageType, A2AMessageKinds};
+use v3::messages::a2a::A2AMessageKinds;
+use v3::messages::a2a::message_type::MessageType;
 use v3::messages::mime_type::MimeType;
 use error::VcxResult;
 
