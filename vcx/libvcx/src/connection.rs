@@ -5,7 +5,7 @@ use rmp_serde;
 use api::VcxStateType;
 use settings;
 use messages;
-use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion};
+use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, SerializableObject};
 use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails};
 use messages::payload::Payloads;
 use messages::thread::Thread;
@@ -17,7 +17,6 @@ use utils::error;
 use utils::libindy::signus::create_my_did;
 use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
-use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::json::KeyMatch;
 use std::collections::HashMap;
 
@@ -211,16 +210,11 @@ impl Connection {
         self.state != VcxStateType::VcxStateNone && self.state != VcxStateType::VcxStateAccepted
     }
 
-    fn from_str(data: &str) -> VcxResult<Self> {
-        ObjectWithVersion::deserialize(data)
-            .map(|obj: ObjectWithVersion<Self>| obj.data)
-            .map_err(|err| err.extend("Cannot deserialize Connection"))
-    }
-
     fn to_string(&self) -> VcxResult<String> {
-        ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
-            .serialize()
-            .map_err(|err| err.extend("Cannot serialize Connection"))
+        let object: SerializableObject<Connection, v3_connection::connection::Connection> = SerializableObject::V1 { data: self.to_owned() };
+
+        ::serde_json::to_string(&object)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("Cannot serialize Connection: {:?}", err)))
     }
 
     fn create_agent_pairwise(&mut self) -> VcxResult<u32> {
@@ -614,22 +608,36 @@ pub fn connect(handle: u32, options: Option<String>) -> VcxResult<u32> {
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
     if v3_connection::CONNECTION_MAP.has_handle(handle) {
-        return v3_connection::to_string(handle);
-    }
+        v3_connection::CONNECTION_MAP.get(handle, |connection| {
+            let (data, state) = connection.to_owned().into();
 
-    CONNECTION_MAP.get(handle, |t| {
-        Connection::to_string(&t)
-    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+            let object = SerializableObject::V2 { data, state };
+
+            ::serde_json::to_string(&object)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("Cannot serialize Connection: {:?}", err)))
+        }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+    } else {
+        CONNECTION_MAP.get(handle, |connection| {
+            connection.to_string()
+        }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+    }
 }
 
 pub fn from_string(connection_data: &str) -> VcxResult<u32> {
-    if let Ok(derived_connection) = Connection::from_str(connection_data) {
-        let handle = CONNECTION_MAP.add(derived_connection)?;
-        debug!("inserting handle {} source_id {} into connection table", handle, get_source_id(handle).unwrap_or_default());
-        Ok(handle)
-    } else {
-        v3_connection::from_string(connection_data)
-    }
+    let object: SerializableObject<Connection, v3_connection::states::ActorDidExchangeState> = ::serde_json::from_str(connection_data)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Connection: {:?}", err)))?;
+
+    let handle = match object {
+        SerializableObject::V1 { data, .. } => {
+            CONNECTION_MAP.add(data)?
+        }
+        SerializableObject::V2 { data, state } => {
+            v3_connection::CONNECTION_MAP.
+                add(v3_connection::connection::Connection::from((data, state)))?
+        }
+    };
+
+    Ok(handle)
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
@@ -701,49 +709,49 @@ impl KeyMatch for (String, Option<String>) {
 
 
 lazy_static! {
-    static ref ABBREVIATIONS: Vec<(String, String)> = {
-        vec![
-        ("statusCode".to_string(),          "sc".to_string()),
-        ("connReqId".to_string(),           "id".to_string()),
-        ("senderDetail".to_string(),        "s".to_string()),
-        ("name".to_string(),                "n".to_string()),
-        ("agentKeyDlgProof".to_string(),    "dp".to_string()),
-        ("agentDID".to_string(),            "d".to_string()),
-        ("agentDelegatedKey".to_string(),   "k".to_string()),
-        ("signature".to_string(),           "s".to_string()),
-        ("DID".to_string(), "d".to_string()),
-        ("logoUrl".to_string(), "l".to_string()),
-        ("verKey".to_string(), "v".to_string()),
-        ("senderAgencyDetail".to_string(), "sa".to_string()),
-        ("endpoint".to_string(), "e".to_string()),
-        ("targetName".to_string(), "t".to_string()),
-        ("statusMsg".to_string(), "sm".to_string()),
-        ]
-    };
+static ref ABBREVIATIONS: Vec < (String, String) > = {
+vec ! [
+("statusCode".to_string(),          "sc".to_string()),
+("connReqId".to_string(), "id".to_string()),
+("senderDetail".to_string(), "s".to_string()),
+("name".to_string(), "n".to_string()),
+("agentKeyDlgProof".to_string(), "dp".to_string()),
+("agentDID".to_string(),            "d".to_string()),
+("agentDelegatedKey".to_string(), "k".to_string()),
+("signature".to_string(), "s".to_string()),
+("DID".to_string(), "d".to_string()),
+("logoUrl".to_string(), "l".to_string()),
+("verKey".to_string(), "v".to_string()),
+("senderAgencyDetail".to_string(), "sa".to_string()),
+("endpoint".to_string(), "e".to_string()),
+("targetName".to_string(), "t".to_string()),
+("statusMsg".to_string(), "sm".to_string()),
+]
+};
 }
 
 lazy_static! {
-    static ref UNABBREVIATIONS: Vec<((String, Option<String>), String)> = {
-        vec![
-        (("sc".to_string(), None),                                  "statusCode".to_string()),
-        (("id".to_string(), None),                                  "connReqId".to_string()),
-        (("s".to_string(), None),                                   "senderDetail".to_string()),
-        (("n".to_string(), Some("senderDetail".to_string())),       "name".to_string()),
-        (("dp".to_string(), Some("senderDetail".to_string())),      "agentKeyDlgProof".to_string()),
-        (("d".to_string(), Some("agentKeyDlgProof".to_string())),   "agentDID".to_string()),
-        (("k".to_string(), Some("agentKeyDlgProof".to_string())),   "agentDelegatedKey".to_string()),
-        (("s".to_string(), Some("agentKeyDlgProof".to_string())),   "signature".to_string()),
-        (("d".to_string(), Some("senderDetail".to_string())),       "DID".to_string()),
-        (("l".to_string(), Some("senderDetail".to_string())),       "logoUrl".to_string()),
-        (("v".to_string(), Some("senderDetail".to_string())),       "verKey".to_string()),
-        (("sa".to_string(), None),                                  "senderAgencyDetail".to_string()),
-        (("d".to_string(), Some("senderAgencyDetail".to_string())), "DID".to_string()),
-        (("v".to_string(), Some("senderAgencyDetail".to_string())), "verKey".to_string()),
-        (("e".to_string(), Some("senderAgencyDetail".to_string())), "endpoint".to_string()),
-        (("t".to_string(), None),                                   "targetName".to_string()),
-        (("sm".to_string(), None),                                  "statusMsg".to_string()),
-        ]
-    };
+static ref UNABBREVIATIONS: Vec < ((String, Option < String > ), String) > = {
+vec ! [
+(("sc".to_string(), None), "statusCode".to_string()),
+(("id".to_string(), None), "connReqId".to_string()),
+(("s".to_string(), None),                                   "senderDetail".to_string()),
+(("n".to_string(), Some("senderDetail".to_string())), "name".to_string()),
+(("dp".to_string(), Some("senderDetail".to_string())),      "agentKeyDlgProof".to_string()),
+(("d".to_string(), Some("agentKeyDlgProof".to_string())), "agentDID".to_string()),
+(("k".to_string(), Some("agentKeyDlgProof".to_string())),   "agentDelegatedKey".to_string()),
+(("s".to_string(), Some("agentKeyDlgProof".to_string())), "signature".to_string()),
+(("d".to_string(), Some("senderDetail".to_string())),       "DID".to_string()),
+(("l".to_string(), Some("senderDetail".to_string())), "logoUrl".to_string()),
+(("v".to_string(), Some("senderDetail".to_string())),       "verKey".to_string()),
+(("sa".to_string(), None), "senderAgencyDetail".to_string()),
+(("d".to_string(), Some("senderAgencyDetail".to_string())), "DID".to_string()),
+(("v".to_string(), Some("senderAgencyDetail".to_string())), "verKey".to_string()),
+(("e".to_string(), Some("senderAgencyDetail".to_string())), "endpoint".to_string()),
+(("t".to_string(), None), "targetName".to_string()),
+(("sm".to_string(), None), "statusMsg".to_string()),
+]
+};
 }
 
 fn abbrv_event_detail(val: Value) -> VcxResult<Value> {
@@ -755,6 +763,43 @@ fn unabbrv_event_detail(val: Value) -> VcxResult<Value> {
         .map_err(|err| err.extend("Cannot unabbreviate event detail"))
 }
 
+impl Into<(Connection, v3_connection::states::ActorDidExchangeState)> for v3_connection::connection::Connection {
+    fn into(self) -> (Connection, v3_connection::states::ActorDidExchangeState) {
+        let data = Connection {
+            source_id: self.source_id().clone(),
+            pw_did: self.agent_info().pw_did.clone(),
+            pw_verkey: self.agent_info().pw_vk.clone(),
+            state: VcxStateType::from_u32(self.state()),
+            uuid: String::new(),
+            endpoint: String::new(),
+            invite_detail: None,
+            invite_url: None,
+            agent_did: self.agent_info().pw_did.clone(),
+            agent_vk: self.agent_info().pw_vk.clone(),
+            their_pw_did: self.remote_did().unwrap_or_default(),
+            their_pw_verkey: self.remote_vk().unwrap_or_default(),
+            public_did: None,
+            their_public_did: None,
+        };
+
+        (data, self.state_object().to_owned())
+    }
+}
+
+impl From<(Connection, v3_connection::states::ActorDidExchangeState)> for v3_connection::connection::Connection {
+    fn from((connection, state): (Connection, v3_connection::states::ActorDidExchangeState)) -> v3_connection::connection::Connection {
+        let agent_info = v3_connection::agent::AgentInfo {
+            pw_did: connection.get_pw_did().to_string(),
+            pw_vk: connection.get_pw_verkey().to_string(),
+            agent_did: connection.get_agent_did().to_string(),
+            agent_vk: connection.get_agent_verkey().to_string(),
+        };
+
+        let connection_sm = v3_connection::states::DidExchangeSM::from(connection.get_source_id().to_string(), agent_info, state);
+
+        v3_connection::connection::Connection::new(connection_sm)
+    }
+}
 
 #[cfg(test)]
 pub mod tests {
@@ -897,10 +942,21 @@ pub mod tests {
         let handle = create_connection("test_serialize_deserialize").unwrap();
         assert!(handle > 0);
         let first_string = to_string(handle).unwrap();
+        println!("{}", first_string);
         assert!(release(handle).is_ok());
         let handle = from_string(&first_string).unwrap();
         let second_string = to_string(handle).unwrap();
         assert!(release(handle).is_ok());
+        assert_eq!(first_string, second_string);
+
+        let handle_v2 = v3_connection::create_connection("test_serialize_deserialize").unwrap();
+        assert!(handle_v2 > 0);
+        let first_string = to_string(handle_v2).unwrap();
+        println!("{}", first_string);
+        assert!(v3_connection::release(handle_v2).is_ok());
+        let handle_v2 = from_string(&first_string).unwrap();
+        let second_string = to_string(handle_v2).unwrap();
+        assert!(v3_connection::release(handle_v2).is_ok());
         assert_eq!(first_string, second_string);
     }
 
@@ -1003,50 +1059,50 @@ pub mod tests {
     #[test]
     fn test_invite_detail_abbr2() {
         let un_abbr = json!({
-  "statusCode":"MS-102",
-  "connReqId":"yta2odh",
-  "senderDetail":{
-    "name":"ent-name",
-    "agentKeyDlgProof":{
-      "agentDID":"N2Uyi6SVsHZq1VWXuA3EMg",
-      "agentDelegatedKey":"CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
-      "signature":"/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg=="
-    },
-    "DID":"F2axeahCaZfbUYUcKefc3j",
-    "logoUrl":"ent-logo-url",
-    "verKey":"74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx"
-  },
-  "senderAgencyDetail":{
-    "DID":"BDSmVkzxRYGE4HKyMKxd1H",
-    "verKey":"6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
-    "endpoint":"52.38.32.107:80/agency/msg"
-  },
-  "targetName":"there",
-  "statusMsg":"message sent"
+"statusCode": "MS-102",
+"connReqId": "yta2odh",
+"senderDetail":{
+"name": "ent-name",
+"agentKeyDlgProof":{
+"agentDID": "N2Uyi6SVsHZq1VWXuA3EMg",
+"agentDelegatedKey": "CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
+"signature":"/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg=="
+},
+"DID": "F2axeahCaZfbUYUcKefc3j",
+"logoUrl": "ent-logo-url",
+"verKey": "74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx"
+},
+"senderAgencyDetail":{
+"DID": "BDSmVkzxRYGE4HKyMKxd1H",
+"verKey": "6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
+"endpoint":"52.38.32.107:80/agency/msg"
+},
+"targetName": "there",
+"statusMsg": "message sent"
 });
 
         let abbr = json!({
-  "sc":"MS-102",
-  "id": "yta2odh",
-  "s": {
-    "n": "ent-name",
-    "dp": {
-      "d": "N2Uyi6SVsHZq1VWXuA3EMg",
-      "k": "CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
-      "s":
-        "/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg==",
-    },
-    "d": "F2axeahCaZfbUYUcKefc3j",
-    "l": "ent-logo-url",
-    "v": "74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx",
-  },
-  "sa": {
-    "d": "BDSmVkzxRYGE4HKyMKxd1H",
-    "v": "6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
-    "e": "52.38.32.107:80/agency/msg",
-  },
-  "t": "there",
-  "sm":"message sent"
+"sc": "MS-102",
+"id": "yta2odh",
+"s": {
+"n": "ent-name",
+"dp": {
+"d": "N2Uyi6SVsHZq1VWXuA3EMg",
+"k": "CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
+"s":
+"/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg==",
+},
+"d": "F2axeahCaZfbUYUcKefc3j",
+"l": "ent-logo-url",
+"v": "74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx",
+},
+"sa": {
+"d": "BDSmVkzxRYGE4HKyMKxd1H",
+"v": "6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
+"e": "52.38.32.107:80/agency/msg",
+},
+"t": "there",
+"sm": "message sent"
 });
         let processed = abbrv_event_detail(un_abbr.clone()).unwrap();
         assert_eq!(processed, abbr);

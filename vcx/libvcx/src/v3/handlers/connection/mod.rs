@@ -143,17 +143,6 @@ pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u3
     }).map(|_| error::SUCCESS.code_num)
 }
 
-pub fn to_string(handle: u32) -> VcxResult<String> {
-    CONNECTION_MAP.get(handle, |connection| {
-        Connection::to_string(&connection)
-    })
-}
-
-pub fn from_string(connection_data: &str) -> VcxResult<u32> {
-    let connection: Connection = Connection::from_str(connection_data)?;
-    CONNECTION_MAP.add(connection)
-}
-
 pub fn add_pending_messages(handle: u32, messages: HashMap<MessageId, String>) -> VcxResult<()> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         connection.add_pending_messages(messages.clone())
@@ -331,16 +320,5 @@ pub mod test {
 
         release(connection_handle).unwrap();
         assert!(!CONNECTION_MAP.has_handle(connection_handle));
-    }
-
-    #[test]
-    fn test_connection_serialization_works() {
-        let connection_handle = create_connection(_source_id()).unwrap();
-        assert!(CONNECTION_MAP.has_handle(connection_handle));
-
-        let connection_json = to_string(connection_handle).unwrap();
-
-        let connection_handle_2 = from_string(&connection_json).unwrap();
-        assert!(CONNECTION_MAP.has_handle(connection_handle_2));
     }
 }

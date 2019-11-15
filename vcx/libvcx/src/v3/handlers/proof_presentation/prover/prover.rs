@@ -22,27 +22,27 @@ lazy_static! {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Prover {
-    state: ProverSM
+    prover_sm: ProverSM
 }
 
 impl Prover {
     pub fn create(source_id: &str, presentation_request: PresentationRequest) -> VcxResult<Prover> {
         trace!("Prover::create >>> source_id: {}, presentation_request: {:?}", source_id, presentation_request);
         Ok(Prover {
-            state: ProverSM::new(presentation_request, source_id.to_string()),
+            prover_sm: ProverSM::new(presentation_request, source_id.to_string()),
         })
     }
 
-    pub fn state(&self) -> u32 { self.state.state() }
+    pub fn state(&self) -> u32 { self.prover_sm.state() }
 
     pub fn presentation_status(&self) -> u32 {
         trace!("Prover::presentation_state >>>");
-        self.state.presentation_status()
+        self.prover_sm.presentation_status()
     }
 
     pub fn retrieve_credentials(&self) -> VcxResult<String> {
         trace!("Prover::retrieve_credentials >>>");
-        let presentation_request = self.state.presentation_request().request_presentations_attach.content()?;
+        let presentation_request = self.prover_sm.presentation_request().request_presentations_attach.content()?;
         anoncreds::libindy_prover_get_credentials_for_proof_req(&presentation_request)
     }
 
@@ -54,7 +54,7 @@ impl Prover {
     pub fn generate_presentation_msg(&self) -> VcxResult<String> {
         trace!("Prover::generate_presentation_msg >>>");
 
-        let proof: ProofMessage = self.state.presentation()?.clone().try_into()?;
+        let proof: ProofMessage = self.prover_sm.presentation()?.clone().try_into()?;
 
         ::serde_json::to_string(&proof)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
@@ -68,16 +68,16 @@ impl Prover {
     pub fn update_state(mut self, message: Option<&str>) -> VcxResult<Prover> {
         trace!("Prover::update_state >>> message: {:?}", message);
 
-        if !self.state.has_transitions() { return Ok(self); }
+        if !self.prover_sm.has_transitions() { return Ok(self); }
 
         if let Some(message_) = message {
             return self.update_state_with_message(message_);
         }
 
-        let connection_handle = self.state.connection_handle()?;
+        let connection_handle = self.prover_sm.connection_handle()?;
         let messages = connection::get_messages(connection_handle)?;
 
-        if let Some((uid, message)) = self.state.find_message_to_handle(messages) {
+        if let Some((uid, message)) = self.prover_sm.find_message_to_handle(messages) {
             self = self.handle_message(message.into())?;
             connection::update_message_status(connection_handle, uid)?;
         };
@@ -91,7 +91,7 @@ impl Prover {
         let message: Message = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot updated state with message: Message deserialization failed: {:?}", err)))?;
 
-        let connection_handle = self.state.connection_handle()?;
+        let connection_handle = self.prover_sm.connection_handle()?;
 
         let uid = message.uid.clone();
         let a2a_message = connection::decode_message(connection_handle, message)?;
@@ -146,7 +146,7 @@ impl Prover {
         Ok(presentation_requests)
     }
 
-    pub fn get_source_id(&self) -> String { self.state.source_id() }
+    pub fn get_source_id(&self) -> String { self.prover_sm.source_id() }
 
     pub fn to_string(&self) -> VcxResult<String> {
         trace!("Prover::to_string >>>");
@@ -165,7 +165,7 @@ impl Prover {
     }
 
     pub fn step(mut self, message: ProverMessages) -> VcxResult<Prover> {
-        self.state = self.state.step(message)?;
+        self.prover_sm = self.prover_sm.step(message)?;
         Ok(self)
     }
 }

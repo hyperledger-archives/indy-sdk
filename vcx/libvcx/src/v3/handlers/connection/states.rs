@@ -214,6 +214,14 @@ impl DidExchangeSM {
         }
     }
 
+    pub fn from(source_id: String, agent_info: AgentInfo, state: ActorDidExchangeState) -> Self{
+        DidExchangeSM {
+            source_id,
+            agent_info,
+            state,
+        }
+    }
+
     pub fn agent_info(&self) -> &AgentInfo {
         &self.agent_info
     }
@@ -226,6 +234,10 @@ impl DidExchangeSM {
         match self.state {
             ActorDidExchangeState::Inviter(ref state) | ActorDidExchangeState::Invitee(ref state) => state.code(),
         }
+    }
+
+    pub fn state_object<'a>(&'a self) -> &'a ActorDidExchangeState {
+        &self.state
     }
 
     pub fn find_message_to_handle(&self, messages: HashMap<String, A2AMessage>) -> Option<(String, A2AMessage)> {
@@ -474,6 +486,12 @@ impl DidExchangeSM {
             ActorDidExchangeState::Invitee(DidExchangeState::Invited(ref state)) => Some(&state.invitation),
             _ => None
         }
+    }
+
+    pub fn remote_did(&self) -> VcxResult<String> {
+        self.did_doc()
+            .map(|did_doc: DidDoc| did_doc.id.clone())
+            .ok_or(VcxError::from_msg(VcxErrorKind::NotReady, "Remote Connection DID is not set"))
     }
 
     pub fn remote_vk(&self) -> VcxResult<String> {
