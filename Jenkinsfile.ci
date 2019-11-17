@@ -18,8 +18,8 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 'android-test': { androidTesting() },
-                // 'macos-test'  : { macosTesting() },
-                // 'ios-test'    : { iosTesting() },
+                'macos-test'  : { macosTesting() },
+                'ios-test'    : { iosTesting() },
                 // 'centos-test' : { centosTesting() },
                 'windows-test': { windowsTesting() }
         ])
