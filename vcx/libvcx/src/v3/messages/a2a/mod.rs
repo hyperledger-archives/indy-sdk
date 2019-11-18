@@ -12,6 +12,7 @@ use v3::messages::connection::request::Request;
 use v3::messages::connection::response::SignedResponse;
 use v3::messages::connection::problem_report::ProblemReport as ConnectionProblemReport;
 use v3::messages::connection::ping::Ping;
+use v3::messages::connection::ping_response::PingResponse;
 use v3::messages::forward::Forward;
 use v3::messages::error::ProblemReport as CommonProblemReport;
 use v3::messages::issuance::credential_proposal::CredentialProposal;
@@ -36,6 +37,7 @@ pub enum A2AMessage {
     ConnectionResponse(SignedResponse),
     ConnectionProblemReport(ConnectionProblemReport),
     Ping(Ping),
+    PingResponse(PingResponse),
 
     /// notification
     Ack(Ack),
@@ -85,6 +87,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
             "ping" => {
                 Ping::deserialize(value)
                     .map(|msg| A2AMessage::Ping(msg))
+                    .map_err(de::Error::custom)
+            }
+            "ping_response" => {
+                PingResponse::deserialize(value)
+                    .map(|msg| A2AMessage::PingResponse(msg))
                     .map_err(de::Error::custom)
             }
             "problem_report" => {
@@ -161,6 +168,7 @@ impl Serialize for A2AMessage {
             A2AMessage::ConnectionResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeResponse),
             A2AMessage::ConnectionProblemReport(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeProblemReport),
             A2AMessage::Ping(msg) => set_a2a_message_type(msg, A2AMessageKinds::Ping),
+            A2AMessage::PingResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::PingResponse),
             A2AMessage::Ack(msg) => set_a2a_message_type(msg, A2AMessageKinds::Ack),
             A2AMessage::CommonProblemReport(msg) => set_a2a_message_type(msg, A2AMessageKinds::ProblemReport),
             A2AMessage::CredentialProposal(msg) => set_a2a_message_type(msg, A2AMessageKinds::CredentialProposal),
@@ -188,6 +196,7 @@ pub enum A2AMessageKinds {
     ExchangeProblemReport,
     Ed25519Signature,
     Ping,
+    PingResponse,
     Ack,
     CredentialOffer,
     CredentialProposal,
@@ -210,6 +219,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::ExchangeResponse => MessageFamilies::DidExchange,
             A2AMessageKinds::ExchangeProblemReport => MessageFamilies::DidExchange,
             A2AMessageKinds::Ping => MessageFamilies::Notification,
+            A2AMessageKinds::PingResponse => MessageFamilies::Notification, // TODO: trust_ping Message family
             A2AMessageKinds::Ack => MessageFamilies::Notification,
             A2AMessageKinds::ProblemReport => MessageFamilies::ReportProblem,
             A2AMessageKinds::Ed25519Signature => MessageFamilies::Signature,
@@ -233,6 +243,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::ExchangeResponse => "response".to_string(),
             A2AMessageKinds::ExchangeProblemReport => "problem_report".to_string(),
             A2AMessageKinds::Ping => "ping".to_string(),
+            A2AMessageKinds::PingResponse => "ping_response".to_string(),
             A2AMessageKinds::Ack => "ack".to_string(),
             A2AMessageKinds::ProblemReport => "problem-report".to_string(),
             A2AMessageKinds::Ed25519Signature => "ed25519Sha512_single".to_string(),

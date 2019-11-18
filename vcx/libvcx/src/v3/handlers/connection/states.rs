@@ -8,6 +8,7 @@ use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{Response, SignedResponse};
 use v3::messages::connection::problem_report::{ProblemReport, ProblemCode};
 use v3::messages::connection::ping::Ping;
+use v3::messages::connection::ping_response::PingResponse;
 use v3::messages::ack::Ack;
 use v3::messages::connection::did_doc::DidDoc;
 
@@ -367,9 +368,9 @@ impl DidExchangeSM {
                             }
                             DidExchangeMessages::PingReceived(ping) => {
                                 if ping.response_requested {
-                                    let ping = Ping::create().set_thread_id(
+                                    let ping_response = PingResponse::create().set_thread_id(
                                         ping.thread.as_ref().and_then(|thread| thread.thid.clone()).unwrap_or(ping.id.0.clone()));
-                                    agent_info.send_message(&ping.to_a2a_message(), &state.did_doc)?;
+                                    agent_info.send_message(&ping_response.to_a2a_message(), &state.did_doc)?;
                                 }
 
                                 ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping).into()))
