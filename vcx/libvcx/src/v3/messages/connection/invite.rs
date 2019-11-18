@@ -76,6 +76,10 @@ pub mod tests {
         }
     }
 
+    pub fn _invitation_json() -> String {
+        ::serde_json::to_string(&_invitation().to_a2a_message()).unwrap()
+    }
+
     #[test]
     fn test_request_build_works() {
         let invitation: Invitation = Invitation::default()

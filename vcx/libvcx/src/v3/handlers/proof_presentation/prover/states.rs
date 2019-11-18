@@ -1,6 +1,6 @@
 use api::VcxStateType;
 
-use v3::handlers::connection;
+use connection;
 use v3::handlers::proof_presentation::prover::messages::ProverMessages;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
@@ -274,7 +274,7 @@ impl ProverSM {
             ProverState::Initiated(_) => VcxStateType::VcxStateInitialized as u32,
             ProverState::PresentationPrepared(_) => VcxStateType::VcxStateInitialized as u32,
             ProverState::PresentationPreparationFailed(_) => VcxStateType::VcxStateInitialized as u32,
-            ProverState::PresentationSent(_) => VcxStateType::VcxStateOfferSent as u32,
+            ProverState::PresentationSent(_) => VcxStateType::VcxStateOfferSent as u32, // TODO: maybe VcxStateType::VcxStateAccepted
             ProverState::Finished(_) => VcxStateType::VcxStateAccepted as u32,
         }
     }
@@ -332,9 +332,9 @@ impl ProverSM {
 pub mod test {
     use super::*;
 
+    use v3::handlers::connection::tests::mock_connection;
     use v3::test::source_id;
     use v3::test::setup::TestModeSetup;
-    use v3::handlers::connection::test::mock_connection;
     use v3::messages::proof_presentation::test::{_ack, _problem_report};
     use v3::messages::proof_presentation::presentation_request::tests::_presentation_request;
     use v3::messages::proof_presentation::presentation::tests::_presentation;

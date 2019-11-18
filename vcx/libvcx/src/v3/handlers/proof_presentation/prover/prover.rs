@@ -7,9 +7,9 @@ use std::collections::HashMap;
 
 use v3::handlers::proof_presentation::prover::states::ProverSM;
 use v3::handlers::proof_presentation::prover::messages::ProverMessages;
-use v3::handlers::connection;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
+use connection;
 
 use messages::proofs::proof_message::ProofMessage;
 use v3::SERIALIZE_VERSION;

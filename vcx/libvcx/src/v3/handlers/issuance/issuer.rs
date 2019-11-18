@@ -1,8 +1,6 @@
 use api::VcxStateType;
 use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::handlers::issuance::states::{IssuerState, InitialState};
-use v3::handlers::connection::{send_message, get_messages};
-use v3::handlers::connection::update_message_status;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
@@ -14,6 +12,8 @@ use utils::libindy::anoncreds::{self, libindy_issuer_create_credential_offer};
 use issuer_credential::encode_attributes;
 use v3::messages::status::Status;
 use std::collections::HashMap;
+use connection::{send_message, get_messages};
+use connection::update_message_status;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct IssuerSM {
@@ -275,9 +275,9 @@ fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, 
 pub mod test {
     use super::*;
 
+    use v3::handlers::connection::tests::mock_connection;
     use v3::test::source_id;
     use v3::test::setup::TestModeSetup;
-    use v3::handlers::connection::test::mock_connection;
     use v3::messages::issuance::test::{_ack, _problem_report};
     use v3::messages::issuance::credential::tests::_credential;
     use v3::messages::issuance::credential_request::tests::_credential_request;

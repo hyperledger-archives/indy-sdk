@@ -6,11 +6,10 @@ use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::error::ProblemReport;
-use v3::handlers::connection::{send_message, get_messages, get_pw_did, update_message_status};
 use v3::messages::a2a::A2AMessage;
 use v3::messages::ack::Ack;
-use v3::handlers::connection;
 use v3::messages::status::Status;
+use connection;
 
 use utils::libindy::anoncreds::{self, libindy_prover_store_credential};
 use error::prelude::*;
@@ -52,11 +51,11 @@ impl HolderSM {
         if self.is_terminal_state() { return Ok(self); }
 
         let conn_handle = self.state.get_connection_handle();
-        let messages = get_messages(conn_handle)?;
+        let messages = connection::get_messages(conn_handle)?;
 
         match self.find_message_to_handle(messages) {
             Some((uid, msg)) => {
-                update_message_status(conn_handle, uid)?;
+                connection::update_message_status(conn_handle, uid)?;
                 self.handle_message(msg.into())
             }
             None => Ok(self)
@@ -117,14 +116,14 @@ impl HolderSM {
                             let cred_request = cred_request
                                 .set_thread_id(thread_id.clone());
                             connection::remove_pending_message(conn_handle, &state_data.offer.id)?;
-                            send_message(conn_handle, cred_request.to_a2a_message())?;
+                            connection::send_message(conn_handle, cred_request.to_a2a_message())?;
                             HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle).into())
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
                                 .set_comment(err.to_string())
                                 .set_thread_id(thread_id.clone());
-                            send_message(conn_handle, problem_report.to_a2a_message())?;
+                            connection::send_message(conn_handle, problem_report.to_a2a_message())?;
                             HolderState::Finished((state_data, problem_report).into())
                         }
                     }
@@ -142,7 +141,7 @@ impl HolderSM {
                             let ack = Ack::create()
                                 .set_thread_id(thread_id.clone());
 
-                            send_message(state_data.connection_handle, ack.to_a2a_message())?;
+                            connection::send_message(state_data.connection_handle, ack.to_a2a_message())?;
                             HolderState::Finished((state_data, cred_id, credential).into())
                         }
                         Err(err) => {
@@ -150,7 +149,7 @@ impl HolderSM {
                                 .set_comment(err.to_string())
                                 .set_thread_id(thread_id.clone());
 
-                            send_message(state_data.connection_handle, problem_report.to_a2a_message())?;
+                            connection::send_message(state_data.connection_handle, problem_report.to_a2a_message())?;
                             HolderState::Finished((state_data, problem_report).into())
                         }
                     }
@@ -243,7 +242,7 @@ fn _store_credential(credential: &Credential,
 fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxResult<(CredentialRequest, String, String)> {
     trace!("Holder::_make_credential_request >>> conn_handle: {:?}, offer: {:?}", conn_handle, offer);
 
-    let my_did = get_pw_did(conn_handle)?;
+    let my_did = connection::get_pw_did(conn_handle)?;
     let cred_offer = offer.offers_attach.content()?;
     let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
     let (req, req_meta, cred_def_id, cred_def_json) =
@@ -256,9 +255,9 @@ fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxRes
 mod test {
     use super::*;
 
+    use v3::handlers::connection::tests::mock_connection;
     use v3::test::source_id;
     use v3::test::setup::TestModeSetup;
-    use v3::handlers::connection::test::mock_connection;
     use v3::messages::issuance::credential::tests::_credential;
     use v3::messages::issuance::credential_offer::tests::_credential_offer;
     use v3::messages::issuance::credential_request::tests::_credential_request;

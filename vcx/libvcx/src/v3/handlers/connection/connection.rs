@@ -16,16 +16,28 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn new(connection_sm: DidExchangeSM) -> Connection {
-        Connection { connection_sm }
-    }
-
-    pub fn create(source_id: &str, actor: Actor) -> Connection {
-        trace!("Connection::create >>> source_id: {}, actor: {:?}", source_id, actor);
+    pub fn create(source_id: &str) -> Connection {
+        trace!("Connection::create >>> source_id: {}", source_id);
 
         Connection {
-            connection_sm: DidExchangeSM::new(actor, source_id),
+            connection_sm: DidExchangeSM::new(Actor::Inviter, source_id),
         }
+    }
+
+    pub fn from_parts(source_id: String, agent_info: AgentInfo, state: ActorDidExchangeState) -> Connection {
+        Connection { connection_sm: DidExchangeSM::from(source_id, agent_info, state) }
+    }
+
+    pub fn create_with_invite(source_id: &str, invitation: Invitation) -> VcxResult<Connection> {
+        trace!("Connection::create_with_invite >>> source_id: {}", source_id);
+
+        let mut connection = Connection {
+            connection_sm: DidExchangeSM::new(Actor::Invitee, source_id),
+        };
+
+        connection = connection.process_invite(invitation)?;
+
+        Ok(connection)
     }
 
     pub fn source_id(&self) -> String { self.connection_sm.source_id().to_string() }
@@ -46,8 +58,8 @@ impl Connection {
         &self.connection_sm.state_object()
     }
 
-    pub fn get_source_id(&self) -> VcxResult<String> {
-        Ok(self.connection_sm.source_id().to_string())
+    pub fn get_source_id(&self) -> String {
+        self.connection_sm.source_id().to_string()
     }
 
     pub fn process_invite(self, invitation: Invitation) -> VcxResult<Connection> {

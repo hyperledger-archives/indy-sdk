@@ -104,6 +104,7 @@ pub mod test {
 
     impl Drop for Pool {
         fn drop(&mut self) {
+            ::utils::libindy::pool::close().unwrap();
             ::utils::libindy::pool::tests::delete_test_pool();
         }
     }
@@ -264,7 +265,6 @@ pub mod test {
                                                                                    String::from("cred"),
                                                                                    credential_data,
                                                                                    0).unwrap();
-
             ::issuer_credential::send_credential_offer(self.credential_handle, self.connection_handle).unwrap();
             ::issuer_credential::update_state(self.credential_handle, None).unwrap();
             assert_eq!(2, ::issuer_credential::get_state(self.credential_handle).unwrap());
@@ -278,7 +278,7 @@ pub mod test {
             ::issuer_credential::send_credential(self.credential_handle, self.connection_handle).unwrap();
             ::issuer_credential::update_state(self.credential_handle, None).unwrap();
             assert_eq!(4, ::issuer_credential::get_state(self.credential_handle).unwrap());
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::v3::handlers::issuance::get_issuer_credential_status(self.credential_handle).unwrap());
+            assert_eq!(::v3::messages::status::Status::Success.code(), ::issuer_credential::get_credential_status(self.credential_handle).unwrap());
         }
 
         pub fn request_presentation(&mut self) {
@@ -383,7 +383,7 @@ pub mod test {
             self.activate();
             ::credential::update_state(self.credential_handle, None).unwrap();
             assert_eq!(4, ::credential::get_state(self.credential_handle).unwrap());
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::v3::handlers::issuance::get_holder_credential_status(self.credential_handle).unwrap());
+            assert_eq!(::v3::messages::status::Status::Success.code(), ::credential::get_credential_status(self.credential_handle).unwrap());
         }
 
         pub fn send_presentation(&mut self) {
@@ -415,7 +415,7 @@ pub mod test {
         pub fn ensure_presentation_verified(&self) {
             self.activate();
             ::disclosed_proof::update_state(self.presentation_handle, None).unwrap();
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::v3::handlers::proof_presentation::prover::get_presentation_status(self.presentation_handle).unwrap());
+            assert_eq!(::v3::messages::status::Status::Success.code(), ::disclosed_proof::get_presentation_status(self.presentation_handle).unwrap());
         }
     }
 

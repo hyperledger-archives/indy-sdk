@@ -7,10 +7,11 @@ use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::error::ProblemReport;
 use v3::messages::ack::Ack;
 use v3::messages::status::Status;
+use connection::{get_pw_did, get_their_pw_verkey};
 use proof::Proof;
+use connection;
 
 use std::collections::HashMap;
-use v3::handlers::connection;
 use error::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -150,8 +151,8 @@ impl VerifierSM {
             VerifierState::Initiated(state) => {
                 match message {
                     VerifierMessages::SendPresentationRequest(connection_handle) => {
-                        let my_did = connection::get_pw_did(connection_handle)?;
-                        let remote_did = connection::get_their_pw_verkey(connection_handle)?;
+                        let my_did = get_pw_did(connection_handle)?;
+                        let remote_did = get_their_pw_verkey(connection_handle)?;
 
                         let presentation_request: PresentationRequestData =
                             state.presentation_request_data.clone()
@@ -284,9 +285,9 @@ impl VerifierSM {
 pub mod test {
     use super::*;
 
+    use v3::handlers::connection::tests::mock_connection;
     use v3::test::source_id;
     use v3::test::setup::TestModeSetup;
-    use v3::handlers::connection::test::mock_connection;
     use v3::messages::proof_presentation::presentation_request::tests::_presentation_request;
     use v3::messages::proof_presentation::presentation_request::tests::_presentation_request_data;
     use v3::messages::proof_presentation::presentation::tests::_presentation;
