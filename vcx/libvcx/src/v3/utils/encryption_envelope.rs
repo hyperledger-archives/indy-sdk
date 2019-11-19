@@ -71,7 +71,10 @@ impl EncryptionEnvelope {
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
 
         let message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))
+            .map_err(|err| {
+                info!("{:?}", err);
+                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err))
+            })
             .unwrap_or_else(|_| A2AMessage::Generic(message));
 
         Ok(message)

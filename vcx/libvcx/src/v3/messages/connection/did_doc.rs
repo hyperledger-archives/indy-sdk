@@ -10,17 +10,19 @@ pub struct DidDoc {
     #[serde(rename = "@context")]
     pub context: String,
     pub id: String,
+    #[serde(default)]
     #[serde(rename = "publicKey")]
-    pub public_key: Vec<PublicKey>,
+    pub public_key: Vec<Ed25519PublicKey>, // TODO: A DID document MAY include a publicKey property??? (https://w3c.github.io/did-core/#public-keys)
+    #[serde(default)]
     pub authentication: Vec<Authentication>,
     pub service: Vec<Service>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct PublicKey {
+pub struct Ed25519PublicKey {
     pub id: String,
     #[serde(rename = "type")]
-    pub type_: String,
+    pub type_: String, // all list of types: https://w3c-ccg.github.io/ld-cryptosuite-registry/
     pub controller: String,
     #[serde(rename = "publicKeyBase58")]
     pub public_key_base_58: String,
@@ -39,7 +41,9 @@ pub struct Service {
     pub id: String,
     #[serde(rename = "type")]
     pub type_: String,
+    #[serde(default)]
     pub priority: u32,
+    #[serde(default)]
     #[serde(rename = "recipientKeys")]
     pub recipient_keys: Vec<String>,
     #[serde(default)]
@@ -94,7 +98,7 @@ impl DidDoc {
                 let key_reference = DidDoc::_build_key_reference(&self.id, &key_id);
 
                 self.public_key.push(
-                    PublicKey {
+                    Ed25519PublicKey {
                         id: key_id,
                         type_: String::from(KEY_TYPE),
                         controller: self.id.clone(),
@@ -124,7 +128,7 @@ impl DidDoc {
                 let key_reference = DidDoc::_build_key_reference(&self.id, &key_id);
 
                 self.public_key.push(
-                    PublicKey {
+                    Ed25519PublicKey {
                         id: key_id,
                         type_: String::from(KEY_TYPE),
                         controller: self.id.clone(),
@@ -140,6 +144,10 @@ impl DidDoc {
     }
 
     pub fn validate(&self) -> VcxResult<()> {
+        if self.context != CONTEXT {
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)))
+        }
+        
         for service in self.service.iter() {
             Url::parse(&service.service_endpoint)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported endpoint: {:?}", service.service_endpoint)))?;
@@ -165,7 +173,7 @@ impl DidDoc {
         Ok(())
     }
 
-    fn validate_public_key(&self, target_key: &str) -> VcxResult<&PublicKey> {
+    fn validate_public_key(&self, target_key: &str) -> VcxResult<&Ed25519PublicKey> {
         let id = DidDoc::_parse_key_reference(target_key);
 
         let key = self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string())
@@ -179,6 +187,10 @@ impl DidDoc {
     }
 
     fn validate_authentication(&self, target_key: &str) -> VcxResult<()> {
+        if self.authentication.is_empty(){
+            return Ok(())
+        }
+
         let key = self.authentication.iter().find(|key_|
             key_.public_key == target_key.to_string() ||
                 DidDoc::_parse_key_reference(&key_.public_key) == target_key.to_string())
@@ -252,7 +264,7 @@ use v3::messages::connection::invite::Invitation;
 impl From<Invitation> for DidDoc {
     fn from(invite: Invitation) -> DidDoc {
         let mut did_doc: DidDoc = DidDoc::default();
-        did_doc.set_id(invite.id.0.clone());
+        did_doc.set_id(invite.id.0.clone()); // TODO: FIXME DIDDoc id always MUST be a valid DID
         did_doc.set_service_endpoint(invite.service_endpoint.clone());
         did_doc.set_keys(invite.recipient_keys, invite.routing_keys);
         did_doc
@@ -326,9 +338,9 @@ pub mod tests {
             context: String::from(CONTEXT),
             id: _id(),
             public_key: vec![
-                PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
-                PublicKey { id: "2".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
-                PublicKey { id: "3".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
+                Ed25519PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+                Ed25519PublicKey { id: "2".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
+                Ed25519PublicKey { id: "3".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
             ],
             authentication: vec![
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
@@ -349,9 +361,9 @@ pub mod tests {
             context: String::from(CONTEXT),
             id: _id(),
             public_key: vec![
-                PublicKey { id: _key_reference_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
-                PublicKey { id: _key_reference_2(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
-                PublicKey { id: _key_reference_3(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
+                Ed25519PublicKey { id: _key_reference_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+                Ed25519PublicKey { id: _key_reference_2(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
+                Ed25519PublicKey { id: _key_reference_3(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
             ],
             authentication: vec![
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
@@ -372,9 +384,9 @@ pub mod tests {
             context: String::from(CONTEXT),
             id: _id(),
             public_key: vec![
-                PublicKey { id: _key_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
-                PublicKey { id: _key_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
-                PublicKey { id: _key_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
+                Ed25519PublicKey { id: _key_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+                Ed25519PublicKey { id: _key_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
+                Ed25519PublicKey { id: _key_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
             ],
             authentication: vec![
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_1() }
@@ -395,7 +407,7 @@ pub mod tests {
             context: String::from(CONTEXT),
             id: _id(),
             public_key: vec![
-                PublicKey { id: _key_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+                Ed25519PublicKey { id: _key_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
             ],
             authentication: vec![
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_1() }

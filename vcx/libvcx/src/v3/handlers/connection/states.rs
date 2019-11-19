@@ -434,8 +434,7 @@ impl DidExchangeSM {
                                             .set_problem_code(ProblemCode::ResponseProcessingError)
                                             .set_explain(err.to_string())
                                             .set_thread_id(state.request.id.0.clone());
-
-                                        agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc)?;
+                                        agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc).ok();
                                         ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report).into()))
                                     }
                                 }
