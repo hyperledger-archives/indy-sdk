@@ -1024,7 +1024,7 @@ impl<'a, 'de, T> ObjectWithVersion<'a, T> where T: ::serde::Serialize + ::serde:
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "version")]
-pub enum SerializableObject<T, P> {
+pub enum SerializableObjectWithState<T, P> {
     #[serde(rename = "1.0")]
     V1 { data: T },
     #[serde(rename = "2.0")]

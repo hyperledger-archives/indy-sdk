@@ -26,9 +26,11 @@ lazy_static! {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
+#[serde(tag = "version", content = "data")]
 enum IssuerCredentials {
+    #[serde(rename = "1.0")]
     V1(IssuerCredential),
+    #[serde(rename = "2.0")]
     V3(Issuer),
 }
 
@@ -640,20 +642,18 @@ pub fn issuer_credential_create(cred_def_handle: u32,
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    ISSUER_CREDENTIAL_MAP.map(handle, |obj| {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
-            IssuerCredentials::V1(mut obj) => {
+            IssuerCredentials::V1(ref mut obj) => {
                 obj.update_state(message.clone())?;
-                Ok(IssuerCredentials::V1(obj))
+                Ok(obj.get_state())
             }
-            IssuerCredentials::V3(obj) => {
-                let obj = obj.update_status(message.clone())?;
-                Ok(IssuerCredentials::V3(obj))
+            IssuerCredentials::V3(ref mut obj) => {
+                obj.update_status(message.clone())?;
+                obj.get_state()
             }
         }
-    })?;
-
-    get_state(handle)
+    })
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
@@ -711,19 +711,17 @@ pub fn generate_credential_offer_msg(handle: u32, connection_handle: u32) -> Vcx
 }
 
 pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    ISSUER_CREDENTIAL_MAP.map(handle, |obj| {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
-            IssuerCredentials::V1(mut obj) => {
-                obj.send_credential_offer(connection_handle)?;
-                Ok(IssuerCredentials::V1(obj))
+            IssuerCredentials::V1(ref mut obj) => {
+                obj.send_credential_offer(connection_handle)
             }
-            IssuerCredentials::V3(obj) => {
-                let obj = obj.send_credential_offer(connection_handle)?;
-                Ok(IssuerCredentials::V3(obj))
+            IssuerCredentials::V3(ref mut obj) => {
+                obj.send_credential_offer(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
             }
         }
-    })?;
-    Ok(error::SUCCESS.code_num)
+    })
 }
 
 pub fn generate_credential_msg(handle: u32, connection_handle: u32) -> VcxResult<String> {
@@ -736,19 +734,17 @@ pub fn generate_credential_msg(handle: u32, connection_handle: u32) -> VcxResult
 }
 
 pub fn send_credential(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    ISSUER_CREDENTIAL_MAP.map(handle, |obj| {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
-            IssuerCredentials::V1(mut obj) => {
-                obj.send_credential(connection_handle)?;
-                Ok(IssuerCredentials::V1(obj))
+            IssuerCredentials::V1(ref mut obj) => {
+                obj.send_credential(connection_handle)
             }
-            IssuerCredentials::V3(obj) => {
-                let obj = obj.send_credential(connection_handle)?;
-                Ok(IssuerCredentials::V3(obj))
+            IssuerCredentials::V3(ref mut obj) => {
+                obj.send_credential(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
             }
         }
-    })?;
-    Ok(error::SUCCESS.code_num)
+    })
 }
 
 pub fn revoke_credential(handle: u32) -> VcxResult<()> {

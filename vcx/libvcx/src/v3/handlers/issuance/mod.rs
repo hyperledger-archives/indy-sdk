@@ -32,11 +32,11 @@ impl Issuer {
         Ok(Issuer { issuer_sm })
     }
 
-    pub fn send_credential_offer(self, connection_handle: u32) -> VcxResult<Issuer> {
+    pub fn send_credential_offer(&mut self, connection_handle: u32) -> VcxResult<()> {
         self.step(CredentialIssuanceMessage::CredentialInit(connection_handle))
     }
 
-    pub fn send_credential(self, connection_handle: u32) -> VcxResult<Issuer> {
+    pub fn send_credential(&mut self, connection_handle: u32) -> VcxResult<()> {
         self.step(CredentialIssuanceMessage::CredentialSend())
     }
 
@@ -48,7 +48,7 @@ impl Issuer {
         Ok(self.issuer_sm.get_source_id())
     }
 
-    pub fn update_status(self, msg: Option<String>) -> VcxResult<Issuer> {
+    pub fn update_status(&mut self, msg: Option<String>) -> VcxResult<()> {
         match msg {
             Some(msg) => {
                 let message: Message = ::serde_json::from_str(&msg)
@@ -58,8 +58,8 @@ impl Issuer {
                 self.step(message.into())
             }
             None => {
-                let issuer_sm = self.issuer_sm.update_state()?;
-                Ok(Issuer { issuer_sm })
+                self.issuer_sm = self.issuer_sm.clone().update_state()?;
+                Ok(())
             }
         }
     }
@@ -68,9 +68,9 @@ impl Issuer {
         Ok(self.issuer_sm.credential_status())
     }
 
-    pub fn step(mut self, message: CredentialIssuanceMessage) -> VcxResult<Issuer> {
-        self.issuer_sm = self.issuer_sm.handle_message(message)?;
-        Ok(self)
+    pub fn step(&mut self, message: CredentialIssuanceMessage) -> VcxResult<()> {
+        self.issuer_sm = self.issuer_sm.clone().handle_message(message)?;
+        Ok(())
     }
 }
 
@@ -90,11 +90,11 @@ impl Holder {
         Ok(Holder { holder_sm })
     }
 
-    pub fn send_request(self, connection_handle: u32) -> VcxResult<Holder> {
+    pub fn send_request(&mut self, connection_handle: u32) -> VcxResult<()> {
         self.step(CredentialIssuanceMessage::CredentialRequestSend(connection_handle))
     }
 
-    pub fn update_state(self, msg: Option<String>) -> VcxResult<Holder> {
+    pub fn update_state(&mut self, msg: Option<String>) -> VcxResult<()> {
         match msg {
             Some(msg) => {
                 let message: Message = ::serde_json::from_str(&msg)
@@ -104,8 +104,8 @@ impl Holder {
                 self.step(message.into())
             }
             None => {
-                let holder_sm = self.holder_sm.update_state()?;
-                Ok(Holder { holder_sm })
+                self.holder_sm = self.holder_sm.clone().update_state()?;
+                Ok(())
             }
         }
     }
@@ -126,9 +126,9 @@ impl Holder {
         Ok(self.holder_sm.credential_status())
     }
 
-    pub fn step(mut self, message: CredentialIssuanceMessage) -> VcxResult<Holder> {
-        self.holder_sm = self.holder_sm.handle_message(message)?;
-        Ok(self)
+    pub fn step(&mut self, message: CredentialIssuanceMessage) -> VcxResult<()> {
+        self.holder_sm = self.holder_sm.clone().handle_message(message)?;
+        Ok(())
     }
 
     pub fn get_credential_offer_message(connection_handle: u32, msg_id: &str) -> VcxResult<CredentialOffer> {

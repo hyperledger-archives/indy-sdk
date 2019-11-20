@@ -29,9 +29,11 @@ lazy_static! {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
+#[serde(tag = "version", content = "data")]
 enum Proofs {
+    #[serde(rename = "1.0")]
     V1(Proof),
+    #[serde(rename = "2.0")]
     V3(Verifier),
 }
 
@@ -479,18 +481,18 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    PROOF_MAP.map(handle, |obj| {
+    PROOF_MAP.get_mut(handle, |obj| {
         match obj {
-            Proofs::V1(obj) => {
-                Ok(Proofs::V1(obj))
+            Proofs::V1(ref mut obj) => {
+                obj.update_state(message.clone())?;
+                Ok(obj.get_state())
             }
-            Proofs::V3(obj) => {
-                let obj = obj.update_state(message.as_ref().map(String::as_str))?;
-                Ok(Proofs::V3(obj))
+            Proofs::V3(ref mut obj) => {
+                obj.update_state(message.as_ref().map(String::as_str))?;
+                Ok(obj.state())
             }
         }
-    })?;
-    get_state(handle)
+    })
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
@@ -521,10 +523,8 @@ pub fn release_all() {
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
     PROOF_MAP.get(handle, |obj| {
-        match obj {
-            Proofs::V1(ref obj) => obj.to_string(),
-            Proofs::V3(ref obj) => obj.to_string()
-        }
+        serde_json::to_string(obj)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("cannot serialize Proof object: {:?}", err)))
     })
 }
 
@@ -552,19 +552,17 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
 }
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    PROOF_MAP.map(handle, |obj| {
+    PROOF_MAP.get_mut(handle, |obj| {
         match obj {
-            Proofs::V1(mut obj) => {
-                obj.send_proof_request(connection_handle)?;
-                Ok(Proofs::V1(obj))
+            Proofs::V1(ref mut obj) => {
+                obj.send_proof_request(connection_handle)
             }
-            Proofs::V3(obj) => {
-                let obj = obj.send_presentation_request(connection_handle)?;
-                Ok(Proofs::V3(obj))
+            Proofs::V3(ref mut obj) => {
+                obj.send_presentation_request(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
             }
         }
-    })?;
-    Ok(error::SUCCESS.code_num)
+    })
 }
 
 pub fn get_proof_uuid(handle: u32) -> VcxResult<String> {

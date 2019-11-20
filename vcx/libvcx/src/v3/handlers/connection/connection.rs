@@ -35,7 +35,7 @@ impl Connection {
             connection_sm: DidExchangeSM::new(Actor::Invitee, source_id),
         };
 
-        connection = connection.process_invite(invitation)?;
+        connection.process_invite(invitation)?;
 
         Ok(connection)
     }
@@ -62,7 +62,7 @@ impl Connection {
         self.connection_sm.source_id().to_string()
     }
 
-    pub fn process_invite(self, invitation: Invitation) -> VcxResult<Connection> {
+    pub fn process_invite(&mut self, invitation: Invitation) -> VcxResult<()> {
         trace!("Connection::process_invite >>> invitation: {:?}", invitation);
         self.step(DidExchangeMessages::InvitationReceived(invitation))
     }
@@ -82,12 +82,12 @@ impl Connection {
         self.connection_sm.actor()
     }
 
-    pub fn connect(self) -> VcxResult<Connection> {
+    pub fn connect(&mut self) -> VcxResult<()> {
         trace!("Connection::connect >>> source_id: {}", self.connection_sm.source_id());
         self.step(DidExchangeMessages::Connect())
     }
 
-    pub fn update_state(mut self, message: Option<&str>) -> VcxResult<Connection> {
+    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
         trace!("Connection::update_state >>> message: {:?}", message);
 
         if let Some(message_) = message {
@@ -98,7 +98,7 @@ impl Connection {
         let agent_info = self.agent_info().clone();
 
         if let Some((uid, message)) = self.connection_sm.find_message_to_handle(messages) {
-            self = self.handle_message(message.into())?;
+            self.handle_message(message.into())?;
             agent_info.update_message_status(uid)?;
         };
 
@@ -106,12 +106,12 @@ impl Connection {
             let messages = prev_agent_info.get_messages()?;
 
             if let Some((uid, message)) = self.connection_sm.find_message_to_handle(messages) {
-                self = self.handle_message(message.into())?;
+                self.handle_message(message.into())?;
                 prev_agent_info.update_message_status(uid)?;
             }
         }
 
-        Ok(self)
+        Ok(())
     }
 
     pub fn update_message_status(&self, uid: String) -> VcxResult<()> {
@@ -119,7 +119,7 @@ impl Connection {
         self.connection_sm.agent_info().update_message_status(uid)
     }
 
-    pub fn update_state_with_message(mut self, message: &str) -> VcxResult<Connection> {
+    pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Connection: update_state_with_message: {}", message);
 
         let message: Message = ::serde_json::from_str(&message)
@@ -127,10 +127,10 @@ impl Connection {
                                               format!("Cannot updated state with messages: Message deserialization failed: {:?}", err)))?;
 
         let a2a_message = self.decode_message(&message)?;
-        self = self.handle_message(a2a_message.into())?;
+        self.handle_message(a2a_message.into())?;
         self.update_message_status(message.uid)?;
 
-        Ok(self)
+        Ok(())
     }
 
     pub fn get_messages(&self) -> VcxResult<HashMap<String, A2AMessage>> {
@@ -143,7 +143,7 @@ impl Connection {
         self.agent_info().get_message_by_id(msg_id)
     }
 
-    pub fn handle_message(self, message: DidExchangeMessages) -> VcxResult<Connection> {
+    pub fn handle_message(&mut self, message: DidExchangeMessages) -> VcxResult<()> {
         trace!("Connection: handle_message >>> {:?}", message);
         self.step(message)
     }
@@ -172,9 +172,9 @@ impl Connection {
         self.agent_info().delete()
     }
 
-    fn step(mut self, message: DidExchangeMessages) -> VcxResult<Connection> {
-        self.connection_sm = self.connection_sm.step(message)?;
-        Ok(self)
+    fn step(&mut self, message: DidExchangeMessages) -> VcxResult<()> {
+        self.connection_sm = self.connection_sm.clone().step(message)?;
+        Ok(())
     }
 
     pub fn add_pending_messages(&mut self, messages: HashMap<MessageId, String>) -> VcxResult<()> {

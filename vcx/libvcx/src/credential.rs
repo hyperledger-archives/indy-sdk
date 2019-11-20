@@ -29,9 +29,11 @@ lazy_static! {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
+#[serde(tag = "version", content = "data")]
 enum Credentials {
+    #[serde(rename = "1.0")]
     V1(Credential),
+    #[serde(rename = "2.0")]
     V3(Holder),
 }
 
@@ -421,21 +423,19 @@ fn _credential_create(source_id: &str) -> Credential {
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    HANDLE_MAP.map(handle, |obj| {
+    HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
-            Credentials::V1(obj) => {
+            Credentials::V1(ref mut obj) => {
                 debug!("updating state for credential {} with msg_id {:?}", obj.source_id, obj.msg_uid);
-                obj.get_state();
-                Ok(Credentials::V1(obj))
+                obj.update_state(message.clone());
+                Ok(error::SUCCESS.code_num)
             }
-            Credentials::V3(obj) => {
-                let obj = obj.update_state(message.clone())?;
-                Ok(Credentials::V3(obj))
+            Credentials::V3(ref mut obj) => {
+                obj.update_state(message.clone())?;
+                Ok(error::SUCCESS.code_num)
             }
         }
-    })?;
-
-    Ok(error::SUCCESS.code_num)
+    })
 }
 
 pub fn get_credential(handle: u32) -> VcxResult<String> {
@@ -508,20 +508,18 @@ pub fn generate_credential_request_msg(handle: u32, connection_handle: u32) -> V
 }
 
 pub fn send_credential_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    HANDLE_MAP.map(handle, |obj| {
+    HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
-            Credentials::V1(mut obj) => {
-                obj.send_request(connection_handle)?;
-                Ok(Credentials::V1(obj))
+            Credentials::V1(ref mut obj) => {
+                obj.send_request(connection_handle)
             }
-            Credentials::V3(obj) => {
-                let obj = obj.send_request(connection_handle)?;
-                Ok(Credentials::V3(obj))
+            Credentials::V3(ref mut obj) => {
+                obj.send_request(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
             }
         }
-    }).map_err(handle_err)?;
+    }).map_err(handle_err)
 
-    Ok(error::SUCCESS.code_num)
 }
 
 pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResult<String> {

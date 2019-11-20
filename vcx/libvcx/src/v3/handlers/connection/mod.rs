@@ -152,6 +152,27 @@ pub mod tests {
             assert_eq!(0, messages.len());
         }
 
+        // Download Messages
+        {
+            use messages::get_message::{download_messages, MessageByConnection, Message};
+
+            let credential_offer = ::v3::messages::issuance::credential_offer::tests::_credential_offer();
+
+            faber.activate();
+            ::connection::send_message(faber.connection_handle, credential_offer.to_a2a_message()).unwrap();
+
+            alice.activate();
+
+            let messages: Vec<MessageByConnection> = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
+            let message: Message = messages[0].msgs[0].clone();
+            assert_eq!(::messages::RemoteMessageType::Other("aries".to_string()), message.msg_type);
+            let payload: ::messages::payload::PayloadV1 = ::serde_json::from_str(&message.decrypted_payload.unwrap()).unwrap();
+            let _payload: ::issuer_credential::CredentialOffer = ::serde_json::from_str(&payload.msg).unwrap();
+
+            ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
+
+        }
+
         // Helpers
         {
             faber.activate();

@@ -1,4 +1,3 @@
-use messages::ObjectWithVersion;
 use messages::get_message::Message;
 use error::prelude::*;
 use utils::libindy::anoncreds;
@@ -12,7 +11,6 @@ use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use connection;
 
 use messages::proofs::proof_message::ProofMessage;
-use v3::SERIALIZE_VERSION;
 
 use std::sync::Mutex;
 
@@ -46,7 +44,7 @@ impl Prover {
         anoncreds::libindy_prover_get_credentials_for_proof_req(&presentation_request)
     }
 
-    pub fn generate_presentation(self, credentials: String, self_attested_attrs: String) -> VcxResult<Prover> {
+    pub fn generate_presentation(&mut self, credentials: String, self_attested_attrs: String) -> VcxResult<()> {
         trace!("Prover::generate_presentation >>> credentials: {}, self_attested_attrs: {:?}", credentials, self_attested_attrs);
         self.step(ProverMessages::PreparePresentation((credentials, self_attested_attrs)))
     }
@@ -60,15 +58,15 @@ impl Prover {
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
-    pub fn send_presentation(self, connection_handle: u32) -> VcxResult<Prover> {
+    pub fn send_presentation(&mut self, connection_handle: u32) -> VcxResult<()> {
         trace!("Prover::send_presentation >>>");
         self.step(ProverMessages::SendPresentation(connection_handle))
     }
 
-    pub fn update_state(mut self, message: Option<&str>) -> VcxResult<Prover> {
+    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
         trace!("Prover::update_state >>> message: {:?}", message);
 
-        if !self.prover_sm.has_transitions() { return Ok(self); }
+        if !self.prover_sm.has_transitions() { return Ok(()); }
 
         if let Some(message_) = message {
             return self.update_state_with_message(message_);
@@ -78,14 +76,14 @@ impl Prover {
         let messages = connection::get_messages(connection_handle)?;
 
         if let Some((uid, message)) = self.prover_sm.find_message_to_handle(messages) {
-            self = self.handle_message(message.into())?;
+            self.handle_message(message.into())?;
             connection::update_message_status(connection_handle, uid)?;
         };
 
-        Ok(self)
+        Ok(())
     }
 
-    pub fn update_state_with_message(mut self, message: &str) -> VcxResult<Prover> {
+    pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Prover::update_state_with_message >>> message: {:?}", message);
 
         let message: Message = ::serde_json::from_str(&message)
@@ -96,13 +94,13 @@ impl Prover {
         let uid = message.uid.clone();
         let a2a_message = connection::decode_message(connection_handle, message)?;
 
-        self = self.handle_message(a2a_message.into())?;
+        self.handle_message(a2a_message.into())?;
         connection::update_message_status(connection_handle, uid)?;
 
-        Ok(self)
+        Ok(())
     }
 
-    pub fn handle_message(self, message: ProverMessages) -> VcxResult<Prover> {
+    pub fn handle_message(&mut self, message: ProverMessages) -> VcxResult<()> {
         trace!("Prover::handle_message >>> message: {:?}", message);
         self.step(message)
     }
@@ -148,24 +146,8 @@ impl Prover {
 
     pub fn get_source_id(&self) -> String { self.prover_sm.source_id() }
 
-    pub fn to_string(&self) -> VcxResult<String> {
-        trace!("Prover::to_string >>>");
-
-        ObjectWithVersion::new(SERIALIZE_VERSION, self.to_owned())
-            .serialize()
-            .map_err(|err| err.extend("Cannot serialize DisclosedProof"))
-    }
-
-    pub fn from_str(data: &str) -> VcxResult<Prover> {
-        trace!("Prover::from_str >>> data: {:?}", data);
-
-        ObjectWithVersion::deserialize(data)
-            .map(|obj: ObjectWithVersion<Prover>| obj.data)
-            .map_err(|err| err.extend("Cannot deserialize Prover"))
-    }
-
-    pub fn step(mut self, message: ProverMessages) -> VcxResult<Prover> {
-        self.prover_sm = self.prover_sm.step(message)?;
-        Ok(self)
+    pub fn step(&mut self, message: ProverMessages) -> VcxResult<()> {
+        self.prover_sm = self.prover_sm.clone().step(message)?;
+        Ok(())
     }
 }

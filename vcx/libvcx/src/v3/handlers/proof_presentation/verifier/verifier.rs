@@ -1,7 +1,6 @@
 use error::prelude::*;
 use std::convert::TryInto;
 
-use messages::ObjectWithVersion;
 use messages::get_message::Message;
 
 use connection;
@@ -12,7 +11,6 @@ use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 
 use messages::proofs::proof_request::ProofRequestMessage;
 use messages::proofs::proof_message::ProofMessage;
-use v3::SERIALIZE_VERSION;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Verifier {
@@ -53,10 +51,10 @@ impl Verifier {
         self.verifier_sm.presentation_status()
     }
 
-    pub fn update_state(mut self, message: Option<&str>) -> VcxResult<Verifier> {
+    pub fn update_state(&mut self, message: Option<&str>) -> VcxResult<()> {
         trace!("Verifier::update_state >>> message: {:?}", message);
 
-        if !self.verifier_sm.has_transitions() { return Ok(self); }
+        if !self.verifier_sm.has_transitions() { return Ok(()); }
 
         if let Some(message_) = message {
             return self.update_state_with_message(message_);
@@ -66,14 +64,14 @@ impl Verifier {
         let messages = connection::get_messages(connection_handle)?;
 
         if let Some((uid, message)) = self.verifier_sm.find_message_to_handle(messages) {
-            self = self.handle_message(message.into())?;
+            self.handle_message(message.into())?;
             connection::update_message_status(connection_handle, uid)?;
         };
 
-        Ok(self)
+        Ok(())
     }
 
-    pub fn update_state_with_message(mut self, message: &str) -> VcxResult<Verifier> {
+    pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Verifier::update_state_with_message >>> message: {:?}", message);
 
         let message: Message = ::serde_json::from_str(&message)
@@ -81,26 +79,26 @@ impl Verifier {
 
         let connection_handle = self.verifier_sm.connection_handle()?;
 
-        let uid =  message.uid.clone();
+        let uid = message.uid.clone();
         let a2a_message = connection::decode_message(connection_handle, message)?;
 
-        self = self.handle_message(a2a_message.into())?;
+        self.handle_message(a2a_message.into())?;
         connection::update_message_status(connection_handle, uid)?;
 
-        Ok(self)
+        Ok(())
     }
 
-    pub fn handle_message(self, message: VerifierMessages) -> VcxResult<Verifier> {
+    pub fn handle_message(&mut self, message: VerifierMessages) -> VcxResult<()> {
         trace!("Verifier::handle_message >>> message: {:?}", message);
         self.step(message)
     }
 
-    pub fn verify_presentation(self, presentation: Presentation) -> VcxResult<Verifier> {
+    pub fn verify_presentation(&mut self, presentation: Presentation) -> VcxResult<()> {
         trace!("Verifier::verify_presentation >>> presentation: {:?}", presentation);
         self.step(VerifierMessages::VerifyPresentation(presentation))
     }
 
-    pub fn send_presentation_request(self, connection_handle: u32) -> VcxResult<Verifier> {
+    pub fn send_presentation_request(&mut self, connection_handle: u32) -> VcxResult<()> {
         trace!("Verifier::send_presentation_request >>> connection_handle: {:?}", connection_handle);
         self.step(VerifierMessages::SendPresentationRequest(connection_handle))
     }
@@ -123,24 +121,8 @@ impl Verifier {
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofMessage: {:?}", err)))
     }
 
-    pub fn from_str(data: &str) -> VcxResult<Self> {
-        trace!("Verifier::from_str >>> data: {:?}", data);
-
-        ObjectWithVersion::deserialize(data)
-            .map(|obj: ObjectWithVersion<Self>| obj.data)
-            .map_err(|err| err.extend("Cannot deserialize Connection"))
-    }
-
-    pub fn to_string(&self) -> VcxResult<String> {
-        trace!("Verifier::to_string >>>");
-
-        ObjectWithVersion::new(SERIALIZE_VERSION, self.to_owned())
-            .serialize()
-            .map_err(|err| err.extend("Cannot serialize Connection"))
-    }
-
-    pub fn step(mut self, message: VerifierMessages) -> VcxResult<Verifier> {
-        self.verifier_sm = self.verifier_sm.step(message)?;
-        Ok(self)
+    pub fn step(&mut self, message: VerifierMessages) -> VcxResult<()> {
+        self.verifier_sm = self.verifier_sm.clone().step(message)?;
+        Ok(())
     }
 }

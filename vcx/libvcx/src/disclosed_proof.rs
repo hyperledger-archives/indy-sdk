@@ -31,9 +31,11 @@ lazy_static! {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
+#[serde(tag = "version", content = "data")]
 enum DisclosedProofs {
+    #[serde(rename = "1.0")]
     V1(DisclosedProof),
+    #[serde(rename = "2.0")]
     V3(Prover),
 }
 
@@ -525,20 +527,17 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 
 // update_state is just the same as get_state for disclosed_proof
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    HANDLE_MAP.map(handle, |obj| {
+    HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
             DisclosedProofs::V1(obj) => {
-                obj.get_state();
-                Ok(DisclosedProofs::V1(obj))
+                Ok(obj.get_state())
             }
-            DisclosedProofs::V3(obj) => {
-                let obj = obj.update_state(message.as_ref().map(String::as_str))?;
-                Ok(DisclosedProofs::V3(obj))
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.update_state(message.as_ref().map(String::as_str))?;
+                Ok(obj.state())
             }
         }
-    })?;
-
-    get_state(handle)
+    })
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
@@ -573,30 +572,28 @@ pub fn generate_proof_msg(handle: u32) -> VcxResult<String> {
 }
 
 pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    HANDLE_MAP.map(handle, |obj| {
+    HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
-            DisclosedProofs::V1(mut obj) => {
-                obj.send_proof(connection_handle)?;
-                Ok(DisclosedProofs::V1(obj))
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.send_proof(connection_handle)
             }
-            DisclosedProofs::V3(obj) => {
-                let obj = obj.send_presentation(connection_handle)?;
-                Ok(DisclosedProofs::V3(obj))
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.send_presentation(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
             }
         }
-    }).map(|_| error::SUCCESS.code_num)
+    })
 }
 
 pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
-    HANDLE_MAP.map(handle, |obj| {
+    HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
-            DisclosedProofs::V1(mut obj) => {
-                obj.generate_proof(&credentials, &self_attested_attrs)?;
-                Ok(DisclosedProofs::V1(obj))
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.generate_proof(&credentials, &self_attested_attrs)
             }
-            DisclosedProofs::V3(obj) => {
-                let obj = obj.generate_presentation(credentials.clone(), self_attested_attrs.clone())?;
-                Ok(DisclosedProofs::V3(obj))
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.generate_presentation(credentials.clone(), self_attested_attrs.clone())?;
+                Ok(error::SUCCESS.code_num)
             }
         }
     }).map(|_| error::SUCCESS.code_num)
