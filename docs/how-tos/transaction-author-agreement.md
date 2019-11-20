@@ -13,7 +13,7 @@ IndySDK provides API to:
 * Append TAA acceptance data to request before signing and submitting of them to the Ledger.
 
 
-### Liibndy
+### Libindy
 
 #####  Trustee set up AML and TAA on the Ledger
 1. Set AML on the Ledger:
@@ -62,9 +62,11 @@ In our case `digest` is sha256(`1.0example TAA text`)
 ```
 nym_req = indy_build_nym_request(...)
 time_of_acceptance = get_current_timestamp
-nym_req = indy_append_txn_author_agreement_acceptance_to_request(nym_req, "example TAA text", "1.0", null, "example label", time_of_acceptance)
+nym_req = indy_append_txn_author_agreement_acceptance_to_request(nym_req, null, null, "TAA digest", "example label", time_of_acceptance)
 indy_sign_and_submit_request(.., nym_req)
 ```
+
+**Note**: Instead of "TAA digest" parameter (4th), the plain text of the agreement and the version can be specified (2nd and 3rd parameters). For more details please see API documentation.
 
 **Note**: The flow for sending of Payment transaction is different because plugin does signing internal.
 You must pass TAA data as part of `extra` parameter.
