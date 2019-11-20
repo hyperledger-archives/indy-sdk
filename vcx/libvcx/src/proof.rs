@@ -32,7 +32,7 @@ lazy_static! {
 #[serde(untagged)]
 enum Proofs {
     V1(Proof),
-    V2(Verifier),
+    V3(Verifier),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -429,7 +429,7 @@ pub fn create_proof(source_id: String,
     // Initiate proof of new format -- redirect to v3 folder
     if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
         let verifier = Verifier::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
-        return PROOF_MAP.add(Proofs::V2(verifier))
+        return PROOF_MAP.add(Proofs::V3(verifier))
             .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
     }
 
@@ -484,9 +484,9 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
             Proofs::V1(obj) => {
                 Ok(Proofs::V1(obj))
             }
-            Proofs::V2(obj) => {
+            Proofs::V3(obj) => {
                 let obj = obj.update_state(message.as_ref().map(String::as_str))?;
-                Ok(Proofs::V2(obj))
+                Ok(Proofs::V3(obj))
             }
         }
     })?;
@@ -497,7 +497,7 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
     PROOF_MAP.get(handle, |obj| {
         match obj {
             Proofs::V1(ref obj) => Ok(obj.get_state()),
-            Proofs::V2(ref obj) => Ok(obj.state())
+            Proofs::V3(ref obj) => Ok(obj.state())
         }
     })
 }
@@ -506,7 +506,7 @@ pub fn get_proof_state(handle: u32) -> VcxResult<u32> {
     PROOF_MAP.get(handle, |obj| {
         match obj {
             Proofs::V1(ref obj) => Ok(obj.get_proof_state()),
-            Proofs::V2(ref obj) => Ok(obj.presentation_status())
+            Proofs::V3(ref obj) => Ok(obj.presentation_status())
         }
     })
 }
@@ -523,7 +523,7 @@ pub fn to_string(handle: u32) -> VcxResult<String> {
     PROOF_MAP.get(handle, |obj| {
         match obj {
             Proofs::V1(ref obj) => obj.to_string(),
-            Proofs::V2(ref obj) => obj.to_string()
+            Proofs::V3(ref obj) => obj.to_string()
         }
     })
 }
@@ -546,7 +546,7 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
     PROOF_MAP.get_mut(handle, |obj| {
         match obj {
             Proofs::V1(ref mut obj) => obj.generate_proof_request_msg(),
-            Proofs::V2(ref obj) => obj.generate_presentation_request_msg()
+            Proofs::V3(ref obj) => obj.generate_presentation_request_msg()
         }
     })
 }
@@ -558,9 +558,9 @@ pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32>
                 obj.send_proof_request(connection_handle)?;
                 Ok(Proofs::V1(obj))
             }
-            Proofs::V2(obj) => {
+            Proofs::V3(obj) => {
                 let obj = obj.send_presentation_request(connection_handle)?;
-                Ok(Proofs::V2(obj))
+                Ok(Proofs::V3(obj))
             }
         }
     })?;
@@ -571,7 +571,7 @@ pub fn get_proof_uuid(handle: u32) -> VcxResult<String> {
     PROOF_MAP.get(handle, |obj| {
         match obj {
             Proofs::V1(ref obj) => Ok(obj.get_proof_uuid().clone()),
-            Proofs::V2(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle))
+            Proofs::V3(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle))
         }
     })
 }
@@ -586,7 +586,7 @@ pub fn get_proof(handle: u32) -> VcxResult<String> {
     PROOF_MAP.get(handle, |obj| {
         match obj {
             Proofs::V1(ref obj) => obj.get_proof(),
-            Proofs::V2(ref obj) => obj.get_presentation()
+            Proofs::V3(ref obj) => obj.get_presentation()
         }
     })
 }

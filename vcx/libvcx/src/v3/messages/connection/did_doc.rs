@@ -147,6 +147,10 @@ impl DidDoc {
         if self.context != CONTEXT {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)))
         }
+
+        if self.id.is_empty() {
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"))
+        }
         
         for service in self.service.iter() {
             Url::parse(&service.service_endpoint)

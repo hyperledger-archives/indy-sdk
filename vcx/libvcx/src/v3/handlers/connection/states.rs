@@ -188,6 +188,10 @@ impl RequestedState {
 
         let response: Response = response.decode(&remote_vk)?;
 
+        if !response.thread.is_reply(&self.request.id.0){
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot handle Response: thread id does not match: {:?}", response.thread)))
+        }
+
         let ack = Ack::create().set_thread_id(response.thread.thid.clone().unwrap_or_default());
         agent_info.send_message(&ack.to_a2a_message(), &response.connection.did_doc)?;
 
@@ -345,7 +349,7 @@ impl DidExchangeSM {
                                             .set_explain(err.to_string())
                                             .set_thread_id(request.id.0.clone());
 
-                                        agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc).ok();
+                                        agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc).ok(); // IS is possible?
                                         ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
                                     }
                                 }
@@ -947,6 +951,7 @@ pub mod test {
             Response::default()
                 .set_service_endpoint(_service_endpoint())
                 .set_keys(vec![key.to_string()], vec![])
+                .set_thread_id(_request().id.0.clone())
                 .encode(&key).unwrap()
         }
 

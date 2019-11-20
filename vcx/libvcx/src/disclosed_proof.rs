@@ -34,7 +34,7 @@ lazy_static! {
 #[serde(untagged)]
 enum DisclosedProofs {
     V1(DisclosedProof),
-    V2(Prover),
+    V3(Prover),
 }
 
 impl Default for DisclosedProof {
@@ -490,13 +490,13 @@ pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize PresentationRequest: {}", err)))?;
 
         let new_proof = Prover::create(source_id, proof_request_message.try_into()?)?;
-        return HANDLE_MAP.add(DisclosedProofs::V2(new_proof));
+        return HANDLE_MAP.add(DisclosedProofs::V3(new_proof));
     }
 
     // Received request of new format -- redirect to v3 folder
     if let Ok(presentation_request) = serde_json::from_str::<::v3::messages::proof_presentation::presentation_request::PresentationRequest>(proof_req) {
         let new_proof = Prover::create(source_id, presentation_request)?;
-        return HANDLE_MAP.add(DisclosedProofs::V2(new_proof));
+        return HANDLE_MAP.add(DisclosedProofs::V3(new_proof));
     }
 
     trace!("create_proof >>> source_id: {}, proof_req: {}", source_id, proof_req);
@@ -518,7 +518,7 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
     HANDLE_MAP.get(handle, |obj| {
         match obj {
             DisclosedProofs::V1(ref obj) => Ok(obj.get_state()),
-            DisclosedProofs::V2(ref obj) => Ok(obj.state())
+            DisclosedProofs::V3(ref obj) => Ok(obj.state())
         }
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
@@ -531,9 +531,9 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
                 obj.get_state();
                 Ok(DisclosedProofs::V1(obj))
             }
-            DisclosedProofs::V2(obj) => {
+            DisclosedProofs::V3(obj) => {
                 let obj = obj.update_state(message.as_ref().map(String::as_str))?;
-                Ok(DisclosedProofs::V2(obj))
+                Ok(DisclosedProofs::V3(obj))
             }
         }
     })?;
@@ -567,7 +567,7 @@ pub fn generate_proof_msg(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get(handle, |obj| {
         match obj {
             DisclosedProofs::V1(ref obj) => obj.generate_proof_msg(),
-            DisclosedProofs::V2(ref obj) => obj.generate_presentation_msg()
+            DisclosedProofs::V3(ref obj) => obj.generate_presentation_msg()
         }
     })
 }
@@ -579,9 +579,9 @@ pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
                 obj.send_proof(connection_handle)?;
                 Ok(DisclosedProofs::V1(obj))
             }
-            DisclosedProofs::V2(obj) => {
+            DisclosedProofs::V3(obj) => {
                 let obj = obj.send_presentation(connection_handle)?;
-                Ok(DisclosedProofs::V2(obj))
+                Ok(DisclosedProofs::V3(obj))
             }
         }
     }).map(|_| error::SUCCESS.code_num)
@@ -594,9 +594,9 @@ pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: Str
                 obj.generate_proof(&credentials, &self_attested_attrs)?;
                 Ok(DisclosedProofs::V1(obj))
             }
-            DisclosedProofs::V2(obj) => {
+            DisclosedProofs::V3(obj) => {
                 let obj = obj.generate_presentation(credentials.clone(), self_attested_attrs.clone())?;
-                Ok(DisclosedProofs::V2(obj))
+                Ok(DisclosedProofs::V3(obj))
             }
         }
     }).map(|_| error::SUCCESS.code_num)
@@ -606,7 +606,7 @@ pub fn retrieve_credentials(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
             DisclosedProofs::V1(ref obj) => obj.retrieve_credentials(),
-            DisclosedProofs::V2(ref obj) => obj.retrieve_credentials()
+            DisclosedProofs::V3(ref obj) => obj.retrieve_credentials()
         }
     })
 }
@@ -717,7 +717,7 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get(handle, |obj| {
         match obj {
             DisclosedProofs::V1(obj) => Ok(obj.get_source_id().clone()),
-            DisclosedProofs::V2(ref obj) => Ok(obj.get_source_id())
+            DisclosedProofs::V3(ref obj) => Ok(obj.get_source_id())
         }
     }).map_err(handle_err)
 }
@@ -726,7 +726,7 @@ pub fn get_presentation_status(handle: u32) -> VcxResult<u32> {
     HANDLE_MAP.get(handle, |obj| {
         match obj {
             DisclosedProofs::V1(obj) => Err(VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle)),
-            DisclosedProofs::V2(ref obj) => Ok(obj.presentation_status())
+            DisclosedProofs::V3(ref obj) => Ok(obj.presentation_status())
         }
     })
 }

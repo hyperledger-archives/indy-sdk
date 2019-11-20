@@ -29,7 +29,7 @@ lazy_static! {
 #[serde(untagged)]
 enum IssuerCredentials {
     V1(IssuerCredential),
-    V2(Issuer),
+    V3(Issuer),
 }
 
 static CREDENTIAL_OFFER_ID_KEY: &str = "claim_offer_id";
@@ -555,7 +555,7 @@ pub fn get_encoded_attributes(handle: u32) -> VcxResult<String> {
     ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref obj) => obj.create_attributes_encodings(),
-            IssuerCredentials::V2(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle))
+            IssuerCredentials::V3(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle))
         }
     })
 }
@@ -564,7 +564,7 @@ pub fn get_offer_uid(handle: u32) -> VcxResult<String> {
     ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref obj) => Ok(obj.get_offer_uid().to_string()),
-            IssuerCredentials::V2(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle))
+            IssuerCredentials::V3(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle))
         }
     })
 }
@@ -573,7 +573,7 @@ pub fn get_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
     ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref obj) => obj.get_payment_txn(),
-            IssuerCredentials::V2(ref obj) => Err(VcxError::from(VcxErrorKind::NoPaymentInformation))
+            IssuerCredentials::V3(ref obj) => Err(VcxError::from(VcxErrorKind::NoPaymentInformation))
         }
     })
 }
@@ -590,7 +590,7 @@ pub fn issuer_credential_create(cred_def_handle: u32,
     // Initiate connection of new format -- redirect to v3 folder
     if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
         let issuer = v3::handlers::issuance::Issuer::create(cred_def_handle, &credential_data, &source_id)?;
-        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V2(issuer))
+        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer))
     }
 
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
@@ -646,9 +646,9 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
                 obj.update_state(message.clone())?;
                 Ok(IssuerCredentials::V1(obj))
             }
-            IssuerCredentials::V2(obj) => {
+            IssuerCredentials::V3(obj) => {
                 let obj = obj.update_status(message.clone())?;
-                Ok(IssuerCredentials::V2(obj))
+                Ok(IssuerCredentials::V3(obj))
             }
         }
     })?;
@@ -660,7 +660,7 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
     ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref obj) => Ok(obj.get_state()),
-            IssuerCredentials::V2(ref obj) => obj.get_state(),
+            IssuerCredentials::V3(ref obj) => obj.get_state(),
         }
     })
 }
@@ -669,7 +669,7 @@ pub fn get_credential_status(handle: u32) -> VcxResult<u32> {
     ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle)),
-            IssuerCredentials::V2(ref obj) => obj.get_credential_status(),
+            IssuerCredentials::V3(ref obj) => obj.get_credential_status(),
         }
     })
 }
@@ -705,7 +705,7 @@ pub fn generate_credential_offer_msg(handle: u32, connection_handle: u32) -> Vcx
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref mut obj) => obj.generate_credential_offer_msg(connection_handle),
-            IssuerCredentials::V2(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle)), // TODO: implement
+            IssuerCredentials::V3(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle)), // TODO: implement
         }
     })
 }
@@ -717,9 +717,9 @@ pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u
                 obj.send_credential_offer(connection_handle)?;
                 Ok(IssuerCredentials::V1(obj))
             }
-            IssuerCredentials::V2(obj) => {
+            IssuerCredentials::V3(obj) => {
                 let obj = obj.send_credential_offer(connection_handle)?;
-                Ok(IssuerCredentials::V2(obj))
+                Ok(IssuerCredentials::V3(obj))
             }
         }
     })?;
@@ -730,7 +730,7 @@ pub fn generate_credential_msg(handle: u32, connection_handle: u32) -> VcxResult
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref mut obj) => obj.generate_credential_msg(connection_handle),
-            IssuerCredentials::V2(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle)), // TODO: implement
+            IssuerCredentials::V3(ref obj) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle)), // TODO: implement
         }
     })
 }
@@ -742,9 +742,9 @@ pub fn send_credential(handle: u32, connection_handle: u32) -> VcxResult<u32> {
                 obj.send_credential(connection_handle)?;
                 Ok(IssuerCredentials::V1(obj))
             }
-            IssuerCredentials::V2(obj) => {
+            IssuerCredentials::V3(obj) => {
                 let obj = obj.send_credential(connection_handle)?;
-                Ok(IssuerCredentials::V2(obj))
+                Ok(IssuerCredentials::V3(obj))
             }
         }
     })?;
@@ -755,7 +755,7 @@ pub fn revoke_credential(handle: u32) -> VcxResult<()> {
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref mut obj) => obj.revoke_cred(),
-            IssuerCredentials::V2(ref obj) => Err(VcxError::from(VcxErrorKind::NotReady)), // TODO: implement
+            IssuerCredentials::V3(ref obj) => Err(VcxError::from(VcxErrorKind::NotReady)), // TODO: implement
         }
     })
 }
@@ -772,7 +772,7 @@ pub fn get_credential_attributes(handle: u32) -> VcxResult<String> {
     ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref obj) => Ok(obj.get_credential_attributes().to_string()),
-            IssuerCredentials::V2(ref obj) => Err(VcxError::from(VcxErrorKind::NotReady)), // TODO: implement
+            IssuerCredentials::V3(ref obj) => Err(VcxError::from(VcxErrorKind::NotReady)), // TODO: implement
         }
     })
 }
@@ -781,7 +781,7 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
     ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref obj) => Ok(obj.get_source_id().to_string()),
-            IssuerCredentials::V2(ref obj) => obj.get_source_id()
+            IssuerCredentials::V3(ref obj) => obj.get_source_id()
         }
     })
 }

@@ -61,7 +61,11 @@ pub enum A2AMessage {
 impl<'de> Deserialize<'de> for A2AMessage {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
-        let message_type: MessageType = serde_json::from_value(value["@type"].clone()).map_err(de::Error::custom)?;
+        
+        let message_type: MessageType = match serde_json::from_value(value["@type"].clone()) {
+            Ok(message_type) => message_type,
+            Err(_) => return Ok(A2AMessage::Generic(value.to_string()))
+        };
 
         match message_type.type_.as_str() {
             "forward" => {
@@ -178,9 +182,7 @@ impl Serialize for A2AMessage {
             A2AMessage::PresentationProposal(msg) => set_a2a_message_type(msg, A2AMessageKinds::PresentationProposal),
             A2AMessage::PresentationRequest(msg) => set_a2a_message_type(msg, A2AMessageKinds::PresentationRequest),
             A2AMessage::Presentation(msg) => set_a2a_message_type(msg, A2AMessageKinds::Presentation),
-            A2AMessage::Generic(msg) => {
-                ::serde_json::to_value(msg)
-            }
+            A2AMessage::Generic(msg) => ::serde_json::to_value(msg),
         }.map_err(ser::Error::custom)?;
 
         value.serialize(serializer)

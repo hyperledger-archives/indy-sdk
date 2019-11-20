@@ -113,7 +113,7 @@ pub mod tests {
         {
             faber.activate();
 
-            let generic_message = "some message";
+            let generic_message = r#"{"field":"value"}"#;
             ::connection::send_generic_message(faber.connection_handle, generic_message, "").unwrap();
 
             alice.activate();
