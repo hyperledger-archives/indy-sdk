@@ -254,6 +254,45 @@ impl Connection {
         Ok(error::SUCCESS.code_num)
     }
 
+    pub fn update_state(&mut self, message: Option<String>) -> VcxResult<u32> {
+        debug!("updating state for connection {}", self.source_id);
+
+        if self.state == VcxStateType::VcxStateInitialized || self.state == VcxStateType::VcxStateAccepted {
+            return Ok(error::SUCCESS.code_num);
+        }
+
+        let response =
+            messages::get_messages()
+                .to(&self.pw_did)?
+                .to_vk(&self.pw_verkey)?
+                .agent_did(&self.agent_did)?
+                .agent_vk(&self.agent_vk)?
+                .send_secure()
+                .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, format!("Could not update state for connection {}", self.source_id)))?;
+
+        debug!("connection {} update state response: {:?}", self.source_id, response);
+        if self.state == VcxStateType::VcxStateOfferSent || self.state == VcxStateType::VcxStateInitialized {
+            for message in response {
+                if message.status_code == MessageStatusCode::Accepted && message.msg_type == RemoteMessageType::ConnReqAnswer {
+                    self.process_acceptance_message(message)?;
+                }
+            }
+        };
+
+        Ok(error::SUCCESS.code_num)
+    }
+
+    pub fn process_acceptance_message(&mut self, message: Message) -> VcxResult<u32> {
+        let details = parse_acceptance_details(&message)
+            .map_err(|err| err.extend("Cannot parse acceptance details"))?;
+
+        self.set_their_pw_did(&details.did);
+        self.set_their_pw_verkey(&details.verkey);
+        self.set_state(VcxStateType::VcxStateAccepted);
+
+        Ok(error::SUCCESS.code_num)
+    }
+
     pub fn send_generic_message(&self, message: &str, msg_options: &str) -> VcxResult<String> {
         if self.state != VcxStateType::VcxStateAccepted {
             return Err(VcxError::from(VcxErrorKind::NotReady));
@@ -608,48 +647,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
             Connections::V1(ref connection) => connection.send_generic_message(&msg, &msg_options),
             Connections::V3(ref connection) => connection.send_generic_message(msg, msg_options)
         }
-    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
-}
-
-impl Connection {
-    pub fn update_state(&mut self, message: Option<String>) -> VcxResult<u32> {
-        debug!("updating state for connection {}", self.source_id);
-
-        if self.state == VcxStateType::VcxStateInitialized || self.state == VcxStateType::VcxStateAccepted {
-            return Ok(error::SUCCESS.code_num);
-        }
-
-        let response =
-            messages::get_messages()
-                .to(&self.pw_did)?
-                .to_vk(&self.pw_verkey)?
-                .agent_did(&self.agent_did)?
-                .agent_vk(&self.agent_vk)?
-                .send_secure()
-                .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, format!("Could not update state for connection {}", self.source_id)))?;
-
-        debug!("connection {} update state response: {:?}", self.source_id, response);
-        if self.state == VcxStateType::VcxStateOfferSent || self.state == VcxStateType::VcxStateInitialized {
-            for message in response {
-                if message.status_code == MessageStatusCode::Accepted && message.msg_type == RemoteMessageType::ConnReqAnswer {
-                    self.process_acceptance_message(message)?;
-                }
-            }
-        };
-
-        Ok(error::SUCCESS.code_num)
-    }
-
-    pub fn process_acceptance_message(&mut self, message: Message) -> VcxResult<u32> {
-        let details = parse_acceptance_details(&message)
-            .map_err(|err| err.extend("Cannot parse acceptance details"))?;
-
-        self.set_their_pw_did(&details.did);
-        self.set_their_pw_verkey(&details.verkey);
-        self.set_state(VcxStateType::VcxStateAccepted);
-
-        Ok(error::SUCCESS.code_num)
-    }
+    })
 }
 
 pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u32> {
@@ -892,8 +890,8 @@ impl Into<(Connection, ActorDidExchangeState)> for ConnectionV3 {
             endpoint: String::new(),
             invite_detail: None,
             invite_url: None,
-            agent_did: self.agent_info().pw_did.clone(),
-            agent_vk: self.agent_info().pw_vk.clone(),
+            agent_did: self.agent_info().agent_did.clone(),
+            agent_vk: self.agent_info().agent_vk.clone(),
             their_pw_did: self.remote_did().unwrap_or_default(),
             their_pw_verkey: self.remote_vk().unwrap_or_default(),
             public_did: None,
@@ -963,7 +961,7 @@ pub fn send_message(handle: u32, message: A2AMessage) -> VcxResult<()> {
             Connections::V1(ref mut connection) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
             Connections::V3(ref mut connection) => connection.send_message(&message)
         }
-    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+    })
 }
 
 pub fn add_pending_messages(handle: u32, messages: HashMap<MessageId, String>) -> VcxResult<()> {
@@ -990,7 +988,7 @@ pub fn is_v3_connection(connection_handle: u32) -> VcxResult<bool> {
             Connections::V1(ref connection) => Ok(false),
             Connections::V3(ref connection) => Ok(true)
         }
-    })
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
 #[cfg(test)]
