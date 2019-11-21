@@ -645,8 +645,10 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
         match obj {
             IssuerCredentials::V1(ref mut obj) => {
-                obj.update_state(message.clone())?;
-                Ok(obj.get_state())
+                match obj.update_state(message.clone()) {
+                    Ok(x) => Ok(x),
+                    Err(x) => Ok(obj.get_state()),
+                }
             }
             IssuerCredentials::V3(ref mut obj) => {
                 obj.update_status(message.clone())?;
