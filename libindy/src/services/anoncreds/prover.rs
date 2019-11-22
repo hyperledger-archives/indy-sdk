@@ -18,7 +18,7 @@ use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolic
 use crate::domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionId};
 use crate::domain::anoncreds::credential_offer::CredentialOffer;
 use crate::domain::anoncreds::credential_request::CredentialRequestMetadata;
-use crate::domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
+use crate::domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent, RevealedAttributeGroupInfo, AttributeValue};
 use crate::domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestPayload, ProofRequestsVersion, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
 use crate::domain::anoncreds::requested_credential::ProvingCredentialKey;
 use crate::domain::anoncreds::requested_credential::RequestedCredentials;
@@ -373,17 +373,19 @@ impl Prover {
                                                               encoded: attribute_values.encoded,
                                                           });
                 } else if let Some(names) = &attribute.names {
-                    let mut attribute_values_vec = vec![];
+                    let mut value_map: HashMap<String, AttributeValue> = HashMap::new();
                     for name in names {
                         let attr_value = self.get_credential_values_for_attribute(&credential.values.0, &name)
                             .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", name)))?;
-                        attribute_values_vec.push(RevealedAttributeInfo {
-                            sub_proof_index,
+                        value_map.insert(name.clone(), AttributeValue {
                             raw: attr_value.raw,
                             encoded: attr_value.encoded,
-                        })
+                        });
                     }
-                    requested_proof.revealed_attr_groups.insert(attr_info.attr_referent.clone(), attribute_values_vec);
+                    requested_proof.revealed_attr_groups.insert(attr_info.attr_referent.clone(), RevealedAttributeGroupInfo {
+                        sub_proof_index,
+                        values: value_map
+                    });
                 }
             } else {
                 requested_proof.unrevealed_attrs.insert(attr_info.attr_referent, SubProofReferent { sub_proof_index });
@@ -721,7 +723,8 @@ mod tests {
 
         fn _attr_info() -> AttributeInfo {
             AttributeInfo {
-                name: "name".to_string(),
+                name: Some("name".to_string()),
+                names: None,
                 restrictions: None,
                 non_revoked: None,
             }
@@ -796,7 +799,8 @@ mod tests {
             });
 
             proof_req.requested_attributes.insert("attribute_referent_2".to_string(), AttributeInfo {
-                name: "last_name".to_string(),
+                name: Some("last_name".to_string()),
+                names: None,
                 restrictions: None,
                 non_revoked: None,
             });
@@ -994,7 +998,8 @@ mod tests {
             ]);
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &Some(restriction),
                                                              &None).unwrap();
@@ -1019,7 +1024,8 @@ mod tests {
             );
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &None,
                                                              &Some(&extra_query)).unwrap();
@@ -1046,7 +1052,8 @@ mod tests {
             );
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &Some(restriction),
                                                              &Some(&extra_query)).unwrap();
@@ -1072,7 +1079,8 @@ mod tests {
             );
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &None,
                                                              &Some(&extra_query)).unwrap();
@@ -1102,7 +1110,8 @@ mod tests {
             );
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &Some(restriction),
                                                              &Some(&extra_query)).unwrap();

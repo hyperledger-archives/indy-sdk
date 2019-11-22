@@ -17,7 +17,7 @@ pub struct Proof {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RequestedProof {
     pub revealed_attrs: HashMap<String, RevealedAttributeInfo>,
-    pub revealed_attr_groups: HashMap<String, Vec<RevealedAttributeInfo>>,
+    pub revealed_attr_groups: HashMap<String, RevealedAttributeGroupInfo>,
     pub self_attested_attrs: HashMap<String, String>,
     pub unrevealed_attrs: HashMap<String, SubProofReferent>,
     pub predicates: HashMap<String, SubProofReferent>
@@ -47,6 +47,17 @@ pub struct RevealedAttributeInfo {
     pub encoded: String
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RevealedAttributeGroupInfo {
+    pub sub_proof_index: u32,
+    pub values: HashMap<String, AttributeValue>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AttributeValue {
+    pub raw: String,
+    pub encoded: String
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Identifier {

@@ -151,7 +151,7 @@ impl Verifier {
             &mut requested_proof.revealed_attr_groups
                 .iter()
                 .filter(|&(attr_referent, ref revealed_attr_info)|
-                    sub_proof_index == revealed_attr_info[0].sub_proof_index as usize && proof_req.requested_attributes.contains_key(attr_referent))
+                    sub_proof_index == revealed_attr_info.sub_proof_index as usize && proof_req.requested_attributes.contains_key(attr_referent))
                 .map(|(attr_referent, _)|
                     proof_req.requested_attributes[attr_referent].clone())
                 .collect::<Vec<AttributeInfo>>()
@@ -271,7 +271,7 @@ impl Verifier {
         for (referent, infos) in proof.requested_proof.revealed_attr_groups.iter() {
             revealed_identifiers.insert(
                 referent.to_string(),
-                Verifier::_get_proof_identifier(proof, infos[0].sub_proof_index)?
+                Verifier::_get_proof_identifier(proof, infos.sub_proof_index)?
             );
         }
         Ok(revealed_identifiers)
@@ -334,12 +334,18 @@ impl Verifier {
                 .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequests", attr_referent)))?
                 .names.as_ref()
                 .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequests", attr_referent)))?;
-            if attr_infos.len() != attr_names.len() {
+            if attr_infos.values.len() != attr_names.len() {
                 error!("Proof Revealed Attr Group does not match Proof Request Attribute Group, proof request attrs: {:?}, referent: {:?}, attr_infos: {:?}", proof_req.requested_attributes, attr_referent, attr_infos);
                 return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Proof Revealed Attr Group does not match Proof Request Attribute Group"))
             }
-            for (attr_info, attr_name) in attr_infos.iter().zip(attr_names.iter()) {
-                Verifier::_verify_revealed_attribute_value(attr_name, proof, &attr_info)?;
+            for attr_name in attr_names {
+                let attr_info = &attr_infos.values.get(attr_name)
+                    .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Proof Revealed Attr Group does not match Proof Request Attribute Group"))?;
+                Verifier::_verify_revealed_attribute_value(attr_name, proof, &RevealedAttributeInfo {
+                    sub_proof_index: attr_infos.sub_proof_index,
+                    raw: attr_info.raw.clone(),
+                    encoded: attr_info.encoded.clone()
+                })?;
             }
         }
         Ok(())
@@ -390,56 +396,27 @@ impl Verifier {
             if let Some(ref query) = info.restrictions {
                 let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers)?;
 
-                let (names, revealed_values) = if let Some(name) = info.name {
-                    (
-                        vec![name.clone()],
-                        vec![requested_proof.revealed_attrs.get(&referent).map(|attr| attr.raw.as_str())]
-                    )
+                let name_value_map: HashMap<String, Option<&str>> = if let Some(name) = info.name {
+                    let mut map = HashMap::new();
+                    map.insert(name.clone(), requested_proof.revealed_attrs.get(&referent).map(|attr| attr.raw.as_str()));
+                    map
                 } else if let Some(names) = info.names {
-                    let attrs = requested_proof.revealed_attr_groups.get(&referent);
-                    let rev_attrs = if let Some(attrs) = attrs {
-                        attrs.iter().map(|attr| Some(attr.raw.as_str())).collect()
-                    } else {
-                        vec![None; names.len()]
-                    };
-                    (
-                        names,
-                        rev_attrs
-                    )
+                    let mut map = HashMap::new();
+                    let attrs = requested_proof.revealed_attr_groups.get(&referent)
+                        .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Proof does not have referent from proof request"))?;
+                    for name in names {
+                        let val = attrs.values.get(&name).map(|attr| attr.raw.as_str());
+                        map.insert(name, val);
+                    }
+                    map
                 } else {
                     error!(r#"Proof Request attribute restriction should contain "name" or "names" param. Current proof request: {:?}"#, proof_req);
                     return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Proof Request attribute restriction should contain "name" or "names" param"#));
                 };
 
-                if names.len() != revealed_values.len() {
-                    error!("Proof Revealed Attr Group does not match Proof Request Attribute Group, proof request attrs: {:?}, referent: {:?}, revealed attr_groups: {:?}", proof_req.requested_attributes, referent, requested_proof.revealed_attr_groups);
-                    return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Proof Revealed Attr Group does not match Proof Request Attribute Group"))
-                }
-
-                for (name, revealed_value) in names.iter().zip(revealed_values.into_iter()) {
-                    Verifier::_process_operator(name, &query, &filter, revealed_value)
+                for (name, value) in name_value_map.into_iter() {
+                    Verifier::_process_operator(&name, &query, &filter, value)
                         .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{:?}\" attribute", &name)))?;
-                }
-            }
-        }
-
-        // Checking that revealed attrs has the same credential in groups
-        for (attr_ref, attr_info) in proof_req.requested_attributes.iter() {
-            if let Some(names) = &attr_info.names {
-                let revealed_attrs = requested_proof.revealed_attr_groups.get(attr_ref.as_str())
-                    .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Revealed attributes are not found for referent {}", attr_ref)))?;
-
-                if names.len() != revealed_attrs.len() {
-                    error!("Proof Revealed Attr Group does not match Proof Request Attribute Group, proof request attrs: {:?}, referent: {:?}, revealed attr_groups: {:?}", proof_req.requested_attributes, attr_ref, requested_proof.revealed_attr_groups);
-                    return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Proof Revealed Attr Group does not match Proof Request Attribute Group"))
-                }
-
-                let index: HashSet<u32> = revealed_attrs.iter().map(|attr| attr.sub_proof_index).collect();
-
-                if index.len() != 1 {
-                    error!("Proof Revealed Attr Group contains different sub proof indexes: attrs: {:?},  indexes: {:?}", revealed_attrs, index);
-                    return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Proof Revealed Attr Group contains different sub proof indexes"))
-
                 }
             }
         }

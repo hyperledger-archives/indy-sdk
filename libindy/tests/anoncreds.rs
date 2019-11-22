@@ -2950,24 +2950,6 @@ mod high_cases {
                                                        &anoncreds::schemas_for_proof(),
                                                        &anoncreds::cred_defs_for_proof(),
                                                        "{}").unwrap();
-            println!("{}", proof);
-
-            let proof = serde_json::from_str::<serde_json::Value>(&proof).unwrap();
-
-            let indexes: HashSet<u64> = proof.as_object().unwrap()
-                .get("requested_proof").unwrap()
-                .as_object().unwrap()
-                .get("revealed_attr_groups").unwrap()
-                .as_object().unwrap()
-                .get("attr1_referent").unwrap()
-                .as_array().unwrap()
-                .iter().map(|val| {
-                val.as_object().unwrap()
-                    .get("sub_proof_index").unwrap()
-                    .as_u64().unwrap()
-            }).collect();
-
-            assert_eq!(indexes.len(), 1);
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
@@ -3140,16 +3122,39 @@ mod high_cases {
                 "requested_predicates": {},
             }).to_string();
 
-            indyrs::logger::set_default_logger(Some("trace")).unwrap();
-
             let valid = anoncreds::verifier_verify_proof(&other_proof_req_json,
                                                          &anoncreds::proof_json_names(),
-                                                         &anoncreds::schemas_for_proof(),
-                                                         &anoncreds::cred_defs_for_proof(),
+                                                         &anoncreds::schema_names(),
+                                                         &anoncreds::cred_defs_names(),
                                                          "{}",
                                                          "{}").unwrap();
             assert!(valid);
         }
+    }
+
+    #[test]
+    fn verifier_verify_proof_works_for_proof_with_names_in_different_credentials() {
+        let other_proof_req_json = json!({
+                "nonce":"123432421212",
+                "name":"proof_req_1",
+                "version":"0.1",
+                "requested_attributes": {
+                    "attr1_referent": {
+                        "names":["name", "age"],
+                        "revealed": "true",
+
+                    }
+                },
+                "requested_predicates": {},
+            }).to_string();
+
+        let valid = anoncreds::verifier_verify_proof(&other_proof_req_json,
+                                                     &anoncreds::proof_json_names_diff_creds(),
+                                                     &anoncreds::schema_names(),
+                                                     &anoncreds::cred_defs_names(),
+                                                     "{}",
+                                                     "{}").unwrap();
+        assert!(!valid);
     }
 
     mod verifier_verify_proof_with_proof_req_restrictions {
