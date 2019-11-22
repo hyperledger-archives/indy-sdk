@@ -270,7 +270,6 @@ fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, 
         .set_credential(credential)
 }
 
-#[cfg(feature = "aries")]
 #[cfg(test)]
 pub mod test {
     use super::*;

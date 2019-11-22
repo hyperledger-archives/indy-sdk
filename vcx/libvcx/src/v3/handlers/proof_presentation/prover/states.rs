@@ -327,7 +327,6 @@ impl ProverSM {
     }
 }
 
-#[cfg(feature = "aries")]
 #[cfg(test)]
 pub mod test {
     use super::*;

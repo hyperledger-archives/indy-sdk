@@ -250,7 +250,6 @@ fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxRes
     Ok((CredentialRequest::create().set_requests_attach(req)?, req_meta, cred_def_json))
 }
 
-#[cfg(feature = "aries")]
 #[cfg(test)]
 mod test {
     use super::*;

@@ -548,7 +548,6 @@ pub enum Actor {
     Invitee
 }
 
-#[cfg(feature = "aries")]
 #[cfg(test)]
 pub mod test {
     use super::*;

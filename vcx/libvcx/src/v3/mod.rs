@@ -5,7 +5,6 @@ pub mod messages;
 
 pub const SERIALIZE_VERSION: &'static str = "2.0";
 
-#[cfg(feature = "aries")]
 #[cfg(test)]
 pub mod test {
     use rand;
@@ -435,6 +434,7 @@ pub mod test {
         }
     }
 
+    #[cfg(feature = "aries")]
     #[test]
     fn aries_demo() {
         PaymentPlugin::load();

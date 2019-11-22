@@ -87,8 +87,13 @@ pub mod tests {
     use utils::libindy::tests::test_setup;
     use utils::libindy::crypto::create_key;
 
+    fn _setup(){
+        ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE, "false");
+    }
+
     #[test]
     fn test_encryption_envelope_works_for_no_keys() {
+        _setup();
         let setup = test_setup::key();
 
         let message = A2AMessage::Ack(_ack());
@@ -99,6 +104,7 @@ pub mod tests {
 
     #[test]
     fn test_encryption_envelope_works_for_recipient_only() {
+        _setup();
         let setup = test_setup::key();
 
         let message = A2AMessage::Ack(_ack());
@@ -109,6 +115,7 @@ pub mod tests {
 
     #[test]
     fn test_encryption_envelope_works_for_routing_keys() {
+        _setup();
         let setup = test_setup::key();
         let key_1 = create_key().unwrap();
         let key_2 = create_key().unwrap();

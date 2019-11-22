@@ -280,7 +280,6 @@ impl VerifierSM {
     }
 }
 
-#[cfg(feature = "aries")]
 #[cfg(test)]
 pub mod test {
     use super::*;
