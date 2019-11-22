@@ -313,7 +313,7 @@ All these options are part of Indy wallet `config`/`credential` parameters.
 * `sdk_to_remote_verkey` - pairwise Verkey for Agent
 
 ### Logging
-Libindy provides two options for Logger initialization:
+libVCX provides two options for Logger initialization:
 
 * `vcx_set_default_logger` API function sets default logger implementation. 
 Rust `env_logger` is used as a default logging library.  This is a simple logger which writes to stdout (can be configured via `RUST_LOG` environment variable).
