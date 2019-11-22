@@ -188,8 +188,8 @@ impl RequestedState {
 
         let response: Response = response.decode(&remote_vk)?;
 
-        if !response.thread.is_reply(&self.request.id.0){
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot handle Response: thread id does not match: {:?}", response.thread)))
+        if !response.thread.is_reply(&self.request.id.0) {
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot handle Response: thread id does not match: {:?}", response.thread)));
         }
 
         let ack = Ack::create().set_thread_id(response.thread.thid.clone().unwrap_or_default());
@@ -197,6 +197,27 @@ impl RequestedState {
 
         Ok(response)
     }
+}
+
+impl RespondedState {
+    fn handle_ping(&self, ping: &Ping, agent_info: &AgentInfo) -> VcxResult<()> {
+        _handle_ping(ping, agent_info, &self.did_doc)
+    }
+}
+
+impl CompleteState {
+    fn handle_ping(&self, ping: &Ping, agent_info: &AgentInfo) -> VcxResult<()> {
+        _handle_ping(ping, agent_info, &self.did_doc)
+    }
+}
+
+fn _handle_ping(ping: &Ping, agent_info: &AgentInfo, did_doc: &DidDoc) -> VcxResult<()> {
+    if ping.response_requested {
+        let ping_response = PingResponse::create().set_thread_id(
+            ping.thread.as_ref().and_then(|thread| thread.thid.clone()).unwrap_or(ping.id.0.clone()));
+        agent_info.send_message(&ping_response.to_a2a_message(), did_doc)?;
+    }
+    Ok(())
 }
 
 impl DidExchangeSM {
@@ -219,7 +240,7 @@ impl DidExchangeSM {
         }
     }
 
-    pub fn from(source_id: String, agent_info: AgentInfo, state: ActorDidExchangeState) -> Self{
+    pub fn from(source_id: String, agent_info: AgentInfo, state: ActorDidExchangeState) -> Self {
         DidExchangeSM {
             source_id,
             agent_info,
@@ -299,6 +320,18 @@ impl DidExchangeSM {
                         }
                     }
                 }
+                ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref state)) |
+                ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref state)) => {
+                    match message {
+                        ping @ A2AMessage::Ping(_) => {
+                            debug!("Ping message received");
+                            return Some((uid, ping));
+                        }
+                        message @ _ => {
+                            debug!("Unexpected message received in Completed state: {:?}", message);
+                        }
+                    }
+                }
                 _ => {
                     debug!("Unexpected message received: message: {:?}", message);
                 }
@@ -371,12 +404,7 @@ impl DidExchangeSM {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ack).into()))
                             }
                             DidExchangeMessages::PingReceived(ping) => {
-                                if ping.response_requested {
-                                    let ping_response = PingResponse::create().set_thread_id(
-                                        ping.thread.as_ref().and_then(|thread| thread.thid.clone()).unwrap_or(ping.id.0.clone()));
-                                    agent_info.send_message(&ping_response.to_a2a_message(), &state.did_doc)?;
-                                }
-
+                                state.handle_ping(&ping, &agent_info)?;
                                 ActorDidExchangeState::Inviter(DidExchangeState::Completed((state, ping).into()))
                             }
                             DidExchangeMessages::ProblemReportReceived(problem_report) => {
@@ -388,7 +416,15 @@ impl DidExchangeSM {
                         }
                     }
                     DidExchangeState::Completed(state) => {
-                        ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
+                        match message {
+                            DidExchangeMessages::PingReceived(ping) => {
+                                state.handle_ping(&ping, &agent_info)?;
+                                ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
+                            }
+                            _ => {
+                                ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
+                            }
+                        }
                     }
                 }
             }
@@ -455,7 +491,15 @@ impl DidExchangeSM {
                         ActorDidExchangeState::Invitee(DidExchangeState::Responded(state))
                     }
                     DidExchangeState::Completed(state) => {
-                        ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
+                        match message {
+                            DidExchangeMessages::PingReceived(ping) => {
+                                state.handle_ping(&ping, &agent_info)?;
+                                ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
+                            }
+                            _ => {
+                                ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
+                            }
+                        }
                     }
                 }
             }
@@ -893,7 +937,7 @@ pub mod test {
 
                 let connection = inviter_sm().to_inviter_completed_state();
 
-                // No messages
+                // Ping
                 {
                     let messages = map!(
                         "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
@@ -903,7 +947,9 @@ pub mod test {
                         "key_5".to_string() => A2AMessage::Ack(_ack())
                     );
 
-                    assert!(connection.find_message_to_handle(messages).is_none());
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_4", uid);
+                    assert_match!(A2AMessage::Ping(_), message);
                 }
             }
         }
@@ -942,6 +988,17 @@ pub mod test {
             pub fn to_invitee_requested_state(mut self) -> DidExchangeSM {
                 self = self.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
                 self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self
+            }
+
+            pub fn to_invitee_completed_state(mut self, wallet_handle: i32) -> DidExchangeSM {
+                let key = create_key(wallet_handle, Some(::utils::libindy::tests::test_setup::TRUSTEE_SEED));
+                let invitation = Invitation::default().set_recipient_keys(vec![key.clone()]);
+
+                self = self.step(DidExchangeMessages::InvitationReceived(invitation)).unwrap();
+                self = self.step(DidExchangeMessages::Connect()).unwrap();
+                self = self.step(DidExchangeMessages::ExchangeResponseReceived(_response(&key))).unwrap();
+                self = self.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
                 self
             }
         }
@@ -1195,6 +1252,28 @@ pub mod test {
                     );
 
                     assert!(connection.find_message_to_handle(messages).is_none());
+                }
+            }
+
+            #[test]
+            fn test_find_message_to_handle_from_completed_state() {
+                let setup = AgencyModeSetup::init();
+
+                let connection = invitee_sm().to_invitee_completed_state(setup.wallet_handle);
+
+                // Ping
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::ConnectionProblemReport(_problem_report()),
+                        "key_4".to_string() => A2AMessage::Ping(_ping()),
+                        "key_5".to_string() => A2AMessage::Ack(_ack())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_4", uid);
+                    assert_match!(A2AMessage::Ping(_), message);
                 }
             }
         }
