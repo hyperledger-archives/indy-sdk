@@ -118,7 +118,10 @@ pub struct NonRevocedInterval {
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct AttributeInfo {
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub names: Option<Vec<String>>,
     pub restrictions: Option<Query>,
     pub non_revoked: Option<NonRevocedInterval>
 }
@@ -178,7 +181,7 @@ impl Validatable for ProofRequest {
         }
 
         for (_, requested_attribute) in value.requested_attributes.iter() {
-            if requested_attribute.name.is_empty() {
+            if requested_attribute.name.as_ref().unwrap_or(&"".to_string()).is_empty() && requested_attribute.names.is_none() {
                 return Err(format!("Proof Request validation failed: there is empty requested attribute: {:?}", requested_attribute));
             }
             if let Some(ref restrictions) = requested_attribute.restrictions {
@@ -327,7 +330,8 @@ mod tests {
         fn proof_request_to_unqualified() {
             let mut requested_attributes: HashMap<String, AttributeInfo> = HashMap::new();
             requested_attributes.insert("attr1_referent".to_string(), AttributeInfo {
-                name: "name".to_string(),
+                name: Some("name".to_string()),
+                names: None,
                 restrictions: Some(Query::And(vec![
                     Query::Eq("issuer_did".to_string(), DID_QUALIFIED.to_string()),
                     Query::Eq("schema_id".to_string(), SCHEMA_ID_QUALIFIED.to_string()),
@@ -359,7 +363,8 @@ mod tests {
 
             let mut expected_requested_attributes: HashMap<String, AttributeInfo> = HashMap::new();
             expected_requested_attributes.insert("attr1_referent".to_string(), AttributeInfo {
-                name: "name".to_string(),
+                name: Some("name".to_string()),
+                names: None,
                 restrictions: Some(Query::And(vec![
                     Query::Eq("issuer_did".to_string(), DID_UNQUALIFIED.to_string()),
                     Query::Eq("schema_id".to_string(), SCHEMA_ID_UNQUALIFIED.to_string()),

@@ -28,6 +28,7 @@ pub static mut CREDENTIAL_JSON: &'static str = "";
 pub const ANONCREDS_WALLET_CONFIG: &'static str = r#"{"id": "anoncreds_wallet"}"#;
 pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
 pub const CREDENTIAL1_ID: &'static str = "credential1_id";
+pub const CREDENTIAL1_SUB_ID: &'static str = "credential1_sub_id";
 pub const CREDENTIAL2_ID: &'static str = "credential2_id";
 pub const CREDENTIAL3_ID: &'static str = "credential3_id";
 pub const DELIMITER: &'static str = ":";
@@ -154,7 +155,7 @@ pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_c
                            master_secret_name: &str, schemas_json: &str, cred_defs_json: &str,
                            rev_states_json: &str) -> Result<String, IndyError> {
     anoncreds::prover_create_proof(wallet_handle, proof_req_json, requested_credentials_json,
-                         master_secret_name, schemas_json, cred_defs_json, rev_states_json).wait()
+                                   master_secret_name, schemas_json, cred_defs_json, rev_states_json).wait()
 }
 
 pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str,
@@ -200,6 +201,10 @@ pub fn gvt_schema_id() -> String {
     SchemaId::new(&DidValue(ISSUER_DID.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
+pub fn gvt_sub_schema_id() -> String {
+    SchemaId::new(&DidValue(ISSUER_DID.to_string()), GVT_SUB_SCHEMA_NAME, SCHEMA_VERSION).0
+}
+
 pub fn gvt_schema_id_fully_qualified() -> String {
     SchemaId::new(&DidValue(ISSUER_DID_V1.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
 }
@@ -209,7 +214,7 @@ pub fn gvt_cred_def_id() -> String {
 }
 
 pub fn local_gvt_cred_def_id() -> String {
-    CredentialDefinitionId::new(&DidValue(ISSUER_DID.to_string()),  &SchemaId(gvt_schema_id()), SIGNATURE_TYPE, TAG_1).0
+    CredentialDefinitionId::new(&DidValue(ISSUER_DID.to_string()), &SchemaId(gvt_schema_id()), SIGNATURE_TYPE, TAG_1).0
 }
 
 pub fn gvt_cred_def_id_fully_qualified() -> String {
@@ -234,12 +239,26 @@ pub fn gvt_schema() -> SchemaV1 {
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
         attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap().into(),
-        seq_no: None
+        seq_no: None,
+    }
+}
+
+pub fn gvt_sub_schema() -> SchemaV1 {
+    SchemaV1 {
+        id: SchemaId(gvt_sub_schema_id()),
+        version: SCHEMA_VERSION.to_string(),
+        name: GVT_SUB_SCHEMA_NAME.to_string(),
+        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SUB_SCHEMA_ATTRIBUTES).unwrap().into(),
+        seq_no: None,
     }
 }
 
 pub fn gvt_schema_json() -> String {
     serde_json::to_string(&Schema::SchemaV1(gvt_schema())).unwrap()
+}
+
+pub fn gvt_sub_schema_json() -> String {
+    serde_json::to_string(&Schema::SchemaV1(gvt_sub_schema())).unwrap()
 }
 
 pub fn gvt_schema_id_issuer2() -> String {
@@ -252,7 +271,7 @@ pub fn gvt_schema_issuer2() -> SchemaV1 {
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
         attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap().into(),
-        seq_no: None
+        seq_no: None,
     }
 }
 
@@ -271,7 +290,7 @@ pub fn xyz_schema() -> SchemaV1 {
         version: SCHEMA_VERSION.to_string(),
         name: XYZ_SCHEMA_NAME.to_string(),
         attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap().into(),
-        seq_no: None
+        seq_no: None,
     }
 }
 
@@ -289,7 +308,7 @@ pub fn xyz_schema_tag2() -> SchemaV1 {
         version: SCHEMA_VERSION.to_string(),
         name: format!("{}{}", XYZ_SCHEMA_NAME, TAG_2),
         attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap().into(),
-        seq_no: None
+        seq_no: None,
     }
 }
 
@@ -343,6 +362,17 @@ pub fn gvt_credential_values_json() -> String {
     serde_json::to_string(&gvt_credential_values()).unwrap()
 }
 
+pub fn gvt_sub_credential_values() -> HashMap<String, AttributeValues> {
+    map! {
+            "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()},
+            "height_sub".to_string() => AttributeValues {raw: "175".to_string(), encoded: "175".to_string()}
+          }
+}
+
+pub fn gvt_sub_credential_values_json() -> String {
+    serde_json::to_string(&gvt_sub_credential_values()).unwrap()
+}
+
 pub fn xyz_credential_values() -> HashMap<String, AttributeValues> {
     map! {
             "status".to_string() => AttributeValues {raw: "partial".to_string(), encoded: "51792877103171595686471452153480627530895".to_string()},
@@ -392,7 +422,7 @@ pub fn issuer_1_gvt_credential() -> CredentialInfo {
                        "name".to_string() => "Alex".to_string(),
                        "height".to_string() => "175".to_string(),
                        "age".to_string() => "28".to_string()
-                   }
+                   },
     }
 }
 
@@ -406,7 +436,7 @@ pub fn issuer_1_xyz_credential() -> CredentialInfo {
         attrs: map! {
                        "status".to_string() => "partial".to_string(),
                        "period".to_string() => "8".to_string()
-                   }
+                   },
     }
 }
 
@@ -422,7 +452,7 @@ pub fn issuer_2_gvt_credential() -> CredentialInfo {
                        "name".to_string() => "Alexander".to_string(),
                        "height".to_string() => "170".to_string(),
                        "Age".to_string() => "28".to_string()
-                   }
+                   },
     }
 }
 
@@ -566,6 +596,35 @@ pub fn proof_request_attr_and_predicate() -> String {
         }).to_string()
 }
 
+pub fn proof_request_attr_names() -> String {
+    json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": {
+               "attr1_referent": {
+                   "names":["name", "age"],
+                   "revealed": "true"
+               }
+           },
+           "requested_predicates": {},
+        }).to_string()
+}
+
+pub fn proof_request_attr_no_name_or_names() -> String {
+    json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": {
+               "attr1_referent": {
+                    "revealed": "true"
+               }
+           },
+           "requested_predicates": {},
+        }).to_string()
+}
+
 pub fn proof_request_attr() -> String {
     json!({
            "nonce":"123432421212",
@@ -578,6 +637,66 @@ pub fn proof_request_attr() -> String {
            }),
            "requested_predicates": json!({}),
         }).to_string()
+}
+
+pub fn proof_json_names() -> String {
+    r#"{
+        "proof":{
+            "proofs":[
+                {
+                    "primary_proof":{
+                        "eq_proof":{
+                            "revealed_attrs":{
+                                "age":"28",
+                                "name":"1139481716457488690172217916278103335"
+                            },
+                            "a_prime":"81202425055655159415430726143446253378204350854888903829382657893496398795429858912871052735910433615382552287280896152973655663992067874490209284457105519477758441731275754194753149555027499528955820324705238088443825173807717959770179040015683323324258724516662658866335163666082523851742800979938630719671239020403320459692506049227033696433201019252788666400482179915095838529502516278922133802732281788096243321839399825257523347938140059960523955317965347626972982088657667424358663865641553472999184156541967493074377764820988268295087989661404892200361381070179984711723540473877850649952432288665164222200584",
+                            "e":"180076680992214173901320281721512637164745264003642718205357762839496686868034618198992604879778071840120652482283617891927922934017260286",
+                            "v":"1099293883123282689348435321922354592392566569607376360319995515800244264895372403645856771019452692590677417059470556153929244668998390401330863163647654089418013332961962450011593654425427634960373848056803224967415569886656437839499320830916535083896438253547941188962176203704043211411063554875354054439369242058711183683644091926034983568694253754378968927790424488703495714843843155941164442279871360389493776317686307992201475057701781467921551514301309269465306854209160729918562370822983023145300382277530250805019308363887294234688730153511762749161695035029944547783123783697228520930487969211495474082124514701669379721194220300734016820248370616726444216531040698605436282396680979134784538388985062317643851848397386129004277256406362327545990442263824686570060821367550474208545582947256432170077441388550694704158009448036450541157137121279830506196256969897178594987314363626178878363955173868675047050037",
+                            "m":{
+                                "master_secret":"3509108757751766035645775524960122409437954473432142718817832117999367457491435504180317126034213405723880460625763692641044234130923762128565809038872197243893254454286490793848",
+                                "height":"577049813473557844014083740906650576123552775723865753022629445805454134808739755443311670147973207483132524148941109760451737749851751935298524473818760848768567675109645296800",
+                                "sex":"2302185835869344299464122725659589846458379685060669134932718752901511570078188196753369951134702441799575352661898953860298234093490532547694703847411904352838589182778167101301"
+                            },
+                            "m2":"12689534896366370412035141139642081924440659321578710497613391713951150228440878708626802746593178568345237850169018018527859185202190024747773918702207368025975232338598178897432"
+                        },
+                        "ge_proofs":[]
+                    },
+                    "non_revoc_proof":null
+                }
+            ],
+            "aggregated_proof":{"c_hash":"8898595812780655705177732620812117293031752131364071882537413283927622190872","c_list":[[2,131,63,66,182,105,84,44,179,9,78,99,216,83,24,113,141,75,47,86,229,36,221,204,53,141,97,232,168,132,98,25,60,97,66,98,105,239,187,140,67,133,218,41,99,3,69,207,146,19,124,84,96,66,228,44,253,138,47,231,142,96,42,249,249,194,51,153,68,151,60,151,244,210,98,147,134,25,87,99,119,6,54,170,42,65,18,165,111,14,58,53,185,32,28,196,147,47,249,172,148,41,115,187,228,254,145,53,237,184,15,19,119,121,183,123,159,206,4,105,39,14,225,116,219,184,104,40,168,158,81,22,40,189,16,221,220,24,176,249,143,227,220,228,196,71,79,166,117,253,191,150,234,8,106,170,49,200,245,8,78,108,96,159,250,90,230,65,150,222,41,162,78,174,137,175,17,244,176,201,160,99,201,89,130,248,21,248,195,161,93,11,74,155,252,225,96,36,157,247,168,161,158,190,108,128,255,163,13,117,128,148,72,145,82,131,94,104,37,60,251,83,139,60,97,218,165,163,218,107,20,69,97,32,253,239,118,38,44,67,196,108,122,188,49,56,23,252,75,203,176,177,77,17,62,123,8]]}
+        },
+        "requested_proof":{
+            "revealed_attrs":{},
+            "revealed_attr_groups":{
+                "attr1_referent":
+                    [
+                        {
+                            "sub_proof_index":0,
+                            "raw":"Alex",
+                            "encoded":"1139481716457488690172217916278103335"
+                        },
+                        {
+                            "sub_proof_index":0,
+                            "raw":"28",
+                            "encoded":"28"
+                        }
+                    ]
+                },
+                "self_attested_attrs":{},
+                "unrevealed_attrs":{},
+                "predicates":{}
+            },
+            "identifiers":[
+                {
+                    "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
+                    "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG_1",
+                    "rev_reg_id":null,
+                    "timestamp":null
+                }
+            ]
+        }"#.to_string()
 }
 
 pub fn proof_json() -> String {
@@ -598,6 +717,7 @@ pub fn proof_json() -> String {
                 "revealed_attrs":{
                     "attr1_referent":{"sub_proof_index":0,"raw":"Alex","encoded":"1139481716457488690172217916278103335"}
                 },
+                "revealed_attr_groups": {},
                 "self_attested_attrs":{},
                 "unrevealed_attrs":{},
                 "predicates":{}
@@ -614,7 +734,6 @@ pub fn proof_json() -> String {
 }
 
 pub fn proof_json_restrictions() -> String {
-
     r#"{
         "proof":{
             "proofs":[
@@ -691,7 +810,6 @@ pub fn proof_json_restrictions() -> String {
 }
 
 pub fn proof_request_restrictions() -> String {
-
     json!({
         "name":"proof_req_1",
         "nonce":"123432421212",
@@ -839,6 +957,15 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
                                                     None,
                                                     Some(&default_cred_def_config())).unwrap();
 
+            //2.1 Issuer1 Creates GVT Subscheme (for "names" tests, IS-1381)
+            let (issuer1_gvt_sub_cred_def_id, issuer1_gvt_sub_credential_def_json) =
+                issuer_create_credential_definition(wallet_handle,
+                                                    ISSUER_DID,
+                                                    &gvt_sub_schema_json(),
+                                                    TAG_1,
+                                                    None,
+                                                    Some(&default_cred_def_config())).unwrap();
+
             //3. Issuer1 Creates XYZ CredentialDefinition
             let (issuer1_xyz_cred_deg_id, issuer1_xyz_credential_def_json) =
                 issuer_create_credential_definition(wallet_handle,
@@ -859,6 +986,9 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
 
             //5. Issuer1 Creates GVT CredentialOffer
             let issuer1_gvt_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_gvt_cred_deg_id).unwrap();
+
+            //5.1 Issuer1 Creates GVT sub CredentialOffer
+            let issuer1_gvt_sub_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_gvt_sub_cred_def_id).unwrap();
 
             //6. Issuer1 Creates XYZ CredentialOffer
             let issuer1_xyz_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_xyz_cred_deg_id).unwrap();
@@ -890,6 +1020,29 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
                                     &issuer1_gvt_credential_req_metadata,
                                     &issuer1_gvt_cred,
                                     &issuer1_gvt_credential_def_json,
+                                    None).unwrap();
+
+            // Issuer1 issues GVT SUB Credential
+            //9.1 Prover creates Credential Request
+            let (issuer1_gvt_sub_credential_req, issuer1_gvt_sub_credential_req_metadata) = prover_create_credential_req(wallet_handle,
+                                                                                                                         DID_MY1,
+                                                                                                                         &issuer1_gvt_sub_credential_offer,
+                                                                                                                         &issuer1_gvt_sub_credential_def_json,
+                                                                                                                         COMMON_MASTER_SECRET).unwrap();
+            //10.1 Issuer1 creates GVT Credential
+            let (issuer1_gvt_sub_cred, _, _) = issuer_create_credential(wallet_handle,
+                                                                        &issuer1_gvt_sub_credential_offer,
+                                                                        &issuer1_gvt_sub_credential_req,
+                                                                        &gvt_sub_credential_values_json(),
+                                                                        None,
+                                                                        None).unwrap();
+
+            //11. Prover stores Credential
+            prover_store_credential(wallet_handle,
+                                    CREDENTIAL1_SUB_ID,
+                                    &issuer1_gvt_sub_credential_req_metadata,
+                                    &issuer1_gvt_sub_cred,
+                                    &issuer1_gvt_sub_credential_def_json,
                                     None).unwrap();
 
             // Issuer1 issue XYZ Credential

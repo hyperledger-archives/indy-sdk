@@ -360,16 +360,31 @@ impl Prover {
         for attr_info in req_attrs_for_credential {
             if attr_info.revealed {
                 let attribute = &proof_req.requested_attributes[&attr_info.attr_referent];
-                let attribute_values =
-                    self.get_credential_values_for_attribute(&credential.values.0, &attribute.name)
-                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", attribute.name)))?;
 
-                requested_proof.revealed_attrs.insert(attr_info.attr_referent,
-                                                      RevealedAttributeInfo {
-                                                          sub_proof_index,
-                                                          raw: attribute_values.raw,
-                                                          encoded: attribute_values.encoded,
-                                                      });
+                if let Some(name) = &attribute.name {
+                    let attribute_values =
+                        self.get_credential_values_for_attribute(&credential.values.0, &name)
+                            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", name)))?;
+
+                    requested_proof.revealed_attrs.insert(attr_info.attr_referent.clone(),
+                                                          RevealedAttributeInfo {
+                                                              sub_proof_index,
+                                                              raw: attribute_values.raw,
+                                                              encoded: attribute_values.encoded,
+                                                          });
+                } else if let Some(names) = &attribute.names {
+                    let mut attribute_values_vec = vec![];
+                    for name in names {
+                        let attr_value = self.get_credential_values_for_attribute(&credential.values.0, &name)
+                            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", name)))?;
+                        attribute_values_vec.push(RevealedAttributeInfo {
+                            sub_proof_index,
+                            raw: attr_value.raw,
+                            encoded: attr_value.encoded,
+                        })
+                    }
+                    requested_proof.revealed_attr_groups.insert(attr_info.attr_referent.clone(), attribute_values_vec);
+                }
             } else {
                 requested_proof.unrevealed_attrs.insert(attr_info.attr_referent, SubProofReferent { sub_proof_index });
             }
@@ -393,7 +408,13 @@ impl Prover {
 
         for attr in req_attrs_for_credential {
             if attr.revealed {
-                sub_proof_request_builder.add_revealed_attr(&attr_common_view(&attr.attr_info.name))?
+                if let Some(ref name) = &attr.attr_info.name {
+                    sub_proof_request_builder.add_revealed_attr(&attr_common_view(name))?
+                } else if let Some(ref names) = &attr.attr_info.names {
+                    for name in names {
+                        sub_proof_request_builder.add_revealed_attr(&attr_common_view(name))?
+                    }
+                }
             }
         }
 
@@ -413,13 +434,23 @@ impl Prover {
 
     pub fn extend_proof_request_restrictions(&self,
                                              version: &ProofRequestsVersion,
-                                             name: &str,
+                                             name: &Option<String>,
+                                             names: &Option<Vec<String>>,
                                              referent: &str,
                                              restrictions: &Option<Query>,
                                              extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<Query> {
-        let mut queries: Vec<Query> = vec![
-            Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
-        ];
+        info!("name: {:?}, names: {:?}", name, names);
+        let mut queries: Vec<Query> = if let Some(name) = name {
+            vec![
+                Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
+            ]
+        } else if let Some(names) = names {
+            names.iter().map(|name| {
+                Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
+            }).collect()
+        } else {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Proof Request attribute restriction should contain "name" or "names" param"#));
+        };
 
         if let Some(restrictions_) = restrictions {
             match version {
@@ -940,7 +971,8 @@ mod tests {
             let ps = Prover::new();
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &None,
                                                              &None).unwrap();

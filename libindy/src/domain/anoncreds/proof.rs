@@ -17,6 +17,7 @@ pub struct Proof {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RequestedProof {
     pub revealed_attrs: HashMap<String, RevealedAttributeInfo>,
+    pub revealed_attr_groups: HashMap<String, Vec<RevealedAttributeInfo>>,
     pub self_attested_attrs: HashMap<String, String>,
     pub unrevealed_attrs: HashMap<String, SubProofReferent>,
     pub predicates: HashMap<String, SubProofReferent>
@@ -26,6 +27,7 @@ impl Default for RequestedProof {
     fn default() -> Self {
         RequestedProof {
             revealed_attrs: HashMap::new(),
+            revealed_attr_groups: HashMap::new(),
             self_attested_attrs: HashMap::new(),
             unrevealed_attrs: HashMap::new(),
             predicates: HashMap::new(),
