@@ -964,6 +964,7 @@ mod tests {
         use super::*;
 
         const ATTR_NAME: &str = "name";
+        const ATTR_NAME_2: &str = "name_2";
         const ATTR_REFERENT: &str = "attr_1";
 
         fn _value(json: &str) -> serde_json::Value {
@@ -983,6 +984,25 @@ mod tests {
 
             let expected_query = Query::And(vec![
                 Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string())
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn build_query_works_for_name() {
+            let ps = Prover::new();
+
+            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                             &None,
+                                                             &Some(vec![ATTR_NAME.to_string(), ATTR_NAME_2.to_string()]),
+                                                             ATTR_REFERENT,
+                                                             &None,
+                                                             &None).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
+                Query::Eq("attr::name_2::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string())
             ]);
 
             assert_eq!(expected_query, query);

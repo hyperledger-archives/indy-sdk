@@ -112,7 +112,7 @@ mod high_cases {
             println!("!!!!\n{}", credentials);
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
-            assert_eq!(credentials.len(), 3);
+            assert_eq!(credentials.len(), 4);
             assert!(credentials.contains(&anoncreds::issuer_1_gvt_credential()));
             assert!(credentials.contains(&anoncreds::issuer_1_xyz_credential()));
             assert!(credentials.contains(&anoncreds::issuer_2_gvt_credential()));
@@ -290,12 +290,12 @@ mod high_cases {
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let (search_handle, count) = anoncreds::prover_search_credentials(wallet_handle, "{}").unwrap();
-            assert_eq!(count, 3);
+            assert_eq!(count, 4);
 
             let credentials = anoncreds::prover_fetch_credentials(search_handle, count).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
-            assert_eq!(credentials.len(), 3);
+            assert_eq!(credentials.len(), 4);
             assert!(credentials.contains(&anoncreds::issuer_1_gvt_credential()));
             assert!(credentials.contains(&anoncreds::issuer_1_xyz_credential()));
             assert!(credentials.contains(&anoncreds::issuer_2_gvt_credential()));

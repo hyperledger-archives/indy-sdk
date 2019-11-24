@@ -202,7 +202,7 @@ pub fn gvt_schema_id() -> String {
 }
 
 pub fn gvt_sub_schema_id() -> String {
-    SchemaId::new(&DidValue(ISSUER_DID.to_string()), GVT_SUB_SCHEMA_NAME, SCHEMA_VERSION).0
+    SchemaId::new(&DidValue(ISSUER_DID_2.to_string()), GVT_SUB_SCHEMA_NAME, SCHEMA_SUB_VERSION).0
 }
 
 pub fn gvt_schema_id_fully_qualified() -> String {
@@ -246,7 +246,7 @@ pub fn gvt_schema() -> SchemaV1 {
 pub fn gvt_sub_schema() -> SchemaV1 {
     SchemaV1 {
         id: SchemaId(gvt_sub_schema_id()),
-        version: SCHEMA_VERSION.to_string(),
+        version: SCHEMA_SUB_VERSION.to_string(),
         name: GVT_SUB_SCHEMA_NAME.to_string(),
         attr_names: serde_json::from_str::<HashSet<String>>(GVT_SUB_SCHEMA_ATTRIBUTES).unwrap().into(),
         seq_no: None,
@@ -753,6 +753,7 @@ pub fn proof_json_restrictions() -> String {
                 "attr3_referent":{"sub_proof_index":0,"raw":"partial","encoded":"51792877103171595686471452153480627530895"},
                 "attr4_referent":{"sub_proof_index":2,"raw":"male","encoded":"5944657099558967239210949258394887428692050081607692519917050011144233115103"}
             },
+            "revealed_attr_groups": {},
             "self_attested_attrs":{},
             "unrevealed_attrs":{},
             "predicates":{}
@@ -937,7 +938,7 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
             //2.1 Issuer1 Creates GVT Subscheme (for "names" tests, IS-1381)
             let (issuer1_gvt_sub_cred_def_id, issuer1_gvt_sub_credential_def_json) =
                 issuer_create_credential_definition(wallet_handle,
-                                                    ISSUER_DID,
+                                                    ISSUER_DID_SUB,
                                                     &gvt_sub_schema_json(),
                                                     TAG_1,
                                                     None,
