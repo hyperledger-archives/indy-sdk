@@ -181,7 +181,8 @@ impl Validatable for ProofRequest {
         }
 
         for (_, requested_attribute) in value.requested_attributes.iter() {
-            if (requested_attribute.name == None || requested_attribute.name == Some("".to_string())) && requested_attribute.names.is_none() {
+            if (requested_attribute.name == None || requested_attribute.name == Some("".to_string())) &&
+                (requested_attribute.names == None || requested_attribute.names == Some(vec![])) {
                 return Err(format!("Proof Request validation failed: there is empty requested attribute: {:?}", requested_attribute));
             }
             if let Some(ref restrictions) = requested_attribute.restrictions {
