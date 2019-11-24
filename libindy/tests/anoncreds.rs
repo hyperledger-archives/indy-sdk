@@ -2368,6 +2368,37 @@ mod high_cases {
         }
 
         #[test]
+        fn prover_search_credentials_for_proof_req_works_for_names() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let proof_req = json!({
+               "nonce":"123432421212",
+               "name":"proof_req_1",
+               "version":"0.1",
+               "requested_attributes": json!({
+                   "attr1_referent": json!({
+                       "names":["name", "sex"]
+                   })
+               }),
+               "requested_predicates": json!({ }),
+            }).to_string();
+
+            let search_handle = anoncreds::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, None).unwrap();
+
+            let credentials_json = anoncreds::prover_fetch_next_credentials_for_proof_req(
+                search_handle, "attr1_referent", 100).unwrap();
+
+            let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
+            assert_eq!(credentials.len(), 2);
+
+            anoncreds::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
         fn prover_search_credentials_for_proof_req_works_for_non_significant_predicate() {
             anoncreds::init_common_wallet();
 
@@ -4225,7 +4256,6 @@ mod medium_cases {
         #[test]
         fn prover_create_proof_works_for_no_name_or_names() {
             anoncreds::init_common_wallet();
-            indyrs::logger::set_default_logger(Some("trace")).unwrap();
 
             let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
@@ -4244,7 +4274,7 @@ mod medium_cases {
                                                      &anoncreds::schemas_for_proof(),
                                                      &anoncreds::cred_defs_for_proof(),
                                                      "{}");
-            println!("{:?}", res);
+
             assert_code!(ErrorCode::CommonInvalidStructure, res);
 
             wallet::close_wallet(wallet_handle).unwrap();
