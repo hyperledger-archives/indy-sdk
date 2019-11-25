@@ -50,7 +50,7 @@ pub struct RevealedAttributeInfo {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RevealedAttributeGroupInfo {
     pub sub_proof_index: u32,
-    pub values: HashMap<String, AttributeValue>,
+    pub values: HashMap<String /* attribute name */, AttributeValue>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
