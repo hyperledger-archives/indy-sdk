@@ -442,11 +442,8 @@ impl Prover {
                                              restrictions: &Option<Query>,
                                              extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<Query> {
         info!("name: {:?}, names: {:?}", name, names);
-        let mut queries: Vec<Query> = if let Some(name) = name {
-            vec![
-                Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
-            ]
-        } else if let Some(names) = names {
+
+        let mut queries: Vec<Query> = if let Some(names) = names.as_ref().or(name.as_ref().map(|s| vec![s.clone()]).as_ref()) {
             names.iter().map(|name| {
                 Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
             }).collect()

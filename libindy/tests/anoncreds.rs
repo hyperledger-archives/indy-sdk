@@ -2931,7 +2931,6 @@ mod high_cases {
 
     mod prover_create_proof_works {
         use super::*;
-        use std::collections::HashSet;
 
         #[test]
         fn prover_create_proof_works() {
@@ -2974,13 +2973,13 @@ mod high_cases {
                  "requested_predicates": {}
             }).to_string();
 
-            let proof = anoncreds::prover_create_proof(wallet_handle,
-                                                       &anoncreds::proof_request_attr_names(),
-                                                       &requested_credentials_json,
-                                                       COMMON_MASTER_SECRET,
-                                                       &anoncreds::schemas_for_proof(),
-                                                       &anoncreds::cred_defs_for_proof(),
-                                                       "{}").unwrap();
+            anoncreds::prover_create_proof(wallet_handle,
+                                           &anoncreds::proof_request_attr_names(),
+                                           &requested_credentials_json,
+                                           COMMON_MASTER_SECRET,
+                                           &anoncreds::schemas_for_proof(),
+                                           &anoncreds::cred_defs_for_proof(),
+                                           "{}").unwrap();
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
