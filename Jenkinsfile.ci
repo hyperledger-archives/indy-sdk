@@ -1,5 +1,7 @@
 #!groovy
 
+@Library('SovrinHelpers') _
+
 
 Ubuntu16 = "Ubuntu 16.04"
 Ubuntu18 = "Ubuntu 18.04"
@@ -18,8 +20,8 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 'android-test': { androidTesting() },
-                // 'macos-test'  : { macosTesting() },
-                // 'ios-test'    : { iosTesting() },
+                'macos-test'  : { macosTesting() },
+                'ios-test'    : { iosTesting() },
                 // 'centos-test' : { centosTesting() },
                 'windows-test': { windowsTesting() }
         ])
@@ -363,7 +365,7 @@ def centosTesting() {
 
 def linuxTesting(file, env_name, network_name, full_testing) {
     parallel([
-            failFast                                  : true,
+            failFast                                  : false,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
                     linuxLibindyBuild(file, env_name, network_name, full_testing)
@@ -415,6 +417,7 @@ def vcxTesting(file, env_name, network_name, full_testing) {
 
 def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     def poolInst
+    def libindy_tests_failed = false
     try {
         echo "${env_name} Test: Checkout csm"
         checkout scm
@@ -429,6 +432,15 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
                 cd libindy
                 cargo build --features "fatal_warnings sodium_static"
             '''
+
+            // TODO Should be removed. Debug output to collect env configuration for IS-1428. May be reverted as a whole commit.
+            echo "DBG >>>"
+            sh "ls /usr/include/"
+            sh "ls -la /usr/lib/x86_64-linux-gnu/lib[sc][sr][ly]*"
+            sh "cat libindy/target/debug/build/openssl-s*/output"
+            sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
+            sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
+            echo "DBG <<<"
         }
 
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
@@ -475,11 +487,26 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
         testEnv.inside("--network=${network_name}") {
             def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
 
-            sh """
+            test_res_ec = sh returnStatus: true, script: """
                 cd libindy
                 RUST_BACKTRACE=1 cargo test --no-run ${features_args}
                 RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test ${features_args}
             """
+
+            // TODO Should be removed. Debug output to collect env configuration for IS-1428. May be reverted as a whole commit.
+            echo "DBG >>>"
+            sh "ls /usr/include/"
+            sh "ls -la /usr/lib/x86_64-linux-gnu/lib[sc][sr][ly]*"
+            sh "cat libindy/target/debug/build/openssl-s*/output"
+            sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
+            sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
+            echo "DBG <<<"
+
+            libindy_tests_failed = (test_res_ec != 0)
+            if (libindy_tests_failed) {
+                // TODO Should be removed. Debug step to collect env configuration for IS-1428. May be reverted as a whole commit.
+                approval.check("default")
+            }
         }
 
         echo "${env_name} Libnullpay Test: Test"
@@ -493,7 +520,8 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     }
 
     finally {
-        closePool(env_name, network_name, poolInst)
+        closePool(env_name, network_name, poolInst, libindy_tests_failed)
+        libindyBuildFinished[env_name] = true
     }
 }
 
@@ -811,7 +839,7 @@ def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_v
     return poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 }
 
-def closePool(env_name, network_name, poolInst) {
+def closePool(env_name, network_name, poolInst, skip_clean_ws = false) {
     echo "${env_name} Test: Cleanup"
     try {
         echo "${env_name} Test: stop pool"
@@ -822,7 +850,10 @@ def closePool(env_name, network_name, poolInst) {
     finally {
         dockerClean(env_name, network_name)
     }
-    step([$class: 'WsCleanup'])
+    // TODO Should be removed. Debug step to collect env configuration for IS-1428. May be reverted as a whole commit.
+    if (!skip_clean_ws) {
+        step([$class: 'WsCleanup'])
+    }
 }
 
 def shell(command) {
