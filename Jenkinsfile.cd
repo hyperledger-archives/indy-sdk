@@ -49,8 +49,8 @@ def testing() {
                 'centos-test' : { centosTesting() },
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
-                // 'ios-test'    : { iosTesting() },
-                // 'macos-test'  : { macosTesting() }
+                'ios-test'    : { iosTesting() },
+                'macos-test'  : { macosTesting() }
         ])
     }
 }
@@ -63,8 +63,8 @@ def publishing() {
                 'ubuntu-files' : { ubuntuPublishing() },
                 'windows-files': { windowsPublishing() },
                 'android-files': { androidPublishing() },
-                // 'ios-files'    : { iosPublishing() },
-                // 'macos-files'  : { macOsPublishing() },
+                'ios-files'    : { iosPublishing() },
+                'macos-files'  : { macOsPublishing() },
         ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
