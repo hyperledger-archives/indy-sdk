@@ -687,7 +687,6 @@ mod tests {
                                   r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
         let proof_string = to_string(handle).unwrap();
-        println!("{}", proof_string);
         let s: Value = serde_json::from_str(&proof_string).unwrap();
         assert_eq!(s["version"], DEFAULT_SERIALIZE_VERSION);
         assert!(!proof_string.is_empty());
