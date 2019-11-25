@@ -56,7 +56,6 @@ proof = {
                 "sub_proof_index": 0, "raw": "Alex", "encoded": "1139481716457488690172217916278103335"
             }
         },
-        "revealed_attr_groups": {},
         "self_attested_attrs": {},
         "unrevealed_attrs": {},
         "predicates": {}

@@ -625,6 +625,22 @@ pub fn proof_request_attr_no_name_or_names() -> String {
         }).to_string()
 }
 
+pub fn proof_request_attr_both_name_and_names() -> String {
+    json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": {
+               "attr1_referent": {
+                    "name": "test",
+                    "names": ["test_1", "test_2"],
+                    "revealed": "true"
+               }
+           },
+           "requested_predicates": {},
+        }).to_string()
+}
+
 pub fn proof_request_attr_empty_names() -> String {
     json!({
            "nonce":"123432421212",

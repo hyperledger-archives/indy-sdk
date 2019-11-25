@@ -4280,6 +4280,33 @@ mod medium_cases {
         }
 
         #[test]
+        fn prover_create_proof_works_for_both_name_and_names() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let requested_credentials_json = json!({
+                 "self_attested_attributes": json!({}),
+                 "requested_attributes": json!({
+                    "attr1_referent": json!({ "cred_id": CREDENTIAL1_ID, "revealed":true })
+                 }),
+                 "requested_predicates": json!({})
+            }).to_string();
+
+            let res = anoncreds::prover_create_proof(wallet_handle,
+                                                     &anoncreds::proof_request_attr_both_name_and_names(),
+                                                     &requested_credentials_json,
+                                                     COMMON_MASTER_SECRET,
+                                                     &anoncreds::schemas_for_proof(),
+                                                     &anoncreds::cred_defs_for_proof(),
+                                                     "{}");
+
+            assert_code!(ErrorCode::CommonInvalidStructure, res);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
         fn prover_create_proof_works_for_empty_names() {
             anoncreds::init_common_wallet();
 
