@@ -18,7 +18,7 @@ pub struct Proof {
 pub struct RequestedProof {
     pub revealed_attrs: HashMap<String, RevealedAttributeInfo>,
     #[serde(skip_serializing_if="HashMap::is_empty")]
-    #[serde(default = "HashMap::new")]
+    #[serde(default)]
     pub revealed_attr_groups: HashMap<String, RevealedAttributeGroupInfo>,
     pub self_attested_attrs: HashMap<String, String>,
     pub unrevealed_attrs: HashMap<String, SubProofReferent>,
