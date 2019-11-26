@@ -13,6 +13,7 @@ use crate::services::anoncreds::helpers::*;
 use ursa::cl::{CredentialPublicKey, new_nonce, Nonce};
 use ursa::cl::verifier::Verifier as CryptoVerifier;
 use crate::utils::wql::Query;
+use regex::Regex;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Filter {
@@ -22,6 +23,10 @@ pub struct Filter {
     schema_version: String,
     issuer_did: String,
     cred_def_id: String,
+}
+
+lazy_static! {
+    static ref INTERNAL_TAG_MATCHER: Regex = Regex::new("^attr::([^:]+)::(value|marker)$").unwrap();
 }
 
 pub struct Verifier {}
@@ -414,10 +419,8 @@ impl Verifier {
                     return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Proof Request attribute restriction should contain "name" or "names" param"#));
                 };
 
-                for (name, value) in name_value_map.into_iter() {
-                    Verifier::_process_operator(&name, &query, &filter, value)
-                        .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{:?}\" attribute", &name)))?;
-                }
+                Verifier::_do_process_operator(&name_value_map, &query, &filter)
+                    .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{:?}\" attributes", &name_value_map)))?;
             }
         }
 
@@ -471,13 +474,21 @@ impl Verifier {
                          restriction_op: &Query,
                          filter: &Filter,
                          revealed_value: Option<&str>) -> IndyResult<()> {
+        let mut attr_value_map = HashMap::new();
+        attr_value_map.insert(attr.to_string(), revealed_value);
+        Verifier::_do_process_operator(&attr_value_map, restriction_op, filter)
+    }
+
+    fn _do_process_operator(attr_value_map: &HashMap<String, Option<&str>>,
+                            restriction_op: &Query,
+                            filter: &Filter) -> IndyResult<()> {
         match restriction_op {
             Query::Eq(ref tag_name, ref tag_value) => {
-                Verifier::_process_filter(attr, &tag_name, &tag_value, filter, revealed_value)
+                Verifier::_process_filter(attr_value_map, &tag_name, &tag_value, filter)
                     .map_err(|err| err.extend(format!("$eq operator validation failed for tag: \"{}\", value: \"{}\"", tag_name, tag_value)))
             }
             Query::Neq(ref tag_name, ref tag_value) => {
-                if Verifier::_process_filter(attr, &tag_name, &tag_value, filter, revealed_value).is_err() {
+                if Verifier::_process_filter(attr_value_map, &tag_name, &tag_value, filter).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
@@ -487,7 +498,7 @@ impl Verifier {
             Query::In(ref tag_name, ref tag_values) => {
                 let res = tag_values
                     .iter()
-                    .any(|val| Verifier::_process_filter(attr, &tag_name, &val, filter, revealed_value).is_ok());
+                    .any(|val| Verifier::_process_filter(attr_value_map, &tag_name, &val, filter).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -498,7 +509,7 @@ impl Verifier {
             Query::And(ref operators) => {
                 operators
                     .iter()
-                    .map(|op| Verifier::_process_operator(attr, op, filter, revealed_value))
+                    .map(|op| Verifier::_do_process_operator(attr_value_map, op, filter))
                     .collect::<IndyResult<Vec<()>>>()
                     .map(|_| ())
                     .map_err(|err| err.extend("$and operator validation failed."))
@@ -506,7 +517,7 @@ impl Verifier {
             Query::Or(ref operators) => {
                 let res = operators
                     .iter()
-                    .any(|op| Verifier::_process_operator(attr, op, filter, revealed_value).is_ok());
+                    .any(|op| Verifier::_do_process_operator(attr_value_map, op, filter).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -514,7 +525,7 @@ impl Verifier {
                 }
             }
             Query::Not(ref operator) => {
-                if Verifier::_process_operator(attr, &*operator, filter, revealed_value).is_err() {
+                if Verifier::_do_process_operator(attr_value_map, &*operator, filter).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected, "$not operator validation failed. All conditions were passed."))
@@ -524,11 +535,11 @@ impl Verifier {
         }
     }
 
-    fn _process_filter(attr: &str,
+    fn _process_filter(attr_value_map: &HashMap<String, Option<&str>>,
                        tag: &str,
                        tag_value: &str,
-                       filter: &Filter,
-                       revealed_value: Option<&str>) -> IndyResult<()> {
+                       filter: &Filter) -> IndyResult<()> {
+        trace!("_process_filter: attr_value_map: {:?}, tag: {}, tag_value: {}, filter: {:?}", attr_value_map, tag, tag_value, filter);
         match tag {
             tag_ @ "schema_id" => Verifier::_precess_filed(tag_, &filter.schema_id, tag_value),
             tag_ @ "schema_issuer_did" => Verifier::_precess_filed(tag_, &filter.schema_issuer_did, tag_value),
@@ -536,7 +547,7 @@ impl Verifier {
             tag_ @ "schema_version" => Verifier::_precess_filed(tag_, &filter.schema_version, tag_value),
             tag_ @ "cred_def_id" => Verifier::_precess_filed(tag_, &filter.cred_def_id, tag_value),
             tag_ @ "issuer_did" => Verifier::_precess_filed(tag_, &filter.issuer_did, tag_value),
-            x if Verifier::_is_attr_internal_tag(x, attr) => Verifier::_check_internal_tag_revealed_value(x, attr, tag_value, revealed_value),
+            x if Verifier::_is_attr_internal_tag(x, attr_value_map) => Verifier::_check_internal_tag_revealed_value(x, tag_value, attr_value_map),
             x if Verifier::_is_attr_operator(x) => Ok(()),
             _ => Err(err_msg(IndyErrorKind::InvalidStructure, "Unknown Filter Type"))
         }
@@ -550,13 +561,20 @@ impl Verifier {
         }
     }
 
-    fn _is_attr_internal_tag(key: &str, attr: &str) -> bool {
-        key == format!("attr::{}::value", attr) || key == format!("attr::{}::marker", attr)
+    fn _is_attr_internal_tag(key: &str, attr_value_map: &HashMap<String, Option<&str>>) -> bool {
+        INTERNAL_TAG_MATCHER.captures(key).map( |caps|
+            caps.get(1).map(|s| attr_value_map.contains_key(&s.as_str().to_string())).unwrap_or(false)
+        ).unwrap_or(false)
     }
 
-    fn _check_internal_tag_revealed_value(key: &str, attr: &str, tag_value: &str, revealed_value: Option<&str>) -> IndyResult<()> {
-        if let Some(revealed_value) = revealed_value {
-            if key == format!("attr::{}::value", attr) && revealed_value != tag_value {
+    fn _check_internal_tag_revealed_value(key: &str, tag_value: &str, attr_value_map: &HashMap<String, Option<&str>>) -> IndyResult<()> {
+        let attr_name = INTERNAL_TAG_MATCHER.captures(key)
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Attribute name became unparseable")))?
+            .get(1)
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("No name has been parsed")))?
+            .as_str();
+        if let Some(Some(revealed_value)) = attr_value_map.get(attr_name) {
+            if *revealed_value != tag_value {
                 return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
                                                format!("\"{}\" values are different: expected: \"{}\", actual: \"{}\"", key, tag_value, revealed_value)));
             }

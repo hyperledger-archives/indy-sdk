@@ -505,6 +505,39 @@ mod high_cases {
         }
 
         #[test]
+        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_names_with_restrictions() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let proof_req = json!({
+               "nonce":"123432421212",
+               "name":"proof_req_1",
+               "version":"0.1",
+               "requested_attributes": json!({
+                   "attr1_referent": json!({
+                       "names":["name", "sex"],
+                       "restrictions": {
+                            "attr::name::value": "Alex"
+                       }
+                   })
+               }),
+               "requested_predicates": json!({ }),
+            }).to_string();
+
+            let credentials_json = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+            println!("credentials_json:\n{}", credentials_json);
+
+            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+            assert_eq!(credentials.attrs.len(), 1);
+
+            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+            assert_eq!(credentials_for_attr_1.len(), 1);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_names() {
             anoncreds::init_common_wallet();
 
@@ -523,7 +556,6 @@ mod high_cases {
             }).to_string();
 
             let credentials_json = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-            println!("credentials_json:\n{}", credentials_json);
 
             let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
             assert_eq!(credentials.attrs.len(), 1);
@@ -2392,6 +2424,40 @@ mod high_cases {
 
             let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
             assert_eq!(credentials.len(), 2);
+
+            anoncreds::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn prover_search_credentials_for_proof_req_works_for_names_with_restrictions() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let proof_req = json!({
+               "nonce":"123432421212",
+               "name":"proof_req_1",
+               "version":"0.1",
+               "requested_attributes": json!({
+                   "attr1_referent": json!({
+                       "names":["name", "sex"],
+                       "restrictions": {
+                            "attr::name::value": "Alex"
+                       }
+                   })
+               }),
+               "requested_predicates": json!({ }),
+            }).to_string();
+
+            let search_handle = anoncreds::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, None).unwrap();
+
+            let credentials_json = anoncreds::prover_fetch_next_credentials_for_proof_req(
+                search_handle, "attr1_referent", 100).unwrap();
+
+            let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
+            assert_eq!(credentials.len(), 1);
 
             anoncreds::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
 
