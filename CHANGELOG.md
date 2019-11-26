@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.13.0 - 2019-11-XX
+* LibVCX Aries support:
+    * Now you can use old 
+    * Implemented Connection RFC (IS-1180)
+    * Implemented Credential Issuance RFC (IS-1393)
+    * Implemented Credential Presentation RFC (IS-1394)
+    * Integrated Connection Protocol into Dummy Cloud Agent (IS-1392)
+* Bugfixes:
+    * Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
+    * Fixed bool representation in Java wrapper (IS-1368)
+
 ## 1.12.0 - 2019-10-08
 * Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
     * general format of fully-qualified identifier is `<prefix>:<method>:<value>`.
