@@ -41,11 +41,6 @@ impl Request {
         self
     }
 
-    pub fn set_id(mut self, id: MessageId) -> Request {
-        self.id = id;
-        self
-    }
-
     pub fn set_label(mut self, label: String) -> Request {
         self.label = label;
         self
@@ -75,13 +70,9 @@ pub mod tests {
         String::from("VsKV7grR1BUE29mG2Fm2kX")
     }
 
-    fn _id() -> MessageId {
-        MessageId(String::from("testid"))
-    }
-
     pub fn _request() -> Request {
         Request {
-            id: _id(),
+            id: MessageId::id(),
             label: _label(),
             connection: ConnectionData {
                 did: _did(),
@@ -93,7 +84,6 @@ pub mod tests {
     #[test]
     fn test_request_build_works() {
         let request: Request = Request::default()
-            .set_id(_id())
             .set_did(_did())
             .set_label(_label())
             .set_service_endpoint(_service_endpoint())

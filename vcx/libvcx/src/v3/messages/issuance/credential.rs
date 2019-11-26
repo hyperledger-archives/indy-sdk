@@ -1,10 +1,5 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
-use v3::messages::attachment::{
-    Attachments,
-    Attachment,
-    Json,
-    AttachmentEncoding
-};
+use v3::messages::attachment::{Attachments, AttachmentEncoding};
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
 use issuer_credential::CredentialMessage;
@@ -39,13 +34,12 @@ impl Credential {
     }
 
     pub fn set_credential(mut self, credential: String) -> VcxResult<Credential> {
-        let json: Json = Json::new(::serde_json::Value::String(credential), AttachmentEncoding::Base64)?;
-        self.credentials_attach.add(Attachment::JSON(json));
+        self.credentials_attach.add_json_attachment(::serde_json::Value::String(credential), AttachmentEncoding::Base64)?;
         Ok(self)
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Self {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -59,7 +53,7 @@ impl TryInto<Credential> for CredentialMessage {
 
     fn try_into(self) -> Result<Credential, Self::Error> {
         Credential::create()
-            .set_thread(Thread::new().set_thid(self.claim_offer_id))
+            .set_thread_id(self.claim_offer_id)
             .set_credential(self.libindy_cred)
     }
 }
@@ -84,5 +78,45 @@ impl TryInto<CredentialMessage> for Credential {
             cred_def_id: indy_credential["cred_def_id"].as_str().map(String::from).unwrap_or_default(),
             rev_reg_def_json: String::new(),
         })
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use v3::messages::issuance::credential_offer::tests::{thread, thread_id};
+
+    fn _attachment() -> ::serde_json::Value {
+        json!({
+            "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
+            "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG1",
+            "values":{"name":{"raw":"Name","encoded":"1139481716457488690172217916278103335"}}
+        })
+    }
+
+    fn _comment() -> String {
+        String::from("comment")
+    }
+
+    pub fn _credential() -> Credential {
+        let mut attachment = Attachments::new();
+        attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
+
+        Credential {
+            id: MessageId::id(),
+            comment: _comment(),
+            thread: thread(),
+            credentials_attach: attachment,
+        }
+    }
+
+    #[test]
+    fn test_credential_build_works() {
+        let credential: Credential = Credential::create()
+            .set_comment(_comment())
+            .set_thread_id(thread_id())
+            .set_credential(_attachment().to_string()).unwrap();
+
+        assert_eq!(_credential(), credential);
     }
 }

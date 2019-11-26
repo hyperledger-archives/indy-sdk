@@ -5,7 +5,8 @@ use time;
 
 use messages::thread::Thread;
 use v3::messages::connection::did_doc::*;
-use v3::messages::a2a::{A2AMessage, MessageType, MessageId, A2AMessageKinds};
+use v3::messages::a2a::{A2AMessage, MessageId, A2AMessageKinds};
+use v3::messages::a2a::message_type::MessageType;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Response {
@@ -48,11 +49,6 @@ impl Response {
         Response::default()
     }
 
-    pub fn set_id(mut self, id: MessageId) -> Response {
-        self.id = id;
-        self
-    }
-
     pub fn set_did(mut self, did: String) -> Response {
         self.connection.did = did.clone();
         self.connection.did_doc.set_id(did);
@@ -69,8 +65,8 @@ impl Response {
         self
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Response {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -164,17 +160,17 @@ pub mod tests {
         String::from("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW")
     }
 
-    fn _id() -> MessageId {
-        MessageId(String::from("testid"))
-    }
-
     pub fn _thread() -> Thread {
         Thread::new().set_thid(String::from("test_id"))
     }
 
+    pub fn _thread_id() -> String {
+        _thread().thid.unwrap()
+    }
+
     pub fn _response() -> Response {
         Response {
-            id: _id(),
+            id: MessageId::id(),
             thread: _thread(),
             connection: ConnectionData {
                 did: _did(),
@@ -183,9 +179,9 @@ pub mod tests {
         }
     }
 
-    fn _encoded_response() -> SignedResponse {
+    pub fn _signed_response() -> SignedResponse {
         SignedResponse {
-            id: _id(),
+            id: MessageId::id(),
             thread: _thread(),
             connection_sig: ConnectionSignature {
                 msg_type: MessageType::build(A2AMessageKinds::Ed25519Signature),
@@ -199,9 +195,8 @@ pub mod tests {
     #[test]
     fn test_response_build_works() {
         let response: Response = Response::default()
-            .set_id(_id())
             .set_did(_did())
-            .set_thread(_thread())
+            .set_thread_id(_thread_id())
             .set_service_endpoint(_service_endpoint())
             .set_keys(_recipient_keys(), _routing_keys());
 

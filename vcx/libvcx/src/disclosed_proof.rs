@@ -22,12 +22,21 @@ use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, R
 use utils::libindy::anoncreds;
 use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
 
-use v3::handlers::connection as v3_connection;
-use v3::handlers::proof_presentation::prover as v3_prover;
+use v3::handlers::proof_presentation::prover::prover::Prover;
+
 use std::convert::TryInto;
 
 lazy_static! {
-    static ref HANDLE_MAP: ObjectCache<DisclosedProof>  = Default::default();
+    static ref HANDLE_MAP: ObjectCache<DisclosedProofs>  = Default::default();
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "version", content = "data")]
+enum DisclosedProofs {
+    #[serde(rename = "1.0")]
+    V1(DisclosedProof),
+    #[serde(rename = "2.0")]
+    V3(Prover),
 }
 
 impl Default for DisclosedProof {
@@ -482,12 +491,14 @@ pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
         let proof_request_message: ProofRequestMessage = serde_json::from_str(proof_req)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize PresentationRequest: {}", err)))?;
 
-        return v3_prover::create_presentation(source_id, proof_request_message.try_into()?);
+        let new_proof = Prover::create(source_id, proof_request_message.try_into()?)?;
+        return HANDLE_MAP.add(DisclosedProofs::V3(new_proof));
     }
 
     // Received request of new format -- redirect to v3 folder
-    if let Ok(presentation_request) = serde_json::from_str::<::v3::messages::proof_presentation::presentation_request::PresentationRequest>(proof_req){
-        return v3_prover::create_presentation(source_id, presentation_request);
+    if let Ok(presentation_request) = serde_json::from_str::<::v3::messages::proof_presentation::presentation_request::PresentationRequest>(proof_req) {
+        let new_proof = Prover::create(source_id, presentation_request)?;
+        return HANDLE_MAP.add(DisclosedProofs::V3(new_proof));
     }
 
     trace!("create_proof >>> source_id: {}, proof_req: {}", source_id, proof_req);
@@ -502,113 +513,113 @@ pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
 
     new_proof.set_state(VcxStateType::VcxStateRequestReceived);
 
-    HANDLE_MAP.add(new_proof)
+    HANDLE_MAP.add(DisclosedProofs::V1(new_proof))
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
-    if v3_prover::PROVER_MAP.has_handle(handle) {
-        return v3_prover::get_state(handle);
-    }
-
     HANDLE_MAP.get(handle, |obj| {
-        Ok(obj.get_state())
-    }).map_err(handle_err)
+        match obj {
+            DisclosedProofs::V1(ref obj) => Ok(obj.get_state()),
+            DisclosedProofs::V3(ref obj) => Ok(obj.state())
+        }
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
 // update_state is just the same as get_state for disclosed_proof
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
-    if v3_prover::PROVER_MAP.has_handle(handle) {
-        return v3_prover::update_state(handle, message);
-    }
-
-    HANDLE_MAP.get(handle, |obj| {
-        Ok(obj.get_state())
+    HANDLE_MAP.get_mut(handle, |obj| {
+        match obj {
+            DisclosedProofs::V1(obj) => {
+                Ok(obj.get_state())
+            }
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.update_state(message.as_ref().map(String::as_str))?;
+                Ok(obj.state())
+            }
+        }
     })
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
-    if v3_prover::PROVER_MAP.has_handle(handle) {
-        return v3_prover::to_string(handle);
-    }
-
     HANDLE_MAP.get(handle, |obj| {
-        DisclosedProof::to_string(&obj)
+        serde_json::to_string(obj)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("cannot serialize DisclosedProof object: {:?}", err)))
     })
 }
 
 pub fn from_string(proof_data: &str) -> VcxResult<u32> {
-    if let Ok(derived_proof) = DisclosedProof::from_str(proof_data) {
-        HANDLE_MAP.add(derived_proof)
-    } else {
-        v3_prover::from_string(proof_data)
-    }
+    let proof: DisclosedProofs = serde_json::from_str(proof_data)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("cannot deserialize DisclosedProofs object: {:?}", err)))?;
+
+    HANDLE_MAP.add(proof)
 }
 
 pub fn release(handle: u32) -> VcxResult<()> {
-    if v3_prover::PROVER_MAP.has_handle(handle) {
-        return v3_prover::release(handle);
-    }
-
     HANDLE_MAP.release(handle).map_err(handle_err)
 }
 
 pub fn release_all() {
     HANDLE_MAP.drain().ok();
-    v3_prover::release_all();
 }
 
 pub fn generate_proof_msg(handle: u32) -> VcxResult<String> {
-    if v3_prover::PROVER_MAP.has_handle(handle) {
-        return v3_prover::generate_proof_msg(handle);
-    }
-
-    HANDLE_MAP.get_mut(handle, |obj| {
-        obj.generate_proof_msg()
+    HANDLE_MAP.get(handle, |obj| {
+        match obj {
+            DisclosedProofs::V1(ref obj) => obj.generate_proof_msg(),
+            DisclosedProofs::V3(ref obj) => obj.generate_presentation_msg()
+        }
     })
 }
 
 pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    if v3_prover::PROVER_MAP.has_handle(handle) {
-        return v3_prover::send_proof(handle, connection_handle);
-    }
-
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.send_proof(connection_handle)
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.send_proof(connection_handle)
+            }
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.send_presentation(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
     })
 }
 
 pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
-    if v3_prover::PROVER_MAP.has_handle(handle) {
-        return v3_prover::generate_presentation(handle, credentials, self_attested_attrs);
-    }
-
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.generate_proof(&credentials, &self_attested_attrs)
-    })
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.generate_proof(&credentials, &self_attested_attrs)
+            }
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.generate_presentation(credentials.clone(), self_attested_attrs.clone())?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    }).map(|_| error::SUCCESS.code_num)
 }
 
 pub fn retrieve_credentials(handle: u32) -> VcxResult<String> {
-    if v3_prover::PROVER_MAP.has_handle(handle) {
-        return v3_prover::retrieve_credentials(handle);
-    }
-
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.retrieve_credentials()
+        match obj {
+            DisclosedProofs::V1(ref obj) => obj.retrieve_credentials(),
+            DisclosedProofs::V3(ref obj) => obj.retrieve_credentials()
+        }
     })
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    HANDLE_MAP.has_handle(handle) || v3_prover::PROVER_MAP.has_handle(handle)
+    HANDLE_MAP.has_handle(handle)
 }
 
 //TODO one function with credential
 pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
-    if v3_connection::CONNECTION_MAP.has_handle(connection_handle) {
-        let presentation_request = v3_prover::get_presentation_request(connection_handle, msg_id)?;
+    if connection::is_v3_connection(connection_handle)? {
+        let presentation_request = Prover::get_presentation_request(connection_handle, msg_id)?;
         let proof_request: ProofRequestMessage = presentation_request.try_into()?;
 
         return serde_json::to_string_pretty(&proof_request)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize message: {}", err)))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize message: {}", err)));
     }
 
     trace!("get_proof_request >>> connection_handle: {}, msg_id: {}", connection_handle, msg_id);
@@ -639,8 +650,8 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
 
 //TODO one function with credential
 pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> VcxResult<String> {
-    if v3_connection::CONNECTION_MAP.has_handle(connection_handle) {
-        let presentation_requests = v3_prover::get_presentation_request_messages(connection_handle, match_name)?;
+    if connection::is_v3_connection(connection_handle)? {
+        let presentation_requests = Prover::get_presentation_request_messages(connection_handle, match_name)?;
 
         let msgs: Vec<ProofRequestMessage> = presentation_requests
             .into_iter()
@@ -700,13 +711,21 @@ fn _parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<ProofRe
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
-    if v3_prover::PROVER_MAP.has_handle(handle) {
-        return v3_prover::get_source_id(handle);
-    }
-
     HANDLE_MAP.get(handle, |obj| {
-        Ok(obj.get_source_id().clone())
+        match obj {
+            DisclosedProofs::V1(obj) => Ok(obj.get_source_id().clone()),
+            DisclosedProofs::V3(ref obj) => Ok(obj.get_source_id())
+        }
     }).map_err(handle_err)
+}
+
+pub fn get_presentation_status(handle: u32) -> VcxResult<u32> {
+    HANDLE_MAP.get(handle, |obj| {
+        match obj {
+            DisclosedProofs::V1(obj) => Err(VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle)),
+            DisclosedProofs::V3(ref obj) => Ok(obj.presentation_status())
+        }
+    })
 }
 
 #[cfg(test)]

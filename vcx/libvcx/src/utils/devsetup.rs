@@ -67,6 +67,40 @@ macro_rules! teardown {
     )
 }
 
+#[macro_export]
+macro_rules! assert_match {
+($pattern:pat, $var:expr) => (
+        assert!(match $var {
+            $pattern => true,
+            _ => false
+        })
+    );
+    ($pattern:pat, $var:expr, $val_in_pattern:ident, $exp_value:expr) => (
+        assert!(match $var {
+            $pattern => $val_in_pattern == $exp_value,
+            _ => false
+        })
+    );
+    ($pattern:pat, $var:expr, $val_in_pattern1:ident, $exp_value1:expr, $val_in_pattern2:ident, $exp_value2:expr) => (
+        assert!(match $var {
+            $pattern => $val_in_pattern1 == $exp_value1 && $val_in_pattern2 == $exp_value2,
+            _ => false
+        })
+    );
+}
+
+macro_rules! map(
+    { $($key:expr => $value:expr),+ } => {
+        {
+            let mut m = ::std::collections::HashMap::new();
+            $(
+                m.insert($key, $value);
+            )+
+            m
+        }
+     };
+);
+
 #[cfg(test)]
 pub mod tests {
     extern crate rand;

@@ -25,18 +25,13 @@ impl Ack {
         Ack::default()
     }
 
-    pub fn set_id(mut self, id: MessageId) -> Ack {
-        self.id = id;
-        self
-    }
-
     pub fn set_status(mut self, status: AckStatus) -> Ack {
         self.status = status;
         self
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Ack {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -60,13 +55,9 @@ pub mod tests {
     use super::*;
     use v3::messages::connection::response::tests::*;
 
-    fn _id() -> MessageId {
-        MessageId(String::from("testid"))
-    }
-
     pub fn _ack() -> Ack {
         Ack {
-            id: _id(),
+            id: MessageId::id(),
             status: AckStatus::Fail,
             thread: _thread(),
         }
@@ -75,9 +66,8 @@ pub mod tests {
     #[test]
     fn test_ack_build_works() {
         let ack: Ack = Ack::default()
-            .set_id(_id())
             .set_status(AckStatus::Fail)
-            .set_thread(_thread());
+            .set_thread_id(_thread_id());
 
         assert_eq!(_ack(), ack);
     }

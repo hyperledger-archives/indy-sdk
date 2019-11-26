@@ -1,4 +1,5 @@
-use v3::messages::a2a::{MessageType, A2AMessageKinds};
+use v3::messages::a2a::A2AMessageKinds;
+use v3::messages::a2a::message_type::MessageType;
 use v3::messages::mime_type::MimeType;
 use error::VcxResult;
 
@@ -44,4 +45,19 @@ pub struct CredentialValue {
     #[serde(rename = "mime-type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub _type: Option<MimeType>,
+}
+
+#[cfg(test)]
+pub mod test {
+    use v3::messages::ack;
+    use v3::messages::error;
+    use v3::messages::issuance::credential_offer::tests::_credential_offer;
+
+    pub fn _ack() -> ack::Ack {
+        ack::tests::_ack().set_thread_id(_credential_offer().id.clone().0)
+    }
+
+    pub fn _problem_report() -> error::ProblemReport {
+        error::tests::_problem_report().set_thread_id(_credential_offer().id.clone().0)
+    }
 }

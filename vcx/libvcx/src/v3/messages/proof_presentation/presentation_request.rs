@@ -1,10 +1,5 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
-use v3::messages::attachment::{
-    Attachments,
-    Attachment,
-    Json,
-    AttachmentEncoding
-};
+use v3::messages::attachment::{Attachments, AttachmentEncoding};
 use error::prelude::*;
 use std::convert::TryInto;
 
@@ -41,8 +36,7 @@ impl PresentationRequest {
     }
 
     pub fn set_request_presentations_attach(mut self, request_presentations: &PresentationRequestData) -> VcxResult<PresentationRequest> {
-        let json: Json = Json::new(json!(request_presentations), AttachmentEncoding::Base64)?;
-        self.request_presentations_attach.add(Attachment::JSON(json));
+        self.request_presentations_attach.add_json_attachment(json!(request_presentations), AttachmentEncoding::Base64)?;
         Ok(self)
     }
 
@@ -53,6 +47,16 @@ impl PresentationRequest {
     pub fn to_json(&self) -> VcxResult<String> {
         serde_json::to_string(self)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize PresentationRequest: {}", err)))
+    }
+}
+
+impl Default for PresentationRequest {
+    fn default() -> PresentationRequest {
+        PresentationRequest {
+            id: MessageId::new(),
+            comment: None,
+            request_presentations_attach: Attachments::new(),
+        }
     }
 }
 
@@ -87,3 +91,50 @@ impl TryInto<ProofRequestMessage> for PresentationRequest {
 }
 
 pub type PresentationRequestData = ProofRequestData;
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use messages::thread::Thread;
+
+    pub fn _presentation_request_data() -> PresentationRequestData {
+        PresentationRequestData::default()
+            .set_requested_attributes(json!([{"name": "name"}]).to_string()).unwrap()
+    }
+
+    fn _attachment() -> ::serde_json::Value {
+        json!(_presentation_request_data())
+    }
+
+    fn _comment() -> String {
+        String::from("comment")
+    }
+
+    pub fn thread_id() -> String {
+        _presentation_request().id.0
+    }
+
+    pub fn thread() -> Thread {
+        Thread::new().set_thid(_presentation_request().id.0)
+    }
+
+    pub fn _presentation_request() -> PresentationRequest {
+        let mut attachment = Attachments::new();
+        attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
+
+        PresentationRequest {
+            id: MessageId::id(),
+            comment: Some(_comment()),
+            request_presentations_attach: attachment,
+        }
+    }
+
+    #[test]
+    fn test_presentation_request_build_works() {
+        let presentation_request: PresentationRequest = PresentationRequest::default()
+            .set_comment(_comment())
+            .set_request_presentations_attach(&_presentation_request_data()).unwrap();
+
+        assert_eq!(_presentation_request(), presentation_request);
+    }
+}

@@ -1,5 +1,8 @@
-use std::u8;
-use messages::message_type::parse_message_type;
+pub mod message_family;
+pub mod message_type;
+
+use self::message_type::MessageType;
+use self::message_family::MessageFamilies;
 
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
@@ -9,12 +12,12 @@ use v3::messages::connection::request::Request;
 use v3::messages::connection::response::SignedResponse;
 use v3::messages::connection::problem_report::ProblemReport as ConnectionProblemReport;
 use v3::messages::connection::ping::Ping;
+use v3::messages::connection::ping_response::PingResponse;
 use v3::messages::forward::Forward;
 use v3::messages::error::ProblemReport as CommonProblemReport;
 use v3::messages::issuance::credential_proposal::CredentialProposal;
 use v3::messages::ack::Ack;
 
-use utils::uuid;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
 use v3::messages::issuance::credential::Credential;
@@ -34,6 +37,7 @@ pub enum A2AMessage {
     ConnectionResponse(SignedResponse),
     ConnectionProblemReport(ConnectionProblemReport),
     Ping(Ping),
+    PingResponse(PingResponse),
 
     /// notification
     Ack(Ack),
@@ -57,7 +61,11 @@ pub enum A2AMessage {
 impl<'de> Deserialize<'de> for A2AMessage {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
-        let message_type: MessageType = serde_json::from_value(value["@type"].clone()).map_err(de::Error::custom)?;
+
+        let message_type: MessageType = match serde_json::from_value(value["@type"].clone()) {
+            Ok(message_type) => message_type,
+            Err(_) => return Ok(A2AMessage::Generic(value.to_string()))
+        };
 
         match message_type.type_.as_str() {
             "forward" => {
@@ -83,6 +91,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
             "ping" => {
                 Ping::deserialize(value)
                     .map(|msg| A2AMessage::Ping(msg))
+                    .map_err(de::Error::custom)
+            }
+            "ping_response" => {
+                PingResponse::deserialize(value)
+                    .map(|msg| A2AMessage::PingResponse(msg))
                     .map_err(de::Error::custom)
             }
             "problem_report" => {
@@ -159,6 +172,7 @@ impl Serialize for A2AMessage {
             A2AMessage::ConnectionResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeResponse),
             A2AMessage::ConnectionProblemReport(msg) => set_a2a_message_type(msg, A2AMessageKinds::ExchangeProblemReport),
             A2AMessage::Ping(msg) => set_a2a_message_type(msg, A2AMessageKinds::Ping),
+            A2AMessage::PingResponse(msg) => set_a2a_message_type(msg, A2AMessageKinds::PingResponse),
             A2AMessage::Ack(msg) => set_a2a_message_type(msg, A2AMessageKinds::Ack),
             A2AMessage::CommonProblemReport(msg) => set_a2a_message_type(msg, A2AMessageKinds::ProblemReport),
             A2AMessage::CredentialProposal(msg) => set_a2a_message_type(msg, A2AMessageKinds::CredentialProposal),
@@ -168,9 +182,7 @@ impl Serialize for A2AMessage {
             A2AMessage::PresentationProposal(msg) => set_a2a_message_type(msg, A2AMessageKinds::PresentationProposal),
             A2AMessage::PresentationRequest(msg) => set_a2a_message_type(msg, A2AMessageKinds::PresentationRequest),
             A2AMessage::Presentation(msg) => set_a2a_message_type(msg, A2AMessageKinds::Presentation),
-            A2AMessage::Generic(msg) => {
-                ::serde_json::to_value(msg)
-            }
+            A2AMessage::Generic(msg) => ::serde_json::to_value(msg),
         }.map_err(ser::Error::custom)?;
 
         value.serialize(serializer)
@@ -186,6 +198,7 @@ pub enum A2AMessageKinds {
     ExchangeProblemReport,
     Ed25519Signature,
     Ping,
+    PingResponse,
     Ack,
     CredentialOffer,
     CredentialProposal,
@@ -208,6 +221,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::ExchangeResponse => MessageFamilies::DidExchange,
             A2AMessageKinds::ExchangeProblemReport => MessageFamilies::DidExchange,
             A2AMessageKinds::Ping => MessageFamilies::Notification,
+            A2AMessageKinds::PingResponse => MessageFamilies::Notification, // TODO: trust_ping Message family
             A2AMessageKinds::Ack => MessageFamilies::Notification,
             A2AMessageKinds::ProblemReport => MessageFamilies::ReportProblem,
             A2AMessageKinds::Ed25519Signature => MessageFamilies::Signature,
@@ -231,6 +245,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::ExchangeResponse => "response".to_string(),
             A2AMessageKinds::ExchangeProblemReport => "problem_report".to_string(),
             A2AMessageKinds::Ping => "ping".to_string(),
+            A2AMessageKinds::PingResponse => "ping_response".to_string(),
             A2AMessageKinds::Ack => "ack".to_string(),
             A2AMessageKinds::ProblemReport => "problem-report".to_string(),
             A2AMessageKinds::Ed25519Signature => "ed25519Sha512_single".to_string(),
@@ -243,117 +258,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::PresentationPreview => "presentation-preview".to_string(),
             A2AMessageKinds::PresentationRequest => "request-presentation".to_string(),
             A2AMessageKinds::Presentation => "presentation".to_string(),
-
         }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub enum MessageFamilies {
-    Routing,
-    DidExchange,
-    Notification,
-    Signature,
-    CredentialIssuance,
-    ReportProblem,
-    PresentProof,
-    TrustPing,
-    Unknown(String)
-}
-
-impl MessageFamilies {
-    pub fn version(&self) -> &'static str {
-        match self {
-            MessageFamilies::Routing => "1.0",
-            MessageFamilies::DidExchange => "1.0",
-            MessageFamilies::Notification => "1.0",
-            MessageFamilies::Signature => "1.0",
-            MessageFamilies::CredentialIssuance => "1.0",
-            MessageFamilies::ReportProblem => "1.0",
-            MessageFamilies::PresentProof => "1.0",
-            MessageFamilies::TrustPing => "1.0",
-            MessageFamilies::Unknown(_) => "1.0"
-        }
-    }
-}
-
-impl From<String> for MessageFamilies {
-    fn from(family: String) -> Self {
-        match family.as_str() {
-            "routing" => MessageFamilies::Routing,
-            "connections" => MessageFamilies::DidExchange, // TODO: should be didexchange
-            "signature" => MessageFamilies::Signature,
-            "notification" => MessageFamilies::Notification,
-            "issue-credential" => MessageFamilies::CredentialIssuance,
-            "report-problem" => MessageFamilies::ReportProblem,
-            "present-proof" => MessageFamilies::PresentProof,
-            "trust_ping" => MessageFamilies::TrustPing,
-            family @ _ => MessageFamilies::Unknown(family.to_string())
-        }
-    }
-}
-
-impl ::std::string::ToString for MessageFamilies {
-    fn to_string(&self) -> String {
-        match self {
-            MessageFamilies::Routing => "routing".to_string(),
-            MessageFamilies::DidExchange => "connections".to_string(), // TODO: should be didexchange
-            MessageFamilies::Notification => "notification".to_string(),
-            MessageFamilies::Signature => "signature".to_string(),
-            MessageFamilies::CredentialIssuance => "issue-credential".to_string(),
-            MessageFamilies::ReportProblem => "report-problem".to_string(),
-            MessageFamilies::PresentProof => "present-proof".to_string(),
-            MessageFamilies::TrustPing => "trust_ping".to_string(),
-            MessageFamilies::Unknown(family) => family.to_string()
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct MessageType {
-    pub did: String,
-    pub family: MessageFamilies,
-    pub version: String,
-    pub type_: String,
-}
-
-impl MessageType {
-    const DID: &'static str = "did:sov:BzCbsNYhMrjHiqZDTUASHg";
-
-    pub fn build(kind: A2AMessageKinds) -> MessageType {
-        MessageType {
-            did: Self::DID.to_string(),
-            family: kind.family(),
-            version: kind.family().version().to_string(),
-            type_: kind.name(),
-        }
-    }
-}
-
-
-impl<'de> Deserialize<'de> for MessageType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-        let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
-
-        match value.as_str() {
-            Some(type_) => {
-                let (did, family, version, type_) = parse_message_type(type_).map_err(de::Error::custom)?;
-                Ok(MessageType {
-                    did,
-                    family: MessageFamilies::from(family),
-                    version,
-                    type_,
-                })
-            }
-            _ => Err(de::Error::custom("Unexpected @type field structure."))
-        }
-    }
-}
-
-impl Serialize for MessageType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let value = Value::String(format!("{};spec/{}/{}/{}", self.did, self.family.to_string(), self.version, self.type_));
-        value.serialize(serializer)
     }
 }
 
@@ -361,7 +266,19 @@ impl Serialize for MessageType {
 pub struct MessageId(pub String);
 
 impl MessageId {
+    #[cfg(test)]
+    pub fn id() -> MessageId {
+        MessageId(String::from("testid"))
+    }
+
+    #[cfg(test)]
     pub fn new() -> MessageId {
+        MessageId::id()
+    }
+
+    #[cfg(not(test))]
+    pub fn new() -> MessageId {
+        use utils::uuid;
         MessageId(uuid::uuid())
     }
 }

@@ -21,7 +21,6 @@ impl<T> Default for ObjectCache<T> {
 }
 
 impl<T> ObjectCache<T> {
-
     fn _lock_store(&self) -> VcxResult<MutexGuard<HashMap<u32, Mutex<T>>>> {
         match self.store.lock() {
             Ok(g) => Ok(g),
@@ -42,7 +41,6 @@ impl<T> ObjectCache<T> {
 
     pub fn get<F, R>(&self, handle: u32, closure: F) -> VcxResult<R>
         where F: Fn(&T) -> VcxResult<R> {
-
         let store = self._lock_store()?;
         match store.get(&handle) {
             Some(m) => match m.lock() {
@@ -55,7 +53,6 @@ impl<T> ObjectCache<T> {
 
     pub fn get_mut<F, R>(&self, handle: u32, closure: F) -> VcxResult<R>
         where F: Fn(&mut T) -> VcxResult<R> {
-
         let mut store = self._lock_store()?;
         match store.get_mut(&handle) {
             Some(m) => match m.lock() {
@@ -88,26 +85,6 @@ impl<T> ObjectCache<T> {
 
         match store.insert(handle, Mutex::new(obj)) {
             _ => Ok(()),
-        }
-    }
-
-    pub fn map<F>(&self, handle: u32, mut mapper: F) -> VcxResult<()>
-        where F: FnMut(T) -> VcxResult<T> {
-        let mut store = self._lock_store()?;
-        let obj: Option<Mutex<T>> = store.remove(&handle);
-        let result = match obj {
-            Some(m) => {
-                let obj = m.into_inner()
-                    .map_err(|_| VcxError::from_msg(VcxErrorKind::Common(10), "Can't obtain object"))?;
-                mapper(obj)
-            }
-            None => {
-                return Err(VcxError::from_msg(VcxErrorKind::InvalidHandle, format!("Object not found for handle: {}", handle)));
-            }
-        }?;
-        match store.insert(handle, Mutex::new(result)) {
-            None => Ok(()),
-            Some(_) => Err(VcxError::from_msg(VcxErrorKind::Common(10), "Unable to insert to map"))
         }
     }
 
@@ -152,7 +129,6 @@ mod tests {
         }).unwrap();
 
         assert_eq!("TEST", string);
-
     }
 
     fn mut_object_test() {
@@ -170,5 +146,4 @@ mod tests {
 
         assert_eq!("test", string);
     }
-
 }

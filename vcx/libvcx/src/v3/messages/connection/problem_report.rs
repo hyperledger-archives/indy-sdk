@@ -48,11 +48,6 @@ impl ProblemReport {
 }
 
 impl ProblemReport {
-    pub fn set_id(mut self, id: MessageId) -> ProblemReport {
-        self.id = id;
-        self
-    }
-
     pub fn set_problem_code(mut self, problem_code: ProblemCode) -> ProblemReport {
         self.problem_code = Some(problem_code);
         self
@@ -63,8 +58,8 @@ impl ProblemReport {
         self
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> ProblemReport {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -96,10 +91,6 @@ pub mod tests {
     use super::*;
     use v3::messages::connection::response::tests::*;
 
-    fn _id() -> MessageId {
-        MessageId(String::from("testid"))
-    }
-
     fn _problem_code() -> ProblemCode {
         ProblemCode::ResponseProcessingError
     }
@@ -108,9 +99,9 @@ pub mod tests {
         String::from("test explanation")
     }
 
-    fn _problem_report() -> ProblemReport {
+    pub fn _problem_report() -> ProblemReport {
         ProblemReport {
-            id:  _id(),
+            id: MessageId::id(),
             problem_code: Some(_problem_code()),
             explain: Some(_explain()),
             localization: None,
@@ -121,10 +112,9 @@ pub mod tests {
     #[test]
     fn test_problem_report_build_works() {
         let report: ProblemReport = ProblemReport::default()
-            .set_id(_id())
             .set_problem_code(_problem_code())
             .set_explain(_explain())
-            .set_thread(_thread());
+            .set_thread_id(_thread_id());
 
         assert_eq!(_problem_report(), report);
     }

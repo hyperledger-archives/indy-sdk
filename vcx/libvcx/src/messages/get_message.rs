@@ -274,7 +274,7 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn payload<'a>(&'a self) -> VcxResult<Vec<u8>>{
+    pub fn payload<'a>(&'a self) -> VcxResult<Vec<u8>> {
         match self.payload {
             Some(MessagePayload::V1(ref payload)) => Ok(to_u8(payload)),
             Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload).map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, err)),
@@ -286,20 +286,60 @@ impl Message {
         // TODO: must be Result
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
-            let payload = match payload {
+            let decrypted_payload = match payload {
                 MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
                     .map(|payload| Payloads::PayloadV1(payload)),
                 MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
                     .map(|payload| Payloads::PayloadV2(payload))
             };
 
-            new_message.decrypted_payload = match payload {
-                Ok(payload) => ::serde_json::to_string(&payload).ok(),
-                _ => ::serde_json::to_string(&json!(null)).ok()
+            if let Ok(decrypted_payload) = decrypted_payload {
+                new_message.decrypted_payload = ::serde_json::to_string(&decrypted_payload).ok();
+            } else if let Ok(decrypted_payload) = self._decrypt_v3_message(vk) {
+                new_message.decrypted_payload = ::serde_json::to_string(&json!(decrypted_payload)).ok()
+            } else {
+                new_message.decrypted_payload = ::serde_json::to_string(&json!(null)).ok();
             }
         }
         new_message.payload = None;
         new_message
+    }
+
+    fn _decrypt_v3_message(&self, vk: &str) -> VcxResult<::messages::payload::PayloadV1> {
+        use v3::messages::a2a::A2AMessage;
+        use v3::utils::encryption_envelope::EncryptionEnvelope;
+        use ::issuer_credential::{CredentialOffer, CredentialMessage};
+        use ::messages::payload::{PayloadTypes, PayloadV1, PayloadKinds};
+        use std::convert::TryInto;
+
+        let a2a_message = EncryptionEnvelope::open(vk, self.payload()?)?;
+
+        let (kind, msg) = match a2a_message {
+            A2AMessage::PresentationRequest(presentation_request) => {
+                let proof_req: ProofRequestMessage = presentation_request.try_into()?;
+
+                (PayloadKinds::ProofRequest, json!(&proof_req).to_string())
+            }
+            A2AMessage::CredentialOffer(offer) => {
+                let cred_offer: CredentialOffer = offer.try_into()?;
+
+                (PayloadKinds::CredOffer, json!(&cred_offer).to_string())
+            }
+            A2AMessage::Credential(credential) => {
+                let credential: CredentialMessage = credential.try_into()?;
+
+                (PayloadKinds::Cred, json!(&credential).to_string())
+            }
+            msg => {
+                let msg = json!(&msg).to_string();
+                (PayloadKinds::Other(String::from("aries")), msg)
+            }
+        };
+
+        Ok(PayloadV1 {
+            type_: PayloadTypes::build_v1(kind, "json"),
+            msg,
+        })
     }
 }
 
@@ -476,10 +516,12 @@ mod tests {
                                                                              1).unwrap();
         ::issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
-        let hello_uid = ::messages::send_message::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
+        let hello_uid = ::connection::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::tests::set_consumer();
         let all_messages = download_messages(None, None, None).unwrap();
+        println!("all_messages {:?}", all_messages);
+
         let pending = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
         assert_eq!(pending.len(), 1);
         assert!(pending[0].msgs[0].decrypted_payload.is_some());

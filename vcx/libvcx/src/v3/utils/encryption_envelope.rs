@@ -2,7 +2,7 @@ use utils::libindy::crypto;
 
 use error::prelude::*;
 use v3::messages::a2a::A2AMessage;
-use v3::messages::connection::remote_info::RemoteConnectionInfo;
+use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::forward::Forward;
 
 #[derive(Debug)]
@@ -11,32 +11,38 @@ pub struct EncryptionEnvelope(pub Vec<u8>);
 impl EncryptionEnvelope {
     pub fn create(message: &A2AMessage,
                   pw_verkey: &str,
-                  remote_connection_info: &RemoteConnectionInfo) -> VcxResult<EncryptionEnvelope> {
-        EncryptionEnvelope::encrypt_for_pairwise(message, pw_verkey, remote_connection_info)
-            .and_then(|message| EncryptionEnvelope::wrap_into_forward_messages(message, remote_connection_info))
+                  did_doc: &DidDoc) -> VcxResult<EncryptionEnvelope> {
+        trace!("EncryptionEnvelope::create >>> message: {:?}, pw_verkey: {:?}, did_doc: {:?}", message, pw_verkey, did_doc);
+
+        if ::settings::test_indy_mode_enabled() { return Ok(EncryptionEnvelope(vec![])); }
+
+        EncryptionEnvelope::encrypt_for_pairwise(message, pw_verkey, did_doc)
+            .and_then(|message| EncryptionEnvelope::wrap_into_forward_messages(message, did_doc))
             .map(|message| EncryptionEnvelope(message))
     }
 
     fn encrypt_for_pairwise(message: &A2AMessage,
                             pw_verkey: &str,
-                            remote_connection_info: &RemoteConnectionInfo) -> VcxResult<Vec<u8>> {
+                            did_doc: &DidDoc) -> VcxResult<Vec<u8>> {
         let message = match message {
             A2AMessage::Generic(message_) => message_.to_string(),
             message => json!(message).to_string()
         };
 
-        let receiver_keys = json!(remote_connection_info.recipient_keys).to_string();
+        let receiver_keys = json!(did_doc.recipient_keys()).to_string();
 
         crypto::pack_message(Some(&pw_verkey), &receiver_keys, message.as_bytes())
     }
 
     fn wrap_into_forward_messages(mut message: Vec<u8>,
-                                  remote_connection_info: &RemoteConnectionInfo) -> VcxResult<Vec<u8>> {
-        let mut to = remote_connection_info.recipient_keys.get(0)
-            .map(String::from)
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Recipient Key not found"))?;
+                                  did_doc: &DidDoc) -> VcxResult<Vec<u8>> {
+        let (recipient_keys, routing_keys) = did_doc.resolve_keys();
 
-        for routing_key in remote_connection_info.routing_keys.iter() {
+        let mut to = recipient_keys.get(0)
+            .map(String::from)
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConnectionHandle, format!("Recipient Key not found in DIDDoc: {:?}", did_doc)))?;
+
+        for routing_key in routing_keys.iter() {
             message = EncryptionEnvelope::wrap_into_forward(message, &to, &routing_key)?;
             to = routing_key.clone();
         }
@@ -65,8 +71,9 @@ impl EncryptionEnvelope {
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
 
         let message: A2AMessage = ::serde_json::from_str(&message)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))
-            .unwrap_or_else(|_|A2AMessage::Generic(message));
+            .map_err(|err| {
+                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err))
+            })?;
 
         Ok(message)
     }
@@ -80,56 +87,46 @@ pub mod tests {
     use utils::libindy::tests::test_setup;
     use utils::libindy::crypto::create_key;
 
+    fn _setup(){
+        ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE, "false");
+    }
+
     #[test]
     fn test_encryption_envelope_works_for_no_keys() {
+        _setup();
         let setup = test_setup::key();
-
-        let info = RemoteConnectionInfo {
-            label: _label(),
-            recipient_keys: vec![],
-            routing_keys: vec![],
-            service_endpoint: _service_endpoint(),
-        };
 
         let message = A2AMessage::Ack(_ack());
 
-        let res = EncryptionEnvelope::create(&message, &setup.key, &info);
+        let res = EncryptionEnvelope::create(&message, &setup.key, &DidDoc::default());
         assert_eq!(res.unwrap_err().kind(), VcxErrorKind::InvalidLibindyParam);
     }
 
     #[test]
     fn test_encryption_envelope_works_for_recipient_only() {
+        _setup();
         let setup = test_setup::key();
-
-        let info = RemoteConnectionInfo {
-            label: _label(),
-            recipient_keys: _recipient_keys(),
-            routing_keys: vec![],
-            service_endpoint: _service_endpoint(),
-        };
 
         let message = A2AMessage::Ack(_ack());
 
-        let envelope = EncryptionEnvelope::create(&message, &setup.key, &info).unwrap();
+        let envelope = EncryptionEnvelope::create(&message, &setup.key, &_did_doc_4()).unwrap();
         assert_eq!(message, EncryptionEnvelope::open(&_key_1(), envelope.0).unwrap());
     }
 
     #[test]
     fn test_encryption_envelope_works_for_routing_keys() {
+        _setup();
         let setup = test_setup::key();
         let key_1 = create_key().unwrap();
         let key_2 = create_key().unwrap();
 
-        let info = RemoteConnectionInfo {
-            label: _label(),
-            recipient_keys: _recipient_keys(),
-            routing_keys: vec![key_1.clone(), key_2.clone()],
-            service_endpoint: _service_endpoint(),
-        };
+        let mut did_doc = DidDoc::default();
+        did_doc.set_service_endpoint(_service_endpoint());
+        did_doc.set_keys(_recipient_keys(), vec![key_1.clone(), key_2.clone()]);
 
         let ack = A2AMessage::Ack(_ack());
 
-        let envelope = EncryptionEnvelope::create(&ack, &setup.key, &info).unwrap();
+        let envelope = EncryptionEnvelope::create(&ack, &setup.key, &did_doc).unwrap();
 
         let message_1 = EncryptionEnvelope::open(&key_1, envelope.0).unwrap();
 

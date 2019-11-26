@@ -11,36 +11,36 @@ use v3::messages::a2a::A2AMessage;
 pub enum CredentialIssuanceMessage {
     CredentialInit(u32),
     CredentialSend(),
-    CredentialProposal(CredentialProposal, u32),
-    CredentialOffer(CredentialOffer, u32),
+    CredentialProposal(CredentialProposal),
+    CredentialOffer(CredentialOffer),
     CredentialRequestSend(u32),
-    CredentialRequest(CredentialRequest, u32),
-    Credential(Credential, u32),
+    CredentialRequest(CredentialRequest),
+    Credential(Credential),
     Ack(Ack),
     ProblemReport(ProblemReport),
     Unknown
 }
 
-impl From<(&A2AMessage, u32)> for CredentialIssuanceMessage {
-    fn from((msg, handle): (&A2AMessage, u32)) -> Self {
+impl From<A2AMessage> for CredentialIssuanceMessage {
+    fn from(msg: A2AMessage) -> Self {
         match msg {
             A2AMessage::CredentialProposal(proposal) => {
-                CredentialIssuanceMessage::CredentialProposal(proposal.clone(), handle)
+                CredentialIssuanceMessage::CredentialProposal(proposal)
             },
             A2AMessage::CredentialOffer(offer) => {
-                CredentialIssuanceMessage::CredentialOffer(offer.clone(), handle)
+                CredentialIssuanceMessage::CredentialOffer(offer)
             },
             A2AMessage::CredentialRequest(request) => {
-                CredentialIssuanceMessage::CredentialRequest(request.clone(), handle)
+                CredentialIssuanceMessage::CredentialRequest(request)
             },
             A2AMessage::Credential(credential) => {
-                CredentialIssuanceMessage::Credential(credential.clone(), handle)
+                CredentialIssuanceMessage::Credential(credential)
             },
             A2AMessage::Ack(ack) => {
-                CredentialIssuanceMessage::Ack(ack.clone())
+                CredentialIssuanceMessage::Ack(ack)
             },
             A2AMessage::CommonProblemReport(report) => {
-                CredentialIssuanceMessage::ProblemReport(report.clone())
+                CredentialIssuanceMessage::ProblemReport(report)
             },
             _ => {
                 CredentialIssuanceMessage::Unknown

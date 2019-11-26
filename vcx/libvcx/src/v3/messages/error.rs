@@ -27,20 +27,7 @@ pub struct ProblemReport {
 
 impl ProblemReport {
     pub fn create() -> Self {
-        ProblemReport {
-            id: MessageId::new(),
-            thread: Thread::new(),
-            description: None,
-            who_retries: None,
-            tracking_uri: None,
-            escalation_uri: None,
-            fix_hint: None,
-            impact: None,
-            noticed_time: None,
-            location: None,
-            problem_items: None,
-            comment: None,
-        }
+        ProblemReport::default()
     }
 
     pub fn set_description(mut self, code: u32) -> Self {
@@ -56,8 +43,8 @@ impl ProblemReport {
         self
     }
 
-    pub fn set_thread(mut self, thread: Thread) -> Self {
-        self.thread = thread;
+    pub fn set_thread_id(mut self, id: String) -> Self {
+        self.thread.thid = Some(id);
         self
     }
 
@@ -99,4 +86,62 @@ pub enum Impact {
     Thread,
     #[serde(rename = "connection")]
     Connection
+}
+
+impl Default for ProblemReport {
+    fn default() -> ProblemReport {
+        ProblemReport {
+            id: MessageId::new(),
+            thread: Thread::new(),
+            description: None,
+            who_retries: None,
+            tracking_uri: None,
+            escalation_uri: None,
+            fix_hint: None,
+            impact: None,
+            noticed_time: None,
+            location: None,
+            problem_items: None,
+            comment: None,
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use v3::messages::connection::response::tests::*;
+
+    fn _code() -> u32 { 0 }
+
+    fn _comment() -> String {
+        String::from("test comment")
+    }
+
+    pub fn _problem_report() -> ProblemReport {
+        ProblemReport {
+            id: MessageId::id(),
+            thread: _thread(),
+            description: Some(Description { en: None, code: _code() }),
+            who_retries: None,
+            tracking_uri: None,
+            escalation_uri: None,
+            fix_hint: None,
+            impact: None,
+            noticed_time: None,
+            location: None,
+            problem_items: None,
+            comment: Some(_comment()),
+        }
+    }
+
+    #[test]
+    fn test_problem_report_build_works() {
+        let report: ProblemReport = ProblemReport::default()
+            .set_comment(_comment())
+            .set_thread_id(_thread_id())
+            .set_description(_code());
+
+        assert_eq!(_problem_report(), report);
+    }
 }
