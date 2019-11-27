@@ -107,9 +107,10 @@ pub static INVALID_REV_ENTRY: Error = Error{ code_num: 1092, message: "Unable to
 pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1093, message: "Invalid Credential Revocation timestamp"};
 pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1094, message: "Unknown Rejection of Schema Creation, refer to libindy documentation"};
 pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1095, message: "Failed to create Revocation Registration Definition"};
-pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1096, message: "Failed to decode attachment"};
-pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1097, message: "This type of attachment can not be used"};
-pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1098, message: "Unknown mime type"};
+/* EC 1096 - 1099 are reserved for proprietary forks of libVCX */
+pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1100, message: "Failed to decode attachment"};
+pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1101, message: "This type of attachment can not be used"};
+pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown mime type"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
