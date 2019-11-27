@@ -6,16 +6,16 @@ use std::ops::Deref;
 use utils::libindy::callback::{get_cb, build_string, build_buf};
 
 lazy_static! {
-    pub static ref CALLBACKS_U32: Mutex<HashMap<u32, Box<FnMut(u32) + Send>>> = Default::default();
-    pub static ref CALLBACKS_U32_U32: Mutex<HashMap<u32, Box<FnMut(u32, u32) + Send>>> = Default::default();
-    pub static ref CALLBACKS_U32_STR: Mutex<HashMap<u32, Box<FnMut(u32, Option<String>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_U32_U32_STR: Mutex<HashMap<u32, Box<FnMut(u32, u32, Option<String>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_U32_STR_STR: Mutex<HashMap <u32, Box<FnMut(u32, Option<String>, Option<String>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_U32_BOOL: Mutex<HashMap<u32, Box<FnMut(u32, bool) + Send>>> = Default::default();
-    pub static ref CALLBACKS_U32_BIN: Mutex<HashMap<u32, Box<FnMut(u32, Vec<u8>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_U32_OPTSTR_BIN: Mutex<HashMap<u32,Box<FnMut(u32, Option<String>, Vec<u8>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_U32_BIN_BIN: Mutex<HashMap<u32, Box<FnMut(u32, Vec<u8>, Vec<u8>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_U32_U32_STR_STR_STR: Mutex<HashMap<u32, Box<FnMut(u32, u32, Option<String>, Option<String>, Option<String>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32: Mutex<HashMap<u32, Box<dyn FnMut(u32) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_U32: Mutex<HashMap<u32, Box<dyn FnMut(u32, u32) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_STR: Mutex<HashMap<u32, Box<dyn FnMut(u32, Option<String>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_U32_STR: Mutex<HashMap<u32, Box<dyn FnMut(u32, u32, Option<String>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_STR_STR: Mutex<HashMap <u32, Box<dyn FnMut(u32, Option<String>, Option<String>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_BOOL: Mutex<HashMap<u32, Box<dyn FnMut(u32, bool) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_BIN: Mutex<HashMap<u32, Box<dyn FnMut(u32, Vec<u8>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_OPTSTR_BIN: Mutex<HashMap<u32,Box<dyn FnMut(u32, Option<String>, Vec<u8>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_BIN_BIN: Mutex<HashMap<u32, Box<dyn FnMut(u32, Vec<u8>, Vec<u8>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_U32_U32_STR_STR_STR: Mutex<HashMap<u32, Box<dyn FnMut(u32, u32, Option<String>, Option<String>, Option<String>) + Send>>> = Default::default();
 }
 
 pub extern "C" fn call_cb_u32(command_handle: u32, arg1: u32) {
@@ -122,10 +122,10 @@ mod tests {
 
     #[test]
     fn test_get_cb(){
-        let mutex_map: Mutex<HashMap<u32, Box<FnMut(u32) + Send>>> = Default::default();
+        let mutex_map: Mutex<HashMap<u32, Box<dyn FnMut(u32) + Send>>> = Default::default();
         assert!(get_cb(2123, &mutex_map).is_none());
 
-        let closure: Box<FnMut(u32) + Send> = Box::new(move |err | {
+        let closure: Box<dyn FnMut(u32) + Send> = Box::new(move |err | {
 
         });
 

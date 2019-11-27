@@ -192,7 +192,7 @@ impl Credential {
         self.msg_uid = Some(response.get_msg_uid()?);
         self.state = VcxStateType::VcxStateOfferSent;
 
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     fn _check_msg(&mut self, message: Option<String>) -> VcxResult<()> {

@@ -11,7 +11,6 @@ RUN apt-get update && \
       cmake \
       python3-pip \
       debhelper \
-      devscripts \
       libncursesw5-dev \
       libzmq3-dev \
       libsodium-dev
@@ -43,7 +42,7 @@ RUN apt-get install -y wget
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.36.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.39.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 WORKDIR /home/indy

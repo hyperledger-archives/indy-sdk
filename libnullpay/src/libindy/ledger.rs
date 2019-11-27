@@ -9,7 +9,7 @@ pub fn build_get_txn_request(
     submitter_did: Option<&str>,
     ledger_type: Option<&str>,
     seq_no: i32,
-    cb: Box<FnMut(ErrorCode, String) + Send>,
+    cb: Box<dyn FnMut(ErrorCode, String) + Send>,
 ) -> ErrorCode {
     let (command_handle, cb) = callbacks::closure_to_cb_ec_string(cb);
     let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());

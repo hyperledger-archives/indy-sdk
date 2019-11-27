@@ -134,6 +134,7 @@ pub struct Config {
     pool_config: Option<String>,
     did_method: Option<String>,
     communication_method: Option<String>,
+    webhook_url: Option<String>,
 }
 
 
@@ -174,6 +175,9 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     }
     if let Some(communication_method) = &my_config.communication_method {
         settings::set_config_value(settings::COMMUNICATION_METHOD, communication_method);
+    }
+    if let Some(webhook_url) = &my_config.webhook_url {
+        settings::set_config_value(settings::CONFIG_WEBHOOK_URL, webhook_url);
     }
 
     wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str),
@@ -241,6 +245,9 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     }
     if let Some(_communication_method) = &my_config.communication_method {
         final_config["communication_method"] = json!(_communication_method);
+    }
+    if let Some(_webhook_url) = &my_config.webhook_url {
+        final_config["webhook_url"] = json!(_webhook_url);
     }
 
     wallet::close_wallet()?;

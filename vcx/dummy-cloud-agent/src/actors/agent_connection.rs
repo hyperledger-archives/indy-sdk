@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RemoteMsg, HandleAdminMessage, AdminRegisterAgentConnection};
+use actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RemoteMsg, HandleAdminMessage, AdminRegisterAgentConnection, requester};
 use actors::router::Router;
 use domain::a2a::*;
 use domain::a2connection::*;
@@ -22,6 +22,7 @@ use rmp_serde;
 use serde_json;
 use actors::admin::Admin;
 use domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
+use futures::future::ok;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -83,6 +84,17 @@ pub struct AgentConnection {
     admin: Addr<Admin>
 }
 
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MessageNotification {
+    msg_uid: String,
+    msg_type: RemoteMessageType,
+    their_pw_did: String,
+    msg_status_code: MessageStatusCode,
+    notification_id: String,
+    pw_did: String
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct AgentConnectionState {
     // Agent Key Delegation Proof
@@ -102,7 +114,6 @@ impl AgentConnection {
                   router: Addr<Router>,
                   admin: Addr<Admin>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::create >> {:?}", config);
-
         future::ok(())
             .and_then(move |_| {
                 let agent_connection = AgentConnection {
@@ -802,6 +813,39 @@ impl AgentConnection {
             .into_box()
     }
 
+    fn send_webhook_notification(&self, webhook_url: &str, msg_notification: MessageNotification) {
+        let notification_id = msg_notification.notification_id.clone();
+        let ser_msg_notification = serde_json::to_string(&msg_notification).unwrap();
+        debug!("Sending webhook notification {} to {} data", notification_id, webhook_url);
+        let send_notification = requester::REQWEST_CLIENT
+            .post(webhook_url)
+            .header("Accepts", "application/json")
+            .header("Content-type", "application/json")
+            .body(ser_msg_notification)
+            .send()
+            .map_err(move |error| {
+                error!("Problem sending webhook notification. NotificationId {} {:?}",
+                       notification_id, error);
+            })
+            .and_then(move |res| {
+                if let Err(res_err) = res.error_for_status_ref() {
+                    error!("Error code returned from webhook url. NotificationId {} {:?}",
+                           msg_notification.notification_id, res_err);
+                };
+                ok(())
+            });
+
+        Arbiter::spawn_fn(move || { send_notification });
+    }
+
+    fn get_webhook_for_message(&self, sender_did: &str, status_code: MessageStatusCode) -> Option<&String> {
+        match status_code {
+            MessageStatusCode::Received => self.agent_configs.get("notificationWebhookUrl"),
+            MessageStatusCode::Accepted if (sender_did != self.user_pairwise_did) => self.agent_configs.get("notificationWebhookUrl"),
+            _ => None
+        }
+    }
+
     fn handle_forward_message(&mut self, msg: ForwardV3) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         let msg_ = ftry_act!(self, {serde_json::to_vec(&msg.msg)});
 
@@ -838,6 +882,20 @@ impl AgentConnection {
                                        sending_data,
                                        thread);
         self.state.messages.insert(msg.uid.to_string(), msg.clone());
+        match self.get_webhook_for_message(&msg.sender_did, msg.status_code.clone()) {
+            Some(webhook_url) => {
+                let msg_notification = MessageNotification {
+                    msg_uid: msg.uid.clone(),
+                    msg_type: msg._type.clone(),
+                    their_pw_did: msg.sender_did.clone(),
+                    msg_status_code: msg.status_code.clone(),
+                    pw_did: self.user_pairwise_did.clone(),
+                    notification_id: uuid::Uuid::new_v4().to_string(),
+                };
+                self.send_webhook_notification(webhook_url, msg_notification)
+            }
+            None => ()
+        }
         msg
     }
 

@@ -107,7 +107,7 @@ impl UpdateMessageStatusByConnectionsBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateMessageStatusByConnectionsResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateMessageStatusByConnectionsResponse"))
         }
     }
 }

@@ -197,7 +197,7 @@ pub fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Vcx
                         if timestamp > cached_rev_state.timestamp {
                             let new_cache = RevRegCache {
                                 rev_state: Some(RevState {
-                                    timestamp: timestamp,
+                                    timestamp,
                                     value: rev_state_json.clone()
                                 })
                             };
@@ -224,7 +224,7 @@ pub fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Vcx
 
                     let new_cache = RevRegCache {
                         rev_state: Some(RevState {
-                            timestamp: timestamp,
+                            timestamp,
                             value: rev_state_json.clone()
                         })
                     };
@@ -453,7 +453,7 @@ impl DisclosedProof {
             .map_err(|err| err.extend("Could not send proof"))?;
 
         self.state = VcxStateType::VcxStateAccepted;
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
@@ -1476,7 +1476,7 @@ mod tests {
             schema_id,
             cred_def_id,
             rev_reg_id: rev_reg_id.clone(),
-            cred_rev_id: cred_rev_id,
+            cred_rev_id,
             tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
             revocation_interval: None,
             timestamp: None,
@@ -1519,7 +1519,7 @@ mod tests {
             schema_id,
             cred_def_id,
             rev_reg_id: rev_reg_id.clone(),
-            cred_rev_id: cred_rev_id,
+            cred_rev_id,
             tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
             revocation_interval: None,
             timestamp: None,
@@ -1574,7 +1574,7 @@ mod tests {
             schema_id,
             cred_def_id,
             rev_reg_id: rev_reg_id.clone(),
-            cred_rev_id: cred_rev_id,
+            cred_rev_id,
             tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
             revocation_interval: Some(NonRevokedInterval { from: Some(cached_timestamp + 1), to: None }),
             timestamp: None,
@@ -1629,7 +1629,7 @@ mod tests {
             schema_id,
             cred_def_id,
             rev_reg_id: rev_reg_id.clone(),
-            cred_rev_id: cred_rev_id,
+            cred_rev_id,
             tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
             revocation_interval: Some(NonRevokedInterval { from: None, to: Some(cached_timestamp - 1) }),
             timestamp: None,

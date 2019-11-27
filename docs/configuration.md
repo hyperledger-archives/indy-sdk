@@ -129,6 +129,8 @@ More details about `env_logger` and its customization can be found [here](https:
 * `indy_set_logger` API function registers custom logger implementation. 
 Library user can provide a custom logger implementation by passing a set of handlers which will be called in correspondent cases.
 
+WARNING: You can only set the logger **once**. Call `indy_set_default_logger`, `indy_set_logger`, not both. Once it's been set, libindy won't let you change it.
+
 #### Error Handling
 
 Every Libindy API function returns an error code that indicates result status of function execution. 
@@ -223,3 +225,119 @@ An example of a batch script:
 
 #### Transaction Author Agreement
 See [document](./how-tos/transaction-author-agreement.md)
+
+## Vcx
+
+Libvcx library must be initialized with one of the functions:
+* `vcx_init_with_config` -  initializes with <configuration> passed as JSON string (wallet must be already created). 
+* `vcx_init` -  initializes with a path to the file containing <configuration> (wallet must be already created). 
+* `vcx_init_minimal` - initializes with the minimal <configuration> (wallet, pool must already be set with vcx_wallet_set_handle() and vcx_pool_set_handle()) and without any agency configuration.
+
+If the library works with an agency `vcx_agent_provision` function must be called before initialization.
+This function does: 
+* provisions an agent in the agency.
+* populates of configuration and wallet for this agent.
+The result of this function is <configuration> JSON which can be extended and used for initialization.
+
+Every library call after initialization will use this <configuration>. 
+An example of <configuration> file can be found [here](../vcx/libvcx/sample_config/config.json)
+
+To change <configuration> a user must call `vcx_shutdown` and then call initialization function again.
+
+### Configuration options
+The config json must match to the following format: `{"key": "value as string"}`. Note, that values are always strings. 
+It can accept multiple options that are listed below. 
+Almost all of them are optional and depend on the way you use Vcx (with agency or not).
+
+##### Common library related options
+* `payment_method` - name of used payment method which was registered by a plugin (plugin must be registered independently).
+
+* `threadpool_size` - size of thread pool used for command execution (8 by default). 
+
+* `protocol_version` - message protocol to use for agent to agency and agent to agent communication. 
+Can be one of:
+    * "1.0" - use bundled messages, auth/anon cryptography.
+    * "2.0" - use aries cross domain message format, pack/unpack functions. 
+    
+* `author_agreement` - accept and use transaction author agreement data containing the following fields:
+    * `acceptanceMechanismType` - (string) mechanism how user has accepted the TAA 
+        (must be one of the keys taken from GET_TRANSACTION_AUTHOR_AGREEMENT_AML response['result']['data']['aml'] map).
+    * `timeOfAcceptance` - (u64) UTC timestamp when user has accepted the TAA.
+    * `text` and `version` - (string) text and version of TAA.
+    * `taaDigest` - (string) sha256 hash calculated on concatenated strings: `version || text`.
+
+    NOTE that either pair `text` `version` or `taaDigest` must be used 
+    This TAA data will be appended for every write transaction sending to the ledger.
+
+    Example: 
+    ```
+    ... other config fields
+    ...
+    ...
+    "author_agreement": "{\"taaDigest\": \"string\", \"acceptanceMechanismType\":\"string\", \"timeOfAcceptance\": u64}” }",
+    ```
+
+* `did_method` - method name to use for fully qualified DIDs.
+
+##### User info options
+* `institution_did` - DID associated with institution.
+* `institution_verkey` - Verkey associated with institution.
+* `institution_name` - name associated with institution (it is used like a label for connection/credential offer/proof request). 
+* `institution_logo_url` - url containing institution logo.
+
+##### Pool related options
+* `pool_name` - name of the pool ledger configuration will be created.
+* `genesis_path` - path to the genesis transaction file to use fot pool creation.
+* `pool_config` - runtime pool configuration json (see `config` parameter of `indy_open_pool_ledger` function). 
+
+##### Wallet related options
+All these options are part of Indy wallet `config`/`credential` parameters.
+
+* `wallet_name` - name of the wallet to use. Note that wallet must be already created.
+* `wallet_key` - key or passphrase used for wallet creation.
+* `wallet_key_derivation` - key derivation method.
+* `wallet_type` - type of the wallet (default Libindy or some plugged one).
+* `storage_config` - an addition configuration related to the wallet storage.
+* `storage_credentials` - storage configuration json.
+* `backup_key` - key or passphrase used for wallet import.
+* `exported_wallet_path` - key or passphrase used for wallet export.
+* `wallet_handle` - handle to the already opened wallet to use.
+
+##### Agency related options
+* `agency_endpoint` - agency endpoint to connect.
+* `agency_did` - agency DID.
+* `agency_verkey` - agency Verkey.
+* `remote_to_sdk_did` - agent DID
+* `remote_to_sdk_verkey` - agent Verkey
+* `sdk_to_remote_did` - pairwise DID for agent
+* `sdk_to_remote_verkey` - pairwise Verkey for Agent
+
+### Logging
+libVCX provides two options for Logger initialization:
+
+* `vcx_set_default_logger` API function sets default logger implementation. 
+Rust `env_logger` is used as a default logging library.  This is a simple logger which writes to stdout (can be configured via `RUST_LOG` environment variable).
+More details about `env_logger` and its customization can be found [here](https://crates.io/crates/env_logger).
+
+* `vcx_set_logger` API function registers custom logger implementation. 
+Library user can provide a custom logger implementation by passing a set of handlers which will be called in correspondent cases.
+This function will also be used by `indy` and `plugins` for logging.
+
+WARNING: You can only set the logger **once**. Once it's been set, vcx won't let you change it.
+
+
+##### Wrappers
+* The Python wrapper uses default Python logging module. So, to enable logs you need just to configure its usual way. 
+ Note: there is an additional log level=0 that is equal to `trace` level. 
+
+    Example: `logging.basicConfig(level=logging.DEBUG)`
+* The Java wrapper uses slf4j as a facade for various logging frameworks, such as java.util.logging, logback and log4j.
+* The NodeJs provides to functions for logger initialization:
+  * setDefaultLogger ( pattern ) - turns on the default logger.
+  * setLogger ( logFn ) - sets a function to be called every time a log is emitted. Example:
+  
+    ```
+    indy.setLogger(function (level, target, message, modulePath, file, line) {
+      console.log('libindy said:', level, target, message, modulePath, file, line)
+    })
+    ```

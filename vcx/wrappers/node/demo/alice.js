@@ -6,8 +6,11 @@ import readlineSync from 'readline-sync'
 import sleepPromise from 'sleep-promise'
 import * as demoCommon from './common'
 import logger from './logger'
+import url from 'url'
+import isPortReachable from 'is-port-reachable';
 
 const utime = Math.floor(new Date() / 1000);
+const optionalWebhook =  "http://localhost:7209/notifications/alice"
 
 const provisionConfig = {
     'agency_url': 'http://localhost:8080',
@@ -40,6 +43,13 @@ async function run() {
         provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
     }
 
+    if (await isPortReachable(url.parse(optionalWebhook).port, {host: url.parse(optionalWebhook).hostname})) {
+        provisionConfig['webhook_url'] = optionalWebhook
+        logger.info(`Webhook server available! Will use webhook: ${optionalWebhook}`)
+    } else {
+        logger.info(`Webhook url will not be used`)
+    }
+
     logger.info("#8 Provision an agent and wallet, get back configuration details");
     let config = await demoCommon.provisionAgentInAgency(provisionConfig);
 
@@ -70,7 +80,7 @@ async function run() {
     logger.info("#16 Poll agency and accept credential offer from faber");
     let credential_state = await credential.getState();
     while (credential_state !== StateType.Accepted) {
-        sleepPromise(2000);
+        await sleepPromise(2000);
         await credential.updateState();
         credential_state = await credential.getState();
     }

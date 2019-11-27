@@ -84,9 +84,7 @@ impl DeleteConnectionBuilder {
 
         let response = httpclient::post_u8(&data)?;
 
-        let response = self.parse_response(&response)?;
-
-        Ok(response)
+        self.parse_response(&response)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
@@ -97,7 +95,7 @@ impl DeleteConnectionBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(res)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateConnectionResponse(res)) => Ok(()),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
         }
     }
 

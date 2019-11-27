@@ -11,7 +11,7 @@ extern crate android_logger;
 use std::io::Write;
 use self::env_logger::Builder as EnvLoggerBuilder;
 use self::log::{Level, LevelFilter, Metadata, Record};
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use self::libc::{c_char};
 use std::env;
 use std::ptr;
@@ -28,7 +28,7 @@ use error::prelude::*;
 use utils::libindy;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
-static LOGGER_INIT: Once = ONCE_INIT;
+static LOGGER_INIT: Once = Once::new();
 static mut CONTEXT: *const CVoid = ptr::null();
 static mut ENABLED_CB: Option<EnabledCB> = None;
 static mut LOG_CB: Option<LogCB> = None;
