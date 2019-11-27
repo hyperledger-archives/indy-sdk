@@ -1,6 +1,6 @@
 [package]
 name = "null-payment-method"
-version = "1.12.0"
+version = "1.13.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 build = "build.rs"
 
