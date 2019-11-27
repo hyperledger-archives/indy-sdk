@@ -72,7 +72,18 @@ pub fn build_sub_proof_request(attrs_for_credential: &[AttributeInfo],
     let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
 
     for attr in attrs_for_credential {
-        sub_proof_request_builder.add_revealed_attr(&attr_common_view(&attr.name))?
+        let names = if let Some(name) = &attr.name {
+            vec![name.clone()]
+        } else if let Some(names) = &attr.names {
+            names.to_owned()
+        } else {
+            error!(r#"Attr for credential restriction should contain "name" or "names" param. Current attr: {:?}"#, attr);
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Attr for credential restriction should contain "name" or "names" param."#));
+        };
+
+        for name in names {
+            sub_proof_request_builder.add_revealed_attr(&attr_common_view(&name))?
+        }
     }
 
     for predicate in predicates_for_credential {
