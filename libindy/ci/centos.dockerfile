@@ -22,7 +22,7 @@ RUN curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
 RUN yum -y install nodejs
 
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz && \
+    curl https://download.libsodium.org/libsodium/releases/old/unsupported/libsodium-1.0.14.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.14 && \
     ./configure && \
     make && \
