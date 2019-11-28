@@ -428,6 +428,21 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
 
         testEnv.inside {
             echo "${env_name} Libindy Test: Build"
+
+            // TODO Should be removed. Debug output to collect env configuration for IS-1428. May be reverted as a whole commit.
+            echo "DBG >>>"
+            sh "cat /etc/apt/sources.list"
+            sh "find libindy/"
+            sh "ls /usr/include/"
+            sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
+            sh "ls -la /usr/lib/x86_64-linux-gnu/lib[sc][sr][ly]*"
+            try {
+                sh "cat libindy/target/debug/build/openssl-s*/output"
+                sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
+            } catch (ignore) {
+            }
+            echo "DBG <<<"
+
             sh '''
                 cd libindy
                 cargo build --features "fatal_warnings sodium_static"
@@ -436,10 +451,10 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
             // TODO Should be removed. Debug output to collect env configuration for IS-1428. May be reverted as a whole commit.
             echo "DBG >>>"
             sh "ls /usr/include/"
+            sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
             sh "ls -la /usr/lib/x86_64-linux-gnu/lib[sc][sr][ly]*"
             sh "cat libindy/target/debug/build/openssl-s*/output"
             sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
-            sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
             echo "DBG <<<"
         }
 
@@ -520,7 +535,7 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     }
 
     finally {
-        closePool(env_name, network_name, poolInst, libindy_tests_failed)
+        closePool(env_name, network_name, poolInst)
         libindyBuildFinished[env_name] = true
     }
 }
