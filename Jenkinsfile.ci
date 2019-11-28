@@ -13,17 +13,17 @@ libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
 testing()
 
 def testing() {
-    stage('Static Analysis') {
-        staticValidation()
-    }
+//    stage('Static Analysis') {
+//        staticValidation()
+//    }
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'android-test': { androidTesting() },
-                'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                // 'centos-test' : { centosTesting() },
-                'windows-test': { windowsTesting() }
+//                'android-test': { androidTesting() },
+//                'macos-test'  : { macosTesting() },
+//                'ios-test'    : { iosTesting() },
+//                // 'centos-test' : { centosTesting() },
+//                'windows-test': { windowsTesting() }
         ])
     }
 }
@@ -371,28 +371,6 @@ def linuxTesting(file, env_name, network_name, full_testing) {
                     linuxLibindyBuild(file, env_name, network_name, full_testing)
                 }
             },
-            "${env_name} Test: test other components" : {
-                waitUntil {
-                    libindyBuildFinished[env_name]
-                }
-                def jobs = [
-                        "${env_name}-cli-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
-                        },
-                        "${env_name}-vcx-test": {
-                            vcxTesting(file, env_name, network_name, full_testing)
-                        }
-                ]
-                if (full_testing) {
-                    jobs["${env_name}wrappers-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxIndyWrappersTesting)
-                    }
-                    jobs["${env_name}-cloud-agent-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
-                    }
-                }
-                parallel(jobs)
-            },
     ])
 }
 
@@ -427,10 +405,23 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
         def testEnv = buildTestEnv(file, env_name)
 
         testEnv.inside {
+            // TODO Should be removed. Debug output to collect env configuration for IS-1428. May be reverted as a whole commit.
+            echo "DBG >>>"
+            try {
+                sh "cat /etc/apt/sources.list"
+                sh "find libindy/"
+                sh "ls /usr/include/"
+                sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
+                sh "ls -la /usr/lib/x86_64-linux-gnu/lib[sc][sr][ly]*"
+                sh "cat libindy/target/debug/build/openssl-s*/output"
+                sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
+            } catch (ignore) {
+            }
+            echo "DBG <<<"
             echo "${env_name} Libindy Test: Build"
             sh '''
                 cd libindy
-                cargo build --features "fatal_warnings sodium_static"
+                cargo build -p openssl --features "fatal_warnings sodium_static"
             '''
 
             // TODO Should be removed. Debug output to collect env configuration for IS-1428. May be reverted as a whole commit.
@@ -441,86 +432,11 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
             sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
             sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
             echo "DBG <<<"
-        }
-
-        sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
-        sh "cp libindy/target/debug/libindy.so wrappers/python"
-        sh "cp libindy/target/debug/libindy.so wrappers/nodejs"
-        sh "cp libindy/target/debug/libindy.so wrappers/rust"
-        sh "cp libindy/target/debug/libindy.so cli"
-        sh "cp libindy/target/debug/libindy.so libnullpay"
-        sh "cp libindy/target/debug/libindy.so vcx/libvcx"
-        sh "cp libindy/target/debug/libindy.so vcx/wrappers/node"
-        sh "cp libindy/target/debug/libindy.so vcx/wrappers/java"
-        sh "cp libindy/target/debug/libindy.so vcx/wrappers/python3"
-        sh "cp libindy/target/debug/libindy.so vcx/dummy-cloud-agent"
-
-        testEnv.inside {
-            echo "${env_name} Libnullpay Test: Build"
-            sh '''
-                cd libnullpay
-                LIBRARY_PATH=./ cargo build --features fatal_warnings
-            '''
-        }
-
-        sh "cp libnullpay/target/debug/libnullpay.so cli"
-        sh "cp libnullpay/target/debug/libnullpay.so vcx/libvcx"
-        sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/node"
-        sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/java"
-        sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/python3"
-
-        stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
-        stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
-        stash includes: 'wrappers/nodejs/libindy.so', name: "LibindyNodejsSO${env_name}"
-        stash includes: 'wrappers/rust/libindy.so', name: "LibindyRustSO${env_name}"
-        stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
-        stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
-        stash includes: 'vcx/libvcx/libindy.so,vcx/libvcx/libnullpay.so', name: "VCXLibindyAndLibnullpaySO${env_name}"
-        stash includes: 'vcx/wrappers/node/libindy.so,vcx/wrappers/node/libnullpay.so', name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
-        stash includes: 'vcx/wrappers/java/libindy.so,vcx/wrappers/java/libnullpay.so', name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
-        stash includes: 'vcx/wrappers/python3/libindy.so,vcx/wrappers/python3/libnullpay.so', name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
-        stash includes: 'vcx/dummy-cloud-agent/libindy.so', name: "LibindyCloudAgentSO${env_name}"
-
-        libindyBuildFinished[env_name] = true
-
-        echo "${env_name} Libindy Test: Test"
-        testEnv.inside("--network=${network_name}") {
-            def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
-
-            test_res_ec = sh returnStatus: true, script: """
-                cd libindy
-                RUST_BACKTRACE=1 cargo test --no-run ${features_args}
-                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test ${features_args}
-            """
-
-            // TODO Should be removed. Debug output to collect env configuration for IS-1428. May be reverted as a whole commit.
-            echo "DBG >>>"
-            sh "ls /usr/include/"
-            sh "ls -la /usr/lib/x86_64-linux-gnu/lib[sc][sr][ly]*"
-            sh "cat libindy/target/debug/build/openssl-s*/output"
-            sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
-            sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
-            echo "DBG <<<"
-
-            libindy_tests_failed = (test_res_ec != 0)
-            if (libindy_tests_failed) {
-                // TODO Should be removed. Debug step to collect env configuration for IS-1428. May be reverted as a whole commit.
-                approval.check("default")
-            }
-        }
-
-        echo "${env_name} Libnullpay Test: Test"
-        testEnv.inside("--network=${network_name}") {
-            sh '''
-                cd libnullpay
-                LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
-            '''
         }
     }
 
     finally {
-        closePool(env_name, network_name, poolInst, libindy_tests_failed)
+        closePool(env_name, network_name, poolInst)
         libindyBuildFinished[env_name] = true
     }
 }
