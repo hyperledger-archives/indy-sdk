@@ -437,9 +437,15 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
             sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
             sh "ls -la /usr/lib/x86_64-linux-gnu/lib[sc][sr][ly]*"
             try {
-                sh "cat libindy/target/debug/build/openssl-s*/output"
-                sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
+                sh "! ls libindy/target"
             } catch (ignore) {
+                echo "!!! WARN !!! target directory does not empty"
+                try {
+                    sh "cat libindy/target/debug/build/openssl-s*/output"
+                    sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
+                } catch (ignore1) {
+                }
+                sh "cd libindy && cargo clean"
             }
             echo "DBG <<<"
 
@@ -472,6 +478,14 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
 
         testEnv.inside {
             echo "${env_name} Libnullpay Test: Build"
+
+            try {
+                sh "! ls libnullpay/target"
+            } catch (ignore) {
+                echo "!!! WARN !!! target directory does not empty"
+                sh "cd libnullpay && cargo clean"
+            }
+
             sh '''
                 cd libnullpay
                 LIBRARY_PATH=./ cargo build --features fatal_warnings
@@ -554,6 +568,14 @@ def linuxVcxBuild(file, env_name, network_name) {
 
         echo "${env_name} Libvcx Test: Build"
         testEnv.inside {
+
+            try {
+                sh "! ls vcx/libvcx/target"
+            } catch (ignore) {
+                echo "!!! WARN !!! target directory does not empty"
+                sh "cd vcx/libvcx && cargo clean"
+            }
+
             sh '''
                 cd vcx/libvcx
                 LIBRARY_PATH=./ cargo build --features fatal_warnings
@@ -743,6 +765,14 @@ def linuxCLITesting(env_name, network_name, testEnv) {
 
     echo "${env_name} Indy Cli Test: tests"
     testEnv.inside("--network=${network_name}") {
+
+        try {
+            sh "! ls cli/target"
+        } catch (ignore) {
+            echo "!!! WARN !!! target directory does not empty"
+            sh "cd cli && cargo clean"
+        }
+
         sh '''
             cd cli
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --features fatal_warnings
@@ -771,6 +801,14 @@ def linuxCloudAgentTesting(env_name, network_name, testEnv) {
 
     echo "${env_name} Cloud Agent Test: tests"
     testEnv.inside {
+
+        try {
+            sh "! ls vcx/dummy-cloud-agent/target"
+        } catch (ignore) {
+            echo "!!! WARN !!! target directory does not empty"
+            sh "cd vcx/dummy-cloud-agent && cargo clean"
+        }
+
         sh '''
             cd vcx/dummy-cloud-agent
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run
