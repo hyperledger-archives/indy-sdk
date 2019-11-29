@@ -39,6 +39,7 @@ def staticValidation() {
 
 def runValdiationRust(dir) {
     node('ubuntu') {
+        cleanWs()
         checkout scm
         def testEnv
         if (dir == 'vcx/libvcx') {
@@ -59,6 +60,7 @@ def windowsTesting() {
         stage('Windows Test') {
             def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
             ws(ws_path) {
+                cleanWs()
                 try {
                     echo "Windows Test: Checkout scm"
                     checkout scm
@@ -203,6 +205,7 @@ def windowsTesting() {
 
 def macosTesting() {
     node('macos') {
+        cleanWs()
         stage('MacOS Test') {
             def pool_name = "indy_pool"
             try {
@@ -281,6 +284,7 @@ def iosTesting() {
     }
 
     node('macos') {
+        cleanWs()
         stage('iOS Test') {
             def pool_name = "indy_pool"
             try {
@@ -368,6 +372,7 @@ def linuxTesting(file, env_name, network_name, full_testing) {
             failFast                                  : false,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
+                    cleanWs()
                     linuxLibindyBuild(file, env_name, network_name, full_testing)
                 }
             },
@@ -401,6 +406,7 @@ def vcxTesting(file, env_name, network_name, full_testing) {
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
                 node('ubuntu') {
+                    cleanWs()
                     linuxVcxBuild(file, env_name, network_name)
                 }
             },
@@ -596,6 +602,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 
 def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
     node(node_label) {
+        cleanWs()
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
