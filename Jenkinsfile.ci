@@ -39,18 +39,22 @@ def staticValidation() {
 
 def runValdiationRust(dir) {
     node('ubuntu') {
-        cleanWs()
-        checkout scm
-        def testEnv
-        if (dir == 'vcx/libvcx') {
-            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
-        } else {
-            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
-        }
-        testEnv.inside {
-            //FIXME waiting on IS-823
-            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
-            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        try {
+            cleanWs()
+            checkout scm
+            def testEnv
+            if (dir == 'vcx/libvcx') {
+                testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
+            } else {
+                testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
+            }
+            testEnv.inside {
+                //FIXME waiting on IS-823
+                //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
+                sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+            }
+        } finally {
+            cleanWs()
         }
     }
 }
