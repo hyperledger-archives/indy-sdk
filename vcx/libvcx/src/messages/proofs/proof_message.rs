@@ -41,34 +41,38 @@ impl ProofMessage {
     }
 
     pub fn get_credential_info(&self) -> VcxResult<Vec<CredInfo>> {
-        let mut rtn = Vec::new();
-
-        let credentials: Value = serde_json::from_str(&self.libindy_proof)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
-
-        if let Value::Array(ref identifiers) = credentials["identifiers"] {
-            for identifier in identifiers {
-                if let (Some(schema_id), Some(cred_def_id)) = (identifier["schema_id"].as_str(),
-                                                               identifier["cred_def_id"].as_str()) {
-                    let rev_reg_id = identifier["rev_reg_id"]
-                        .as_str()
-                        .map(|x| x.to_string());
-
-                    let timestamp = identifier["timestamp"].as_u64();
-                    rtn.push(
-                        CredInfo {
-                            schema_id: schema_id.to_string(),
-                            cred_def_id: cred_def_id.to_string(),
-                            rev_reg_id,
-                            timestamp,
-                        }
-                    );
-                } else { return Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, "Cannot get identifiers")); }
-            }
-        }
-
-        Ok(rtn)
+        get_credential_info(&self.libindy_proof)
     }
+}
+
+pub fn get_credential_info(proof: &str) -> VcxResult<Vec<CredInfo>> {
+    let mut rtn = Vec::new();
+
+    let credentials: Value = serde_json::from_str(&proof)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
+
+    if let Value::Array(ref identifiers) = credentials["identifiers"] {
+        for identifier in identifiers {
+            if let (Some(schema_id), Some(cred_def_id)) = (identifier["schema_id"].as_str(),
+                                                           identifier["cred_def_id"].as_str()) {
+                let rev_reg_id = identifier["rev_reg_id"]
+                    .as_str()
+                    .map(|x| x.to_string());
+
+                let timestamp = identifier["timestamp"].as_u64();
+                rtn.push(
+                    CredInfo {
+                        schema_id: schema_id.to_string(),
+                        cred_def_id: cred_def_id.to_string(),
+                        rev_reg_id,
+                        timestamp,
+                    }
+                );
+            } else { return Err(VcxError::from_msg(VcxErrorKind::InvalidProofCredentialData, "Cannot get identifiers")); }
+        }
+    }
+
+    Ok(rtn)
 }
 
 #[cfg(test)]

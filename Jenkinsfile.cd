@@ -439,7 +439,8 @@ def linuxVcxBuild(file, env_name, network_name) {
             // TODO in Rust 1.39.0 there was a problem with test name before "--". Temporary put test name after it.
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "pool_tests agency_v2" -- tests::test_real_proof_for_protocol_type_v2 --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency_v2" -- tests::test_real_proof_for_protocol_type_v2 --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests aries" -- v3::test::aries_demo --exact
             '''
         }
     }

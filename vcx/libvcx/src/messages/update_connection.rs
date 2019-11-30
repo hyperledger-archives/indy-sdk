@@ -108,6 +108,16 @@ impl DeleteConnectionBuilder {
     }
 }
 
+pub fn send_delete_connection_message(pw_did: &str, pw_verkey: &str, agent_did: &str, agent_vk: &str) -> VcxResult<()> {
+    delete_connection()
+        .to(pw_did)?
+        .to_vk(pw_verkey)?
+        .agent_did(agent_did)?
+        .agent_vk(agent_vk)?
+        .send_secure()
+        .map_err(|err| err.extend("Cannot delete connection"))
+}
+
 //TODO Every GeneralMessage extension, duplicates code
 impl GeneralMessage for DeleteConnectionBuilder {
     type Msg = DeleteConnectionBuilder;
