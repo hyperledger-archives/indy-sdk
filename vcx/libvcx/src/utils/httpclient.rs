@@ -12,9 +12,11 @@ lazy_static! {
 
 //Todo: change this RC to a u32
 pub fn post_u8(body_content: &Vec<u8>) -> VcxResult<Vec<u8>> {
-    let endpoint = settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)?;
-    let url = format!("{}/agency/msg", endpoint);
+    let endpoint = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)?);
+    post_message(body_content, &endpoint)
+}
 
+pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
     if settings::test_agency_mode_enabled() {
         return Ok(NEXT_U8_RESPONSE.lock().unwrap().pop().unwrap_or(Vec::new()));
     }
@@ -29,7 +31,7 @@ pub fn post_u8(body_content: &Vec<u8>) -> VcxResult<Vec<u8>> {
     debug!("Posting encrypted bundle to: \"{}\"", url);
 
     let mut response =
-        client.post(&url)
+        client.post(url)
             .body(body_content.to_owned())
             .header(CONTENT_TYPE, "octet_stream")
             .send()

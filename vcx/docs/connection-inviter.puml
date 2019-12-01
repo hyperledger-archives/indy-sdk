@@ -1,0 +1,244 @@
+@startuml
+title DID Exchange Protocol
+
+participant "Alice" as Alice
+participant "Alice Agency" as AliceAgency
+participant "Alice Agent" as AliceAgent
+participant "Alice Pairwise Agent" as AlicePairwiseAgent
+participant "Bob" as Bob
+participant "Bob Agent" as BobAgent
+
+== Provisioning ==
+
+Alice -> AliceAgency: Provision Alice
+note left
+ Agency side:
+    We can keep the common workflow as is.
+    We still can create Pairwise Agents on the initiation of connection or
+            accepting an invitation but use it as a mediator only.
+    In the current state Pairwise Agents are already able
+        - collect incoming messages
+        - return collected messages
+        - update status of received messages
+
+ The key difference is that we will not use Agency anymore for sending messages to another connection side,
+        so we don't need to keep other side keys on the Agency.
+ Vcx will do the message preparation and sending itself.
+
+ There is a problem with message forwarding:
+    Now DIDs must be used as target (`to` filed) according to Cross-Domain Messaging HIPE.
+ This problem is reflected in the issue: https://github.com/hyperledger/aries-rfcs/issues/255.
+ Lovesh's suggestion sounds acceptable to us.
+
+ So, we need to change on Agency is making support of messages forwarding based on
+     Alice Verkey's (in addition to DID's based).
+ It should be easy to distinguish because fully-qualified DID's must be used for a new protocol version.
+end note
+
+AliceAgency -> AliceAgent: Provision Alice
+
+Bob -> BobAgent:
+note right
+ In this diagram, we assume that Bob uses different Aries, compatible Agent.
+ He has published DIDDoc which is resolvable by Bob DID.
+ Alice will send messages to Bob actor directly for simplification.
+end note
+
+== Invitation ==
+
+Alice -> Alice: initiate connection establishment
+note left
+`vcx_connection_create` -> create `Connection` state object
+`vcx_connection_connect` ->  create Alice Pairwise Agent on Agency,
+        prepares `invite` message containing Alice DIDDoc and send it.
+end note
+
+Alice -> AliceAgency: Create Alice Pairwise Agent
+AliceAgency -> AliceAgent: Create Alice Pairwise Agent
+AliceAgent -> AlicePairwiseAgent: Create Alice Pairwise Agent
+
+AlicePairwiseAgent -> Alice: Alice Pairwise Agent Verkey
+
+Alice -> Bob: Share plain `invitation` message with Bob.
+note left
+{
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/invitation",
+    "@id": "12345678900987654321",
+    "label": "Alice",
+    "recipientKeys": ["Alice Pairwise Verkey"],
+    "serviceEndpoint": "https://example.com/endpoint",
+    "routingKeys": ["Alice Agency Verkey", "Alice Pairwise Agent Verkey"]
+}
+end note
+
+== Connection Request ==
+
+Bob -> Bob: process `invite` message and create `connection_request`
+
+Bob -> AliceAgency: Send `encrypted_fwd_request` to `serviceEndpoint` taken from `invitation`
+note right
+encrypted_fwd_request = <pack(forward_message, "Alice Agency Verkey")>
+
+forward_message = {
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/routing/1.0/forward",
+  "to"   : "Alice Pairwise Agent Verkey",
+  "msg"  :  encrypted_forward_inner_message
+}
+end note
+
+AliceAgency -> AlicePairwiseAgent: forward `encrypted_forward_inner_message`
+
+AlicePairwiseAgent -> AlicePairwiseAgent:
+note right
+encrypted_forward_inner_message = <pack(forward_inner_message, "Alice Pairwise Agent Verkey")>
+
+forward_inner_message = {
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/routing/1.0/forward",
+  "to"   : "Alice Pairwise Verkey",
+  "msg"  :  encrypted_request
+}
+end note
+
+AlicePairwiseAgent -> AlicePairwiseAgent: stores `encrypted_request` in the queue.
+
+AlicePairwiseAgent <- Alice: `vcx_connection_update_state` all next steps are hidden in this call
+AlicePairwiseAgent <- Alice: get all messages {'status': 'Received'}
+AlicePairwiseAgent -> Alice: [ `encrypted_request` ]
+Alice -> Alice: decrypt and process `request`
+note left
+request = {
+  "@id": "5678876542345",
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/request",
+  "label": "Alice",
+  "connection": {
+    "did": "Bob Pairwise Verkey",
+  	"did_doc": {
+      "@context": "https://w3id.org/did/v1"
+      "id": "did:sov:1234abcd",
+      "publicKey": [
+        {"id": "Bob Pairwise Verkey", "type": "RsaVerificationKey2018",  "owner": "did:sov:1234abcd","publicKeyPem": "-----BEGIN PUBLIC X…"},
+        {"id": "Bob Agent Verkey", "type": "RsaVerificationKey2018",  "owner": "did:sov:1234abcd","publicKeyPem": "-----BEGIN PUBLIC A…"}
+      ],
+      "authentication": [
+        {"type": "RsaSignatureAuthentication2018", "publicKey": "did:sov:1234abcd#4"}
+      ],
+      "service": [
+        {
+          "id": "did:example:123456789abcdefghi;did-communication",
+          "type": "did-communication",
+          "priority" : 0,
+          "recipientKeys" : [ "Bob Pairwise Verkey" ],
+          "routingKeys" : [ "Bob Agent Verkey" ],
+          "serviceEndpoint" : "did:example:xd45fr567794lrzti67;did-communication"
+        }
+      ]
+    }
+  }
+}
+end note
+
+Alice -> AlicePairwiseAgent: update messages status
+
+== Connection Response ==
+
+Alice -> Alice
+note left
+Alice generates `connection_response` for Bob.
+end note
+
+Alice -> Bob: Send `encrypted_fwd_response` to `serviceEndpoint` taken from `connection_request`
+
+note left
+encrypted_fwd_response = <pack(forward_message, "Bob Agent Verkey")>
+
+forward_message = {
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/routing/1.0/forward",
+  "to"   : "Bob Pairwise Verkey",
+  "msg"  :  encrypted_connection_response
+}
+end note
+
+Bob -> Bob: decrypts `encrypted_connection_response`
+
+note right
+encrypted_connection_response = <pack(connection_response, "Bob Pairwise Verkey", "Alice Pairwise Verkey")>
+
+connection_response = {
+  "@id": "5678876542345",
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0/response",
+  "label": "Alice",
+  "connection": {
+    "did": "Alice Pairwise Verkey",
+  	"did_doc": {
+      "@context": "https://w3id.org/did/v1"
+      "@context": "https://w3id.org/did/v1"
+      "id": "did:sov:1234abcd",
+      "publicKey": [
+        {"id": "Alice Pairwise Verkey", "type": "RsaVerificationKey2018",  "owner": "did:sov:1234abcd","publicKeyPem": "-----BEGIN PUBLIC X…"},
+        {"id": "Alice Agency Verkey", "type": "RsaVerificationKey2018",  "owner": "did:sov:1234abcd","publicKeyPem": "-----BEGIN PUBLIC 9…"},
+        {"id": "Alice Agent Pairwise Verkey", "type": "RsaVerificationKey2018",  "owner": "did:sov:1234abcd","publicKeyPem": "-----BEGIN PUBLIC A…"}
+      ],
+      "authentication": [
+        {"type": "RsaSignatureAuthentication2018", "publicKey": "did:sov:1234abcd#4"}
+      ],
+      "service": [
+        {
+          "id": "did:example:123456789abcdefghi;did-communication",
+          "type": "did-communication",
+          "priority" : 0,
+          "recipientKeys" : [ "Alice Pairwise Verkey" ],
+          "routingKeys" : [ "Alice Agency Verkey", "Alice Pairwise Agent Verkey" ],
+          "serviceEndpoint" : "https://example.com/endpoint"
+        }
+      ]
+    }
+  }
+}
+end note
+
+== Ack ==
+
+Bob -> AliceAgency: sens `encrypted_fwd_response` for Alice
+note right
+encrypted_fwd_response = <pack(forward_message, "Alice Agency Verkey")>
+
+forward_message = {
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/routing/1.0/forward",
+  "to"   : "Alice Pairwise Agent Verkey",
+  "msg"  :  encrypted_forward_inner_message
+}
+end note
+
+AliceAgency -> AlicePairwiseAgent: forward `encrypted_forward_inner_message`
+
+AlicePairwiseAgent -> AlicePairwiseAgent:
+note right
+encrypted_forward_inner_message = <pack(forward_inner_message, "Alice Pairwise Agent Verkey")>
+
+forward_inner_message = {
+  "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/routing/1.0/forward",
+  "to"   : "Alice Pairwise Verkey",
+  "msg"  :  encrypted_ack
+}
+end note
+
+AlicePairwiseAgent -> AlicePairwiseAgent: stores `encrypted_ack` in the queue.
+
+AlicePairwiseAgent <- Alice: `vcx_connection_update_state` all next steps are hidden in this call
+AlicePairwiseAgent <- Alice: get all messages {'status': 'Received'}
+AlicePairwiseAgent -> Alice: [ `encrypted_ack` ]
+Alice -> Alice: decrypt and process `ack`
+note left
+encrypted_ack = <pack(ack, "Alice Pairwise Verkey", "Bob Pairwise Verkey")>
+
+ack = {
+    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/notification/1.0/ack",
+    "@id": "5678876542345",
+    "status": "OK",
+    "~thread": {
+        "thid": "<The Thread ID is the Message ID (@id) of the first message in the thread>"
+    },
+}
+end note
+
+@enduml

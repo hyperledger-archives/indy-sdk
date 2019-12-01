@@ -47,6 +47,7 @@ pub static CONFIG_PAYMENT_METHOD: &str = "payment_method";
 pub static CONFIG_TXN_AUTHOR_AGREEMENT: &str = "author_agreement";
 pub static CONFIG_POOL_CONFIG: &str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
+pub static COMMUNICATION_METHOD: &str = "communication_method"; // proprietary or aries
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -309,6 +310,13 @@ pub fn validate_payment_method() -> VcxResult<()> {
 pub fn get_payment_method() -> String {
     get_config_value(CONFIG_PAYMENT_METHOD).unwrap_or(DEFAULT_PAYMENT_METHOD.to_string())
 }
+
+pub fn get_communication_method() -> VcxResult<String> {
+    get_config_value(COMMUNICATION_METHOD)
+}
+
+pub const ARIES_COMMUNICATION_METHOD: &str = "aries";
+
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ProtocolTypes {

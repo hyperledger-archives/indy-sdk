@@ -24,10 +24,10 @@ pub struct UpdateMessageStatusByConnectionsResponse {
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
-struct UIDsByConn {
+pub struct UIDsByConn {
     #[serde(rename = "pairwiseDID")]
-    pairwise_did: String,
-    uids: Vec<String>,
+    pub pairwise_did: String,
+    pub uids: Vec<String>,
 }
 
 struct UpdateMessageStatusByConnectionsBuilder {
@@ -123,12 +123,14 @@ pub fn update_agency_messages(status_code: &str, msg_json: &str) -> VcxResult<()
     let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize UIDsByConn: {}", err)))?;
 
+    update_messages(status_code, uids_by_conns)
+}
+
+pub fn update_messages(status_code: MessageStatusCode, uids_by_conns: Vec<UIDsByConn>) -> VcxResult<()> {
     UpdateMessageStatusByConnectionsBuilder::create()
         .uids_by_conns(uids_by_conns)?
         .status_code(status_code)?
-        .send_secure()?;
-
-    Ok(())
+        .send_secure()
 }
 
 #[cfg(test)]
