@@ -14,6 +14,7 @@ from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State
 
+
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
 provisionConfig = {
@@ -23,11 +24,13 @@ provisionConfig = {
     'wallet_name': 'alice_wallet',
     'wallet_key': '123',
     'payment_method': 'null',
-    'enterprise_seed': '000000000000000000000000Trustee1'
+    'enterprise_seed': '000000000000000000000000Trustee1',
+    'protocol_type': '2.0',
+    'communication_method': 'aries'
 }
 
-async def main():
 
+async def main():
     payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
     payment_plugin.nullpay_init()
 
@@ -49,7 +52,11 @@ async def main():
     jdetails = json.loads(details)
     connection_to_faber = await Connection.create_with_details('faber', json.dumps(jdetails))
     await connection_to_faber.connect('{"use_public_did": true}')
-    await connection_to_faber.update_state()
+    connection_state = await connection_to_faber.update_state()
+    while connection_state != State.Accepted:
+        sleep(2)
+        await connection_to_faber.update_state()
+        connection_state = await connection_to_faber.get_state()
 
     print("#11 Wait for faber.py to issue a credential offer")
     sleep(10)
@@ -89,7 +96,16 @@ async def main():
     print("#26 Send the proof to faber")
     await proof.send_proof(connection_to_faber)
 
+    proof_state = await proof.get_state()
+    while proof_state != State.Accepted:
+        sleep(2)
+        await proof.update_state()
+        proof_state = await proof.get_state()
+
+    print("proof is verified!!")
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
+    sleep(1)

@@ -12,6 +12,7 @@ import org.hyperledger.indy.sdk.did.DidResults;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.ledger.LedgerResults;
 import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseResponseResult;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -70,9 +71,12 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 
 
 		// Trust Anchor writes a credential def to the ledger. He first get the schemadef and schemaid from the ledger
-		String schemaRequest = Ledger.buildGetSchemaRequest(didTrustAnchor, schemaId).get();
-		String schemResponse = Ledger.submitRequest(pool, schemaRequest).get();
-		ParseResponseResult schemaDefParseResult = Ledger.parseGetSchemaResponse(schemResponse).get();
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(didTrustAnchor, schemaId).get();
+		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, schemaResponse -> {
+			JSONObject getSchemaResponseObject = new JSONObject(schemaResponse);
+			return !getSchemaResponseObject.getJSONObject("result").isNull("seqNo");
+		});
+		ParseResponseResult schemaDefParseResult = Ledger.parseGetSchemaResponse(getSchemaResponse).get();
 		String schemaJson = schemaDefParseResult.getObjectJson();
 		String schemaDef = schemaJson.toString();
 

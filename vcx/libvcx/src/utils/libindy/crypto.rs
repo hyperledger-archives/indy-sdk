@@ -70,3 +70,9 @@ pub fn unpack_message(msg: &[u8]) -> VcxResult<Vec<u8>> {
         .wait()
         .map_err(map_rust_indy_sdk_error)
 }
+
+pub fn create_key() -> VcxResult<String> {
+    crypto::create_key(::utils::libindy::wallet::get_wallet_handle(), None)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
