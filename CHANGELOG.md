@@ -7,8 +7,8 @@
     * Implemented Credential Issuance RFC (IS-1393)
     * Implemented Credential Presentation RFC (IS-1394)
     * Integrated Connection Protocol into Dummy Cloud Agent (IS-1392)
+* Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
 * Bugfixes:
-    * Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
     * Fixed bool representation in Java wrapper (IS-1368)
 
 ## 1.12.0 - 2019-10-08

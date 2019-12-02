@@ -4,7 +4,7 @@ libvcx (0.5.0) unstable; urgency=medium
 
 ## 0.5.0
 * LibVCX Aries support:
-    * Now you can use old
+    * Now you can keep old code without doing any changes and use Aries protocols if you have not parsed any messages. If you need more information -- see the migration guide.
     * Implemented Connection RFC (IS-1180)
     * Implemented Credential Issuance RFC (IS-1393)
     * Implemented Credential Presentation RFC (IS-1394)
