@@ -11,6 +11,7 @@ RUN apt-get update && \
       cmake \
       python3-pip \
       debhelper \
+      devscripts \
       libncursesw5-dev \
       libzmq3-dev \
       libsodium-dev
