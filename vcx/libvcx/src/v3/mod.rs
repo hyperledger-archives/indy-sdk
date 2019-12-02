@@ -18,6 +18,8 @@ pub mod test {
     }
 
     pub mod setup {
+        use settings::{CONFIG_WALLET_KEY_DERIVATION, DEFAULT_WALLET_KEY};
+
         pub fn base_config() -> ::serde_json::Value {
             json!({
                 "agency_did":"VsKV7grR1BUE29mG2Fm2kX",
@@ -33,8 +35,9 @@ pub mod test {
                 "remote_to_sdk_verkey":"Bkd9WFmCydMCvLKL8x47qyQTN1nbyQ8rUK8JTsQRtLGE",
                 "sdk_to_remote_did":"Mi3bbeWQDVpQCmGFBqWeYa",
                 "sdk_to_remote_verkey":"CHcPnSn48wfrUhekmcFZAmx8NvhHCh72J73WToNiK9EX",
-                "wallet_key":"123",
+                "wallet_key":DEFAULT_WALLET_KEY,
                 "wallet_name":"test_wallet",
+                CONFIG_WALLET_KEY_DERIVATION:"RAW",
                 "communication_method":"aries",
             })
         }
