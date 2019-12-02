@@ -3,9 +3,7 @@ libindy (1.13.0) unstable; urgency=medium
 [ Hyperledger ]
 
 ## 1.13.0
-* Bugfix:
-    * Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
-    * Fixed bool representation in Java wrapper (IS-1368)
+* Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
 
 ## 1.12.0
 * Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:

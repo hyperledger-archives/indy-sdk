@@ -2,7 +2,6 @@
 
 ## 1.13.0 - 2019-11-XX
 * LibVCX Aries support:
-    * Now you can use old 
     * Implemented Connection RFC (IS-1180)
     * Implemented Credential Issuance RFC (IS-1393)
     * Implemented Credential Presentation RFC (IS-1394)
