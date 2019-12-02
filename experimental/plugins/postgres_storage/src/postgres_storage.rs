@@ -372,6 +372,7 @@ pub struct PostgresConfig {
     min_idle_time: Option<u32>,      // default 0
     connection_timeout: Option<u64>, // default 5
     wallet_scheme: Option<WalletScheme>,   // default DatabasePerWallet
+    database_name: Option<String>,   // default _WALLET_DB
 }
 
 impl PostgresConfig {
@@ -624,14 +625,39 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         }
 
         debug!("setting up the admin_postgres_url");
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str =
+            if config.database_name && config.database_name.len() {
+                config.database_name.as_str()
+            } else {
+                _WALLETS_DB
+            };
+        debug!("wallet_db_name: {:?}", wallet_db_name);
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
-        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
-
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+        debug!("postgres_url: {:?}", url);
         debug!("connecting to postgres, url_base: {:?}", url_base);
         let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
+        /*
         debug!("creating wallets DB");
         if let Err(error) = conn.execute(&_CREATE_WALLETS_DATABASE, &[]) {
+            if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
+                debug!("error creating database, Error: {}", error);
+                conn.finish()?;
+                return Err(WalletStorageError::IOError(format!("Error occurred while creating the database: {}", error)))
+            } else {
+                // if database already exists, assume tables are created already and return
+                debug!("database already exists");
+                conn.finish()?;
+                return Ok(());
+            }
+        }
+        */
+        debug!("creating wallets DB");
+        let create_db_sql: String = str::replace(_CREATE_WALLET_DATABASE, "$1", wallet_db_name);
+        debug!("create_db_sql: {:?}", create_db_sql);
+        if let Err(error) = conn.execute(&create_db_sql, &[]) {
             if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
                 debug!("error creating database, Error: {}", error);
                 conn.finish()?;
