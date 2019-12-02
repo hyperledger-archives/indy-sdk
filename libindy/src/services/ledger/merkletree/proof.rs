@@ -1,6 +1,6 @@
-use services::ledger::merkletree::tree::{Tree, TreeLeafData};
-use utils::crypto::hash::Hash;
-use errors::prelude::*;
+use crate::services::ledger::merkletree::tree::{Tree, TreeLeafData};
+use indy_utils::crypto::hash::Hash;
+use indy_api_types::errors::prelude::*;
 
 /// An inclusion proof represent the fact that a `value` is a member
 /// of a `MerkleTree` with root hash `root_hash`.

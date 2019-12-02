@@ -6,10 +6,10 @@ inject_indy_dependencies!();
 extern crate indyrs as indy;
 extern crate indyrs as api;
 
-use utils::inmem_wallet::InmemWallet;
-use utils::{environment, wallet, test, did};
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::inmem_wallet::InmemWallet;
+use crate::utils::{environment, wallet, test, did};
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 use std::path::PathBuf;
@@ -328,8 +328,8 @@ mod medium_cases {
     use super::*;
     use std::ffi::CString;
 
-    use api::INVALID_WALLET_HANDLE;
-    use utils::test::cleanup_wallet;
+    use crate::api::INVALID_WALLET_HANDLE;
+    use crate::utils::test::cleanup_wallet;
 
     mod register_wallet_type {
         use super::*;

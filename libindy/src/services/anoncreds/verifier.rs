@@ -1,18 +1,19 @@
 use std::collections::{HashMap, HashSet};
 
-use domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinitionId};
-use domain::anoncreds::proof::{Proof, RequestedProof, Identifier};
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestPayload, NonRevocedInterval};
-use domain::anoncreds::revocation_registry::RevocationRegistryV1;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
-use domain::anoncreds::schema::{SchemaV1, SchemaId};
-use errors::prelude::*;
-use services::anoncreds::helpers::*;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinitionV1, CredentialDefinitionId};
+use crate::domain::anoncreds::proof::{Proof, RequestedProof, Identifier, RevealedAttributeInfo};
+use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, ProofRequestPayload, NonRevocedInterval};
+use crate::domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
+use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
+use indy_api_types::errors::prelude::*;
+use crate::services::anoncreds::helpers::*;
 
 
 use ursa::cl::{CredentialPublicKey, new_nonce, Nonce};
 use ursa::cl::verifier::Verifier as CryptoVerifier;
-use utils::wql::Query;
+use crate::utils::wql::Query;
+use regex::Regex;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Filter {
@@ -22,6 +23,10 @@ pub struct Filter {
     schema_version: String,
     issuer_did: String,
     cred_def_id: String,
+}
+
+lazy_static! {
+    static ref INTERNAL_TAG_MATCHER: Regex = Regex::new("^attr::([^:]+)::(value|marker)$").unwrap();
 }
 
 pub struct Verifier {}
@@ -103,7 +108,7 @@ impl Verifier {
             let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
             let predicates_for_credential = Verifier::_get_predicates_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
 
-            let credential_schema = build_credential_schema(&schema.attr_names)?;
+            let credential_schema = build_credential_schema(&schema.attr_names.0)?;
             let sub_proof_request = build_sub_proof_request(&attrs_for_credential, &predicates_for_credential)?;
 
             let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
@@ -139,13 +144,23 @@ impl Verifier {
         trace!("_get_revealed_attributes_for_credential >>> sub_proof_index: {:?}, requested_credentials: {:?}, proof_req: {:?}",
                sub_proof_index, requested_proof, proof_req);
 
-        let revealed_attrs_for_credential = requested_proof.revealed_attrs
+        let mut revealed_attrs_for_credential = requested_proof.revealed_attrs
             .iter()
             .filter(|&(attr_referent, ref revealed_attr_info)|
                 sub_proof_index == revealed_attr_info.sub_proof_index as usize && proof_req.requested_attributes.contains_key(attr_referent))
             .map(|(attr_referent, _)|
                 proof_req.requested_attributes[attr_referent].clone())
             .collect::<Vec<AttributeInfo>>();
+
+        revealed_attrs_for_credential.append(
+            &mut requested_proof.revealed_attr_groups
+                .iter()
+                .filter(|&(attr_referent, ref revealed_attr_info)|
+                    sub_proof_index == revealed_attr_info.sub_proof_index as usize && proof_req.requested_attributes.contains_key(attr_referent))
+                .map(|(attr_referent, _)|
+                    proof_req.requested_attributes[attr_referent].clone())
+                .collect::<Vec<AttributeInfo>>()
+        );
 
         trace!("_get_revealed_attributes_for_credential <<< revealed_attrs_for_credential: {:?}", revealed_attrs_for_credential);
 
@@ -258,6 +273,12 @@ impl Verifier {
                 Verifier::_get_proof_identifier(proof, info.sub_proof_index)?
             );
         }
+        for (referent, infos) in proof.requested_proof.revealed_attr_groups.iter() {
+            revealed_identifiers.insert(
+                referent.to_string(),
+                Verifier::_get_proof_identifier(proof, infos.sub_proof_index)?
+            );
+        }
         Ok(revealed_identifiers)
     }
 
@@ -303,28 +324,58 @@ impl Verifier {
     fn _verify_revealed_attribute_values(proof_req: &ProofRequestPayload,
                                          proof: &Proof) -> IndyResult<()> {
         for (attr_referent, attr_info) in proof.requested_proof.revealed_attrs.iter() {
-            let reveal_attr_encoded = attr_info.encoded.to_string();
-            let sub_proof_index = attr_info.sub_proof_index as usize;
 
-            let attr_name = proof_req.requested_attributes.get(attr_referent.as_str())
+            let attr_name = proof_req.requested_attributes.get(attr_referent)
                 .as_ref()
-                .map(|attr_info| attr_info.name.as_str())
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequests", attr_referent)))?
+                .name.as_ref()
                 .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequests", attr_referent)))?;
+            Verifier::_verify_revealed_attribute_value(attr_name.as_str(), proof, &attr_info)?;
+        }
 
-            let crypto_proof_encoded = proof.proof.proofs
-                .get(sub_proof_index)
-                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("CryptoProof not found by index \"{}\"", sub_proof_index)))?
-                .revealed_attrs()?
-                .iter()
-                .find(|(key, _)| attr_common_view(&attr_name) == attr_common_view(&key))
-                .map(|(_, val)| val.to_string())
-                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with name \"{}\" not found in CryptoProof", attr_name)))?;
-
-            if reveal_attr_encoded != crypto_proof_encoded {
-                return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
-                                               format!("Encoded Values for \"{}\" are different in RequestedProof \"{}\" and CryptoProof \"{}\"", attr_name, reveal_attr_encoded, crypto_proof_encoded)));
+        for (attr_referent, attr_infos) in proof.requested_proof.revealed_attr_groups.iter() {
+            let attr_names = proof_req.requested_attributes.get(attr_referent)
+                .as_ref()
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequests", attr_referent)))?
+                .names.as_ref()
+                .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with referent \"{}\" not found in ProofRequests", attr_referent)))?;
+            if attr_infos.values.len() != attr_names.len() {
+                error!("Proof Revealed Attr Group does not match Proof Request Attribute Group, proof request attrs: {:?}, referent: {:?}, attr_infos: {:?}", proof_req.requested_attributes, attr_referent, attr_infos);
+                return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Proof Revealed Attr Group does not match Proof Request Attribute Group"))
+            }
+            for attr_name in attr_names {
+                let attr_info = &attr_infos.values.get(attr_name)
+                    .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Proof Revealed Attr Group does not match Proof Request Attribute Group"))?;
+                Verifier::_verify_revealed_attribute_value(attr_name, proof, &RevealedAttributeInfo {
+                    sub_proof_index: attr_infos.sub_proof_index,
+                    raw: attr_info.raw.clone(),
+                    encoded: attr_info.encoded.clone()
+                })?;
             }
         }
+        Ok(())
+    }
+
+    fn _verify_revealed_attribute_value(attr_name: &str,
+                                        proof: &Proof,
+                                        attr_info: &RevealedAttributeInfo) -> IndyResult<()> {
+        let reveal_attr_encoded = attr_info.encoded.to_string();
+        let sub_proof_index = attr_info.sub_proof_index as usize;
+
+        let crypto_proof_encoded = proof.proof.proofs
+            .get(sub_proof_index)
+            .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("CryptoProof not found by index \"{}\"", sub_proof_index)))?
+            .revealed_attrs()?
+            .iter()
+            .find(|(key, _)| attr_common_view(attr_name) == attr_common_view(&key))
+            .map(|(_, val)| val.to_string())
+            .ok_or(IndyError::from_msg(IndyErrorKind::ProofRejected, format!("Attribute with name \"{}\" not found in CryptoProof", attr_name)))?;
+
+        if reveal_attr_encoded != crypto_proof_encoded {
+            return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
+                                           format!("Encoded Values for \"{}\" are different in RequestedProof \"{}\" and CryptoProof \"{}\"", attr_name, reveal_attr_encoded, crypto_proof_encoded)));
+        }
+
         Ok(())
     }
 
@@ -349,10 +400,27 @@ impl Verifier {
         for (referent, info) in requested_attrs {
             if let Some(ref query) = info.restrictions {
                 let filter = Verifier::_gather_filter_info(&referent, &proof_attr_identifiers)?;
-                let revealed_value = requested_proof.revealed_attrs.get(&referent).map(|attr| attr.raw.as_str());
 
-                Verifier::_process_operator(&info.name, &query, &filter, revealed_value)
-                    .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{}\" attribute", &info.name)))?;
+                let name_value_map: HashMap<String, Option<&str>> = if let Some(name) = info.name {
+                    let mut map = HashMap::new();
+                    map.insert(name.clone(), requested_proof.revealed_attrs.get(&referent).map(|attr| attr.raw.as_str()));
+                    map
+                } else if let Some(names) = info.names {
+                    let mut map = HashMap::new();
+                    let attrs = requested_proof.revealed_attr_groups.get(&referent)
+                        .ok_or(IndyError::from_msg(IndyErrorKind::InvalidStructure, "Proof does not have referent from proof request"))?;
+                    for name in names {
+                        let val = attrs.values.get(&name).map(|attr| attr.raw.as_str());
+                        map.insert(name, val);
+                    }
+                    map
+                } else {
+                    error!(r#"Proof Request attribute restriction should contain "name" or "names" param. Current proof request: {:?}"#, proof_req);
+                    return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Proof Request attribute restriction should contain "name" or "names" param"#));
+                };
+
+                Verifier::_do_process_operator(&name_value_map, &query, &filter)
+                    .map_err(|err| err.extend(format!("Requested restriction validation failed for \"{:?}\" attributes", &name_value_map)))?;
             }
         }
 
@@ -406,13 +474,21 @@ impl Verifier {
                          restriction_op: &Query,
                          filter: &Filter,
                          revealed_value: Option<&str>) -> IndyResult<()> {
+        let mut attr_value_map = HashMap::new();
+        attr_value_map.insert(attr.to_string(), revealed_value);
+        Verifier::_do_process_operator(&attr_value_map, restriction_op, filter)
+    }
+
+    fn _do_process_operator(attr_value_map: &HashMap<String, Option<&str>>,
+                            restriction_op: &Query,
+                            filter: &Filter) -> IndyResult<()> {
         match restriction_op {
             Query::Eq(ref tag_name, ref tag_value) => {
-                Verifier::_process_filter(attr, &tag_name, &tag_value, filter, revealed_value)
+                Verifier::_process_filter(attr_value_map, &tag_name, &tag_value, filter)
                     .map_err(|err| err.extend(format!("$eq operator validation failed for tag: \"{}\", value: \"{}\"", tag_name, tag_value)))
             }
             Query::Neq(ref tag_name, ref tag_value) => {
-                if Verifier::_process_filter(attr, &tag_name, &tag_value, filter, revealed_value).is_err() {
+                if Verifier::_process_filter(attr_value_map, &tag_name, &tag_value, filter).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
@@ -422,7 +498,7 @@ impl Verifier {
             Query::In(ref tag_name, ref tag_values) => {
                 let res = tag_values
                     .iter()
-                    .any(|val| Verifier::_process_filter(attr, &tag_name, &val, filter, revealed_value).is_ok());
+                    .any(|val| Verifier::_process_filter(attr_value_map, &tag_name, &val, filter).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -433,7 +509,7 @@ impl Verifier {
             Query::And(ref operators) => {
                 operators
                     .iter()
-                    .map(|op| Verifier::_process_operator(attr, op, filter, revealed_value))
+                    .map(|op| Verifier::_do_process_operator(attr_value_map, op, filter))
                     .collect::<IndyResult<Vec<()>>>()
                     .map(|_| ())
                     .map_err(|err| err.extend("$and operator validation failed."))
@@ -441,7 +517,7 @@ impl Verifier {
             Query::Or(ref operators) => {
                 let res = operators
                     .iter()
-                    .any(|op| Verifier::_process_operator(attr, op, filter, revealed_value).is_ok());
+                    .any(|op| Verifier::_do_process_operator(attr_value_map, op, filter).is_ok());
                 if res {
                     Ok(())
                 } else {
@@ -449,7 +525,7 @@ impl Verifier {
                 }
             }
             Query::Not(ref operator) => {
-                if Verifier::_process_operator(attr, &*operator, filter, revealed_value).is_err() {
+                if Verifier::_do_process_operator(attr_value_map, &*operator, filter).is_err() {
                     Ok(())
                 } else {
                     Err(IndyError::from_msg(IndyErrorKind::ProofRejected, "$not operator validation failed. All conditions were passed."))
@@ -459,11 +535,11 @@ impl Verifier {
         }
     }
 
-    fn _process_filter(attr: &str,
+    fn _process_filter(attr_value_map: &HashMap<String, Option<&str>>,
                        tag: &str,
                        tag_value: &str,
-                       filter: &Filter,
-                       revealed_value: Option<&str>) -> IndyResult<()> {
+                       filter: &Filter) -> IndyResult<()> {
+        trace!("_process_filter: attr_value_map: {:?}, tag: {}, tag_value: {}, filter: {:?}", attr_value_map, tag, tag_value, filter);
         match tag {
             tag_ @ "schema_id" => Verifier::_precess_filed(tag_, &filter.schema_id, tag_value),
             tag_ @ "schema_issuer_did" => Verifier::_precess_filed(tag_, &filter.schema_issuer_did, tag_value),
@@ -471,7 +547,7 @@ impl Verifier {
             tag_ @ "schema_version" => Verifier::_precess_filed(tag_, &filter.schema_version, tag_value),
             tag_ @ "cred_def_id" => Verifier::_precess_filed(tag_, &filter.cred_def_id, tag_value),
             tag_ @ "issuer_did" => Verifier::_precess_filed(tag_, &filter.issuer_did, tag_value),
-            x if Verifier::_is_attr_internal_tag(x, attr) => Verifier::_check_internal_tag_revealed_value(x, attr, tag_value, revealed_value),
+            x if Verifier::_is_attr_internal_tag(x, attr_value_map) => Verifier::_check_internal_tag_revealed_value(x, tag_value, attr_value_map),
             x if Verifier::_is_attr_operator(x) => Ok(()),
             _ => Err(err_msg(IndyErrorKind::InvalidStructure, "Unknown Filter Type"))
         }
@@ -485,13 +561,20 @@ impl Verifier {
         }
     }
 
-    fn _is_attr_internal_tag(key: &str, attr: &str) -> bool {
-        key == format!("attr::{}::value", attr) || key == format!("attr::{}::marker", attr)
+    fn _is_attr_internal_tag(key: &str, attr_value_map: &HashMap<String, Option<&str>>) -> bool {
+        INTERNAL_TAG_MATCHER.captures(key).map( |caps|
+            caps.get(1).map(|s| attr_value_map.contains_key(&s.as_str().to_string())).unwrap_or(false)
+        ).unwrap_or(false)
     }
 
-    fn _check_internal_tag_revealed_value(key: &str, attr: &str, tag_value: &str, revealed_value: Option<&str>) -> IndyResult<()> {
-        if let Some(revealed_value) = revealed_value {
-            if key == format!("attr::{}::value", attr) && revealed_value != tag_value {
+    fn _check_internal_tag_revealed_value(key: &str, tag_value: &str, attr_value_map: &HashMap<String, Option<&str>>) -> IndyResult<()> {
+        let attr_name = INTERNAL_TAG_MATCHER.captures(key)
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("Attribute name became unparseable")))?
+            .get(1)
+            .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, format!("No name has been parsed")))?
+            .as_str();
+        if let Some(Some(revealed_value)) = attr_value_map.get(attr_name) {
+            if *revealed_value != tag_value {
                 return Err(IndyError::from_msg(IndyErrorKind::ProofRejected,
                                                format!("\"{}\" values are different: expected: \"{}\", actual: \"{}\"", key, tag_value, revealed_value)));
             }

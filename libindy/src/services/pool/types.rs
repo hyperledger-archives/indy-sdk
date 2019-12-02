@@ -2,9 +2,9 @@ use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
-use errors::prelude::*;
-use utils::crypto::verkey_builder::build_full_verkey;
-use api::CommandHandle;
+use indy_api_types::errors::prelude::*;
+use crate::utils::crypto::verkey_builder::build_full_verkey;
+use indy_api_types::CommandHandle;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeData {

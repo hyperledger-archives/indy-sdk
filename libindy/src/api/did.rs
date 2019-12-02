@@ -1,17 +1,17 @@
-use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
-use commands::{Command, CommandExecutor};
-use commands::did::DidCommand;
-use domain::crypto::did::{TheirDidInfo, DidValue, MyDidInfo, DidMethod};
-use domain::crypto::key::KeyInfo;
-use errors::prelude::*;
-use utils::ctypes;
-use utils::validation::Validatable;
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::did::DidCommand;
+use crate::domain::crypto::did::{TheirDidInfo, DidValue, MyDidInfo, DidMethod};
+use crate::domain::crypto::key::KeyInfo;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
+use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
 
 use std::ptr;
-use domain::ledger::attrib::Endpoint;
+use crate::domain::ledger::attrib::Endpoint;
 
 
 /// Creates keys (signing and encryption keys) for a new

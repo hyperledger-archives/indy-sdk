@@ -237,7 +237,9 @@
  @param version (Optional) version of TAA from ledger.
      text and version should be passed together.
      text and version are required if taaDigest parameter is omitted.
- @param taaDigest (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+ @param taaDigest (Optional) digest on text and version.
+                   Digest is sha256 hash calculated on concatenated strings: version || text.
+                   This parameter is required if text and version parameters are omitted.
  @param accMechType mechanism how user has accepted the TAA
  @param timeOfAcceptance UTC timestamp when user has accepted the TAA
 

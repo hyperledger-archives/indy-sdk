@@ -10,6 +10,8 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
 
+import static org.hyperledger.indy.sdk.Callbacks.boolCallback;
+
 /**
  * pairwise.rs API
  */
@@ -26,22 +28,6 @@ public class Pairwise extends IndyJava.API {
 	/*
 	 * STATIC CALLBACKS
 	 */
-
-	/**
-	 * Callback used when isPairwiseExists completes.
-	 */
-	private static Callback isPairwiseExistsCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, boolean exists) {
-
-			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
-			if (! checkResult(future, err)) return;
-
-			Boolean result = Boolean.valueOf(exists);
-			future.complete(result);
-		}
-	};
 
 	/**
 	 * Callback used when createPairwise completes.
@@ -135,7 +121,7 @@ public class Pairwise extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				theirDid,
-				isPairwiseExistsCb);
+				boolCallback);
 
 		checkResult(future, result);
 

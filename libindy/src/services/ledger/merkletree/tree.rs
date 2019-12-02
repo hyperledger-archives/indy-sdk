@@ -1,12 +1,12 @@
 use std::cmp;
 
-use errors::prelude::*;
-pub use services::ledger::merkletree::proof::{
+use indy_api_types::errors::prelude::*;
+pub use crate::services::ledger::merkletree::proof::{
     Lemma,
     Positioned,
     Proof
 };
-use utils::crypto::hash::{Hash};
+use indy_utils::crypto::hash::{Hash};
 
 pub type TreeLeafData = Vec<u8>;
 

@@ -3,8 +3,8 @@ use named_type::NamedType;
 use regex::Regex;
 use rust_base58::FromBase58;
 
-use utils::validation::Validatable;
-use utils::qualifier;
+use indy_api_types::validation::Validatable;
+use crate::utils::qualifier;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DidMethod(pub String);

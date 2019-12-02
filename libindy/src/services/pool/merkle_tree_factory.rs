@@ -6,11 +6,11 @@ use std::path::PathBuf;
 use serde_json;
 use serde_json::Value as SJsonValue;
 
-use domain::ledger::request::ProtocolVersion;
-use errors::prelude::*;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::types::{NodeTransaction, NodeTransactionV0, NodeTransactionV1};
-use utils::environment;
+use crate::domain::ledger::request::ProtocolVersion;
+use indy_api_types::errors::prelude::*;
+use crate::services::ledger::merkletree::merkletree::MerkleTree;
+use crate::services::pool::types::{NodeTransaction, NodeTransactionV0, NodeTransactionV1};
+use crate::utils::environment;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
@@ -239,8 +239,8 @@ mod tests {
 
     use byteorder::LittleEndian;
 
-    use domain::ledger::request::ProtocolVersion;
-    use utils::test;
+    use crate::domain::ledger::request::ProtocolVersion;
+    use crate::utils::test;
 
     use super::*;
 

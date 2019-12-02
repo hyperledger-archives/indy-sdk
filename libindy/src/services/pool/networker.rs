@@ -5,10 +5,10 @@ use rand::thread_rng;
 use rand::prelude::SliceRandom;
 use time::Tm;
 
-use errors::prelude::*;
-use services::pool::events::*;
-use services::pool::types::*;
-use utils::sequence;
+use indy_api_types::errors::prelude::*;
+use crate::services::pool::events::*;
+use crate::services::pool::types::*;
+use indy_utils::sequence;
 
 use super::time::Duration;
 
@@ -389,9 +389,9 @@ pub mod networker_tests {
     use std;
     use std::thread;
 
-    use domain::pool::{MAX_REQ_PER_POOL_CON, POOL_ACK_TIMEOUT, POOL_CON_ACTIVE_TO, POOL_REPLY_TIMEOUT};
-    use services::pool::tests::nodes_emulator;
-    use utils::crypto::ed25519_sign;
+    use crate::domain::pool::{MAX_REQ_PER_POOL_CON, POOL_ACK_TIMEOUT, POOL_CON_ACTIVE_TO, POOL_REPLY_TIMEOUT};
+    use crate::services::pool::tests::nodes_emulator;
+    use crate::utils::crypto::ed25519_sign;
 
     use super::*;
     use rust_base58::base58::FromBase58;

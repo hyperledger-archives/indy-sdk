@@ -5,8 +5,8 @@ use super::super::crypto::did::DidValue;
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
-use utils::validation::Validatable;
-use utils::qualifier;
+use indy_api_types::validation::Validatable;
+use crate::utils::qualifier;
 
 pub const MAX_ATTRIBUTES_COUNT: usize = 125;
 
@@ -58,7 +58,27 @@ pub fn schemas_map_to_schemas_v1_map(schemas: Schemas) -> HashMap<SchemaId, Sche
     schemas.into_iter().map(|(schema_id, schema)| { (schema_id, SchemaV1::from(schema)) }).collect()
 }
 
-pub type AttributeNames = HashSet<String>;
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AttributeNames(pub HashSet<String>);
+
+#[allow(dead_code)]
+impl AttributeNames {
+    pub fn new() -> Self {
+        AttributeNames(HashSet::new())
+    }
+}
+
+impl From<HashSet<String>> for AttributeNames {
+    fn from(attrs: HashSet<String>) -> Self {
+        AttributeNames(attrs)
+    }
+}
+
+impl Into<HashSet<String>> for AttributeNames {
+    fn into(self) -> HashSet<String> {
+        self.0
+    }
+}
 
 impl Validatable for Schema {
     fn validate(&self) -> Result<(), String> {
@@ -74,12 +94,12 @@ impl Validatable for Schema {
 
 impl Validatable for AttributeNames {
     fn validate(&self) -> Result<(), String> {
-        if self.is_empty() {
+        if self.0.is_empty() {
             return Err(String::from("Empty list of Schema attributes has been passed"));
         }
 
-        if self.len() > MAX_ATTRIBUTES_COUNT {
-            return Err(format!("The number of Schema attributes {} cannot be greater than {}", self.len(), MAX_ATTRIBUTES_COUNT));
+        if self.0.len() > MAX_ATTRIBUTES_COUNT {
+            return Err(format!("The number of Schema attributes {} cannot be greater than {}", self.0.len(), MAX_ATTRIBUTES_COUNT));
         }
         Ok(())
     }

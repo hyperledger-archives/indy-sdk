@@ -4,14 +4,14 @@ use indy::did;
 use indy::IndyError;
 use self::futures::Future;
 
-use utils::{ledger, pool};
-use utils::types::ResponseType;
-use api::PoolHandle;
-use utils::constants::DEFAULT_METHOD_NAME;
+use crate::utils::{ledger, pool};
+use crate::utils::types::ResponseType;
+use crate::api::PoolHandle;
+use crate::utils::constants::DEFAULT_METHOD_NAME;
 
 
 pub fn create_store_and_publish_did(wallet_handle: i32, pool_handle: PoolHandle, role: &str, method_name: Option<&str>) -> Result<(String, String), IndyError> {
-    let my_did_json = json!({"method_name": method_name, "seed": ::utils::constants::TRUSTEE_SEED}).to_string();
+    let my_did_json = json!({"method_name": method_name, "seed": crate::utils::constants::TRUSTEE_SEED}).to_string();
     let (trustee_did, _) = create_my_did(wallet_handle, &my_did_json)?;
     let my_did_json = json!({"method_name": method_name}).to_string();
     let (did, vk) = create_my_did(wallet_handle, &my_did_json)?;

@@ -1,7 +1,8 @@
 [package]
 name = "indy-cli"
-version = "1.12.0"
+version = "1.13.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
+edition = "2018"
 
 [features]
 nullpay_plugin = []

@@ -1,21 +1,21 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
-use commands::*;
-use commands::payment_address::handle_payment_error;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
+use crate::commands::*;
+use crate::commands::payment_address::handle_payment_error;
 
 use indy::{ErrorCode, IndyError};
-use libindy::ledger::Ledger;
-use libindy::payment::Payment;
+use crate::libindy::ledger::Ledger;
+use crate::libindy::payment::Payment;
 
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
 use std::collections::{HashMap, BTreeMap};
 
-use utils::table::{print_table, print_list_table};
-use utils::file::{read_file, write_file};
+use crate::utils::table::{print_table, print_list_table};
+use crate::utils::file::{read_file, write_file};
 
 use self::regex::Regex;
 use self::chrono::prelude::*;
@@ -93,13 +93,13 @@ macro_rules! send_request {
 
 macro_rules! get_transaction_to_use {
     ($ctx:expr, $param_txn:expr) => ({
-        let request = if let Some(txn_) = $param_txn {
+        if let Some(txn_) = $param_txn {
             txn_.to_string()
         } else if let Some(txn_) = get_transaction($ctx) {
             println!("Transaction stored into context: {:?}.", txn_);
             println!("Would you like to use it? (y/n)");
 
-            let use_transaction = ::command_executor::wait_for_user_reply($ctx);
+            let use_transaction = crate::command_executor::wait_for_user_reply($ctx);
 
             if !use_transaction {
                 println!("No transaction has been used.");
@@ -113,8 +113,7 @@ macro_rules! get_transaction_to_use {
                     load transaction using `ledger load-transaction`, or \
                     build a transaction (with passing either `send=false` or `endorser` parameter).");
             return Err(());
-        };
-        request
+        }
     })
 }
 
@@ -165,7 +164,7 @@ pub mod nym_command {
                     println_warn!("There is the same `DID` stored in the wallet but with different Verkey: {:?}", verkey_);
                     println_warn!("Do you really want to change Verkey on the ledger? (y/n)");
 
-                    let change_nym = ::command_executor::wait_for_user_reply(ctx);
+                    let change_nym = crate::command_executor::wait_for_user_reply(ctx);
 
                     if !change_nym {
                         println!("The transaction has not been sent.");
@@ -1033,7 +1032,7 @@ pub mod custom_command {
                     println!("Transaction stored into context: {:?}.", txn_);
                     println!("Would you like to send it? (y/n)");
 
-                    let use_transaction = ::command_executor::wait_for_user_reply(ctx);
+                    let use_transaction = crate::command_executor::wait_for_user_reply(ctx);
 
                     if !use_transaction {
                         println!("No transaction has been send.");
@@ -1651,7 +1650,7 @@ pub mod save_transaction_command {
         println!("Transaction: {:?}.", transaction);
         println!("Would you like to save it? (y/n)");
 
-        let save_transaction = ::command_executor::wait_for_user_reply(ctx);
+        let save_transaction = crate::command_executor::wait_for_user_reply(ctx);
 
         if !save_transaction {
             println!("The transaction has not been saved.");
@@ -1779,7 +1778,7 @@ pub mod taa_command {
                                                &[("text", "Text"),
                                                    ("version", "Version")],
                                                true);
-                    ::commands::pool::accept_transaction_author_agreement(ctx, &text, &version);
+                    crate::commands::pool::accept_transaction_author_agreement(ctx, &text, &version);
                 }
             })?;
 
@@ -2387,15 +2386,15 @@ pub struct ReplyResult<T> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet, open_wallet, close_wallet};
-    use commands::pool::tests::disconnect_and_delete_pool;
-    use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3, VERKEY_MY3};
+    use crate::commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet, open_wallet, close_wallet};
+    use crate::commands::pool::tests::disconnect_and_delete_pool;
+    use crate::commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3, VERKEY_MY3};
     #[cfg(feature = "nullpay_plugin")]
-    use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
+    use crate::commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
     #[cfg(feature = "nullpay_plugin")]
-    use commands::payment_address::tests::create_payment_address;
-    use libindy::ledger::Ledger;
-    use libindy::did::Did;
+    use crate::commands::payment_address::tests::create_payment_address;
+    use crate::libindy::ledger::Ledger;
+    use crate::libindy::did::Did;
 
     const TRANSACTION: &str = r#"{"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":2}"#;
 
@@ -4830,7 +4829,7 @@ pub mod tests {
     }
 
     fn _path() -> (::std::path::PathBuf, String) {
-        let mut path = ::utils::environment::EnvironmentUtils::indy_home_path();
+        let mut path = crate::utils::environment::EnvironmentUtils::indy_home_path();
         path.push("transaction");
         (path.clone(), path.to_str().unwrap().to_string())
     }

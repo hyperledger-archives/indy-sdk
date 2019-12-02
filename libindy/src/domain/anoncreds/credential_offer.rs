@@ -3,7 +3,7 @@ use ursa::cl::{CredentialKeyCorrectnessProof, Nonce};
 use super::schema::SchemaId;
 use super::credential_definition::CredentialDefinitionId;
 
-use utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialOffer {

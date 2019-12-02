@@ -1,12 +1,12 @@
-use domain::crypto::did::{Did, TheirDid};
-use domain::pairwise::{Pairwise, PairwiseInfo};
-use errors::prelude::*;
-use services::wallet::{RecordOptions, WalletService};
+use crate::domain::crypto::did::{Did, TheirDid};
+use crate::domain::pairwise::{Pairwise, PairwiseInfo};
+use indy_api_types::errors::prelude::*;
+use indy_wallet::{RecordOptions, WalletService};
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::str;
-use api::WalletHandle;
-use domain::crypto::did::DidValue;
+use indy_api_types::WalletHandle;
+use crate::domain::crypto::did::DidValue;
 
 
 pub enum PairwiseCommand {

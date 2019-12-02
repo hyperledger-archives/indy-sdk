@@ -13,9 +13,9 @@ use indy::pool;
 use self::futures::Future;
 use serde_json;
 
-use utils::types::{Response, ResponseType};
-use utils::{environment, test};
-use api::PoolHandle;
+use crate::utils::types::{Response, ResponseType};
+use crate::utils::{environment, test};
+use crate::api::PoolHandle;
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {

@@ -2,6 +2,11 @@ import {initRustAPI, initVcxWithConfig, provisionAgent} from "./../dist/src";
 import * as ffi from "ffi";
 import 'fs';
 
+export async function loadPostgresPlugin (provisionConfig) {
+    const myffi = ffi.Library('/usr/local/lib/libindystrgpostgres.dylib', {postgresstorage_init: ['void', []]});
+    await myffi.postgresstorage_init()
+}
+
 export async function initLibNullPay() {
     const myffi = ffi.Library('/usr/local/lib/libnullpay.dylib', {nullpay_init: ['void', []]});
     await myffi.nullpay_init();

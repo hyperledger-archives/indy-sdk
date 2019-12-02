@@ -16,8 +16,8 @@ use libc::{c_void, c_char};
 use std::ffi::CString;
 use std::ptr;
 
-use errors::prelude::*;
-use utils::ctypes;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
 

@@ -8,19 +8,19 @@ extern crate indyrs as api;
 extern crate indy_sys;
 
 #[cfg(feature = "local_nodes_pool")]
-use utils::callback;
-use utils::constants::{WALLET_CREDENTIALS, PROTOCOL_VERSION};
-use utils::{pool as pool_utils, timeout};
-use utils::domain::anoncreds::credential_definition::CredentialDefinition;
-use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
-use utils::domain::anoncreds::proof::Proof;
-use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
-use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
-use utils::domain::anoncreds::revocation_state::RevocationState;
-use utils::domain::anoncreds::schema::Schema;
+use crate::utils::callback;
+use crate::utils::constants::{WALLET_CREDENTIALS, PROTOCOL_VERSION};
+use crate::utils::{pool as pool_utils, timeout};
+use crate::utils::domain::anoncreds::credential_definition::CredentialDefinition;
+use crate::utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use crate::utils::domain::anoncreds::proof::Proof;
+use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistry;
+use crate::utils::domain::anoncreds::revocation_state::RevocationState;
+use crate::utils::domain::anoncreds::schema::Schema;
 
-use utils::environment;
-use utils::Setup;
+use crate::utils::environment;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 use self::indy_sys::*;
@@ -298,7 +298,11 @@ fn anoncreds_demo_works() {
         "version": "0.1",
         "requested_attributes": {
             "attr1_referent": {
-                "name": "name"
+                "names": ["name", "height", "sex"],
+                "restrictions": {
+                    "attr::name::value": "Alex",
+                    "attr::sex::value": "male"
+                }
             }
         },
         "requested_predicates": {
@@ -407,8 +411,8 @@ fn anoncreds_demo_works() {
     // Verifier verify proof
     let proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
-    let revealed_attr_1 = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
-    assert_eq!("Alex", revealed_attr_1.raw);
+    let revealed_attr_1 = proof.requested_proof.revealed_attr_groups.get("attr1_referent").unwrap();
+    assert_eq!("Alex", revealed_attr_1.values["name"].raw);
 
     let rev_reg_defs_json = json!({
         rev_reg_id.as_str(): serde_json::from_str::<RevocationRegistryDefinition>(&revoc_reg_def_json).unwrap()

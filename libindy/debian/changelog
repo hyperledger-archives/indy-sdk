@@ -1,6 +1,9 @@
-libindy (1.12.0) unstable; urgency=medium
+libindy (1.13.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.13.0
+* Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
 
 ## 1.12.0
 * Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
@@ -15,6 +18,7 @@ libindy (1.12.0) unstable; urgency=medium
 
     * added a new function -- `indy_qualify_did` -- that updates DID stored in the wallet to make it fully qualified, or to do other DID maintenance.
     * all functions in Ledger API can accept fully-qualified identifiers but always return results in an unqualified form.
+* The default value of `Protocol Version` was changed on 2. Henceforth `indy_set_protocol_version` function should be called if you are going to work with Indy-Node 1.3 and less.
 * Bugfixes
     * Fixed `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
     * Fixed `attr::{}::value` verification (IS-1380, thanks @nrempel for reporting the vulnerability)

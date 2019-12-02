@@ -2,11 +2,11 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use domain::ledger::request::ProtocolVersion;
-use domain::pool::{PoolConfig, PoolOpenConfig};
-use errors::prelude::*;
-use services::pool::PoolService;
-use api::{PoolHandle, CommandHandle};
+use crate::domain::ledger::request::ProtocolVersion;
+use crate::domain::pool::{PoolConfig, PoolOpenConfig};
+use indy_api_types::errors::prelude::*;
+use crate::services::pool::PoolService;
+use indy_api_types::{PoolHandle, CommandHandle};
 
 pub enum PoolCommand {
     Create(

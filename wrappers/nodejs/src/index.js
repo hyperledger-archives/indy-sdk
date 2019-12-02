@@ -443,6 +443,14 @@ indy.buildGetNymRequest = function buildGetNymRequest (submitterDid, targetDid, 
   return cb.promise
 }
 
+indy.parseGetNymResponse = function parseGetNymResponse (response, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data)
+  })
+  capi.parseGetNymResponse(toJson(response), cb)
+  return cb.promise
+}
+
 indy.buildSchemaRequest = function buildSchemaRequest (submitterDid, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildSchemaRequest(submitterDid, toJson(data), cb)

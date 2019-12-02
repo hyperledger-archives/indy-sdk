@@ -308,6 +308,35 @@ extern "C" {
                                                                         const char*   request_json)
                                                   );
 
+    /// Parse a GET_NYM response to get NYM data.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// get_nym_response: response on GET_NYM request.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// NYM data
+    /// {
+    ///     did: DID as base58-encoded string for 16 or 32 bit DID value.
+    ///     verkey: verification key as base58-encoded string.
+    ///     role: Role associated number
+    ///                             null (common USER)
+    ///                             0 - TRUSTEE
+    ///                             2 - STEWARD
+    ///                             101 - TRUST_ANCHOR
+    ///                             101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+    ///                             201 - NETWORK_MONITOR
+    /// }
+
+    extern indy_error_t indy_parse_get_nym_response(indy_handle_t command_handle,
+                                                    const char *  get_nym_response,
+
+                                                    void           (*cb)(indy_handle_t command_handle_,
+                                                                         indy_error_t  err,
+                                                                         const char*   nym_json)
+                                                   );
+
     /// Builds a SCHEMA request. Request to add Credential's schema.
     ///
     /// #Params
@@ -1226,7 +1255,9 @@ extern "C" {
     /// text and version - (optional) raw data about TAA from ledger.
     ///     These parameters should be passed together.
     ///     These parameters are required if taa_digest parameter is omitted.
-    /// taa_digest - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    /// taa_digest - (optional) digest on text and version.
+    ///     Digest is sha256 hash calculated on concatenated strings: version || text.
+    ///     This parameter is required if text and version parameters are omitted.
     /// mechanism - mechanism how user has accepted the TAA
     /// time - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
     ///

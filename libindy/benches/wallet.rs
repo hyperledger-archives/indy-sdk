@@ -34,14 +34,14 @@ use indy::api as api;
 #[macro_use]
 mod utils;
 
-use utils::wallet::WalletUtils;
-use utils::non_secrets::NonSecretsUtils;
-use utils::test::TestUtils;
-use utils::constants::*;
+use crate::utils::wallet::WalletUtils;
+use crate::utils::non_secrets::NonSecretsUtils;
+use crate::utils::test::TestUtils;
+use crate::utils::constants::*;
 
 use criterion::{Criterion, Benchmark};
 
-use utils::sequence::SequenceUtils;
+use crate::utils::sequence::SequenceUtils;
 use rand::Rng;
 
 

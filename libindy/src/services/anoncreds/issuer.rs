@@ -13,14 +13,14 @@ use ursa::cl::{
 };
 use ursa::cl::issuer::Issuer as CryptoIssuer;
 
-use domain::anoncreds::schema::AttributeNames;
-use domain::anoncreds::credential::CredentialValues;
-use domain::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1 as CredentialDefinition};
-use domain::anoncreds::credential_request::CredentialRequest;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
-use domain::crypto::did::DidValue;
-use errors::prelude::*;
-use services::anoncreds::helpers::*;
+use crate::domain::anoncreds::schema::AttributeNames;
+use crate::domain::anoncreds::credential::CredentialValues;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1 as CredentialDefinition};
+use crate::domain::anoncreds::credential_request::CredentialRequest;
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
+use crate::domain::crypto::did::DidValue;
+use indy_api_types::errors::prelude::*;
+use crate::services::anoncreds::helpers::*;
 
 pub struct Issuer {}
 
@@ -35,7 +35,7 @@ impl Issuer {
                                                                               CredentialKeyCorrectnessProof)> {
         trace!("new_credential_definition >>> attr_names: {:?}, support_revocation: {:?}", attr_names, support_revocation);
 
-        let credential_schema = build_credential_schema(attr_names)?;
+        let credential_schema = build_credential_schema(&attr_names.0)?;
         let non_credential_schema = build_non_credential_schema()?;
 
         let (credential_public_key, credential_private_key, credential_key_correctness_proof) =
@@ -97,7 +97,7 @@ impl Issuer {
                cred_def, secret!(&cred_priv_key), secret!(&cred_issuance_blinding_nonce), secret!(&cred_request), secret!(&cred_values), secret!(&rev_idx),
                rev_reg_def, rev_reg, secret!(&rev_key_priv));
 
-        let credential_values = build_credential_values(&cred_values, None)?;
+        let credential_values = build_credential_values(&cred_values.0, None)?;
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
 
         let (credential_signature, signature_correctness_proof, rev_reg_delta) =

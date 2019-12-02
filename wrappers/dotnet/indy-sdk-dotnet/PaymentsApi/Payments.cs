@@ -1,5 +1,7 @@
 ﻿using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.PaymentsApi.NativeMethods;
 #if __IOS__
@@ -222,6 +224,51 @@ namespace Hyperledger.Indy.PaymentsApi
             taskCompletionSource.SetResult(txn_json);
         }
         static ParseVerifyPaymentResponseDelegate ParseVerifyPaymentResponseDelegate = ParseVerifyPaymentResponseDelegateMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GetRequestInfoDelegate))]
+#endif
+        static void GetRequestInfoDelegateMethod(int xcommand_handle, int err, string request_info_json)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(request_info_json);
+        }
+        static GetRequestInfoDelegate GetRequestInfoDelegate = GetRequestInfoDelegateMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(SignWithAddressDelegate))]
+#endif
+        static void SignWithAddressDelegateMethod(int xcommand_handle, int err, IntPtr signature_raw, uint signature_len)
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var signatureBytes = new byte[signature_len];
+            Marshal.Copy(signature_raw, signatureBytes, 0, (int)signature_len);
+
+            taskCompletionSource.SetResult(signatureBytes);
+        }
+        static SignWithAddressDelegate SignWithAddressDelegate = SignWithAddressDelegateMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(VerifyWithAddressDelegate))]
+#endif
+        static void VerifyWithAddressDelegateMethod(int xcommand_handle, int err, bool result)
+        {
+            var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(result);
+        }
+        static VerifyWithAddressDelegate VerifyWithAddressDelegate = VerifyWithAddressDelegateMethod;
 
         /// <summary>
         /// Create the payment address for this payment method.
@@ -808,6 +855,115 @@ namespace Hyperledger.Indy.PaymentsApi
                 paymentMethod,
                 responseJson,
                 ParseVerifyPaymentResponseDelegate);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Gets request requirements (with minimal price) correspondent to specific auth rule
+        /// in case the requester can perform this action.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
+        /// </summary>
+        /// <param name="getAuthRuleResponseJson">Response on `GET_AUTH_RULE` request returning action constraints set on the ledger.</param>
+        /// <param name="requesterInfoJson">
+        /// {
+        ///     "role": string (optional) - role of a user which can sign a transaction.
+        ///     "sig_count": u64 - number of signers.
+        ///     "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+        ///     "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
+        /// }</param>
+        /// <param name="feesJson">fees set on the ledger (result of <see cref="ParseGetTxnFeesResponseAsync" />).</param>
+        /// <returns>
+        /// request info if a requester match to the action constraints.
+        /// {
+        ///     "price": u64 - fee required for the action performing,
+        ///     "requirements": [{
+        ///         "role": string (optional) - role of users who should sign,
+        ///         "sig_count": u64 - number of signers,
+        ///         "need_to_be_owner": bool - if requester need to be owner,
+        ///         "off_ledger_signature": bool - allow signature of unknow for ledger did (false by default).
+        ///     }]
+        /// }
+        /// </returns>
+        public static Task<string> GetRequestInfoAsync(string getAuthRuleResponseJson, string requesterInfoJson, string feesJson)
+        {
+            ParamGuard.NotNullOrWhiteSpace(getAuthRuleResponseJson, "getAuthRuleResponseJson");
+            ParamGuard.NotNullOrWhiteSpace(requesterInfoJson, "requesterInfoJson");
+            ParamGuard.NotNullOrWhiteSpace(feesJson, "feesJson");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_get_request_info(
+                commandHandle,
+                getAuthRuleResponseJson,
+                requesterInfoJson,
+                feesJson,
+                GetRequestInfoDelegate);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Signs a message with a payment address.
+        /// </summary>
+        /// <param name="wallet">Wallet handle</param>
+        /// <param name="address">Payment address of message signer. The key must be created by calling <see cref="CreatePaymentAddressAsync" /></param>
+        /// <param name="message">Message to be signed</param>
+        /// <returns></returns>
+        public static Task<byte[]> SignWithAddressAsync(Wallet wallet, string address, byte[] message)
+        {
+            ParamGuard.NotNullOrWhiteSpace(address, "address");
+            ParamGuard.NotNull(message, "message");
+            ParamGuard.NotNull(wallet, "wallet");
+
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_sign_with_address(
+                commandHandle,
+                wallet.Handle,
+                address,
+                message,
+                (uint)message.Length,
+                SignWithAddressDelegate);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Verify a signature with a payment address.
+        /// </summary>
+        /// <param name="address">Payment address of the message signer</param>
+        /// <param name="message">Message data</param>
+        /// <param name="signature">Signed message data</param>
+        /// <returns><c>true</c> - if signature is valid, <c>false</c> - otherwise</returns>
+        public static Task<bool> VerifyWithAddressAsync(string address, byte[] message, byte[] signature)
+        {
+            ParamGuard.NotNullOrWhiteSpace(address, "address");
+            ParamGuard.NotNull(message, "message");
+            ParamGuard.NotNull(signature, "signature");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_verify_with_address(
+                commandHandle,
+                address,
+                message,
+                (uint)message.Length,
+                signature,
+                (uint)signature.Length,
+                VerifyWithAddressDelegate);
 
             CallbackHelper.CheckResult(result);
 

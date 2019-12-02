@@ -1,11 +1,11 @@
 use serde_json;
 use serde_json::Value as SJsonValue;
 
-use domain::ledger::constants;
-use errors::prelude::*;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::{PoolService, types:: *};
-use api::CommandHandle;
+use crate::domain::ledger::constants;
+use indy_api_types::errors::prelude::*;
+use crate::services::ledger::merkletree::merkletree::MerkleTree;
+use crate::services::pool::{PoolService, types:: *};
+use indy_api_types::CommandHandle;
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&str; 11] = [
     constants::GET_NYM,

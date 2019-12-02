@@ -425,10 +425,10 @@ impl CommandExecutor {
 
     fn _get_dynamic_completions(&self, dynamic_completion_type: DynamicCompletionType, word: &str) -> Vec<(String, char)> {
         let completions = match dynamic_completion_type {
-            DynamicCompletionType::Wallet => ::commands::wallet::wallet_names(),
-            DynamicCompletionType::Did => ::commands::did::list_dids(self.ctx()),
-            DynamicCompletionType::Pool => ::commands::pool::pool_list(),
-            DynamicCompletionType::PaymentAddress => ::commands::payment_address::list_payment_addresses(self.ctx()),
+            DynamicCompletionType::Wallet => crate::commands::wallet::wallet_names(),
+            DynamicCompletionType::Did => crate::commands::did::list_dids(self.ctx()),
+            DynamicCompletionType::Pool => crate::commands::pool::pool_list(),
+            DynamicCompletionType::PaymentAddress => crate::commands::payment_address::list_payment_addresses(self.ctx()),
         };
 
         completions

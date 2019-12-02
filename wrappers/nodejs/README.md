@@ -1545,6 +1545,28 @@ Builds a GET\_NYM request. Request to get information about a DID \(NYM\).
 
 Errors: `Common*`
 
+#### parseGetNymResponse \( response \) -&gt; nymData
+
+Parse a GET_NYM response to get NYM data.
+
+* `response`: String - response on GET_NYM request.
+* __->__ `nymData`: Json 
+```
+   {
+       did: DID as base58-encoded string for 16 or 32 bit DID value.
+       verkey: verification key as base58-encoded string.
+       role: Role associated number
+                               null (common USER)
+                               0 - TRUSTEE
+                               2 - STEWARD
+                               101 - TRUST_ANCHOR
+                               101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+                               201 - NETWORK_MONITOR
+   }
+```
+
+Errors: `Common*`
+
 #### buildSchemaRequest \( submitterDid, data \) -&gt; request
 
 Builds a SCHEMA request. Request to add Credential's schema.
@@ -2091,7 +2113,7 @@ If all text, version and taaDigest parameters are specified, a check integrity o
 * `version`: String - \(Optional\) raw data about TAA from ledger.
      * `text` and `version` parameters should be passed together.
      * `text` and `version` parameters are required if taaDigest parameter is omitted.
-* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. Digest is sha256 hash calculated on concatenated strings: version || text. This parameter is required if text and version parameters are omitted.
 * `accMechType`: String - mechanism how user has accepted the TAA.
 * `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk. 
 

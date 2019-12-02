@@ -6,32 +6,32 @@ use ursa::cl::{new_nonce, RevocationRegistry, Witness};
 
 use serde_json::Value;
 
-use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
-use domain::anoncreds::credential::{Credential, CredentialInfo};
-use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
-use domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
-use domain::anoncreds::credential_offer::CredentialOffer;
-use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
-use domain::anoncreds::master_secret::MasterSecret;
-use domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, ProofRequest, ProofRequestExtraQuery};
-use domain::anoncreds::requested_credential::RequestedCredentials;
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
-use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
-use domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
-use domain::crypto::did::DidValue;
-use errors::prelude::*;
-use services::anoncreds::AnoncredsService;
-use services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
-use services::blob_storage::BlobStorageService;
-use services::crypto::CryptoService;
-use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use utils::sequence;
-use utils::wql::Query;
+use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
+use crate::domain::anoncreds::credential::{Credential, CredentialInfo};
+use crate::domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
+use crate::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
+use crate::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
+use crate::domain::anoncreds::master_secret::MasterSecret;
+use crate::domain::anoncreds::proof_request::{NonRevocedInterval, PredicateInfo, ProofRequest, ProofRequestExtraQuery};
+use crate::domain::anoncreds::requested_credential::RequestedCredentials;
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
+use crate::domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
+use crate::domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
+use crate::domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
+use crate::domain::crypto::did::DidValue;
+use indy_api_types::errors::prelude::*;
+use crate::services::anoncreds::AnoncredsService;
+use crate::services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_interval};
+use crate::services::blob_storage::BlobStorageService;
+use crate::services::crypto::CryptoService;
+use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use indy_utils::sequence;
+use crate::utils::wql::Query;
 
 use super::tails::SDKTailsAccessor;
-use api::WalletHandle;
-use commands::BoxedCallbackStringStringSend;
+use indy_api_types::WalletHandle;
+use crate::commands::BoxedCallbackStringStringSend;
 
 pub enum ProverCommand {
     CreateMasterSecret(
@@ -534,6 +534,7 @@ impl ProverCommandExecutor {
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_req_version,
                                                                                         &requested_attr.name,
+                                                                                        &requested_attr.names,
                                                                                         &attr_id,
                                                                                         &requested_attr.restrictions,
                                                                                         &None)?;
@@ -546,7 +547,8 @@ impl ProverCommandExecutor {
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_req_version,
-                                                                                        &requested_predicate.name,
+                                                                                        &Some(requested_predicate.name.clone()),
+                                                                                        &None,
                                                                                         &predicate_id,
                                                                                         &requested_predicate.restrictions,
                                                                                         &None)?;
@@ -581,6 +583,7 @@ impl ProverCommandExecutor {
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
                                                                                         &requested_attr.name,
+                                                                                        &requested_attr.names,
                                                                                         &attr_id,
                                                                                         &requested_attr.restrictions,
                                                                                         &extra_query)?;
@@ -597,7 +600,8 @@ impl ProverCommandExecutor {
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
-                                                                                        &requested_predicate.name,
+                                                                                        &Some(requested_predicate.name.clone()),
+                                                                                        &None,
                                                                                         &predicate_id,
                                                                                         &requested_predicate.restrictions,
                                                                                         &extra_query)?;
@@ -693,7 +697,7 @@ impl ProverCommandExecutor {
 
         let cred_referents = cred_refs_for_attrs.union(&cred_refs_for_predicates).cloned().collect::<Vec<String>>();
 
-        let mut credentials: HashMap<String, Credential> = HashMap::new();
+        let mut credentials: HashMap<String, Credential> = HashMap::with_capacity(cred_referents.len());
 
         for cred_referent in cred_referents.into_iter() {
             let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_referent, &RecordOptions::id_value())?;
@@ -788,7 +792,7 @@ impl ProverCommandExecutor {
                             referent: &str,
                             credential: Credential) -> CredentialInfo {
         let credential_values: HashMap<String, String> =
-            credential.values
+            credential.values.0
                 .into_iter()
                 .map(|(attr, values)| (attr, values.raw))
                 .collect();
@@ -849,7 +853,7 @@ impl ProverCommandExecutor {
             let (referent, credential) = self._get_credential(&credential_record)?;
 
             if let Some(predicate) = predicate_info {
-                let values = self.anoncreds_service.prover.get_credential_values_for_attribute(&credential.values, &predicate.name)
+                let values = self.anoncreds_service.prover.get_credential_values_for_attribute(&credential.values.0, &predicate.name)
                     .ok_or_else(|| err_msg(IndyErrorKind::InvalidState, "Credential values not found"))?;
 
                 let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate, &values.encoded)?;

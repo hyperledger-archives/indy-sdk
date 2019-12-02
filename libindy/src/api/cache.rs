@@ -1,13 +1,13 @@
-use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
-use commands::{Command, CommandExecutor};
-use commands::cache::CacheCommand;
-use errors::prelude::*;
-use utils::ctypes;
-use domain::cache::{GetCacheOptions, PurgeOptions};
-use domain::anoncreds::schema::SchemaId;
-use domain::anoncreds::credential_definition::CredentialDefinitionId;
-use domain::crypto::did::DidValue;
-use utils::validation::Validatable;
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::cache::CacheCommand;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
+use crate::domain::cache::{GetCacheOptions, PurgeOptions};
+use crate::domain::anoncreds::schema::SchemaId;
+use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
+use crate::domain::crypto::did::DidValue;
+use indy_api_types::validation::Validatable;
 use libc::c_char;
 
 

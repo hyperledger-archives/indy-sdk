@@ -1,7 +1,7 @@
-use errors::prelude::*;
-use services::ledger::merkletree::proof::{Lemma, Proof};
-use services::ledger::merkletree::tree::{LeavesIntoIterator, LeavesIterator, Tree, TreeLeafData};
-use utils::crypto::hash::{Hash, EMPTY_HASH_BYTES};
+use indy_api_types::errors::prelude::*;
+use crate::services::ledger::merkletree::proof::{Lemma, Proof};
+use crate::services::ledger::merkletree::tree::{LeavesIntoIterator, LeavesIterator, Tree, TreeLeafData};
+use indy_utils::crypto::hash::{Hash, EMPTY_HASH_BYTES};
 
 /// A Merkle tree is a binary tree, with values of type `T` at the leafs,
 /// and where every internal node holds the hash of the concatenation of the hashes of its children nodes.

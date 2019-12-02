@@ -1,19 +1,19 @@
-use errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
-use domain::anoncreds::credential::AttributeValues;
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, NonRevocedInterval};
+use crate::domain::anoncreds::credential::AttributeValues;
+use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, NonRevocedInterval};
 use ursa::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
 
-use domain::crypto::did::DidValue;
-use domain::anoncreds::schema::SchemaId;
-use domain::anoncreds::credential_definition::CredentialDefinitionId;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
-use domain::anoncreds::schema::Schema;
-use domain::anoncreds::credential_definition::CredentialDefinition;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
-use domain::anoncreds::credential_offer::CredentialOffer;
-use domain::anoncreds::credential_request::CredentialRequest;
-use domain::anoncreds::proof_request::ProofRequest;
+use crate::domain::crypto::did::DidValue;
+use crate::domain::anoncreds::schema::SchemaId;
+use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
+use crate::domain::anoncreds::schema::Schema;
+use crate::domain::anoncreds::credential_definition::CredentialDefinition;
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use crate::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::domain::anoncreds::credential_request::CredentialRequest;
+use crate::domain::anoncreds::proof_request::ProofRequest;
 
 use std::collections::{HashSet, HashMap};
 
@@ -72,7 +72,18 @@ pub fn build_sub_proof_request(attrs_for_credential: &[AttributeInfo],
     let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
 
     for attr in attrs_for_credential {
-        sub_proof_request_builder.add_revealed_attr(&attr_common_view(&attr.name))?
+        let names = if let Some(name) = &attr.name {
+            vec![name.clone()]
+        } else if let Some(names) = &attr.names {
+            names.to_owned()
+        } else {
+            error!(r#"Attr for credential restriction should contain "name" or "names" param. Current attr: {:?}"#, attr);
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Attr for credential restriction should contain "name" or "names" param."#));
+        };
+
+        for name in names {
+            sub_proof_request_builder.add_revealed_attr(&attr_common_view(&name))?
+        }
     }
 
     for predicate in predicates_for_credential {

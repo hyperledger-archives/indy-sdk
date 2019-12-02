@@ -1,30 +1,30 @@
-use api::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
-use errors::prelude::*;
-use commands::{Command, CommandExecutor};
-use commands::anoncreds::AnoncredsCommand;
-use commands::anoncreds::issuer::IssuerCommand;
-use commands::anoncreds::prover::ProverCommand;
-use commands::anoncreds::verifier::VerifierCommand;
-use domain::anoncreds::schema::{Schema, AttributeNames, Schemas};
-use domain::crypto::did::DidValue;
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId, CredentialDefinitions};
-use domain::anoncreds::credential_offer::CredentialOffer;
-use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
-use domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
-use domain::anoncreds::credential::{Credential, CredentialValues};
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, RevocationRegistryDefinition, RevocationRegistryId, RevocationRegistryDefinitions};
-use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
-use domain::anoncreds::proof::Proof;
-use domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery};
-use domain::anoncreds::requested_credential::RequestedCredentials;
-use domain::anoncreds::revocation_registry::RevocationRegistries;
-use domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
-use utils::ctypes;
+use indy_api_types::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
+use indy_api_types::errors::prelude::*;
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::anoncreds::AnoncredsCommand;
+use crate::commands::anoncreds::issuer::IssuerCommand;
+use crate::commands::anoncreds::prover::ProverCommand;
+use crate::commands::anoncreds::verifier::VerifierCommand;
+use crate::domain::anoncreds::schema::{Schema, AttributeNames, Schemas};
+use crate::domain::crypto::did::DidValue;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId, CredentialDefinitions};
+use crate::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
+use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
+use crate::domain::anoncreds::credential::{Credential, CredentialValues};
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, RevocationRegistryDefinition, RevocationRegistryId, RevocationRegistryDefinitions};
+use crate::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
+use crate::domain::anoncreds::proof::Proof;
+use crate::domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery};
+use crate::domain::anoncreds::requested_credential::RequestedCredentials;
+use crate::domain::anoncreds::revocation_registry::RevocationRegistries;
+use crate::domain::anoncreds::revocation_state::{RevocationState, RevocationStates};
+use indy_utils::ctypes;
 
 use libc::c_char;
 use std::ptr;
 
-use utils::validation::Validatable;
+use crate::indy_api_types::validation::Validatable;
 
 /*
 These functions wrap the Ursa algorithm as documented in this paper:
@@ -1526,6 +1526,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
 ///         "restrictions": Optional<filter_json>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1651,6 +1652,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
 ///         "restrictions": Optional<wql query>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1921,6 +1923,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
 ///         "restrictions": Optional<wql query>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1965,6 +1968,16 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///             "revealed_attrs": {
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+///             },
+///             "revealed_attr_groups": {
+///                 "requested_attr5_id": {
+///                     "sub_proof_index": number,
+///                     "values": [
+///                         {
+///                             "raw": string,
+///                             "encoded": string
+///                         }
+///                     ], // NOTE: check that `encoded` value match to `raw` value on application level
 ///             },
 ///             "unrevealed_attrs": {
 ///                 "requested_attr3_id": {sub_proof_index: number}
@@ -2072,6 +2085,16 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
 ///             },
+///             "revealed_attr_groups": {
+///                 "requested_attr5_id": {
+///                     "sub_proof_index": number,
+///                     "values": [
+///                         {
+///                             "raw": string,
+///                             "encoded": string
+///                         }
+///                     ], // NOTE: check that `encoded` value match to `raw` value on application level
+///             },
 ///             "unrevealed_attrs": {
 ///                 "requested_attr3_id": {sub_proof_index: number}
 ///             },
@@ -2125,6 +2148,7 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
 ///         "restrictions": Optional<wql query>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation

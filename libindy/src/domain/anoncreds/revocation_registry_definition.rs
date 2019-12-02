@@ -7,8 +7,8 @@ use super::super::crypto::did::DidValue;
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
-use utils::validation::Validatable;
-use utils::qualifier;
+use indy_api_types::validation::Validatable;
+use crate::utils::qualifier;
 
 pub const CL_ACCUM: &str = "CL_ACCUM";
 pub const REV_REG_DEG_MARKER: &str = "4";

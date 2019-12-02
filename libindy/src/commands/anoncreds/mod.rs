@@ -3,18 +3,18 @@ pub mod prover;
 pub mod verifier;
 mod tails;
 
-use commands::anoncreds::issuer::{IssuerCommand, IssuerCommandExecutor};
-use commands::anoncreds::prover::{ProverCommand, ProverCommandExecutor};
-use commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecutor};
+use crate::commands::anoncreds::issuer::{IssuerCommand, IssuerCommandExecutor};
+use crate::commands::anoncreds::prover::{ProverCommand, ProverCommandExecutor};
+use crate::commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecutor};
 
-use services::anoncreds::AnoncredsService;
-use services::blob_storage::BlobStorageService;
-use services::pool::PoolService;
-use services::wallet::WalletService;
-use services::crypto::CryptoService;
-use services::anoncreds::helpers::to_unqualified;
+use crate::services::anoncreds::AnoncredsService;
+use crate::services::blob_storage::BlobStorageService;
+use crate::services::pool::PoolService;
+use indy_wallet::WalletService;
+use crate::services::crypto::CryptoService;
+use crate::services::anoncreds::helpers::to_unqualified;
 
-use errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 use std::rc::Rc;
 

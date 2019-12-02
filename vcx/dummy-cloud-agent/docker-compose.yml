@@ -1,0 +1,52 @@
+version: '2'
+services:
+  indy_pool:
+    build:
+      context: ../../ci/
+      dockerfile: indy-pool.dockerfile
+      args:
+        pool_ip: '10.0.0.2'
+    image: indy_pool
+    container_name: indy_pool
+    working_dir: /home/indy
+    ports:
+      - "9701:9701"
+      - "9702:9702"
+      - "9703:9703"
+      - "9704:9704"
+      - "9705:9705"
+      - "9706:9706"
+      - "9707:9707"
+      - "9708:9708"
+    networks:
+      pool_network:
+        ipv4_address: 10.0.0.2
+  dummy:
+    build:
+      context: ../../libindy/ci
+      dockerfile: ubuntu.dockerfile
+    command:  bash -c 'cd indy-sdk/libindy &&
+                       cargo build &&
+                       cp target/debug/libindy.so ../vcx/dummy-cloud-agent/ &&
+                       cd ../vcx/dummy-cloud-agent &&
+                       sed -i -e 's/localhost/0.0.0.0/g' -e 's/127.0.0.1/0.0.0.0/g' config/sample-config.json &&
+                       LIBRARY_PATH=./ LD_LIBRARY_PATH=./ cargo run config/sample-config.json'
+    image: dummy
+    container_name: dummy
+    working_dir: /home/indy
+    ports:
+      - "8080:8080"
+    networks:
+      - pool_network
+    volumes:
+      - '../../:/home/indy/indy-sdk'
+    links:
+      - indy_pool
+networks:
+  pool_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        -
+          subnet: 10.0.0.0/24

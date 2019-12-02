@@ -6,8 +6,8 @@ use indy::ledger;
 use self::futures::Future;
 use self::indy_sys::ledger::{CustomTransactionParser, CustomFree, indy_register_transaction_parser_for_sp};
 
-use utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
-use utils::constants::*;
+use crate::utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
+use crate::utils::constants::*;
 
 use std::sync::{Once};
 use std::mem;
@@ -83,6 +83,10 @@ pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> R
 pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>,
                          alias: Option<&str>, role: Option<&str>) -> Result<String, IndyError> {
     ledger::build_nym_request(submitter_did, target_did, verkey, alias, role).wait()
+}
+
+pub fn parse_get_nym_response(get_nym_response: &str) -> Result<String, IndyError> {
+    ledger::parse_get_nym_response(get_nym_response).wait()
 }
 
 pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, IndyError> {
@@ -288,7 +292,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
 
             let schema_request = build_schema_request(&issuer_did, &schema_json).unwrap();
             let schema_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
-            pool::check_response_type(&schema_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&schema_response, crate::utils::types::ResponseType::REPLY);
 
             let get_schema_request = build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
             let get_schema_response = submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
@@ -302,7 +306,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
                                                                                               Some(&anoncreds::revocation_cred_def_config())).unwrap();
             let cred_def_request = build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
             let cred_def_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
-            pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&cred_def_response, crate::utils::types::ResponseType::REPLY);
 
             let tails_writer_config = anoncreds::tails_writer_config();
             let tails_writer_handle = blob_storage::open_writer("default", &tails_writer_config).unwrap();
@@ -318,7 +322,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
 
             let rev_reg_def_request = build_revoc_reg_def_request(&issuer_did, &revoc_reg_def_json).unwrap();
             let rev_reg_def_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_def_request).unwrap();
-            pool::check_response_type(&rev_reg_def_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&rev_reg_def_response, crate::utils::types::ResponseType::REPLY);
 
             let rev_reg_entry_request = build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &rev_reg_entry_json).unwrap();
             sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
@@ -369,7 +373,7 @@ pub fn post_qualified_entities() -> (&'static str, &'static str) {
 
             let schema_request = build_schema_request(&issuer_did, &schema_json).unwrap();
             let schema_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
-            pool::check_response_type(&schema_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&schema_response, crate::utils::types::ResponseType::REPLY);
 
             let get_schema_request = build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
             let get_schema_response = submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
@@ -383,7 +387,7 @@ pub fn post_qualified_entities() -> (&'static str, &'static str) {
                                                                                               Some(&anoncreds::revocation_cred_def_config())).unwrap();
             let cred_def_request = build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
             let cred_def_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
-            pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&cred_def_response, crate::utils::types::ResponseType::REPLY);
 
             let res = mem::transmute(&schema_id as &str);
             mem::forget(schema_id);

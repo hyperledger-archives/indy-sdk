@@ -43,6 +43,9 @@
                                       targetDid:(NSString *)targetDid
                                      outRequest:(NSString **)requestJson;
 
+- (NSError *)parseGetNymResponse:(NSString *)response
+                         nymData:(NSString **)nymData;
+
 // MARK: - Attrib request
 - (NSError *)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
                                       targetDid:(NSString *)targetDid

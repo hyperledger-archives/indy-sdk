@@ -5,9 +5,9 @@ use self::futures::Future;
 use serde_json;
 
 use indy::wallet;
-use utils::{test};
-use utils::constants::WALLET_CREDENTIALS;
-use utils::types::WalletRecord;
+use crate::utils::{test};
+use crate::utils::constants::WALLET_CREDENTIALS;
+use crate::utils::types::WalletRecord;
 
 use std::sync::Once;
 use std::collections::HashMap;

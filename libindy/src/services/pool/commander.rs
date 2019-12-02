@@ -1,11 +1,11 @@
-use errors::prelude::*;
-use services::pool::events::PoolEvent;
+use indy_api_types::errors::prelude::*;
+use crate::services::pool::events::PoolEvent;
 
 use super::zmq;
 
 use byteorder::{ByteOrder, LittleEndian};
-use api::INVALID_COMMAND_HANDLE;
-use services::pool::{COMMAND_CONNECT, COMMAND_EXIT, COMMAND_REFRESH};
+use indy_api_types::INVALID_COMMAND_HANDLE;
+use crate::services::pool::{COMMAND_CONNECT, COMMAND_EXIT, COMMAND_REFRESH};
 
 pub struct Commander {
     cmd_socket: zmq::Socket,
@@ -63,8 +63,9 @@ impl Commander {
 #[cfg(test)]
 mod commander_tests {
     use super::*;
-    use api::{CommandHandle, next_command_handle};
-    use services::pool::{COMMAND_REFRESH, COMMAND_EXIT, pool_create_pair_of_sockets};
+    use indy_api_types::{CommandHandle};
+    use indy_utils::next_command_handle;
+    use crate::services::pool::{COMMAND_REFRESH, COMMAND_EXIT, pool_create_pair_of_sockets};
 
     fn new_commander() -> Commander {
         let zmq_ctx = zmq::Context::new();

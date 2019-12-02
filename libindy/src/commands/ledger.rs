@@ -5,29 +5,30 @@ use std::rc::Rc;
 use serde_json;
 use serde_json::Value;
 
-use api::ledger::{CustomFree, CustomTransactionParser};
-use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId};
-use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
-use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
-use domain::crypto::did::{Did, DidValue};
-use domain::crypto::key::Key;
-use domain::ledger::node::NodeOperationData;
-use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::auth_rule::{Constraint, AuthRules};
-use domain::ledger::request::Request;
-use domain::ledger::pool::Schedule;
-use errors::prelude::*;
-use services::crypto::CryptoService;
-use services::ledger::LedgerService;
-use services::pool::{
+use crate::api::ledger::{CustomFree, CustomTransactionParser};
+use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId};
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
+use crate::domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
+use crate::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
+use crate::domain::crypto::did::{Did, DidValue};
+use crate::domain::crypto::key::Key;
+use crate::domain::ledger::node::NodeOperationData;
+use crate::domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
+use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
+use crate::domain::ledger::request::Request;
+use crate::domain::ledger::pool::Schedule;
+use indy_api_types::errors::prelude::*;
+use crate::services::crypto::CryptoService;
+use crate::services::ledger::LedgerService;
+use crate::services::pool::{
     PoolService,
     parse_response_metadata
 };
-use services::wallet::{RecordOptions, WalletService};
-use utils::crypto::signature_serializer::serialize_signature;
-use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
-use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
+use indy_wallet::{RecordOptions, WalletService};
+use crate::utils::crypto::signature_serializer::serialize_signature;
+use indy_api_types::{WalletHandle, PoolHandle, CommandHandle};
+use indy_utils::next_command_handle;
+use crate::commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
 use rust_base58::ToBase58;
 use std::string::ToString;
 
@@ -90,6 +91,9 @@ pub enum LedgerCommand {
     BuildGetNymRequest(
         Option<DidValue>, // submitter did
         DidValue, // target did
+        Box<dyn Fn(IndyResult<String>) + Send>),
+    ParseGetNymResponse(
+        String, // get nym response json
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildSchemaRequest(
         DidValue, // submitter did
@@ -357,6 +361,10 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildGetNymRequest(submitter_did, target_did, cb) => {
                 debug!(target: "ledger_command_executor", "BuildGetNymRequest command received");
                 cb(self.build_get_nym_request(submitter_did.as_ref(), &target_did));
+            }
+            LedgerCommand::ParseGetNymResponse(get_nym_response, cb) => {
+                info!(target: "ledger_command_executor", "ParseGetNymResponse command received");
+                cb(self.parse_get_nym_response(&get_nym_response));
             }
             LedgerCommand::BuildSchemaRequest(submitter_did, data, cb) => {
                 debug!(target: "ledger_command_executor", "BuildSchemaRequest command received");
@@ -742,6 +750,17 @@ impl LedgerCommandExecutor {
                                                             target_did)?;
 
         debug!("build_get_attrib_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn parse_get_nym_response(&self,
+                             get_nym_response: &str) -> IndyResult<String> {
+        debug!("parse_get_nym_response >>> get_nym_response: {:?}", get_nym_response);
+
+        let res = self.ledger_service.parse_get_nym_response(get_nym_response)?;
+
+        debug!("parse_get_nym_response <<< res: {:?}", res);
 
         Ok(res)
     }

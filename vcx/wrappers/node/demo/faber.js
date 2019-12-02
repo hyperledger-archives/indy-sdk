@@ -1,6 +1,7 @@
 import {CredentialDef} from "../dist/src/api/credential-def";
 import {IssuerCredential} from "../dist/src/api/issuer-credential";
 import {Proof} from "../dist/src/api/proof";
+import {vcxUpdateWebhookUrl} from "../dist/src/api/utils";
 import {Connection} from "../dist/src/api/connection";
 import {Schema} from "./../dist/src/api/schema";
 import {StateType, ProofState} from "../dist/src";
@@ -8,8 +9,11 @@ import sleepPromise from 'sleep-promise'
 import * as demoCommon from "./common";
 import {getRandomInt} from "./common";
 import logger from './logger'
+import url from 'url'
+import isPortReachable from 'is-port-reachable';
 
 const utime = Math.floor(new Date() / 1000);
+const optionalWebhook =  "http://localhost:7209/notifications/faber"
 
 const provisionConfig = {
     'agency_url': 'http://localhost:8080',
@@ -18,36 +22,54 @@ const provisionConfig = {
     'wallet_name': `node_vcx_demo_faber_wallet_${utime}`,
     'wallet_key': '123',
     'payment_method': 'null',
-    'enterprise_seed': '000000000000000000000000Trustee1'
+    'enterprise_seed': '000000000000000000000000Trustee1',
 };
 
 const logLevel = 'error';
 
+function postegressEnabled() {
+    return process.argv[2] === '--postgres'
+}
+
 async function run() {
     await demoCommon.initLibNullPay();
 
-    logger.info("#0 initialize rust API from NodeJS");
+    logger.info("#0 Initialize rust API from NodeJS");
     await demoCommon.initRustApiAndLogger(logLevel);
 
-    logger.info("#1 Provision an agent and wallet, get back configuration details");
-    logger.debug(`Config used to provision agent in agency: ${JSON.stringify(provisionConfig, null, 2)}`);
-    let config = await demoCommon.provisionAgentInAgency(provisionConfig);
+    if (postegressEnabled()) {
+        logger.info("Going to initialize postgress plugin.")
+        await demoCommon.loadPostgresPlugin(provisionConfig);
+        logger.info("Postgress plugin initialized.")
+        provisionConfig['wallet_type'] = 'postgres_storage'
+        provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
+        provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
+    }
+    
+    if (await isPortReachable(url.parse(optionalWebhook).port, {host: url.parse(optionalWebhook).hostname})) {
+        provisionConfig['webhook_url'] = optionalWebhook
+        logger.info(`Webhook server available! Will use webhook: ${optionalWebhook}`)
+    } else {
+        logger.info(`Webhook url will not be used`)
+    }
 
-    logger.info("#2 Initialize libvcx with new configuration");
-    logger.debug(`${JSON.stringify(config, null, 2)}`);
-    await demoCommon.initVcxWithProvisionedAgentConfig(config);
+    logger.info(`#1 Config used to provision agent in agency: ${JSON.stringify(provisionConfig, null, 2)}`);
+    const agentProvision = await demoCommon.provisionAgentInAgency(provisionConfig);
 
-    logger.info("#3 Create a new schema on the ledger");
+    logger.info(`#2 Using following agent provision to initialize VCX ${JSON.stringify(agentProvision, null, 2)}`);
+    await demoCommon.initVcxWithProvisionedAgentConfig(agentProvision);
+
     const version = `${getRandomInt(1, 101)}.${getRandomInt(1, 101)}.${getRandomInt(1, 101)}`;
     const schemaData = {
         data: {
             attrNames: ['name', 'date', 'degree'],
-            name: `Schema1`,
+            name: `FaberVcx`,
             version
         },
         paymentHandle: 0,
-        sourceId: 'testSchemaSourceId123'
+        sourceId: `your-identifier-fabervcx-${version}`
     };
+    logger.info(`#3 Create a new schema on the ledger: ${JSON.stringify(schemaData, null, 2)}`);
 
     const schema = await Schema.create(schemaData);
     const schemaId = await schema.getSchemaId();
@@ -71,7 +93,7 @@ async function run() {
 
     logger.info("#5 Create a connection to alice and print out the invite details");
     const connectionToAlice = await Connection.create({id: 'alice'});
-    await connectionToAlice.connect('{"use_public_did": true}');
+    await connectionToAlice.connect('{}');
     await connectionToAlice.updateState();
     const details = await connectionToAlice.inviteDetails(false);
     logger.info("\n\n**invite details**");
@@ -127,15 +149,15 @@ async function run() {
     await credentialForAlice.updateState();
     credential_state = await credentialForAlice.getState();
     while (credential_state !== StateType.Accepted) {
-        sleepPromise(2000);
+        await sleepPromise(2000);
         await credentialForAlice.updateState();
         credential_state = await credentialForAlice.getState();
     }
 
     const proofAttributes = [
-        {'name': 'name', 'restrictions': [{'issuer_did': config['institution_did']}]},
-        {'name': 'date', 'restrictions': [{'issuer_did': config['institution_did']}]},
-        {'name': 'degree', 'restrictions': [{'issuer_did': config['institution_did']}]}
+        {'name': 'name', 'restrictions': [{'issuer_did': agentProvision['institution_did']}]},
+        {'name': 'date', 'restrictions': [{'issuer_did': agentProvision['institution_did']}]},
+        {'name': 'degree', 'restrictions': [{'issuer_did': agentProvision['institution_did']}]}
     ];
 
     logger.info("#19 Create a Proof object");
@@ -152,7 +174,7 @@ async function run() {
     logger.info("#21 Poll agency and wait for alice to provide proof");
     let proofState = await proof.getState();
     while (proofState !== StateType.Accepted) {
-        sleepPromise(2000);
+        await sleepPromise(2000);
         await proof.updateState();
         proofState = await proof.getState();
     }
@@ -162,11 +184,10 @@ async function run() {
 
     logger.info("#28 Check if proof is valid");
     if (proof.proofState === ProofState.Verified) {
-        logger.info("proof is verified!!")
+        logger.info("Proof is verified")
     } else {
-        logger.info("could not verify proof :(")
+        logger.info("Could not verify proof")
     }
 }
-
 
 run();

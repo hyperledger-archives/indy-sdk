@@ -10,7 +10,7 @@ pub mod payment_address;
 
 use self::regex::Regex;
 
-use command_executor::{CommandContext, CommandParams};
+use crate::command_executor::{CommandContext, CommandParams};
 use indy::{ErrorCode, IndyError};
 
 use std;
@@ -324,7 +324,7 @@ pub fn handle_indy_error(err: IndyError, submitter_did: Option<&str>, pool_name:
 }
 
 #[cfg(test)]
-use libindy::ledger::Ledger;
+use crate::libindy::ledger::Ledger;
 
 #[cfg(test)]
 pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
@@ -346,7 +346,7 @@ pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> 
 }
 
 #[cfg(test)]
-use utils::test::TestUtils;
+use crate::utils::test::TestUtils;
 
 #[cfg(test)]
 fn setup() -> CommandContext {

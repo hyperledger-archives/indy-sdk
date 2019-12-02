@@ -6,14 +6,14 @@ inject_indy_dependencies!();
 extern crate indyrs as indy;
 extern crate indyrs as api;
 
-use utils::{did, pool, ledger};
-use utils::constants::*;
-use utils::types::ResponseType;
-use utils::Setup;
+use crate::utils::{did, pool, ledger};
+use crate::utils::constants::*;
+use crate::utils::types::ResponseType;
+use crate::utils::Setup;
 
 use self::indy::ErrorCode;
 
-use api::{INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
+use crate::api::{INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;

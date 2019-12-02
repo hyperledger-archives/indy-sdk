@@ -16,6 +16,8 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
 
+import static org.hyperledger.indy.sdk.Callbacks.boolCallback;
+
 /**
  * anoncreds.rs API
  */
@@ -133,22 +135,6 @@ public class Anoncreds extends IndyJava.API {
 			if (! checkResult(future, err)) return;
 
 			ProverCreateCredentialRequestResult result = new ProverCreateCredentialRequestResult(credential_req_json, credential_req_metadata_json);
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when verifierVerifyProof completes.
-	 */
-	private static Callback verifierVerifyProofCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, Boolean valid) {
-
-			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
-			if (! checkResult(future, err)) return;
-
-			Boolean result = valid;
 			future.complete(result);
 		}
 	};
@@ -1421,7 +1407,7 @@ public class Anoncreds extends IndyJava.API {
 				credentialDefs,
 				revocRegDefs,
 				revocRegs,
-				verifierVerifyProofCb);
+				boolCallback);
 
 		checkResult(future, result);
 

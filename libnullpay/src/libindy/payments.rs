@@ -116,7 +116,7 @@ pub fn register_payment_method(
 ) -> ErrorCode {
     let (sender, receiver) = channel();
 
-    let closure: Box<FnMut(ErrorCode) + Send> = Box::new(move |err| {
+    let closure: Box<dyn FnMut(ErrorCode) + Send> = Box::new(move |err| {
         sender.send(err).unwrap();
     });
 
@@ -149,7 +149,7 @@ pub fn register_payment_method(
 }
 
 pub fn list_payment_addresses(wallet_handle: i32,
-                              cb: Box<FnMut(ErrorCode, String) + Send>, ) -> ErrorCode {
+                              cb: Box<dyn FnMut(ErrorCode, String) + Send>, ) -> ErrorCode {
     let (command_handle, cb) = callbacks::closure_to_cb_ec_string(cb);
 
     unsafe {

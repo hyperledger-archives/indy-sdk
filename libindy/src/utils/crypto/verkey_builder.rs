@@ -1,6 +1,6 @@
-use errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use rust_base58::{FromBase58, ToBase58};
-use services::crypto::DEFAULT_CRYPTO_TYPE;
+use crate::services::crypto::DEFAULT_CRYPTO_TYPE;
 
 
 pub fn build_full_verkey(dest: &str, verkey: Option<&str>) -> Result<String, IndyError> {

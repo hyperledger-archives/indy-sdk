@@ -1739,6 +1739,22 @@ NAN_METHOD(buildGetNymRequest) {
   delete arg1;
 }
 
+void parseGetNymResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(parseGetNymResponse) {
+  INDY_ASSERT_NARGS(parseGetNymResponse, 2)
+  INDY_ASSERT_STRING(parseGetNymResponse, 0, response)
+  INDY_ASSERT_FUNCTION(parseGetNymResponse, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_parse_get_nym_response(icb->handle, arg0, parseGetNymResponse_cb));
+  delete arg0;
+}
+
 void buildSchemaRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3648,6 +3664,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildAttribRequest", buildAttribRequest);
   Nan::Export(target, "buildGetAttribRequest", buildGetAttribRequest);
   Nan::Export(target, "buildGetNymRequest", buildGetNymRequest);
+  Nan::Export(target, "parseGetNymResponse", parseGetNymResponse);
   Nan::Export(target, "buildSchemaRequest", buildSchemaRequest);
   Nan::Export(target, "buildGetSchemaRequest", buildGetSchemaRequest);
   Nan::Export(target, "parseGetSchemaResponse", parseGetSchemaResponse);

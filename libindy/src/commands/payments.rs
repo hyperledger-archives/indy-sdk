@@ -8,17 +8,17 @@ use hex;
 
 use serde_json;
 
-use errors::prelude::*;
-use services::crypto::CryptoService;
-use services::ledger::LedgerService;
-use services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
-use services::wallet::{RecordOptions, WalletService};
-use api::{WalletHandle, CommandHandle};
-use domain::ledger::auth_rule::AuthRule;
-use domain::crypto::did::DidValue;
+use indy_api_types::errors::prelude::*;
+use crate::services::crypto::CryptoService;
+use crate::services::ledger::LedgerService;
+use crate::services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
+use indy_wallet::{RecordOptions, WalletService};
+use indy_api_types::{WalletHandle, CommandHandle};
+use crate::domain::ledger::auth_rule::AuthRule;
+use crate::domain::crypto::did::DidValue;
 
-use api::next_command_handle;
-use commands::BoxedCallbackStringStringSend;
+use indy_utils::next_command_handle;
+use crate::commands::BoxedCallbackStringStringSend;
 
 pub enum PaymentsCommand {
     RegisterMethod(

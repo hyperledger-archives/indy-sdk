@@ -1,6 +1,16 @@
 # Changelog
 
-## 1.12.0 - 2019-09-XX
+## 1.13.0 - 2019-12-03
+* LibVCX Aries support:
+    * Implemented Connection RFC (IS-1180)
+    * Implemented Credential Issuance RFC (IS-1393)
+    * Implemented Credential Presentation RFC (IS-1394)
+    * Integrated Connection Protocol into Dummy Cloud Agent (IS-1392)
+* Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
+* Bugfixes:
+    * Fixed bool representation in Java wrapper (IS-1368)
+
+## 1.12.0 - 2019-10-08
 * Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
     * general format of fully-qualified identifier is `<prefix>:<method>:<value>`.
     * extended `did_info` parameter of `indy_create_and_store_my_did` function to accepts optional `method_name` filed. This field should be used to create fully qualified DID.
@@ -18,6 +28,7 @@
     * extended VCX provisioning config to accept optional `did_method` filed. This field should be used to create fully qualified DIDs.
 * Migrated Android onto the API v21 and NDK 20.
 * Supported MacOS builds for Indy CLI.
+* The default value of `Protocol Version` was changed on 2. Henceforth `indy_set_protocol_version` function should be called if you are going to work with Indy-Node 1.3 and less. 
 * Bugfixes
     * Fixed `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
     * Fixed `attr::{}::value` verification (IS-1380, thanks @nrempel for reporting the vulnerability)

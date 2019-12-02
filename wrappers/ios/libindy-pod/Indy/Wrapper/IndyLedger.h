@@ -132,6 +132,27 @@
                                  targetDID:(NSString *)targetDid
                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
+/**
+ Parse a GET_NYM response to get NYM data.
+ 
+ @param response Response on GET_NYM request.
+ @param completion Callback that takes command result as parameter. 
+ Returns NYM data as JSON
+    {
+        did: DID as base58-encoded string for 16 or 32 bit DID value.
+        verkey: verification key as base58-encoded string.
+        role: Role associated number
+                                null (common USER)
+                                0 - TRUSTEE
+                                2 - STEWARD
+                                101 - TRUST_ANCHOR
+                                101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+                                201 - NETWORK_MONITOR
+    }
+ */
++ (void)parseGetNymResponse:(NSString *)response
+                 completion:(void (^)(NSError *error, NSString *nymDataJson))completion;
+
 // MARK: - Attribute request
 
 /**
@@ -804,7 +825,9 @@
  @param version (Optional) version of TAA from ledger.
      text and version should be passed together.
      text and version are required if taaDigest parameter is omitted.
- @param taaDigest (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+ @param taaDigest (Optional) digest on text and version.
+  Digest is sha256 hash calculated on concatenated strings: version || text.
+  This parameter is required if text and version parameters are omitted.
  @param accMechType mechanism how user has accepted the TAA
  @param timeOfAcceptance UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
 

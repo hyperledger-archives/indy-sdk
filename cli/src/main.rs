@@ -25,10 +25,10 @@ mod command_executor;
 mod commands;
 mod libindy;
 
-use command_executor::CommandExecutor;
+use crate::command_executor::CommandExecutor;
 
-use commands::{common, did, ledger, pool, wallet, payment_address};
-use utils::history;
+use crate::commands::{common, did, ledger, pool, wallet, payment_address};
+use crate::utils::history;
 
 use linefeed::{Reader, ReadResult, Terminal, Signal};
 use linefeed::complete::{Completer, Completion};

@@ -2,11 +2,11 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use domain::wallet::Tags;
-use errors::prelude::*;
-use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use utils::sequence;
-use api::WalletHandle;
+use indy_api_types::domain::wallet::Tags;
+use indy_api_types::errors::prelude::*;
+use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use indy_utils::sequence;
+use indy_api_types::WalletHandle;
 
 
 pub enum NonSecretsCommand {

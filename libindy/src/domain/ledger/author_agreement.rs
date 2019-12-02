@@ -1,8 +1,8 @@
-use super::constants::{TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT, TXN_AUTHR_AGRMT_AML, GET_TXN_AUTHR_AGRMT_AML};
-
-use utils::validation::Validatable;
-
 use std::collections::HashMap;
+
+use indy_api_types::validation::Validatable;
+
+use super::constants::{GET_TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT_AML, TXN_AUTHR_AGRMT, TXN_AUTHR_AGRMT_AML};
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct TxnAuthorAgreementOperation {
@@ -64,11 +64,19 @@ impl GetTxnAuthorAgreementOperation {
     }
 }
 
-pub type AcceptanceMechanisms = HashMap<String, ::serde_json::Value>;
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct AcceptanceMechanisms(pub HashMap<String, ::serde_json::Value>);
+
+impl AcceptanceMechanisms {
+    #[allow(dead_code)]
+    pub fn new() -> Self {
+        AcceptanceMechanisms(HashMap::new())
+    }
+}
 
 impl Validatable for AcceptanceMechanisms {
     fn validate(&self) -> Result<(), String> {
-        if self.is_empty() {
+        if self.0.is_empty() {
             return Err(String::from("Empty list of Acceptance Mechanisms has been passed"));
         }
         Ok(())

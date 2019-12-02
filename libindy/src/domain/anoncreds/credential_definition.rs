@@ -3,8 +3,8 @@ use super::schema::SchemaId;
 use super::super::ledger::request::ProtocolVersion;
 use super::super::crypto::did::DidValue;
 
-use utils::validation::Validatable;
-use utils::qualifier;
+use indy_api_types::validation::Validatable;
+use crate::utils::qualifier;
 
 use ursa::cl::{
     CredentialPrimaryPublicKey,
@@ -208,7 +208,7 @@ impl CredentialDefinitionId {
             return Some((DidValue(did), signature_type, SchemaId(schema_id), tag));
         }
 
-        return None;
+        None
     }
 
     pub fn issuer_did(&self) -> Option<DidValue> {

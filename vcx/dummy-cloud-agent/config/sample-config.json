@@ -1,6 +1,7 @@
 {
   "app": {
-    "prefix": "/agency"
+    "prefix": "/agency",
+    "enable_admin_api": false
   },
   "forward_agent": {
     "did": "VsKV7grR1BUE29mG2Fm2kX",

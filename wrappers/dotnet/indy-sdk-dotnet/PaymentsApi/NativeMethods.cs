@@ -145,26 +145,26 @@ namespace Hyperledger.Indy.PaymentsApi
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_parse_get_txn_fees_response(int command_handle, string payment_method, string resp_json, ParseGetTxnFeesResponseDelegate cb);
-
-        /// <summary>
-        /// Parse get txn fees response delegate.
-        /// </summary>
         public delegate void ParseGetTxnFeesResponseDelegate(int command_handle, int err, string fees_json);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_build_verify_payment_req(int command_handle, int wallet_handle, string submitter_did, string receipt, BuildVerifyPaymentRequestDelegate cb);
-
-        /// <summary>
-        /// Build verify payment request delegate.
-        /// </summary>
         public delegate void BuildVerifyPaymentRequestDelegate(int command_handle, int err, string verify_txn_json, string payment_method);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
         internal static extern int indy_parse_verify_payment_response(int command_handle, string payment_method, string resp_json, ParseVerifyPaymentResponseDelegate cb);
-
-        /// <summary>
-        /// Parse verify payment request delegate.
-        /// </summary>
         public delegate void ParseVerifyPaymentResponseDelegate(int command_handle, int err, string txn_json);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
+        internal static extern int indy_get_request_info(int command_handle, string get_auth_rule_response_json, string requester_info_json, string fees_json, GetRequestInfoDelegate cb);
+        internal delegate void GetRequestInfoDelegate(int command_handle, int err, string request_info_json);
+                                                
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
+        internal static extern int indy_sign_with_address(int command_handle, int wallet_handle, string address, byte[] message_raw, uint message_len, SignWithAddressDelegate cb);
+        internal delegate void SignWithAddressDelegate(int command_handle, int err, IntPtr signature_raw, uint signature_len);
+    
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
+        internal static extern int indy_verify_with_address(int command_handle, string address, byte[] message_raw, uint message_len, byte[] signature_raw, uint signature_len, VerifyWithAddressDelegate cb);
+        internal delegate void VerifyWithAddressDelegate(int command_handle, int err, bool result);
     }
 }

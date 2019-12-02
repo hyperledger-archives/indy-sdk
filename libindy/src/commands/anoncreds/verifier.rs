@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
-use domain::anoncreds::proof::Proof;
-use domain::anoncreds::proof_request::{ProofRequest, ProofRequestPayload};
-use domain::anoncreds::revocation_registry::{rev_regs_map_to_rev_regs_local_map, RevocationRegistryV1, RevocationRegistries};
-use domain::anoncreds::revocation_registry_definition::{rev_reg_defs_map_to_rev_reg_defs_v1_map, RevocationRegistryDefinitionV1, RevocationRegistryId, RevocationRegistryDefinitions};
-use domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
-use errors::prelude::*;
-use services::anoncreds::AnoncredsService;
+use crate::domain::anoncreds::credential_definition::{cred_defs_map_to_cred_defs_v1_map, CredentialDefinitionV1, CredentialDefinitionId, CredentialDefinitions};
+use crate::domain::anoncreds::proof::Proof;
+use crate::domain::anoncreds::proof_request::{ProofRequest, ProofRequestPayload};
+use crate::domain::anoncreds::revocation_registry::{rev_regs_map_to_rev_regs_local_map, RevocationRegistryV1, RevocationRegistries};
+use crate::domain::anoncreds::revocation_registry_definition::{rev_reg_defs_map_to_rev_reg_defs_v1_map, RevocationRegistryDefinitionV1, RevocationRegistryId, RevocationRegistryDefinitions};
+use crate::domain::anoncreds::schema::{schemas_map_to_schemas_v1_map, SchemaV1, SchemaId, Schemas};
+use indy_api_types::errors::prelude::*;
+use crate::services::anoncreds::AnoncredsService;
 
 pub enum VerifierCommand {
     VerifyProof(

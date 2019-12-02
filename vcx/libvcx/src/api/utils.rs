@@ -43,7 +43,7 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
         Err(e) => {
             error!("Provision Agent Error {}.", e);
             let _res: u32 = e.into();
-            return ptr::null_mut();
+            ptr::null_mut()
         }
         Ok(s) => {
             debug!("Provision Agent Successful");

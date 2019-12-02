@@ -10,23 +10,23 @@ extern crate indyrs as api;
 mod demos {
     use super::*;
 
-    use utils::{wallet, anoncreds};
-    use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID};
+    use crate::utils::{wallet, anoncreds};
+    use crate::utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID};
 
     use indy::ErrorCode;
-    use utils::inmem_wallet::InmemWallet;
-    use utils::constants::*;
-    use utils::Setup;
+    use crate::utils::inmem_wallet::InmemWallet;
+    use crate::utils::constants::*;
+    use crate::utils::Setup;
 
-    use utils::domain::anoncreds::schema::Schema;
-    use utils::domain::anoncreds::credential_definition::CredentialDefinition;
-    use utils::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
-    use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
-    use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
-    use utils::domain::anoncreds::proof::Proof;
-    use utils::domain::anoncreds::revocation_state::RevocationState;
-    use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
-    use utils::domain::anoncreds::credential_offer::CredentialOffer;
+    use crate::utils::domain::anoncreds::schema::Schema;
+    use crate::utils::domain::anoncreds::credential_definition::CredentialDefinition;
+    use crate::utils::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolicy;
+    use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+    use crate::utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+    use crate::utils::domain::anoncreds::proof::Proof;
+    use crate::utils::domain::anoncreds::revocation_state::RevocationState;
+    use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistry;
+    use crate::utils::domain::anoncreds::credential_offer::CredentialOffer;
 
     #[test]
     fn anoncreds_works_for_single_issuer_single_prover() {
@@ -1696,10 +1696,10 @@ mod demos {
         Setup::empty();
 
         //1. Issuer creates wallet, gets wallet handle
-        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_issuance_by_default_revocation_strategy_revoke_credential").unwrap();
+        let (issuer_wallet_handle, issuer_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_issuance_by_default_revocation_strategy_revoke_credential_issuer").unwrap();
 
         //2. Prover creates wallet, gets wallet handle
-        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_issuance_by_default_revocation_strategy_revoke_credential").unwrap();
+        let (prover_wallet_handle, prover_wallet_config) = wallet::create_and_open_default_wallet("anoncreds_works_for_issuance_by_default_revocation_strategy_revoke_credential_prover").unwrap();
 
         //3 Issuer creates Schema, Credential Definition and Revocation Registry
         let (schema_id, schema_json,

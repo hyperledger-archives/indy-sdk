@@ -8,27 +8,28 @@ extern crate indyrs as api;
 
 use self::indy::ErrorCode;
 #[cfg(feature = "local_nodes_pool")]
-use utils::{pool, ledger, did, anoncreds};
-use utils::types::*;
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::{pool, ledger, did, anoncreds};
+use crate::utils::types::*;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 use self::rand::distributions::Alphanumeric;
 
-use utils::domain::ledger::constants;
-use utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
-use utils::domain::anoncreds::schema::SchemaV1;
-use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
-use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
-use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
-use utils::domain::crypto::did::DidValue;
+use crate::utils::domain::ledger::constants;
+use crate::utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
+use crate::utils::domain::ledger::nym::NymData;
+use crate::utils::domain::anoncreds::schema::SchemaV1;
+use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
+use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use crate::utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
+use crate::utils::domain::crypto::did::DidValue;
 
 use std::collections::HashMap;
 use std::thread;
 
-use api::INVALID_WALLET_HANDLE;
-use api::INVALID_POOL_HANDLE;
+use crate::api::INVALID_WALLET_HANDLE;
+use crate::api::INVALID_POOL_HANDLE;
 
 mod high_cases {
     use super::*;
@@ -366,8 +367,7 @@ mod high_cases {
 
             let get_nym_request = ledger::build_get_nym_request(Some(&setup.did), &setup.did).unwrap();
             let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
+            ledger::parse_get_nym_response(&get_nym_response).unwrap();
         }
 
         #[test]
@@ -383,9 +383,12 @@ mod high_cases {
 
             let get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
             let get_nym_response = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_resp).unwrap();
+            let data = ledger::parse_get_nym_response(&get_nym_response).unwrap();
 
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
+            let nym_data: NymData = serde_json::from_str(&data).unwrap();
+            assert_eq!(my_did, nym_data.did.0);
+            assert_eq!(my_verkey, nym_data.verkey.unwrap());
+            assert!(nym_data.role.is_none());
         }
     }
 
@@ -529,7 +532,6 @@ mod high_cases {
 
             let get_attrib_request = ledger::build_get_attrib_request(Some(&setup.did), &setup.did, Some("endpoint"), None, None).unwrap();
             let get_attrib_response = ledger::submit_request_with_retries(setup.pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
-
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
         }
@@ -1417,7 +1419,7 @@ mod high_cases {
             let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
             assert!(response_metadata["seqNo"].as_u64().is_some());
             assert!(response_metadata["txnTime"].as_u64().is_none());
-            assert!(response_metadata["lastTxnTime"].as_u64().is_none());
+            assert!(response_metadata["lastTxnTime"].as_u64().is_some());
             assert!(response_metadata["lastSeqNo"].as_u64().is_none());
         }
 
@@ -2846,7 +2848,7 @@ mod medium_cases {
     use super::*;
     use openssl::hash::{MessageDigest, Hasher};
     use sodiumoxide::crypto::secretbox;
-    use utils::domain::anoncreds::schema::Schema;
+    use crate::utils::domain::anoncreds::schema::Schema;
 
     mod requests {
         use super::*;
@@ -2998,8 +3000,9 @@ mod medium_cases {
 
             let get_nym_request = ledger::build_get_nym_request(None, DID_TRUSTEE).unwrap();
             let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_some());
+            let get_nym_response = ledger::parse_get_nym_response(&get_nym_response).unwrap();
+            let get_nym_response: NymData = serde_json::from_str(&get_nym_response).unwrap();
+            assert_eq!(DID_TRUSTEE.to_string(), get_nym_response.did.0);
         }
 
         #[test]
@@ -3092,8 +3095,8 @@ mod medium_cases {
 
             let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
             let get_nym_response = ledger::submit_request(setup.pool_handle, &get_nym_request).unwrap();
-            let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
-            assert!(get_nym_response.result.data.is_none());
+            let res = ledger::parse_get_nym_response(&get_nym_response);
+            assert_code!(ErrorCode::LedgerNotFound, res);
         }
 
         #[test]
@@ -3137,9 +3140,8 @@ mod medium_cases {
 
             let mut get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
             let get_nym_response_with_role = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_req_resp).unwrap();
-
-            let get_nym_response_with_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_with_role).unwrap();
-            let get_nym_response_data_with_role: GetNymResultData = serde_json::from_str(&get_nym_response_with_role.result.data.unwrap()).unwrap();
+            let get_nym_response_data_with_role = ledger::parse_get_nym_response(&get_nym_response_with_role).unwrap();
+            let get_nym_response_data_with_role: NymData = serde_json::from_str(&get_nym_response_data_with_role).unwrap();
 
             nym_request = ledger::build_nym_request(&my_did, &my_did,
                                                     Some(&my_verkey), None, Some("")).unwrap();
@@ -3148,9 +3150,8 @@ mod medium_cases {
 
             get_nym_request = ledger::build_get_nym_request(Some(&my_did), &my_did).unwrap();
             let get_nym_response_without_role = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_request, &nym_req_resp).unwrap();
-
-            let get_nym_response_without_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_without_role).unwrap();
-            let get_nym_response_data_without_role: GetNymResultData = serde_json::from_str(&get_nym_response_without_role.result.data.unwrap()).unwrap();
+            let get_nym_response_data_without_role = ledger::parse_get_nym_response(&get_nym_response_without_role).unwrap();
+            let get_nym_response_data_without_role: NymData = serde_json::from_str(&get_nym_response_data_without_role).unwrap();
 
             assert!(get_nym_response_data_without_role.role.is_none());
             assert_ne!(get_nym_response_data_without_role.role, get_nym_response_data_with_role.role);
@@ -3306,7 +3307,7 @@ mod medium_cases {
 
     mod schemas_requests {
         use super::*;
-        use utils::domain::anoncreds::schema::SchemaId;
+        use crate::utils::domain::anoncreds::schema::SchemaId;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -3356,10 +3357,10 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_request_works_for_attrs_count_more_than_acceptable() {
-            use utils::domain::anoncreds::schema::MAX_ATTRIBUTES_COUNT;
+            use crate::utils::domain::anoncreds::schema::MAX_ATTRIBUTES_COUNT;
 
             let mut schema = utils::anoncreds::gvt_schema();
-            schema.attr_names = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect();
+            schema.attr_names = (0..MAX_ATTRIBUTES_COUNT + 1).map(|i| i.to_string()).collect::<std::collections::HashSet<String>>().into();
             let schema = Schema::SchemaV1(schema);
             let schema_json = serde_json::to_string(&schema).unwrap();
 
@@ -3564,7 +3565,7 @@ mod medium_cases {
 
             let schema_request = ledger::build_schema_request(&setup.did, &schema_json).unwrap();
             let schema_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &schema_request).unwrap();
-            pool::check_response_type(&schema_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&schema_response, crate::utils::types::ResponseType::REPLY);
 
             let get_schema_request = ledger::build_get_schema_request(Some(&setup.did), &schema_id).unwrap();
             let get_schema_response = ledger::submit_request_with_retries(setup.pool_handle, &get_schema_request, &schema_response).unwrap();
@@ -3578,7 +3579,7 @@ mod medium_cases {
                                                                                               Some(&anoncreds::default_cred_def_config())).unwrap();
             let cred_def_request = ledger::build_cred_def_txn(&setup.did, &cred_def_json).unwrap();
             let cred_def_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &cred_def_request).unwrap();
-            pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&cred_def_response, crate::utils::types::ResponseType::REPLY);
 
             let get_cred_def_request = ledger::build_get_cred_def_request(Some(DID_MY1), &cred_def_id).unwrap();
             let get_cred_def_response = ledger::submit_request_with_retries(setup.pool_handle, &get_cred_def_request, &cred_def_response).unwrap();
