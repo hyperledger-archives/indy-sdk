@@ -18,7 +18,7 @@ use crate::domain::anoncreds::credential_attr_tag_policy::CredentialAttrTagPolic
 use crate::domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionId};
 use crate::domain::anoncreds::credential_offer::CredentialOffer;
 use crate::domain::anoncreds::credential_request::CredentialRequestMetadata;
-use crate::domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent};
+use crate::domain::anoncreds::proof::{Identifier, Proof, RequestedProof, RevealedAttributeInfo, SubProofReferent, RevealedAttributeGroupInfo, AttributeValue};
 use crate::domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestPayload, ProofRequestsVersion, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
 use crate::domain::anoncreds::requested_credential::ProvingCredentialKey;
 use crate::domain::anoncreds::requested_credential::RequestedCredentials;
@@ -360,16 +360,33 @@ impl Prover {
         for attr_info in req_attrs_for_credential {
             if attr_info.revealed {
                 let attribute = &proof_req.requested_attributes[&attr_info.attr_referent];
-                let attribute_values =
-                    self.get_credential_values_for_attribute(&credential.values.0, &attribute.name)
-                        .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", attribute.name)))?;
 
-                requested_proof.revealed_attrs.insert(attr_info.attr_referent,
-                                                      RevealedAttributeInfo {
-                                                          sub_proof_index,
-                                                          raw: attribute_values.raw,
-                                                          encoded: attribute_values.encoded,
-                                                      });
+                if let Some(name) = &attribute.name {
+                    let attribute_values =
+                        self.get_credential_values_for_attribute(&credential.values.0, &name)
+                            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", name)))?;
+
+                    requested_proof.revealed_attrs.insert(attr_info.attr_referent.clone(),
+                                                          RevealedAttributeInfo {
+                                                              sub_proof_index,
+                                                              raw: attribute_values.raw,
+                                                              encoded: attribute_values.encoded,
+                                                          });
+                } else if let Some(names) = &attribute.names {
+                    let mut value_map: HashMap<String, AttributeValue> = HashMap::new();
+                    for name in names {
+                        let attr_value = self.get_credential_values_for_attribute(&credential.values.0, &name)
+                            .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("Credential value not found for attribute {:?}", name)))?;
+                        value_map.insert(name.clone(), AttributeValue {
+                            raw: attr_value.raw,
+                            encoded: attr_value.encoded,
+                        });
+                    }
+                    requested_proof.revealed_attr_groups.insert(attr_info.attr_referent.clone(), RevealedAttributeGroupInfo {
+                        sub_proof_index,
+                        values: value_map
+                    });
+                }
             } else {
                 requested_proof.unrevealed_attrs.insert(attr_info.attr_referent, SubProofReferent { sub_proof_index });
             }
@@ -393,7 +410,13 @@ impl Prover {
 
         for attr in req_attrs_for_credential {
             if attr.revealed {
-                sub_proof_request_builder.add_revealed_attr(&attr_common_view(&attr.attr_info.name))?
+                if let Some(ref name) = &attr.attr_info.name {
+                    sub_proof_request_builder.add_revealed_attr(&attr_common_view(name))?
+                } else if let Some(ref names) = &attr.attr_info.names {
+                    for name in names {
+                        sub_proof_request_builder.add_revealed_attr(&attr_common_view(name))?
+                    }
+                }
             }
         }
 
@@ -413,13 +436,20 @@ impl Prover {
 
     pub fn extend_proof_request_restrictions(&self,
                                              version: &ProofRequestsVersion,
-                                             name: &str,
+                                             name: &Option<String>,
+                                             names: &Option<Vec<String>>,
                                              referent: &str,
                                              restrictions: &Option<Query>,
                                              extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<Query> {
-        let mut queries: Vec<Query> = vec![
-            Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
-        ];
+        info!("name: {:?}, names: {:?}", name, names);
+
+        let mut queries: Vec<Query> = if let Some(names) = names.as_ref().or(name.as_ref().map(|s| vec![s.clone()]).as_ref()) {
+            names.iter().map(|name| {
+                Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
+            }).collect()
+        } else {
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Proof Request attribute restriction should contain "name" or "names" param"#));
+        };
 
         if let Some(restrictions_) = restrictions {
             match version {
@@ -690,7 +720,8 @@ mod tests {
 
         fn _attr_info() -> AttributeInfo {
             AttributeInfo {
-                name: "name".to_string(),
+                name: Some("name".to_string()),
+                names: None,
                 restrictions: None,
                 non_revoked: None,
             }
@@ -765,7 +796,8 @@ mod tests {
             });
 
             proof_req.requested_attributes.insert("attribute_referent_2".to_string(), AttributeInfo {
-                name: "last_name".to_string(),
+                name: Some("last_name".to_string()),
+                names: None,
                 restrictions: None,
                 non_revoked: None,
             });
@@ -929,6 +961,7 @@ mod tests {
         use super::*;
 
         const ATTR_NAME: &str = "name";
+        const ATTR_NAME_2: &str = "name_2";
         const ATTR_REFERENT: &str = "attr_1";
 
         fn _value(json: &str) -> serde_json::Value {
@@ -940,13 +973,33 @@ mod tests {
             let ps = Prover::new();
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &None,
                                                              &None).unwrap();
 
             let expected_query = Query::And(vec![
                 Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string())
+            ]);
+
+            assert_eq!(expected_query, query);
+        }
+
+        #[test]
+        fn build_query_works_for_name() {
+            let ps = Prover::new();
+
+            let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
+                                                             &None,
+                                                             &Some(vec![ATTR_NAME.to_string(), ATTR_NAME_2.to_string()]),
+                                                             ATTR_REFERENT,
+                                                             &None,
+                                                             &None).unwrap();
+
+            let expected_query = Query::And(vec![
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
+                Query::Eq("attr::name_2::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string())
             ]);
 
             assert_eq!(expected_query, query);
@@ -962,7 +1015,8 @@ mod tests {
             ]);
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &Some(restriction),
                                                              &None).unwrap();
@@ -987,7 +1041,8 @@ mod tests {
             );
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &None,
                                                              &Some(&extra_query)).unwrap();
@@ -1014,7 +1069,8 @@ mod tests {
             );
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &Some(restriction),
                                                              &Some(&extra_query)).unwrap();
@@ -1040,7 +1096,8 @@ mod tests {
             );
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &None,
                                                              &Some(&extra_query)).unwrap();
@@ -1070,7 +1127,8 @@ mod tests {
             );
 
             let query = ps.extend_proof_request_restrictions(&ProofRequestsVersion::V2,
-                                                             ATTR_NAME,
+                                                             &Some(ATTR_NAME.to_string()),
+                                                             &None,
                                                              ATTR_REFERENT,
                                                              &Some(restriction),
                                                              &Some(&extra_query)).unwrap();

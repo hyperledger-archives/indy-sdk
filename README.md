@@ -124,7 +124,7 @@ Please See the section "Release channels" above for more details.
 
 ### Windows
 
-1. Go to https://repo.sovrin.org/windows/{library}/{release-channel}.
+1. Go to `https://repo.sovrin.org/windows/{library}/{release-channel}.`
 2. Download last version of library.
 3. Unzip archives to the directory where you want to save working library.
 4. After unzip you will get next structure of files:
@@ -198,7 +198,7 @@ See section "Release channels" for more details.
 
 ### Centos
 
-1. Go to https://repo.sovrin.org/rpm/{library}/{release-channel}.
+1. Go to `https://repo.sovrin.org/rpm/{library}/{release-channel}`.
 2. Download and unzip the last version of library.
 3. Install with `rpm -i library-version.rpm`.
 

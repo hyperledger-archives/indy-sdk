@@ -3,7 +3,8 @@ use connection;
 use api::VcxStateType;
 use messages::*;
 use messages::message_type::MessageTypes;
-use messages::payload::{Payloads, PayloadKinds, Thread};
+use messages::payload::{Payloads, PayloadKinds};
+use messages::thread::Thread;
 use utils::httpclient;
 use utils::uuid::uuid;
 use error::prelude::*;
@@ -190,9 +191,9 @@ impl SendResponse {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct SendMessageOptions {
-    msg_type: String,
-    msg_title: String,
-    ref_msg_id: Option<String>,
+    pub msg_type: String,
+    pub msg_title: String,
+    pub ref_msg_id: Option<String>,
 }
 
 pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str) -> VcxResult<String> {
