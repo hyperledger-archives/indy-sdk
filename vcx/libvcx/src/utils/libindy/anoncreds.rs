@@ -86,6 +86,8 @@ pub fn libindy_issuer_create_credential(cred_offer_json: &str,
                                         cred_values_json: &str,
                                         rev_reg_id: Option<String>,
                                         tails_file: Option<String>) -> VcxResult<(String, Option<String>, Option<String>)> {
+    if settings::test_indy_mode_enabled() { return Ok((::utils::constants::CREDENTIAL_JSON.to_owned(), None, None)); }
+
     let revocation = rev_reg_id.as_ref().map(String::as_str);
 
     let blob_handle = match tails_file {
@@ -108,6 +110,8 @@ pub fn libindy_prover_create_proof(proof_req_json: &str,
                                    schemas_json: &str,
                                    credential_defs_json: &str,
                                    revoc_states_json: Option<&str>) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() { return Ok(::utils::constants::PROOF_JSON.to_owned()); }
+
     let revoc_states_json = revoc_states_json.unwrap_or("{}");
     anoncreds::prover_create_proof(get_wallet_handle(),
                                    proof_req_json,
@@ -546,6 +550,12 @@ fn _check_schema_response(response: &str) -> VcxResult<()> {
         Response::Reject(reject) => Err(VcxError::from_msg(VcxErrorKind::DuplicationSchema, format!("{:?}", reject))),
         Response::ReqNACK(reqnack) => Err(VcxError::from_msg(VcxErrorKind::UnknownSchemaRejection, "Unknown Rejection of Schema Creation, refer to libindy documentation"))
     }
+}
+
+pub fn generate_nonce() -> VcxResult<String> {
+    anoncreds::generate_nonce()
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
 }
 
 #[cfg(test)]
