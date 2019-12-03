@@ -627,14 +627,14 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         debug!("setting up the admin_postgres_url");
         // look to see if there is a specified db to use.  If not, use the default name
         let wallet_db_name: String =
-            if config.database_name != None && !config.database_name.is_empty() {
-                config.database_name
+            if config.database_name != None && config.database_name.is_some() {
+                config.database_name.unwrap();
             } else {
                 _WALLETS_DB.to_string()
             };
         debug!("wallet_db_name: {:?}", wallet_db_name);
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
-        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+        let url = PostgresStorageType::_postgres_url(&wallet_db_name[..], &config, &credentials);
         debug!("postgres_url: {:?}", url);
         debug!("connecting to postgres, url_base: {:?}", url_base);
         let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
@@ -655,7 +655,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         }
         */
         debug!("creating wallets DB");
-        let create_db_sql: String = str::replace(_CREATE_WALLET_DATABASE, "$1", wallet_db_name);
+        let create_db_sql: String = str::replace(_CREATE_WALLET_DATABASE, "$1", &wallet_db_name[..]);
         debug!("create_db_sql: {:?}", create_db_sql);
         if let Err(error) = conn.execute(&create_db_sql, &[]) {
             if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
