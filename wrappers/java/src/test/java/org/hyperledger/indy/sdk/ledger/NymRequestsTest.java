@@ -93,7 +93,10 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 		String getNymRequest = Ledger.buildGetNymRequest(myDid, myDid).get();
 		String getNymResponse = PoolUtils.ensurePreviousRequestApplied(pool, getNymRequest,
-				response -> compareResponseType(response, "REPLY"));
+				innerResponse -> {
+					JSONObject innerResponseObject = new JSONObject(innerResponse);
+					return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+				});
 		assertNotNull(getNymResponse);
 
 		String nymDataJson = Ledger.parseGetNymResponse(getNymResponse).get();
