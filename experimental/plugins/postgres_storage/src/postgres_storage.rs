@@ -628,7 +628,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         // look to see if there is a specified db to use.  If not, use the default name
         let wallet_db_name: String =
             if config.database_name != None && config.database_name.is_some() {
-                config.database_name.unwrap();
+                config.database_name.unwrap()
             } else {
                 _WALLETS_DB.to_string()
             };
