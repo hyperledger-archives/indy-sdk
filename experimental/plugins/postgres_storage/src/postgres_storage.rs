@@ -627,8 +627,8 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         debug!("setting up the admin_postgres_url");
         // look to see if there is a specified db to use.  If not, use the default name
         let wallet_db_name: &str =
-            if config.database_name && config.database_name.len() {
-                config.database_name.as_str()
+            if config.database_name != None && config.database_name.is_empty() == false {
+                config.database_name
             } else {
                 _WALLETS_DB
             };
