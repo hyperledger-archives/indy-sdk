@@ -132,7 +132,10 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 		// read accum from ledger
 		long timestampAfterCreatingRevDef = getUnixTimeStamp();
 		request = Ledger.buildGetRevocRegRequest(didTrustAnchor, revRegDefId, timestampAfterCreatingRevDef).get();
-		response = Ledger.submitRequest(pool, request).get();
+		response = PoolUtils.ensurePreviousRequestApplied(pool, request, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		LedgerResults.ParseRegistryResponseResult resultAfterCreatingRevDef = Ledger.parseGetRevocRegResponse(response).get();
 		System.out.println("Accum Value at (after creating rev def): " + timestampAfterCreatingRevDef + "\n" +  resultAfterCreatingRevDef.getObjectJson() + "\n");
 		//
@@ -180,7 +183,10 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 		// read accum from ledger
 		long timestampAfterWritingDeltaAfterIssueingCredential = getUnixTimeStamp();
 		request = Ledger.buildGetRevocRegRequest(didTrustAnchor, revRegDefId, timestampAfterWritingDeltaAfterIssueingCredential).get();
-		response = Ledger.submitRequest(pool, request).get();
+		response = PoolUtils.ensurePreviousRequestApplied(pool, request, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		LedgerResults.ParseRegistryResponseResult resultAfterCredentialIssueing = Ledger.parseGetRevocRegResponse(response).get();
 		System.out.println("Accum Value at (after issueing credential): " + timestampAfterWritingDeltaAfterIssueingCredential + "\n" +  resultAfterCredentialIssueing.getObjectJson() + "\n");
 		//
@@ -216,7 +222,10 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 		// read accum from ledger
 		long timestampAfterRevocation = getUnixTimeStamp();
 		request = Ledger.buildGetRevocRegRequest(didTrustAnchor, revRegDefId, timestampAfterRevocation).get();
-		response = Ledger.submitRequest(pool, request).get();
+		response = PoolUtils.ensurePreviousRequestApplied(pool, request, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		LedgerResults.ParseRegistryResponseResult resultAfterRevocation = Ledger.parseGetRevocRegResponse(response).get();
 		System.out.println("Accum Value at (after revocation): " + timestampAfterRevocation + "\n" +  resultAfterRevocation.getObjectJson() + "\n");
 		//
@@ -276,7 +285,10 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 
 		// create the revocation states which participate in the proof
 		request = Ledger.buildGetRevocRegDeltaRequest(null, revRegDefId, timestamp, timestamp).get(); // read the delta for the interval, which was requested in the proof request
-		response = Ledger.submitRequest(pool, request).get();
+		response = PoolUtils.ensurePreviousRequestApplied(pool, request, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		System.out.println("Read the delta from the ledger response:\n" + response + "\n");
 
 		LedgerResults.ParseRegistryResponseResult deltaResult = Ledger.parseGetRevocRegDeltaResponse(response).get();
@@ -313,7 +325,11 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 		// the prover creates his own revocation definitions.
 		JSONObject revocRegDefs = new JSONObject();
 		request = Ledger.buildGetRevocRegDefRequest(didTrustAnchor, revRegDefId).get();
-		response = Ledger.signAndSubmitRequest(pool, wallet, didTrustAnchor, request).get();
+		request = Ledger.signRequest(wallet, didTrustAnchor, request).get();
+		response = PoolUtils.ensurePreviousRequestApplied(pool, request, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		ParseResponseResult parseResult = Ledger.parseGetRevocRegDefResponse(response).get();
 		String revRegDefReadFromLedgerByVerifier = parseResult.getObjectJson();
 		revocRegDefs.put(revRegDefId, new JSONObject(revRegDefReadFromLedgerByVerifier));
@@ -326,7 +342,11 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 		long to = timestamp;
 
 		request = Ledger.buildGetRevocRegDeltaRequest(didTrustAnchor, revRegDefId, from, to).get();
-		response = Ledger.signAndSubmitRequest(pool, wallet, didTrustAnchor, request).get();
+		request = Ledger.signRequest(wallet, didTrustAnchor, request).get();
+		response = PoolUtils.ensurePreviousRequestApplied(pool, request, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		System.out.println("Prover has read the revoc delta for interval from: " + from + "to: " + to + " response from ledger \n" + response + "\n");
 		LedgerResults.ParseRegistryResponseResult parseRegRespResult = Ledger.parseGetRevocRegDeltaResponse(response).get();
 		String proverReadDeltaFromLedger = parseRegRespResult.getObjectJson();
@@ -337,7 +357,11 @@ public class AnoncredsVerifyProofAfterCredentialRevokeTest extends IndyIntegrati
 		 */
 		long time = getUnixTimeStamp();
 		request = Ledger.buildGetRevocRegDeltaRequest(didTrustAnchor, revRegDefId, time, time).get();
-		response = Ledger.signAndSubmitRequest(pool, wallet, didTrustAnchor, request).get();
+		request = Ledger.signRequest(wallet, didTrustAnchor, request).get();
+		response = PoolUtils.ensurePreviousRequestApplied(pool, request, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		System.out.println("Prover has read the revoc delta for interval from: " + time + "to: " + time + " response from ledger \n" + response + "\n");
 		parseRegRespResult = Ledger.parseGetRevocRegDeltaResponse(response).get();
 		proverReadDeltaFromLedger = parseRegRespResult.getObjectJson();

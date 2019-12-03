@@ -34,7 +34,7 @@ RUN pip3 install -U \
 	pip \
 	setuptools \
 	virtualenv \
-	twine \
+	twine==1.15.0 \
 	plumbum==1.6.7 six==1.12.0 \
 	deb-pkg-tools
 
