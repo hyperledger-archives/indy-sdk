@@ -693,8 +693,15 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
     }
     // initialize a single wallet based on wallet storage strategy
     fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError> {
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str =
+            match config.database_name {
+                Some(ref database_name) => database_name,
+                None => _WALLETS_DB,
+            };
+
         // insert metadata
-        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
 
         let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
             Ok(conn) => conn,
@@ -719,8 +726,14 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
     }
     // open a wallet based on wallet storage strategy
     fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str =
+            match config.database_name {
+                Some(ref database_name) => database_name,
+                None => _WALLETS_DB,
+            };
 
-        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
 
         // don't need a connection, but connect just to verify we can
         let conn = match postgres::Connection::connect(&url[..], config.tls()) {
@@ -762,7 +775,13 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
     }
     // delete a single wallet based on wallet storage strategy
     fn delete_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
-        let url = PostgresStorageType::_postgres_url(&_WALLETS_DB, &config, &credentials);
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str =
+            match config.database_name {
+                Some(ref database_name) => database_name,
+                None => _WALLETS_DB,
+            };
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
 
         let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
             Ok(conn) => conn,
