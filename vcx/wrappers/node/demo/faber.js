@@ -44,6 +44,7 @@ async function run() {
 
     logger.info(`#1 Config used to provision agent in agency: ${JSON.stringify(provisionConfig, null, 2)}`);
     const agentProvision = await demoCommon.provisionAgentInAgency(provisionConfig);
+    agentProvision['payment_method'] = 'null'
 
     logger.info(`#2 Using following agent provision to initialize VCX ${JSON.stringify(agentProvision, null, 2)}`);
     await demoCommon.initVcxWithProvisionedAgentConfig(agentProvision);
