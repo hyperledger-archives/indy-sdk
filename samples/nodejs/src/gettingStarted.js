@@ -4,8 +4,6 @@ const indy = require('indy-sdk');
 const util = require('./util');
 const assert = require('assert');
 
-console.log = console.trace
-
 async function run() {
 
     console.log("gettingStarted.js -> started");
@@ -118,17 +116,17 @@ async function run() {
     console.log("------------------------------");
 
     console.log("\"Government\" -> Create \"Job-Certificate\" Schema");
-    let [jobCertificateSchemaId, jobCertificateSchema] = await indy.issuerCreateSchema(governmentDid, 'Job-Certificate', '0.3',
+    let [jobCertificateSchemaId, jobCertificateSchema] = await indy.issuerCreateSchema(governmentDid, 'Job-Certificate', '0.2',
         ['first_name', 'last_name', 'salary', 'employee_status',
-            'experience', 'common_attrib']);
+            'experience']);
 
     console.log("\"Government\" -> Send \"Job-Certificate\" Schema to Ledger");
     await sendSchema(poolHandle, governmentWallet, governmentDid, jobCertificateSchema);
 
     console.log("\"Government\" -> Create \"Transcript\" Schema");
-    let [transcriptSchemaId, transcriptSchema] = await indy.issuerCreateSchema(governmentDid, 'Transcript', '1.3',
+    let [transcriptSchemaId, transcriptSchema] = await indy.issuerCreateSchema(governmentDid, 'Transcript', '1.2',
         ['first_name', 'last_name', 'degree', 'status',
-            'year', 'average', 'ssn', 'common_attrib']);
+            'year', 'average', 'ssn']);
     console.log("\"Government\" -> Send \"Transcript\" Schema to Ledger");
     await sendSchema(poolHandle, governmentWallet, governmentDid, transcriptSchema);
 
@@ -214,8 +212,7 @@ async function run() {
         "status": {"raw": "graduated", "encoded": "2213454313412354"},
         "ssn": {"raw": "123-45-6789", "encoded": "3124141231422543541"},
         "year": {"raw": "2015", "encoded": "2015"},
-        "average": {"raw": "5", "encoded": "5"},
-        "common_attrib": { "raw": "216", "encoded": "216" }
+        "average": {"raw": "5", "encoded": "5"}
     };
 
     let [transcriptCredJson] = await indy.issuerCreateCredential(faberWallet, transcriptCredOfferJson, authdecryptedTranscriptCredRequestJson, transcriptCredValues, null, -1);
@@ -260,22 +257,18 @@ async function run() {
             },
             'attr3_referent': {
                 'name': 'degree',
-                'restrictions': [{ 'cred_def_id': faberTranscriptCredDefId }]
+                'restrictions': [{'cred_def_id': faberTranscriptCredDefId}]
             },
             'attr4_referent': {
                 'name': 'status',
-                'restrictions': [{ 'cred_def_id': faberTranscriptCredDefId }]
+                'restrictions': [{'cred_def_id': faberTranscriptCredDefId}]
             },
             'attr5_referent': {
                 'name': 'ssn',
-                'restrictions': [{ 'cred_def_id': faberTranscriptCredDefId }]
+                'restrictions': [{'cred_def_id': faberTranscriptCredDefId}]
             },
             'attr6_referent': {
                 'name': 'phone_number'
-            },
-            'attr7_referent': {
-                'name': 'common_attrib',
-                'restrictions': [{ 'cred_def_id': faberTranscriptCredDefId }]
             }
         },
         'requested_predicates': {
@@ -315,10 +308,7 @@ async function run() {
     let credForAttr4 = credentials[0]['cred_info'];
 
     await indy.proverFetchCredentialsForProofReq(searchForJobApplicationProofRequest, 'attr5_referent', 100)
-    let credForAttr5 = credentials[0]['cred_info']; 
-    
-    await indy.proverFetchCredentialsForProofReq(searchForJobApplicationProofRequest, 'attr7_referent', 100)
-    let credForAttr7 = credentials[0]['cred_info'];
+    let credForAttr5 = credentials[0]['cred_info'];
 
     await indy.proverFetchCredentialsForProofReq(searchForJobApplicationProofRequest, 'predicate1_referent', 100)
     let credForPredicate1 = credentials[0]['cred_info'];
@@ -331,7 +321,6 @@ async function run() {
     credsForJobApplicationProof[`${credForAttr3['referent']}`] = credForAttr3;
     credsForJobApplicationProof[`${credForAttr4['referent']}`] = credForAttr4;
     credsForJobApplicationProof[`${credForAttr5['referent']}`] = credForAttr5;
-    credsForJobApplicationProof[`${credForAttr7['referent']}`] = credForAttr7;
     credsForJobApplicationProof[`${credForPredicate1['referent']}`] = credForPredicate1;
 
     let [schemasJson, credDefsJson, revocStatesJson] = await proverGetEntitiesFromLedger(poolHandle, aliceFaberDid, credsForJobApplicationProof, 'Alice');
@@ -344,10 +333,9 @@ async function run() {
             'attr6_referent': '123-45-6789'
         },
         'requested_attributes': {
-            'attr3_referent': { 'cred_id': credForAttr3['referent'], 'revealed': true},
-            'attr4_referent': { 'cred_id': credForAttr4['referent'], 'revealed': true},
-            'attr5_referent': { 'cred_id': credForAttr5['referent'], 'revealed': true },
-            'attr7_referent': { 'cred_id': credForAttr7['referent'], 'revealed': true },
+            'attr3_referent': {'cred_id': credForAttr3['referent'], 'revealed': true},
+            'attr4_referent': {'cred_id': credForAttr4['referent'], 'revealed': true},
+            'attr5_referent': {'cred_id': credForAttr5['referent'], 'revealed': true},
         },
         'requested_predicates': {'predicate1_referent': {'cred_id': credForPredicate1['referent']}}
     };
@@ -372,11 +360,10 @@ async function run() {
     assert('Bachelor of Science, Marketing' === decryptedJobApplicationProof['requested_proof']['revealed_attrs']['attr3_referent']['raw']);
     assert('graduated' === decryptedJobApplicationProof['requested_proof']['revealed_attrs']['attr4_referent']['raw']);
     assert('123-45-6789' === decryptedJobApplicationProof['requested_proof']['revealed_attrs']['attr5_referent']['raw']);
-    assert('216' === decryptedJobApplicationProof['requested_proof']['revealed_attrs']['attr7_referent']['raw']);
 
     assert('Alice' === decryptedJobApplicationProof['requested_proof']['self_attested_attrs']['attr1_referent']);
     assert('Garcia' === decryptedJobApplicationProof['requested_proof']['self_attested_attrs']['attr2_referent']);
-    assert('123-45-6789' === decryptedJobApplicationProof['requested_proof']['self_attested_attrs']['attr6_referent']);    
+    assert('123-45-6789' === decryptedJobApplicationProof['requested_proof']['self_attested_attrs']['attr6_referent']);
 
     assert(await indy.verifierVerifyProof(jobApplicationProofRequestJson, decryptedJobApplicationProofJson, schemasJson, credDefsJson, revocRefDefsJson, revocRegsJson));
 
@@ -421,8 +408,7 @@ async function run() {
         "last_name": {"raw": "Garcia", "encoded": "312643218496194691632153761283356127"},
         "employee_status": {"raw": "Permanent", "encoded": "2143135425425143112321314321"},
         "salary": {"raw": "2400", "encoded": "2400"},
-        "experience": {"raw": "10", "encoded": "10"},
-        "common_attrib": {"raw": "216", "encoded":"216"}
+        "experience": {"raw": "10", "encoded": "10"}
     };
 
     let [jobCertificateCredJson] = await indy.issuerCreateCredential(acmeWallet, jobCertificateCredOfferJson, authdecryptedJobCertificateCredRequestJson, aliceJobCertificateCredValuesJson, null, -1);
@@ -463,13 +449,6 @@ async function run() {
             'attr1_referent': {
                 'name': 'employee_status',
                 'restrictions': [{'cred_def_id': acmeJobCertificateCredDefId}]
-            },
-            'attr2_referent': {
-                'name': 'common_attrib',
-                'restrictions': [
-                    { 'cred_def_id': acmeJobCertificateCredDefId },
-                    { 'cred_def_id': faberTranscriptCredDefId }
-                ]
             }
         },
         'requested_predicates': {
@@ -506,11 +485,6 @@ async function run() {
     credentials = await indy.proverFetchCredentialsForProofReq(searchForJApplyLoanProofRequest, 'attr1_referent', 100)
     credForAttr1 = credentials[0]['cred_info'];
 
-    credentials2 = await indy.proverFetchCredentialsForProofReq(searchForJApplyLoanProofRequest, 'attr2_referent', 100)
-    credForAttr2 = credentials2[0]['cred_info'];
-
-    console.log(credForAttr2);
-
     await indy.proverFetchCredentialsForProofReq(searchForJApplyLoanProofRequest, 'predicate1_referent', 100)
     credForPredicate1 = credentials[0]['cred_info'];
 
@@ -521,7 +495,6 @@ async function run() {
 
     let credsForApplyLoanProof = {};
     credsForApplyLoanProof[`${credForAttr1['referent']}`] = credForAttr1;
-    credsForApplyLoanProof[`${credForAttr2['referent']}`] = credForAttr2;
     credsForApplyLoanProof[`${credForPredicate1['referent']}`] = credForPredicate1;
     credsForApplyLoanProof[`${credForPredicate2['referent']}`] = credForPredicate2;
 
@@ -531,8 +504,7 @@ async function run() {
     let applyLoanRequestedCredsJson = {
         'self_attested_attributes': {},
         'requested_attributes': {
-            'attr1_referent': { 'cred_id': credForAttr1['referent'], 'revealed': true },
-            'attr2_referent': { 'cred_id': credForAttr2['referent'], 'revealed': true }
+            'attr1_referent': {'cred_id': credForAttr1['referent'], 'revealed': true}
         },
         'requested_predicates': {
             'predicate1_referent': {'cred_id': credForPredicate1['referent']},
@@ -560,7 +532,6 @@ async function run() {
 
     console.log("\"Thrift\" -> Verify \"Loan-Application-Basic\" Proof from Alice");
     assert('Permanent' === authdecryptedAliceApplyLoanProof['requested_proof']['revealed_attrs']['attr1_referent']['raw']);
-    assert('216' === authdecryptedAliceApplyLoanProof['requested_proof']['revealed_attrs']['attr2_referent']['raw']);
 
     assert(await indy.verifierVerifyProof(applyLoanProofRequestJson, authdecryptedAliceApplyLoanProofJson, schemasJson, credDefsJson, revocDefsJson, revocRegsJson));
 
