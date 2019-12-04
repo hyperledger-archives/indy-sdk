@@ -1,4 +1,4 @@
-import * as ref from 'ref'
+import * as ref from 'ref-napi'
 import * as StructType from 'ref-struct'
 
 import { VCXRuntime } from './vcx'
