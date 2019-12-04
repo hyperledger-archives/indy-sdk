@@ -1,4 +1,4 @@
-import * as ffi from 'ffi'
+import * as ffi from 'ffi-napi'
 import * as os from 'os'
 import * as path from 'path'
 
