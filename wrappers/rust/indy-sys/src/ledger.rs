@@ -259,6 +259,7 @@ extern {
                                                    submitter_did: CString,
                                                    text: CString,
                                                    version: CString,
+                                                   retired: bool,
                                                    cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]

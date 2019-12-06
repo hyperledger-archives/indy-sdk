@@ -1491,9 +1491,9 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
-	 * 
+	 *
 	 * EXPERIMENTAL
-	 * 
+	 *
 	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
 	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param text -  a content of the TTA.
@@ -1506,6 +1506,30 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String text,
 			String version) throws IndyException {
+		return buildTxnAuthorAgreementRequest(submitterDid, text, version, false);
+	}
+
+	/**
+	 * Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+	 *
+	 * EXPERIMENTAL
+	 *
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
+	 * @param text -  a content of the TTA.
+	 * @param version -  a version of the TTA (unique UTF-8 string).
+	 * @param retired - is the TAA retired. False by default.
+	 *                   Should be used to deactivate TAA on the ledger.
+	 *                   All TAA should be mark as retired on the ledger to completely disable TAA check.
+	 *
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildTxnAuthorAgreementRequest(
+			String submitterDid,
+			String text,
+			String version,
+			boolean retired) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNull(text, "text");
@@ -1519,6 +1543,7 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				text,
 				version,
+				retired,
 				buildRequestCb);
 
 		checkResult(future, result);

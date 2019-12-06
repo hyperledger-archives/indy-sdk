@@ -1498,7 +1498,8 @@ async def build_get_auth_rule_request(submitter_did: Optional[str],
 
 async def build_txn_author_agreement_request(submitter_did: str,
                                              text: str,
-                                             version: str) -> str:
+                                             version: str,
+                                             retired: bool = False) -> str:
     """
     Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
 
@@ -1525,11 +1526,13 @@ async def build_txn_author_agreement_request(submitter_did: str,
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_text = c_char_p(text.encode('utf-8'))
     c_version = c_char_p(version.encode('utf-8'))
+    c_retired = c_bool(retired)
 
     request_json = await do_call('indy_build_txn_author_agreement_request',
                                  c_submitter_did,
                                  c_text,
                                  c_version,
+                                 c_retired,
                                  build_txn_author_agreement_request.cb)
 
     res = request_json.decode()

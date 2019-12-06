@@ -1741,24 +1741,23 @@ pub mod taa_command {
         let text = get_opt_empty_str_param("text", params).map_err(error_err!())?;
         let file = get_opt_str_param("file", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
+        let retired = get_opt_bool_param("retired", params).map_err(error_err!())?.unwrap_or(false);
 
-        let text = match (text, file) {
-            (Some(text_), None) => text_.to_string(),
+        let text: Option<String> = match (text, file) {
+            (Some(text_), None) => Some(text_.to_string()),
             (None, Some(file_)) => {
-                read_file(file_)
-                    .map_err(|err| println_err!("{}", err))?
+                Some(read_file(file_).map_err(|err| println_err!("{}", err))?)
             }
             (Some(_), Some(_)) => {
                 println_err!("Only one of the parameters `text` and `file` can be specified");
                 return Err(())
             },
             (None, None) => {
-                println_err!("Either `text` or `file` parameter must be specified");
-                return Err(())
+                None
             }
         };
 
-        let mut request = Ledger::build_txn_author_agreement_request(&submitter_did, &text, &version)
+        let mut request = Ledger::build_txn_author_agreement_request(&submitter_did, text.as_ref().map(String::as_str), &version, retired)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&submitter_did))?;
@@ -1768,10 +1767,11 @@ pub mod taa_command {
 
         handle_transaction_response(response)
             .map(|result| {
-                if text.is_empty() {
+                // TODO support multiply active TAA on the ledger IS-1441
+                if retired {
                     set_transaction_author_info(ctx, None);
                     println_succ!("Transaction Author Agreement has been reset.");
-                } else {
+                } else if let Some(text) = text {
                     print_transaction_response(result,
                                                "Transaction Author Agreement has been sent to Ledger.",
                                                None,

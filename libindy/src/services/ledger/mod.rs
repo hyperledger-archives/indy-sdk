@@ -421,8 +421,8 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_txn_author_agreement_request(&self, identifier: &DidValue, text: &str, version: &str) -> IndyResult<String> {
-        build_result!(TxnAuthorAgreementOperation, Some(identifier), text.to_string(), version.to_string())
+    pub fn build_txn_author_agreement_request(&self, identifier: &DidValue, text: Option<&str>, version: &str, retired: bool) -> IndyResult<String> {
+        build_result!(TxnAuthorAgreementOperation, Some(identifier), text.map(str::to_string), version.to_string(), retired)
     }
 
     #[logfn(Info)]
@@ -1081,7 +1081,21 @@ mod tests {
                 "version": VERSION
             });
 
-            let request = ledger_service.build_txn_author_agreement_request(&identifier(), TEXT, VERSION).unwrap();
+            let request = ledger_service.build_txn_author_agreement_request(&identifier(), Some(TEXT), VERSION, false).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_txn_author_agreement_request_works_for_retired_wo_text() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": TXN_AUTHR_AGRMT,
+                "version": VERSION,
+                "retired": true,
+            });
+
+            let request = ledger_service.build_txn_author_agreement_request(&identifier(), None, VERSION, true).unwrap();
             check_request(&request, expected_result);
         }
 

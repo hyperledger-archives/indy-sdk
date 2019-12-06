@@ -2018,6 +2018,9 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
 ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// text: a content of the TTA.
 /// version: a version of the TTA (unique UTF-8 string).
+/// retired: is the TAA retired. False by default.
+///             Should be used to deactivate TAA on the ledger.
+///             All TAA should be mark as retired on the ledger to completely disable TAA check.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -2030,17 +2033,20 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
                                                       submitter_did: *const c_char,
                                                       text: *const c_char,
                                                       version: *const c_char,
+                                                      retired: bool,
                                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                                            err: ErrorCode,
                                                                            request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+    trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}, retired {:?}",
+           submitter_did, text, version, retired);
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
-    check_useful_c_str_empty_accepted!(text, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(text, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_build_txn_author_agreement_request: entities >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+    trace!("indy_build_txn_author_agreement_request: entities >>> submitter_did: {:?}, text: {:?}, version: {:?}, retired {:?}",
+           submitter_did, text, version, retired);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
@@ -2048,6 +2054,7 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
                 submitter_did,
                 text,
                 version,
+                retired,
                 boxed_callback_string!("indy_build_txn_author_agreement_request", cb, command_handle)
             )));
 

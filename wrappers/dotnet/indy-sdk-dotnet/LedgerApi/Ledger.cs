@@ -1323,10 +1323,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="text">a content of the TAA.</param>
         /// <param name="version">a version of the TAA (unique UTF-8 string).</param>
         /// <returns>Request result as json.</returns>
-        public static Task<string> BuildTxnAuthorAgreementRequestAsync(string submitter_did, string text, string version)
+        public static Task<string> BuildTxnAuthorAgreementRequestAsync(string submitter_did, string text, string version, bool retired)
         {
             ParamGuard.NotNullOrWhiteSpace(submitter_did, "submitter_did");
-            ParamGuard.NotNull(text, "text");
             ParamGuard.NotNullOrWhiteSpace(version, "version");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -1337,6 +1336,7 @@ namespace Hyperledger.Indy.LedgerApi
                 submitter_did,
                 text,
                 version,
+                retired,
                 BuildRequestCallback);
 
             CallbackHelper.CheckResult(result);

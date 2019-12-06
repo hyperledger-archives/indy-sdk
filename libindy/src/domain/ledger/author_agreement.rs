@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Not;
 
 use indy_api_types::validation::Validatable;
 
@@ -8,16 +9,20 @@ use super::constants::{GET_TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT_AML, TXN_AUTHR_A
 pub struct TxnAuthorAgreementOperation {
     #[serde(rename = "type")]
     _type: String,
-    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text: Option<String>,
     version: String,
+    #[serde(skip_serializing_if = "Not::not")]
+    retired: bool,
 }
 
 impl TxnAuthorAgreementOperation {
-    pub fn new(text: String, version: String) -> TxnAuthorAgreementOperation {
+    pub fn new(text: Option<String>, version: String, retired: bool) -> TxnAuthorAgreementOperation {
         TxnAuthorAgreementOperation {
             _type: TXN_AUTHR_AGRMT.to_string(),
             text,
-            version
+            version,
+            retired,
         }
     }
 }

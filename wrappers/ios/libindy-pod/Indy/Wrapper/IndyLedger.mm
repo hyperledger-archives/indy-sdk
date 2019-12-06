@@ -828,6 +828,7 @@
 + (void)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
                                                   text:(NSString *)text
                                                version:(NSString *)version
+                                               retired:(BOOL)retired
                                             completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
     indy_error_t ret;
 
@@ -837,6 +838,7 @@
             [submitterDid UTF8String],
             [text UTF8String],
             [version UTF8String],
+            (indy_bool_t) retired,
             IndyWrapperCommonStringCallback);
 
     if (ret != Success) {

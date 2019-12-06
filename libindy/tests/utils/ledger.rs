@@ -231,9 +231,10 @@ pub fn build_get_auth_rule_request(submitter_did: Option<&str>,
 }
 
 pub fn build_txn_author_agreement_request(submitter_did: &str,
-                                          text: &str,
-                                          version: &str) -> Result<String, IndyError> {
-    ledger::build_txn_author_agreement_request(submitter_did, text, version).wait()
+                                          text: Option<&str>,
+                                          version: &str,
+                                          retired: bool) -> Result<String, IndyError> {
+    ledger::build_txn_author_agreement_request(submitter_did, text, version, retired).wait()
 }
 
 pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,

@@ -1209,31 +1209,36 @@ fn _build_get_auth_rule_request(command_handle: CommandHandle,
 ///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
 /// * `text`: a content of the TTA.
 /// * `version`: a version of the TTA (unique UTF-8 string).
+/// * `retired`: is the TAA retired. False by default.
+///              Should be used to deactivate TAA on the ledger.
+///              All TAA should be mark as retired on the ledger to completely disable TAA check.
 ///
 /// # Returns
 /// Request result as json.
-pub fn build_txn_author_agreement_request(submitter_did: &str, text: &str, version: &str) -> Box<dyn Future<Item=String, Error=IndyError>> {
+pub fn build_txn_author_agreement_request(submitter_did: &str, text: Option<&str>, version: &str, retired: bool) -> Box<dyn Future<Item=String, Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-    let err = _build_txn_author_agreement_request(command_handle, submitter_did, text, version, cb);
+    let err = _build_txn_author_agreement_request(command_handle, submitter_did, text, version, retired, cb);
 
     ResultHandler::str(command_handle, err, receiver)
 }
 
 fn _build_txn_author_agreement_request(command_handle: CommandHandle,
                                        submitter_did: &str,
-                                       text: &str,
+                                       text: Option<&str>,
                                        version: &str,
+                                       retired: bool,
                                        cb: Option<ResponseStringCB>) -> ErrorCode {
     let submitter_did = c_str!(submitter_did);
-    let text = c_str!(text);
+    let text_str = opt_c_str!(text);
     let version = c_str!(version);
 
     ErrorCode::from(unsafe {
         ledger::indy_build_txn_author_agreement_request(command_handle,
                                                         submitter_did.as_ptr(),
-                                                        text.as_ptr(),
+                                                        opt_c_ptr!(text, text_str),
                                                         version.as_ptr(),
+                                                        retired,
                                                         cb)
     })
 }

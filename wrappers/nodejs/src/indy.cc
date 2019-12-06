@@ -2257,12 +2257,14 @@ NAN_METHOD(buildTxnAuthorAgreementRequest) {
   INDY_ASSERT_STRING(buildTxnAuthorAgreementRequest, 0, submitterDid)
   INDY_ASSERT_STRING(buildTxnAuthorAgreementRequest, 1, text)
   INDY_ASSERT_STRING(buildTxnAuthorAgreementRequest, 2, version)
-  INDY_ASSERT_FUNCTION(buildTxnAuthorAgreementRequest, 3)
+  INDY_ASSERT_BOOLEAN(buildTxnAuthorAgreementRequest, 3, retired)
+  INDY_ASSERT_FUNCTION(buildTxnAuthorAgreementRequest, 4)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
-  IndyCallback* icb = argToIndyCb(info[3]);
-  indyCalled(icb, indy_build_txn_author_agreement_request(icb->handle, arg0, arg1, arg2, buildTxnAuthorAgreementRequest_cb));
+  indy_bool_t arg3 = info[3]->IsTrue();
+  IndyCallback* icb = argToIndyCb(info[4]);
+  indyCalled(icb, indy_build_txn_author_agreement_request(icb->handle, arg0, arg1, arg2, arg3 buildTxnAuthorAgreementRequest_cb));
   delete arg0;
   delete arg1;
   delete arg2;

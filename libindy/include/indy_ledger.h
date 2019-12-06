@@ -1127,6 +1127,9 @@ extern "C" {
     ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// text: a content of the TTA.
     /// version: a version of the TTA (unique UTF-8 string).
+    /// retired: is the TAA retired. False by default.
+    ///          Should be used to deactivate TAA on the ledger.
+    ///          All TAA should be mark as retired on the ledger to completely disable TAA check.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -1138,6 +1141,7 @@ extern "C" {
                                                                 const char *  submitter_did,
                                                                 const char *  text,
                                                                 const char *  version,
+                                                                indy_bool_t   retired,
 
                                                                 void           (*cb)(indy_handle_t command_handle_,
                                                                                      indy_error_t  err,

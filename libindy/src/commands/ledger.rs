@@ -240,8 +240,9 @@ pub enum LedgerCommand {
     ),
     BuildTxnAuthorAgreementRequest(
         DidValue, // submitter did
-        String, // text
+        Option<String>, // text
         String, // version
+        bool,   // retired
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetTxnAuthorAgreementRequest(
         Option<DidValue>, // submitter did
@@ -486,9 +487,9 @@ impl LedgerCommandExecutor {
                 debug!(target: "ledger_command_executor", "GetCredDefContinue command received");
                 self._get_cred_def_continue(id, pool_response, cb_id);
             }
-            LedgerCommand::BuildTxnAuthorAgreementRequest(submitter_did, text, version, cb) => {
+            LedgerCommand::BuildTxnAuthorAgreementRequest(submitter_did, text, version, retired, cb) => {
                 debug!(target: "ledger_command_executor", "BuildTxnAuthorAgreementRequest command received");
-                cb(self.build_txn_author_agreement_request(&submitter_did, &text, &version));
+                cb(self.build_txn_author_agreement_request(&submitter_did, text.as_ref().map(String::as_str), &version, retired));
             }
             LedgerCommand::BuildGetTxnAuthorAgreementRequest(submitter_did, data, cb) => {
                 debug!(target: "ledger_command_executor", "BuildGetTxnAuthorAgreementRequest command received");
@@ -1122,13 +1123,14 @@ impl LedgerCommandExecutor {
 
     fn build_txn_author_agreement_request(&self,
                                           submitter_did: &DidValue,
-                                          text: &str,
-                                          version: &str) -> IndyResult<String> {
-        debug!("build_txn_author_agreement_request >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+                                          text: Option<&str>,
+                                          version: &str,
+                                          retired: bool) -> IndyResult<String> {
+        debug!("build_txn_author_agreement_request >>> submitter_did: {:?}, text: {:?}, version: {:?}, retired: {:?}", submitter_did, text, version, retired);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_txn_author_agreement_request(submitter_did, text, version)?;
+        let res = self.ledger_service.build_txn_author_agreement_request(submitter_did, text, version, retired)?;
 
         debug!("build_txn_author_agreement_request <<< res: {:?}", res);
 
