@@ -137,7 +137,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		JSONObject credOffer = new JSONObject(credOfferJson);
 		String getCredDefRequest = Ledger.buildGetCredDefRequest(proverDid, credOffer.getString("cred_def_id")).get();
 
-		String getCredDefResponse = Ledger.submitRequest(pool, getCredDefRequest).get();
+		String getCredDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getCredDefRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		ParseResponseResult credDefIdInfo = Ledger.parseGetCredDefResponse(getCredDefResponse).get();
 
 		credDefId = credDefIdInfo.getId();
@@ -171,7 +174,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		// Prover gets RevocationRegistryDefinition
 		JSONObject credential = new JSONObject(credJson);
 		String getRevRegDefRequest = Ledger.buildGetRevocRegDefRequest(proverDid, credential.getString("rev_reg_id")).get();
-		String getRevRegDefResponse = Ledger.submitRequest(pool, getRevRegDefRequest).get();
+		String getRevRegDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegDefRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 
 		ParseResponseResult revRegInfo1 = Ledger.parseGetRevocRegDefResponse(getRevRegDefResponse).get();
 		String revocRegDefJson = revRegInfo1.getObjectJson();
@@ -208,7 +214,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		// Prover gets RevocationRegistryDelta from Ledger
 
 		String getRevRegDeltaRequest = Ledger.buildGetRevocRegDeltaRequest(proverDid, cred_info.getString("rev_reg_id"), - 1, (int) to).get();
-		String getRevRegDeltaResponse = Ledger.submitRequest(pool, getRevRegDeltaRequest).get();
+		String getRevRegDeltaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegDeltaRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 
 		LedgerResults.ParseRegistryResponseResult revRegInfo2 = Ledger.parseGetRevocRegDeltaResponse(getRevRegDeltaResponse).get();
 
@@ -222,7 +231,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover gets Schema from Ledger
 		getSchemaRequest = Ledger.buildGetSchemaRequest(proverDid, cred_info.getString("schema_id")).get();
-		getSchemaResponse = Ledger.submitRequest(pool, getSchemaRequest).get();
+		getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 
 		ParseResponseResult schemaInfo2 = Ledger.parseGetSchemaResponse(getSchemaResponse).get();
 		String schemaId = schemaInfo2.getId();
@@ -255,28 +267,40 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Verifier gets Schema from Ledger
 		String getSchemaReq = Ledger.buildGetSchemaRequest(DID_MY1, identifier.getString("schema_id")).get();
-		String getSchemaResp = Ledger.submitRequest(pool, getSchemaReq).get();
+		String getSchemaResp = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaReq, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		LedgerResults.ParseResponseResult schemaInfo3 = Ledger.parseGetSchemaResponse(getSchemaResp).get();
 		schemaId = schemaInfo3.getId();
 		schemaJson = schemaInfo3.getObjectJson();
 
 		// Verifier gets CredDef from Ledger
 		String getCredDefReq = Ledger.buildGetCredDefRequest(DID_MY1, identifier.getString("cred_def_id")).get();
-		String getCredDefResp = Ledger.submitRequest(pool, getCredDefReq).get();
+		String getCredDefResp = PoolUtils.ensurePreviousRequestApplied(pool, getCredDefReq, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		LedgerResults.ParseResponseResult credDefInfo3 = Ledger.parseGetCredDefResponse(getCredDefResp).get();
 		credDefId = credDefInfo3.getId();
 		credDefJson = credDefInfo3.getObjectJson();
 
 		// Verifier gets RevocationRegistryDefinition from Ledger
 		String getRevRegDefReq = Ledger.buildGetRevocRegDefRequest(DID_MY1, identifier.getString("rev_reg_id")).get();
-		String getRevRegDefResp = Ledger.submitRequest(pool, getRevRegDefReq).get();
+		String getRevRegDefResp = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegDefReq, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		ParseResponseResult revRegDefInfo3 = Ledger.parseGetRevocRegDefResponse(getRevRegDefResp).get();
 		String revRegDefId = revRegDefInfo3.getId();
 		revRegDefJson = revRegDefInfo3.getObjectJson();
 
 		// Verifier gets RevocationRegistry from Ledger
 		String getRevRegReq = Ledger.buildGetRevocRegRequest(DID_MY1, identifier.getString("rev_reg_id"), identifier.getInt("timestamp")).get();
-		String getRevRegResp = Ledger.submitRequest(pool, getRevRegReq).get();
+		String getRevRegResp = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegReq, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		LedgerResults.ParseRegistryResponseResult revRegInfo3 = Ledger.parseGetRevocRegResponse(getRevRegResp).get();
 		revRegId = revRegInfo3.getId();
 		String revRegJson = revRegInfo3.getObjectJson();
@@ -320,7 +344,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover gets RevocationRegistryDelta from Ledger
 		getRevRegDeltaRequest = Ledger.buildGetRevocRegDeltaRequest(proverDid, revRegId, (int) from, (int) to).get();
-		getRevRegDeltaResponse = Ledger.submitRequest(pool, getRevRegDeltaRequest).get();
+		getRevRegDeltaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegDeltaRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		LedgerResults.ParseRegistryResponseResult revRegInfo4 = Ledger.parseGetRevocRegDeltaResponse(getRevRegDeltaResponse).get();
 
 		revRegId = revRegInfo4.getId();
@@ -361,7 +388,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Verifier gets RevocationRegistry from Ledger
 		getRevRegReq = Ledger.buildGetRevocRegRequest(DID_MY1, identifier.getString("rev_reg_id"), identifier.getInt("timestamp")).get();
-		getRevRegResp = Ledger.submitRequest(pool, getRevRegReq).get();
+		getRevRegResp = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegReq, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 
 		LedgerResults.ParseRegistryResponseResult revRegInfo5 = Ledger.parseGetRevocRegResponse(getRevRegResp).get();
 		revRegId = revRegInfo5.getId();
@@ -478,7 +508,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		// Prover gets CredentialDefinition from Ledger
 		String getCredDefRequest = Ledger.buildGetCredDefRequest(proverDid, credDefInfo.getCredDefId()).get();
 
-		String getCredDefResponse = Ledger.submitRequest(pool, getCredDefRequest).get();
+		String getCredDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getCredDefRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		ParseResponseResult credDefIdInfo = Ledger.parseGetCredDefResponse(getCredDefResponse).get();
 
 		credDefId = credDefIdInfo.getId();
@@ -508,7 +541,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover gets RevocationRegistryDefinition
 		String getRevRegDefRequest = Ledger.buildGetRevocRegDefRequest(proverDid, revRegId).get();
-		String getRevRegDefResponse = Ledger.submitRequest(pool, getRevRegDefRequest).get();
+		String getRevRegDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegDefRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 
 		ParseResponseResult revRegInfo1 = Ledger.parseGetRevocRegDefResponse(getRevRegDefResponse).get();
 
@@ -551,7 +587,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
         /* FIXME */
 		String getRevRegDeltaRequest = Ledger.buildGetRevocRegDeltaRequest(proverDid, revRegId, - 1, (int) to).get();
-		String getRevRegDeltaResponse = Ledger.submitRequest(pool, getRevRegDeltaRequest).get();
+		String getRevRegDeltaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegDeltaRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 
 		LedgerResults.ParseRegistryResponseResult revRegInfo2 = Ledger.parseGetRevocRegDeltaResponse(getRevRegDeltaResponse).get();
 
@@ -566,7 +605,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover gets Schema from Ledger
 		getSchemaRequest = Ledger.buildGetSchemaRequest(proverDid, schemaInfo1.getId()).get();
-		getSchemaResponse = Ledger.submitRequest(pool, getSchemaRequest).get();
+		getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 
 		ParseResponseResult schemaInfo2 = Ledger.parseGetSchemaResponse(getSchemaResponse).get();
 		String schemaId = schemaInfo2.getId();
@@ -600,7 +642,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		// Verifier gets RevocationRegistry from Ledger
 
 		String getRevRegReq = Ledger.buildGetRevocRegRequest(DID_MY1, revRegId, (int) timestamp).get();
-		String getRevRegResp = Ledger.submitRequest(pool, getRevRegReq).get();
+		String getRevRegResp = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegReq, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		LedgerResults.ParseRegistryResponseResult revRegInfo3 = Ledger.parseGetRevocRegResponse(getRevRegResp).get();
 
 		revRegId = revRegInfo3.getId();
@@ -642,7 +687,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover gets RevocationRegistryDelta from Ledger
 		getRevRegDeltaRequest = Ledger.buildGetRevocRegDeltaRequest(proverDid, revRegId, (int) from, (int) to).get();
-		getRevRegDeltaResponse = Ledger.submitRequest(pool, getRevRegDeltaRequest).get();
+		getRevRegDeltaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegDeltaRequest, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 		LedgerResults.ParseRegistryResponseResult revRegInfo4 = Ledger.parseGetRevocRegDeltaResponse(getRevRegDeltaResponse).get();
 
 		revRegId = revRegInfo4.getId();
@@ -680,7 +728,10 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Verifier gets RevocationRegistry from Ledger
 		getRevRegReq = Ledger.buildGetRevocRegRequest(DID_MY1, revRegId, (int) timestamp).get();
-		getRevRegResp = Ledger.submitRequest(pool, getRevRegReq).get();
+		getRevRegResp = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegReq, innerResponse -> {
+			JSONObject innerResponseObject = new JSONObject(innerResponse);
+			return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+		});
 
 		LedgerResults.ParseRegistryResponseResult revRegInfo5 = Ledger.parseGetRevocRegResponse(getRevRegResp).get();
 		revRegId = revRegInfo5.getId();

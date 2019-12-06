@@ -54,12 +54,21 @@ create_avd(){
 
     yes | sdkmanager --licenses
 
-    echo "yes" |
-          sdkmanager --no_https \
-            "emulator" \
-            "platform-tools" \
-            "platforms;android-24" \
-            "system-images;android-24;default;${ABI}"
+    if [ ! -d "${ANDROID_SDK}/emulator/" ] ; then
+        echo "yes" |
+              sdkmanager --no_https \
+                "emulator" \
+                "platform-tools" \
+                "platforms;android-24" \
+                "system-images;android-24;default;${ABI}"
+
+        # TODO hack to downgrade Android Emulator. Should be removed as soon as headless mode will be fixed.
+        curl -o emu.zip https://dl.google.com/android/repository/emulator-linux-5889189.zip
+        mv emulator emulator_backup
+        unzip emu.zip
+    else
+        echo "Skipping sdkmanager activity"
+    fi
 
     echo "${BLUE}Creating android emulator${RESET}"
 
