@@ -1508,4 +1508,10 @@ pub mod tests {
 
         assert!(encode_attributes(BAD_TEST_CREDENTIAL_DATA).is_err())
     }
+
+    #[test]
+    fn test_encode_empty_field() {
+        let empty_field = r#""empty_field"#;
+        print!("{:?}", encode_attributes(empty_field));
+    }
 }

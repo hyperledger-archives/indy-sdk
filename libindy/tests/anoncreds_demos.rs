@@ -69,7 +69,14 @@ mod demos {
                                             "attr2_referent":{
                                                 "name":"sex"
                                             },
-                                            "attr3_referent":{"name":"phone"}
+                                            "attr3_referent":{"name":"phone"},
+                                            "attr4_referent": {
+                                                "name":"empty_param",
+                                                "restrictions": {
+                                                    "attr::empty_param::value": ""
+                                                },
+                                                "revealed": "true"
+                                            }
                                        },
                                        "requested_predicates":{
                                             "predicate1_referent":{"name":"age","p_type":">=","p_value":18}
@@ -86,12 +93,13 @@ mod demos {
                                                   "self_attested_attributes":{{"attr3_referent":"{}"}},
                                                   "requested_attributes":{{
                                                         "attr1_referent":{{ "cred_id":"{}", "revealed":true }},
-                                                        "attr2_referent":{{ "cred_id":"{}", "revealed":false }}
+                                                        "attr2_referent":{{ "cred_id":"{}", "revealed":false }},
+                                                        "attr4_referent":{{ "cred_id":"{}", "revealed":false }}
                                                   }},
                                                   "requested_predicates":{{
                                                         "predicate1_referent":{{ "cred_id":"{}" }}
                                                   }}
-                                                }}"#, self_attested_value, credential.referent, credential.referent, credential.referent);
+                                                }}"#, self_attested_value, credential.referent, credential.referent, credential.referent, credential.referent);
 
         let schemas_json = json!({schema_id: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
         let cred_defs_json = json!({cred_def_id: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
@@ -106,6 +114,7 @@ mod demos {
                                                         &rev_states_json).unwrap();
 
         let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+        println!("proof_json: {}", proof_json);
 
         //9. Verifier verifies proof
         assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
