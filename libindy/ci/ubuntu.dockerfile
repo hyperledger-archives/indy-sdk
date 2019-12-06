@@ -39,7 +39,7 @@ RUN pip3 install -U \
 	deb-pkg-tools
 
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz && \
+   curl https://download.libsodium.org/libsodium/releases/old/unsupported/libsodium-1.0.14.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.14 && \
     ./configure --disable-shared && \
     make && \

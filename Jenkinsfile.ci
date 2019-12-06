@@ -1,7 +1,5 @@
 #!groovy
 
-@Library('SovrinHelpers') _
-
 
 Ubuntu16 = "Ubuntu 16.04"
 Ubuntu18 = "Ubuntu 18.04"
@@ -39,17 +37,22 @@ def staticValidation() {
 
 def runValdiationRust(dir) {
     node('ubuntu') {
-        checkout scm
-        def testEnv
-        if (dir == 'vcx/libvcx') {
-            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
-        } else {
-            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
-        }
-        testEnv.inside {
-            //FIXME waiting on IS-823
-            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
-            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        try {
+            cleanWs()
+            checkout scm
+            def testEnv
+            if (dir == 'vcx/libvcx') {
+                testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
+            } else {
+                testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
+            }
+            testEnv.inside {
+                //FIXME waiting on IS-823
+                //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
+                sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+            }
+        } finally {
+            cleanWs()
         }
     }
 }
@@ -59,6 +62,7 @@ def windowsTesting() {
         stage('Windows Test') {
             def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
             ws(ws_path) {
+                cleanWs()
                 try {
                     echo "Windows Test: Checkout scm"
                     checkout scm
@@ -203,6 +207,7 @@ def windowsTesting() {
 
 def macosTesting() {
     node('macos') {
+        cleanWs()
         stage('MacOS Test') {
             def pool_name = "indy_pool"
             try {
@@ -281,6 +286,7 @@ def iosTesting() {
     }
 
     node('macos') {
+        cleanWs()
         stage('iOS Test') {
             def pool_name = "indy_pool"
             try {
@@ -365,9 +371,10 @@ def centosTesting() {
 
 def linuxTesting(file, env_name, network_name, full_testing) {
     parallel([
-            failFast                                  : false,
+            failFast                                  : true,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
+                    cleanWs()
                     linuxLibindyBuild(file, env_name, network_name, full_testing)
                 }
             },
@@ -401,6 +408,7 @@ def vcxTesting(file, env_name, network_name, full_testing) {
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
                 node('ubuntu') {
+                    cleanWs()
                     linuxVcxBuild(file, env_name, network_name)
                 }
             },
@@ -417,7 +425,6 @@ def vcxTesting(file, env_name, network_name, full_testing) {
 
 def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     def poolInst
-    def libindy_tests_failed = false
     try {
         echo "${env_name} Test: Checkout csm"
         checkout scm
@@ -432,15 +439,6 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
                 cd libindy
                 cargo build --features "fatal_warnings sodium_static"
             '''
-
-            // TODO Should be removed. Debug output to collect env configuration for IS-1428. May be reverted as a whole commit.
-            echo "DBG >>>"
-            sh "ls /usr/include/"
-            sh "ls -la /usr/lib/x86_64-linux-gnu/lib[sc][sr][ly]*"
-            sh "cat libindy/target/debug/build/openssl-s*/output"
-            sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
-            sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
-            echo "DBG <<<"
         }
 
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
@@ -487,26 +485,11 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
         testEnv.inside("--network=${network_name}") {
             def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
 
-            test_res_ec = sh returnStatus: true, script: """
+            sh """
                 cd libindy
                 RUST_BACKTRACE=1 cargo test --no-run ${features_args}
                 RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test ${features_args}
             """
-
-            // TODO Should be removed. Debug output to collect env configuration for IS-1428. May be reverted as a whole commit.
-            echo "DBG >>>"
-            sh "ls /usr/include/"
-            sh "ls -la /usr/lib/x86_64-linux-gnu/lib[sc][sr][ly]*"
-            sh "cat libindy/target/debug/build/openssl-s*/output"
-            sh "cat libindy/target/debug/build/openssl-[0-f]*/output"
-            sh "grep OPENSSL_VERSION_NUMBER -B 5 -A 5 /usr/include/openssl/opensslv.h"
-            echo "DBG <<<"
-
-            libindy_tests_failed = (test_res_ec != 0)
-            if (libindy_tests_failed) {
-                // TODO Should be removed. Debug step to collect env configuration for IS-1428. May be reverted as a whole commit.
-                approval.check("default")
-            }
         }
 
         echo "${env_name} Libnullpay Test: Test"
@@ -520,8 +503,7 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     }
 
     finally {
-        closePool(env_name, network_name, poolInst, libindy_tests_failed)
-        libindyBuildFinished[env_name] = true
+        closePool(env_name, network_name, poolInst)
     }
 }
 
@@ -582,6 +564,7 @@ def linuxVcxBuild(file, env_name, network_name) {
             sh '''
                 cd vcx/libvcx
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency_v2" -- tests::test_real_proof_for_protocol_type_v2 --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests aries" -- v3::test::aries_demo --exact
             '''
         }
     }
@@ -596,6 +579,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 
 def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
     node(node_label) {
+        cleanWs()
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
@@ -839,7 +823,7 @@ def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_v
     return poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 }
 
-def closePool(env_name, network_name, poolInst, skip_clean_ws = false) {
+def closePool(env_name, network_name, poolInst) {
     echo "${env_name} Test: Cleanup"
     try {
         echo "${env_name} Test: stop pool"
@@ -850,10 +834,7 @@ def closePool(env_name, network_name, poolInst, skip_clean_ws = false) {
     finally {
         dockerClean(env_name, network_name)
     }
-    // TODO Should be removed. Debug step to collect env configuration for IS-1428. May be reverted as a whole commit.
-    if (!skip_clean_ws) {
-        step([$class: 'WsCleanup'])
-    }
+    step([$class: 'WsCleanup'])
 }
 
 def shell(command) {
