@@ -1511,7 +1511,10 @@ pub mod tests {
 
     #[test]
     fn test_encode_empty_field() {
-        let empty_field = r#""empty_field"#;
-        print!("{:?}", encode_attributes(empty_field));
+        let empty_field = r#"{"empty_field": ""}"#;
+        let field_encoded = encode_attributes(empty_field).unwrap();
+        let field_encoded_json: serde_json::Map<String, serde_json::Value> = serde_json::from_str(&field_encoded).unwrap();
+        assert!(field_encoded_json["empty_field"]["raw"].as_str().unwrap().is_empty());
+        assert!(!field_encoded_json["empty_field"]["encoded"].as_str().unwrap().is_empty());
     }
 }
