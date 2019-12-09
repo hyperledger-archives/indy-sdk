@@ -363,6 +363,21 @@ pub fn gvt_credential_values_json() -> String {
     serde_json::to_string(&gvt_credential_values()).unwrap()
 }
 
+// note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
+pub fn gvt_credential_values_demo() -> HashMap<String, AttributeValues> {
+    map! {
+            "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()},
+            "name".to_string() => AttributeValues {raw: "Alex".to_string(), encoded: "1139481716457488690172217916278103335".to_string()},
+            "height".to_string() => AttributeValues {raw: "175".to_string(), encoded: "175".to_string()},
+            "age".to_string() => AttributeValues {raw: "28".to_string(), encoded: "28".to_string()},
+            "empty_param".to_string() => AttributeValues {raw: "".to_string(), encoded: "112233".to_string()}
+          }
+}
+
+pub fn gvt_credential_values_json_demo() -> String {
+    serde_json::to_string(&gvt_credential_values_demo()).unwrap()
+}
+
 pub fn gvt_sub_credential_values() -> HashMap<String, AttributeValues> {
     map! {
             "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()},

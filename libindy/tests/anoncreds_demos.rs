@@ -42,7 +42,7 @@ mod demos {
         let (schema_id, schema_json, cred_def_id, cred_def_json) = anoncreds::multi_steps_issuer_preparation(issuer_wallet_handle,
                                                                                                              ISSUER_DID,
                                                                                                              GVT_SCHEMA_NAME,
-                                                                                                             GVT_SCHEMA_ATTRIBUTES);
+                                                                                                             GVT_SCHEMA_ATTRIBUTES_DEMO);
 
         //4. Prover creates Master Secret
         anoncreds::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
@@ -52,7 +52,7 @@ mod demos {
                                                  prover_wallet_handle,
                                                  issuer_wallet_handle,
                                                  CREDENTIAL1_ID,
-                                                 &anoncreds::gvt_credential_values_json(),
+                                                 &anoncreds::gvt_credential_values_json_demo(),
                                                  &cred_def_id,
                                                  &cred_def_json);
 
