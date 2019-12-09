@@ -51,13 +51,13 @@ impl Message for HandleAdminMessage {
 
 
 // Common messages
-pub struct AddA2ARoute(pub String, pub Recipient<HandleA2AMsg>);
+pub struct AddA2ARoute(pub String, pub String, pub Recipient<HandleA2AMsg>);
 
 impl Message for AddA2ARoute {
     type Result = ();
 }
 
-pub struct AddA2ConnRoute(pub String, pub Recipient<HandleA2ConnMsg>);
+pub struct AddA2ConnRoute(pub String, pub String, pub Recipient<HandleA2ConnMsg>);
 
 impl Message for AddA2ConnRoute {
     type Result = ();

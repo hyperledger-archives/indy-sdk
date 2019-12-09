@@ -1418,7 +1418,7 @@ mod high_cases {
             let response_metadata: serde_json::Value = serde_json::from_str(&response_metadata).unwrap();
             assert!(response_metadata["seqNo"].as_u64().is_some());
             assert!(response_metadata["txnTime"].as_u64().is_none());
-            assert!(response_metadata["lastTxnTime"].as_u64().is_none());
+            assert!(response_metadata["lastTxnTime"].as_u64().is_some());
             assert!(response_metadata["lastSeqNo"].as_u64().is_none());
         }
 

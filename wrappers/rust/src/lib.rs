@@ -361,7 +361,18 @@ impl IndyError {
         let mut error_json_p: *const c_char = ptr::null();
 
         unsafe { ffi::indy_get_current_error(&mut error_json_p); }
-        let error_json = rust_str!(error_json_p);
+        let error_json = opt_rust_str!(error_json_p);
+
+        let error_json = match error_json {
+            Some(error_json_) => error_json_,
+            None => {
+                return IndyError {
+                    error_code: ErrorCode::CommonInvalidState,
+                    message: String::from("Invalid ErrorMessage pointer"),
+                    indy_backtrace: None,
+                };
+            }
+        };
 
         match ::serde_json::from_str::<ErrorDetails>(&error_json) {
             Ok(error) => IndyError {

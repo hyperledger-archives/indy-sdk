@@ -1526,6 +1526,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
 ///         "restrictions": Optional<filter_json>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1651,6 +1652,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
 ///         "restrictions": Optional<wql query>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1921,6 +1923,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
 ///         "restrictions": Optional<wql query>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1965,6 +1968,16 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///             "revealed_attrs": {
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+///             },
+///             "revealed_attr_groups": {
+///                 "requested_attr5_id": {
+///                     "sub_proof_index": number,
+///                     "values": [
+///                         {
+///                             "raw": string,
+///                             "encoded": string
+///                         }
+///                     ], // NOTE: check that `encoded` value match to `raw` value on application level
 ///             },
 ///             "unrevealed_attrs": {
 ///                 "requested_attr3_id": {sub_proof_index: number}
@@ -2072,6 +2085,16 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
 ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
 ///             },
+///             "revealed_attr_groups": {
+///                 "requested_attr5_id": {
+///                     "sub_proof_index": number,
+///                     "values": [
+///                         {
+///                             "raw": string,
+///                             "encoded": string
+///                         }
+///                     ], // NOTE: check that `encoded` value match to `raw` value on application level
+///             },
 ///             "unrevealed_attrs": {
 ///                 "requested_attr3_id": {sub_proof_index: number}
 ///             },
@@ -2125,6 +2148,7 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
 ///         "restrictions": Optional<wql query>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation

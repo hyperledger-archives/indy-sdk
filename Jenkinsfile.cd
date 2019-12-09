@@ -49,8 +49,8 @@ def testing() {
                 'centos-test' : { centosTesting() },
                 'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() },
-                // 'ios-test'    : { iosTesting() },
-                // 'macos-test'  : { macosTesting() }
+                'ios-test'    : { iosTesting() },
+                'macos-test'  : { macosTesting() }
         ])
     }
 }
@@ -63,8 +63,8 @@ def publishing() {
                 'ubuntu-files' : { ubuntuPublishing() },
                 'windows-files': { windowsPublishing() },
                 'android-files': { androidPublishing() },
-                // 'ios-files'    : { iosPublishing() },
-                // 'macos-files'  : { macOsPublishing() },
+                'ios-files'    : { iosPublishing() },
+                'macos-files'  : { macOsPublishing() },
         ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
@@ -120,16 +120,21 @@ def staticValidation() {
 
 def runValdiationRust(dir) {
     node('ubuntu') {
-        checkout scm
-        if (dir == 'vcx/libvcx') {
-            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
-        } else {
-            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
-        }
-        testEnv.inside {
-            //FIXME waiting on IS-823
-            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
-            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        try {
+            cleanWs()
+            checkout scm
+            if (dir == 'vcx/libvcx') {
+                testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
+            } else {
+                testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
+            }
+            testEnv.inside {
+                //FIXME waiting on IS-823
+                //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
+                sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+            }
+        } finally {
+            cleanWs()
         }
     }
 }
@@ -219,6 +224,7 @@ def linuxTesting(file, env_name, network_name) {
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
+                    cleanWs()
                     linuxLibindyBuild(file, env_name, network_name, full_testing)
                 }
             },
@@ -258,6 +264,7 @@ def vcxTesting(file, env_name, network_name, full_testing) {
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
                 node('ubuntu') {
+                    cleanWs()
                     linuxVcxBuild(file, env_name, network_name)
                 }
             },
@@ -432,7 +439,8 @@ def linuxVcxBuild(file, env_name, network_name) {
             // TODO in Rust 1.39.0 there was a problem with test name before "--". Temporary put test name after it.
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "pool_tests agency_v2" -- tests::test_real_proof_for_protocol_type_v2 --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests agency_v2" -- tests::test_real_proof_for_protocol_type_v2 --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release --features "pool_tests aries" -- v3::test::aries_demo --exact
             '''
         }
     }
@@ -561,6 +569,7 @@ def windowsTesting() {
         stage('Windows Test') {
             def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
             ws(ws_path) {
+                cleanWs()
                 try {
                     echo "Windows Test: Checkout scm"
                     checkout scm
@@ -755,6 +764,7 @@ def iosTesting() {
     }
 
     node('macos') {
+        cleanWs()
         stage('iOS Test') {
             try {
                 echo "iOS Test: Checkout scm"
@@ -846,6 +856,7 @@ def centosTesting() {
 
 def macosTesting() {
     node('macos') {
+        cleanWs()
         stage('MacOS Test') {
             def pool_name = "indy_pool"
             try {
@@ -922,6 +933,7 @@ def centosPublishing() {
     def env_name = Centos
 
     node('ubuntu') {
+        cleanWs()
         stage("Publish ${env_name} Files") {
             try {
                 echo "Publish ${env_name} files: Checkout scm"
@@ -998,6 +1010,7 @@ def linuxPublishing(file, env_name, build_wrappers) {
     def libindyVersion
 
     node('ubuntu') {
+        cleanWs()
         stage("Publish ${env_name} Files") {
             try {
                 echo "Publish ${env_name} files: Checkout scm"
@@ -1075,6 +1088,7 @@ def publishToCargo(testEnv, suffix, ver) {
 def windowsPublishing() {
     def libindyVersion
     node('ubuntu') {
+        cleanWs()
         stage('Publish Libindy Windows Files') {
             try {
                 echo 'Publish Windows files: Checkout scm'
@@ -1128,6 +1142,7 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
 def iosPublishing() {
     def libindyVersion
     node('ubuntu') {
+        cleanWs()
         stage('Publish Libindy iOS Files') {
             try {
                 echo 'Publish iOS files: Checkout scm'
@@ -1179,6 +1194,7 @@ def publishIOSAtrifacts(testEnv, packageName, stashName, version, targetName) {
 
 def macOsPublishing() {
     node('ubuntu') {
+        cleanWs()
         stage('Publish Libindy MacOS Files') {
             try {
                 echo 'Publish iOS files: Checkout scm'
@@ -1403,6 +1419,7 @@ def vcxJavaWrapperPublishing(testEnv, isRelease) {
 
 def publishingRCtoStable() {
     node('ubuntu') {
+        cleanWs()
         stage('Moving RC artifacts to Stable') {
             try {
                 echo 'Moving RC artifacts to Stable: Checkout scm'
@@ -1721,6 +1738,7 @@ def androidPublishing() {
     def libnullpayVersion
 
     node('ubuntu') {
+        cleanWs()
         stage('Publish Android binaries') {
             try {
                 echo 'Publish Android files: Checkout scm'
@@ -1820,6 +1838,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 
 def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
     node(node_label) {
+        cleanWs()
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
@@ -1849,6 +1868,7 @@ def androidTesting() {
 
 def androidBuildAsTesting() {
     node('ubuntu') {
+        cleanWs()
         stage('Android test') {
             try {
                 echo 'Building android binaries. This will act as a minimal test for android'

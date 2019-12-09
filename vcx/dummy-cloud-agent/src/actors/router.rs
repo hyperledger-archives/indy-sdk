@@ -35,14 +35,16 @@ impl Router {
             .into_box()
     }
 
-    fn add_a2a_route(&mut self, did: String, handler: Recipient<HandleA2AMsg>) {
-        trace!("Router::handle_add_route >> {}", did);
-        self.routes.insert(did, handler);
+    fn add_a2a_route(&mut self, did: String, verkey: String, handler: Recipient<HandleA2AMsg>) {
+        trace!("Router::handle_add_route >> {}, {}", did, verkey);
+        self.routes.insert(did, handler.clone());
+        self.routes.insert(verkey, handler);
     }
 
-    fn add_a2conn_route(&mut self, did: String, handler: Recipient<HandleA2ConnMsg>) {
-        trace!("Router::add_a2conn_route >> {}", did);
-        self.pairwise_routes.insert(did, handler);
+    fn add_a2conn_route(&mut self, did: String, verkey: String, handler: Recipient<HandleA2ConnMsg>) {
+        trace!("Router::add_a2conn_route >> {}, {}", did, verkey);
+        self.pairwise_routes.insert(did, handler.clone());
+        self.pairwise_routes.insert(verkey, handler);
     }
 
     pub fn route_a2a_msg(&self, did: String, msg: Vec<u8>) -> ResponseFuture<Vec<u8>, Error> {
@@ -93,7 +95,7 @@ impl Handler<AddA2ARoute> for Router {
 
     fn handle(&mut self, msg: AddA2ARoute, _: &mut Self::Context) -> Self::Result {
         trace!("Handler<AddA2ARoute>::handle >> {}", msg.0);
-        self.add_a2a_route(msg.0, msg.1)
+        self.add_a2a_route(msg.0, msg.1, msg.2)
     }
 }
 
@@ -102,7 +104,7 @@ impl Handler<AddA2ConnRoute> for Router {
 
     fn handle(&mut self, msg: AddA2ConnRoute, _: &mut Self::Context) -> Self::Result {
         trace!("Handler<AddA2ConnRoute>::handle >> {}", msg.0);
-        self.add_a2conn_route(msg.0, msg.1)
+        self.add_a2conn_route(msg.0, msg.1, msg.2)
     }
 }
 
