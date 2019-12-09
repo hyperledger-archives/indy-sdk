@@ -166,7 +166,7 @@ pub fn libindy_build_get_nym_request(submitter_did: Option<&str>, did: &str) -> 
 pub mod auth_rule {
     use super::*;
     use std::collections::HashMap;
-    use std::sync::{Once, ONCE_INIT};
+    use std::sync::Once;
     use std::sync::Mutex;
 
     use indy::future::Future;
@@ -335,7 +335,7 @@ pub mod auth_rule {
 
     fn _get_default_ledger_auth_rules() {
         lazy_static! {
-            static ref GET_DEFAULT_AUTH_CONSTRAINTS: Once = ONCE_INIT;
+            static ref GET_DEFAULT_AUTH_CONSTRAINTS: Once = Once::new();
 
         }
 

@@ -16,7 +16,7 @@ pub fn map_indy_error<T, C: PrimInt>(rtn: T, error_code: C) -> Result<T, u32> {
 
 pub fn map_rust_indy_sdk_error(error: IndyError) -> VcxError {
     match error.error_code as u32 {
-        100 ... 111 => VcxError::from_msg(VcxErrorKind::InvalidLibindyParam, error.message),
+        100..=111 => VcxError::from_msg(VcxErrorKind::InvalidLibindyParam, error.message),
         113 => VcxError::from_msg(VcxErrorKind::LibindyInvalidStructure, error.message),
         114 => VcxError::from_msg(VcxErrorKind::IOError, error.message),
         200 => VcxError::from_msg(VcxErrorKind::InvalidWalletHandle, error.message),
@@ -48,7 +48,7 @@ pub fn map_indy_error_code<C: PrimInt>(error_code: C) -> u32 {
     }
 
     match error_code {
-        100 ... 111 => error::INVALID_LIBINDY_PARAM.code_num,
+        100..=111 => error::INVALID_LIBINDY_PARAM.code_num,
         113 => error::LIBINDY_INVALID_STRUCTURE.code_num,
         200 => error::INVALID_WALLET_HANDLE.code_num,
         203 => error::WALLET_ALREADY_EXISTS.code_num,

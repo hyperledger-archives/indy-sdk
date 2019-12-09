@@ -67,6 +67,40 @@ macro_rules! teardown {
     )
 }
 
+#[macro_export]
+macro_rules! assert_match {
+($pattern:pat, $var:expr) => (
+        assert!(match $var {
+            $pattern => true,
+            _ => false
+        })
+    );
+    ($pattern:pat, $var:expr, $val_in_pattern:ident, $exp_value:expr) => (
+        assert!(match $var {
+            $pattern => $val_in_pattern == $exp_value,
+            _ => false
+        })
+    );
+    ($pattern:pat, $var:expr, $val_in_pattern1:ident, $exp_value1:expr, $val_in_pattern2:ident, $exp_value2:expr) => (
+        assert!(match $var {
+            $pattern => $val_in_pattern1 == $exp_value1 && $val_in_pattern2 == $exp_value2,
+            _ => false
+        })
+    );
+}
+
+macro_rules! map(
+    { $($key:expr => $value:expr),+ } => {
+        {
+            let mut m = ::std::collections::HashMap::new();
+            $(
+                m.insert($key, $value);
+            )+
+            m
+        }
+     };
+);
+
 #[cfg(test)]
 pub mod tests {
     extern crate rand;
@@ -84,8 +118,9 @@ pub mod tests {
     static mut INSTITUTION_CONFIG: u32 = 0;
     static mut CONSUMER_CONFIG: u32 = 0;
     use indy::ErrorCode;
+    use std::sync::Once;
 
-    static INIT_PLUGIN: std::sync::Once = std::sync::ONCE_INIT;
+    static INIT_PLUGIN: std::sync::Once = std::sync::Once::new();
 
     lazy_static! {
         static ref CONFIG_STRING: ObjectCache<String> = Default::default();
@@ -283,10 +318,10 @@ pub mod tests {
         let consumer_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
         unsafe {
-            INSTITUTION_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config)).unwrap();
+            INSTITUTION_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config)).unwrap();
         }
         unsafe {
-            CONSUMER_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&consumer_wallet_name, &consumer_config)).unwrap();
+            CONSUMER_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&consumer_wallet_name, &consumer_config)).unwrap();
         }
         pool::tests::open_sandbox_pool();
 
@@ -316,7 +351,7 @@ pub mod tests {
         ::utils::libindy::payments::tests::token_setup(None, None, false);
     }
 
-    fn _config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
+    pub fn config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
         let wallet_handle = wallet::open_wallet(wallet_n, None, None, None).unwrap();
         let mut config: serde_json::Value = serde_json::from_str(config).unwrap();
         config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.to_string());
@@ -374,7 +409,7 @@ pub mod tests {
         let config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
         unsafe {
-            INSTITUTION_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&settings::DEFAULT_WALLET_NAME, &config)).unwrap();
+            INSTITUTION_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&settings::DEFAULT_WALLET_NAME, &config)).unwrap();
         }
 
         pool::tests::open_sandbox_pool();

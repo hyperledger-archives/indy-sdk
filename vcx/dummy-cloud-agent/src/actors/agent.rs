@@ -88,7 +88,7 @@ impl Agent {
                 let agent = agent.start();
 
                 router
-                    .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
+                    .send(AddA2ARoute(did.clone(), verkey.clone(), agent.clone().recipient()))
                     .from_err()
                     .map(move |_| (wallet_id, wallet_key, did, verkey, admin, agent))
                     .map_err(|err: Error| err.context("Can't add route for Agent").into())
@@ -179,7 +179,7 @@ impl Agent {
                 let agent = agent.start();
 
                 router
-                    .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
+                    .send(AddA2ARoute(did.clone(), verkey.clone(), agent.clone().recipient()))
                     .map(move |_| (admin, agent, did))
                     .from_err()
                     .map_err(|err: Error| err.context("Can't add route for Agent.").into())
@@ -258,6 +258,15 @@ impl Agent {
                         let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
                         slf.router
                             .send(RouteA2AMsg(msg.fwd, msg_))
+                            .from_err()
+                            .and_then(|res| res)
+                            .into_actor(slf)
+                            .into_box()
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::ForwardV3(msg))) => {
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        slf.router
+                            .send(RouteA2AMsg(msg.to, msg_))
                             .from_err()
                             .and_then(|res| res)
                             .into_actor(slf)
@@ -554,7 +563,7 @@ impl Agent {
                     .into_actor(slf)
             })
             .and_then(|(for_did, pairwise_did, pairwise_did_verkey), slf, _| {
-                pairwise::create_pairwise(slf.wallet_handle, &for_did, &pairwise_did, None)
+                pairwise::create_pairwise(slf.wallet_handle, &for_did, &pairwise_did, Some("{}"))
                     .map_err(|err| err.context("Can't store agent pairwise connection.").into())
                     .map(|_| (for_did, pairwise_did, pairwise_did_verkey))
                     .into_actor(slf)
@@ -604,8 +613,11 @@ impl Agent {
     fn handle_update_configs(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, (), Error> {
         for config_option in msg.configs {
             match config_option.name.as_str() {
-                "name" | "logoUrl" => self.configs.insert(config_option.name, config_option.value),
-                _ => continue
+                "name" | "logoUrl" | "notificationWebhookUrl" => self.configs.insert(config_option.name, config_option.value),
+                _ => {
+                    warn!("Agent was trying to set up unsupported agent configuration option {}", config_option.name.as_str());
+                    continue
+                }
             };
         }
 

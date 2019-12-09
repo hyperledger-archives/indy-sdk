@@ -34,8 +34,8 @@ RUN pip3 install -U \
 	pip \
 	setuptools \
 	virtualenv \
-	twine \
-	plumbum \
+	twine==1.15.0 \
+	plumbum==1.6.7 six==1.12.0 \
 	deb-pkg-tools
 
 RUN apt-get update && apt-get install openjdk-8-jdk -y
@@ -54,7 +54,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.36.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.39.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 # Install clippy to the Rust toolchain
