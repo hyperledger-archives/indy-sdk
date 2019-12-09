@@ -354,8 +354,7 @@ pub fn gvt_credential_values() -> HashMap<String, AttributeValues> {
             "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()},
             "name".to_string() => AttributeValues {raw: "Alex".to_string(), encoded: "1139481716457488690172217916278103335".to_string()},
             "height".to_string() => AttributeValues {raw: "175".to_string(), encoded: "175".to_string()},
-            "age".to_string() => AttributeValues {raw: "28".to_string(), encoded: "28".to_string()},
-            "empty_param".to_string() => AttributeValues {raw: "".to_string(), encoded: "111222333".to_string()}
+            "age".to_string() => AttributeValues {raw: "28".to_string(), encoded: "28".to_string()}
           }
 }
 
@@ -381,8 +380,7 @@ pub fn gvt_credential_values_json_demo() -> String {
 pub fn gvt_sub_credential_values() -> HashMap<String, AttributeValues> {
     map! {
             "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()},
-            "height_sub".to_string() => AttributeValues {raw: "175".to_string(), encoded: "175".to_string()},
-            "empty_param".to_string() => AttributeValues {raw: "".to_string(), encoded: "111222333".to_string()}
+            "height_sub".to_string() => AttributeValues {raw: "175".to_string(), encoded: "175".to_string()}
           }
 }
 
