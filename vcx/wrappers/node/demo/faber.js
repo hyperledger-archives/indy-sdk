@@ -21,7 +21,7 @@ const provisionConfig = {
     'enterprise_seed': '000000000000000000000000Trustee1'
 };
 
-const logLevel = 'error';
+const logLevel = 'trace';
 
 function postegressEnabled() {
     return process.argv[2] === '--postgres'
