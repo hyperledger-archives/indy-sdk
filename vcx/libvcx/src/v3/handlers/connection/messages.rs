@@ -2,7 +2,7 @@ use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::SignedResponse;
 use v3::messages::connection::problem_report::ProblemReport;
-use v3::messages::connection::ping::Ping;
+use v3::messages::trust_ping::ping::Ping;
 use v3::messages::ack::Ack;
 use v3::messages::a2a::A2AMessage;
 

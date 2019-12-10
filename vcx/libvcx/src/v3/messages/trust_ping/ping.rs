@@ -27,6 +27,11 @@ impl Ping {
         self
     }
 
+    pub fn request_response(mut self) -> Ping {
+        self.response_requested = true;
+        self
+    }
+
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::Ping(self.clone()) // TODO: THINK how to avoid clone
     }

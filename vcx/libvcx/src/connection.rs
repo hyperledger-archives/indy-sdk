@@ -994,6 +994,15 @@ pub fn is_v3_connection(connection_handle: u32) -> VcxResult<bool> {
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
+pub fn send_ping(connection_handle: u32, comment: Option<String>) -> VcxResult<()> {
+    CONNECTION_MAP.get(connection_handle, |connection| {
+        match connection {
+            Connections::V1(ref connection) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
+            Connections::V3(ref connection) => connection.send_ping(comment.as_ref().map(String::as_str))
+        }
+    })
+}
+
 #[cfg(test)]
 pub mod tests {
     use utils::constants::*;

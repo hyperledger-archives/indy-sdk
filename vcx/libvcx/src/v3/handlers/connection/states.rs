@@ -7,8 +7,8 @@ use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{Response, SignedResponse};
 use v3::messages::connection::problem_report::{ProblemReport, ProblemCode};
-use v3::messages::connection::ping::Ping;
-use v3::messages::connection::ping_response::PingResponse;
+use v3::messages::trust_ping::ping::Ping;
+use v3::messages::trust_ping::ping_response::PingResponse;
 use v3::messages::ack::Ack;
 use v3::messages::connection::did_doc::DidDoc;
 
@@ -602,7 +602,7 @@ pub mod test {
     use v3::messages::connection::request::tests::_request;
     use v3::messages::connection::response::tests::_signed_response;
     use v3::messages::connection::problem_report::tests::_problem_report;
-    use v3::messages::connection::ping::tests::_ping;
+    use v3::messages::trust_ping::ping::tests::_ping;
     use v3::messages::ack::tests::_ack;
 
     pub mod inviter {

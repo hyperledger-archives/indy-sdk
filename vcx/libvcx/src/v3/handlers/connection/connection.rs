@@ -5,6 +5,7 @@ use v3::handlers::connection::states::{DidExchangeSM, Actor, ActorDidExchangeSta
 use v3::handlers::connection::messages::DidExchangeMessages;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::invite::Invitation;
+use v3::messages::trust_ping::ping::Ping;
 use v3::handlers::connection::agent::AgentInfo;
 
 use std::collections::HashMap;
@@ -165,6 +166,17 @@ impl Connection {
         trace!("Connection::send_generic_message >>> message: {:?}", message);
 
         self.send_message(&A2AMessage::Generic(message.to_string())).map(|_| String::new())
+    }
+
+    pub fn send_ping(&self, comment: Option<&str>) -> VcxResult<()> {
+        trace!("Connection::send_ping >>> comment: {:?}", comment);
+
+        let mut ping = Ping::create().request_response();
+        if let Some(comment) = comment {
+            ping = ping.set_comment(comment.to_string());
+        }
+
+        self.send_message(&A2AMessage::Ping(ping))
     }
 
     pub fn delete(&self) -> VcxResult<()> {
