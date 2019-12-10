@@ -274,12 +274,14 @@ mod tests {
         for i in 1..number_of_attributes {
             attrs_list.as_array_mut().unwrap().push(json!(format!("key{}",i)));
         }
+        attrs_list.as_array_mut().unwrap().push(json!("empty_param"));
         let attrs_list = attrs_list.to_string();
         let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, false);
         let mut credential_data = json!({});
         for i in 1..number_of_attributes {
             credential_data[format!("key{}", i)] = json!([format!("value{}",i)]);
         }
+        credential_data["empty_param"] = json!([""]);
         let credential_data = credential_data.to_string();
         let credential_offer = send_cred_offer(&institution_did, cred_def_handle, alice, &credential_data);
 
@@ -297,6 +299,7 @@ mod tests {
         for i in 1..number_of_attributes {
             attrs.as_array_mut().unwrap().push(json!({ "name":format!("key{}", i), "restrictions": [restrictions]}));
         }
+        attrs.as_array_mut().unwrap().push(json!({ "name":"empty_param", "restrictions": {"attr::empty_param::value": ""}}));
         let (proof_req_handle, req_uuid) = send_proof_request(alice, &attrs.to_string(), "[]", "{}", "");
 
         let proof_handle = create_proof(faber, &req_uuid);
@@ -311,6 +314,10 @@ mod tests {
                 "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string(),
             });
         };
+        credentials["attrs"]["empty_param"] = json!({
+                "credential": matching_credentials["attrs"]["empty_param"][0].clone(),
+                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string(),
+            });
         generate_and_send_proof(proof_handle, faber, credentials);
 
         // AS INSTITUTION VALIDATE PROOF
