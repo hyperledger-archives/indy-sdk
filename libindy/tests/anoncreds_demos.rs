@@ -91,7 +91,7 @@ mod demos {
                                                   "requested_predicates":{{
                                                         "predicate1_referent":{{ "cred_id":"{}" }}
                                                   }}
-                                                }}"#, self_attested_value, credential.referent, credential.referent, credential.referent, credential.referent);
+                                                }}"#, self_attested_value, credential.referent, credential.referent, credential.referent);
 
         let schemas_json = json!({schema_id: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
         let cred_defs_json = json!({cred_def_id: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
