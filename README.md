@@ -124,7 +124,7 @@ Please See the section "Release channels" above for more details.
 
 ### Windows
 
-1. Go to https://repo.sovrin.org/windows/{library}/{release-channel}.
+1. Go to `https://repo.sovrin.org/windows/{library}/{release-channel}.`
 2. Download last version of library.
 3. Unzip archives to the directory where you want to save working library.
 4. After unzip you will get next structure of files:
@@ -198,7 +198,7 @@ See section "Release channels" for more details.
 
 ### Centos
 
-1. Go to https://repo.sovrin.org/rpm/{library}/{release-channel}.
+1. Go to `https://repo.sovrin.org/rpm/{library}/{release-channel}`.
 2. Download and unzip the last version of library.
 3. Install with `rpm -i library-version.rpm`.
 
@@ -335,6 +335,7 @@ The documents that provide necessary information for Libindy migrations.
 * [v1.9.0 → v1.10.x](docs/migration-guides/migration-guide-1.9.0-1.10.0.md)
 * [v1.10.0 → v1.11.x](docs/migration-guides/migration-guide-1.10.0-1.11.0.md)
 * [v1.11.0 → v1.12.x](docs/migration-guides/migration-guide-1.11.0-1.12.0.md)
+* [v1.12.0 → v1.13.x](docs/migration-guides/migration-guide-1.12.0-1.13.0.md)
 
 ## How to Contribute
 * We'd love your help; see these [HL Indy Wiki](https://wiki.hyperledger.org/display/indy/How+to+Contribute) and [slides on how to contribute](http://bit.ly/2ugd0bq).

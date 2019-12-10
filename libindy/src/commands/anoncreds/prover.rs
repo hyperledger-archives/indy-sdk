@@ -534,6 +534,7 @@ impl ProverCommandExecutor {
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_req_version,
                                                                                         &requested_attr.name,
+                                                                                        &requested_attr.names,
                                                                                         &attr_id,
                                                                                         &requested_attr.restrictions,
                                                                                         &None)?;
@@ -546,7 +547,8 @@ impl ProverCommandExecutor {
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&proof_req_version,
-                                                                                        &requested_predicate.name,
+                                                                                        &Some(requested_predicate.name.clone()),
+                                                                                        &None,
                                                                                         &predicate_id,
                                                                                         &requested_predicate.restrictions,
                                                                                         &None)?;
@@ -581,6 +583,7 @@ impl ProverCommandExecutor {
         for (attr_id, requested_attr) in proof_req.requested_attributes.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
                                                                                         &requested_attr.name,
+                                                                                        &requested_attr.names,
                                                                                         &attr_id,
                                                                                         &requested_attr.restrictions,
                                                                                         &extra_query)?;
@@ -597,7 +600,8 @@ impl ProverCommandExecutor {
 
         for (predicate_id, requested_predicate) in proof_req.requested_predicates.iter() {
             let query = self.anoncreds_service.prover.extend_proof_request_restrictions(&version,
-                                                                                        &requested_predicate.name,
+                                                                                        &Some(requested_predicate.name.clone()),
+                                                                                        &None,
                                                                                         &predicate_id,
                                                                                         &requested_predicate.restrictions,
                                                                                         &extra_query)?;

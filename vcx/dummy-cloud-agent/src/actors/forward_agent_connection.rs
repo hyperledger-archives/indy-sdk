@@ -93,7 +93,7 @@ impl ForwardAgentConnection {
                 let forward_agent_connection = forward_agent_connection.start();
 
                 router
-                    .send(AddA2ARoute(my_did.clone(), forward_agent_connection.clone().recipient()))
+                    .send(AddA2ARoute(my_did.clone(), my_verkey.clone(), forward_agent_connection.clone().recipient()))
                     .from_err()
                     .map(move |_| (my_did, my_verkey, forward_agent_connection, admin))
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
@@ -170,7 +170,7 @@ impl ForwardAgentConnection {
                     wallet_handle,
                     their_did,
                     their_verkey,
-                    my_verkey,
+                    my_verkey: my_verkey.clone(),
                     state,
                     router: router.clone(),
                     admin: admin.clone(),
@@ -181,7 +181,7 @@ impl ForwardAgentConnection {
                 let forward_agent_connection = forward_agent_connection.start();
 
                 router
-                    .send(AddA2ARoute(my_did.clone(), forward_agent_connection.clone().recipient()))
+                    .send(AddA2ARoute(my_did.clone(), my_verkey.clone(), forward_agent_connection.clone().recipient()))
                     .from_err()
                     .map(move |_| (forward_agent_connection, my_did, admin))
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
