@@ -23,6 +23,8 @@ const provisionConfig = {
     'wallet_key': '123',
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
+    'protocol_type': '2.0',
+    'communication_method': 'aries'
 };
 
 const logLevel = 'error';
@@ -45,7 +47,7 @@ async function run() {
         provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
         provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
     }
-    
+
     if (await isPortReachable(url.parse(optionalWebhook).port, {host: url.parse(optionalWebhook).hostname})) {
         provisionConfig['webhook_url'] = optionalWebhook
         logger.info(`Webhook server available! Will use webhook: ${optionalWebhook}`)
@@ -188,6 +190,7 @@ async function run() {
     } else {
         logger.info("Could not verify proof")
     }
+    process.exit(0);
 }
 
 run();

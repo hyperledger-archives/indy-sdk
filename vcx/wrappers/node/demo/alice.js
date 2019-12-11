@@ -19,7 +19,9 @@ const provisionConfig = {
     'wallet_name': `node_vcx_demo_alice_wallet_${utime}`,
     'wallet_key': '123',
     'payment_method': 'null',
-    'enterprise_seed': '000000000000000000000000Trustee1'
+    'enterprise_seed': '000000000000000000000000Trustee1',
+    'protocol_type': '2.0',
+    'communication_method': 'aries'
 };
 
 const logLevel = 'error';
@@ -63,10 +65,15 @@ async function run() {
     logger.info("#10 Convert to valid json and string and create a connection to faber");
     const connection_to_faber = await Connection.createWithInvite({id: 'faber', invite: JSON.stringify(jdetails)});
     await connection_to_faber.connect({data: '{"use_public_did": true}'});
-    await connection_to_faber.updateState();
+    let connection_state = await connection_to_faber.getState();
+    while (connection_state !== StateType.Accepted) {
+        await sleepPromise(2000);
+        await connection_to_faber.updateState();
+        connection_state = await connection_to_faber.getState();
+    }
 
     logger.info("#11 Wait for faber.py to issue a credential offer");
-    await sleepPromise(5000);
+    await sleepPromise(10000);
     const offers = await Credential.getOffers(connection_to_faber);
     logger.info(`Alice found ${offers.length} credential offers.`);
     logger.debug(JSON.stringify(offers));
@@ -107,6 +114,15 @@ async function run() {
 
     logger.info("#26 Send the proof to faber");
     await proof.sendProof(connection_to_faber);
+
+    let proofState = await proof.getState()
+    while (proofState !== StateType .Accepted) {
+        await sleepPromise(2000);
+        await proof.updateState()
+        proofState = await proof.getState()
+    }
+    logger.info("Proof is verified.")
+    process.exit(0);
 }
 
 run();
