@@ -8,18 +8,18 @@ module.exports.runScript = async function runScript (optionDefinitions, usageDef
   try {
     options = commandLineArgs(optionDefinitions)
   } catch (error) {
-    console.error(`Error parsing arguments`)
+    console.error('Error parsing arguments')
     console.error(error)
     console.log(usage)
     return
   }
   if (options.help) {
-    console.error(`Help requested.`)
+    console.error('Help requested.')
     console.log(usage)
     return
   }
   if (!areOptionsValid(options)) {
-    console.error(`Invalid options.`)
+    console.error('Invalid options.')
     console.log(usage)
     return
   }
