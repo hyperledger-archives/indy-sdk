@@ -42,8 +42,8 @@
         "demo:notifyserver": "node notification-server.js",
         "demo:alice": "babel-node demo/alice.js",
         "demo:faber": "babel-node demo/faber.js",
-        "demo:alice:pg": "babel-node demo/alice.js --postgres",
-        "demo:faber:pg": "babel-node demo/faber.js --postgres",
+        "demo:alice:pg": "babel-node demo/alice.js --postgresql",
+        "demo:faber:pg": "babel-node demo/faber.js --postgresql",
         "demo:alice:sign": "babel-node demo/alice-signature.js",
         "demo:faber:verify": "babel-node demo/faber-verify-signature.js",
         "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",
@@ -53,6 +53,8 @@
         "test-logging": "export TS_NODE_PROJECT=\"./test/tsconfig.json\" export NODE_ENV='test'&& find ./test/suite3 -name '*.test.ts' -exec ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register \\{} \\;"
     },
     "devDependencies": {
+        "command-line-args": "^5.1.1",
+        "command-line-usage": "^5.0.5",
         "is-port-reachable": "^2.0.1",
         "@types/chai": "^4.1.4",
         "@types/lodash": "^4.14.109",

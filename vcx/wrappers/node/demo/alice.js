@@ -8,6 +8,7 @@ import * as demoCommon from './common'
 import logger from './logger'
 import url from 'url'
 import isPortReachable from 'is-port-reachable';
+import {runScript} from './script-comon'
 
 const utime = Math.floor(new Date() / 1000);
 const optionalWebhook =  "http://localhost:7209/notifications/alice"
@@ -20,8 +21,6 @@ const provisionConfig = {
     'wallet_key': '123',
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
-    'protocol_type': '2.0',
-    'communication_method': 'aries'
 };
 
 const logLevel = 'error';
@@ -30,24 +29,29 @@ function postegressEnabled() {
     return process.argv[2] === '--postgres'
 }
 
-async function run() {
+async function runAlice(options) {
     await demoCommon.initLibNullPay();
 
-    logger.info("#7 initialize rust API from NodeJS");
+    logger.info("#0 Initialize rust API from NodeJS");
     await demoCommon.initRustApiAndLogger(logLevel);
 
-    if (postegressEnabled()) {
-        logger.info("Going to initialize postgress plugin.")
+    if (options['comm'] === 'aries') {
+        provisionConfig['protocol_type'] = '2.0'
+        provisionConfig['communication_method'] = 'aries'
+        logger.info(`Running with Aries VCX Enabled! Make sure VCX agency is configured to use protocol_type 2.0`)
+    }
+    if (options['postgresql']) {
         await demoCommon.loadPostgresPlugin(provisionConfig);
-        logger.info("Postgress plugin initialized.")
         provisionConfig['wallet_type'] = 'postgres_storage'
         provisionConfig['storage_config'] = '{"url":"localhost:5432"}'
         provisionConfig['storage_credentials'] = '{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}'
+        logger.info(`Running with PostreSQL wallet enabled! Config = ${provisionConfig['storage_config']}`)
+    } else {
+        logger.info(`Running with builtin wallet.`)
     }
-
     if (await isPortReachable(url.parse(optionalWebhook).port, {host: url.parse(optionalWebhook).hostname})) {
         provisionConfig['webhook_url'] = optionalWebhook
-        logger.info(`Webhook server available! Will use webhook: ${optionalWebhook}`)
+        logger.info(`Running with webhook notifications enabled! Webhook url = ${optionalWebhook}`)
     } else {
         logger.info(`Webhook url will not be used`)
     }
@@ -125,4 +129,44 @@ async function run() {
     process.exit(0);
 }
 
-run();
+const optionDefinitions = [
+    {
+        name: 'help',
+        alias: 'h',
+        type: Boolean,
+        description: 'Display this usage guide.'
+    },
+    {
+        name: 'comm',
+        type: String,
+        description: 'Communication method. Possible values: aries, legacy. Default is aries.',
+        defaultValue: 'aries'
+    },
+    {
+        name: 'postgresql',
+        type: Boolean,
+        description: 'If specified, postresql wallet will be used.',
+        defaultValue: false
+    }
+]
+
+const usage = [
+    {
+        header: 'Options',
+        optionList: optionDefinitions
+    },
+    {
+        content: 'Project home: {underline https://github.com/Patrik-Stas/indy-wallet-watch}'
+    }
+]
+
+function areOptionsValid (options) {
+    let allowedCommMethods = ['aries', 'legacy']
+    if (!(allowedCommMethods.includes(options['comm']))) {
+        console.error(`Unknown communication method ${options['comm']}. Only ${JSON.stringify(allowedCommMethods)} are allowed.`)
+        return false
+    }
+    return true
+}
+
+runScript(optionDefinitions, usage, areOptionsValid, runAlice)
