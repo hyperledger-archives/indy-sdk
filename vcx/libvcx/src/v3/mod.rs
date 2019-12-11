@@ -200,18 +200,9 @@ pub mod test {
         }
 
         pub fn create_schema(&mut self) {
-            let data = r#"["name","date","degree"]"#.to_string();
-            self.do_create_schema(data);
-        }
-
-        pub fn create_schema_with_empty_param(&mut self) {
-            let data = r#"["name","date","degree", "empty_param"]"#.to_string();
-            self.do_create_schema(data);
-        }
-
-        pub fn do_create_schema(&mut self, data: String) {
             self.activate();
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
+            let data = r#"["name","date","degree", "empty_param"]"#.to_string();
             let name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
             let version: String = String::from("1.0");
 
@@ -230,28 +221,13 @@ pub mod test {
         }
 
         pub fn create_presentation_request(&self) -> u32 {
-            let requested_attrs = json!([
-                {"name": "name"},
-                {"name": "date"},
-                {"name": "degree"}
-            ]).to_string();
-
-            self.do_create_presentation_request(requested_attrs)
-        }
-
-        pub fn create_presentation_request_with_empty_param(&self) -> u32 {
+            let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
             let requested_attrs = json!([
                 {"name": "name"},
                 {"name": "date"},
                 {"name": "degree"},
                 {"name": "empty_param", "restrictions": {"attr::empty_param::value": ""}}
             ]).to_string();
-
-            self.do_create_presentation_request(requested_attrs)
-        }
-
-        pub fn do_create_presentation_request(&self, requested_attrs: String) -> u32 {
-            let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
 
             ::proof::create_proof(String::from("alice_degree"),
                                   requested_attrs,
@@ -277,28 +253,15 @@ pub mod test {
         }
 
         pub fn offer_credential(&mut self) {
-            let credential_data = json!({
-                "name": "alice",
-                "date": "05-2018",
-                "degree": "maths",
-            }).to_string();
-            self.do_offer_credential(credential_data);
-        }
-
-        pub fn offer_credential_with_emopty_param(&mut self) {
-            let credential_data = json!({
-                "name": "alice",
-                "date": "05-2018",
-                "degree": "maths",
-                "empty_param": "",
-            }).to_string();
-            self.do_offer_credential(credential_data);
-        }
-
-        fn do_offer_credential(&mut self, credential_data: String) {
             self.activate();
 
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
+            let credential_data = json!({
+                "name": "alice",
+                "date": "05-2018",
+                "degree": "maths",
+                "empty_param": ""
+            }).to_string();
 
             self.credential_handle = ::issuer_credential::issuer_credential_create(self.cred_def_handle,
                                                                                    String::from("alice_degree"),
@@ -325,16 +288,6 @@ pub mod test {
         pub fn request_presentation(&mut self) {
             self.activate();
             self.presentation_handle = self.create_presentation_request();
-            self.do_request_presentation();
-        }
-
-        pub fn request_presentation_with_empty_param(&mut self) {
-            self.activate();
-            self.presentation_handle = self.create_presentation_request_with_empty_param();
-            self.do_request_presentation();
-        }
-
-        fn do_request_presentation(&mut self) {
             assert_eq!(1, ::proof::get_state(self.presentation_handle).unwrap());
 
             ::proof::send_proof_request(self.presentation_handle, self.connection_handle).unwrap();
@@ -518,43 +471,6 @@ pub mod test {
 
         // Credential Presentation
         faber.request_presentation();
-        alice.send_presentation();
-        faber.verify_presentation();
-        alice.ensure_presentation_verified();
-    }
-
-    #[cfg(feature = "aries")]
-    #[test]
-    fn aries_demo_with_empty_param() {
-        PaymentPlugin::load();
-        let _pool = Pool::open();
-
-        let mut faber = Faber::setup();
-        let mut alice = Alice::setup();
-
-        // Publish Schema and Credential Definition
-        faber.create_schema_with_empty_param();
-
-        ::std::thread::sleep(::std::time::Duration::from_secs(2));
-
-        faber.create_credential_definition();
-
-        // Connection
-        let invite = faber.create_invite();
-        alice.accept_invite(&invite);
-
-        faber.update_state(3);
-        alice.update_state(4);
-        faber.update_state(4);
-
-        // Credential issuance
-        faber.offer_credential_with_empty_param();
-        alice.accept_offer();
-        faber.send_credential();
-        alice.accept_credential();
-
-        // Credential Presentation
-        faber.request_presentation_with_empty_param();
         alice.send_presentation();
         faber.verify_presentation();
         alice.ensure_presentation_verified();
