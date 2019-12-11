@@ -1,5 +1,7 @@
 ## Indy SDK for .NET
 
+**IMPORTANT: This wrapper is deprecated in favor of Aries .NET client**
+
 This is a **work-in-progress** .NET wrapper for [ Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy). It is implemented using PInvoke calls to a native c-callable library written in Rust. 
 Hyperledger Indy is the open-source codebase behind the Sovrin network for self-sovereign digital identity.
 

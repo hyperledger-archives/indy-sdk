@@ -1000,17 +1000,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_empty_val_succeeds() {
-        init!("true");
-        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
-                                              "1".to_string(),
-                                              "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-                                              "credential_name".to_string(),
-                                              r#"{"attr":""}"#.to_owned(),
-                                              1).unwrap();
-    }
-
-    #[test]
     fn test_send_credential_offer() {
         init!("true");
         let connection_handle = build_test_connection();

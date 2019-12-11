@@ -113,7 +113,7 @@ fn main() {
         let dst = output_dir.join("..\\..\\..\\..");
         println!("cargo:rustc-flags=-L {}", indy_dir.as_os_str().to_str().unwrap());
 
-        let files = vec!["indy.dll", "libeay32md.dll", "libsodium.dll", "libzmq.dll", "ssleay32md.dll"];
+        let files = vec!["indy.dll", "indy.dll.lib", "libeay32md.dll", "libsodium.dll", "libzmq.dll", "ssleay32md.dll"];
         for f in files.iter() {
             if let Ok(_) = fs::copy(&indy_dir.join(f), &dst.join(f)) {
                 println!("copy {} -> {}", &indy_dir.join(f).display(), &dst.join(f).display());
