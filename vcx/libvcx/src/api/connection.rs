@@ -565,6 +565,7 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
 /// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
 ///
 /// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it just return success as result.
 ///
 /// #params
 ///
@@ -585,7 +586,7 @@ pub extern fn vcx_connection_send_ping(command_handle: u32,
                                        cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
     info!("vcx_connection_send_ping >>>");
 
-    check_useful_opt_c_str!(comment, VcxErrorKind::InvalidConfiguration);
+    check_useful_opt_c_str!(comment, VcxErrorKind::InvalidOption);
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     trace!("vcx_connection_send_ping(command_handle: {}, connection_handle: {}, comment: {:?})",

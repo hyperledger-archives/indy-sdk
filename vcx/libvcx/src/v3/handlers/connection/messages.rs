@@ -3,6 +3,7 @@ use v3::messages::connection::request::Request;
 use v3::messages::connection::response::SignedResponse;
 use v3::messages::connection::problem_report::ProblemReport;
 use v3::messages::trust_ping::ping::Ping;
+use v3::messages::trust_ping::ping_response::PingResponse;
 use v3::messages::ack::Ack;
 use v3::messages::a2a::A2AMessage;
 
@@ -15,7 +16,9 @@ pub enum DidExchangeMessages {
     ExchangeResponseReceived(SignedResponse),
     AckReceived(Ack),
     ProblemReportReceived(ProblemReport),
+    SendPing(Option<String>),
     PingReceived(Ping),
+    PingResponseReceived(PingResponse),
     Unknown
 }
 
@@ -33,6 +36,9 @@ impl From<A2AMessage> for DidExchangeMessages {
             }
             A2AMessage::Ping(ping) => {
                 DidExchangeMessages::PingReceived(ping)
+            }
+            A2AMessage::PingResponse(ping_response) => {
+                DidExchangeMessages::PingResponseReceived(ping_response)
             }
             A2AMessage::Ack(ack) => {
                 DidExchangeMessages::AckReceived(ack)

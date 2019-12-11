@@ -181,4 +181,11 @@ describe('Connection:', () => {
     })
   })
 
+  describe('sendPing:', () => {
+    it('success: send ping', async () => {
+      const connection = await connectionCreate()
+      connection.sendPing('ping')
+    })
+  })
+
 })

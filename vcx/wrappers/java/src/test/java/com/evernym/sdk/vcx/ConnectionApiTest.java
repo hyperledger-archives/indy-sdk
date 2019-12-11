@@ -212,4 +212,12 @@ class ConnectionApiTest {
         int updateStateResult = futureUpdateState.get();
         assert(updateStateResult== 4 );
     }
+
+    @Test
+    @DisplayName("send ping")
+    void sendPing() throws VcxException, ExecutionException, InterruptedException {
+        Integer connectionHandle = _createConnection();
+        CompletableFuture<Void> future = ConnectionApi.sconnectionSendPing(connectionHandle, null);
+        Awaitility.await().until(future::isDone);
+    }
 }

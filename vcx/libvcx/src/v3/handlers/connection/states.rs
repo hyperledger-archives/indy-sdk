@@ -327,6 +327,10 @@ impl DidExchangeSM {
                             debug!("Ping message received");
                             return Some((uid, ping));
                         }
+                        ping_response @ A2AMessage::PingResponse(_) => {
+                            debug!("PingResponse message received");
+                            return Some((uid, ping_response));
+                        }
                         message @ _ => {
                             debug!("Unexpected message received in Completed state: {:?}", message);
                         }
@@ -492,8 +496,21 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Completed(state) => {
                         match message {
+                            DidExchangeMessages::SendPing(comment) => {
+                                let mut ping = Ping::create().request_response();
+                                if let Some(comment) = comment {
+                                    ping = ping.set_comment(comment);
+                                }
+
+                                agent_info.send_message(&ping.to_a2a_message(), &state.did_doc).ok();
+
+                                ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
+                            }
                             DidExchangeMessages::PingReceived(ping) => {
                                 state.handle_ping(&ping, &agent_info)?;
+                                ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
+                            }
+                            DidExchangeMessages::PingResponseReceived(ping_response) => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
                             }
                             _ => {
