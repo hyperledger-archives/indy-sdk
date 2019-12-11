@@ -1,14 +1,14 @@
-import {CredentialDef} from "../dist/src/api/credential-def";
-import {IssuerCredential} from "../dist/src/api/issuer-credential";
-import {Proof} from "../dist/src/api/proof";
-import {Connection} from "../dist/src/api/connection";
-import {Schema} from "./../dist/src/api/schema";
-import {StateType, ProofState} from "../dist/src";
-import sleepPromise from 'sleep-promise'
-import * as demoCommon from "./common";
-import {getRandomInt} from "./common";
-import logger from './logger'
-import readlineSync from "readline-sync";
+const {CredentialDef} = require("../dist/src/api/credential-def");
+const {IssuerCredential} = require("../dist/src/api/issuer-credential");
+const {Proof} = require("../dist/src/api/proof");
+const {Connection} = require("../dist/src/api/connection");
+const {Schema} = require("./../dist/src/api/schema");
+const {StateType, ProofState} = require("../dist/src");
+const sleepPromise = require('sleep-promise)'
+const demoCommon = require("./common");
+const {getRandomInt} = require("./common");
+const logger = require('./logger)'
+const readlineSync = require("readline-sync");
 
 const utime = Math.floor(new Date() / 1000);
 

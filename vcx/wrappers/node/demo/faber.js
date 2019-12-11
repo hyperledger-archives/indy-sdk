@@ -1,17 +1,17 @@
-import {CredentialDef} from "../dist/src/api/credential-def";
-import {IssuerCredential} from "../dist/src/api/issuer-credential";
-import {Proof} from "../dist/src/api/proof";
-import {vcxUpdateWebhookUrl} from "../dist/src/api/utils";
-import {Connection} from "../dist/src/api/connection";
-import {Schema} from "./../dist/src/api/schema";
-import {StateType, ProofState} from "../dist/src";
-import sleepPromise from 'sleep-promise'
-import * as demoCommon from "./common";
-import {getRandomInt} from "./common";
-import logger from './logger'
-import url from 'url'
-import isPortReachable from 'is-port-reachable';
-import {runScript} from './script-comon'
+const {CredentialDef} = require("../dist/src/api/credential-def")
+const {IssuerCredential} = require("../dist/src/api/issuer-credential")
+const {Proof} = require("../dist/src/api/proof")
+const {vcxUpdateWebhookUrl} = require("../dist/src/api/utils")
+const {Connection} = require("../dist/src/api/connection")
+const {Schema} = require("./../dist/src/api/schema")
+const {StateType, ProofState} = require("../dist/src")
+const sleepPromise = require("sleep-promise")
+const demoCommon = require("./common")
+const {getRandomInt} = require("./common")
+const logger = require('./logger')
+const url = require('url')
+const isPortReachable = require('is-port-reachable')
+const {runScript} = require('./script-comon')
 
 
 const utime = Math.floor(new Date() / 1000);
@@ -40,7 +40,7 @@ async function runFaber(options) {
         provisionConfig['communication_method'] = 'aries'
         logger.info(`Running with Aries VCX Enabled! Make sure VCX agency is configured to use protocol_type 2.0`)
     }
-    
+
     if (options['postgresql']) {
         await demoCommon.loadPostgresPlugin(provisionConfig);
         provisionConfig['wallet_type'] = 'postgres_storage'

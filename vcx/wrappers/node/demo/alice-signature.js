@@ -1,11 +1,11 @@
-import {DisclosedProof} from "../dist/src/api/disclosed-proof";
-import {Connection} from "../dist/src/api/connection";
-import {Credential} from "../dist/src/api/credential";
-import {StateType} from "../dist/src";
-import readlineSync from 'readline-sync'
-import sleepPromise from 'sleep-promise'
-import * as demoCommon from './common'
-import logger from './logger'
+const {DisclosedProof} = require("../dist/src/api/disclosed-proof";
+const {Connection} = require("../dist/src/api/connection";
+const {Credential} = require("../dist/src/api/credential";
+const {StateType} = require("../dist/src";
+const readlineSync = require('readline-sync';
+const sleepPromise = require('sleep-promise';
+const demoCommon = require('./common';
+const logger = require('./logger';
 
 const utime = Math.floor(new Date() / 1000);
 
