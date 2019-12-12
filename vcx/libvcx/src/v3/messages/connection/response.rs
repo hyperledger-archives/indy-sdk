@@ -8,6 +8,7 @@ use v3::messages::connection::did_doc::*;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::a2a::message_type::MessageType;
+use v3::messages::ack::PleaseAck;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Response {
@@ -15,7 +16,10 @@ pub struct Response {
     pub id: MessageId,
     #[serde(rename = "~thread")]
     pub thread: Thread,
-    pub connection: ConnectionData
+    pub connection: ConnectionData,
+    #[serde(rename = "~please_ack")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub please_ack: Option<PleaseAck>
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -33,7 +37,10 @@ pub struct SignedResponse {
     #[serde(rename = "~thread")]
     pub thread: Thread,
     #[serde(rename = "connection~sig")]
-    pub connection_sig: ConnectionSignature
+    pub connection_sig: ConnectionSignature,
+    #[serde(rename = "~please_ack")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub please_ack: Option<PleaseAck>
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -63,6 +70,11 @@ impl Response {
 
     pub fn set_keys(mut self, recipient_keys: Vec<String>, routing_keys: Vec<String>) -> Response {
         self.connection.did_doc.set_keys(recipient_keys, routing_keys);
+        self
+    }
+
+    pub fn ask_for_ack(mut self) -> Self {
+        self.please_ack = Some(PleaseAck {});
         self
     }
 
@@ -97,6 +109,7 @@ impl Response {
             id: self.id.clone(),
             thread: self.thread.clone(),
             connection_sig,
+            please_ack: self.please_ack.clone(),
         };
 
         Ok(signed_response)
@@ -126,6 +139,7 @@ impl SignedResponse {
             id: self.id,
             thread: self.thread,
             connection,
+            please_ack: self.please_ack,
         })
     }
 
@@ -143,6 +157,7 @@ impl Default for Response {
                 did: String::new(),
                 did_doc: DidDoc::default()
             },
+            please_ack: None,
         }
     }
 }
@@ -198,6 +213,7 @@ pub mod tests {
                 did: _did(),
                 did_doc: _did_doc()
             },
+            please_ack: None,
         }
     }
 
@@ -211,6 +227,7 @@ pub mod tests {
                 signer: _key(),
                 ..Default::default()
             },
+            please_ack: None,
         }
     }
 

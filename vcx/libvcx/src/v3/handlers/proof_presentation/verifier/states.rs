@@ -96,9 +96,10 @@ impl PresentationRequestSentState {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidProof, "Presentation verification failed"));
         }
 
-        let ack = Ack::create().set_thread_id(self.presentation_request.id.0.clone());
-
-        connection::send_message(self.connection_handle, ack.to_a2a_message())?;
+        if presentation.please_ack.is_some() {
+            let ack = Ack::create().set_thread_id(self.presentation_request.id.0.clone());
+            connection::send_message(self.connection_handle, ack.to_a2a_message())?;
+        }
 
         Ok(())
     }

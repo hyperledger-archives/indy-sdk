@@ -20,6 +20,9 @@ pub enum AckStatus {
     Pending
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PleaseAck {}
+
 impl Ack {
     pub fn create() -> Ack {
         Ack::default()

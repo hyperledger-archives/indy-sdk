@@ -1,5 +1,6 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 use v3::messages::attachment::{Attachments, AttachmentEncoding};
+use v3::messages::ack::PleaseAck;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
 use issuer_credential::CredentialMessage;
@@ -15,7 +16,10 @@ pub struct Credential {
     #[serde(rename = "credentials~attach")]
     pub credentials_attach: Attachments,
     #[serde(rename = "~thread")]
-    pub thread: Thread
+    pub thread: Thread,
+    #[serde(rename = "~please_ack")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub please_ack: Option<PleaseAck>
 }
 
 impl Credential {
@@ -31,6 +35,11 @@ impl Credential {
     pub fn set_credential(mut self, credential: String) -> VcxResult<Credential> {
         self.credentials_attach.add_json_attachment(::serde_json::Value::String(credential), AttachmentEncoding::Base64)?;
         Ok(self)
+    }
+
+    pub fn ask_for_ack(mut self) -> Self {
+        self.please_ack = Some(PleaseAck {});
+        self
     }
 
     pub fn set_thread_id(mut self, id: String) -> Self {
@@ -113,6 +122,7 @@ pub mod tests {
             comment: _comment(),
             thread: thread(),
             credentials_attach: attachment,
+            please_ack: None,
         }
     }
 

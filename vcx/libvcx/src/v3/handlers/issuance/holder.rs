@@ -138,10 +138,11 @@ impl HolderSM {
                     let result = _store_credential(&credential, &state_data.req_meta, &state_data.cred_def_json);
                     match result {
                         Ok(cred_id) => {
-                            let ack = Ack::create()
-                                .set_thread_id(thread_id.clone());
+                            if credential.please_ack.is_some() {
+                                let ack = Ack::create().set_thread_id(thread_id.clone());
+                                connection::send_message(state_data.connection_handle, ack.to_a2a_message())?;
+                            }
 
-                            connection::send_message(state_data.connection_handle, ack.to_a2a_message())?;
                             HolderState::Finished((state_data, cred_id, credential).into())
                         }
                         Err(err) => {

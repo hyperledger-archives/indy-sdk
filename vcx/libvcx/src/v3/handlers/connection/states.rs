@@ -178,7 +178,8 @@ impl InvitedState {
         let response = Response::create()
             .set_did(new_agent_info.pw_did.to_string())
             .set_service_endpoint(new_agent_info.agency_endpoint()?)
-            .set_keys(new_agent_info.recipient_keys(), new_agent_info.routing_keys()?);
+            .set_keys(new_agent_info.recipient_keys(), new_agent_info.routing_keys()?)
+            .ask_for_ack();
 
         let signed_response = response.clone()
             .set_thread_id(request.id.0.clone())
@@ -203,8 +204,11 @@ impl RequestedState {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot handle Response: thread id does not match: {:?}", response.thread)));
         }
 
-        let ack = Ack::create().set_thread_id(response.thread.thid.clone().unwrap_or_default());
-        agent_info.send_message(&ack.to_a2a_message(), &response.connection.did_doc)?;
+        if response.please_ack.is_some() {
+            // TODO: else send Ping ???
+            let ack = Ack::create().set_thread_id(response.thread.thid.clone().unwrap_or_default());
+            agent_info.send_message(&ack.to_a2a_message(), &response.connection.did_doc)?;
+        }
 
         Ok(response)
     }

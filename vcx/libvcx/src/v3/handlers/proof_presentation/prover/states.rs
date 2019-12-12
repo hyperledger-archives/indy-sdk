@@ -205,6 +205,7 @@ impl ProverSM {
                         match state.build_presentation(&credentials, &self_attested_attrs) {
                             Ok(presentation) => {
                                 let presentation = Presentation::create()
+                                    .ask_for_ack()
                                     .set_thread_id(thread_id.clone())
                                     .set_presentations_attach(presentation)?;
 
