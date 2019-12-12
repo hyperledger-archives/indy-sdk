@@ -18,14 +18,7 @@ pub struct CredentialProposal {
 
 impl CredentialProposal {
     pub fn create() -> Self {
-        CredentialProposal {
-            id: MessageId::new(),
-            comment: String::new(),
-            credential_proposal: CredentialPreviewData::new(),
-            schema_id: String::new(),
-            cred_def_id: String::new(),
-            thread: None,
-        }
+        CredentialProposal::default()
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
@@ -55,6 +48,19 @@ impl CredentialProposal {
 
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::CredentialProposal(self.clone()) // TODO: THINK how to avoid clone
+    }
+}
+
+impl Default for CredentialProposal {
+    fn default() -> CredentialProposal {
+        CredentialProposal {
+            id: MessageId::new(),
+            comment: String::new(),
+            credential_proposal: CredentialPreviewData::new(),
+            schema_id: String::new(),
+            cred_def_id: String::new(),
+            thread: None,
+        }
     }
 }
 

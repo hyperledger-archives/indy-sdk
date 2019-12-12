@@ -3,7 +3,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use std::ptr;
-use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection, process_acceptance_message, send_generic_message};
+use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection, process_acceptance_message, send_generic_message, send_discovery_features};
 
 use error::prelude::*;
 use messages::get_message::Message;
@@ -725,6 +725,61 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
             e.into()
         }
     }
+}
+
+/// Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it just return success as result.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// query: query string to match against supported message types.
+///
+/// comment: (Optional) human-friendly description of the query.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_send_discovery_features(command_handle: u32,
+                                                     connection_handle: u32,
+                                                     query: *const c_char,
+                                                     comment: *const c_char,
+                                                     cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_connection_send_discovery_features >>>");
+
+    check_useful_opt_c_str!(query, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(comment, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_send_discovery_features(command_handle: {}, connection_handle: {}, query: {:?}, comment: {:?})",
+           command_handle, connection_handle, query, comment);
+
+    spawn(move || {
+        match send_discovery_features(connection_handle, query, comment) {
+            Ok(()) => {
+                trace!("vcx_connection_send_discovery_features(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_connection_send_discovery_features(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 #[cfg(test)]

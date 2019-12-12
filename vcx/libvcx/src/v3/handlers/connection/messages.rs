@@ -4,6 +4,8 @@ use v3::messages::connection::response::SignedResponse;
 use v3::messages::connection::problem_report::ProblemReport;
 use v3::messages::connection::ping::Ping;
 use v3::messages::ack::Ack;
+use v3::messages::discovery::query::Query;
+use v3::messages::discovery::disclose::Disclose;
 use v3::messages::a2a::A2AMessage;
 
 
@@ -16,6 +18,9 @@ pub enum DidExchangeMessages {
     AckReceived(Ack),
     ProblemReportReceived(ProblemReport),
     PingReceived(Ping),
+    DiscoverFeatures((Option<String>, Option<String>)),
+    QueryReceived(Query),
+    DiscloseReceived(Disclose),
     Unknown
 }
 
@@ -36,6 +41,12 @@ impl From<A2AMessage> for DidExchangeMessages {
             }
             A2AMessage::Ack(ack) => {
                 DidExchangeMessages::AckReceived(ack)
+            }
+            A2AMessage::Query(query) => {
+                DidExchangeMessages::QueryReceived(query)
+            }
+            A2AMessage::Disclose(disclose) => {
+                DidExchangeMessages::DiscloseReceived(disclose)
             }
             A2AMessage::ConnectionProblemReport(report) => {
                 DidExchangeMessages::ProblemReportReceived(report)

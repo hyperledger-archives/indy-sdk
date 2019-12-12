@@ -23,13 +23,7 @@ pub struct CredentialOffer {
 
 impl CredentialOffer {
     pub fn create() -> Self {
-        CredentialOffer {
-            id: MessageId::new(),
-            comment: String::new(),
-            credential_preview: CredentialPreviewData::new(),
-            offers_attach: Attachments::new(),
-            thread: None,
-        }
+        CredentialOffer::default()
     }
 
     pub fn set_id(mut self, id: String) -> Self {
@@ -64,6 +58,18 @@ impl CredentialOffer {
 
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::CredentialOffer(self.clone()) // TODO: THINK how to avoid clone
+    }
+}
+
+impl Default for CredentialOffer {
+    fn default() -> CredentialOffer {
+        CredentialOffer {
+            id: MessageId::new(),
+            comment: String::new(),
+            credential_preview: CredentialPreviewData::new(),
+            offers_attach: Attachments::new(),
+            thread: None,
+        }
     }
 }
 

@@ -5,7 +5,8 @@ use time;
 
 use messages::thread::Thread;
 use v3::messages::connection::did_doc::*;
-use v3::messages::a2a::{A2AMessage, MessageId, A2AMessageKinds};
+use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::a2a::message_type::MessageType;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -86,7 +87,7 @@ impl Response {
         let signature = base64::encode_config(&signature, base64::URL_SAFE);
 
         let connection_sig = ConnectionSignature {
-            msg_type: MessageType::build(A2AMessageKinds::Ed25519Signature),
+            msg_type: MessageType::build(MessageFamilies::Signature, "ed25519Sha512_single"),
             signature,
             sig_data,
             signer: key.to_string(),
@@ -146,6 +147,21 @@ impl Default for Response {
     }
 }
 
+impl Default for SignedResponse {
+    fn default() -> SignedResponse {
+        SignedResponse {
+            id: MessageId::new(),
+            thread: Thread::new(),
+            connection_sig: ConnectionSignature {
+                msg_type: MessageType::build(MessageFamilies::Signature, "ed25519Sha512_single"),
+                signature: String::new(),
+                sig_data: String::new(),
+                signer: String::new(),
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -184,7 +200,7 @@ pub mod tests {
             id: MessageId::id(),
             thread: _thread(),
             connection_sig: ConnectionSignature {
-                msg_type: MessageType::build(A2AMessageKinds::Ed25519Signature),
+                msg_type: MessageType::build(MessageFamilies::Signature, "ed25519Sha512_single"),
                 signature: String::from("yeadfeBWKn09j5XU3ITUE3gPbUDmPNeblviyjrOIDdVMT5WZ8wxMCxQ3OpAnmq1o-Gz0kWib9zr0PLsbGc2jCA=="),
                 sig_data: String::from("MTU3MTg0NzQwM3siZGlkIjoiVnNLVjdnclIxQlVFMjltRzJGbTJrWCIsImRpZF9kb2MiOnsiQGNvbnRleHQiOiJodHRwczovL3czaWQub3JnL2RpZC92MSIsImF1dGhlbnRpY2F0aW9uIjpbeyJwdWJsaWNLZXkiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzEiLCJ0eXBlIjoiRWQyNTUxOVNpZ25hdHVyZUF1dGhlbnRpY2F0aW9uMjAxOCJ9XSwiaWQiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIiwicHVibGljS2V5IjpbeyJpZCI6IjEiLCJvd25lciI6IlZzS1Y3Z3JSMUJVRTI5bUcyRm0ya1giLCJwdWJsaWNLZXlCYXNlNTgiOiI3SjNYczhLUVV0U2ZNenB0ZVVLcThiNDg5bzdENFB4QVkxSjFKQUxDNDF6ayIsInR5cGUiOiJFZDI1NTE5VmVyaWZpY2F0aW9uS2V5MjAxOCJ9LHsiaWQiOiIyIiwib3duZXIiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIiwicHVibGljS2V5QmFzZTU4IjoiSGV6Y2UyVVdNWjN3VWhWa2gyTGZLU3M4bkR6V3d6czJXaW43RXpOTjNZYVIiLCJ0eXBlIjoiRWQyNTUxOVZlcmlmaWNhdGlvbktleTIwMTgifSx7ImlkIjoiMyIsIm93bmVyIjoiVnNLVjdnclIxQlVFMjltRzJGbTJrWCIsInB1YmxpY0tleUJhc2U1OCI6IjNMWXV4SkJKa25nRGJ2Smo0emp4MTNEQlVkWjJQOTZlTnlid2QybjlMOUFVIiwidHlwZSI6IkVkMjU1MTlWZXJpZmljYXRpb25LZXkyMDE4In1dLCJzZXJ2aWNlIjpbeyJpZCI6ImRpZDpleGFtcGxlOjEyMzQ1Njc4OWFiY2RlZmdoaTtkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIlZzS1Y3Z3JSMUJVRTI5bUcyRm0ya1gjMSJdLCJyb3V0aW5nS2V5cyI6WyJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzIiLCJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzMiXSwic2VydmljZUVuZHBvaW50IjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwidHlwZSI6ImRpZC1jb21tdW5pY2F0aW9uIn1dfX0="),
                 signer: _key(),

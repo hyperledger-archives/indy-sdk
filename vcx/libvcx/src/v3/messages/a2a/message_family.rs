@@ -8,6 +8,7 @@ pub enum MessageFamilies {
     ReportProblem,
     PresentProof,
     TrustPing,
+    DiscoveryFeatures,
     Unknown(String)
 }
 
@@ -22,6 +23,7 @@ impl MessageFamilies {
             MessageFamilies::ReportProblem => "1.0",
             MessageFamilies::PresentProof => "1.0",
             MessageFamilies::TrustPing => "1.0",
+            MessageFamilies::DiscoveryFeatures => "1.0",
             MessageFamilies::Unknown(_) => "1.0"
         }
     }
@@ -38,6 +40,7 @@ impl From<String> for MessageFamilies {
             "report-problem" => MessageFamilies::ReportProblem,
             "present-proof" => MessageFamilies::PresentProof,
             "trust_ping" => MessageFamilies::TrustPing,
+            "discover-features" => MessageFamilies::DiscoveryFeatures,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -54,6 +57,7 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::ReportProblem => "report-problem".to_string(),
             MessageFamilies::PresentProof => "present-proof".to_string(),
             MessageFamilies::TrustPing => "trust_ping".to_string(),
+            MessageFamilies::DiscoveryFeatures => "discover-features".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }

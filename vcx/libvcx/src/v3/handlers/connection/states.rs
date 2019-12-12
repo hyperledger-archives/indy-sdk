@@ -11,9 +11,12 @@ use v3::messages::connection::ping::Ping;
 use v3::messages::connection::ping_response::PingResponse;
 use v3::messages::ack::Ack;
 use v3::messages::connection::did_doc::DidDoc;
+use v3::messages::discovery::query::Query;
+use v3::messages::discovery::disclose::{Disclose, ProtocolDescriptor};
+use v3::messages::a2a::MessageId;
+use v3::messages::a2a::protocol_registry::PROTOCOL_REGISTRY;
 
 use std::collections::HashMap;
-use v3::messages::a2a::MessageId;
 
 use error::prelude::*;
 
@@ -206,8 +209,59 @@ impl RespondedState {
 }
 
 impl CompleteState {
+    fn handle_message(self, message: DidExchangeMessages, agent_info: &AgentInfo) -> VcxResult<DidExchangeState> {
+        Ok(match message {
+            DidExchangeMessages::PingReceived(ping) => {
+                self.handle_ping(&ping, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::DiscoverFeatures((query_, comment)) => {
+                self.handle_discover_features(query_, comment, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::QueryReceived(query) => {
+                self.handle_discovery_query(query, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::DiscloseReceived(disclose) => {
+                self.handle_discovery_disclose(disclose)?;
+                DidExchangeState::Completed(self)
+            }
+            _ => {
+                DidExchangeState::Completed(self)
+            }
+        })
+    }
+
     fn handle_ping(&self, ping: &Ping, agent_info: &AgentInfo) -> VcxResult<()> {
         _handle_ping(ping, agent_info, &self.did_doc)
+    }
+
+    fn handle_discover_features(&self, query: Option<String>, comment: Option<String>, agent_info: &AgentInfo) -> VcxResult<()> {
+        let query_ =
+            Query::create()
+                .set_query(query)
+                .set_comment(comment);
+
+        agent_info.send_message(&query_.to_a2a_message(), &self.did_doc)
+    }
+
+    fn handle_discovery_query(&self, query: Query, agent_info: &AgentInfo) -> VcxResult<()> {
+        let protocols = PROTOCOL_REGISTRY.get_protocols_for_query(query.query.as_ref().map(String::as_str))
+            .iter()
+            .map(|protocol| ProtocolDescriptor { pid: protocol.to_string(), roles: None })
+            .collect();
+
+        let disclose = Disclose::create()
+            .set_protocols(protocols)
+            .set_thread_id(query.id.0.clone());
+
+        agent_info.send_message(&disclose.to_a2a_message(), &self.did_doc)
+    }
+
+    fn handle_discovery_disclose(&self, disclose: Disclose) -> VcxResult<()> {
+        println!("Received protocols:{:?}", disclose.protocols);
+        Ok(())
     }
 }
 
@@ -327,6 +381,14 @@ impl DidExchangeSM {
                             debug!("Ping message received");
                             return Some((uid, ping));
                         }
+                        query @ A2AMessage::Query(_) => {
+                            debug!("Query message received");
+                            return Some((uid, query));
+                        }
+                        disclose @ A2AMessage::Disclose(_) => {
+                            debug!("Disclose message received");
+                            return Some((uid, disclose));
+                        }
                         message @ _ => {
                             debug!("Unexpected message received in Completed state: {:?}", message);
                         }
@@ -416,15 +478,7 @@ impl DidExchangeSM {
                         }
                     }
                     DidExchangeState::Completed(state) => {
-                        match message {
-                            DidExchangeMessages::PingReceived(ping) => {
-                                state.handle_ping(&ping, &agent_info)?;
-                                ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
-                            }
-                            _ => {
-                                ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
-                            }
-                        }
+                        ActorDidExchangeState::Inviter(state.handle_message(message, &agent_info)?)
                     }
                 }
             }
@@ -491,15 +545,7 @@ impl DidExchangeSM {
                         ActorDidExchangeState::Invitee(DidExchangeState::Responded(state))
                     }
                     DidExchangeState::Completed(state) => {
-                        match message {
-                            DidExchangeMessages::PingReceived(ping) => {
-                                state.handle_ping(&ping, &agent_info)?;
-                                ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
-                            }
-                            _ => {
-                                ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
-                            }
-                        }
+                        ActorDidExchangeState::Invitee(state.handle_message(message, &agent_info)?)
                     }
                 }
             }
@@ -604,6 +650,8 @@ pub mod test {
     use v3::messages::connection::problem_report::tests::_problem_report;
     use v3::messages::connection::ping::tests::_ping;
     use v3::messages::ack::tests::_ack;
+    use v3::messages::discovery::query::tests::_query;
+    use v3::messages::discovery::disclose::tests::_disclose;
 
     pub mod inviter {
         use super::*;
@@ -951,6 +999,32 @@ pub mod test {
                     assert_eq!("key_4", uid);
                     assert_match!(A2AMessage::Ping(_), message);
                 }
+
+                // Query
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Query(_query())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Query(_), message);
+                }
+
+                // Disclose
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Disclose(_disclose())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Disclose(_), message);
+                }
             }
         }
 
@@ -1186,6 +1260,9 @@ pub mod test {
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::QueryReceived(_query())).unwrap();
+                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
             }
         }
 
@@ -1274,6 +1351,32 @@ pub mod test {
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_4", uid);
                     assert_match!(A2AMessage::Ping(_), message);
+                }
+
+                // Query
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Query(_query())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Query(_), message);
+                }
+
+                // Disclose
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::Disclose(_disclose())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_3", uid);
+                    assert_match!(A2AMessage::Disclose(_), message);
                 }
             }
         }
