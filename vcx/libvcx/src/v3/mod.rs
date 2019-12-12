@@ -202,7 +202,7 @@ pub mod test {
         pub fn create_schema(&mut self) {
             self.activate();
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
-            let data = r#"["name","date","degree"]"#.to_string();
+            let data = r#"["name","date","degree", "empty_param"]"#.to_string();
             let name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
             let version: String = String::from("1.0");
 
@@ -225,7 +225,8 @@ pub mod test {
             let requested_attrs = json!([
                 {"name": "name"},
                 {"name": "date"},
-                {"name": "degree"}
+                {"name": "degree"},
+                {"name": "empty_param", "restrictions": {"attr::empty_param::value": ""}}
             ]).to_string();
 
             ::proof::create_proof(String::from("alice_degree"),
@@ -259,6 +260,7 @@ pub mod test {
                 "name": "alice",
                 "date": "05-2018",
                 "degree": "maths",
+                "empty_param": ""
             }).to_string();
 
             self.credential_handle = ::issuer_credential::issuer_credential_create(self.cred_def_handle,

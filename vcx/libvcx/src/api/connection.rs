@@ -903,7 +903,7 @@ mod tests {
         init!("true");
 
         let msg = format!("My message");
-        ;
+
         let msg_len = msg.len();
 
         let connection_handle = ::connection::tests::build_test_connection();
