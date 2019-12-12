@@ -48,6 +48,8 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Mutex;
 use std::str;
+use utils::logger::LibindyDefaultLogger;
+use errors::common::CommonError;
 
 pub static POSTGRES_STORAGE_NAME: &str = "postgres_storage";
 
@@ -55,6 +57,10 @@ pub static POSTGRES_STORAGE_NAME: &str = "postgres_storage";
 #[no_mangle]
 pub extern fn postgresstorage_init() -> libindy::ErrorCode {
     let postgres_storage_name = CString::new(POSTGRES_STORAGE_NAME).unwrap();
+    let res: Result<(), CommonError> = LibindyDefaultLogger::init(None).into();
+    match res {
+        _ => {}
+    }
 
     libindy::wallet::register_wallet_storage(
         postgres_storage_name.as_ptr(),
@@ -154,7 +160,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::AlreadyExists => ErrorCode::WalletAlreadyExistsError,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Init storage failed: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -179,7 +188,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::AlreadyExists => ErrorCode::WalletAlreadyExistsError,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Create storage failed: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }

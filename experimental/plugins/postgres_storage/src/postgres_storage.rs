@@ -471,6 +471,7 @@ impl WalletStrategy for DatabasePerWalletStrategy {
     // initialize storage based on wallet storage strategy
     fn init_storage(&self, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
         // no-op
+        debug!("Initializing storage strategy DatabasePerWalletStrategy.");
         Ok(())
     }
     // initialize a single wallet based on wallet storage strategy
@@ -607,6 +608,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
     fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
         // create database and tables for storage
         // if admin user and password aren't provided then bail
+        debug!("Initializing storage strategy MultiWalletSingleTableStrategy.");
         if credentials.admin_account == None || credentials.admin_password == None {
             return Ok(())
         }
