@@ -1,0 +1,36 @@
+{
+  "app": {
+    "prefix": "/agency",
+    "enable_admin_api": true
+  },
+  "forward_agent": {
+    "did": "VsKV7grR1BUE29mG2Fm2kX",
+    "did_seed": "0000000000000000000000000Forward",
+    "endpoint": "http://localhost:8080",
+    "wallet_id": "forward_agent_wallet_id",
+    "wallet_passphrase": "forward_agent_wallet_passphrase"
+  },
+  "server": {
+    "addresses": [
+      "127.0.0.1:8080"
+    ],
+    "workers": 1
+  },
+  "wallet_storage": {
+    "config": {
+      "url": "localhost:5432",
+      "max_connections" : 100,
+      "min_idle_time" : 1,
+      "connection_timeout" : 5,
+      "wallet_scheme": "MultiWalletSingleTable"
+    },
+    "credentials": {
+      "account": "postgres",
+      "password": "mysecretpassword",
+      "admin_account": "postgres",
+      "admin_password": "mysecretpassword"
+    },
+    "type": "postgres_storage"
+  },
+  "protocol_type": "1.0"
+}

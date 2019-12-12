@@ -36,6 +36,8 @@ use std::env;
 use std::fs::File;
 use actors::admin::Admin;
 use app::start_app_server;
+use indy::wallet::{load_storage_library, get_postgres_storage_plugin};
+use serde_json::Value;
 
 #[macro_use]
 pub(crate) mod utils;
@@ -44,6 +46,8 @@ pub(crate) mod actors;
 pub(crate) mod app;
 pub(crate) mod domain;
 pub(crate) mod indy;
+
+const POSTGRES_PLUGIN_INITIALIZER: &str = "postgresstorage_init";
 
 fn main() {
     indy::logger::set_default_logger(None)
@@ -69,6 +73,14 @@ fn main() {
     _print_help();
 }
 
+fn _init_postgre_wallet(storage_config: &Option<Value>, storage_credentials: &Option<Value>) {
+    info!("Loading postgres using storage configuration {:?}", storage_config);
+    let storage_config_serialized = serde_json::to_string(storage_config).expect("Failed to serialize 'storage_config'.");
+    let storage_credentials_serialized = serde_json::to_string(storage_credentials).expect("Failed to serialize 'storage_credentials'.");
+    load_storage_library(&get_postgres_storage_plugin(), POSTGRES_PLUGIN_INITIALIZER, &storage_config_serialized, &storage_credentials_serialized);
+    info!("Loaded postgres wallet plugin.");
+}
+
 fn _start(config_path: &str) {
     info!("Starting Indy Dummy Agent with config: {}", config_path);
 
@@ -83,6 +95,13 @@ fn _start(config_path: &str) {
         .and_then(|reader| serde_json::from_reader(reader)
             .context("Can't parse config file"))
         .expect("Invalid configuration file");
+
+
+    match wallet_storage_config.xtype.as_ref() {
+        Some(wallet_type) if wallet_type == "postgres_storage" =>
+            _init_postgre_wallet(&wallet_storage_config.config, &wallet_storage_config.credentials),
+        _ => { }
+    }
 
     let sys = actix::System::new("indy-dummy-agent");
 
