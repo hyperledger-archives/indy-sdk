@@ -1,5 +1,3 @@
-extern crate ursa;
-
 use std::error;
 use std::error::Error;
 use std::io;

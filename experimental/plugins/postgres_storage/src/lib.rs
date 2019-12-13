@@ -19,7 +19,6 @@ extern crate serde_json;
 extern crate lazy_static;
 
 // Note that to use macroses from indy_common::util inside of other modules it must me loaded first!
-extern crate ursa;
 extern crate libc;
 extern crate time;
 extern crate rand;

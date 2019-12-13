@@ -1,5 +1,4 @@
 extern crate zmq;
-extern crate ursa;
 extern crate log;
 
 use std::cell::{BorrowError, BorrowMutError};
