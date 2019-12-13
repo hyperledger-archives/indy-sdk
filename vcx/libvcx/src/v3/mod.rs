@@ -111,6 +111,16 @@ pub mod test {
         }
     }
 
+    fn download_message() -> ::messages::get_message::Message {
+        let messages = ::messages::get_message::download_messages(None, Some(vec![String::from("MS-103")]), None).unwrap();
+        let mut messages: Vec<::messages::get_message::MessageByConnection> = messages.into_iter().filter(|messages_| !messages_.msgs.is_empty()).collect();
+        assert_eq!(1, messages.len());
+        let mut messages = messages.pop().unwrap();
+        assert_eq!(1, messages.msgs.len());
+        let message = messages.msgs.pop().unwrap();
+        message
+    }
+
     pub struct Faber {
         pub wallet_name: String,
         pub wallet_handle: i32,
@@ -252,6 +262,13 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
+        pub fn update_state_with_message(&self, expected_state: u32) {
+            self.activate();
+            let message = download_message();
+            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
+            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+        }
+
         pub fn offer_credential(&mut self) {
             self.activate();
 
@@ -370,6 +387,13 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
+        pub fn update_state_with_message(&self, expected_state: u32) {
+            self.activate();
+            let message = download_message();
+            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
+            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+        }
+
         pub fn accept_offer(&mut self) {
             self.activate();
             let offers = ::credential::get_credential_offer_messages(self.connection_handle).unwrap();
@@ -474,6 +498,30 @@ pub mod test {
         alice.send_presentation();
         faber.verify_presentation();
         alice.ensure_presentation_verified();
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn aries_demo_update_state_with_message_flow() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Connection
+        let invite = faber.create_invite();
+        alice.accept_invite(&invite);
+
+        faber.update_state_with_message(3);
+        alice.update_state_with_message(4);
+        faber.update_state_with_message(4);
+
+        faber.activate();
+        ::connection::send_ping(faber.connection_handle, None).unwrap();
+
+        alice.update_state_with_message(4);
+        faber.update_state_with_message(4);
     }
 }
 
