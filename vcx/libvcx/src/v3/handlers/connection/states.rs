@@ -206,6 +206,16 @@ impl RespondedState {
 }
 
 impl CompleteState {
+    fn handle_send_ping(&self, comment: Option<String>, agent_info: &AgentInfo) -> VcxResult<()> {
+        let ping =
+            Ping::create()
+                .request_response()
+                .set_comment(comment);
+
+        agent_info.send_message(&ping.to_a2a_message(), &self.did_doc).ok();
+        Ok(())
+    }
+
     fn handle_ping(&self, ping: &Ping, agent_info: &AgentInfo) -> VcxResult<()> {
         _handle_ping(ping, agent_info, &self.did_doc)
     }
@@ -421,8 +431,15 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Completed(state) => {
                         match message {
+                            DidExchangeMessages::SendPing(comment) => {
+                                state.handle_send_ping(comment, &agent_info)?;
+                                ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
+                            }
                             DidExchangeMessages::PingReceived(ping) => {
                                 state.handle_ping(&ping, &agent_info)?;
+                                ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
+                            }
+                            DidExchangeMessages::PingResponseReceived(ping_response) => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
                             }
                             _ => {
@@ -497,13 +514,7 @@ impl DidExchangeSM {
                     DidExchangeState::Completed(state) => {
                         match message {
                             DidExchangeMessages::SendPing(comment) => {
-                                let mut ping = Ping::create().request_response();
-                                if let Some(comment) = comment {
-                                    ping = ping.set_comment(comment);
-                                }
-
-                                agent_info.send_message(&ping.to_a2a_message(), &state.did_doc).ok();
-
+                                state.handle_send_ping(comment, &agent_info)?;
                                 ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
                             }
                             DidExchangeMessages::PingReceived(ping) => {
