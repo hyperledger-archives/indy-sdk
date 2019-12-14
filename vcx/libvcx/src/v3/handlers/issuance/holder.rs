@@ -73,12 +73,12 @@ impl HolderSM {
                 HolderState::RequestSent(ref state) => {
                     match message {
                         A2AMessage::Credential(credential) => {
-                            if credential.thread.is_reply(&self.thread_id) {
+                            if credential.from_thread(&self.thread_id) {
                                 return Some((uid, A2AMessage::Credential(credential)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.thread_id) {
+                            if problem_report.from_thread(&self.thread_id) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }

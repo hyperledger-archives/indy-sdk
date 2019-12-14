@@ -11,7 +11,6 @@ use error::prelude::*;
 pub struct Presentation {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
     #[serde(rename = "presentations~attach")]
@@ -37,21 +36,11 @@ impl Presentation {
         self.presentations_attach.add_json_attachment(::serde_json::Value::String(presentations), AttachmentEncoding::Base64)?;
         Ok(self)
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn ask_for_ack(mut self) -> Self {
-        self.please_ack = Some(PleaseAck {});
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::Presentation(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+please_ack!(Presentation);
+threadlike!(Presentation);
+a2a_message!(Presentation);
 
 impl Default for Presentation {
     fn default() -> Presentation {

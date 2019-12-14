@@ -7,8 +7,10 @@ pub struct Ping {
     pub id: MessageId,
     #[serde(default)]
     pub response_requested: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     comment: Option<String>,
     #[serde(rename = "~thread")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub thread: Option<Thread>,
 }
 
@@ -31,11 +33,9 @@ impl Ping {
         self.response_requested = true;
         self
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::Ping(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+a2a_message!(Ping);
 
 impl Default for Ping {
     fn default() -> Ping {

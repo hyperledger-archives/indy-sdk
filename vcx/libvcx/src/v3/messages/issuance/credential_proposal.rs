@@ -12,6 +12,7 @@ pub struct CredentialProposal {
     pub credential_proposal: CredentialPreviewData,
     pub schema_id: String,
     pub cred_def_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "~thread")]
     pub thread: Option<Thread>
 }
@@ -45,24 +46,9 @@ impl CredentialProposal {
         self.thread = Some(Thread::new().set_thid(id));
         self
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CredentialProposal(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-impl Default for CredentialProposal {
-    fn default() -> CredentialProposal {
-        CredentialProposal {
-            id: MessageId::new(),
-            comment: String::new(),
-            credential_proposal: CredentialPreviewData::new(),
-            schema_id: String::new(),
-            cred_def_id: String::new(),
-            thread: None,
-        }
-    }
-}
+a2a_message!(CredentialProposal);
 
 #[cfg(test)]
 pub mod tests {

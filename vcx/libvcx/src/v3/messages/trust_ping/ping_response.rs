@@ -5,6 +5,7 @@ use v3::messages::a2a::{MessageId, A2AMessage};
 pub struct PingResponse {
     #[serde(rename = "@id")]
     pub id: MessageId,
+    #[serde(skip_serializing_if = "Option::is_none")]
     comment: Option<String>,
     #[serde(rename = "~thread")]
     pub thread: Thread,
@@ -15,20 +16,14 @@ impl PingResponse {
         PingResponse::default()
     }
 
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
     pub fn set_comment(mut self, comment: String) -> PingResponse {
         self.comment = Some(comment);
         self
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::PingResponse(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+threadlike!(PingResponse);
+a2a_message!(PingResponse);
 
 impl Default for PingResponse {
     fn default() -> PingResponse {

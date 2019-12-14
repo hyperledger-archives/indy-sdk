@@ -43,11 +43,9 @@ impl Invitation {
         self.routing_keys = routing_keys;
         self
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::ConnectionInvitation(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+a2a_message!(Invitation, ConnectionInvitation);
 
 impl Default for Invitation {
     fn default() -> Invitation {

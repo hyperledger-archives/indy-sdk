@@ -117,17 +117,17 @@ impl VerifierSM {
                 VerifierState::PresentationRequestSent(ref state) => {
                     match message {
                         A2AMessage::Presentation(presentation) => {
-                            if presentation.thread.is_reply(&self.thread_id()) {
+                            if presentation.from_thread(&self.thread_id()) {
                                 return Some((uid, A2AMessage::Presentation(presentation)));
                             }
                         }
                         A2AMessage::PresentationProposal(proposal) => {
-                            if proposal.thread.is_reply(&self.thread_id()) {
+                            if proposal.from_thread(&self.thread_id()) {
                                 return Some((uid, A2AMessage::PresentationProposal(proposal)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.thread_id()) {
+                            if problem_report.from_thread(&self.thread_id()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }

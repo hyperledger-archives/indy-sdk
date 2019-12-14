@@ -55,23 +55,9 @@ impl CredentialOffer {
         self.thread = Some(Thread::new().set_thid(id));
         self
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CredentialOffer(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-impl Default for CredentialOffer {
-    fn default() -> CredentialOffer {
-        CredentialOffer {
-            id: MessageId::new(),
-            comment: String::new(),
-            credential_preview: CredentialPreviewData::new(),
-            offers_attach: Attachments::new(),
-            thread: None,
-        }
-    }
-}
+a2a_message!(CredentialOffer);
 
 impl TryInto<CredentialOffer> for CredentialOfferV1 {
     type Error = VcxError;

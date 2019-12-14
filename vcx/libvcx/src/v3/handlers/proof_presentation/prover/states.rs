@@ -172,12 +172,12 @@ impl ProverSM {
                 ProverState::PresentationSent(ref state) => {
                     match message {
                         A2AMessage::Ack(ack) => {
-                            if ack.thread.is_reply(&self.thread_id) {
+                            if ack.from_thread(&self.thread_id) {
                                 return Some((uid, A2AMessage::Ack(ack)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.thread_id) {
+                            if problem_report.from_thread(&self.thread_id) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }

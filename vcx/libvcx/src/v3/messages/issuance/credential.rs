@@ -36,32 +36,11 @@ impl Credential {
         self.credentials_attach.add_json_attachment(::serde_json::Value::String(credential), AttachmentEncoding::Base64)?;
         Ok(self)
     }
-
-    pub fn ask_for_ack(mut self) -> Self {
-        self.please_ack = Some(PleaseAck {});
-        self
-    }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::Credential(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-impl Default for Credential {
-    fn default() -> Credential {
-        Credential {
-            id: MessageId::new(),
-            comment: String::new(),
-            credentials_attach: Attachments::new(),
-            thread: Thread::new()
-        }
-    }
-}
+please_ack!(Credential);
+threadlike!(Credential);
+a2a_message!(Credential);
 
 impl TryInto<Credential> for CredentialMessage {
     type Error = VcxError;

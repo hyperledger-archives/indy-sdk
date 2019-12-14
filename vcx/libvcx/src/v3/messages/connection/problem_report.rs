@@ -57,16 +57,10 @@ impl ProblemReport {
         self.explain = Some(explain);
         self
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::ConnectionProblemReport(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+threadlike!(ProblemReport);
+a2a_message!(ProblemReport, ConnectionProblemReport);
 
 impl Default for ProblemReport {
     fn default() -> ProblemReport {

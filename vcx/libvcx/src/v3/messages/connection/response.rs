@@ -73,16 +73,6 @@ impl Response {
         self
     }
 
-    pub fn ask_for_ack(mut self) -> Self {
-        self.please_ack = Some(PleaseAck {});
-        self
-    }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
     pub fn encode(&self, key: &str) -> VcxResult<SignedResponse> {
         let connection_data = json!(self.connection).to_string();
 
@@ -116,6 +106,9 @@ impl Response {
     }
 }
 
+please_ack!(Response);
+threadlike!(Response);
+
 impl SignedResponse {
     pub fn decode(self, key: &str) -> VcxResult<Response> {
         let signature = base64::decode_config(&self.connection_sig.signature.as_bytes(), base64::URL_SAFE)
@@ -142,11 +135,9 @@ impl SignedResponse {
             please_ack: self.please_ack,
         })
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::ConnectionResponse(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+a2a_message!(SignedResponse, ConnectionResponse);
 
 impl Default for Response {
     fn default() -> Response {

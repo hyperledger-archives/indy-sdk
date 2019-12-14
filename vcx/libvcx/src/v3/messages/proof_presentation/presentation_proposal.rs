@@ -6,7 +6,6 @@ use messages::thread::Thread;
 pub struct PresentationProposal {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
     pub presentation_proposal: PresentationPreview,
@@ -72,17 +71,10 @@ impl PresentationProposal {
         self.presentation_proposal = presentation_preview;
         self
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::PresentationProposal(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
+threadlike!(PresentationProposal);
+a2a_message!(PresentationProposal);
 
 #[cfg(test)]
 pub mod tests {

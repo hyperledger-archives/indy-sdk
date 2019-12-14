@@ -20,9 +20,6 @@ pub enum AckStatus {
     Pending
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct PleaseAck {}
-
 impl Ack {
     pub fn create() -> Ack {
         Ack::default()
@@ -32,16 +29,10 @@ impl Ack {
         self.status = status;
         self
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::Ack(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+threadlike!(Ack);
+a2a_message!(Ack);
 
 impl Default for Ack {
     fn default() -> Ack {
@@ -52,6 +43,19 @@ impl Default for Ack {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PleaseAck {}
+
+#[macro_export]
+macro_rules! please_ack (($type:ident) => (
+    impl $type {
+        pub fn ask_for_ack(mut self) -> $type {
+            self.please_ack = Some(PleaseAck {});
+            self
+        }
+    }
+));
 
 #[cfg(test)]
 pub mod tests {

@@ -72,7 +72,7 @@ impl IssuerSM {
                 IssuerState::OfferSent(ref state) => {
                     match message {
                         A2AMessage::CredentialRequest(credential) => {
-                            if credential.thread.is_reply(&self.state.thread_id()) {
+                            if credential.from_thread(&self.state.thread_id()) {
                                 return Some((uid, A2AMessage::CredentialRequest(credential)));
                             }
                         }
@@ -84,7 +84,7 @@ impl IssuerSM {
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.state.thread_id()) {
+                            if problem_report.from_thread(&self.state.thread_id()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -97,12 +97,12 @@ impl IssuerSM {
                 IssuerState::CredentialSent(ref state) => {
                     match message {
                         A2AMessage::Ack(ack) => {
-                            if ack.thread.is_reply(&self.state.thread_id()) {
+                            if ack.from_thread(&self.state.thread_id()) {
                                 return Some((uid, A2AMessage::Ack(ack)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.state.thread_id()) {
+                            if problem_report.from_thread(&self.state.thread_id()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }

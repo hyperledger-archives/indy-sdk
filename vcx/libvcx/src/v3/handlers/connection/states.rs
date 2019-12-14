@@ -200,7 +200,7 @@ impl RequestedState {
 
         let response: Response = response.decode(&remote_vk)?;
 
-        if !response.thread.is_reply(&self.request.id.0) {
+        if !response.from_thread(&self.request.id.0) {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot handle Response: thread id does not match: {:?}", response.thread)));
         }
 

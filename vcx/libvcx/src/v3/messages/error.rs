@@ -51,19 +51,14 @@ impl ProblemReport {
         self.comment = Some(comment);
         self
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CommonProblemReport(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+threadlike!(ProblemReport);
+a2a_message!(ProblemReport, CommonProblemReport);
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Description {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub en: Option<String>,
     pub code: u32,
 }

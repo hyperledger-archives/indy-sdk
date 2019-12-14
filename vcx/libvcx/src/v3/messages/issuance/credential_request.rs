@@ -29,27 +29,10 @@ impl CredentialRequest {
         self.requests_attach.add_json_attachment(::serde_json::Value::String(credential_request), AttachmentEncoding::Base64)?;
         Ok(self)
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CredentialRequest(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-impl Default for CredentialRequest {
-    fn default() -> CredentialRequest {
-        CredentialRequest {
-            id: MessageId::new(),
-            comment: None,
-            requests_attach: Attachments::new(),
-            thread: Thread::new(),
-        }
-    }
-}
+threadlike!(CredentialRequest);
+a2a_message!(CredentialRequest);
 
 #[cfg(test)]
 pub mod tests {

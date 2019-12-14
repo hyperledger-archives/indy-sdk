@@ -55,11 +55,9 @@ impl Request {
         self.connection.did_doc.set_keys(recipient_keys, routing_keys);
         self
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::ConnectionRequest(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+a2a_message!(Request, ConnectionRequest);
 
 #[cfg(test)]
 pub mod tests {

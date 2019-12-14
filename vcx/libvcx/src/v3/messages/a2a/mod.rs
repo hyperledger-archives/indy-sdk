@@ -252,3 +252,22 @@ impl A2AMessage {
     const QUERY: &'static str = "query";
     const DISCLOSE: &'static str = "disclose";
 }
+
+#[macro_export]
+macro_rules! a2a_message {
+    ($type:ident) => (
+        impl $type {
+            pub fn to_a2a_message(&self) -> A2AMessage {
+                A2AMessage::$type(self.clone()) // TODO: THINK how to avoid clone
+            }
+        }
+    );
+
+    ($type:ident, $a2a_message_kind:ident) => (
+        impl $type {
+            pub fn to_a2a_message(&self) -> A2AMessage {
+                A2AMessage::$a2a_message_kind(self.clone()) // TODO: THINK how to avoid clone
+            }
+        }
+    );
+}
