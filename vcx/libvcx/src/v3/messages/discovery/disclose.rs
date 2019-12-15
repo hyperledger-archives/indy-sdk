@@ -1,4 +1,5 @@
 use messages::thread::Thread;
+use settings::Actors;
 use v3::messages::a2a::{MessageId, A2AMessage};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -14,7 +15,7 @@ pub struct Disclose {
 pub struct ProtocolDescriptor {
     pub pid: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub roles: Option<Vec<String>>
+    pub roles: Option<Vec<Actors>>
 }
 
 impl Disclose {

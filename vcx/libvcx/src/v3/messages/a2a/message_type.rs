@@ -13,11 +13,9 @@ pub struct MessageType {
 }
 
 impl MessageType {
-    const DID: &'static str = "did:sov:BzCbsNYhMrjHiqZDTUASHg";
-
     pub fn build(family: MessageFamilies, name: &str) -> MessageType {
         MessageType {
-            did: Self::DID.to_string(),
+            did: MessageFamilies::DID.to_string(),
             version: family.version().to_string(),
             family,
             type_: name.to_string(),

@@ -12,9 +12,9 @@ use v3::messages::connection::ping_response::PingResponse;
 use v3::messages::ack::Ack;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::discovery::query::Query;
-use v3::messages::discovery::disclose::{Disclose, ProtocolDescriptor};
+use v3::messages::discovery::disclose::Disclose;
 use v3::messages::a2a::MessageId;
-use v3::messages::a2a::protocol_registry::PROTOCOL_REGISTRY;
+use v3::messages::a2a::protocol_registry::ProtocolRegistry;
 
 use std::collections::HashMap;
 
@@ -247,10 +247,7 @@ impl CompleteState {
     }
 
     fn handle_discovery_query(&self, query: Query, agent_info: &AgentInfo) -> VcxResult<()> {
-        let protocols = PROTOCOL_REGISTRY.get_protocols_for_query(query.query.as_ref().map(String::as_str))
-            .iter()
-            .map(|protocol| ProtocolDescriptor { pid: protocol.to_string(), roles: None })
-            .collect();
+        let protocols = ProtocolRegistry::init().get_protocols_for_query(query.query.as_ref().map(String::as_str));
 
         let disclose = Disclose::create()
             .set_protocols(protocols)
