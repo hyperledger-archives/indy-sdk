@@ -738,7 +738,7 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
 ///
 /// connection_handle: connection to send message
 ///
-/// query: query string to match against supported message types.
+/// query: (Optional) query string to match against supported message types.
 ///
 /// comment: (Optional) human-friendly description of the query.
 ///

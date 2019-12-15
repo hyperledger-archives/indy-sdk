@@ -181,4 +181,10 @@ describe('Connection:', () => {
     })
   })
 
+  describe('sendDiscoveryFeatures:', () => {
+    it('success: send discovery features', async () => {
+      const connection = await connectionCreate()
+      connection.sendDiscoveryFeatures('*', 'comment')
+    })
+  })
 })
