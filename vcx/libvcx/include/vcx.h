@@ -232,7 +232,7 @@ vcx_error_t vcx_connection_update_state(vcx_command_handle_t command_handle,
 /// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
 ///
 /// Note that this function is useful in case `aries` communication method is used.
-/// In other cases it just return success as result.
+/// In other cases it returns Invalid Connection Handle error.
 ///
 /// #params
 ///

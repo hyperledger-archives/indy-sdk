@@ -309,7 +309,7 @@ public class ConnectionApi extends VcxJava.API {
         }
     };
 
-    public static CompletableFuture<Void> sconnectionSendPing(
+    public static CompletableFuture<Void> connectionSendPing(
             int connectionHandle,
             String comment
     ) throws VcxException {

@@ -297,7 +297,7 @@ class Connection(VcxStateful):
         Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
 
         Note that this function is useful in case `aries` communication method is used.
-        In other cases it just return success as result.
+        In other cases it returns Invalid Connection Handle error.
 
         :param comment: (Optional) human-friendly description of the ping.
 

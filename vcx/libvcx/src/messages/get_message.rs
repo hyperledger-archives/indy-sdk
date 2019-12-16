@@ -268,7 +268,6 @@ pub struct Message {
     pub ref_msg_id: Option<String>,
     #[serde(skip_deserializing)]
     pub delivery_details: Vec<DeliveryDetails>,
-//    #[serde(skip_deserializing)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub decrypted_payload: Option<String>,
 }

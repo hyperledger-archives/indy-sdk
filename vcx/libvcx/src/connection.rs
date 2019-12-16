@@ -995,7 +995,7 @@ pub fn is_v3_connection(connection_handle: u32) -> VcxResult<bool> {
 pub fn send_ping(connection_handle: u32, comment: Option<String>) -> VcxResult<()> {
     CONNECTION_MAP.get_mut(connection_handle, |connection| {
         match connection {
-            Connections::V1(ref connection) => Ok(()),
+            Connections::V1(ref connection) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
             Connections::V3(ref mut connection) => connection.send_ping(comment.clone())
         }
     })

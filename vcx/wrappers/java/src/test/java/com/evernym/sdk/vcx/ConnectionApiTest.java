@@ -215,9 +215,10 @@ class ConnectionApiTest {
 
     @Test
     @DisplayName("send ping")
-    void sendPing() throws VcxException, ExecutionException, InterruptedException {
-        Integer connectionHandle = _createConnection();
-        CompletableFuture<Void> future = ConnectionApi.sconnectionSendPing(connectionHandle, null);
-        Awaitility.await().until(future::isDone);
+    void sendPing() {
+        Assertions.assertThrows(ExecutionException.class, () -> {
+            Integer connectionHandle = _createConnection();
+            TestHelper.getResultFromFuture(ConnectionApi.connectionSendPing(connectionHandle, null));
+        });
     }
 }
