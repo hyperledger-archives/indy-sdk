@@ -152,6 +152,8 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
 
     validate_optional_config_val(config.get(CONFIG_WEBHOOK_URL), VcxErrorKind::InvalidUrl, Url::parse)?;
 
+    validate_optional_config_val(config.get(ACTORS), VcxErrorKind::InvalidOption, validation::validate_actors)?;
+
     Ok(error::SUCCESS.code_num)
 }
 
@@ -691,7 +693,7 @@ pub mod tests {
 
     #[test]
     fn test_process_config_str_for_actors() {
-        let content = json!({
+        let mut config = json!({
             "pool_name" : "pool1",
             "config_name":"config1",
             "wallet_name":"test_read_config_file",
@@ -705,10 +707,14 @@ pub mod tests {
             "genesis_path":"/tmp/pool1.txn",
             "wallet_key":"key",
             "actors": ["invitee", "holder"]
-        }).to_string();
+        });
 
-        process_config_string(&content, true).unwrap();
+        process_config_string(&config.to_string(), true).unwrap();
 
-        assert_eq!(vec![Actors::Invitee, Actors::Holder], get_actors())
+        assert_eq!(vec![Actors::Invitee, Actors::Holder], get_actors());
+
+        // passed invalid actor
+        config["actors"] = json!(["wrong"]);
+        assert_eq!(process_config_string(&config.to_string(), true).unwrap_err().kind(), VcxErrorKind::InvalidOption);
     }
 }

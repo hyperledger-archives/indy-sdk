@@ -3,6 +3,7 @@ use strum::IntoEnumIterator;
 
 use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::discovery::disclose::ProtocolDescriptor;
+use settings::Actors;
 
 pub struct ProtocolRegistry {
     protocols: Vec<ProtocolDescriptor>
@@ -11,6 +12,7 @@ pub struct ProtocolRegistry {
 impl ProtocolRegistry {
     pub fn init() -> ProtocolRegistry {
         let mut registry = ProtocolRegistry { protocols: Vec::new() };
+        let actors = ::settings::get_actors();
 
         for family in MessageFamilies::iter() {
             match family {
@@ -21,7 +23,7 @@ impl ProtocolRegistry {
                 family @ MessageFamilies::CredentialIssuance |
                 family @ MessageFamilies::PresentProof |
                 family @ MessageFamilies::TrustPing |
-                family @ MessageFamilies::DiscoveryFeatures => registry.add_protocol(family),
+                family @ MessageFamilies::DiscoveryFeatures => registry.add_protocol(&actors, family),
                 MessageFamilies::Signature => {}
                 MessageFamilies::Unknown(_) => {}
             }
@@ -30,9 +32,7 @@ impl ProtocolRegistry {
         registry
     }
 
-    pub fn add_protocol(&mut self, family: MessageFamilies) {
-        let actors = ::settings::get_actors();
-
+    pub fn add_protocol(&mut self, actors: &Vec<Actors>, family: MessageFamilies) {
         match family.actors() {
             None => {
                 self.protocols.push(ProtocolDescriptor { pid: family.id(), roles: None })
@@ -71,7 +71,6 @@ impl ProtocolRegistry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use settings::Actors;
 
     fn _protocols() -> Vec<ProtocolDescriptor> {
         vec![
