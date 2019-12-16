@@ -111,9 +111,8 @@ pub mod test {
         }
     }
 
-    fn download_message() -> ::messages::get_message::Message {
-        let messages = ::messages::get_message::download_messages(None, Some(vec![String::from("MS-103")]), None).unwrap();
-        let mut messages: Vec<::messages::get_message::MessageByConnection> = messages.into_iter().filter(|messages_| !messages_.msgs.is_empty()).collect();
+    fn download_message(did: String) -> ::messages::get_message::Message {
+        let mut messages = ::messages::get_message::download_messages(Some(vec![did]), Some(vec![String::from("MS-103")]), None).unwrap();
         assert_eq!(1, messages.len());
         let mut messages = messages.pop().unwrap();
         assert_eq!(1, messages.msgs.len());
@@ -264,7 +263,8 @@ pub mod test {
 
         pub fn update_state_with_message(&self, expected_state: u32) {
             self.activate();
-            let message = download_message();
+            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
+            let message = download_message(did);
             ::connection::update_state_with_message(self.connection_handle, message).unwrap();
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
@@ -389,7 +389,8 @@ pub mod test {
 
         pub fn update_state_with_message(&self, expected_state: u32) {
             self.activate();
-            let message = download_message();
+            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
+            let message = download_message(did);
             ::connection::update_state_with_message(self.connection_handle, message).unwrap();
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
