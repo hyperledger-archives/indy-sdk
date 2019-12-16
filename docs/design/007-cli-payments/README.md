@@ -155,3 +155,32 @@ All commands to send domain transactions require new optional params to add tran
 ```
 
 Note that "source-n" is identifier presented in "Source" column of ```ledger get-sources``` command output
+
+### Sign with a payment address
+
+Many cryptocurrencies provide mechanisms to prove control for a given payment address.
+This command signs inputs using the private key that corresponds to the specified payment address.
+
+```indy-cli
+indy> payment-address sign address=<payment-address> input=<input>
+```
+
+"address" is the payment address generated from using create.
+
+"input is the data to be signed.
+
+The output is a hex encoded signature that can be passed to verify
+
+### Verify signature from a payment address
+
+Verify a proof of payment address control by verifying a signature.
+
+```indy-cli
+indy> payment-address verify address=<payment-address> input=<input> signature=<signature>
+```
+
+"address" is the payment address generated from using create. This should be the same address used to create "signature"
+
+"input is the data to be signed. This must be the same data used to create "signature" otherwise verify will return false.
+
+"signature" is the proof of payment address generated from using sign.
