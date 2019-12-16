@@ -1378,38 +1378,38 @@ pub mod tests {
         let handle = CONNECTION_MAP.add(Connections::V1(c)).unwrap();
 
         assert_eq!(connect(handle, Some("{}".to_string())).unwrap_err().kind(), VcxErrorKind::GeneralConnectionError);
-        ;
+
 
         // from_string throws a ConnectionError
         assert_eq!(from_string("").unwrap_err().kind(), VcxErrorKind::InvalidJson);
-        ;
+
 
         // release throws a connection Error
         assert_eq!(release(1234).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
     }
 
     #[test]
     fn test_void_functions_actually_have_results() {
         assert_eq!(set_their_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
         assert_eq!(set_state(1, VcxStateType::VcxStateNone).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
         assert_eq!(set_pw_did(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
         assert_eq!(set_their_pw_did(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
         assert_eq!(set_uuid(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
         assert_eq!(set_endpoint(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
         assert_eq!(set_agent_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
         let details: InviteDetail = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
         assert_eq!(set_invite_details(1, &details).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
         assert_eq!(set_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-        ;
+
     }
 
     #[test]
