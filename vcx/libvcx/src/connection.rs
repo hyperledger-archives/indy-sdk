@@ -26,6 +26,7 @@ use v3::handlers::connection::connection::Connection as ConnectionV3;
 use v3::handlers::connection::states::ActorDidExchangeState;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation as InvitationV3;
+use v3::messages::connection::service::Service as ServiceV3;
 
 lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connections> = Default::default();
@@ -965,6 +966,10 @@ pub fn send_message(handle: u32, message: A2AMessage) -> VcxResult<()> {
             Connections::V3(ref mut connection) => connection.send_message(&message)
         }
     })
+}
+
+pub fn send_message_to_self_endpoint(message: A2AMessage, service: ServiceV3) -> VcxResult<()> {
+    ConnectionV3::send_message_to_self_endpoint(&message, service)
 }
 
 pub fn add_pending_messages(handle: u32, messages: HashMap<MessageId, String>) -> VcxResult<()> {

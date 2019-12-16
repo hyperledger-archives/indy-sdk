@@ -10,7 +10,7 @@ pub struct EncryptionEnvelope(pub Vec<u8>);
 
 impl EncryptionEnvelope {
     pub fn create(message: &A2AMessage,
-                  pw_verkey: &str,
+                  pw_verkey: Option<&str>,
                   did_doc: &DidDoc) -> VcxResult<EncryptionEnvelope> {
         trace!("EncryptionEnvelope::create >>> message: {:?}, pw_verkey: {:?}, did_doc: {:?}", message, pw_verkey, did_doc);
 
@@ -22,7 +22,7 @@ impl EncryptionEnvelope {
     }
 
     fn encrypt_for_pairwise(message: &A2AMessage,
-                            pw_verkey: &str,
+                            pw_verkey: Option<&str>,
                             did_doc: &DidDoc) -> VcxResult<Vec<u8>> {
         let message = match message {
             A2AMessage::Generic(message_) => message_.to_string(),
@@ -31,7 +31,7 @@ impl EncryptionEnvelope {
 
         let receiver_keys = json!(did_doc.recipient_keys()).to_string();
 
-        crypto::pack_message(Some(&pw_verkey), &receiver_keys, message.as_bytes())
+        crypto::pack_message(pw_verkey, &receiver_keys, message.as_bytes())
     }
 
     fn wrap_into_forward_messages(mut message: Vec<u8>,
@@ -98,7 +98,7 @@ pub mod tests {
 
         let message = A2AMessage::Ack(_ack());
 
-        let res = EncryptionEnvelope::create(&message, &setup.key, &DidDoc::default());
+        let res = EncryptionEnvelope::create(&message, Some(&setup.key), &DidDoc::default());
         assert_eq!(res.unwrap_err().kind(), VcxErrorKind::InvalidLibindyParam);
     }
 
@@ -109,7 +109,7 @@ pub mod tests {
 
         let message = A2AMessage::Ack(_ack());
 
-        let envelope = EncryptionEnvelope::create(&message, &setup.key, &_did_doc_4()).unwrap();
+        let envelope = EncryptionEnvelope::create(&message, Some(&setup.key), &_did_doc_4()).unwrap();
         assert_eq!(message, EncryptionEnvelope::open(&_key_1(), envelope.0).unwrap());
     }
 
@@ -126,7 +126,7 @@ pub mod tests {
 
         let ack = A2AMessage::Ack(_ack());
 
-        let envelope = EncryptionEnvelope::create(&ack, &setup.key, &did_doc).unwrap();
+        let envelope = EncryptionEnvelope::create(&ack, Some(&setup.key), &did_doc).unwrap();
 
         let message_1 = EncryptionEnvelope::open(&key_1, envelope.0).unwrap();
 
