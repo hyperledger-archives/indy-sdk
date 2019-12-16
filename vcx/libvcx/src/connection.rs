@@ -997,7 +997,7 @@ pub fn is_v3_connection(connection_handle: u32) -> VcxResult<bool> {
 pub fn send_discovery_features(connection_handle: u32, query: Option<String>, comment: Option<String>) -> VcxResult<()> {
     CONNECTION_MAP.get_mut(connection_handle, |connection| {
         match connection {
-            Connections::V1(ref connection) => Ok(()),
+            Connections::V1(ref connection) =>  Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
             Connections::V3(ref mut connection) => connection.send_discovery_features(query.clone(), comment.clone())
         }
     })

@@ -365,7 +365,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * Send discovery features message to the specified connection to discover which features it supports, and to what extent.
    *
    * Note that this function is useful in case `aries` communication method is used.
-   * In other cases it just return success as result.
+   * In other cases it returns Invalid Connection Handle error.
    *
    */
   public async sendDiscoveryFeatures (query: string | null | undefined, comment: string | null | undefined): Promise<void> {

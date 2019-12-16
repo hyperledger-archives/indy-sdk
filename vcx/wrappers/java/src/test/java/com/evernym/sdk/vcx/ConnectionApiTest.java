@@ -217,7 +217,9 @@ class ConnectionApiTest {
     @DisplayName("send discovery features")
     void sendDiscoveryFeatures() throws VcxException, ExecutionException, InterruptedException {
         Integer connectionHandle = _createConnection();
-        CompletableFuture<Void> future = ConnectionApi.sendDiscoveryFeatures(connectionHandle, null, null);
-        Awaitility.await().until(future::isDone);
+        Assertions.assertThrows(InvalidConnectionHandleException.class, ()-> {
+            CompletableFuture<Void> future = ConnectionApi.sendDiscoveryFeatures(connectionHandle, null, null);
+            Awaitility.await().until(future::isDone);
+        });
     }
 }

@@ -184,7 +184,8 @@ describe('Connection:', () => {
   describe('sendDiscoveryFeatures:', () => {
     it('success: send discovery features', async () => {
       const connection = await connectionCreate()
-      connection.sendDiscoveryFeatures('*', 'comment')
+      const error = await shouldThrow(() => connection.sendDiscoveryFeatures('*', 'comment'))
+      assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
     })
   })
 })
