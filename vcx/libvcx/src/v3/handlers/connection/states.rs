@@ -12,7 +12,7 @@ use v3::messages::connection::ping_response::PingResponse;
 use v3::messages::ack::Ack;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::discovery::query::Query;
-use v3::messages::discovery::disclose::Disclose;
+use v3::messages::discovery::disclose::{Disclose, ProtocolDescriptor};
 use v3::messages::a2a::MessageId;
 use v3::messages::a2a::protocol_registry::ProtocolRegistry;
 
@@ -89,7 +89,8 @@ pub struct RespondedState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteState {
     did_doc: DidDoc,
-    pending_messages: HashMap<MessageId, String>
+    pending_messages: HashMap<MessageId, String>,
+    protocols: Option<Vec<ProtocolDescriptor>>
 }
 
 impl From<(NullState, Invitation)> for InvitedState {
@@ -130,7 +131,7 @@ impl From<(RequestedState, ProblemReport)> for NullState {
 impl From<(RequestedState, Response)> for CompleteState {
     fn from((state, response): (RequestedState, Response)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
-        CompleteState { did_doc: response.connection.did_doc, pending_messages: HashMap::new() }
+        CompleteState { did_doc: response.connection.did_doc, pending_messages: HashMap::new(), protocols: None }
     }
 }
 
@@ -144,14 +145,21 @@ impl From<(RespondedState, ProblemReport)> for NullState {
 impl From<(RespondedState, Ack)> for CompleteState {
     fn from((state, ack): (RespondedState, Ack)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new() }
+        CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new(), protocols: None }
     }
 }
 
 impl From<(RespondedState, Ping)> for CompleteState {
     fn from((state, ping): (RespondedState, Ping)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new() }
+        CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new(), protocols: None }
+    }
+}
+
+impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
+    fn from((state, protocols): (CompleteState, Vec<ProtocolDescriptor>)) -> CompleteState {
+        trace!("DidExchangeStateSM: transit state from CompleteState to CompleteState");
+        CompleteState { did_doc: state.did_doc, pending_messages: state.pending_messages, protocols: Some(protocols) }
     }
 }
 
@@ -224,8 +232,8 @@ impl CompleteState {
                 DidExchangeState::Completed(self)
             }
             DidExchangeMessages::DiscloseReceived(disclose) => {
-                self.handle_discovery_disclose(disclose)?;
-                DidExchangeState::Completed(self)
+                self.handle_discovery_disclose(&disclose)?;
+                DidExchangeState::Completed((self, disclose.protocols).into())
             }
             _ => {
                 DidExchangeState::Completed(self)
@@ -256,7 +264,7 @@ impl CompleteState {
         agent_info.send_message(&disclose.to_a2a_message(), &self.did_doc)
     }
 
-    fn handle_discovery_disclose(&self, disclose: Disclose) -> VcxResult<()> {
+    fn handle_discovery_disclose(&self, disclose: &Disclose) -> VcxResult<()> {
         println!("Received protocols:{:?}", disclose.protocols);
         Ok(())
     }
@@ -579,6 +587,14 @@ impl DidExchangeSM {
         }
     }
 
+    pub fn get_protocols(&self) -> Option<&Vec<ProtocolDescriptor>> {
+        match self.state {
+            ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref state)) |
+            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref state)) => state.protocols.as_ref(),
+            _ => None
+        }
+    }
+
     pub fn remote_did(&self) -> VcxResult<String> {
         self.did_doc()
             .map(|did_doc: DidDoc| did_doc.id.clone())
@@ -832,6 +848,24 @@ pub mod test {
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
 
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Responded(_)), did_exchange_sm.state);
+            }
+
+            #[test]
+            fn test_did_exchange_handle_disclose_from_completed_state() {
+                let _setup = AgencyModeSetup::init();
+
+                let mut did_exchange_sm = inviter_sm();
+
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
+
+                assert!(did_exchange_sm.get_protocols().is_none());
+
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::DiscloseReceived(_disclose())).unwrap();
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                assert!(did_exchange_sm.get_protocols().is_some());
             }
 
             #[test]
