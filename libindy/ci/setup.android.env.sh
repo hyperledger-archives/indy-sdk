@@ -48,6 +48,10 @@ delete_existing_avd(){
     avdmanager delete avd -n ${ABSOLUTE_ARCH}
 }
 
+download_emulator() {
+    curl -o emu.zip https://dl.google.com/android/repository/emulator-linux-5889189.zip
+}
+
 create_avd(){
 
     echo "${GREEN}Creating Android SDK${RESET}"
@@ -63,7 +67,7 @@ create_avd(){
                 "system-images;android-24;default;${ABI}"
 
         # TODO hack to downgrade Android Emulator. Should be removed as soon as headless mode will be fixed.
-        curl -o emu.zip https://dl.google.com/android/repository/emulator-linux-5889189.zip
+        mv /home/indy/emu.zip emu.zip
         mv emulator emulator_backup
         unzip emu.zip
     else
@@ -101,7 +105,11 @@ download_and_unzip_if_missed() {
 download_sdk(){
     pushd ${ANDROID_SDK}
         download_and_unzip_if_missed "tools" "https://dl.google.com/android/repository/" "sdk-tools-linux-4333796.zip"
+    popd
+}
 
+recreate_avd(){
+    pushd ${ANDROID_SDK}
         set +e
         delete_existing_avd
         set -e

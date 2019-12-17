@@ -263,7 +263,8 @@ def macosModuleBuildingAndTest(library, testFeatures = "") {
 def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
-    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android")
+    dockerBuild("libindy")
+    linuxModuleTesting("ci/android.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android", "android")
 }
 
 def iosTesting() {
@@ -577,7 +578,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     linuxModuleTesting(file, env_name, network_name, module_tester, "ubuntu")
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label, image_name="libindy") {
     node(node_label) {
         cleanWs()
         def poolInst
@@ -587,7 +588,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) 
 
             poolInst = openPool(env_name, network_name)
 
-            def testEnv = buildTestEnv(file, env_name)
+            def testEnv = buildTestEnv(file, env_name, image_name)
 
             module_tester(env_name, network_name, testEnv)
         } finally {
@@ -760,10 +761,10 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def buildTestEnv(file, env_name) {
+def buildTestEnv(file, env_name, name="libindy") {
     dir('libindy') {
         echo "${env_name} Build test environment"
-        return dockerBuild('libindy', file)
+        return dockerBuild(name, file)
     }
 }
 
