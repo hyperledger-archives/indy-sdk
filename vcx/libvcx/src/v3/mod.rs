@@ -269,6 +269,22 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
+        pub fn ping(&self) {
+            self.activate();
+            ::connection::send_ping(self.connection_handle, None).unwrap();
+        }
+
+        pub fn discovery_features(&self) {
+            self.activate();
+            ::connection::send_discovery_features(self.connection_handle, None, None).unwrap();
+        }
+
+        pub fn connection_info(&self) -> ::serde_json::Value {
+            self.activate();
+            let details = ::connection::get_invite_details(self.connection_handle, false).unwrap();
+            ::serde_json::from_str(&details).unwrap()
+        }
+
         pub fn offer_credential(&mut self) {
             self.activate();
 
@@ -518,11 +534,18 @@ pub mod test {
         alice.update_state_with_message(4);
         faber.update_state_with_message(4);
 
-        faber.activate();
-        ::connection::send_ping(faber.connection_handle, None).unwrap();
-
+        // Ping
+        faber.ping();
         alice.update_state_with_message(4);
         faber.update_state_with_message(4);
+
+        // Discovery Features
+        faber.discovery_features();
+        alice.update_state_with_message(4);
+        faber.update_state_with_message(4);
+
+        let faber_connection_info = faber.connection_info();
+        assert!(faber_connection_info["protocols"].as_array().unwrap().len() > 0);
     }
 }
 

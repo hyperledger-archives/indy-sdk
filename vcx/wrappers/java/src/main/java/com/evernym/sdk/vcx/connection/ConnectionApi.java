@@ -307,7 +307,7 @@ public class ConnectionApi extends VcxJava.API {
 			Void result = null;
 			future.complete(result);
 		}
-	}
+	};
 
 	public static CompletableFuture<Void> connectionSendPing(
 			int connectionHandle,

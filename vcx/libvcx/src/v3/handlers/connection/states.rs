@@ -220,7 +220,7 @@ impl CompleteState {
     fn handle_message(self, message: DidExchangeMessages, agent_info: &AgentInfo) -> VcxResult<DidExchangeState> {
         Ok(match message {
             DidExchangeMessages::SendPing(comment) => {
-                self.handle_send_ping(&comment, agent_info)?;
+                self.handle_send_ping(comment, agent_info)?;
                 DidExchangeState::Completed(self)
             }
             DidExchangeMessages::PingReceived(ping) => {
@@ -239,7 +239,6 @@ impl CompleteState {
                 DidExchangeState::Completed(self)
             }
             DidExchangeMessages::DiscloseReceived(disclose) => {
-                self.handle_discovery_disclose(&disclose)?;
                 DidExchangeState::Completed((self, disclose.protocols).into())
             }
             _ => {
@@ -279,11 +278,6 @@ impl CompleteState {
             .set_thread_id(query.id.0.clone());
 
         agent_info.send_message(&disclose.to_a2a_message(), &self.did_doc)
-    }
-
-    fn handle_discovery_disclose(&self, disclose: &Disclose) -> VcxResult<()> {
-        println!("Received protocols:{:?}", disclose.protocols);
-        Ok(())
     }
 }
 
