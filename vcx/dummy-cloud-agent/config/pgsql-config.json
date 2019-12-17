@@ -30,7 +30,9 @@
       "admin_account": "postgres",
       "admin_password": "mysecretpassword"
     },
-    "type": "postgres_storage"
+    "type": "postgres_storage",
+    "plugin_init_function": null,
+    "plugin_library_path": null
   },
   "protocol_type": "1.0"
 }
