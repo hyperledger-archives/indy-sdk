@@ -677,6 +677,7 @@ pub mod test {
     use v3::messages::connection::response::tests::_signed_response;
     use v3::messages::connection::problem_report::tests::_problem_report;
     use v3::messages::trust_ping::ping::tests::_ping;
+    use v3::messages::trust_ping::ping_response::tests::_ping_response;
     use v3::messages::ack::tests::_ack;
     use v3::messages::discovery::query::tests::_query;
     use v3::messages::discovery::disclose::tests::_disclose;
@@ -761,11 +762,9 @@ pub mod test {
             fn test_did_exchange_handle_exchange_request_message_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm();
+                let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
-
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Responded(_)), did_exchange_sm.state);
             }
 
@@ -773,9 +772,7 @@ pub mod test {
             fn test_did_exchange_handle_invalid_exchange_request_message_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm();
-
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
                 let mut request = _request();
                 request.connection.did_doc = DidDoc::default();
@@ -789,9 +786,8 @@ pub mod test {
             fn test_did_exchange_handle_problem_report_message_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm();
+                let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
 
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Null(_)), did_exchange_sm.state);
@@ -801,9 +797,7 @@ pub mod test {
             fn test_did_exchange_handle_other_messages_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm();
-
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                let mut did_exchange_sm = inviter_sm().to_inviter_invited_state();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Invited(_)), did_exchange_sm.state);
@@ -816,10 +810,8 @@ pub mod test {
             fn test_did_exchange_handle_ack_message_from_responded_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm();
+                let mut did_exchange_sm = inviter_sm().to_inviter_responded_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
 
 
@@ -830,10 +822,8 @@ pub mod test {
             fn test_did_exchange_handle_ping_message_from_responded_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm();
+                let mut did_exchange_sm = inviter_sm().to_inviter_responded_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::PingReceived(_ping())).unwrap();
 
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
@@ -843,10 +833,8 @@ pub mod test {
             fn test_did_exchange_handle_problem_report_message_from_responded_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm();
+                let mut did_exchange_sm = inviter_sm().to_inviter_responded_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
 
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Null(_)), did_exchange_sm.state);
@@ -856,49 +844,53 @@ pub mod test {
             fn test_did_exchange_handle_other_messages_from_responded_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm();
+                let mut did_exchange_sm = inviter_sm().to_inviter_responded_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
 
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Responded(_)), did_exchange_sm.state);
             }
 
             #[test]
-            fn test_did_exchange_handle_disclose_from_completed_state() {
+            fn test_did_exchange_handle_messages_from_completed_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = inviter_sm();
+                let mut did_exchange_sm = inviter_sm().to_inviter_completed_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
+                // Send Ping
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::SendPing(None)).unwrap();
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
+                // Ping
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::PingReceived(_ping())).unwrap();
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                // Ping Response
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::PingResponseReceived(_ping_response())).unwrap();
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                // Discovery Features
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::DiscoverFeatures((None, None))).unwrap();
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                // Query
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::QueryReceived(_query())).unwrap();
+                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                // Disclose
                 assert!(did_exchange_sm.get_protocols().is_none());
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::DiscloseReceived(_disclose())).unwrap();
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
                 assert!(did_exchange_sm.get_protocols().is_some());
-            }
 
-            #[test]
-            fn test_did_exchange_handle_any_message_from_completed_state() {
-                let _setup = AgencyModeSetup::init();
-
-                let mut did_exchange_sm = inviter_sm();
-
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeRequestReceived(_request())).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
-
+                // ignore
+                // Ack
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::PingReceived(_ping())).unwrap();
-                assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
-
+                // Problem Report
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
             }
@@ -1046,6 +1038,21 @@ pub mod test {
                     assert_match!(A2AMessage::Ping(_), message);
                 }
 
+                // Ping Response
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::ConnectionProblemReport(_problem_report()),
+                        "key_4".to_string() => A2AMessage::PingResponse(_ping_response()),
+                        "key_5".to_string() => A2AMessage::Ack(_ack())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_4", uid);
+                    assert_match!(A2AMessage::PingResponse(_), message);
+                }
+
                 // Query
                 {
                     let messages = map!(
@@ -1185,9 +1192,8 @@ pub mod test {
             fn test_did_exchange_handle_connect_message_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm();
+                let mut did_exchange_sm = invitee_sm().to_invitee_invited_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
 
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Requested(_)), did_exchange_sm.state);
@@ -1197,9 +1203,8 @@ pub mod test {
             fn test_did_exchange_handle_problem_report_message_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm();
+                let mut did_exchange_sm = invitee_sm().to_invitee_invited_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
 
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Null(_)), did_exchange_sm.state);
@@ -1209,9 +1214,7 @@ pub mod test {
             fn test_did_exchange_handle_other_messages_from_invited_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm();
-
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
+                let mut did_exchange_sm = invitee_sm().to_invitee_invited_state();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Invited(_)), did_exchange_sm.state);
@@ -1226,12 +1229,10 @@ pub mod test {
 
                 let key = create_key(_setup.wallet_handle, Some(::utils::libindy::tests::test_setup::TRUSTEE_SEED));
 
-                let mut did_exchange_sm = invitee_sm();
+                let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
 
                 let invitation = Invitation::default().set_recipient_keys(vec![key.clone()]);
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::InvitationReceived(invitation)).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(_response(&key))).unwrap();
 
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
@@ -1241,10 +1242,7 @@ pub mod test {
             fn test_did_exchange_handle_invalid_response_message_from_requested_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm();
-
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
 
                 let mut signed_response = _signed_response();
                 signed_response.connection_sig.signature = String::from("other");
@@ -1258,10 +1256,8 @@ pub mod test {
             fn test_did_exchange_handle_problem_report_message_from_requested_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm();
+                let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
 
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Null(_)), did_exchange_sm.state);
@@ -1271,10 +1267,7 @@ pub mod test {
             fn test_did_exchange_handle_other_messages_from_requested_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm();
-
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::InvitationReceived(_invitation())).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
+                let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Requested(_)), did_exchange_sm.state);
@@ -1287,27 +1280,43 @@ pub mod test {
             fn test_did_exchange_handle_messages_from_completed_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let key = create_key(_setup.wallet_handle, Some(::utils::libindy::tests::test_setup::TRUSTEE_SEED));
+                let mut did_exchange_sm = invitee_sm().to_invitee_completed_state(_setup.wallet_handle);
 
-                let mut did_exchange_sm = invitee_sm();
-
-                let invitation = Invitation::default().set_recipient_keys(vec![key.clone()]);
-
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::InvitationReceived(invitation)).unwrap();
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::Connect()).unwrap();
-
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(_response(&key))).unwrap();
-
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
+                // Send Ping
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::SendPing(None)).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
+                // Ping
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::PingReceived(_ping())).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
+                // Ping Response
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::PingResponseReceived(_ping_response())).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
+                // Discovery Features
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::DiscoverFeatures((None, None))).unwrap();
+                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                // Query
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::QueryReceived(_query())).unwrap();
+                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                // Disclose
+                assert!(did_exchange_sm.get_protocols().is_none());
+
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::DiscloseReceived(_disclose())).unwrap();
+                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                assert!(did_exchange_sm.get_protocols().is_some());
+
+                // ignore
+                // Ack
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::AckReceived(_ack())).unwrap();
+                assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
+
+                // Problem Report
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ProblemReportReceived(_problem_report())).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
             }
         }
@@ -1397,6 +1406,21 @@ pub mod test {
                     let (uid, message) = connection.find_message_to_handle(messages).unwrap();
                     assert_eq!("key_4", uid);
                     assert_match!(A2AMessage::Ping(_), message);
+                }
+
+                // Ping Response
+                {
+                    let messages = map!(
+                        "key_1".to_string() => A2AMessage::ConnectionRequest(_request()),
+                        "key_2".to_string() => A2AMessage::ConnectionResponse(_signed_response()),
+                        "key_3".to_string() => A2AMessage::ConnectionProblemReport(_problem_report()),
+                        "key_4".to_string() => A2AMessage::PingResponse(_ping_response()),
+                        "key_5".to_string() => A2AMessage::Ack(_ack())
+                    );
+
+                    let (uid, message) = connection.find_message_to_handle(messages).unwrap();
+                    assert_eq!("key_4", uid);
+                    assert_match!(A2AMessage::PingResponse(_), message);
                 }
 
                 // Query
