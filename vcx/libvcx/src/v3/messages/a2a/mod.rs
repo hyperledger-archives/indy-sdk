@@ -12,8 +12,8 @@ use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::SignedResponse;
 use v3::messages::connection::problem_report::ProblemReport as ConnectionProblemReport;
-use v3::messages::connection::ping::Ping;
-use v3::messages::connection::ping_response::PingResponse;
+use v3::messages::trust_ping::ping::Ping;
+use v3::messages::trust_ping::ping_response::PingResponse;
 use v3::messages::forward::Forward;
 use v3::messages::error::ProblemReport as CommonProblemReport;
 use v3::messages::issuance::credential_proposal::CredentialProposal;
@@ -40,6 +40,8 @@ pub enum A2AMessage {
     ConnectionRequest(Request),
     ConnectionResponse(SignedResponse),
     ConnectionProblemReport(ConnectionProblemReport),
+
+    /// trust ping
     Ping(Ping),
     PingResponse(PingResponse),
 

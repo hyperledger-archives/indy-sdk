@@ -9,3 +9,4 @@ pub mod status;
 pub mod issuance;
 pub mod proof_presentation;
 pub mod discovery;
+pub mod trust_ping;

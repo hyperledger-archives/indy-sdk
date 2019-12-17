@@ -111,6 +111,15 @@ pub mod test {
         }
     }
 
+    fn download_message(did: String) -> ::messages::get_message::Message {
+        let mut messages = ::messages::get_message::download_messages(Some(vec![did]), Some(vec![String::from("MS-103")]), None).unwrap();
+        assert_eq!(1, messages.len());
+        let mut messages = messages.pop().unwrap();
+        assert_eq!(1, messages.msgs.len());
+        let message = messages.msgs.pop().unwrap();
+        message
+    }
+
     pub struct Faber {
         pub wallet_name: String,
         pub wallet_handle: i32,
@@ -202,7 +211,7 @@ pub mod test {
         pub fn create_schema(&mut self) {
             self.activate();
             let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
-            let data = r#"["name","date","degree"]"#.to_string();
+            let data = r#"["name","date","degree", "empty_param"]"#.to_string();
             let name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
             let version: String = String::from("1.0");
 
@@ -225,7 +234,8 @@ pub mod test {
             let requested_attrs = json!([
                 {"name": "name"},
                 {"name": "date"},
-                {"name": "degree"}
+                {"name": "degree"},
+                {"name": "empty_param", "restrictions": {"attr::empty_param::value": ""}}
             ]).to_string();
 
             ::proof::create_proof(String::from("alice_degree"),
@@ -251,6 +261,14 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
+        pub fn update_state_with_message(&self, expected_state: u32) {
+            self.activate();
+            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
+            let message = download_message(did);
+            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
+            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+        }
+
         pub fn offer_credential(&mut self) {
             self.activate();
 
@@ -259,6 +277,7 @@ pub mod test {
                 "name": "alice",
                 "date": "05-2018",
                 "degree": "maths",
+                "empty_param": ""
             }).to_string();
 
             self.credential_handle = ::issuer_credential::issuer_credential_create(self.cred_def_handle,
@@ -368,6 +387,14 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
+        pub fn update_state_with_message(&self, expected_state: u32) {
+            self.activate();
+            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
+            let message = download_message(did);
+            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
+            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+        }
+
         pub fn accept_offer(&mut self) {
             self.activate();
             let offers = ::credential::get_credential_offer_messages(self.connection_handle).unwrap();
@@ -472,6 +499,30 @@ pub mod test {
         alice.send_presentation();
         faber.verify_presentation();
         alice.ensure_presentation_verified();
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn aries_demo_update_state_with_message_flow() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Connection
+        let invite = faber.create_invite();
+        alice.accept_invite(&invite);
+
+        faber.update_state_with_message(3);
+        alice.update_state_with_message(4);
+        faber.update_state_with_message(4);
+
+        faber.activate();
+        ::connection::send_ping(faber.connection_handle, None).unwrap();
+
+        alice.update_state_with_message(4);
+        faber.update_state_with_message(4);
     }
 }
 

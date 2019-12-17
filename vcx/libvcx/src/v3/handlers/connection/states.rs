@@ -7,8 +7,8 @@ use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{Response, SignedResponse};
 use v3::messages::connection::problem_report::{ProblemReport, ProblemCode};
-use v3::messages::connection::ping::Ping;
-use v3::messages::connection::ping_response::PingResponse;
+use v3::messages::trust_ping::ping::Ping;
+use v3::messages::trust_ping::ping_response::PingResponse;
 use v3::messages::ack::Ack;
 use v3::messages::connection::did_doc::DidDoc;
 use v3::messages::discovery::query::Query;
@@ -219,8 +219,15 @@ impl RespondedState {
 impl CompleteState {
     fn handle_message(self, message: DidExchangeMessages, agent_info: &AgentInfo) -> VcxResult<DidExchangeState> {
         Ok(match message {
+            DidExchangeMessages::SendPing(comment) => {
+                self.handle_send_ping(&comment, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
             DidExchangeMessages::PingReceived(ping) => {
                 self.handle_ping(&ping, agent_info)?;
+                DidExchangeState::Completed(self)
+            }
+            DidExchangeMessages::PingResponseReceived(ping_response) => {
                 DidExchangeState::Completed(self)
             }
             DidExchangeMessages::DiscoverFeatures((query_, comment)) => {
@@ -239,6 +246,16 @@ impl CompleteState {
                 DidExchangeState::Completed(self)
             }
         })
+    }
+
+    fn handle_send_ping(&self, comment: Option<String>, agent_info: &AgentInfo) -> VcxResult<()> {
+        let ping =
+            Ping::create()
+                .request_response()
+                .set_comment(comment);
+
+        agent_info.send_message(&ping.to_a2a_message(), &self.did_doc).ok();
+        Ok(())
     }
 
     fn handle_ping(&self, ping: &Ping, agent_info: &AgentInfo) -> VcxResult<()> {
@@ -385,6 +402,10 @@ impl DidExchangeSM {
                         ping @ A2AMessage::Ping(_) => {
                             debug!("Ping message received");
                             return Some((uid, ping));
+                        }
+                        ping_response @ A2AMessage::PingResponse(_) => {
+                            debug!("PingResponse message received");
+                            return Some((uid, ping_response));
                         }
                         query @ A2AMessage::Query(_) => {
                             debug!("Query message received");
@@ -661,7 +682,7 @@ pub mod test {
     use v3::messages::connection::request::tests::_request;
     use v3::messages::connection::response::tests::_signed_response;
     use v3::messages::connection::problem_report::tests::_problem_report;
-    use v3::messages::connection::ping::tests::_ping;
+    use v3::messages::trust_ping::ping::tests::_ping;
     use v3::messages::ack::tests::_ack;
     use v3::messages::discovery::query::tests::_query;
     use v3::messages::discovery::disclose::tests::_disclose;

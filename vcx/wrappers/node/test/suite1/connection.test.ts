@@ -181,6 +181,14 @@ describe('Connection:', () => {
     })
   })
 
+  describe('sendPing:', () => {
+    it('success: send ping', async () => {
+      const connection = await connectionCreate()
+      const error = await shouldThrow(() => connection.sendPing('ping'))
+      assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
+    })
+  })
+
   describe('sendDiscoveryFeatures:', () => {
     it('success: send discovery features', async () => {
       const connection = await connectionCreate()

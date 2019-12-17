@@ -20,7 +20,7 @@ def testing() {
                 'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
-                // 'centos-test' : { centosTesting() },
+                'centos-test' : { centosTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
