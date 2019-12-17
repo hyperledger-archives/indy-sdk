@@ -11,8 +11,8 @@ use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::SignedResponse;
 use v3::messages::connection::problem_report::ProblemReport as ConnectionProblemReport;
-use v3::messages::connection::ping::Ping;
-use v3::messages::connection::ping_response::PingResponse;
+use v3::messages::trust_ping::ping::Ping;
+use v3::messages::trust_ping::ping_response::PingResponse;
 use v3::messages::forward::Forward;
 use v3::messages::error::ProblemReport as CommonProblemReport;
 use v3::messages::issuance::credential_proposal::CredentialProposal;
@@ -36,6 +36,8 @@ pub enum A2AMessage {
     ConnectionRequest(Request),
     ConnectionResponse(SignedResponse),
     ConnectionProblemReport(ConnectionProblemReport),
+
+    /// trust ping
     Ping(Ping),
     PingResponse(PingResponse),
 
@@ -220,8 +222,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::ExchangeRequest => MessageFamilies::DidExchange,
             A2AMessageKinds::ExchangeResponse => MessageFamilies::DidExchange,
             A2AMessageKinds::ExchangeProblemReport => MessageFamilies::DidExchange,
-            A2AMessageKinds::Ping => MessageFamilies::Notification,
-            A2AMessageKinds::PingResponse => MessageFamilies::Notification, // TODO: trust_ping Message family
+            A2AMessageKinds::Ping => MessageFamilies::TrustPing,
+            A2AMessageKinds::PingResponse => MessageFamilies::TrustPing,
             A2AMessageKinds::Ack => MessageFamilies::Notification,
             A2AMessageKinds::ProblemReport => MessageFamilies::ReportProblem,
             A2AMessageKinds::Ed25519Signature => MessageFamilies::Signature,
