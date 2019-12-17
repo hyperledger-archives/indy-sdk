@@ -763,8 +763,8 @@ def getUserUid() {
 def buildTestEnv(file, env_name, name="libindy", prebuilt_images=[]) {
     dir('libindy') {
         echo "${env_name} Build  test environment"
-        for (entry in prebuilt_images) {
-            dockerBuild(entry.key, entry.value)
+        for (entry in mapToList(prebuilt_images)) {
+            dockerBuild(entry[0], entry[1])
         }
         return dockerBuild(name, file)
     }
@@ -856,4 +856,11 @@ def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
     sh "brew switch openssl 1.0.2q"
     sh "brew switch zeromq 4.2.3"
+}
+
+@NonCPS
+List<List<?>> mapToList(Map map) {
+    return map.collect { it ->
+        [it.key, it.value]
+    }
 }
