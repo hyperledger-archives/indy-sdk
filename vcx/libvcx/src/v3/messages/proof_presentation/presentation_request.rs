@@ -6,7 +6,7 @@ use std::convert::TryInto;
 
 pub use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, ProofRequestVersion};
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct PresentationRequest {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -43,16 +43,6 @@ impl PresentationRequest {
 }
 
 a2a_message!(PresentationRequest);
-
-impl Default for PresentationRequest {
-    fn default() -> PresentationRequest {
-        PresentationRequest {
-            id: MessageId::new(),
-            comment: None,
-            request_presentations_attach: Attachments::new(),
-        }
-    }
-}
 
 impl TryInto<PresentationRequest> for ProofRequestMessage {
     type Error = VcxError;

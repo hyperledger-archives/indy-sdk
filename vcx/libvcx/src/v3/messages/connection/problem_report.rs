@@ -1,7 +1,7 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ProblemReport {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -30,7 +30,7 @@ pub enum ProblemCode {
     ResponseProcessingError
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Localization {
     locale: Locales
 }
@@ -62,21 +62,15 @@ impl ProblemReport {
 threadlike!(ProblemReport);
 a2a_message!(ProblemReport, ConnectionProblemReport);
 
-impl Default for ProblemReport {
-    fn default() -> ProblemReport {
-        ProblemReport {
-            id: MessageId::new(),
-            problem_code: None,
-            explain: None,
-            localization: None,
-            thread: Thread::new(),
-        }
+impl Default for ProblemCode {
+    fn default() -> ProblemCode {
+        ProblemCode::Empty
     }
 }
 
-impl Default for Localization {
-    fn default() -> Localization {
-        Localization { locale: Locales::En }
+impl Default for Locales {
+    fn default() -> Locales {
+        Locales::En
     }
 }
 

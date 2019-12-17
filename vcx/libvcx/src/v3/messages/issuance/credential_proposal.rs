@@ -4,7 +4,7 @@ use v3::messages::mime_type::MimeType;
 use error::VcxResult;
 use messages::thread::Thread;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct CredentialProposal {
     #[serde(rename = "@id")]
     pub id: MessageId,

@@ -2,7 +2,7 @@ use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::mime_type::MimeType;
 use messages::thread::Thread;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct PresentationProposal {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -13,7 +13,7 @@ pub struct PresentationProposal {
     pub thread: Thread,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct PresentationPreview {
     pub attributes: Vec<Attribute>,
     pub predicates: Vec<Predicate>
@@ -35,26 +35,6 @@ pub struct Predicate {
     pub predicate: String,
     pub threshold: i64,
     pub filter: Vec<::serde_json::Value>
-}
-
-impl Default for PresentationProposal {
-    fn default() -> PresentationProposal {
-        PresentationProposal {
-            id: MessageId::new(),
-            comment: None,
-            presentation_proposal: PresentationPreview::default(),
-            thread: Thread::new(),
-        }
-    }
-}
-
-impl Default for PresentationPreview {
-    fn default() -> PresentationPreview {
-        PresentationPreview {
-            attributes: Vec::new(),
-            predicates: Vec::new(),
-        }
-    }
 }
 
 impl PresentationProposal {

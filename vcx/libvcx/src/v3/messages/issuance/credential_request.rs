@@ -3,7 +3,7 @@ use v3::messages::attachment::{Attachments, AttachmentEncoding};
 use error::VcxResult;
 use messages::thread::Thread;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct CredentialRequest {
     #[serde(rename = "@id")]
     pub id: MessageId,

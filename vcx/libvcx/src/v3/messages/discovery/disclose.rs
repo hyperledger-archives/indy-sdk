@@ -2,7 +2,7 @@ use messages::thread::Thread;
 use settings::Actors;
 use v3::messages::a2a::{MessageId, A2AMessage};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Disclose {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -11,7 +11,7 @@ pub struct Disclose {
     pub thread: Thread
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ProtocolDescriptor {
     pub pid: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -39,25 +39,6 @@ impl Disclose {
 
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::Disclose(self.clone()) // TODO: THINK how to avoid clone
-    }
-}
-
-impl Default for Disclose {
-    fn default() -> Disclose {
-        Disclose {
-            id: MessageId::new(),
-            protocols: Vec::new(),
-            thread: Thread::default(),
-        }
-    }
-}
-
-impl Default for ProtocolDescriptor {
-    fn default() -> ProtocolDescriptor {
-        ProtocolDescriptor {
-            pid: String::new(),
-            roles: None,
-        }
     }
 }
 

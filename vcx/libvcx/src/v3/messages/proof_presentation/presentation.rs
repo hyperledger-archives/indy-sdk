@@ -7,7 +7,7 @@ use std::convert::TryInto;
 
 use error::prelude::*;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct Presentation {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -41,19 +41,6 @@ impl Presentation {
 please_ack!(Presentation);
 threadlike!(Presentation);
 a2a_message!(Presentation);
-
-impl Default for Presentation {
-    fn default() -> Presentation {
-        Presentation {
-            id: MessageId::new(),
-            comment: None,
-            presentations_attach: Attachments::new(),
-            thread: Thread::new(),
-            please_ack: None,
-        }
-    }
-}
-
 
 impl TryInto<ProofMessage> for Presentation {
     type Error = VcxError;

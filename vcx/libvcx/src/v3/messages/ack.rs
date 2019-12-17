@@ -1,7 +1,7 @@
 use messages::thread::Thread;
 use v3::messages::a2a::{MessageId, A2AMessage};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Ack {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -20,6 +20,12 @@ pub enum AckStatus {
     Pending
 }
 
+impl Default for AckStatus {
+    fn default() -> AckStatus {
+        AckStatus::Ok
+    }
+}
+
 impl Ack {
     pub fn create() -> Ack {
         Ack::default()
@@ -33,16 +39,6 @@ impl Ack {
 
 threadlike!(Ack);
 a2a_message!(Ack);
-
-impl Default for Ack {
-    fn default() -> Ack {
-        Ack {
-            id: MessageId::new(),
-            status: AckStatus::Ok,
-            thread: Thread::new(),
-        }
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PleaseAck {}

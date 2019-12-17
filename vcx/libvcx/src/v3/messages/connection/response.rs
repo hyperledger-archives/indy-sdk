@@ -10,7 +10,7 @@ use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::a2a::message_type::MessageType;
 use v3::messages::ack::PleaseAck;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct Response {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -22,7 +22,7 @@ pub struct Response {
     pub please_ack: Option<PleaseAck>
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct ConnectionData {
     #[serde(rename = "DID")]
     pub did: String,
@@ -30,7 +30,7 @@ pub struct ConnectionData {
     pub did_doc: DidDoc,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct SignedResponse {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -43,7 +43,7 @@ pub struct SignedResponse {
     pub please_ack: Option<PleaseAck>
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct ConnectionSignature {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
@@ -138,41 +138,6 @@ impl SignedResponse {
 }
 
 a2a_message!(SignedResponse, ConnectionResponse);
-
-impl Default for Response {
-    fn default() -> Response {
-        Response {
-            id: MessageId::new(),
-            thread: Thread::new(),
-            connection: ConnectionData {
-                did: String::new(),
-                did_doc: DidDoc::default()
-            },
-            please_ack: None,
-        }
-    }
-}
-
-impl Default for SignedResponse {
-    fn default() -> SignedResponse {
-        SignedResponse {
-            id: MessageId::new(),
-            thread: Thread::new(),
-            connection_sig: ConnectionSignature::default()
-        }
-    }
-}
-
-impl Default for ConnectionSignature {
-    fn default() -> ConnectionSignature {
-        ConnectionSignature {
-            msg_type: MessageType::build(MessageFamilies::Signature, "ed25519Sha512_single"),
-            signature: String::new(),
-            sig_data: String::new(),
-            signer: String::new(),
-        }
-    }
-}
 
 #[cfg(test)]
 pub mod tests {

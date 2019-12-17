@@ -1,7 +1,7 @@
 use messages::thread::Thread;
 use v3::messages::a2a::{MessageId, A2AMessage};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct PingResponse {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -24,16 +24,6 @@ impl PingResponse {
 
 threadlike!(PingResponse);
 a2a_message!(PingResponse);
-
-impl Default for PingResponse {
-    fn default() -> PingResponse {
-        PingResponse {
-            id: MessageId::new(),
-            comment: None,
-            thread: Thread::new(),
-        }
-    }
-}
 
 #[cfg(test)]
 pub mod tests {

@@ -1,6 +1,6 @@
 use v3::messages::a2a::{A2AMessage, MessageId};
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Default)]
 pub struct Invitation {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -46,18 +46,6 @@ impl Invitation {
 }
 
 a2a_message!(Invitation, ConnectionInvitation);
-
-impl Default for Invitation {
-    fn default() -> Invitation {
-        Invitation {
-            id: MessageId::new(),
-            label: String::new(),
-            service_endpoint: String::new(),
-            recipient_keys: Vec::new(),
-            routing_keys: Vec::new(),
-        }
-    }
-}
 
 #[cfg(test)]
 pub mod tests {

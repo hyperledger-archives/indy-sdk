@@ -8,7 +8,7 @@ pub mod credential_offer;
 pub mod credential_proposal;
 pub mod credential_request;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct CredentialPreviewData {
     #[serde(rename = "@type")]
     pub _type: MessageType,
@@ -38,7 +38,7 @@ impl CredentialPreviewData {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct CredentialValue {
     pub name: String,
     pub value: String,

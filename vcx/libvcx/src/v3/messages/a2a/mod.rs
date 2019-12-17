@@ -220,13 +220,19 @@ impl MessageId {
         MessageId(String::from("testid"))
     }
 
-    #[cfg(test)]
     pub fn new() -> MessageId {
+        MessageId::default()
+    }
+}
+
+impl Default for MessageId {
+    #[cfg(test)]
+    fn default() -> MessageId {
         MessageId::id()
     }
 
     #[cfg(not(test))]
-    pub fn new() -> MessageId {
+    fn default() -> MessageId {
         use utils::uuid;
         MessageId(uuid::uuid())
     }

@@ -2,7 +2,7 @@ use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ProblemReport {
     #[serde(rename = "@id")]
     id: MessageId,
@@ -56,7 +56,7 @@ impl ProblemReport {
 threadlike!(ProblemReport);
 a2a_message!(ProblemReport, CommonProblemReport);
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Description {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub en: Option<String>,
@@ -76,7 +76,14 @@ pub enum WhoRetries {
     None
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+impl Default for WhoRetries {
+    fn default() -> WhoRetries {
+        WhoRetries::None
+    }
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct FixHint {
     en: String
 }
@@ -90,25 +97,6 @@ pub enum Impact {
     Thread,
     #[serde(rename = "connection")]
     Connection
-}
-
-impl Default for ProblemReport {
-    fn default() -> ProblemReport {
-        ProblemReport {
-            id: MessageId::new(),
-            thread: Thread::new(),
-            description: None,
-            who_retries: None,
-            tracking_uri: None,
-            escalation_uri: None,
-            fix_hint: None,
-            impact: None,
-            noticed_time: None,
-            location: None,
-            problem_items: None,
-            comment: None,
-        }
-    }
 }
 
 #[cfg(test)]

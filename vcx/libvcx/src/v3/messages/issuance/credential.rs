@@ -8,7 +8,7 @@ use messages::payload::PayloadKinds;
 use std::convert::TryInto;
 
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct Credential {
     #[serde(rename = "@id")]
     pub id: MessageId,
