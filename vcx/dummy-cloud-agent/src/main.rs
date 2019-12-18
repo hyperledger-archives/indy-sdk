@@ -38,7 +38,7 @@ use std::env;
 use std::fs::File;
 use actors::admin::Admin;
 use app::start_app_server;
-use indy::wallet::{load_storage_library, serialize_storage_plugin_configuration, finish_loading_postgres};
+use indy::wallet_plugin::{load_storage_library, serialize_storage_plugin_configuration, finish_loading_postgres};
 
 #[macro_use]
 pub(crate) mod utils;
