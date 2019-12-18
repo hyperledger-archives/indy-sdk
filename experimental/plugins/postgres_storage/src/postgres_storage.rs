@@ -674,7 +674,6 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
     }
     // open a wallet based on wallet storage strategy
     fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
-
         let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
 
         // don't need a connection, but connect just to verify we can

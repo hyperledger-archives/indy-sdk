@@ -48,18 +48,16 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Mutex;
 use std::str;
-use utils::logger::LibindyDefaultLogger;
-use errors::common::CommonError;
 
 pub static POSTGRES_STORAGE_NAME: &str = "postgres_storage";
 
 
 #[no_mangle]
 pub extern fn postgresstorage_init() -> libindy::ErrorCode {
+    debug!("Initializing postgress storage plugin");
     let postgres_storage_name = CString::new(POSTGRES_STORAGE_NAME).unwrap();
-    let res: Result<(), CommonError> = LibindyDefaultLogger::init(None).into();
-    match res {
-        _ => {}
+    if let Err(err) = utils::logger::PostgressStorageLogger::init() {
+        return err;
     }
 
     libindy::wallet::register_wallet_storage(
