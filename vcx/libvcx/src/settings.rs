@@ -470,6 +470,8 @@ pub mod tests {
 
     #[test]
     fn test_process_file() {
+        clear_config();
+
         let config_path_buf = get_temp_dir_path(Some("test_init.json"));
         let config_path = config_path_buf.to_str().unwrap();
 
@@ -496,6 +498,8 @@ pub mod tests {
 
     #[test]
     fn test_process_config_str() {
+        clear_config();
+
         let content = json!({
             "pool_name" : "pool1",
             "config_name":"config1",
@@ -693,6 +697,8 @@ pub mod tests {
 
     #[test]
     fn test_process_config_str_for_actors() {
+        clear_config();
+
         let mut config = json!({
             "pool_name" : "pool1",
             "config_name":"config1",
