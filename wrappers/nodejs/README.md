@@ -285,6 +285,7 @@ Example:
      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
     }
 ````
+  If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
 * `revRegId`: String - id of revocation registry stored in the wallet
 * `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * __->__ [ `cred`: Json, `credRevocId`: String, `revocRegDelta`: Json ] - cred\_json: Credential json containing signed credential values
