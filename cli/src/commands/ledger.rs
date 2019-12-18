@@ -1717,6 +1717,10 @@ pub mod taa_command {
                 .add_optional_param("text", "The content of a new agreement. Use empty to reset an active agreement")
                 .add_optional_param("file", "The path to file containing a content of agreement to send (an alternative to the `text` parameter)")
                 .add_required_param("version", "The version of a new agreement")
+                .add_optional_param("ratification-time","The date (timestamp) of TAA ratification by network government")
+                .add_optional_param("retirement-time","The date (timestamp) of TAA retirement. \
+                Should be omitted in case of adding the new (latest) TAA. \
+                Should be used to deactivate non-latest TAA on the ledger.")
                 .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
                 .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
@@ -1741,7 +1745,8 @@ pub mod taa_command {
         let text = get_opt_empty_str_param("text", params).map_err(error_err!())?;
         let file = get_opt_str_param("file", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
-        let retired = get_opt_bool_param("retired", params).map_err(error_err!())?.unwrap_or(false);
+        let ratification_ts = get_opt_number_param::<u64>("ratification-time", params).map_err(error_err!())?;
+        let retirement_ts = get_opt_number_param::<u64>("retirement-time", params).map_err(error_err!())?;
 
         let text: Option<String> = match (text, file) {
             (Some(text_), None) => Some(text_.to_string()),
@@ -1757,7 +1762,7 @@ pub mod taa_command {
             }
         };
 
-        let mut request = Ledger::build_txn_author_agreement_request(&submitter_did, text.as_ref().map(String::as_str), &version, retired)
+        let mut request = Ledger::build_txn_author_agreement_request(&submitter_did, text.as_ref().map(String::as_str), &version, ratification_ts, retirement_ts)
             .map_err(|err| handle_indy_error(err, None, None, None))?;
 
         let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&submitter_did))?;
@@ -1768,17 +1773,19 @@ pub mod taa_command {
         handle_transaction_response(response)
             .map(|result| {
                 // TODO support multiply active TAA on the ledger IS-1441
-                if retired {
-                    set_transaction_author_info(ctx, None);
-                    println_succ!("Transaction Author Agreement has been reset.");
-                } else if let Some(text) = text {
+                if let Some(text) = text{
                     print_transaction_response(result,
                                                "Transaction Author Agreement has been sent to Ledger.",
                                                None,
                                                &[("text", "Text"),
-                                                   ("version", "Version")],
+                                                   ("version", "Version"),
+                                                   ("ratification_ts", "Ratification Time"),
+                                                   ("retirement_ts", "Retirement Time")],
                                                true);
                     crate::commands::pool::accept_transaction_author_agreement(ctx, &text, &version);
+                } else{
+                    set_transaction_author_info(ctx, None);
+                    println_succ!("Transaction Author Agreement has been reset.");
                 }
             })?;
 
