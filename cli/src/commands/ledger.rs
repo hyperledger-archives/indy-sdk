@@ -1783,9 +1783,6 @@ pub mod taa_command {
                                                    ("retirement_ts", "Retirement Time")],
                                                true);
                     crate::commands::pool::accept_transaction_author_agreement(ctx, &text, &version);
-                } else{
-                    set_transaction_author_info(ctx, None);
-                    println_succ!("Transaction Author Agreement has been reset.");
                 }
             })?;
 
@@ -1866,6 +1863,52 @@ pub mod aml_command {
                                                          ("version", "Version"),
                                                          ("amlContext", "Context")],
                                                      true))?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
+
+        let res = print_response_receipts(receipts);
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod taa_disable_all_command {
+    use super::*;
+
+    command!(CommandMetadata::build("disable-all-txn-author-agreements", r#"Disable All Transaction Author Agreements on the ledger"#)
+                .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
+                .add_optional_param("fee","Transaction fee set on the ledger.")
+                .add_optional_param("fees_inputs","The list of source inputs")
+                .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
+                .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("sign","Sign the request (True by default)")
+                .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_example("ledger disable-all-txn-author-agreements")
+                .add_example("ledger disable-all-txn-author-agreements send=false")
+                .add_example("ledger disable-all-txn-author-agreements send=false fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+
+        let mut request = Ledger::build_disable_all_txn_author_agreements_request(&submitter_did)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&submitter_did))?;
+
+        let (response_json, response): (String, Response<serde_json::Value>) =
+            send_write_request!(ctx, params, &request, wallet_handle, &wallet_name, &submitter_did);
+
+        handle_transaction_response(response)
+            .map(|_| {
+                set_transaction_author_info(ctx, None);
+                println_succ!("All Transaction Author Agreements on the Ledger have been disabled");
+            })?;
 
         let receipts = parse_response_with_fees(&response_json, payment_method)?;
 

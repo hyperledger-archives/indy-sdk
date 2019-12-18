@@ -1103,10 +1103,11 @@ mod tests {
             let expected_result = json!({
                 "type": TXN_AUTHR_AGRMT,
                 "version": VERSION,
-                "retired": true,
+                "ratification_ts": 12345,
+                "retirement_ts": 54321,
             });
 
-            let request = ledger_service.build_txn_author_agreement_request(&identifier(), None, VERSION, None, None).unwrap();
+            let request = ledger_service.build_txn_author_agreement_request(&identifier(), None, VERSION, Some(12345), Some(54321)).unwrap();
             check_request(&request, expected_result);
         }
 
