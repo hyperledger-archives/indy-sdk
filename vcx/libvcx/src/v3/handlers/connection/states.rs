@@ -7,8 +7,8 @@ use v3::messages::connection::invite::Invitation;
 use v3::messages::connection::request::Request;
 use v3::messages::connection::response::{Response, SignedResponse};
 use v3::messages::connection::problem_report::{ProblemReport, ProblemCode};
-use v3::messages::connection::ping::Ping;
-use v3::messages::connection::ping_response::PingResponse;
+use v3::messages::trust_ping::ping::Ping;
+use v3::messages::trust_ping::ping_response::PingResponse;
 use v3::messages::ack::Ack;
 use v3::messages::connection::did_doc::DidDoc;
 
@@ -206,6 +206,16 @@ impl RespondedState {
 }
 
 impl CompleteState {
+    fn handle_send_ping(&self, comment: Option<String>, agent_info: &AgentInfo) -> VcxResult<()> {
+        let ping =
+            Ping::create()
+                .request_response()
+                .set_comment(comment);
+
+        agent_info.send_message(&ping.to_a2a_message(), &self.did_doc).ok();
+        Ok(())
+    }
+
     fn handle_ping(&self, ping: &Ping, agent_info: &AgentInfo) -> VcxResult<()> {
         _handle_ping(ping, agent_info, &self.did_doc)
     }
@@ -327,6 +337,10 @@ impl DidExchangeSM {
                             debug!("Ping message received");
                             return Some((uid, ping));
                         }
+                        ping_response @ A2AMessage::PingResponse(_) => {
+                            debug!("PingResponse message received");
+                            return Some((uid, ping_response));
+                        }
                         message @ _ => {
                             debug!("Unexpected message received in Completed state: {:?}", message);
                         }
@@ -417,8 +431,15 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Completed(state) => {
                         match message {
+                            DidExchangeMessages::SendPing(comment) => {
+                                state.handle_send_ping(comment, &agent_info)?;
+                                ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
+                            }
                             DidExchangeMessages::PingReceived(ping) => {
                                 state.handle_ping(&ping, &agent_info)?;
+                                ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
+                            }
+                            DidExchangeMessages::PingResponseReceived(ping_response) => {
                                 ActorDidExchangeState::Inviter(DidExchangeState::Completed(state))
                             }
                             _ => {
@@ -492,8 +513,15 @@ impl DidExchangeSM {
                     }
                     DidExchangeState::Completed(state) => {
                         match message {
+                            DidExchangeMessages::SendPing(comment) => {
+                                state.handle_send_ping(comment, &agent_info)?;
+                                ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
+                            }
                             DidExchangeMessages::PingReceived(ping) => {
                                 state.handle_ping(&ping, &agent_info)?;
+                                ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
+                            }
+                            DidExchangeMessages::PingResponseReceived(ping_response) => {
                                 ActorDidExchangeState::Invitee(DidExchangeState::Completed(state))
                             }
                             _ => {
@@ -602,7 +630,7 @@ pub mod test {
     use v3::messages::connection::request::tests::_request;
     use v3::messages::connection::response::tests::_signed_response;
     use v3::messages::connection::problem_report::tests::_problem_report;
-    use v3::messages::connection::ping::tests::_ping;
+    use v3::messages::trust_ping::ping::tests::_ping;
     use v3::messages::ack::tests::_ack;
 
     pub mod inviter {

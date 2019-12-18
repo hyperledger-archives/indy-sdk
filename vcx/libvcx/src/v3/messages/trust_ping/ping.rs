@@ -22,8 +22,13 @@ impl Ping {
         self
     }
 
-    pub fn set_comment(mut self, comment: String) -> Ping {
-        self.comment = Some(comment);
+    pub fn set_comment(mut self, comment: Option<String>) -> Ping {
+        self.comment = comment;
+        self
+    }
+
+    pub fn request_response(mut self) -> Ping {
+        self.response_requested = true;
         self
     }
 
@@ -64,7 +69,7 @@ pub mod tests {
     #[test]
     fn test_ping_build_works() {
         let ping: Ping = Ping::default()
-            .set_comment(_comment())
+            .set_comment(Some(_comment()))
             .set_thread_id(_thread_id());
 
         assert_eq!(_ping(), ping);

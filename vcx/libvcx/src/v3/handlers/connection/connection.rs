@@ -122,13 +122,16 @@ impl Connection {
     pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Connection: update_state_with_message: {}", message);
 
+        let agent_info = self.agent_info().clone();
+
         let message: Message = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption,
                                               format!("Cannot updated state with messages: Message deserialization failed: {:?}", err)))?;
 
         let a2a_message = self.decode_message(&message)?;
         self.handle_message(a2a_message.into())?;
-        self.update_message_status(message.uid)?;
+
+        agent_info.update_message_status(message.uid)?;
 
         Ok(())
     }
@@ -149,7 +152,16 @@ impl Connection {
     }
 
     pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
-        self.agent_info().decode_message(message)
+        match message.decrypted_payload {
+            Some(ref payload) => {
+                let message: ::messages::payload::PayloadV1 = ::serde_json::from_str(&payload)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
+
+                ::serde_json::from_str::<A2AMessage>(&message.msg)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))
+            }
+            None => self.agent_info().decode_message(message)
+        }
     }
 
     pub fn send_message(&self, message: &A2AMessage) -> VcxResult<()> {
@@ -165,6 +177,11 @@ impl Connection {
         trace!("Connection::send_generic_message >>> message: {:?}", message);
 
         self.send_message(&A2AMessage::Generic(message.to_string())).map(|_| String::new())
+    }
+
+    pub fn send_ping(&mut self, comment: Option<String>) -> VcxResult<()> {
+        trace!("Connection::send_ping >>> comment: {:?}", comment);
+        self.handle_message(DidExchangeMessages::SendPing(comment))
     }
 
     pub fn delete(&self) -> VcxResult<()> {
