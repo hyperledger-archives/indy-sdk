@@ -259,8 +259,15 @@ extern {
                                                    submitter_did: CString,
                                                    text: CString,
                                                    version: CString,
-                                                   retired: bool,
+                                                   ratification_ts: i64,
+                                                   retirement_ts: i64,
                                                    cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_build_disable_all_txn_author_agreements_request(command_handle: CommandHandle,
+                                                                submitter_did: CString,
+                                                                cb: Option<ResponseStringCB>) -> Error;
+
 
     #[no_mangle]
     pub fn indy_build_get_txn_author_agreement_request(command_handle: CommandHandle,

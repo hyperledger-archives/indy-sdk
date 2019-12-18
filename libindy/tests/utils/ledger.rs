@@ -233,8 +233,13 @@ pub fn build_get_auth_rule_request(submitter_did: Option<&str>,
 pub fn build_txn_author_agreement_request(submitter_did: &str,
                                           text: Option<&str>,
                                           version: &str,
-                                          retired: bool) -> Result<String, IndyError> {
-    ledger::build_txn_author_agreement_request(submitter_did, text, version, retired).wait()
+                                          ratification_ts: Option<u64>,
+                                          retirement_ts: Option<u64>) -> Result<String, IndyError> {
+    ledger::build_txn_author_agreement_request(submitter_did, text, version, ratification_ts, retirement_ts).wait()
+}
+
+pub fn build_disable_all_txn_author_agreements_request(submitter_did: &str) -> Result<String, IndyError> {
+    ledger::build_disable_all_txn_author_agreements_request(submitter_did).wait()
 }
 
 pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
