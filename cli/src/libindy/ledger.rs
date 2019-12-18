@@ -115,6 +115,10 @@ impl Ledger {
         ledger::build_acceptance_mechanisms_request(submitter_did, aml, version, aml_context).wait()
     }
 
+    pub fn build_get_acceptance_mechanisms_request(submitter_did: Option<&str>, timestamp: Option<i64>, version: Option<&str>) -> Result<String, IndyError> {
+        ledger::build_get_acceptance_mechanisms_request(submitter_did, timestamp, version).wait()
+    }
+
     pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
                                                   data: Option<&str>, ) -> Result<String, IndyError> {
         ledger::build_get_txn_author_agreement_request(submitter_did, data).wait()

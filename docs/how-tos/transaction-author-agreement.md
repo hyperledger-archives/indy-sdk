@@ -98,7 +98,7 @@ CLI uses session-based approach to work with Transaction Author Agreement.
       .....
     }
     ```
-    The list of available acceptance mechanisms can be received by sending `get_acceptance_mechanisms` request to ledger.
+    The list of available acceptance mechanisms can be received by calling `ledger get-acceptance-mechanisms` command.
 1. On `pool connect` command execution: User will be asked if he would like to accept TAA.
 User either can accept it or skip and accept it later by `pool show-taa` command.
     

@@ -1911,6 +1911,71 @@ pub mod endorse_transaction_command {
     }
 }
 
+pub mod get_acceptance_mechanisms_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-acceptance-mechanisms", r#"Get a list of acceptance mechanisms set on the ledger"#)
+                .add_optional_param("timestamp","The time (as timestamp) to get an active acceptance mechanisms. Skip to get the latest one")
+                .add_optional_param("version","The version of acceptance mechanisms")
+                .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_example("ledger get-acceptance-mechanisms")
+                .add_example("ledger get-acceptance-mechanisms timestamp=1576674598")
+                .add_example("ledger get-acceptance-mechanisms version=1.0")
+                .add_example("ledger get-acceptance-mechanisms send=false")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = get_active_did(&ctx);
+
+        let timestamp = get_opt_number_param::<i64>("timestamp", params).map_err(error_err!())?;
+        let version = get_opt_str_param("version", params).map_err(error_err!())?;
+
+        let request = Ledger::build_get_acceptance_mechanisms_request(submitter_did.as_ref().map(String::as_str), timestamp, version)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        let (_, response) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
+
+        match handle_transaction_response(response) {
+            Ok(result) => {
+                let aml = result["data"]["aml"].as_object()
+                    .ok_or_else(|| println_err!("Wrong data has been received"))?;
+
+                let aml =
+                    aml.iter()
+                        .map(|(key, value)|
+                            json!({
+                                "label": key,
+                                "description": value
+                            }))
+                        .collect::<Vec<serde_json::Value>>();
+
+                if !aml.is_empty() {
+                    println!("Following Acceptance Mechanisms are set on the Ledger");
+                }
+
+                print_list_table(&aml,
+                                 &[("label", "Label"),
+                                     ("description", "Description")],
+                                 "There are no acceptance mechanisms");
+
+                println!("Version: {}", result["data"]["version"].as_str().unwrap_or_default());
+
+                if let Some(context) = result["data"]["amlContext"].as_str() {
+                    println!("Context: {}", context);
+                }
+                println!();
+            }
+            Err(_) => {}
+        }
+
+        trace!("execute <<");
+        Ok(())
+    }
+}
+
 pub fn set_author_agreement(ctx: &CommandContext, request: &mut String) -> Result<(), ()> {
     if let Some((text, version, acc_mech_type, time_of_acceptance)) = get_transaction_author_info(&ctx) {
         if acc_mech_type.is_empty() {
@@ -4822,6 +4887,11 @@ pub mod tests {
                 params.insert("aml", AML.to_string());
                 params.insert("version", _get_version());
                 params.insert("context", "Some Context".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                let cmd = get_acceptance_mechanisms_command::new();
+                let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet_and_pool(&ctx);

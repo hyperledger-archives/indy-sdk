@@ -184,6 +184,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::load_transaction_command::new())
         .add_command(ledger::taa_command::new())
         .add_command(ledger::aml_command::new())
+        .add_command(ledger::get_acceptance_mechanisms_command::new())
         .add_command(ledger::endorse_transaction_command::new())
         .finalize_group()
         .add_group(payment_address::group::new())
