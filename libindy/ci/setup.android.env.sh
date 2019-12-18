@@ -77,7 +77,7 @@ create_avd(){
     echo "${BLUE}Creating android emulator${RESET}"
 
         echo "no" |
-             avdmanager create avd \
+             avdmanager -v create avd \
                 --name ${ABSOLUTE_ARCH} \
                 --package "system-images;android-24;default;${ABI}" \
                 -f \
