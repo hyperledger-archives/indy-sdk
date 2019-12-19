@@ -33,6 +33,12 @@ use indy_utils::crypto::hash::hash as openssl_hash;
 pub mod merkletree;
 
 macro_rules! build_result {
+        ($operation:ident, $submitter_did:expr) => ({
+            let operation = $operation::new();
+
+            Request::build_request($submitter_did, operation)
+                .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, err))
+        });
         ($operation:ident, $submitter_did:expr, $($params:tt)*) => ({
             let operation = $operation::new($($params)*);
 
@@ -421,8 +427,13 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_txn_author_agreement_request(&self, identifier: &DidValue, text: &str, version: &str) -> IndyResult<String> {
-        build_result!(TxnAuthorAgreementOperation, Some(identifier), text.to_string(), version.to_string())
+    pub fn build_txn_author_agreement_request(&self, identifier: &DidValue, text: Option<&str>, version: &str, ratification_ts: Option<u64>, retirement_ts: Option<u64>) -> IndyResult<String> {
+        build_result!(TxnAuthorAgreementOperation, Some(identifier), text.map(str::to_string), version.to_string(), ratification_ts, retirement_ts)
+    }
+
+    #[logfn(Info)]
+    pub fn build_disable_all_txn_author_agreements_request(&self, identifier: &DidValue) -> IndyResult<String> {
+        build_result!(DisableAllTxnAuthorAgreementsOperation, Some(identifier))
     }
 
     #[logfn(Info)]
@@ -1081,7 +1092,22 @@ mod tests {
                 "version": VERSION
             });
 
-            let request = ledger_service.build_txn_author_agreement_request(&identifier(), TEXT, VERSION).unwrap();
+            let request = ledger_service.build_txn_author_agreement_request(&identifier(), Some(TEXT), VERSION, None, None).unwrap();
+            check_request(&request, expected_result);
+        }
+
+        #[test]
+        fn build_txn_author_agreement_request_works_for_retired_wo_text() {
+            let ledger_service = LedgerService::new();
+
+            let expected_result = json!({
+                "type": TXN_AUTHR_AGRMT,
+                "version": VERSION,
+                "ratification_ts": 12345,
+                "retirement_ts": 54321,
+            });
+
+            let request = ledger_service.build_txn_author_agreement_request(&identifier(), None, VERSION, Some(12345), Some(54321)).unwrap();
             check_request(&request, expected_result);
         }
 

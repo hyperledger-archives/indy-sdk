@@ -1,36 +1,37 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::string::ToString;
 
+use indy_api_types::{CommandHandle, PoolHandle, WalletHandle};
+use indy_api_types::errors::prelude::*;
+use indy_utils::next_command_handle;
+use rust_base58::ToBase58;
 use serde_json;
 use serde_json::Value;
 
+use indy_wallet::{RecordOptions, WalletService};
+
 use crate::api::ledger::{CustomFree, CustomTransactionParser};
-use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, CredentialDefinitionId};
+use crate::commands::{BoxedCallbackStringStringSend, Command, CommandExecutor};
+use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId, CredentialDefinitionV1};
 use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1, RevocationRegistryId};
 use crate::domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use crate::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
+use crate::domain::anoncreds::schema::{Schema, SchemaId, SchemaV1};
 use crate::domain::crypto::did::{Did, DidValue};
 use crate::domain::crypto::key::Key;
+use crate::domain::ledger::auth_rule::{AuthRules, Constraint};
+use crate::domain::ledger::author_agreement::{AcceptanceMechanisms, GetTxnAuthorAgreementData};
 use crate::domain::ledger::node::NodeOperationData;
-use crate::domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
-use crate::domain::ledger::request::Request;
 use crate::domain::ledger::pool::Schedule;
-use indy_api_types::errors::prelude::*;
+use crate::domain::ledger::request::Request;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::pool::{
-    PoolService,
-    parse_response_metadata
+    parse_response_metadata,
+    PoolService
 };
-use indy_wallet::{RecordOptions, WalletService};
 use crate::utils::crypto::signature_serializer::serialize_signature;
-use indy_api_types::{WalletHandle, PoolHandle, CommandHandle};
-use indy_utils::next_command_handle;
-use crate::commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
-use rust_base58::ToBase58;
-use std::string::ToString;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -240,8 +241,13 @@ pub enum LedgerCommand {
     ),
     BuildTxnAuthorAgreementRequest(
         DidValue, // submitter did
-        String, // text
+        Option<String>, // text
         String, // version
+        Option<u64>,   // ratification date
+        Option<u64>,   // retirement date
+        Box<dyn Fn(IndyResult<String>) + Send>),
+    BuildDisableAllTxnAuthorAgreementsRequest(
+        DidValue, // submitter did
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetTxnAuthorAgreementRequest(
         Option<DidValue>, // submitter did
@@ -486,9 +492,13 @@ impl LedgerCommandExecutor {
                 debug!(target: "ledger_command_executor", "GetCredDefContinue command received");
                 self._get_cred_def_continue(id, pool_response, cb_id);
             }
-            LedgerCommand::BuildTxnAuthorAgreementRequest(submitter_did, text, version, cb) => {
+            LedgerCommand::BuildTxnAuthorAgreementRequest(submitter_did, text, version, ratification_ts, retirement_ts, cb) => {
                 debug!(target: "ledger_command_executor", "BuildTxnAuthorAgreementRequest command received");
-                cb(self.build_txn_author_agreement_request(&submitter_did, &text, &version));
+                cb(self.build_txn_author_agreement_request(&submitter_did, text.as_ref().map(String::as_str), &version, ratification_ts, retirement_ts));
+            }
+            LedgerCommand::BuildDisableAllTxnAuthorAgreementsRequest(submitter_did, cb) => {
+                debug!(target: "ledger_command_executor", "BuildDisableAllTxnAuthorAgreementsRequest command received");
+                cb(self.build_disable_all_txn_author_agreements_request(&submitter_did));
             }
             LedgerCommand::BuildGetTxnAuthorAgreementRequest(submitter_did, data, cb) => {
                 debug!(target: "ledger_command_executor", "BuildGetTxnAuthorAgreementRequest command received");
@@ -1122,15 +1132,30 @@ impl LedgerCommandExecutor {
 
     fn build_txn_author_agreement_request(&self,
                                           submitter_did: &DidValue,
-                                          text: &str,
-                                          version: &str) -> IndyResult<String> {
-        debug!("build_txn_author_agreement_request >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+                                          text: Option<&str>,
+                                          version: &str,
+                                          ratification_ts: Option<u64>,
+                                          retirement_ts: Option<u64>) -> IndyResult<String> {
+        debug!("build_txn_author_agreement_request >>> submitter_did: {:?}, text: {:?}, version: {:?}, ratification_ts {:?}, retirement_ts {:?}",
+               submitter_did, text, version, ratification_ts, retirement_ts);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_txn_author_agreement_request(submitter_did, text, version)?;
+        let res = self.ledger_service.build_txn_author_agreement_request(submitter_did, text, version, ratification_ts, retirement_ts)?;
 
         debug!("build_txn_author_agreement_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_disable_all_txn_author_agreements_request(&self, submitter_did: &DidValue) -> IndyResult<String> {
+        debug!("build_disable_all_txn_author_agreements_request >>> submitter_did: {:?}", submitter_did);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_disable_all_txn_author_agreements_request(submitter_did)?;
+
+        debug!("build_disable_all_txn_author_agreements_request <<< res: {:?}", res);
 
         Ok(res)
     }
