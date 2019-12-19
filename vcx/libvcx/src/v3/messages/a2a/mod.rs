@@ -65,7 +65,7 @@ pub enum A2AMessage {
     Disclose(Disclose),
 
     /// Any Raw Message
-    Generic(String)
+    Generic(String),
 }
 
 impl<'de> Deserialize<'de> for A2AMessage {
@@ -78,92 +78,92 @@ impl<'de> Deserialize<'de> for A2AMessage {
         };
 
         match (message_type.family, message_type.type_.as_str()) {
-            (MessageFamilies::Routing, "forward") => {
+            (MessageFamilies::Routing, A2AMessage::FORWARD) => {
                 Forward::deserialize(value)
                     .map(|msg| A2AMessage::Forward(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Connections, "invitation") => {
+            (MessageFamilies::Connections, A2AMessage::CONNECTION_INVITATION) => {
                 Invitation::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionInvitation(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Connections, "request") => {
+            (MessageFamilies::Connections, A2AMessage::CONNECTION_REQUEST) => {
                 Request::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionRequest(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Connections, "response") => {
+            (MessageFamilies::Connections, A2AMessage::CONNECTION_RESPONSE) => {
                 SignedResponse::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionResponse(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Notification, "ping") => {
+            (MessageFamilies::Notification, A2AMessage::PING) => {
                 Ping::deserialize(value)
                     .map(|msg| A2AMessage::Ping(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Notification, "ping_response") => {
+            (MessageFamilies::Notification, A2AMessage::PING_RESPONSE) => {
                 PingResponse::deserialize(value)
                     .map(|msg| A2AMessage::PingResponse(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Connections, "problem_report") => {
+            (MessageFamilies::Connections, A2AMessage::CONNECTION_PROBLEM_REPORT) => {
                 ConnectionProblemReport::deserialize(value)
                     .map(|msg| A2AMessage::ConnectionProblemReport(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Notification, "ack") => {
+            (MessageFamilies::Notification, A2AMessage::ACK) => {
                 Ack::deserialize(value)
                     .map(|msg| A2AMessage::Ack(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::ReportProblem, "problem-report") => {
+            (MessageFamilies::ReportProblem, A2AMessage::PROBLEM_REPORT) => {
                 CommonProblemReport::deserialize(value)
                     .map(|msg| A2AMessage::CommonProblemReport(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::CredentialIssuance, "issue-credential") => {
+            (MessageFamilies::CredentialIssuance, A2AMessage::CREDENTIAL) => {
                 Credential::deserialize(value)
                     .map(|msg| A2AMessage::Credential(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::CredentialIssuance, "propose-credential") => {
+            (MessageFamilies::CredentialIssuance, A2AMessage::PROPOSE_CREDENTIAL) => {
                 CredentialProposal::deserialize(value)
                     .map(|msg| A2AMessage::CredentialProposal(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::CredentialIssuance, "offer-credential") => {
+            (MessageFamilies::CredentialIssuance, A2AMessage::CREDENTIAL_OFFER) => {
                 CredentialOffer::deserialize(value)
                     .map(|msg| A2AMessage::CredentialOffer(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::CredentialIssuance, "request-credential") => {
+            (MessageFamilies::CredentialIssuance, A2AMessage::REQUEST_CREDENTIAL) => {
                 CredentialRequest::deserialize(value)
                     .map(|msg| A2AMessage::CredentialRequest(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::PresentProof, "propose-presentation") => {
+            (MessageFamilies::PresentProof, A2AMessage::PROPOSE_PRESENTATION) => {
                 PresentationProposal::deserialize(value)
                     .map(|msg| A2AMessage::PresentationProposal(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::PresentProof, "request-presentation") => {
+            (MessageFamilies::PresentProof, A2AMessage::REQUEST_PRESENTATION) => {
                 PresentationRequest::deserialize(value)
                     .map(|msg| A2AMessage::PresentationRequest(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::PresentProof, "presentation") => {
+            (MessageFamilies::PresentProof, A2AMessage::PRESENTATION) => {
                 Presentation::deserialize(value)
                     .map(|msg| A2AMessage::Presentation(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::DiscoveryFeatures, "query") => {
+            (MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY) => {
                 Query::deserialize(value)
                     .map(|msg| A2AMessage::Query(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::DiscoveryFeatures, "disclose") => {
+            (MessageFamilies::DiscoveryFeatures, A2AMessage::DISCLOSE) => {
                 Disclose::deserialize(value)
                     .map(|msg| A2AMessage::Disclose(msg))
                     .map_err(de::Error::custom)
@@ -186,24 +186,24 @@ fn set_a2a_message_type<T>(msg: T, family: MessageFamilies, name: &str) -> Resul
 impl Serialize for A2AMessage {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let value = match self {
-            A2AMessage::Forward(msg) => set_a2a_message_type(msg, MessageFamilies::Routing, "forward"),
-            A2AMessage::ConnectionInvitation(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, "invitation"),
-            A2AMessage::ConnectionRequest(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, "request"),
-            A2AMessage::ConnectionResponse(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, "response"),
-            A2AMessage::ConnectionProblemReport(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, "problem_report"),
-            A2AMessage::Ping(msg) => set_a2a_message_type(msg, MessageFamilies::Notification, "ping"),
-            A2AMessage::PingResponse(msg) => set_a2a_message_type(msg, MessageFamilies::Notification, "ping_response"), // TODO: trust_ping Message family
-            A2AMessage::Ack(msg) => set_a2a_message_type(msg, MessageFamilies::Notification, "ack"),
-            A2AMessage::CommonProblemReport(msg) => set_a2a_message_type(msg, MessageFamilies::ReportProblem, "problem-report"),
-            A2AMessage::CredentialOffer(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, "offer-credential"),
-            A2AMessage::Credential(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, "issue-credential"),
-            A2AMessage::CredentialProposal(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, "propose-credential"),
-            A2AMessage::CredentialRequest(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, "request-credential"),
-            A2AMessage::PresentationProposal(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, "propose-presentation"),
-            A2AMessage::PresentationRequest(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, "request-presentation"),
-            A2AMessage::Presentation(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, "presentation"),
-            A2AMessage::Query(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, "query"),
-            A2AMessage::Disclose(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, "disclose"),
+            A2AMessage::Forward(msg) => set_a2a_message_type(msg, MessageFamilies::Routing, A2AMessage::FORWARD),
+            A2AMessage::ConnectionInvitation(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_INVITATION),
+            A2AMessage::ConnectionRequest(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_REQUEST),
+            A2AMessage::ConnectionResponse(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_RESPONSE),
+            A2AMessage::ConnectionProblemReport(msg) => set_a2a_message_type(msg, MessageFamilies::Connections, A2AMessage::CONNECTION_PROBLEM_REPORT),
+            A2AMessage::Ping(msg) => set_a2a_message_type(msg, MessageFamilies::TrustPing, A2AMessage::PING),
+            A2AMessage::PingResponse(msg) => set_a2a_message_type(msg, MessageFamilies::TrustPing, A2AMessage::PING_RESPONSE),
+            A2AMessage::Ack(msg) => set_a2a_message_type(msg, MessageFamilies::Notification, A2AMessage::ACK),
+            A2AMessage::CommonProblemReport(msg) => set_a2a_message_type(msg, MessageFamilies::ReportProblem, A2AMessage::PROBLEM_REPORT),
+            A2AMessage::CredentialOffer(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::CREDENTIAL_OFFER),
+            A2AMessage::Credential(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::CREDENTIAL),
+            A2AMessage::CredentialProposal(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::PROPOSE_CREDENTIAL),
+            A2AMessage::CredentialRequest(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::REQUEST_CREDENTIAL),
+            A2AMessage::PresentationProposal(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PROPOSE_PRESENTATION),
+            A2AMessage::PresentationRequest(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::REQUEST_PRESENTATION),
+            A2AMessage::Presentation(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PRESENTATION),
+            A2AMessage::Query(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY),
+            A2AMessage::Disclose(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::DISCLOSE),
             A2AMessage::Generic(msg) => ::serde_json::to_value(msg),
         }.map_err(ser::Error::custom)?;
 
@@ -230,4 +230,25 @@ impl MessageId {
         use utils::uuid;
         MessageId(uuid::uuid())
     }
+}
+
+impl A2AMessage {
+    const FORWARD: &'static str = "forward";
+    const CONNECTION_INVITATION: &'static str = "invitation";
+    const CONNECTION_REQUEST: &'static str = "request";
+    const CONNECTION_RESPONSE: &'static str = "response";
+    const CONNECTION_PROBLEM_REPORT: &'static str = "problem_report";
+    const PING: &'static str = "ping";
+    const PING_RESPONSE: &'static str = "ping_response";
+    const ACK: &'static str = "ack";
+    const PROBLEM_REPORT: &'static str = "problem-report";
+    const CREDENTIAL_OFFER: &'static str = "offer-credential";
+    const CREDENTIAL: &'static str = "issue-credential";
+    const PROPOSE_CREDENTIAL: &'static str = "propose-credential";
+    const REQUEST_CREDENTIAL: &'static str = "request-credential";
+    const PROPOSE_PRESENTATION: &'static str = "propose-presentation";
+    const REQUEST_PRESENTATION: &'static str = "request-presentation";
+    const PRESENTATION: &'static str = "presentation";
+    const QUERY: &'static str = "query";
+    const DISCLOSE: &'static str = "disclose";
 }

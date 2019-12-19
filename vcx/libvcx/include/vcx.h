@@ -270,11 +270,11 @@ vcx_error_t vcx_connection_send_ping(vcx_u32_t command_handle,
 ///
 /// #Returns
 /// Error code as a u32
-vcx_error_t connection_handle(vcx_u32_t command_handle,
-                              vcx_connection_handle_t connection_handle,
-                              const char* query,
-                              const char* comment,
-                              void (*cb)(vcx_command_handle_t, vcx_error_t));
+vcx_error_t vcx_connection_send_discovery_features(vcx_u32_t command_handle,
+                                                   vcx_connection_handle_t connection_handle,
+                                                   const char* query,
+                                                   const char* comment,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 // Create a Credential object that requests and receives a credential for an institution
 //

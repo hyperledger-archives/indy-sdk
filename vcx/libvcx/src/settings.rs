@@ -333,22 +333,15 @@ pub fn get_actors() -> Vec<Actors> {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, EnumIter)]
+#[serde(rename_all="lowercase")]
 pub enum Actors {
-    #[serde(rename = "inviter")]
     Inviter,
-    #[serde(rename = "invitee")]
     Invitee,
-    #[serde(rename = "issuer")]
     Issuer,
-    #[serde(rename = "holder")]
     Holder,
-    #[serde(rename = "prover")]
     Prover,
-    #[serde(rename = "verifier")]
     Verifier,
-    #[serde(rename = "sender")]
     Sender,
-    #[serde(rename = "receiver")]
     Receiver
 }
 
