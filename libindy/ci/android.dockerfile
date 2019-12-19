@@ -1,4 +1,5 @@
 FROM libindy-test
+# to see base image for this one see this file: libindy/ci/ubuntu.dockerfile. It is build in CI/CD pipelines
 ENV ANDROID_BUILD_FOLDER=/tmp/android_build
 ENV ANDROID_SDK=${ANDROID_BUILD_FOLDER}/sdk
 ENV ANDROID_SDK_ROOT=${ANDROID_SDK}

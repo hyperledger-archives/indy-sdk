@@ -168,17 +168,19 @@ generate_arch_flags(){
 
 }
 
-
-download_and_unzip_dependencies(){
+prepare_dependencies() {
     pushd ${ANDROID_BUILD_FOLDER}
         download_and_unzip_if_missed "openssl_$1" "https://repo.sovrin.org/android/libindy/deps-libc++/openssl/" "openssl_$1.zip"
         download_and_unzip_if_missed "libsodium_$1" "https://repo.sovrin.org/android/libindy/deps-libc++/sodium/" "libsodium_$1.zip"
         download_and_unzip_if_missed "libzmq_$1" "https://repo.sovrin.org/android/libindy/deps-libc++/zmq/" "libzmq_$1.zip"
-
-        export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
-        export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
-        export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
     popd
+}
+
+
+setup_dependencies_env_vars(){
+    export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
+    export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
+    export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
 }
 
 

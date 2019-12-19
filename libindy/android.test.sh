@@ -98,7 +98,7 @@ execute_on_device(){
 
 
 recreate_avd
-download_and_unzip_dependencies ${ABSOLUTE_ARCH}
+setup_dependencies_env_vars ${ABSOLUTE_ARCH}
 set_env_vars
 create_standalone_toolchain_and_rust_target
 create_cargo_config

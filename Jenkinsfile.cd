@@ -27,6 +27,8 @@ sovrinPackagingRepo = env.SOVRIN_PACKAGING_REPO ?: 'https://github.com/sovrin-fo
 sovrinPackagingBranch = env.SOVRIN_PACKAGING_BRANCH ?: 'master'
 mavenDeployAddOptions = env.MAVEN_DEPLOY_ADD_OPTIONS ?: ''
 
+androidArchArray = ["arm", "armv7", "x86", "arm64", "x86_64"]
+
 try {
     testing()
     publishing()
@@ -1770,14 +1772,14 @@ def androidPublishing() {
 
 def buildAndroid(buildEnv, version, name, libIndyVersion = null) {
 
-    for (arch in ["arm", "armv7", "x86", "arm64", "x86_64"]) {
+    for (arch in androidArchArray) {
         androidBuildArtifact(buildEnv, arch, version, name, libIndyVersion)
     }
 }
 
 def publishAndroid(buildEnv, version, name) {
 
-    for (arch in ["arm", "armv7", "x86", "arm64", "x86_64"]) {
+    for (arch in androidArchArray) {
         androidPublishArtifact(buildEnv, arch, version, name)
     }
 }
