@@ -212,4 +212,13 @@ class ConnectionApiTest {
         int updateStateResult = futureUpdateState.get();
         assert(updateStateResult== 4 );
     }
+
+    @Test
+    @DisplayName("send ping")
+    void sendPing() {
+        Assertions.assertThrows(ExecutionException.class, () -> {
+            Integer connectionHandle = _createConnection();
+            TestHelper.getResultFromFuture(ConnectionApi.connectionSendPing(connectionHandle, null));
+        });
+    }
 }
