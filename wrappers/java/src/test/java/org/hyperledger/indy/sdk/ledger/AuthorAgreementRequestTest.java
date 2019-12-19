@@ -21,7 +21,27 @@ public class AuthorAgreementRequestTest extends IndyIntegrationTest {
 								.put("version", VERSION)
 				);
 
-		String request = Ledger.buildTxnAuthorAgreementRequest(DID, TEXT, VERSION).get();
+		String request = Ledger.buildTxnAuthorAgreementRequest(DID, TEXT, VERSION, -1, -1).get();
+
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
+	}
+
+	@Test
+	public void testBuildTxnAuthorAgreementRequestForRetiredAndRatificatedWoText() throws Exception {
+		JSONObject expectedResult = new JSONObject()
+				.put("identifier", DID)
+				.put("operation",
+						new JSONObject()
+								.put("type", "4")
+								.put("text", TEXT)
+								.put("version", VERSION)
+								.put("ratification_ts", 12345)
+								.put("retirement_ts", 54321)
+				);
+
+		String request = Ledger.buildTxnAuthorAgreementRequest(DID, TEXT, VERSION, 12345, 54321).get();
 
 		assert (new JSONObject(request).toMap().entrySet()
 				.containsAll(
@@ -56,6 +76,21 @@ public class AuthorAgreementRequestTest extends IndyIntegrationTest {
 				);
 
 		String request = Ledger.buildGetTxnAuthorAgreementRequest(null, data.toString()).get();
+
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
+	}
+
+	@Test
+	public void testBuildDisableAllTxnAuthorAgreementsRequest() throws Exception {
+		JSONObject expectedResult = new JSONObject()
+				.put("operation",
+						new JSONObject()
+								.put("type", "8")
+				);
+
+		String request = Ledger.buildDisableAllTxnAuthorAgreementsRequest(DID).get();
 
 		assert (new JSONObject(request).toMap().entrySet()
 				.containsAll(

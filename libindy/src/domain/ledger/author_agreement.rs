@@ -2,22 +2,43 @@ use std::collections::HashMap;
 
 use indy_api_types::validation::Validatable;
 
-use super::constants::{GET_TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT_AML, TXN_AUTHR_AGRMT, TXN_AUTHR_AGRMT_AML};
+use super::constants::{GET_TXN_AUTHR_AGRMT, GET_TXN_AUTHR_AGRMT_AML, TXN_AUTHR_AGRMT, TXN_AUTHR_AGRMT_AML, DISABLE_ALL_TXN_AUTHR_AGRMTS};
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct TxnAuthorAgreementOperation {
     #[serde(rename = "type")]
     _type: String,
-    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text: Option<String>,
     version: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ratification_ts: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    retirement_ts: Option<u64>,
 }
 
 impl TxnAuthorAgreementOperation {
-    pub fn new(text: String, version: String) -> TxnAuthorAgreementOperation {
+    pub fn new(text: Option<String>, version: String, ratification_ts: Option<u64>, retirement_ts: Option<u64>) -> TxnAuthorAgreementOperation {
         TxnAuthorAgreementOperation {
             _type: TXN_AUTHR_AGRMT.to_string(),
             text,
-            version
+            version,
+            ratification_ts,
+            retirement_ts,
+        }
+    }
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct DisableAllTxnAuthorAgreementsOperation {
+    #[serde(rename = "type")]
+    _type: String,
+}
+
+impl DisableAllTxnAuthorAgreementsOperation {
+    pub fn new() -> DisableAllTxnAuthorAgreementsOperation {
+        DisableAllTxnAuthorAgreementsOperation {
+            _type: DISABLE_ALL_TXN_AUTHR_AGRMTS.to_string(),
         }
     }
 }

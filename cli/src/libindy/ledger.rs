@@ -107,8 +107,12 @@ impl Ledger {
                                             old_value, new_value).wait()
     }
 
-    pub fn build_txn_author_agreement_request(submitter_did: &str, text: &str, version: &str) -> Result<String, IndyError> {
-        ledger::build_txn_author_agreement_request(submitter_did, text, version).wait()
+    pub fn build_txn_author_agreement_request(submitter_did: &str, text: Option<&str>, version: &str, ratification_ts: Option<u64>, retirement_ts: Option<u64>) -> Result<String, IndyError> {
+        ledger::build_txn_author_agreement_request(submitter_did, text, version, ratification_ts, retirement_ts).wait()
+    }
+
+    pub fn build_disable_all_txn_author_agreements_request(submitter_did: &str) -> Result<String, IndyError> {
+        ledger::build_disable_all_txn_author_agreements_request(submitter_did).wait()
     }
 
     pub fn build_acceptance_mechanisms_request(submitter_did: &str, aml: &str, version: &str, aml_context: Option<&str>) -> Result<String, IndyError> {
