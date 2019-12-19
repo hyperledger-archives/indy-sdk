@@ -201,7 +201,10 @@ namespace Hyperledger.Indy.LedgerApi
         internal static extern int indy_build_get_auth_rule_request(int command_handle, string submitter_did, string txn_type, string action, string field, string old_value, string new_value, BuildRequestCompletedDelegate cb);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_build_txn_author_agreement_request(int command_handle, string submitter_did, string text, string version, bool retired, BuildRequestCompletedDelegate cb);
+        internal static extern int indy_build_txn_author_agreement_request(int command_handle, string submitter_did, string text, string version, long ratification_ts, long retirement_ts, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_build_disable_all_txn_author_agreements_request(int command_handle, string submitter_did, BuildRequestCompletedDelegate cb);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_txn_author_agreement_request(int command_handle, string submitter_did, string data, BuildRequestCompletedDelegate cb);
