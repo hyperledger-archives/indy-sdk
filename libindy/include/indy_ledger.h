@@ -1127,6 +1127,10 @@ extern "C" {
     ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// text: a content of the TTA.
     /// version: a version of the TTA (unique UTF-8 string).
+    /// ratification_ts: the date (timestamp) of TAA ratification by network government.
+    /// retirement_ts: the date (timestamp) of TAA retirement.
+    ///                -1 to omit. Should be omitted in case of adding the new (latest) TAA,
+    ///                Should be used to deactivate non-latest TAA on the ledger.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -1138,11 +1142,36 @@ extern "C" {
                                                                 const char *  submitter_did,
                                                                 const char *  text,
                                                                 const char *  version,
+                                                                indy_i64_t  ratification_ts,
+                                                                indy_i64_t  retirement_ts,
 
                                                                 void           (*cb)(indy_handle_t command_handle_,
                                                                                      indy_error_t  err,
                                                                                      const char*   request_json)
                                                                );
+
+    /// Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+    ///
+    /// EXPERIMENTAL
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_disable_all_txn_author_agreements_request(indy_handle_t command_handle,
+                                                                             const char *  submitter_did,
+
+                                                                             void           (*cb)(indy_handle_t command_handle_,
+                                                                                                  indy_error_t  err,
+                                                                                                  const char*   request_json)
+                                                                            );
 
     /// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
     ///
