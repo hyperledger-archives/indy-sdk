@@ -1,35 +1,33 @@
-#[macro_use]
-mod utils;
-
-inject_indy_dependencies!();
-
 extern crate indyrs as indy;
 extern crate indyrs as api;
-
-use self::indy::ErrorCode;
-#[cfg(feature = "local_nodes_pool")]
-use crate::utils::{pool, ledger, did, anoncreds};
-use crate::utils::types::*;
-use crate::utils::constants::*;
-use crate::utils::Setup;
-
-use self::rand::distributions::Alphanumeric;
-
-use crate::utils::domain::ledger::constants;
-use crate::utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
-use crate::utils::domain::ledger::nym::NymData;
-use crate::utils::domain::anoncreds::schema::SchemaV1;
-use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
-use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
-use crate::utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
-use crate::utils::domain::crypto::did::DidValue;
 
 use std::collections::HashMap;
 use std::thread;
 
-use crate::api::INVALID_WALLET_HANDLE;
 use crate::api::INVALID_POOL_HANDLE;
+use crate::api::INVALID_WALLET_HANDLE;
+#[cfg(feature = "local_nodes_pool")]
+use crate::utils::{anoncreds, did, ledger, pool};
+use crate::utils::constants::*;
+use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
+use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use crate::utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
+use crate::utils::domain::anoncreds::schema::SchemaV1;
+use crate::utils::domain::crypto::did::DidValue;
+use crate::utils::domain::ledger::constants;
+use crate::utils::domain::ledger::nym::NymData;
+use crate::utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
+use crate::utils::Setup;
+use crate::utils::types::*;
+
+use self::indy::ErrorCode;
+use self::rand::distributions::Alphanumeric;
+
+#[macro_use]
+mod utils;
+
+inject_indy_dependencies!();
 
 mod high_cases {
     use super::*;
@@ -2232,8 +2230,9 @@ mod high_cases {
             });
 
             let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
-                                                                     TEXT,
-                                                                     VERSION).unwrap();
+                                                                     Some(TEXT),
+                                                                     VERSION,
+                                                                     None, None).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -2246,8 +2245,27 @@ mod high_cases {
             });
 
             let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
-                                                                     "",
-                                                                     VERSION).unwrap();
+                                                                     Some(""),
+                                                                     VERSION,
+                                                                     None,
+                                                                     None).unwrap();
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_txn_author_agreement_request_works_for_retired_and_ratificated_wo_text() {
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT,
+                "version": VERSION,
+                "retirement_ts": 54321,
+                "ratification_ts": 12345,
+            });
+
+            let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
+                                                                     None,
+                                                                     VERSION,
+                                                                     Some(12345),
+                                                                     Some(54321)).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -2395,8 +2413,9 @@ mod high_cases {
     }
 
     mod author_agreement_acceptance {
-        use super::*;
         use rand::Rng;
+
+        use super::*;
 
         const TEXT: &str = "some agreement text";
         const VERSION: &str = "1.0.0";
@@ -2549,7 +2568,7 @@ mod high_cases {
         }
 
         fn _send_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str, taa_text: &str, taa_version: &str) {
-            let request = ledger::build_txn_author_agreement_request(&trustee_did, &taa_text, &taa_version).unwrap();
+            let request = ledger::build_txn_author_agreement_request(&trustee_did, Some(taa_text), &taa_version, None, None).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
         }
@@ -2560,9 +2579,10 @@ mod high_cases {
             (taa_text, taa_version)
         }
 
-        fn _reset_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str) {
-            let taa_version = _rand_version();
-            _send_taa(pool_handle, wallet_handle, trustee_did, "", &taa_version);
+        fn _disable_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str, _taa_version: &str) {
+            let request = ledger::build_disable_all_txn_author_agreements_request(&trustee_did).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
         }
 
         fn _set_aml(pool_handle: i32, wallet_handle: i32, trustee_did: &str) -> (String, String, String, String) {
@@ -2574,6 +2594,7 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore] // Disabled while waiting integration with Node of IS-1427
         fn indy_txn_author_agreement_requests_works() {
             let setup = Setup::trustee();
 
@@ -2581,7 +2602,7 @@ mod high_cases {
 
             let (taa_text, taa_version) = _gen_taa_data();
 
-            let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&setup.did, &taa_text, &taa_version).unwrap();
+            let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&setup.did, Some(&taa_text), &taa_version, None, None).unwrap();
             let txn_author_agreement_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &txn_author_agreement_request).unwrap();
             pool::check_response_type(&txn_author_agreement_response, ResponseType::REPLY);
 
@@ -2593,7 +2614,7 @@ mod high_cases {
             let expected_data = json!({"text": taa_text, "version": taa_version});
             assert_eq!(response["result"]["data"], expected_data);
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did, &taa_version);
         }
 
         #[test]
@@ -2618,6 +2639,7 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore] // FIXME Disabled while waiting integration with Node of IS-1427
         fn indy_author_agreement_works() {
             let setup = Setup::trustee();
 
@@ -2643,16 +2665,17 @@ mod high_cases {
             let get_nym_resp = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_req, &nym_resp).unwrap();
             pool::check_response_type(&get_nym_resp, ResponseType::REPLY);
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did, &taa_version);
         }
 
         #[test]
         #[cfg(not(feature = "only_high_cases"))]
+        #[ignore] // FIXME Disabled while waiting integration with Node of IS-1427
         fn indy_reset_author_agreement_works() {
             let setup = Setup::trustee();
 
             _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (_, taa_version) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -2661,7 +2684,7 @@ mod high_cases {
             let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
             pool::check_response_type(&nym_resp, ResponseType::REJECT);
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did, &taa_version);
 
             let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
             let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
@@ -2669,11 +2692,12 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore] // FIXME Disabled while waiting integration with Node of IS-1427
         fn indy_author_agreement_works_for_using_invalid_taa() {
             let setup = Setup::trustee();
 
             let (_, aml_label, _, _) = _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (_, taa_version) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -2690,11 +2714,12 @@ mod high_cases {
                 pool::check_response_type(&nym_resp, ResponseType::REJECT);
             }
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did, &taa_version);
         }
 
         #[test]
         #[cfg(not(feature = "only_high_cases"))]
+        #[ignore] // FIXME Disabled while waiting integration with Node of IS-1427
         fn indy_author_agreement_works_for_using_invalid_aml() {
             let setup = Setup::trustee();
 
@@ -2716,11 +2741,12 @@ mod high_cases {
                 pool::check_response_type(&nym_resp, ResponseType::REJECT);
             }
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did, &taa_version);
         }
 
         #[test]
         #[cfg(not(feature = "only_high_cases"))]
+        #[ignore] // FIXME Disabled while waiting integration with Node of IS-1427
         fn indy_author_agreement_works_for_using_not_last_taa() {
             let setup = Setup::trustee();
 
@@ -2754,7 +2780,8 @@ mod high_cases {
                 pool::check_response_type(&nym_resp, ResponseType::REPLY);
             }
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did, &taa_version);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did, &taa_version_2);
         }
     }
 
@@ -2845,10 +2872,12 @@ mod high_cases {
 
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
-    use super::*;
-    use openssl::hash::{MessageDigest, Hasher};
+    use openssl::hash::{Hasher, MessageDigest};
     use sodiumoxide::crypto::secretbox;
+
     use crate::utils::domain::anoncreds::schema::Schema;
+
+    use super::*;
 
     mod requests {
         use super::*;
@@ -3306,8 +3335,9 @@ mod medium_cases {
     }
 
     mod schemas_requests {
-        use super::*;
         use crate::utils::domain::anoncreds::schema::SchemaId;
+
+        use super::*;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
