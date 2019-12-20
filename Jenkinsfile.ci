@@ -310,7 +310,6 @@ def iosTesting() {
                             rbenv install -s $(cat .ruby-version)
 
                             gem install bundler
-                            bundler exec gem env
 
                             bundler install
                             bundler list
