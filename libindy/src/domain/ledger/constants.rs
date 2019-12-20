@@ -5,6 +5,7 @@ pub const TXN_AUTHR_AGRMT: &str = "4";  // TODO Use nonabbreviated names as in u
 pub const TXN_AUTHR_AGRMT_AML: &str = "5";
 pub const GET_TXN_AUTHR_AGRMT: &str = "6";
 pub const GET_TXN_AUTHR_AGRMT_AML: &str = "7";
+pub const DISABLE_ALL_TXN_AUTHR_AGRMTS: &str = "8";
 pub const ATTRIB: &str = "100";
 pub const SCHEMA: &str = "101";
 pub const CRED_DEF: &str = "102";

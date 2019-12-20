@@ -737,13 +737,32 @@
                      Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param text a content of the TTA.
  @param version a version of the TTA (unique UTF-8 string).
- 
+ @param ratificationTimestamp  the date (timestamp) of TAA ratification by network government.
+ @param retirementTimestamp  the date (timestamp) of TAA retirement.
+        `nil` to omit. Should be omitted in case of adding the new (latest) TAA,
+        Should be used to deactivate non-latest TAA on the ledger.
+
  Returns Request result as json.
  */
 + (void)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
                                                   text:(NSString *)text
                                                version:(NSString *)version
-                                            completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
+                                 ratificationTimestamp:(NSNumber *)ratificationTimestamp
+                                   retirementTimestamp:(NSNumber *)retirementTimestamp
+                                            completion:(void (^)(NSError *error, NSString *requestJson))completion;
+
+/**
+ Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+
+ EXPERIMENTAL
+
+ @param submitterDid  Identifier (DID) of the transaction author as base58-encoded string.
+                      Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+
+ Returns Result as json.
+ */
++ (void)buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       completion:(void (^)(NSError *error, NSString *requestJson))completion;
 
 /**
  Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
@@ -759,7 +778,7 @@
      timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
  }
  Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
- 
+
  Returns Request result as json.
  */
 + (void)buildGetTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid

@@ -235,3 +235,16 @@ macro_rules! boxed_callback_string {
         })
     }
 }
+
+#[macro_export]
+macro_rules! check_useful_opt_u64 {
+    ($x:ident, $e:expr) => {
+        let $x: Option<u64> = if $x >= 0 {
+            Some(($x) as u64)
+        } else if $x == -1 {
+            None
+        } else {
+            return err_msg($e.into(), "Invalid integer has been passed (should be non-negative or -1").into()
+        };
+    }
+}
