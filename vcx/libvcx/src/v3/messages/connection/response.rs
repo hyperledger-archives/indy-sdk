@@ -43,7 +43,7 @@ pub struct SignedResponse {
     pub please_ack: Option<PleaseAck>
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct ConnectionSignature {
     #[serde(rename = "@type")]
     pub msg_type: MessageType,
@@ -139,6 +139,17 @@ impl SignedResponse {
 
 a2a_message!(SignedResponse, ConnectionResponse);
 
+impl Default for ConnectionSignature {
+    fn default() -> ConnectionSignature {
+        ConnectionSignature {
+            msg_type: MessageType::build(MessageFamilies::Signature, "ed25519Sha512_single"),
+            signature: String::new(),
+            sig_data: String::new(),
+            signer: String::new(),
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -191,7 +202,7 @@ pub mod tests {
     fn test_response_build_works() {
         let response: Response = Response::default()
             .set_did(_did())
-            .set_thread_id(_thread_id())
+            .set_thread_id(&_thread_id())
             .set_service_endpoint(_service_endpoint())
             .set_keys(_recipient_keys(), _routing_keys());
 

@@ -66,7 +66,7 @@ pub mod tests {
     fn test_credential_request_build_works() {
         let credential_request: CredentialRequest = CredentialRequest::create()
             .set_comment(_comment())
-            .set_thread_id(thread_id())
+            .set_thread_id(&thread_id())
             .set_requests_attach(_attachment().to_string()).unwrap();
 
         assert_eq!(_credential_request(), credential_request);

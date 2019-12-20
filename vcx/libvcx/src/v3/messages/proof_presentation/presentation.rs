@@ -83,7 +83,7 @@ pub mod tests {
         let presentation: Presentation = Presentation::default()
             .set_comment(_comment())
             .ask_for_ack()
-            .set_thread_id(thread_id())
+            .set_thread_id(&thread_id())
             .set_presentations_attach(_attachment().to_string()).unwrap();
 
         assert_eq!(_presentation(), presentation);

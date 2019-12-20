@@ -94,7 +94,7 @@ pub mod tests {
     fn test_presentation_proposal_build_works() {
         let presentation_proposal: PresentationProposal = PresentationProposal::default()
             .set_comment(_comment())
-            .set_thread_id(thread_id())
+            .set_thread_id(&thread_id())
             .set_presentation_preview(_presentation_preview());
 
         assert_eq!(_presentation_proposal(), presentation_proposal);

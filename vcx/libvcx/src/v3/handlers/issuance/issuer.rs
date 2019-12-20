@@ -154,7 +154,7 @@ impl IssuerSM {
                 CredentialIssuanceMessage::CredentialProposal(proposal) => {
                     let problem_report = ProblemReport::create()
                         .set_comment(String::from("CredentialProposal is not supported"))
-                        .set_thread_id(state_data.thread_id.clone());
+                        .set_thread_id(&state_data.thread_id);
 
                     send_message(state_data.connection_handle, problem_report.to_a2a_message())?;
                     IssuerState::Finished((state_data, problem_report).into())
@@ -172,14 +172,14 @@ impl IssuerSM {
                     let credential_msg = _create_credential(&state_data.request, &state_data.rev_reg_id, &state_data.tails_file, &state_data.offer, &state_data.cred_data);
                     match credential_msg {
                         Ok(credential_msg) => {
-                            let credential_msg = credential_msg.set_thread_id(state_data.thread_id.clone());
+                            let credential_msg = credential_msg.set_thread_id(&state_data.thread_id);
                             send_message(state_data.connection_handle, credential_msg.to_a2a_message())?;
                             IssuerState::Finished(state_data.into())
                         }
                         Err(err) => {
                             let problem_report = ProblemReport::create()
                                 .set_comment(err.to_string())
-                                .set_thread_id(state_data.thread_id.clone());
+                                .set_thread_id(&state_data.thread_id);
 
                             send_message(state_data.connection_handle, problem_report.to_a2a_message())?;
                             IssuerState::Finished((state_data, problem_report).into())
@@ -539,12 +539,12 @@ pub mod test {
             // No messages for different Thread ID
             {
                 let messages = map!(
-                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer().set_thread_id(String::new())),
-                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request().set_thread_id(String::new())),
-                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal().set_thread_id(String::new())),
-                    "key_4".to_string() => A2AMessage::Credential(_credential().set_thread_id(String::new())),
-                    "key_5".to_string() => A2AMessage::Ack(_ack().set_thread_id(String::new())),
-                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(String::new()))
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer().set_thread_id("")),
+                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request().set_thread_id("")),
+                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal().set_thread_id("")),
+                    "key_4".to_string() => A2AMessage::Credential(_credential().set_thread_id("")),
+                    "key_5".to_string() => A2AMessage::Ack(_ack().set_thread_id("")),
+                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
                 );
 
                 assert!(issuer.find_message_to_handle(messages).is_none());

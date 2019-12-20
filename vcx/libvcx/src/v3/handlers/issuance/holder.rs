@@ -114,7 +114,7 @@ impl HolderSM {
                     match request {
                         Ok((cred_request, req_meta, cred_def_json)) => {
                             let cred_request = cred_request
-                                .set_thread_id(thread_id.clone());
+                                .set_thread_id(&thread_id);
                             connection::remove_pending_message(conn_handle, &state_data.offer.id)?;
                             connection::send_message(conn_handle, cred_request.to_a2a_message())?;
                             HolderState::RequestSent((state_data, req_meta, cred_def_json, connection_handle).into())
@@ -122,7 +122,7 @@ impl HolderSM {
                         Err(err) => {
                             let problem_report = ProblemReport::create()
                                 .set_comment(err.to_string())
-                                .set_thread_id(thread_id.clone());
+                                .set_thread_id(&thread_id);
                             connection::send_message(conn_handle, problem_report.to_a2a_message())?;
                             HolderState::Finished((state_data, problem_report).into())
                         }
@@ -139,7 +139,7 @@ impl HolderSM {
                     match result {
                         Ok(cred_id) => {
                             if credential.please_ack.is_some() {
-                                let ack = Ack::create().set_thread_id(thread_id.clone());
+                                let ack = Ack::create().set_thread_id(&thread_id);
                                 connection::send_message(state_data.connection_handle, ack.to_a2a_message())?;
                             }
 
@@ -148,7 +148,7 @@ impl HolderSM {
                         Err(err) => {
                             let problem_report = ProblemReport::create()
                                 .set_comment(err.to_string())
-                                .set_thread_id(thread_id.clone());
+                                .set_thread_id(&thread_id);
 
                             connection::send_message(state_data.connection_handle, problem_report.to_a2a_message())?;
                             HolderState::Finished((state_data, problem_report).into())
@@ -474,12 +474,12 @@ mod test {
             // No messages for different Thread ID
             {
                 let messages = map!(
-                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer().set_thread_id(String::new())),
-                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request().set_thread_id(String::new())),
-                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal().set_thread_id(String::new())),
-                    "key_4".to_string() => A2AMessage::Credential(_credential().set_thread_id(String::new())),
-                    "key_5".to_string() => A2AMessage::Ack(_ack().set_thread_id(String::new())),
-                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(String::new()))
+                    "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer().set_thread_id("")),
+                    "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request().set_thread_id("")),
+                    "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal().set_thread_id("")),
+                    "key_4".to_string() => A2AMessage::Credential(_credential().set_thread_id("")),
+                    "key_5".to_string() => A2AMessage::Ack(_ack().set_thread_id("")),
+                    "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
                 );
 
                 assert!(holder.find_message_to_handle(messages).is_none());

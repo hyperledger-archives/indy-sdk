@@ -102,7 +102,7 @@ pub mod tests {
         let report: ProblemReport = ProblemReport::default()
             .set_problem_code(_problem_code())
             .set_explain(_explain())
-            .set_thread_id(_thread_id());
+            .set_thread_id(&_thread_id());
 
         assert_eq!(_problem_report(), report);
     }

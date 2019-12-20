@@ -131,7 +131,7 @@ pub mod tests {
     fn test_problem_report_build_works() {
         let report: ProblemReport = ProblemReport::default()
             .set_comment(_comment())
-            .set_thread_id(_thread_id())
+            .set_thread_id(&_thread_id())
             .set_description(_code());
 
         assert_eq!(_problem_report(), report);

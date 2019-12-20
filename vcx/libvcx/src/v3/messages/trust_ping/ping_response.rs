@@ -46,7 +46,7 @@ pub mod tests {
     fn test_ping_response_build_works() {
         let ping_response: PingResponse = PingResponse::default()
             .set_comment(_comment())
-            .set_thread_id(_thread_id());
+            .set_thread_id(&_thread_id());
 
         assert_eq!(_ping_response(), ping_response);
     }

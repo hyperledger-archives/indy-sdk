@@ -19,7 +19,7 @@ pub struct Credential {
     pub thread: Thread,
     #[serde(rename = "~please_ack")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub please_ack: Option<PleaseAck>
+    pub please_ack: Option<PleaseAck>,
 }
 
 impl Credential {
@@ -47,7 +47,7 @@ impl TryInto<Credential> for CredentialMessage {
 
     fn try_into(self) -> Result<Credential, Self::Error> {
         Credential::create()
-            .set_thread_id(self.claim_offer_id)
+            .set_thread_id(&self.claim_offer_id)
             .set_credential(self.libindy_cred)
     }
 }
@@ -109,7 +109,7 @@ pub mod tests {
     fn test_credential_build_works() {
         let credential: Credential = Credential::create()
             .set_comment(_comment())
-            .set_thread_id(thread_id())
+            .set_thread_id(&thread_id())
             .set_credential(_attachment().to_string()).unwrap();
 
         assert_eq!(_credential(), credential);

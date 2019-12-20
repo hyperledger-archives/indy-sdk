@@ -51,8 +51,8 @@ impl CredentialOffer {
         Ok(self)
     }
 
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread = Some(Thread::new().set_thid(id));
+    pub fn set_thread_id(mut self, id: &str) -> Self {
+        self.thread = Some(Thread::new().set_thid(id.to_string()));
         self
     }
 }
@@ -158,7 +158,7 @@ pub mod tests {
     fn test_credential_offer_build_works() {
         let credential_offer: CredentialOffer = CredentialOffer::create()
             .set_comment(_comment())
-            .set_thread_id(_thread_id())
+            .set_thread_id(&_thread_id())
             .set_credential_preview_data(_preview_data()).unwrap()
             .set_offers_attach(&_attachment().to_string()).unwrap();
 
