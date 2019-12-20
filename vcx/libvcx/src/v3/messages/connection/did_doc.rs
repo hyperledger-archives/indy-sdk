@@ -1,3 +1,5 @@
+use v3::messages::connection::invite::Invitation;
+
 use error::prelude::*;
 use url::Url;
 
@@ -62,15 +64,7 @@ impl Default for DidDoc {
             id: String::new(),
             public_key: vec![],
             authentication: vec![],
-            service: vec![Service {
-                // TODO: FIXME Several services????
-                id: format!("did:example:123456789abcdefghi;{}", SERVICE_SUFFIX),
-                type_: String::from(SERVICE_TYPE),
-                priority: 0,
-                service_endpoint: String::new(),
-                recipient_keys: Vec::new(),
-                routing_keys: Vec::new(),
-            }],
+            service: vec![Service::default()],
         }
     }
 }
@@ -265,7 +259,19 @@ impl DidDoc {
     }
 }
 
-use v3::messages::connection::invite::Invitation;
+impl Default for Service {
+    fn default() -> Service {
+        Service {
+            // TODO: FIXME Several services????
+            id: format!("did:example:123456789abcdefghi;{}", SERVICE_SUFFIX),
+            type_: String::from(SERVICE_TYPE),
+            priority: 0,
+            service_endpoint: String::new(),
+            recipient_keys: Vec::new(),
+            routing_keys: Vec::new(),
+        }
+    }
+}
 
 impl From<Invitation> for DidDoc {
     fn from(invite: Invitation) -> DidDoc {

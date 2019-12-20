@@ -8,19 +8,16 @@ pub mod credential_offer;
 pub mod credential_proposal;
 pub mod credential_request;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CredentialPreviewData {
     #[serde(rename = "@type")]
     pub _type: MessageType,
-    pub attributes: Vec<CredentialValue>
+    pub attributes: Vec<CredentialValue>,
 }
 
 impl CredentialPreviewData {
     pub fn new() -> Self {
-        CredentialPreviewData {
-            _type: MessageType::build(MessageFamilies::CredentialIssuance, "credential-preview"),
-            attributes: vec![]
-        }
+        CredentialPreviewData::default()
     }
 
     pub fn add_value(mut self, name: &str, value: &str, mime_type: MimeType) -> VcxResult<CredentialPreviewData> {
@@ -45,6 +42,15 @@ pub struct CredentialValue {
     #[serde(rename = "mime-type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub _type: Option<MimeType>,
+}
+
+impl Default for CredentialPreviewData {
+    fn default() -> CredentialPreviewData {
+        CredentialPreviewData {
+            _type: MessageType::build(MessageFamilies::CredentialIssuance, "credential-preview"),
+            attributes: vec![],
+        }
+    }
 }
 
 #[cfg(test)]
