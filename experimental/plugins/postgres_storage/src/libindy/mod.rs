@@ -1,4 +1,5 @@
 pub mod wallet;
+pub mod logger;
 //use errors::common::CommonError;
 //use errors::ToErrorCode;
 

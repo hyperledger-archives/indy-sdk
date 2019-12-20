@@ -431,6 +431,7 @@ async def issuer_create_credential(wallet_handle: int,
       "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
       "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
      }
+     If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
     :param rev_reg_id: (Optional) id of revocation registry definition stored in the wallet
     :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that
     will allow to read revocation tails

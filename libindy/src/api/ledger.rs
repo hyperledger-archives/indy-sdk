@@ -1,21 +1,21 @@
-use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
+use indy_api_types::{CommandHandle, ErrorCode, PoolHandle, WalletHandle};
 use indy_api_types::errors::prelude::*;
+use indy_api_types::validation::Validatable;
+use indy_utils::ctypes;
+use libc::c_char;
+use serde_json;
+
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::ledger::LedgerCommand;
 use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
-use crate::domain::anoncreds::schema::{Schema, SchemaId};
 use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryId};
 use crate::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
+use crate::domain::anoncreds::schema::{Schema, SchemaId};
 use crate::domain::crypto::did::DidValue;
-use crate::domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
+use crate::domain::ledger::auth_rule::{AuthRules, Constraint};
+use crate::domain::ledger::author_agreement::{AcceptanceMechanisms, GetTxnAuthorAgreementData};
 use crate::domain::ledger::node::NodeOperationData;
-use crate::domain::ledger::auth_rule::{Constraint, AuthRules};
 use crate::domain::ledger::pool::Schedule;
-use indy_utils::ctypes;
-use indy_api_types::validation::Validatable;
-
-use serde_json;
-use libc::c_char;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -2018,6 +2018,10 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
 ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// text: a content of the TTA.
 /// version: a version of the TTA (unique UTF-8 string).
+/// ratification_ts: the date (timestamp) of TAA ratification by network government.
+/// retirement_ts: the date (timestamp) of TAA retirement.
+///                -1 to omit. Should be omitted in case of adding the new (latest) TAA,
+///                Should be used to deactivate non-latest TAA on the ledger.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -2030,17 +2034,23 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
                                                       submitter_did: *const c_char,
                                                       text: *const c_char,
                                                       version: *const c_char,
+                                                      ratification_ts: i64,
+                                                      retirement_ts: i64,
                                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                                            err: ErrorCode,
                                                                            request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+    trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}, ratification_ts {:?}, retirement_ts {:?}",
+           submitter_did, text, version, ratification_ts, retirement_ts);
 
     check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
-    check_useful_c_str_empty_accepted!(text, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(text, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_u64!(ratification_ts, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_u64!(retirement_ts, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_txn_author_agreement_request: entities >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+    trace!("indy_build_txn_author_agreement_request: entities >>> submitter_did: {:?}, text: {:?}, version: {:?}, ratification_ts {:?}, retirement_ts {:?}",
+           submitter_did, text, version, ratification_ts, retirement_ts);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
@@ -2048,12 +2058,57 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
                 submitter_did,
                 text,
                 version,
+                ratification_ts,
+                retirement_ts,
                 boxed_callback_string!("indy_build_txn_author_agreement_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
 
     trace!("indy_build_txn_author_agreement_request: <<< res: {:?}", res);
+
+    res
+}
+
+
+/// Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_disable_all_txn_author_agreements_request(command_handle: CommandHandle,
+                                                                   submitter_did: *const c_char,
+                                                                   cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                                        err: ErrorCode,
+                                                                                        request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_disable_all_txn_author_agreements_request: >>> submitter_did: {:?}", submitter_did);
+
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+
+    trace!("indy_build_disable_all_txn_author_agreements_request: entities >>> submitter_did: {:?}", submitter_did);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildDisableAllTxnAuthorAgreementsRequest(
+                submitter_did,
+                boxed_callback_string!("indy_build_disable_all_txn_author_agreements_request", cb, command_handle)
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_disable_all_txn_author_agreements_request: <<< res: {:?}", res);
 
     res
 }

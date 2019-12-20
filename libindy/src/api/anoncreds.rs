@@ -555,6 +555,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
 ///      "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
 ///      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
 ///     }
+///   If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
 /// rev_reg_id: id of revocation registry stored in the wallet
 /// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails (returned by `indy_open_blob_storage_reader`)
 /// cb: Callback that takes command result as parameter.

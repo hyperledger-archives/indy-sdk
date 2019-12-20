@@ -599,9 +599,16 @@ indy.buildGetAuthRuleRequest = function buildGetAuthRuleRequest (submitterDid, t
   return cb.promise
 }
 
-indy.buildTxnAuthorAgreementRequest = function buildTxnAuthorAgreementRequest (submitterDid, text, version, cb) {
+indy.buildTxnAuthorAgreementRequest = function buildTxnAuthorAgreementRequest (submitterDid, text, version, ratificationTimestamp, retirementTimestamp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildTxnAuthorAgreementRequest(submitterDid, text, version, cb)
+  capi.buildTxnAuthorAgreementRequest(submitterDid, text, version, ratificationTimestamp == null ? -1 : ratificationTimestamp,
+    retirementTimestamp == null ? -1 : retirementTimestamp, cb)
+  return cb.promise
+}
+
+indy.buildDisableAllTxnAuthorAgreementsRequest = function buildDisableAllTxnAuthorAgreementsRequest (submitterDid, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildDisableAllTxnAuthorAgreementsRequest(submitterDid, cb)
   return cb.promise
 }
 
