@@ -1714,13 +1714,29 @@ pub mod taa_command {
                 One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
                 (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
                 (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
-                .add_optional_param("text", "The content of a new agreement. Use empty to reset an active agreement")
+                .add_optional_param("text", r#"The content of a new agreement.
+                         Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+                         for Indy Node version <= 1.12.0:
+                             Use empty string to reset TAA on the ledger
+                         for Indy Node version > 1.12.0
+                             Should be omitted in case of updating an existing TAA (setting `retirement-timestamp`)
+                "#)
                 .add_optional_param("file", "The path to file containing a content of agreement to send (an alternative to the `text` parameter)")
                 .add_required_param("version", "The version of a new agreement")
-                .add_optional_param("ratification-time","The date (timestamp) of TAA ratification by network government")
-                .add_optional_param("retirement-time","The date (timestamp) of TAA retirement. \
-                Should be omitted in case of adding the new (latest) TAA. \
-                Should be used to deactivate non-latest TAA on the ledger.")
+                .add_optional_param("ratification-timestamp",r#"The date (timestamp) of TAA ratification by network government
+                                 for Indy Node version <= 1.12.0:
+                                    Must be omitted
+                                 for Indy Node version > 1.12.0:
+                                    Must be specified in case of adding a new TAA
+                                    Can be omitted in case of updating an existing TAA
+                "#)
+                .add_optional_param("retirement-timestamp", r#"The date (timestamp) of TAA retirement.
+                                for Indy Node version <= 1.12.0:
+                                    Must be omitted
+                                for Indy Node version > 1.12.0:
+                                    Must be omitted in case of adding a new (latest) TAA.
+                                    Should be used for updating (deactivating) non-latest TAA on the ledger.
+                "#)
                 .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
                 .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
@@ -1745,8 +1761,8 @@ pub mod taa_command {
         let text = get_opt_empty_str_param("text", params).map_err(error_err!())?;
         let file = get_opt_str_param("file", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
-        let ratification_ts = get_opt_number_param::<u64>("ratification-time", params).map_err(error_err!())?;
-        let retirement_ts = get_opt_number_param::<u64>("retirement-time", params).map_err(error_err!())?;
+        let ratification_ts = get_opt_number_param::<u64>("ratification-timestamp", params).map_err(error_err!())?;
+        let retirement_ts = get_opt_number_param::<u64>("retirement-timestamp", params).map_err(error_err!())?;
 
         let text: Option<String> = match (text, file) {
             (Some(text_), None) => Some(text_.to_string()),

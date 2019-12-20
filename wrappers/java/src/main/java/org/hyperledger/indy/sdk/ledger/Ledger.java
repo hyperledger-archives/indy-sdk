@@ -1496,12 +1496,27 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
 	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
-	 * @param text -  a content of the TTA.
+	 * @param text - (Optional)  a content of the TTA.
+	 *                  Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+	 *                  for Indy Node version <= 1.12.0:
+	 *                      Use empty string to reset TAA on the ledger
+	 *                  for Indy Node version > 1.12.0
+	 *                      Should be omitted in case of updating an existing TAA (setting `retirementTimestamp`)
 	 * @param version -  a version of the TTA (unique UTF-8 string).
-	 * @param ratificationTimestamp - the date (timestamp) of TAA ratification by network government.
-	 * @param retirementTimestamp - the date (timestamp) of TAA retirement.
-	 *                            pass -1 to omit. Should be omitted in case of adding the new (latest) TAA,
-	 *                            Should be used to deactivate non-latest TAA on the ledger.
+	 * @param ratificationTimestamp - (Optional) the date (timestamp) of TAA ratification by network government. (-1 to omit)
+	 *                  for Indy Node version <= 1.12.0:
+	 *                     Must be omitted
+	 *                  for Indy Node version > 1.12.0:
+	 *                     Must be specified in case of adding a new TAA
+	 *                     Can be omitted in case of updating an existing TAA
+	 * @param retirementTimestamp - (Optional) the date (timestamp) of TAA retirement. (-1 to omit)
+	 *                 for Indy Node version <= 1.12.0:
+	 *                     Must be omitted
+	 *                 for Indy Node version > 1.12.0:
+	 *                     Must be omitted in case of adding a new (latest) TAA.
+	 *                     Should be used for updating (deactivating) non-latest TAA on the ledger.
+	 *
+	 *  Note: Use `buildDisableAllTxnAuthorAgreementsRequest` to disable all TAA's on the ledger.
 	 *
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -1514,7 +1529,6 @@ public class Ledger extends IndyJava.API {
 			long retirementTimestamp) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-		ParamGuard.notNull(text, "text");
 		ParamGuard.notNull(version, "version");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();

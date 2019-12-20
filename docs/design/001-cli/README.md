@@ -409,7 +409,7 @@ ledger load-transaction file=<path to file>
 #### TXN_AUTHR_AGRMT transaction.
 Request to add a new version of Transaction Author Agreement to the ledger.
 ```
-ledger ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [ratification-time=<timestamp>] [retirement-time=<timestamp>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
+ledger ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [ratification-timestamp=<timestamp>] [retirement-timestamp=<timestamp>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
 ```
 
 #### DISABLE_ALL_TXN_AUTHR_AGRMTS transaction.
