@@ -19,7 +19,6 @@ extern crate serde_json;
 extern crate lazy_static;
 
 // Note that to use macroses from indy_common::util inside of other modules it must me loaded first!
-extern crate ursa;
 extern crate libc;
 extern crate time;
 extern crate rand;
@@ -55,7 +54,11 @@ pub static POSTGRES_STORAGE_NAME: &str = "postgres_storage";
 
 #[no_mangle]
 pub extern fn postgresstorage_init() -> libindy::ErrorCode {
+    debug!("Initializing postgress storage plugin");
     let postgres_storage_name = CString::new(POSTGRES_STORAGE_NAME).unwrap();
+    if let Err(err) = utils::logger::PostgressStorageLogger::init() {
+        return err;
+    }
 
     libindy::wallet::register_wallet_storage(
         postgres_storage_name.as_ptr(),
@@ -155,7 +158,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::AlreadyExists => ErrorCode::WalletAlreadyExistsError,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Init storage failed: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -180,7 +186,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::AlreadyExists => ErrorCode::WalletAlreadyExistsError,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Create storage failed: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
