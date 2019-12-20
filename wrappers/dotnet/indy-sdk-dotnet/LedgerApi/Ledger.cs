@@ -1322,11 +1322,14 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="submitter_did">DID of the request sender.</param>
         /// <param name="text">a content of the TAA.</param>
         /// <param name="version">a version of the TAA (unique UTF-8 string).</param>
+        /// <param name="ratification_ts">i64 - the date (timestamp) of TAA ratification by network government.</param>
+        /// <param name="retirement_ts">i64 - the date (timestamp) of TAA retirement.
+        ///                                   -1 to omit. Should be omitted in case of adding the new (latest) TAA,
+        ///                                   Should be used to deactivate non-latest TAA on the ledger.</param>
         /// <returns>Request result as json.</returns>
-        public static Task<string> BuildTxnAuthorAgreementRequestAsync(string submitter_did, string text, string version)
+        public static Task<string> BuildTxnAuthorAgreementRequestAsync(string submitter_did, string text, string version, long ratification_ts, long retirement_ts)
         {
             ParamGuard.NotNullOrWhiteSpace(submitter_did, "submitter_did");
-            ParamGuard.NotNull(text, "text");
             ParamGuard.NotNullOrWhiteSpace(version, "version");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -1337,6 +1340,33 @@ namespace Hyperledger.Indy.LedgerApi
                 submitter_did,
                 text,
                 version,
+                ratification_ts,
+                retirement_ts,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+        ///
+        /// EXPERIMENTAL
+        /// </summary>
+        /// <param name="submitter_did"> Identifier (DID) of the transaction author as base58-encoded string.
+        ///                              Actual request sender may differ if Endorser is used (look at `AppendRequestEndorser`)</param>
+        /// <returns>Request result as json.</returns>
+        public static Task<string> BuildDisableAllTxnAuthorAgreementsRequestAsync(string submitter_did)
+        {
+            ParamGuard.NotNullOrWhiteSpace(submitter_did, "submitter_did");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_disable_all_txn_author_agreements_request(
+                commandHandle,
+                submitter_did,
                 BuildRequestCallback);
 
             CallbackHelper.CheckResult(result);
