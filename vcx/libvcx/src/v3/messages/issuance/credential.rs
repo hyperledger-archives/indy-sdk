@@ -1,5 +1,6 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 use v3::messages::attachment::{Attachments, AttachmentEncoding};
+use v3::messages::ack::PleaseAck;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
 use issuer_credential::CredentialMessage;
@@ -7,7 +8,7 @@ use messages::payload::PayloadKinds;
 use std::convert::TryInto;
 
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct Credential {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -15,7 +16,10 @@ pub struct Credential {
     #[serde(rename = "credentials~attach")]
     pub credentials_attach: Attachments,
     #[serde(rename = "~thread")]
-    pub thread: Thread
+    pub thread: Thread,
+    #[serde(rename = "~please_ack")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub please_ack: Option<PleaseAck>,
 }
 
 impl Credential {
@@ -32,34 +36,18 @@ impl Credential {
         self.credentials_attach.add_json_attachment(::serde_json::Value::String(credential), AttachmentEncoding::Base64)?;
         Ok(self)
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::Credential(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-impl Default for Credential {
-    fn default() -> Credential {
-        Credential {
-            id: MessageId::new(),
-            comment: String::new(),
-            credentials_attach: Attachments::new(),
-            thread: Thread::new()
-        }
-    }
-}
+please_ack!(Credential);
+threadlike!(Credential);
+a2a_message!(Credential);
 
 impl TryInto<Credential> for CredentialMessage {
     type Error = VcxError;
 
     fn try_into(self) -> Result<Credential, Self::Error> {
         Credential::create()
-            .set_thread_id(self.claim_offer_id)
+            .set_thread_id(&self.claim_offer_id)
             .set_credential(self.libindy_cred)
     }
 }
@@ -113,6 +101,7 @@ pub mod tests {
             comment: _comment(),
             thread: thread(),
             credentials_attach: attachment,
+            please_ack: None,
         }
     }
 
@@ -120,7 +109,7 @@ pub mod tests {
     fn test_credential_build_works() {
         let credential: Credential = Credential::create()
             .set_comment(_comment())
-            .set_thread_id(thread_id())
+            .set_thread_id(&thread_id())
             .set_credential(_attachment().to_string()).unwrap();
 
         assert_eq!(_credential(), credential);

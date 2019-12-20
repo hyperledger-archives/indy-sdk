@@ -1,5 +1,7 @@
-pub mod ack;
+#[macro_use]
 pub mod a2a;
+#[macro_use]
+pub mod ack;
 pub mod connection;
 pub mod error;
 pub mod forward;

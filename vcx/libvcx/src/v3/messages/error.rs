@@ -2,7 +2,7 @@ use v3::messages::a2a::{MessageId, A2AMessage};
 use messages::thread::Thread;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ProblemReport {
     #[serde(rename = "@id")]
     id: MessageId,
@@ -10,18 +10,27 @@ pub struct ProblemReport {
     pub thread: Thread,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<Description>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub who_retries: Option<WhoRetries>,
     #[serde(rename = "tracking-uri")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tracking_uri: Option<String>,
     #[serde(rename = "escalation-uri")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub escalation_uri: Option<String>,
     #[serde(rename = "fix-hint")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fix_hint: Option<FixHint>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub impact: Option<Impact>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub noticed_time: Option<String>,
     #[serde(rename = "where")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub problem_items: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>
 }
 
@@ -42,19 +51,14 @@ impl ProblemReport {
         self.comment = Some(comment);
         self
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CommonProblemReport(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+threadlike!(ProblemReport);
+a2a_message!(ProblemReport, CommonProblemReport);
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Description {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub en: Option<String>,
     pub code: u32,
 }
@@ -72,7 +76,14 @@ pub enum WhoRetries {
     None
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+impl Default for WhoRetries {
+    fn default() -> WhoRetries {
+        WhoRetries::None
+    }
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct FixHint {
     en: String
 }
@@ -86,25 +97,6 @@ pub enum Impact {
     Thread,
     #[serde(rename = "connection")]
     Connection
-}
-
-impl Default for ProblemReport {
-    fn default() -> ProblemReport {
-        ProblemReport {
-            id: MessageId::new(),
-            thread: Thread::new(),
-            description: None,
-            who_retries: None,
-            tracking_uri: None,
-            escalation_uri: None,
-            fix_hint: None,
-            impact: None,
-            noticed_time: None,
-            location: None,
-            problem_items: None,
-            comment: None,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -139,7 +131,7 @@ pub mod tests {
     fn test_problem_report_build_works() {
         let report: ProblemReport = ProblemReport::default()
             .set_comment(_comment())
-            .set_thread_id(_thread_id())
+            .set_thread_id(&_thread_id())
             .set_description(_code());
 
         assert_eq!(_problem_report(), report);

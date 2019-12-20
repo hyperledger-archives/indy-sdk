@@ -178,10 +178,11 @@ impl InvitedState {
         let response = Response::create()
             .set_did(new_agent_info.pw_did.to_string())
             .set_service_endpoint(new_agent_info.agency_endpoint()?)
-            .set_keys(new_agent_info.recipient_keys(), new_agent_info.routing_keys()?);
+            .set_keys(new_agent_info.recipient_keys(), new_agent_info.routing_keys()?)
+            .ask_for_ack();
 
         let signed_response = response.clone()
-            .set_thread_id(request.id.0.clone())
+            .set_thread_id(&request.id.0)
             .encode(&prev_agent_info.pw_vk)?;
 
         new_agent_info.send_message(&signed_response.to_a2a_message(), &request.connection.did_doc)?;
@@ -199,12 +200,15 @@ impl RequestedState {
 
         let response: Response = response.decode(&remote_vk)?;
 
-        if !response.thread.is_reply(&self.request.id.0) {
+        if !response.from_thread(&self.request.id.0) {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot handle Response: thread id does not match: {:?}", response.thread)));
         }
 
-        let ack = Ack::create().set_thread_id(response.thread.thid.clone().unwrap_or_default());
-        agent_info.send_message(&ack.to_a2a_message(), &response.connection.did_doc)?;
+        if response.please_ack.is_some() {
+            // TODO: else send Ping ???
+            let ack = Ack::create().set_thread_id(&response.thread.thid.clone().unwrap_or_default());
+            agent_info.send_message(&ack.to_a2a_message(), &response.connection.did_doc)?;
+        }
 
         Ok(response)
     }
@@ -284,7 +288,7 @@ impl CompleteState {
 fn _handle_ping(ping: &Ping, agent_info: &AgentInfo, did_doc: &DidDoc) -> VcxResult<()> {
     if ping.response_requested {
         let ping_response = PingResponse::create().set_thread_id(
-            ping.thread.as_ref().and_then(|thread| thread.thid.clone()).unwrap_or(ping.id.0.clone()));
+            &ping.thread.as_ref().and_then(|thread| thread.thid.clone()).unwrap_or(ping.id.0.clone()));
         agent_info.send_message(&ping_response.to_a2a_message(), did_doc)?;
     }
     Ok(())
@@ -462,7 +466,7 @@ impl DidExchangeSM {
                                         let problem_report = ProblemReport::create()
                                             .set_problem_code(ProblemCode::RequestProcessingError)
                                             .set_explain(err.to_string())
-                                            .set_thread_id(request.id.0.clone());
+                                            .set_thread_id(&request.id.0);
 
                                         agent_info.send_message(&problem_report.to_a2a_message(), &request.connection.did_doc).ok(); // IS is possible?
                                         ActorDidExchangeState::Inviter(DidExchangeState::Null((state, problem_report).into()))
@@ -547,7 +551,7 @@ impl DidExchangeSM {
                                         let problem_report = ProblemReport::create()
                                             .set_problem_code(ProblemCode::ResponseProcessingError)
                                             .set_explain(err.to_string())
-                                            .set_thread_id(state.request.id.0.clone());
+                                            .set_thread_id(&state.request.id.0);
                                         agent_info.send_message(&problem_report.to_a2a_message(), &state.did_doc).ok();
                                         ActorDidExchangeState::Invitee(DidExchangeState::Null((state, problem_report).into()))
                                     }
@@ -1134,7 +1138,7 @@ pub mod test {
             Response::default()
                 .set_service_endpoint(_service_endpoint())
                 .set_keys(vec![key.to_string()], vec![])
-                .set_thread_id(_request().id.0.clone())
+                .set_thread_id(&_request().id.0)
                 .encode(&key).unwrap()
         }
 

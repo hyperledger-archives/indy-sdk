@@ -8,17 +8,21 @@ use v3::messages::connection::did_doc::*;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::a2a::message_type::MessageType;
+use v3::messages::ack::PleaseAck;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct Response {
     #[serde(rename = "@id")]
     pub id: MessageId,
     #[serde(rename = "~thread")]
     pub thread: Thread,
-    pub connection: ConnectionData
+    pub connection: ConnectionData,
+    #[serde(rename = "~please_ack")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub please_ack: Option<PleaseAck>
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct ConnectionData {
     #[serde(rename = "DID")]
     pub did: String,
@@ -26,14 +30,17 @@ pub struct ConnectionData {
     pub did_doc: DidDoc,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct SignedResponse {
     #[serde(rename = "@id")]
     pub id: MessageId,
     #[serde(rename = "~thread")]
     pub thread: Thread,
     #[serde(rename = "connection~sig")]
-    pub connection_sig: ConnectionSignature
+    pub connection_sig: ConnectionSignature,
+    #[serde(rename = "~please_ack")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub please_ack: Option<PleaseAck>
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -66,11 +73,6 @@ impl Response {
         self
     }
 
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
     pub fn encode(&self, key: &str) -> VcxResult<SignedResponse> {
         let connection_data = json!(self.connection).to_string();
 
@@ -97,11 +99,15 @@ impl Response {
             id: self.id.clone(),
             thread: self.thread.clone(),
             connection_sig,
+            please_ack: self.please_ack.clone(),
         };
 
         Ok(signed_response)
     }
 }
+
+please_ack!(Response);
+threadlike!(Response);
 
 impl SignedResponse {
     pub fn decode(self, key: &str) -> VcxResult<Response> {
@@ -126,36 +132,12 @@ impl SignedResponse {
             id: self.id,
             thread: self.thread,
             connection,
+            please_ack: self.please_ack,
         })
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::ConnectionResponse(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-impl Default for Response {
-    fn default() -> Response {
-        Response {
-            id: MessageId::new(),
-            thread: Thread::new(),
-            connection: ConnectionData {
-                did: String::new(),
-                did_doc: DidDoc::default()
-            },
-        }
-    }
-}
-
-impl Default for SignedResponse {
-    fn default() -> SignedResponse {
-        SignedResponse {
-            id: MessageId::new(),
-            thread: Thread::new(),
-            connection_sig: ConnectionSignature::default()
-        }
-    }
-}
+a2a_message!(SignedResponse, ConnectionResponse);
 
 impl Default for ConnectionSignature {
     fn default() -> ConnectionSignature {
@@ -198,6 +180,7 @@ pub mod tests {
                 did: _did(),
                 did_doc: _did_doc()
             },
+            please_ack: None,
         }
     }
 
@@ -211,6 +194,7 @@ pub mod tests {
                 signer: _key(),
                 ..Default::default()
             },
+            please_ack: None,
         }
     }
 
@@ -218,7 +202,7 @@ pub mod tests {
     fn test_response_build_works() {
         let response: Response = Response::default()
             .set_did(_did())
-            .set_thread_id(_thread_id())
+            .set_thread_id(&_thread_id())
             .set_service_endpoint(_service_endpoint())
             .set_keys(_recipient_keys(), _routing_keys());
 
