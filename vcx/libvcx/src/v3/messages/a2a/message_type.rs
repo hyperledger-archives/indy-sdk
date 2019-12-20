@@ -1,4 +1,3 @@
-use v3::messages::a2a::A2AMessageKinds;
 use v3::messages::a2a::message_family::MessageFamilies;
 use messages::message_type::parse_message_type;
 
@@ -14,14 +13,12 @@ pub struct MessageType {
 }
 
 impl MessageType {
-    const DID: &'static str = "did:sov:BzCbsNYhMrjHiqZDTUASHg";
-
-    pub fn build(kind: A2AMessageKinds) -> MessageType {
+    pub fn build(family: MessageFamilies, name: &str) -> MessageType {
         MessageType {
-            did: Self::DID.to_string(),
-            family: kind.family(),
-            version: kind.family().version().to_string(),
-            type_: kind.name(),
+            did: MessageFamilies::DID.to_string(),
+            version: family.version().to_string(),
+            family,
+            type_: name.to_string(),
         }
     }
 }
@@ -48,7 +45,13 @@ impl<'de> Deserialize<'de> for MessageType {
 
 impl Serialize for MessageType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let value = Value::String(format!("{};spec/{}/{}/{}", self.did, self.family.to_string(), self.version, self.type_));
+        let value = Value::String(self.to_string());
         value.serialize(serializer)
+    }
+}
+
+impl ::std::string::ToString for MessageType {
+    fn to_string(&self) -> String {
+        format!("{};spec/{}/{}/{}", self.did, self.family.to_string(), self.version, self.type_)
     }
 }
