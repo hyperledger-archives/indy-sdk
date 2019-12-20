@@ -56,7 +56,7 @@ normalize_dir(){
 
 setup_dependencies(){
     if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
-        download_and_unzip_dependencies ${ABSOLUTE_ARCH}
+        setup_dependencies_env_vars ${ABSOLUTE_ARCH}
         else
             echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
             if [ -z "${OPENSSL_DIR}" ]; then
