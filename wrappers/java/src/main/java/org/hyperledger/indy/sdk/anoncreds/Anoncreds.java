@@ -551,6 +551,7 @@ public class Anoncreds extends IndyJava.API {
 	 *                                  "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
 	 *                                  "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
 	 *                                }
+	 *                                If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
 	 * @param revRegId                (Optional) id of stored in ledger revocation registry definition
 	 * @param blobStorageReaderHandle Pre-configured blob storage reader instance handle that will allow to read revocation tails
 	 * @return A future resolving to a IssuerCreateCredentialResult containing:

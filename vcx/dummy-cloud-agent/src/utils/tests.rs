@@ -205,6 +205,8 @@ pub fn wallet_storage_config() -> WalletStorageConfig {
         xtype: None,
         config: None,
         credentials: None,
+        plugin_library_path: None,
+        plugin_init_function: None,
     }
 }
 
