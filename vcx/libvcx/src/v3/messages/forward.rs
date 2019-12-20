@@ -19,6 +19,15 @@ impl Forward {
     }
 }
 
+impl Default for Forward {
+    fn default() -> Forward {
+        Forward {
+            to: String::new(),
+            msg: ::serde_json::Value::Null,
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;

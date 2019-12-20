@@ -118,7 +118,6 @@ pub mod tests {
     static mut INSTITUTION_CONFIG: u32 = 0;
     static mut CONSUMER_CONFIG: u32 = 0;
     use indy::ErrorCode;
-    use std::sync::Once;
 
     static INIT_PLUGIN: std::sync::Once = std::sync::Once::new();
 

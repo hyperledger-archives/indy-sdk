@@ -17,12 +17,7 @@ pub struct CredentialRequest {
 
 impl CredentialRequest {
     pub fn create() -> Self {
-        CredentialRequest {
-            id: MessageId::new(),
-            comment: None,
-            requests_attach: Attachments::new(),
-            thread: Thread::new(),
-        }
+        CredentialRequest::default()
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
@@ -42,6 +37,17 @@ impl CredentialRequest {
 
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::CredentialRequest(self.clone()) // TODO: THINK how to avoid clone
+    }
+}
+
+impl Default for CredentialRequest {
+    fn default() -> CredentialRequest {
+        CredentialRequest {
+            id: MessageId::new(),
+            comment: None,
+            requests_attach: Attachments::new(),
+            thread: Thread::new(),
+        }
     }
 }
 

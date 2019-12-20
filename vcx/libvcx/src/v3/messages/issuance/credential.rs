@@ -20,12 +20,7 @@ pub struct Credential {
 
 impl Credential {
     pub fn create() -> Self {
-        Credential {
-            id: MessageId::new(),
-            comment: String::new(),
-            credentials_attach: Attachments::new(),
-            thread: Thread::new()
-        }
+        Credential::default()
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
@@ -45,6 +40,17 @@ impl Credential {
 
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::Credential(self.clone()) // TODO: THINK how to avoid clone
+    }
+}
+
+impl Default for Credential {
+    fn default() -> Credential {
+        Credential {
+            id: MessageId::new(),
+            comment: String::new(),
+            credentials_attach: Attachments::new(),
+            thread: Thread::new()
+        }
     }
 }
 
