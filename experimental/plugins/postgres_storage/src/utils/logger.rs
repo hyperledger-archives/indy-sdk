@@ -19,6 +19,9 @@ use std::ptr;
 
 use errors::common::CommonError;
 use utils::ctypes;
+use libindy;
+use libindy::ErrorCode;
+
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
 
@@ -56,20 +59,42 @@ static mut ENABLED_CB: Option<EnabledCB> = None;
 static mut LOG_CB: Option<LogCB> = None;
 static mut FLUSH_CB: Option<FlushCB> = None;
 
-pub struct LibindyLogger {
+
+pub struct PostgressStorageLogger {
     context: *const c_void,
     enabled: Option<EnabledCB>,
     log: LogCB,
     flush: Option<FlushCB>,
 }
 
-impl LibindyLogger {
+impl PostgressStorageLogger {
     fn new(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Self {
-        LibindyLogger { context, enabled, log, flush }
+        PostgressStorageLogger { context, enabled, log, flush }
+    }
+
+    pub fn init() -> Result<(), ErrorCode> {
+        // logging, as implemented, crashes with VCX for android and ios, so
+        // for this hotfix (IS-1164) simply return OK
+        if cfg!(target_os = "android") || cfg!(target_os = "ios") {
+            return Ok(())
+        }
+
+        let (context, enabled, log, flush) = libindy::logger::get_logger()?;
+
+        let log = match log {
+            Some(log) => log,
+            None => return Err(ErrorCode::CommonInvalidState)
+        };
+
+        let logger = PostgressStorageLogger::new(context, enabled, log, flush);
+
+        log::set_boxed_logger(Box::new(logger)).ok();
+        log::set_max_level(LevelFilter::Trace);
+        Ok(())
     }
 }
 
-impl log::Log for LibindyLogger {
+impl log::Log for PostgressStorageLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         if let Some(enabled_cb) = self.enabled {
             let level = metadata.level() as u32;
@@ -110,28 +135,10 @@ impl log::Log for LibindyLogger {
     }
 }
 
-unsafe impl Sync for LibindyLogger {}
+unsafe impl Sync for PostgressStorageLogger {}
 
-unsafe impl Send for LibindyLogger {}
+unsafe impl Send for PostgressStorageLogger {}
 
-impl LibindyLogger {
-    pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), CommonError> {
-        let logger = LibindyLogger::new(context, enabled, log, flush);
-
-        log::set_boxed_logger(Box::new(logger))?;
-        log::set_max_level(LevelFilter::Trace);
-
-        unsafe {
-            LOGGER_STATE = LoggerState::Custom;
-            CONTEXT = context;
-            ENABLED_CB = enabled;
-            LOG_CB = Some(log);
-            FLUSH_CB = flush
-        };
-
-        Ok(())
-    }
-}
 
 pub struct LibindyDefaultLogger;
 
@@ -143,7 +150,7 @@ impl LibindyDefaultLogger {
 
         if cfg!(target_os = "android") {
             #[cfg(target_os = "android")]
-            let log_filter = match pattern {
+                let log_filter = match pattern {
                 Some(val) => match val.to_lowercase().as_ref() {
                     "error" => Filter::default().with_min_level(log::Level::Error),
                     "warn" => Filter::default().with_min_level(log::Level::Warn),
@@ -157,7 +164,7 @@ impl LibindyDefaultLogger {
 
             //Set logging to off when deploying production android app.
             #[cfg(target_os = "android")]
-            android_logger::init_once(log_filter);
+                android_logger::init_once(log_filter);
             info!("Logging for Android");
         } else {
             EnvLoggerBuilder::new()
@@ -171,8 +178,8 @@ impl LibindyDefaultLogger {
     }
 
     extern fn enabled(_context: *const c_void,
-                          level: u32,
-                          target: *const c_char) -> bool {
+                      level: u32,
+                      target: *const c_char) -> bool {
         let level = get_level(level);
         let target = ctypes::c_str_to_string(target).unwrap().unwrap();
 
@@ -185,12 +192,12 @@ impl LibindyDefaultLogger {
     }
 
     extern fn log(_context: *const c_void,
-                      level: u32,
-                      target: *const c_char,
-                      args: *const c_char,
-                      module_path: *const c_char,
-                      file: *const c_char,
-                      line: u32) {
+                  level: u32,
+                  target: *const c_char,
+                  args: *const c_char,
+                  module_path: *const c_char,
+                  file: *const c_char,
+                  line: u32) {
         let target = ctypes::c_str_to_string(target).unwrap().unwrap();
         let args = ctypes::c_str_to_string(args).unwrap().unwrap();
         let module_path = ctypes::c_str_to_string(module_path).unwrap();
@@ -225,6 +232,7 @@ fn get_level(level: u32) -> Level {
         _ => unreachable!(),
     }
 }
+
 
 #[macro_export]
 macro_rules! try_log {

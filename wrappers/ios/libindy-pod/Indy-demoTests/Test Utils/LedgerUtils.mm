@@ -855,6 +855,8 @@
 - (NSError *)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
                                                        text:(NSString *)text
                                                     version:(NSString *)version
+                                      ratificationTimestamp:(NSNumber *)ratificationTimestamp
+                                        retirementTimestamp:(NSNumber *)retirementTimestamp
                                                  outRequest:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
@@ -863,11 +865,33 @@
     [IndyLedger buildTxnAuthorAgreementRequestWithSubmitterDid:submitterDid
                                                           text:text
                                                        version:version
+                                         ratificationTimestamp:ratificationTimestamp
+                                           retirementTimestamp:retirementTimestamp
                                                     completion:^(NSError *error, NSString *json) {
                                                         err = error;
                                                         outJson = json;
                                                         [completionExpectation fulfill];
                                                     }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                            outRequest:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid:submitterDid
+                                                               completion:^(NSError *error, NSString *json) {
+                                                                   err = error;
+                                                                   outJson = json;
+                                                                   [completionExpectation fulfill];
+                                                               }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
