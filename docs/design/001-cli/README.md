@@ -424,6 +424,12 @@ Request to add new acceptance mechanisms for transaction author agreement.
 ledger txn-acceptance-mechanisms [aml=<acceptance mechanisms>] [file=<file with acceptance mechanisms>] version=<version> [context=<some context>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
 ```
 
+#### GET_TXN_AUTHR_AGRMT_AML transaction.
+Get a list of acceptance mechanisms set on the ledger
+```
+ledger get-acceptance-mechanisms [timestamp=<timestamp>] [version=<version>] [send=<true or false>]
+```
+
 ### Payment Address commands
 ```
 indy> payment-address <subcommand>
