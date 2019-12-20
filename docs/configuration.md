@@ -325,6 +325,12 @@ This function will also be used by `indy` and `plugins` for logging.
 
 WARNING: You can only set the logger **once**. Once it's been set, vcx won't let you change it.
 
+### Aries 
+* `communication_method` - the version of protocols to use (can be `aries` or `proprietary`)
+* `actors` - the set of actors application supports.
+This setting is used in `Feature Discovery` protocol to discover which features are supported by other connection side.
+The following actors are implemented by default: [inviter, invitee, issuer, holder, prover, verifier, sender, receiver]. 
+You need to edit this list in case application supports the less number of actors.
 
 ##### Wrappers
 * The Python wrapper uses default Python logging module. So, to enable logs you need just to configure its usual way. 

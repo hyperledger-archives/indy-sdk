@@ -1,5 +1,5 @@
-use v3::messages::a2a::A2AMessageKinds;
 use v3::messages::a2a::message_type::MessageType;
+use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::mime_type::MimeType;
 use error::VcxResult;
 
@@ -18,7 +18,7 @@ pub struct CredentialPreviewData {
 impl CredentialPreviewData {
     pub fn new() -> Self {
         CredentialPreviewData {
-            _type: MessageType::build(A2AMessageKinds::CredentialPreview),
+            _type: MessageType::build(MessageFamilies::CredentialIssuance, "credential-preview"),
             attributes: vec![]
         }
     }

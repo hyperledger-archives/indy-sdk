@@ -153,6 +153,11 @@ public abstract class LibVcx {
          */
         public int vcx_connection_send_ping(int command_handle, int connection_handle, String comment, Callback cb);
 
+        /**
+         * Send discovery features message to the specified connection to discover which features it supports, and to what extent
+         */
+        public int vcx_connection_send_discovery_features(int command_handle, int connection_handle, String query, String comment, Callback cb);
+
 
     /**
      * credential issuer object
