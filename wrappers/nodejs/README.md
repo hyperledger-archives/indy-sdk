@@ -2025,13 +2025,28 @@ EXPERIMENTAL
 
 * `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
                            Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
-* `text`: String - a content of the TTA.
+* `text`: String - \(Optional\)  a content of the TTA.
+    * Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+    * for Indy Node version <= 1.12.0:
+        * Use empty string to reset TAA on the ledger
+    * for Indy Node version > 1.12.0
+        * Should be omitted in case of updating an existing TAA (setting `retirementTimestamp`)
 * `version`: String - a version of the TTA (unique UTF-8 string).
 * `version`: String - the date (timestamp) of TAA ratification by network government.
-* `ratificationTimestamp`: Number - \(Optional\) The date \(timestamp\) of TAA ratification by network government.
-* `retirementTimestamp`: Number - \(Optional\) The date \(timestamp\) of TAA retirement. 
-Should be omitted in case of adding the new (latest) TAA,
-Should be used to deactivate non-latest TAA on the ledger.
+* `ratificationTimestamp`: Number - \(Optional\) Еhe date (timestamp) of TAA ratification by network government.
+    * for Indy Node version <= 1.12.0:
+        * Must be omitted
+    * for Indy Node version > 1.12.0:
+        * Must be specified in case of adding a new TAA
+        * Can be omitted in case of updating an existing TAA
+* `retirementTimestamp`: Number - \(Optional\) the date \(timestamp\) of TAA retirement.
+    * for Indy Node version <= 1.12.0:
+        * Must be omitted
+    * for Indy Node version > 1.12.0:
+        * Must be omitted in case of adding a new (latest) TAA.
+        * Should be used for updating (deactivating) non-latest TAA on the ledger.
+
+Note: Use `buildDisableAllTxnAuthorAgreementsRequest` to disable all TAA's on the ledger.
 
 * __->__ `request`: Json
 

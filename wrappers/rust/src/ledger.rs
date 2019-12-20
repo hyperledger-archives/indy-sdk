@@ -1207,13 +1207,27 @@ fn _build_get_auth_rule_request(command_handle: CommandHandle,
 /// # Arguments
 /// * `submitter_did` - Identifier (DID) of the transaction author as base58-encoded string.
 ///                Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
-/// * `text`: a content of the TTA.
+/// * `text`: (Optional) a content of the TTA.
+///            Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+///             for Indy Node version <= 1.12.0:
+///                 Use empty string to reset TAA on the ledger
+///             for Indy Node version > 1.12.0
+///                 Should be omitted in case of updating an existing TAA (setting `retirement_ts`)
 /// * `version`: a version of the TTA (unique UTF-8 string).
-/// * `ratification_ts`: the date (timestamp) of TAA ratification by network government.
-/// * `retirement_ts`: the date (timestamp) of TAA retirement.
-///                -1 to omit. Should be omitted in case of adding the new (latest) TAA,
-///                Should be used to deactivate non-latest TAA on the ledger.
-
+/// * `ratification_ts`: (Optional) the date (timestamp) of TAA ratification by network government.
+///              for Indy Node version <= 1.12.0:
+///                 Must be omitted
+///              for Indy Node version > 1.12.0:
+///                 Must be specified in case of adding a new TAA
+///                 Can be omitted in case of updating an existing TAA
+/// * `retirement_ts`: (Optional) the date (timestamp) of TAA retirement.
+///              for Indy Node version <= 1.12.0:
+///                 Must be omitted
+///              for Indy Node version > 1.12.0:
+///                 Must be omitted in case of adding a new (latest) TAA.
+///                 Should be used for updating (deactivating) non-latest TAA on the ledger.
+///
+/// Note: Use `build_disable_all_txn_author_agreements_request` to disable all TAA's on the ledger.
 ///
 /// # Returns
 /// Request result as json.
