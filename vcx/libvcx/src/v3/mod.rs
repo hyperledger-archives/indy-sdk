@@ -12,6 +12,7 @@ pub mod test {
     use utils::devsetup::tests::{init_plugin, config_with_wallet_handle};
     use messages::agent_utils::connect_register_provision;
     use utils::libindy::wallet::*;
+    use v3::messages::a2a::A2AMessage;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -261,12 +262,33 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
-        pub fn update_state_with_message(&self, expected_state: u32) {
+        pub fn update_state_with_message(&self, expected_state: u32) -> A2AMessage {
             self.activate();
             let did = ::connection::get_pw_did(self.connection_handle).unwrap();
             let message = download_message(did);
+
+            let a2a_message = ::connection::decode_message(self.connection_handle, message.clone()).unwrap();
+
             ::connection::update_state_with_message(self.connection_handle, message).unwrap();
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+
+            a2a_message
+        }
+
+        pub fn ping(&self) {
+            self.activate();
+            ::connection::send_ping(self.connection_handle, None).unwrap();
+        }
+
+        pub fn discovery_features(&self) {
+            self.activate();
+            ::connection::send_discovery_features(self.connection_handle, None, None).unwrap();
+        }
+
+        pub fn connection_info(&self) -> ::serde_json::Value {
+            self.activate();
+            let details = ::connection::get_invite_details(self.connection_handle, false).unwrap();
+            ::serde_json::from_str(&details).unwrap()
         }
 
         pub fn offer_credential(&mut self) {
@@ -387,12 +409,17 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
-        pub fn update_state_with_message(&self, expected_state: u32) {
+        pub fn update_state_with_message(&self, expected_state: u32) -> A2AMessage {
             self.activate();
             let did = ::connection::get_pw_did(self.connection_handle).unwrap();
             let message = download_message(did);
+
+            let a2a_message = ::connection::decode_message(self.connection_handle, message.clone()).unwrap();
+
             ::connection::update_state_with_message(self.connection_handle, message).unwrap();
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+
+            a2a_message
         }
 
         pub fn accept_offer(&mut self) {
@@ -518,11 +545,26 @@ pub mod test {
         alice.update_state_with_message(4);
         faber.update_state_with_message(4);
 
-        faber.activate();
-        ::connection::send_ping(faber.connection_handle, None).unwrap();
+        // Ping
+        faber.ping();
 
-        alice.update_state_with_message(4);
-        faber.update_state_with_message(4);
+        let message = alice.update_state_with_message(4);
+        assert_match!(A2AMessage::Ping(_), message);
+
+        let message = faber.update_state_with_message(4);
+        assert_match!(A2AMessage::PingResponse(_), message);
+
+        // Discovery Features
+        faber.discovery_features();
+
+        let message = alice.update_state_with_message(4);
+        assert_match!(A2AMessage::Query(_), message);
+
+        let message = faber.update_state_with_message(4);
+        assert_match!(A2AMessage::Disclose(_), message);
+
+        let faber_connection_info = faber.connection_info();
+        assert!(faber_connection_info["protocols"].as_array().unwrap().len() > 0);
     }
 }
 

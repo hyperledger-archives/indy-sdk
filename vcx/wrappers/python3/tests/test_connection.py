@@ -184,11 +184,19 @@ async def test_get_state():
     connection = await Connection.create(source_id)
     assert await connection.get_state() == State.Initialized
 
-
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_ping():
     connection = await Connection.create(source_id)
     with pytest.raises(VcxError) as e:
         await connection.send_ping()
+    assert ErrorCode.InvalidConnectionHandle == e.value.error_code
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_send_discovery_features():
+    connection = await Connection.create(source_id)
+    with pytest.raises(VcxError) as e:
+        await connection.send_discovery_features()
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code

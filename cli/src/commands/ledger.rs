@@ -1714,13 +1714,29 @@ pub mod taa_command {
                 One of the next parameter combinations must be specified to pay a transaction fee (if it is set on the ledger):
                 (source_payment_address, fee) - CLI automatically gets payment sources corresponded to the source payment address and prepares data
                 (fees_inputs, fees_outputs) - explicit specification of payment sources"#)
-                .add_optional_param("text", "The content of a new agreement. Use empty to reset an active agreement")
+                .add_optional_param("text", r#"The content of a new agreement.
+                         Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+                         for Indy Node version <= 1.12.0:
+                             Use empty string to reset TAA on the ledger
+                         for Indy Node version > 1.12.0
+                             Should be omitted in case of updating an existing TAA (setting `retirement-timestamp`)
+                "#)
                 .add_optional_param("file", "The path to file containing a content of agreement to send (an alternative to the `text` parameter)")
                 .add_required_param("version", "The version of a new agreement")
-                .add_optional_param("ratification-time","The date (timestamp) of TAA ratification by network government")
-                .add_optional_param("retirement-time","The date (timestamp) of TAA retirement. \
-                Should be omitted in case of adding the new (latest) TAA. \
-                Should be used to deactivate non-latest TAA on the ledger.")
+                .add_optional_param("ratification-timestamp",r#"The date (timestamp) of TAA ratification by network government
+                                 for Indy Node version <= 1.12.0:
+                                    Must be omitted
+                                 for Indy Node version > 1.12.0:
+                                    Must be specified in case of adding a new TAA
+                                    Can be omitted in case of updating an existing TAA
+                "#)
+                .add_optional_param("retirement-timestamp", r#"The date (timestamp) of TAA retirement.
+                                for Indy Node version <= 1.12.0:
+                                    Must be omitted
+                                for Indy Node version > 1.12.0:
+                                    Must be omitted in case of adding a new (latest) TAA.
+                                    Should be used for updating (deactivating) non-latest TAA on the ledger.
+                "#)
                 .add_optional_param_with_dynamic_completion("source_payment_address","Payment address of sender.", DynamicCompletionType::PaymentAddress)
                 .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
@@ -1745,8 +1761,8 @@ pub mod taa_command {
         let text = get_opt_empty_str_param("text", params).map_err(error_err!())?;
         let file = get_opt_str_param("file", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
-        let ratification_ts = get_opt_number_param::<u64>("ratification-time", params).map_err(error_err!())?;
-        let retirement_ts = get_opt_number_param::<u64>("retirement-time", params).map_err(error_err!())?;
+        let ratification_ts = get_opt_number_param::<u64>("ratification-timestamp", params).map_err(error_err!())?;
+        let retirement_ts = get_opt_number_param::<u64>("retirement-timestamp", params).map_err(error_err!())?;
 
         let text: Option<String> = match (text, file) {
             (Some(text_), None) => Some(text_.to_string()),
@@ -1955,6 +1971,71 @@ pub mod endorse_transaction_command {
                 println_succ!("Data:");
                 print_table(&json!({"data": data}), &[("data", "Data")]);
             })?;
+
+        trace!("execute <<");
+        Ok(())
+    }
+}
+
+pub mod get_acceptance_mechanisms_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-acceptance-mechanisms", r#"Get a list of acceptance mechanisms set on the ledger"#)
+                .add_optional_param("timestamp","The time (as timestamp) to get an active acceptance mechanisms. Skip to get the latest one")
+                .add_optional_param("version","The version of acceptance mechanisms")
+                .add_optional_param("send","Send the request to the Ledger (True by default). If false then created request will be printed and stored into CLI context.")
+                .add_example("ledger get-acceptance-mechanisms")
+                .add_example("ledger get-acceptance-mechanisms timestamp=1576674598")
+                .add_example("ledger get-acceptance-mechanisms version=1.0")
+                .add_example("ledger get-acceptance-mechanisms send=false")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = get_active_did(&ctx);
+
+        let timestamp = get_opt_number_param::<i64>("timestamp", params).map_err(error_err!())?;
+        let version = get_opt_str_param("version", params).map_err(error_err!())?;
+
+        let request = Ledger::build_get_acceptance_mechanisms_request(submitter_did.as_ref().map(String::as_str), timestamp, version)
+            .map_err(|err| handle_indy_error(err, None, None, None))?;
+
+        let (_, response) = send_read_request!(&ctx, params, &request, submitter_did.as_ref().map(String::as_str));
+
+        match handle_transaction_response(response) {
+            Ok(result) => {
+                let aml = result["data"]["aml"].as_object()
+                    .ok_or_else(|| println_err!("Wrong data has been received"))?;
+
+                let aml =
+                    aml.iter()
+                        .map(|(key, value)|
+                            json!({
+                                "label": key,
+                                "description": value
+                            }))
+                        .collect::<Vec<serde_json::Value>>();
+
+                if !aml.is_empty() {
+                    println!("Following Acceptance Mechanisms are set on the Ledger");
+                }
+
+                print_list_table(&aml,
+                                 &[("label", "Label"),
+                                     ("description", "Description")],
+                                 "There are no acceptance mechanisms");
+
+                println!("Version: {}", result["data"]["version"].as_str().unwrap_or_default());
+
+                if let Some(context) = result["data"]["amlContext"].as_str() {
+                    println!("Context: {}", context);
+                }
+                println!();
+            }
+            Err(_) => {}
+        }
 
         trace!("execute <<");
         Ok(())
@@ -4872,6 +4953,11 @@ pub mod tests {
                 params.insert("aml", AML.to_string());
                 params.insert("version", _get_version());
                 params.insert("context", "Some Context".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                let cmd = get_acceptance_mechanisms_command::new();
+                let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
             tear_down_with_wallet_and_pool(&ctx);

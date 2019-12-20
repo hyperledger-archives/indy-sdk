@@ -1,9 +1,13 @@
+use v3::messages::connection::invite::Invitation;
+
 use error::prelude::*;
 use url::Url;
 
 pub const CONTEXT: &str = "https://w3id.org/did/v1";
 pub const KEY_TYPE: &str = "Ed25519VerificationKey2018";
 pub const KEY_AUTHENTICATION_TYPE: &str = "Ed25519SignatureAuthentication2018";
+pub const SERVICE_SUFFIX: &str = "indy";
+pub const SERVICE_TYPE: &str = "IndyAgent";
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DidDoc {
@@ -60,15 +64,7 @@ impl Default for DidDoc {
             id: String::new(),
             public_key: vec![],
             authentication: vec![],
-            service: vec![Service {
-                // TODO: FIXME Several services????
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
-                service_endpoint: String::new(),
-                recipient_keys: Vec::new(),
-                routing_keys: Vec::new(),
-            }],
+            service: vec![Service::default()],
         }
     }
 }
@@ -263,7 +259,19 @@ impl DidDoc {
     }
 }
 
-use v3::messages::connection::invite::Invitation;
+impl Default for Service {
+    fn default() -> Service {
+        Service {
+            // TODO: FIXME Several services????
+            id: format!("did:example:123456789abcdefghi;{}", SERVICE_SUFFIX),
+            type_: String::from(SERVICE_TYPE),
+            priority: 0,
+            service_endpoint: String::new(),
+            recipient_keys: Vec::new(),
+            routing_keys: Vec::new(),
+        }
+    }
+}
 
 impl From<Invitation> for DidDoc {
     fn from(invite: Invitation) -> DidDoc {
@@ -350,12 +358,10 @@ pub mod tests {
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
             ],
             service: vec![Service {
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_reference_1()],
                 routing_keys: vec![_key_reference_2(), _key_reference_3()],
+                ..Default::default()
             }],
         }
     }
@@ -373,12 +379,10 @@ pub mod tests {
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
             ],
             service: vec![Service {
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_1()],
                 routing_keys: vec![_key_2(), _key_3()],
+                ..Default::default()
             }],
         }
     }
@@ -396,12 +400,10 @@ pub mod tests {
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_1() }
             ],
             service: vec![Service {
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_1()],
                 routing_keys: vec![_key_2(), _key_3()],
+                ..Default::default()
             }],
         }
     }
@@ -417,12 +419,10 @@ pub mod tests {
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_1() }
             ],
             service: vec![Service {
-                id: String::from("did:example:123456789abcdefghi;did-communication"),
-                type_: String::from("did-communication"),
-                priority: 0,
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_1()],
                 routing_keys: vec![],
+                ..Default::default()
             }],
         }
     }

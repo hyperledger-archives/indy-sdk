@@ -172,12 +172,12 @@ impl ProverSM {
                 ProverState::PresentationSent(ref state) => {
                     match message {
                         A2AMessage::Ack(ack) => {
-                            if ack.thread.is_reply(&self.thread_id) {
+                            if ack.from_thread(&self.thread_id) {
                                 return Some((uid, A2AMessage::Ack(ack)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.thread_id) {
+                            if problem_report.from_thread(&self.thread_id) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -205,7 +205,8 @@ impl ProverSM {
                         match state.build_presentation(&credentials, &self_attested_attrs) {
                             Ok(presentation) => {
                                 let presentation = Presentation::create()
-                                    .set_thread_id(thread_id.clone())
+                                    .ask_for_ack()
+                                    .set_thread_id(&thread_id)
                                     .set_presentations_attach(presentation)?;
 
                                 ProverState::PresentationPrepared((state, presentation).into())
@@ -214,7 +215,7 @@ impl ProverSM {
                                 let problem_report =
                                     ProblemReport::create()
                                         .set_comment(err.to_string())
-                                        .set_thread_id(thread_id.clone());
+                                        .set_thread_id(&thread_id);
 
                                 ProverState::PresentationPreparationFailed((state, problem_report).into())
                             }
@@ -630,10 +631,10 @@ pub mod test {
             // No messages for different Thread ID
             {
                 let messages = map!(
-                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id(String::new())),
-                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id(String::new())),
-                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id(String::new())),
-                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(String::new()))
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id("")),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id("")),
+                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id("")),
+                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
                 );
 
                 assert!(prover.find_message_to_handle(messages).is_none());

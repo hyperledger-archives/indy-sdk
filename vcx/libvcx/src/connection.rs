@@ -1001,6 +1001,15 @@ pub fn send_ping(connection_handle: u32, comment: Option<String>) -> VcxResult<(
     })
 }
 
+pub fn send_discovery_features(connection_handle: u32, query: Option<String>, comment: Option<String>) -> VcxResult<()> {
+    CONNECTION_MAP.get_mut(connection_handle, |connection| {
+        match connection {
+            Connections::V1(ref connection) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)),
+            Connections::V3(ref mut connection) => connection.send_discovery_features(query.clone(), comment.clone())
+        }
+    })
+}
+
 #[cfg(test)]
 pub mod tests {
     use utils::constants::*;
@@ -1393,7 +1402,6 @@ pub mod tests {
 
         // release throws a connection Error
         assert_eq!(release(1234).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-
     }
 
     #[test]
@@ -1416,7 +1424,6 @@ pub mod tests {
         assert_eq!(set_invite_details(1, &details).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
 
         assert_eq!(set_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-
     }
 
     #[test]

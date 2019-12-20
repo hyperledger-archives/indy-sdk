@@ -1,7 +1,7 @@
 use messages::thread::Thread;
 use v3::messages::a2a::{MessageId, A2AMessage};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Ack {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -20,6 +20,12 @@ pub enum AckStatus {
     Pending
 }
 
+impl Default for AckStatus {
+    fn default() -> AckStatus {
+        AckStatus::Ok
+    }
+}
+
 impl Ack {
     pub fn create() -> Ack {
         Ack::default()
@@ -29,26 +35,23 @@ impl Ack {
         self.status = status;
         self
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::Ack(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-impl Default for Ack {
-    fn default() -> Ack {
-        Ack {
-            id: MessageId::new(),
-            status: AckStatus::Ok,
-            thread: Thread::new(),
+threadlike!(Ack);
+a2a_message!(Ack);
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PleaseAck {}
+
+#[macro_export]
+macro_rules! please_ack (($type:ident) => (
+    impl $type {
+        pub fn ask_for_ack(mut self) -> $type {
+            self.please_ack = Some(PleaseAck {});
+            self
         }
     }
-}
+));
 
 #[cfg(test)]
 pub mod tests {
@@ -67,7 +70,7 @@ pub mod tests {
     fn test_ack_build_works() {
         let ack: Ack = Ack::default()
             .set_status(AckStatus::Fail)
-            .set_thread_id(_thread_id());
+            .set_thread_id(&_thread_id());
 
         assert_eq!(_ack(), ack);
     }

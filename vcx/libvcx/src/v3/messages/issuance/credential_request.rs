@@ -3,7 +3,7 @@ use v3::messages::attachment::{Attachments, AttachmentEncoding};
 use error::VcxResult;
 use messages::thread::Thread;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct CredentialRequest {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -17,12 +17,7 @@ pub struct CredentialRequest {
 
 impl CredentialRequest {
     pub fn create() -> Self {
-        CredentialRequest {
-            id: MessageId::new(),
-            comment: None,
-            requests_attach: Attachments::new(),
-            thread: Thread::new(),
-        }
+        CredentialRequest::default()
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
@@ -34,16 +29,10 @@ impl CredentialRequest {
         self.requests_attach.add_json_attachment(::serde_json::Value::String(credential_request), AttachmentEncoding::Base64)?;
         Ok(self)
     }
-
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CredentialRequest(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+threadlike!(CredentialRequest);
+a2a_message!(CredentialRequest);
 
 #[cfg(test)]
 pub mod tests {
@@ -77,7 +66,7 @@ pub mod tests {
     fn test_credential_request_build_works() {
         let credential_request: CredentialRequest = CredentialRequest::create()
             .set_comment(_comment())
-            .set_thread_id(thread_id())
+            .set_thread_id(&thread_id())
             .set_requests_attach(_attachment().to_string()).unwrap();
 
         assert_eq!(_credential_request(), credential_request);

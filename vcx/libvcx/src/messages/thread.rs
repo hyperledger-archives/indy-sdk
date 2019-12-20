@@ -41,3 +41,17 @@ impl Default for Thread {
         }
     }
 }
+
+#[macro_export]
+macro_rules! threadlike (($type:ident) => (
+    impl $type {
+        pub fn set_thread_id(mut self, id: &str) -> $type {
+            self.thread.thid = Some(id.to_string());
+            self
+        }
+
+        pub fn from_thread(&self, id: &str) -> bool {
+            self.thread.is_reply(id)
+        }
+    }
+));
