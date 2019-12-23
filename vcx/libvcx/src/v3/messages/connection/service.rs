@@ -1,6 +1,6 @@
 use v3::messages::connection::did_doc::DidDoc;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Service {
     #[serde(default)]
@@ -28,16 +28,6 @@ impl Service {
     pub fn set_recipient_keys(mut self, recipient_keys: Vec<String>) -> Self {
         self.recipient_keys = recipient_keys;
         self
-    }
-}
-
-impl Default for Service {
-    fn default() -> Service {
-        Service {
-            recipient_keys: Vec::new(),
-            routing_keys: Vec::new(),
-            service_endpoint: String::new(),
-        }
     }
 }
 

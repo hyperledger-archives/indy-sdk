@@ -248,7 +248,7 @@ impl ProverSM {
                                 ProverState::PresentationSent((state, connection_handle).into())
                             }
                             Some(service) => {
-                                connection::send_message_to_self_endpoint(state.presentation.to_a2a_message(), service)?;
+                                connection::send_message_to_self_endpoint(state.presentation.to_a2a_message(), &service.into())?;
                                 ProverState::Finished(state.into())
                             }
                         }
@@ -266,7 +266,7 @@ impl ProverSM {
                                 connection::send_message(connection_handle, state.problem_report.to_a2a_message())?;
                             }
                             Some(service) => {
-                                connection::send_message_to_self_endpoint(state.problem_report.to_a2a_message(), service)?;
+                                connection::send_message_to_self_endpoint(state.problem_report.to_a2a_message(), &service.into())?;
                             }
                         }
 

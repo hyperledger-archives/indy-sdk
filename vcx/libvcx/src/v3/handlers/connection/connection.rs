@@ -6,10 +6,9 @@ use v3::handlers::connection::messages::DidExchangeMessages;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::invite::Invitation;
-use v3::messages::connection::service::Service;
-use v3::handlers::connection::agent::AgentInfo;
 
 use std::collections::HashMap;
+use v3::messages::connection::did_doc::DidDoc;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -181,10 +180,10 @@ impl Connection {
         self.agent_info().send_message(message, &did_doc)
     }
 
-    pub fn send_message_to_self_endpoint(message: &A2AMessage, service: Service) -> VcxResult<()> {
-        trace!("Connection::send_message_to_self_endpoint >>> message: {:?}, service: {:?}", message, service);
+    pub fn send_message_to_self_endpoint(message: &A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
+        trace!("Connection::send_message_to_self_endpoint >>> message: {:?}, did_doc: {:?}", message, did_doc);
 
-        AgentInfo::send_message_anonymously(message, &service.into())
+        AgentInfo::send_message_anonymously(message, did_doc)
     }
 
     pub fn send_generic_message(&self, message: &str, _message_options: &str) -> VcxResult<String> {
