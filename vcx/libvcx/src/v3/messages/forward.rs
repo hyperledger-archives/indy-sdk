@@ -1,6 +1,6 @@
 use error::prelude::*;
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Default)]
 pub struct Forward {
     pub to: String,
     #[serde(rename = "msg")]
@@ -16,15 +16,6 @@ impl Forward {
             to,
             msg,
         })
-    }
-}
-
-impl Default for Forward {
-    fn default() -> Forward {
-        Forward {
-            to: String::new(),
-            msg: ::serde_json::Value::Null,
-        }
     }
 }
 

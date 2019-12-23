@@ -8,7 +8,7 @@ use issuer_credential::CredentialOffer as CredentialOfferV1;
 use messages::payload::PayloadKinds;
 use std::convert::TryInto;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct CredentialOffer {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -51,27 +51,13 @@ impl CredentialOffer {
         Ok(self)
     }
 
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread = Some(Thread::new().set_thid(id));
+    pub fn set_thread_id(mut self, id: &str) -> Self {
+        self.thread = Some(Thread::new().set_thid(id.to_string()));
         self
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CredentialOffer(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
 
-impl Default for CredentialOffer {
-    fn default() -> CredentialOffer {
-        CredentialOffer {
-            id: MessageId::new(),
-            comment: String::new(),
-            credential_preview: CredentialPreviewData::new(),
-            offers_attach: Attachments::new(),
-            thread: None,
-        }
-    }
-}
+a2a_message!(CredentialOffer);
 
 impl TryInto<CredentialOffer> for CredentialOfferV1 {
     type Error = VcxError;
@@ -172,7 +158,7 @@ pub mod tests {
     fn test_credential_offer_build_works() {
         let credential_offer: CredentialOffer = CredentialOffer::create()
             .set_comment(_comment())
-            .set_thread_id(_thread_id())
+            .set_thread_id(&_thread_id())
             .set_credential_preview_data(_preview_data()).unwrap()
             .set_offers_attach(&_attachment().to_string()).unwrap();
 

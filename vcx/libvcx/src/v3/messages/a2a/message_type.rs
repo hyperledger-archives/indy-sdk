@@ -4,7 +4,7 @@ use messages::message_type::parse_message_type;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct MessageType {
     pub did: String,
     pub family: MessageFamilies,

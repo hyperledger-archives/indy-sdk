@@ -85,3 +85,9 @@ impl ::std::string::ToString for MessageFamilies {
         }
     }
 }
+
+impl Default for MessageFamilies {
+    fn default() -> MessageFamilies {
+        MessageFamilies::Unknown(String::new())
+    }
+}

@@ -1,6 +1,6 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Query {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -27,16 +27,6 @@ impl Query {
 
     pub fn to_a2a_message(&self) -> A2AMessage {
         A2AMessage::Query(self.clone()) // TODO: THINK how to avoid clone
-    }
-}
-
-impl Default for Query {
-    fn default() -> Query {
-        Query {
-            id: MessageId::new(),
-            query: None,
-            comment: None
-        }
     }
 }
 
