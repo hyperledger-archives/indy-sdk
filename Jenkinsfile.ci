@@ -263,7 +263,7 @@ def macosModuleBuildingAndTest(library, testFeatures = "") {
 def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
-    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android")
+    linuxModuleTesting("ci/android.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android", "android", ["libindy": 'ci/ubuntu.dockerfile ci'])
 }
 
 def iosTesting() {
@@ -310,7 +310,6 @@ def iosTesting() {
                             rbenv install -s $(cat .ruby-version)
 
                             gem install bundler
-                            bundler exec gem env
 
                             bundler install
                             bundler list
@@ -577,7 +576,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     linuxModuleTesting(file, env_name, network_name, module_tester, "ubuntu")
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label, image_name="libindy", prebuilt_images = []) {
     node(node_label) {
         cleanWs()
         def poolInst
@@ -587,7 +586,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) 
 
             poolInst = openPool(env_name, network_name)
 
-            def testEnv = buildTestEnv(file, env_name)
+            def testEnv = buildTestEnv(file, env_name, image_name, prebuilt_images)
 
             module_tester(env_name, network_name, testEnv)
         } finally {
@@ -760,10 +759,13 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def buildTestEnv(file, env_name) {
+def buildTestEnv(file, env_name, name="libindy", prebuilt_images=[]) {
     dir('libindy') {
-        echo "${env_name} Build test environment"
-        return dockerBuild('libindy', file)
+        echo "${env_name} Build  test environment"
+        for (entry in mapToList(prebuilt_images)) {
+            dockerBuild(entry[0], entry[1])
+        }
+        return dockerBuild(name, file)
     }
 }
 
@@ -853,4 +855,11 @@ def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
     sh "brew switch openssl 1.0.2q"
     sh "brew switch zeromq 4.2.3"
+}
+
+@NonCPS
+List<List<?>> mapToList(Map map) {
+    return map.collect { it ->
+        [it.key, it.value]
+    }
 }

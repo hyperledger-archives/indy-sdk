@@ -12,6 +12,7 @@ pub mod test {
     use utils::devsetup::tests::{init_plugin, config_with_wallet_handle};
     use messages::agent_utils::connect_register_provision;
     use utils::libindy::wallet::*;
+    use v3::messages::a2a::A2AMessage;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -109,6 +110,15 @@ pub mod test {
             ::utils::libindy::pool::close().unwrap();
             ::utils::libindy::pool::tests::delete_test_pool();
         }
+    }
+
+    fn download_message(did: String) -> ::messages::get_message::Message {
+        let mut messages = ::messages::get_message::download_messages(Some(vec![did]), Some(vec![String::from("MS-103")]), None).unwrap();
+        assert_eq!(1, messages.len());
+        let mut messages = messages.pop().unwrap();
+        assert_eq!(1, messages.msgs.len());
+        let message = messages.msgs.pop().unwrap();
+        message
     }
 
     pub struct Faber {
@@ -252,6 +262,35 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
+        pub fn update_state_with_message(&self, expected_state: u32) -> A2AMessage {
+            self.activate();
+            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
+            let message = download_message(did);
+
+            let a2a_message = ::connection::decode_message(self.connection_handle, message.clone()).unwrap();
+
+            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
+            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+
+            a2a_message
+        }
+
+        pub fn ping(&self) {
+            self.activate();
+            ::connection::send_ping(self.connection_handle, None).unwrap();
+        }
+
+        pub fn discovery_features(&self) {
+            self.activate();
+            ::connection::send_discovery_features(self.connection_handle, None, None).unwrap();
+        }
+
+        pub fn connection_info(&self) -> ::serde_json::Value {
+            self.activate();
+            let details = ::connection::get_invite_details(self.connection_handle, false).unwrap();
+            ::serde_json::from_str(&details).unwrap()
+        }
+
         pub fn offer_credential(&mut self) {
             self.activate();
 
@@ -370,6 +409,19 @@ pub mod test {
             assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
         }
 
+        pub fn update_state_with_message(&self, expected_state: u32) -> A2AMessage {
+            self.activate();
+            let did = ::connection::get_pw_did(self.connection_handle).unwrap();
+            let message = download_message(did);
+
+            let a2a_message = ::connection::decode_message(self.connection_handle, message.clone()).unwrap();
+
+            ::connection::update_state_with_message(self.connection_handle, message).unwrap();
+            assert_eq!(expected_state, ::connection::get_state(self.connection_handle));
+
+            a2a_message
+        }
+
         pub fn accept_offer(&mut self) {
             self.activate();
             let offers = ::credential::get_credential_offer_messages(self.connection_handle).unwrap();
@@ -474,6 +526,45 @@ pub mod test {
         alice.send_presentation();
         faber.verify_presentation();
         alice.ensure_presentation_verified();
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn aries_demo_update_state_with_message_flow() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Connection
+        let invite = faber.create_invite();
+        alice.accept_invite(&invite);
+
+        faber.update_state_with_message(3);
+        alice.update_state_with_message(4);
+        faber.update_state_with_message(4);
+
+        // Ping
+        faber.ping();
+
+        let message = alice.update_state_with_message(4);
+        assert_match!(A2AMessage::Ping(_), message);
+
+        let message = faber.update_state_with_message(4);
+        assert_match!(A2AMessage::PingResponse(_), message);
+
+        // Discovery Features
+        faber.discovery_features();
+
+        let message = alice.update_state_with_message(4);
+        assert_match!(A2AMessage::Query(_), message);
+
+        let message = faber.update_state_with_message(4);
+        assert_match!(A2AMessage::Disclose(_), message);
+
+        let faber_connection_info = faber.connection_info();
+        assert!(faber_connection_info["protocols"].as_array().unwrap().len() > 0);
     }
 }
 

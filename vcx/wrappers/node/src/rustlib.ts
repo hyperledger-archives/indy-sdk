@@ -116,7 +116,10 @@ export interface IFFIEntryPoint {
     number,
   vcx_connection_sign_data: (commandId: number, handle: number, data: number, dataLength: number, cb: any) => number
   vcx_connection_verify_signature: (commandId: number, handle: number, data: number, dataLength: number,
-                                    signature: number, signatureLength: number, cb: any) => number
+                                    signature: number, signatureLength: number, cb: any) => number,
+  vcx_connection_send_ping: (commandId: number, handle: number, comment: string | null | undefined, cb: any) => number,
+  vcx_connection_send_discovery_features: (commandId: number, handle: number, query: string | null | undefined,
+                                           comment: string | null | undefined, cb: any) => number,
 
   // issuer
   vcx_issuer_credential_release: (handle: number) => number,
@@ -303,6 +306,9 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
   vcx_connection_verify_signature: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT_PTR,
     FFI_UNSIGNED_INT, FFI_UNSIGNED_INT_PTR, FFI_UNSIGNED_INT, FFI_CALLBACK_PTR]],
+  vcx_connection_send_ping: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_connection_send_discovery_features: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_STRING_DATA,
+                                           FFI_STRING_DATA, FFI_CALLBACK_PTR]],
 
   // issuer
   vcx_issuer_credential_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],

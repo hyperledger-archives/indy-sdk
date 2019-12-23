@@ -96,9 +96,10 @@ impl PresentationRequestSentState {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidProof, "Presentation verification failed"));
         }
 
-        let ack = Ack::create().set_thread_id(self.presentation_request.id.0.clone());
-
-        connection::send_message(self.connection_handle, ack.to_a2a_message())?;
+        if presentation.please_ack.is_some() {
+            let ack = Ack::create().set_thread_id(&self.presentation_request.id.0);
+            connection::send_message(self.connection_handle, ack.to_a2a_message())?;
+        }
 
         Ok(())
     }
@@ -116,17 +117,17 @@ impl VerifierSM {
                 VerifierState::PresentationRequestSent(ref state) => {
                     match message {
                         A2AMessage::Presentation(presentation) => {
-                            if presentation.thread.is_reply(&self.thread_id()) {
+                            if presentation.from_thread(&self.thread_id()) {
                                 return Some((uid, A2AMessage::Presentation(presentation)));
                             }
                         }
                         A2AMessage::PresentationProposal(proposal) => {
-                            if proposal.thread.is_reply(&self.thread_id()) {
+                            if proposal.from_thread(&self.thread_id()) {
                                 return Some((uid, A2AMessage::PresentationProposal(proposal)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.thread_id()) {
+                            if problem_report.from_thread(&self.thread_id()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -185,7 +186,7 @@ impl VerifierSM {
                                 let problem_report =
                                     ProblemReport::create()
                                         .set_comment(err.to_string())
-                                        .set_thread_id(state.presentation_request.id.0.clone());
+                                        .set_thread_id(&state.presentation_request.id.0);
 
                                 connection::send_message(state.connection_handle, problem_report.to_a2a_message())?;
                                 VerifierState::Finished((state, problem_report).into())
@@ -199,7 +200,7 @@ impl VerifierSM {
                         let problem_report =
                             ProblemReport::create()
                                 .set_comment(String::from("PresentationProposal is not supported"))
-                                .set_thread_id(state.presentation_request.id.0.clone());
+                                .set_thread_id(&state.presentation_request.id.0);
 
                         connection::send_message(state.connection_handle, problem_report.to_a2a_message())?;
                         VerifierState::Finished((state, problem_report).into())
@@ -504,10 +505,10 @@ pub mod test {
             // No messages for different Thread ID
             {
                 let messages = map!(
-                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id(String::new())),
-                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id(String::new())),
-                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id(String::new())),
-                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(String::new()))
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id("")),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id("")),
+                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id("")),
+                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
                 );
 
                 assert!(verifier.find_message_to_handle(messages).is_none());

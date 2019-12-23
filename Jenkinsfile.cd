@@ -27,6 +27,8 @@ sovrinPackagingRepo = env.SOVRIN_PACKAGING_REPO ?: 'https://github.com/sovrin-fo
 sovrinPackagingBranch = env.SOVRIN_PACKAGING_BRANCH ?: 'master'
 mavenDeployAddOptions = env.MAVEN_DEPLOY_ADD_OPTIONS ?: ''
 
+androidArchArray = ["arm", "armv7", "x86", "arm64", "x86_64"]
+
 try {
     testing()
     publishing()
@@ -787,7 +789,6 @@ def iosTesting() {
                             rbenv install -s $(cat .ruby-version)
 
                             gem install bundler
-                            bundler exec gem env
 
                             bundler install
                             bundler list
@@ -1710,10 +1711,13 @@ def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveD
     }
 }
 
-def buildTestEnv(file, env_name) {
+def buildTestEnv(file, env_name, name="libindy", prebuilt_images=[]) {
     dir('libindy') {
         echo "${env_name} Build test environment"
-        return dockerBuild('libindy', file)
+        for (entry in mapToList(prebuilt_images)) {
+            dockerBuild(entry[0], entry[1])
+        }
+        return dockerBuild(name, file)
     }
 }
 
@@ -1767,14 +1771,14 @@ def androidPublishing() {
 
 def buildAndroid(buildEnv, version, name, libIndyVersion = null) {
 
-    for (arch in ["arm", "armv7", "x86", "arm64", "x86_64"]) {
+    for (arch in androidArchArray) {
         androidBuildArtifact(buildEnv, arch, version, name, libIndyVersion)
     }
 }
 
 def publishAndroid(buildEnv, version, name) {
 
-    for (arch in ["arm", "armv7", "x86", "arm64", "x86_64"]) {
+    for (arch in androidArchArray) {
         androidPublishArtifact(buildEnv, arch, version, name)
     }
 }
@@ -1836,7 +1840,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     linuxModuleTesting(file, env_name, network_name, module_tester, 'ubuntu')
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label, image_name="libindy", prebuilt_images = []) {
     node(node_label) {
         cleanWs()
         def poolInst
@@ -1846,7 +1850,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) 
 
             poolInst = openPool(env_name, network_name)
 
-            def testEnv = buildTestEnv(file, env_name)
+            def testEnv = buildTestEnv(file, env_name, image_name, prebuilt_images)
 
             module_tester(env_name, network_name, testEnv)
         } finally {
@@ -1860,7 +1864,7 @@ def androidTesting() {
     network_name = "pool_network"
     parallel([
             "${env_name}-android-test"    : {
-                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, 'android')
+                linuxModuleTesting("ci/android.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, 'android', "android", ["libindy": 'ci/ubuntu.dockerfile ci'])
             },
             "${env_name}-android-building": { androidBuildAsTesting() }
     ])
@@ -1879,8 +1883,9 @@ def androidBuildAsTesting() {
                 def libvcxVersion = getSrcVersion("vcx/libvcx")
 
                 echo 'Building android binaries: Building docker image'
-                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
-                vcxBuildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                dockerHelpers.build('libindy-test', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
+                vcxBuildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
                 sh 'chmod -R 777 libindy/'
                 sh 'chmod -R 777 libindy/ci/'
 
@@ -1900,4 +1905,11 @@ def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
     sh "brew switch openssl 1.0.2q"
     sh "brew switch zeromq 4.2.3"
+}
+
+@NonCPS
+List<List<?>> mapToList(Map map) {
+    return map.collect { it ->
+        [it.key, it.value]
+    }
 }

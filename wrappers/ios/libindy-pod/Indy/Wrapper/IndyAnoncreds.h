@@ -256,6 +256,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
       "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
       "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
      }
+     If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
  @param revRegId: (Optional) id of stored revocation registry definition
  @param blobStorageReaderHandle: (Optional) Pre-configured blob storage reader instance handle that will allow to read revocation tails
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
