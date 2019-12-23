@@ -759,7 +759,7 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def buildTestEnv(file, env_name, name="libindy", prebuilt_images=[]) {
+def buildTestEnv(file, env_name, name="libindy", prebuilt_images=[:]) {
     dir('libindy') {
         echo "${env_name} Build  test environment"
         for (entry in mapToList(prebuilt_images)) {
