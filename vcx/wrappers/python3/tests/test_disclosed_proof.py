@@ -216,6 +216,34 @@ async def test_send_proof_with_bad_connection():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_reject_proof():
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+    disclosed_proof = await DisclosedProof.deserialize(proof_with_version)
+    await disclosed_proof.reject_proof(connection)
+    assert await disclosed_proof.get_state() == State.Rejected
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_get_reject_proof_msg():
+    disclosed_proof = await DisclosedProof.deserialize(proof_with_version)
+    msg = await disclosed_proof.get_reject_proof_msg()
+    assert msg
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_reject_proof_with_bad_connection():
+    with pytest.raises(VcxError) as e:
+        connection = Connection(source_id)
+        disclosed_proof = await DisclosedProof.create(source_id, request)
+        await disclosed_proof.reject_proof(connection)
+    assert ErrorCode.InvalidConnectionHandle == e.value.error_code
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_requests():
     connection = await Connection.create(source_id)
     await connection.connect(connection_options)
