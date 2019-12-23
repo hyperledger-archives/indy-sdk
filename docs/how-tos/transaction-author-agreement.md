@@ -13,7 +13,7 @@ IndySDK provides API to:
 * Build request for disabling all TAAs on the Ledger.
 * Append TAA acceptance data to request before signing and submitting of them to the Ledger.
 
-### Libindy
+## Libindy
 
 #####  Trustee set up AML on the Ledger
 ```
@@ -23,9 +23,7 @@ sign_and_submit_request(.., acceptance_mechanisms_request)
 
 Please NOTE that AML should be set on the Ledger before setting a TAA.
 
-#####  Trustee set up TAA on the Ledger
-
-###### Set TAA on the Ledger
+##### Trustee set TAA on the Ledger
 
 * Indy Node <= 1.12.0
 ```
@@ -39,7 +37,7 @@ txn_author_agreement_request = build_txn_author_agreement_request(.., "example T
 sign_and_submit_request(.., txn_author_agreement_request)
 ```
 
-##### Set a new TAA on the Ledger
+##### Trustee change TAA on the Ledger
 * Indy Node <= 1.12.0
     ```
     txn_author_agreement_request = build_txn_author_agreement_request(.., "new TAA text", "2.0", null, null)
@@ -48,7 +46,7 @@ sign_and_submit_request(.., txn_author_agreement_request)
 
 * Indy Node > 1.12.0
 
-    1. Update the current TAA:
+    1. Update the current TAA to specify a retirement date:
     ```
     update_txn_author_agreement_request = build_txn_author_agreement_request(.., null, "1.0", null, 654321)
     sign_and_submit_request(.., update_txn_author_agreement_request)
@@ -60,7 +58,7 @@ sign_and_submit_request(.., txn_author_agreement_request)
     sign_and_submit_request(.., new_txn_author_agreement_request)
     ```
 
-##### Disable TAA on the Ledger
+##### Trustee disable TAA on the Ledger
 * Indy Node <= 1.12.0
     ```
     txn_author_agreement_request = build_txn_author_agreement_request(.., "", "3.0", null, null)
@@ -98,7 +96,7 @@ We will use `text` and `version` later to append TAA data to request.
 Otherwise you can calculate `digest` as sha256 hash on concatenated strings: `version` || `text`.
 In our case `digest` is sha256(`1.0example TAA text`)
 
-##### User send write transactions to the Ledger
+#### User send write transactions to the Ledger
 ```
 nym_req = indy_build_nym_request(...)
 time_of_acceptance = get_current_timestamp
