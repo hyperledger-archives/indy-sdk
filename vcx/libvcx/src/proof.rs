@@ -362,25 +362,28 @@ impl Proof {
         debug!("proof: {}", payload);
 
         self.proof = match parse_proof_payload(&payload) {
-            Err(_) => return Ok(self.get_state()),
-            Ok(x) => Some(x),
+            Err(err) => return Ok(self.get_state()),
+            Ok(x) => {
+                self.state = x.state.unwrap_or(VcxStateType::VcxStateAccepted);
+                Some(x)
+            },
         };
 
-        self.state = VcxStateType::VcxStateAccepted;
-
-        match self.proof_validation() {
-            Ok(_) => {
-                if self.proof_state != ProofStateType::ProofInvalid {
-                    debug!("Proof format was validated for proof {}", self.source_id);
-                    self.proof_state = ProofStateType::ProofValidated;
+        if self.state == VcxStateType::VcxStateAccepted {
+            match self.proof_validation() {
+                Ok(x) => {
+                    if self.proof_state != ProofStateType::ProofInvalid {
+                        debug!("Proof format was validated for proof {}", self.source_id);
+                        self.proof_state = ProofStateType::ProofValidated;
+                    }
                 }
-            }
-            Err(x) => {
-                self.state = VcxStateType::VcxStateRequestReceived;
-                warn!("Proof {} had invalid format with err {}", self.source_id, x);
-                self.proof_state = ProofStateType::ProofInvalid;
-            }
-        };
+                Err(x) => {
+                    self.state = VcxStateType::VcxStateRequestReceived;
+                    warn!("Proof {} had invalid format with err {}", self.source_id, x);
+                    self.proof_state = ProofStateType::ProofInvalid;
+                }
+            };
+        }
 
         Ok(self.get_state())
     }
@@ -818,6 +821,39 @@ mod tests {
 
         proof.update_state(Some(PROOF_RESPONSE_STR.to_string())).unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
+    }
+
+    #[test]
+    fn test_update_state_with_reject_message() {
+        init!("true");
+
+        let connection_handle = build_test_connection();
+
+        let mut proof = Box::new(Proof {
+            source_id: "12".to_string(),
+            msg_uid: String::from("1234"),
+            ref_msg_id: String::new(),
+            requested_attrs: String::from("[]"),
+            requested_predicates: String::from("[]"),
+            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
+            prover_vk: VERKEY.to_string(),
+            state: VcxStateType::VcxStateOfferSent,
+            proof_state: ProofStateType::ProofUndefined,
+            name: String::new(),
+            version: String::from("1.0"),
+            nonce: generate_nonce().unwrap(),
+            proof: None,
+            proof_request: None,
+            remote_did: DID.to_string(),
+            remote_vk: VERKEY.to_string(),
+            agent_did: DID.to_string(),
+            agent_vk: VERKEY.to_string(),
+            revocation_interval: RevocationInterval { from: None, to: None },
+            thread: Some(Thread::new()),
+        });
+
+        proof.update_state(Some(PROOF_REJECT_RESPONSE_STR.to_string())).unwrap();
+        assert_eq!(proof.get_state(), VcxStateType::VcxStateRejected as u32);
     }
 
     #[test]

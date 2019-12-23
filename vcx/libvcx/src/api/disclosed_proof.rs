@@ -228,6 +228,60 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Send a proof rejection to the connection, called after having received a proof request
+///
+/// #params
+/// command_handle: command handle to map callback to API user context.
+///
+/// proof_handle: proof handle that was provided duration creation.  Used to identify proof object.
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: Callback that provides error status of proof send request
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_reject_proof(command_handle: u32,
+                                               proof_handle: u32,
+                                               connection_handle: u32,
+                                               cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_disclosed_proof_reject_proof >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !disclosed_proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into()
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+    }
+
+    let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
+    trace!("vcx_disclosed_proof_reject_proof(command_handle: {}, proof_handle: {}, connection_handle: {}) source_id: {}",
+           command_handle, proof_handle, connection_handle, source_id);
+
+    spawn(move || {
+        let err = match disclosed_proof::reject_proof(proof_handle, connection_handle) {
+            Ok(x) => {
+                trace!("vcx_disclosed_proof_reject_proof_cb(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, source_id);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(x) => {
+                error!("vcx_disclosed_proof_reject_proof_cb(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, x, source_id);
+                cb(command_handle, x.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Get the proof message for sending.
 ///
 /// #params
@@ -276,6 +330,53 @@ pub extern fn vcx_disclosed_proof_get_proof_msg(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
+/// Get the reject proof message for sending.
+///
+/// #params
+/// command_handle: command handle to map callback to API user context.
+///
+/// proof_handle: proof handle that was provided duration creation.  Used to identify proof object.
+///
+/// cb: Callback that provides error status of proof send request
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_get_reject_msg(command_handle: u32,
+                                                 proof_handle: u32,
+                                                 cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+    info!("vcx_disclosed_proof_get_reject_msg >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !disclosed_proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into()
+    }
+
+    let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
+    trace!("vcx_disclosed_proof_get_reject_msg(command_handle: {}, proof_handle: {}) source_id: {}",
+           command_handle, proof_handle, source_id);
+
+    spawn(move || {
+        match disclosed_proof::generate_reject_proof_msg(proof_handle) {
+            Ok(msg) => {
+                let msg = CStringUtils::string_to_cstring(msg);
+                trace!("vcx_disclosed_proof_get_reject_msg_cb(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, source_id);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            }
+            Err(x) => {
+                error!("vcx_disclosed_proof_get_reject_msg_cb(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, x, source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
 
 /// Queries agency for all pending proof requests from the given connection.
 ///
@@ -941,6 +1042,34 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_send_proof(cb.command_handle, handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
+    }
+
+    #[test]
+    fn test_vcx_reject_proof_request() {
+        init!("true");
+
+        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        assert_eq!(disclosed_proof::get_state(handle).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+
+        let connection_handle = connection::tests::build_test_connection();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_reject_proof(cb.command_handle, handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
+    }
+
+    #[test]
+    fn test_vcx_get_reject_msg() {
+        init!("true");
+
+        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        assert_eq!(disclosed_proof::get_state(handle).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+
+        let connection_handle = connection::tests::build_test_connection();
+
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_get_reject_msg(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
