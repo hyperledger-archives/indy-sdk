@@ -1,6 +1,6 @@
 {
     "description": "Node wrapper for vcx",
-    "license": "ISC",
+    "license": "Apache-2.0",
     "typings": "dist/index.d.ts",
     "directories": {
         "test": "test",
