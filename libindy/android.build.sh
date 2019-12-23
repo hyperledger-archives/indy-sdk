@@ -113,7 +113,7 @@ statically_link_dependencies_with_libindy(){
         ${OPENSSL_DIR}/lib/libcrypto.a \
         ${SODIUM_LIB_DIR}/libsodium.a \
         ${LIBZMQ_LIB_DIR}/libzmq.a \
-        -Wl,--no-whole-archive -z muldefs -L${TOOLCHAIN_DIR}/sysroot/usr/lib/${ANDROID_TRIPLET}/ -lz -llog -lc++_shared
+        -Wl,--no-whole-archive -z muldefs -L${TOOLCHAIN_DIR}/sysroot/usr/lib/${ANDROID_TRIPLET}/${TARGET_API} -lz -llog -lc++_shared
 }
 
 package_library(){
