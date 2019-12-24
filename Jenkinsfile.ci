@@ -576,7 +576,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     linuxModuleTesting(file, env_name, network_name, module_tester, "ubuntu")
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester, node_label, image_name="libindy", prebuilt_images = []) {
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label, image_name="libindy", prebuilt_images = [:]) {
     node(node_label) {
         cleanWs()
         def poolInst
@@ -759,7 +759,7 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def buildTestEnv(file, env_name, name="libindy", prebuilt_images=[]) {
+def buildTestEnv(file, env_name, name="libindy", prebuilt_images=[:]) {
     dir('libindy') {
         echo "${env_name} Build  test environment"
         for (entry in mapToList(prebuilt_images)) {

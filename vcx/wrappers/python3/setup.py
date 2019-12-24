@@ -12,5 +12,6 @@ setup(
     author="Hyperledger Indy Contributors",
     author_email= "hyperledger-indy@lists.hyperledger.org",
     include_package_data=True,
-    packages=find_packages(exclude=['demo', 'tests'])
+    packages=find_packages(exclude=['demo', 'tests']),
+    license='Apache-2.0',
 )
