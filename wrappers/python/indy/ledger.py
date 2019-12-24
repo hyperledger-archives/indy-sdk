@@ -1497,7 +1497,7 @@ async def build_get_auth_rule_request(submitter_did: Optional[str],
 
 
 async def build_txn_author_agreement_request(submitter_did: str,
-                                             text: str,
+                                             text: Optional[str],
                                              version: str,
                                              ratification_ts: Optional[int] = None,
                                              retirement_ts: Optional[int] = None) -> str:
@@ -1547,7 +1547,7 @@ async def build_txn_author_agreement_request(submitter_did: str,
         build_txn_author_agreement_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_text = c_char_p(text.encode('utf-8'))
+    c_text = c_char_p(text.encode('utf-8')) if text is not None else None
     c_version = c_char_p(version.encode('utf-8'))
     c_ratification_ts = c_int64(ratification_ts) if ratification_ts is not None else c_int(-1)
     c_retirement_ts = c_int64(retirement_ts) if retirement_ts is not None else c_int(-1)
