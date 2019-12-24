@@ -1883,7 +1883,7 @@ def androidBuildAsTesting() {
                 def libvcxVersion = getSrcVersion("vcx/libvcx")
 
                 echo 'Building android binaries: Building docker image'
-                dockerHelpers.build('libindy-test', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                dockerHelpers.build('libindy', 'libindy/ci/ubuntu.dockerfile libindy/ci')
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
                 vcxBuildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
                 sh 'chmod -R 777 libindy/'
