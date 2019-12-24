@@ -4955,6 +4955,7 @@ pub mod tests {
                 params.insert("context", "Some Context".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            ::std::thread::sleep(::std::time::Duration::from_secs(1));
             {
                 let cmd = get_acceptance_mechanisms_command::new();
                 let params = CommandParams::new();
