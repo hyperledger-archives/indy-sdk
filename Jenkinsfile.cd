@@ -188,7 +188,7 @@ def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_v
     echo "${env_name} Test: Build docker image for nodes pool ver. ${pool_ver}"
     echo "${env_name} Test: Building nodes pool for versions: plenum ${plenum_ver}, anoncreds ${anoncreds_ver}, node ${node_ver}"
     verOptions = getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver)
-    def poolEnv = dockerHelpers.build("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',
+    def poolEnv = dockerBuild("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',
             "--build-arg pool_ip=10.0.0.2 ${verOptions}")
     echo "${env_name} Test: Run nodes pool"
     return poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
@@ -943,7 +943,7 @@ def centosPublishing() {
                 libindyVersion = getSrcVersion("libindy")
 
                 echo "Publish ${env_name}: Build docker image"
-                def testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/centos.dockerfile ci')
+                def testEnv = dockerBuild('indy-sdk', 'libindy/ci/centos.dockerfile ci')
 
                 libindyRpmPublishing(testEnv, libindyVersion, env_name)
                 libnullpayRpmPublishing(testEnv, env_name)
@@ -1098,7 +1098,7 @@ def windowsPublishing() {
                 libindyVersion = getSrcVersion("libindy")
 
                 echo 'Publish Windows files: Build docker image'
-                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy Windows files'
                 windowsPublishArtifact(testEnv, "libindy", "libindy", "lib", libindyVersion, "LibindyWindowsBuildResult")
@@ -1153,7 +1153,7 @@ def iosPublishing() {
                 version = "$libindyVersion-$env.BUILD_NUMBER"
 
                 echo 'Publish iOS files: Build docker image'
-                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy iOS Pod for aarch64-apple-ios and armv7-apple-ios'
                 publishIOSAtrifacts(testEnv, "libindy", "LibindyMiniIOSPod", version, "libindy-aarch64-armv7.tar.gz")
@@ -1203,7 +1203,7 @@ def macOsPublishing() {
 
                 echo 'Publish MacOS files: Build docker image'
                 def libindyVersion = getSrcVersion("libindy")
-                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy MacOS Library'
                 publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", libindyVersion, "lib")
@@ -1441,7 +1441,7 @@ def publishingRCtoStable() {
                 publishLibindyWindowsFilesRCtoStable(libindyVersion)
 
                 echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
-                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo "Moving ${env_name} RC artifacts to Stable: libindy"
                 publishLibindyDebRCtoStable(testEnv, libindyVersion, env_name)
@@ -1513,7 +1513,7 @@ def publishingRCtoStable() {
                 publishIndyCliMacOSFilesRCtoStable(libindyVersion)
 
                 echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
-                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu18.dockerfile libindy/ci')
+                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu18.dockerfile libindy/ci')
 
                 env_name = Ubuntu18
 
@@ -1754,7 +1754,7 @@ def androidPublishing() {
 
                 echo 'Publish Android binaries: Building docker image'
 
-                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                buildEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 publishAndroid(buildEnv, libindyVersion, 'libindy')
                 publishAndroid(buildEnv, libnullpayVersion, 'libnullpay')
@@ -1883,9 +1883,9 @@ def androidBuildAsTesting() {
                 def libvcxVersion = getSrcVersion("vcx/libvcx")
 
                 echo 'Building android binaries: Building docker image'
-                dockerHelpers.build('libindy', 'libindy/ci/ubuntu.dockerfile libindy/ci')
-                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
-                vcxBuildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
+                dockerBuild('libindy', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                buildEnv = dockerBuild('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
+                vcxBuildEnv = dockerBuild('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
                 sh 'chmod -R 777 libindy/'
                 sh 'chmod -R 777 libindy/ci/'
 
