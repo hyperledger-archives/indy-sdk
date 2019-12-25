@@ -30,7 +30,7 @@ impl ProverSM {
 // Possible Transitions:
 //
 // Initial -> PresentationPrepared, PresentationPreparationFailedState
-// PresentationPrepared -> PresentationSent
+// PresentationPrepared -> PresentationSent, Finished
 // PresentationPreparationFailedState -> Finished
 // PresentationSent -> Finished
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -101,6 +101,18 @@ impl From<(PresentationPreparedState, u32)> for PresentationSentState {
             presentation_request: state.presentation_request,
             presentation: state.presentation,
             connection_handle
+        }
+    }
+}
+
+impl From<PresentationPreparedState> for FinishedState {
+    fn from(state: PresentationPreparedState) -> Self {
+        trace!("transit state from PresentationPreparedState to FinishedState");
+        FinishedState {
+            presentation_request: state.presentation_request,
+            presentation: state.presentation,
+            connection_handle: 0,
+            status: Status::Undefined,
         }
     }
 }
@@ -229,9 +241,17 @@ impl ProverSM {
             ProverState::PresentationPrepared(state) => {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
-                        connection::send_message(connection_handle, state.presentation.to_a2a_message())?;
-                        connection::remove_pending_message(connection_handle, &state.presentation_request.id)?;
-                        ProverState::PresentationSent((state, connection_handle).into())
+                        match state.presentation_request.service.clone() {
+                            None => {
+                                connection::send_message(connection_handle, state.presentation.to_a2a_message())?;
+                                connection::remove_pending_message(connection_handle, &state.presentation_request.id)?;
+                                ProverState::PresentationSent((state, connection_handle).into())
+                            }
+                            Some(service) => {
+                                connection::send_message_to_self_endpoint(state.presentation.to_a2a_message(), &service.into())?;
+                                ProverState::Finished(state.into())
+                            }
+                        }
                     }
                     _ => {
                         ProverState::PresentationPrepared(state)
@@ -241,7 +261,15 @@ impl ProverSM {
             ProverState::PresentationPreparationFailed(state) => {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
-                        connection::send_message(connection_handle, state.problem_report.to_a2a_message())?;
+                        match state.presentation_request.service.clone() {
+                            None => {
+                                connection::send_message(connection_handle, state.problem_report.to_a2a_message())?;
+                            }
+                            Some(service) => {
+                                connection::send_message_to_self_endpoint(state.problem_report.to_a2a_message(), &service.into())?;
+                            }
+                        }
+
                         ProverState::Finished((state, connection_handle).into())
                     }
                     _ => {
@@ -336,7 +364,7 @@ pub mod test {
     use v3::test::source_id;
     use v3::test::setup::TestModeSetup;
     use v3::messages::proof_presentation::test::{_ack, _problem_report};
-    use v3::messages::proof_presentation::presentation_request::tests::_presentation_request;
+    use v3::messages::proof_presentation::presentation_request::tests::{_presentation_request, _presentation_request_with_service};
     use v3::messages::proof_presentation::presentation::tests::_presentation;
     use v3::messages::proof_presentation::presentation_proposal::tests::_presentation_proposal;
 
@@ -452,6 +480,17 @@ pub mod test {
             prover_sm = prover_sm.step(ProverMessages::SendPresentation(mock_connection())).unwrap();
 
             assert_match!(ProverState::PresentationSent(_), prover_sm.state);
+        }
+
+        #[test]
+        fn test_prover_handle_send_presentation_message_from_presentation_prepared_state_for_presentation_request_contains_service_decorator() {
+            let _setup = TestModeSetup::init();
+
+            let mut prover_sm = ProverSM::new(_presentation_request_with_service(), source_id());
+            prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
+            prover_sm = prover_sm.step(ProverMessages::SendPresentation(mock_connection())).unwrap();
+
+            assert_match!(ProverState::Finished(_), prover_sm.state);
         }
 
         #[test]
