@@ -762,18 +762,37 @@
             @"type": @"4",
             @"text": @"indy agreement",
             @"version": @"1.0.0",
+            @"ratification_ts": @(12345),
+            @"retirement_ts": @(54321),
     };
 
     NSString *requestJson;
     ret = [[LedgerUtils sharedInstance] buildTxnAuthorAgreementRequestWithSubmitterDid:[TestUtils trusteeDid]
                                                                                   text:@"indy agreement"
                                                                                version:@"1.0.0"
+                                                                 ratificationTimestamp:@(12345)
+                                                                   retirementTimestamp:@(54321)
                                                                             outRequest:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildTxnAuthorAgreementRequestWithSubmitterDid() failed!");
 
     NSDictionary *request = [NSDictionary fromString:requestJson];
 
     XCTAssertTrue([request contains:expectedResult], @"Request doesn't contain expectedResult");
+}
+
+- (void)testBuildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid {
+    NSDictionary *expectedResult = @{
+            @"type": @"8",
+    };
+
+    NSString *requestJson;
+    ret = [[LedgerUtils sharedInstance] buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                                       outRequest:&requestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid() failed!");
+
+    NSDictionary *request = [NSDictionary fromString:requestJson];
+
+    XCTAssertTrue([expectedResult isEqualToDictionary:request[@"operation"]], @"Wrong Result Json!");
 }
 
 - (void)testBuildGetTxnAuthorAgreementRequestWorks {

@@ -10,29 +10,69 @@ Actors and Terms:
 IndySDK provides API to:
 * Build request for setting TAA and AML on the Ledger.
 * Build request for getting TAA and AML set on the Ledger.
+* Build request for disabling all TAAs on the Ledger.
 * Append TAA acceptance data to request before signing and submitting of them to the Ledger.
-
 
 ### Libindy
 
-#####  Trustee set up AML and TAA on the Ledger
-1. Set AML on the Ledger:
+#####  Trustee set up AML on the Ledger
 ```
 acceptance_mechanisms_request = build_acceptance_mechanisms_request(.., '{"example label":"example description"}', "1.0", ...)
 sign_and_submit_request(.., acceptance_mechanisms_request)
 ```
-2. Set TAA on the Ledger:
+
+Please NOTE that AML should be set on the Ledger before setting a TAA.
+
+#####  Trustee set up TAA on the Ledger
+
+###### Set TAA on the Ledger
+
+* Indy Node <= 1.12.0
 ```
-txn_author_agreement_request = build_txn_author_agreement_request(.., "example TAA text", "1.0", ...)
+txn_author_agreement_request = build_txn_author_agreement_request(.., "example TAA text", "1.0", null, null)
 sign_and_submit_request(.., txn_author_agreement_request)
 ```
 
-3. Use empty text to reset TAA on the ledger.
+* Indy Node > 1.12.0
+```
+txn_author_agreement_request = build_txn_author_agreement_request(.., "example TAA text", "1.0", 123456789, null)
+sign_and_submit_request(.., txn_author_agreement_request)
+```
 
-Please NOTE that AML should be set first.
+##### Set a new TAA on the Ledger
+* Indy Node <= 1.12.0
+    ```
+    txn_author_agreement_request = build_txn_author_agreement_request(.., "new TAA text", "2.0", null, null)
+    sign_and_submit_request(.., txn_author_agreement_request)
+    ```
 
+* Indy Node > 1.12.0
 
-##### User get AML and TAA set on the Ledger
+    1. Update the current TAA:
+    ```
+    update_txn_author_agreement_request = build_txn_author_agreement_request(.., null, "1.0", null, 654321)
+    sign_and_submit_request(.., update_txn_author_agreement_request)
+    ```
+    
+    2. Send a new TAA:
+    ```
+    new_txn_author_agreement_request = build_txn_author_agreement_request(.., "new TAA text", "2.0", 345679890, null)
+    sign_and_submit_request(.., new_txn_author_agreement_request)
+    ```
+
+##### Disable TAA on the Ledger
+* Indy Node <= 1.12.0
+    ```
+    txn_author_agreement_request = build_txn_author_agreement_request(.., "", "3.0", null, null)
+    sign_and_submit_request(.., txn_author_agreement_request)
+    ```
+* Indy Node > 1.12.0
+    ```
+    disable_all_txn_author_agreements_request = indy_build_disable_all_txn_author_agreements_request(..)
+    sign_and_submit_request(.., disable_all_txn_author_agreements_request)
+    ```
+
+##### Get AML and TAA set on the Ledger
 1. Get AML set on the Ledger:
 ```
 get_acceptance_mechanisms_request = build_get_acceptance_mechanisms_request(.., current_timestamp, ...)
@@ -98,7 +138,7 @@ CLI uses session-based approach to work with Transaction Author Agreement.
       .....
     }
     ```
-    The list of available acceptance mechanisms can be received by sending `get_acceptance_mechanisms` request to ledger.
+    The list of available acceptance mechanisms can be received by calling `ledger get-acceptance-mechanisms` command.
 1. On `pool connect` command execution: User will be asked if he would like to accept TAA.
 User either can accept it or skip and accept it later by `pool show-taa` command.
     

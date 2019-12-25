@@ -46,7 +46,7 @@ EOF
 }
 setup_dependencies(){
    if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
-        download_and_unzip_dependencies ${ABSOLUTE_ARCH}
+        setup_dependencies_env_vars ${ABSOLUTE_ARCH}
         else
             echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
             if [ -z "${OPENSSL_DIR}" ]; then
@@ -137,7 +137,6 @@ build(){
 
 generate_arch_flags ${TARGET_ARCH}
 setup_dependencies
-download_and_setup_toolchain
 set_env_vars
 create_standalone_toolchain_and_rust_target
 create_cargo_config

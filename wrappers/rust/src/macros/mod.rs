@@ -25,6 +25,12 @@ macro_rules! opt_c_ptr {
     }
 }
 
+macro_rules! opt_u64 {
+    ($x:ident) => {
+        $x.map(|x| x as i64).unwrap_or(-1)
+    }
+}
+
 macro_rules! rust_str {
     ($x:ident) => {
         unsafe { CStr::from_ptr($x).to_str().unwrap().to_string() }

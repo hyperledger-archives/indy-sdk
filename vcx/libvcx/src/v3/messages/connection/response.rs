@@ -5,19 +5,24 @@ use time;
 
 use messages::thread::Thread;
 use v3::messages::connection::did_doc::*;
-use v3::messages::a2a::{A2AMessage, MessageId, A2AMessageKinds};
+use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::a2a::message_type::MessageType;
+use v3::messages::ack::PleaseAck;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct Response {
     #[serde(rename = "@id")]
     pub id: MessageId,
     #[serde(rename = "~thread")]
     pub thread: Thread,
-    pub connection: ConnectionData
+    pub connection: ConnectionData,
+    #[serde(rename = "~please_ack")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub please_ack: Option<PleaseAck>
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct ConnectionData {
     #[serde(rename = "DID")]
     pub did: String,
@@ -25,14 +30,17 @@ pub struct ConnectionData {
     pub did_doc: DidDoc,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct SignedResponse {
     #[serde(rename = "@id")]
     pub id: MessageId,
     #[serde(rename = "~thread")]
     pub thread: Thread,
     #[serde(rename = "connection~sig")]
-    pub connection_sig: ConnectionSignature
+    pub connection_sig: ConnectionSignature,
+    #[serde(rename = "~please_ack")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub please_ack: Option<PleaseAck>
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -65,11 +73,6 @@ impl Response {
         self
     }
 
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread.thid = Some(id);
-        self
-    }
-
     pub fn encode(&self, key: &str) -> VcxResult<SignedResponse> {
         let connection_data = json!(self.connection).to_string();
 
@@ -86,21 +89,25 @@ impl Response {
         let signature = base64::encode_config(&signature, base64::URL_SAFE);
 
         let connection_sig = ConnectionSignature {
-            msg_type: MessageType::build(A2AMessageKinds::Ed25519Signature),
             signature,
             sig_data,
             signer: key.to_string(),
+            ..Default::default()
         };
 
         let signed_response = SignedResponse {
             id: self.id.clone(),
             thread: self.thread.clone(),
             connection_sig,
+            please_ack: self.please_ack.clone(),
         };
 
         Ok(signed_response)
     }
 }
+
+please_ack!(Response);
+threadlike!(Response);
 
 impl SignedResponse {
     pub fn decode(self, key: &str) -> VcxResult<Response> {
@@ -125,23 +132,20 @@ impl SignedResponse {
             id: self.id,
             thread: self.thread,
             connection,
+            please_ack: self.please_ack,
         })
-    }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::ConnectionResponse(self.clone()) // TODO: THINK how to avoid clone
     }
 }
 
-impl Default for Response {
-    fn default() -> Response {
-        Response {
-            id: MessageId::new(),
-            thread: Thread::new(),
-            connection: ConnectionData {
-                did: String::new(),
-                did_doc: DidDoc::default()
-            },
+a2a_message!(SignedResponse, ConnectionResponse);
+
+impl Default for ConnectionSignature {
+    fn default() -> ConnectionSignature {
+        ConnectionSignature {
+            msg_type: MessageType::build(MessageFamilies::Signature, "ed25519Sha512_single"),
+            signature: String::new(),
+            sig_data: String::new(),
+            signer: String::new(),
         }
     }
 }
@@ -176,6 +180,7 @@ pub mod tests {
                 did: _did(),
                 did_doc: _did_doc()
             },
+            please_ack: None,
         }
     }
 
@@ -184,11 +189,12 @@ pub mod tests {
             id: MessageId::id(),
             thread: _thread(),
             connection_sig: ConnectionSignature {
-                msg_type: MessageType::build(A2AMessageKinds::Ed25519Signature),
                 signature: String::from("yeadfeBWKn09j5XU3ITUE3gPbUDmPNeblviyjrOIDdVMT5WZ8wxMCxQ3OpAnmq1o-Gz0kWib9zr0PLsbGc2jCA=="),
                 sig_data: String::from("MTU3MTg0NzQwM3siZGlkIjoiVnNLVjdnclIxQlVFMjltRzJGbTJrWCIsImRpZF9kb2MiOnsiQGNvbnRleHQiOiJodHRwczovL3czaWQub3JnL2RpZC92MSIsImF1dGhlbnRpY2F0aW9uIjpbeyJwdWJsaWNLZXkiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzEiLCJ0eXBlIjoiRWQyNTUxOVNpZ25hdHVyZUF1dGhlbnRpY2F0aW9uMjAxOCJ9XSwiaWQiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIiwicHVibGljS2V5IjpbeyJpZCI6IjEiLCJvd25lciI6IlZzS1Y3Z3JSMUJVRTI5bUcyRm0ya1giLCJwdWJsaWNLZXlCYXNlNTgiOiI3SjNYczhLUVV0U2ZNenB0ZVVLcThiNDg5bzdENFB4QVkxSjFKQUxDNDF6ayIsInR5cGUiOiJFZDI1NTE5VmVyaWZpY2F0aW9uS2V5MjAxOCJ9LHsiaWQiOiIyIiwib3duZXIiOiJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIiwicHVibGljS2V5QmFzZTU4IjoiSGV6Y2UyVVdNWjN3VWhWa2gyTGZLU3M4bkR6V3d6czJXaW43RXpOTjNZYVIiLCJ0eXBlIjoiRWQyNTUxOVZlcmlmaWNhdGlvbktleTIwMTgifSx7ImlkIjoiMyIsIm93bmVyIjoiVnNLVjdnclIxQlVFMjltRzJGbTJrWCIsInB1YmxpY0tleUJhc2U1OCI6IjNMWXV4SkJKa25nRGJ2Smo0emp4MTNEQlVkWjJQOTZlTnlid2QybjlMOUFVIiwidHlwZSI6IkVkMjU1MTlWZXJpZmljYXRpb25LZXkyMDE4In1dLCJzZXJ2aWNlIjpbeyJpZCI6ImRpZDpleGFtcGxlOjEyMzQ1Njc4OWFiY2RlZmdoaTtkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIlZzS1Y3Z3JSMUJVRTI5bUcyRm0ya1gjMSJdLCJyb3V0aW5nS2V5cyI6WyJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzIiLCJWc0tWN2dyUjFCVUUyOW1HMkZtMmtYIzMiXSwic2VydmljZUVuZHBvaW50IjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwidHlwZSI6ImRpZC1jb21tdW5pY2F0aW9uIn1dfX0="),
                 signer: _key(),
+                ..Default::default()
             },
+            please_ack: None,
         }
     }
 
@@ -196,7 +202,7 @@ pub mod tests {
     fn test_response_build_works() {
         let response: Response = Response::default()
             .set_did(_did())
-            .set_thread_id(_thread_id())
+            .set_thread_id(&_thread_id())
             .set_service_endpoint(_service_endpoint())
             .set_keys(_recipient_keys(), _routing_keys());
 

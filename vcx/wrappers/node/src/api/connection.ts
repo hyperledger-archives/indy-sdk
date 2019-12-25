@@ -359,4 +359,68 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
       throw new VCXInternalError(err)
     }
   }
+
+  /**
+   * Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+   *
+   * Note that this function is useful in case `aries` communication method is used.
+   * In other cases it returns Invalid Connection Handle error.
+   *
+   */
+  public async sendPing (comment: string | null | undefined): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_send_ping(0, this.handle, comment, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+   *
+   * Note that this function is useful in case `aries` communication method is used.
+   * In other cases it returns Invalid Connection Handle error.
+   *
+   */
+  public async sendDiscoveryFeatures (query: string | null | undefined, comment: string | null | undefined): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_send_discovery_features(0, this.handle, query, comment, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
 }

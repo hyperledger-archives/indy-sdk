@@ -197,12 +197,12 @@ impl ProverSM {
                 ProverState::PresentationSent(ref state) => {
                     match message {
                         A2AMessage::Ack(ack) => {
-                            if ack.thread.is_reply(&self.thread_id) {
+                            if ack.from_thread(&self.thread_id) {
                                 return Some((uid, A2AMessage::Ack(ack)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.thread_id) {
+                            if problem_report.from_thread(&self.thread_id) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -230,7 +230,8 @@ impl ProverSM {
                         match state.build_presentation(&credentials, &self_attested_attrs) {
                             Ok(presentation) => {
                                 let presentation = Presentation::create()
-                                    .set_thread_id(thread_id.clone())
+                                    .ask_for_ack()
+                                    .set_thread_id(&thread_id)
                                     .set_presentations_attach(presentation)?;
 
                                 ProverState::PresentationPrepared((state, presentation).into())
@@ -239,7 +240,7 @@ impl ProverSM {
                                 let problem_report =
                                     ProblemReport::create()
                                         .set_comment(err.to_string())
-                                        .set_thread_id(thread_id.clone());
+                                        .set_thread_id(&thread_id);
 
                                 ProverState::PresentationPreparationFailed((state, problem_report).into())
                             }
@@ -261,9 +262,17 @@ impl ProverSM {
             ProverState::PresentationPrepared(state) => {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
-                        connection::send_message(connection_handle, state.presentation.to_a2a_message())?;
-                        connection::remove_pending_message(connection_handle, &state.presentation_request.id)?;
-                        ProverState::PresentationSent((state, connection_handle).into())
+                        match state.presentation_request.service.clone() {
+                            None => {
+                                connection::send_message(connection_handle, state.presentation.to_a2a_message())?;
+                                connection::remove_pending_message(connection_handle, &state.presentation_request.id)?;
+                                ProverState::PresentationSent((state, connection_handle).into())
+                            }
+                            Some(service) => {
+                                connection::send_message_to_self_endpoint(state.presentation.to_a2a_message(), &service.into())?;
+                                ProverState::Finished(state.into())
+                            }
+                        }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
                         Self::_handle_reject_presentation_request(connection_handle, &reason, &state.presentation_request.id, &thread_id)?;
@@ -281,7 +290,15 @@ impl ProverSM {
             ProverState::PresentationPreparationFailed(state) => {
                 match message {
                     ProverMessages::SendPresentation(connection_handle) => {
-                        connection::send_message(connection_handle, state.problem_report.to_a2a_message())?;
+                        match state.presentation_request.service.clone() {
+                            None => {
+                                connection::send_message(connection_handle, state.problem_report.to_a2a_message())?;
+                            }
+                            Some(service) => {
+                                connection::send_message_to_self_endpoint(state.problem_report.to_a2a_message(), &service.into())?;
+                            }
+                        }
+
                         ProverState::Finished((state, connection_handle).into())
                     }
                     _ => {
@@ -399,7 +416,7 @@ pub mod test {
     use v3::test::source_id;
     use v3::test::setup::TestModeSetup;
     use v3::messages::proof_presentation::test::{_ack, _problem_report};
-    use v3::messages::proof_presentation::presentation_request::tests::_presentation_request;
+    use v3::messages::proof_presentation::presentation_request::tests::{_presentation_request, _presentation_request_with_service};
     use v3::messages::proof_presentation::presentation::tests::_presentation;
     use v3::messages::proof_presentation::presentation_proposal::tests::{_presentation_proposal, _presentation_preview};
 
@@ -535,6 +552,17 @@ pub mod test {
             prover_sm = prover_sm.step(ProverMessages::SendPresentation(mock_connection())).unwrap();
 
             assert_match!(ProverState::PresentationSent(_), prover_sm.state);
+        }
+
+        #[test]
+        fn test_prover_handle_send_presentation_message_from_presentation_prepared_state_for_presentation_request_contains_service_decorator() {
+            let _setup = TestModeSetup::init();
+
+            let mut prover_sm = ProverSM::new(_presentation_request_with_service(), source_id());
+            prover_sm = prover_sm.step(ProverMessages::PreparePresentation((_credentials(), _self_attested()))).unwrap();
+            prover_sm = prover_sm.step(ProverMessages::SendPresentation(mock_connection())).unwrap();
+
+            assert_match!(ProverState::Finished(_), prover_sm.state);
         }
 
         #[test]
@@ -742,10 +770,10 @@ pub mod test {
             // No messages for different Thread ID
             {
                 let messages = map!(
-                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id(String::new())),
-                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id(String::new())),
-                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id(String::new())),
-                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(String::new()))
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id("")),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id("")),
+                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id("")),
+                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
                 );
 
                 assert!(prover.find_message_to_handle(messages).is_none());

@@ -735,15 +735,49 @@
 
  @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
                      Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
- @param text a content of the TTA.
+ @param text (Optional) a content of the TTA.
+                 Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+                 for Indy Node version <= 1.12.0:
+                     Use empty string to reset TAA on the ledger
+                 for Indy Node version > 1.12.0
+                     Should be omitted in case of updating an existing TAA (setting `retirementTimestamp`)
  @param version a version of the TTA (unique UTF-8 string).
- 
+ @param ratificationTimestamp  (Optional) the date (timestamp) of TAA ratification by network government.
+                 for Indy Node version <= 1.12.0:
+                    Must be omitted
+                 for Indy Node version > 1.12.0:
+                    Must be specified in case of adding a new TAA
+                    Can be omitted in case of updating an existing TAA
+ @param retirementTimestamp  (Optional) the date (timestamp) of TAA retirement.
+                for Indy Node version <= 1.12.0:
+                    Must be omitted
+                for Indy Node version > 1.12.0:
+                    Must be omitted in case of adding a new (latest) TAA.
+                    Should be used for updating (deactivating) non-latest TAA on the ledger.
+
+ Note: Use `buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid` to disable all TAA's on the ledger.
+
  Returns Request result as json.
  */
 + (void)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
                                                   text:(NSString *)text
                                                version:(NSString *)version
-                                            completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
+                                 ratificationTimestamp:(NSNumber *)ratificationTimestamp
+                                   retirementTimestamp:(NSNumber *)retirementTimestamp
+                                            completion:(void (^)(NSError *error, NSString *requestJson))completion;
+
+/**
+ Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+
+ EXPERIMENTAL
+
+ @param submitterDid  Identifier (DID) of the transaction author as base58-encoded string.
+                      Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+
+ Returns Result as json.
+ */
++ (void)buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       completion:(void (^)(NSError *error, NSString *requestJson))completion;
 
 /**
  Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
@@ -759,7 +793,7 @@
      timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
  }
  Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
- 
+
  Returns Request result as json.
  */
 + (void)buildGetTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid

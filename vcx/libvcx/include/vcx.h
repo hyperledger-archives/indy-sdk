@@ -229,6 +229,53 @@ vcx_error_t vcx_connection_update_state(vcx_command_handle_t command_handle,
                                      vcx_connection_handle_t connection_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
 
+/// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns Invalid Connection Handle error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// comment: (Optional) human-friendly description of the ping.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_send_ping(vcx_u32_t command_handle,
+                                     vcx_connection_handle_t connection_handle,
+                                     const char* comment,
+                                     void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns Invalid Connection Handle error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// query: (Optional) query string to match against supported message types.
+///
+/// comment: (Optional) human-friendly description of the query.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_send_discovery_features(vcx_u32_t command_handle,
+                                                   vcx_connection_handle_t connection_handle,
+                                                   const char* query,
+                                                   const char* comment,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 // Create a Credential object that requests and receives a credential for an institution
 //
 // #Params
