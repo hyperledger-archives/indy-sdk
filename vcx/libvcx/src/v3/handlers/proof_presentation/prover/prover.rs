@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use v3::handlers::proof_presentation::prover::states::ProverSM;
 use v3::handlers::proof_presentation::prover::messages::ProverMessages;
 use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::proof_presentation::presentation_proposal::PresentationPreview;
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use connection;
 
@@ -149,5 +150,26 @@ impl Prover {
     pub fn step(&mut self, message: ProverMessages) -> VcxResult<()> {
         self.prover_sm = self.prover_sm.clone().step(message)?;
         Ok(())
+    }
+
+    pub fn decline_presentation_request(&mut self, connection_handle: u32, reason: Option<String>, proposal: Option<String>) -> VcxResult<()> {
+        trace!("Prover::decline_presentation_request >>> connection_handle: {}, reason: {:?}, proposal: {:?}", connection_handle, reason, proposal);
+        match (reason, proposal) {
+            (Some(reason), None) => {
+                self.step(ProverMessages::RejectPresentationRequest((connection_handle, reason)))
+            }
+            (None, Some(proposal)) => {
+                let presentation_preview: PresentationPreview = serde_json::from_str(&proposal)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize Presentation Preview: {:?}", err)))?;
+
+                self.step(ProverMessages::ProposePresentation((connection_handle, presentation_preview)))
+            }
+            (None, None) => {
+                return Err(VcxError::from_msg(VcxErrorKind::InvalidOption, "Either `reason` or `proposal` parameter must be specified."));
+            }
+            (Some(_), Some(_)) => {
+                return Err(VcxError::from_msg(VcxErrorKind::InvalidOption, "Only one of `reason` or `proposal` parameters must be specified."));
+            }
+        }
     }
 }

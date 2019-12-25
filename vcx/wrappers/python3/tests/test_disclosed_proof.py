@@ -236,3 +236,14 @@ async def test_generate_proof():
     disclosed_proof = await DisclosedProof.create(source_id, request)
     # An error would be thrown if generate_proof failed
     assert await disclosed_proof.generate_proof({}, {}) is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_decline_presentation_request():
+    connection = await Connection.create(source_id)
+    await connection.connect(connection_options)
+    disclosed_proof = await DisclosedProof.create(source_id, request)
+    with pytest.raises(VcxError) as e:
+        await disclosed_proof.decline_presentation_request(connection, 'reason')
+    assert ErrorCode.ActionNotSupported == e.value.error_code

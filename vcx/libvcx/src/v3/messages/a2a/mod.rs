@@ -98,12 +98,12 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::ConnectionResponse(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Notification, A2AMessage::PING) => {
+            (MessageFamilies::TrustPing, A2AMessage::PING) => {
                 Ping::deserialize(value)
                     .map(|msg| A2AMessage::Ping(msg))
                     .map_err(de::Error::custom)
             }
-            (MessageFamilies::Notification, A2AMessage::PING_RESPONSE) => {
+            (MessageFamilies::TrustPing, A2AMessage::PING_RESPONSE) => {
                 PingResponse::deserialize(value)
                     .map(|msg| A2AMessage::PingResponse(msg))
                     .map_err(de::Error::custom)
