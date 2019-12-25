@@ -3,6 +3,7 @@ extern crate indy_sys;
 
 use indy::{IndyError, ErrorCode};
 use indy::ledger;
+use indy_utils::crypto::hash::hash;
 use self::futures::Future;
 use self::indy_sys::ledger::{CustomTransactionParser, CustomFree, indy_register_transaction_parser_for_sp};
 
@@ -74,6 +75,12 @@ fn _submit_retry<F>(minimal_timestamp: u64, submit_action: F) -> Result<String, 
         }
     };
     Ok(action_result)
+}
+
+pub fn calculate_hash(text: &str, version: &str) -> String {
+    let content: String = version.to_string() + text;
+    let digest = hash(content.as_bytes()).unwrap();
+    hex::encode(digest)
 }
 
 pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, IndyError> {
