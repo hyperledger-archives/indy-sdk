@@ -296,10 +296,15 @@ pub mod test {
 
         pub fn verify_presentation(&self) {
             self.activate();
+            self.update_proof_state(4, ::v3::messages::status::Status::Success.code())
+        }
+
+        pub fn update_proof_state(&self, expected_state: u32, expected_status: u32) {
+            self.activate();
 
             ::proof::update_state(self.presentation_handle, None).unwrap();
-            assert_eq!(4, ::proof::get_state(self.presentation_handle).unwrap());
-            assert_eq!(::v3::messages::status::Status::Success.code(), ::proof::get_proof_state(self.presentation_handle).unwrap());
+            assert_eq!(expected_state, ::proof::get_state(self.presentation_handle).unwrap());
+            assert_eq!(expected_status, ::proof::get_proof_state(self.presentation_handle).unwrap());
         }
 
         pub fn teardown(&self) {
@@ -344,7 +349,7 @@ pub mod test {
                 wallet_handle: get_wallet_handle(),
                 connection_handle: 0,
                 credential_handle: 0,
-                presentation_handle: 0
+                presentation_handle: 0,
             }
         }
 
@@ -388,11 +393,17 @@ pub mod test {
             assert_eq!(::v3::messages::status::Status::Success.code(), ::credential::get_credential_status(self.credential_handle).unwrap());
         }
 
-        pub fn send_presentation(&mut self) {
+        pub fn get_proof_request_messages(&self) -> String {
             self.activate();
             let presentation_requests = ::disclosed_proof::get_proof_request_messages(self.connection_handle, None).unwrap();
             let presentation_request = ::serde_json::from_str::<Vec<::serde_json::Value>>(&presentation_requests).unwrap()[0].clone();
             let presentation_request_json = ::serde_json::to_string(&presentation_request).unwrap();
+            presentation_request_json
+        }
+
+        pub fn send_presentation(&mut self) {
+            self.activate();
+            let presentation_request_json = self.get_proof_request_messages();
 
             self.presentation_handle = ::disclosed_proof::create_proof("degree", &presentation_request_json).unwrap();
 
@@ -412,6 +423,14 @@ pub mod test {
 
             ::disclosed_proof::send_proof(self.presentation_handle, self.connection_handle).unwrap();
             assert_eq!(2, ::disclosed_proof::get_state(self.presentation_handle).unwrap());
+        }
+
+        pub fn decline_presentation_request(&mut self) {
+            self.activate();
+            let presentation_request_json = self.get_proof_request_messages();
+
+            self.presentation_handle = ::disclosed_proof::create_proof("degree", &presentation_request_json).unwrap();
+            ::disclosed_proof::decline_presentation_request(self.presentation_handle, self.connection_handle, Some(String::from("reason")), None).unwrap();
         }
 
         pub fn ensure_presentation_verified(&self) {
@@ -472,6 +491,11 @@ pub mod test {
         alice.send_presentation();
         faber.verify_presentation();
         alice.ensure_presentation_verified();
+
+        // Decline Presentation
+        faber.request_presentation();
+        alice.decline_presentation_request();
+        faber.update_proof_state(4, 2);
     }
 }
 

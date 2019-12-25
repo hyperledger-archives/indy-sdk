@@ -332,6 +332,12 @@ public abstract class LibVcx {
 
 
         /**
+         * Declines presentation request.
+         */
+        public int vcx_disclosed_proof_decline_presentation_request(int command_handle, int proof_handle, int connection_handle, String reason, String proposal, Callback cb);
+
+
+        /**
          * UtilsApi object
          *
          */
