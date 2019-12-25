@@ -5,7 +5,7 @@ use v3::handlers::proof_presentation::prover::messages::ProverMessages;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::proof_presentation::presentation::Presentation;
-use v3::messages::ack::Ack;
+use v3::messages::proof_presentation::presentation_ack::PresentationAck;
 use v3::messages::error::ProblemReport;
 use v3::messages::status::Status;
 
@@ -18,7 +18,7 @@ use error::prelude::*;
 pub struct ProverSM {
     source_id: String,
     thread_id: String,
-    state: ProverState
+    state: ProverState,
 }
 
 impl ProverSM {
@@ -39,7 +39,7 @@ pub enum ProverState {
     PresentationPrepared(PresentationPreparedState),
     PresentationPreparationFailed(PresentationPreparationFailedState),
     PresentationSent(PresentationSentState),
-    Finished(FinishedState)
+    Finished(FinishedState),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -71,7 +71,7 @@ pub struct FinishedState {
     connection_handle: u32,
     presentation_request: PresentationRequest,
     presentation: Presentation,
-    status: Status
+    status: Status,
 }
 
 impl From<(InitialState, Presentation)> for PresentationPreparedState {
@@ -100,7 +100,7 @@ impl From<(PresentationPreparedState, u32)> for PresentationSentState {
         PresentationSentState {
             presentation_request: state.presentation_request,
             presentation: state.presentation,
-            connection_handle
+            connection_handle,
         }
     }
 }
@@ -129,8 +129,8 @@ impl From<(PresentationPreparationFailedState, u32)> for FinishedState {
     }
 }
 
-impl From<(PresentationSentState, Ack)> for FinishedState {
-    fn from((state, ack): (PresentationSentState, Ack)) -> Self {
+impl From<(PresentationSentState, PresentationAck)> for FinishedState {
+    fn from((state, ack): (PresentationSentState, PresentationAck)) -> Self {
         trace!("transit state from PresentationSentState to FinishedState");
         FinishedState {
             connection_handle: state.connection_handle,
@@ -183,9 +183,9 @@ impl ProverSM {
                 }
                 ProverState::PresentationSent(ref state) => {
                     match message {
-                        A2AMessage::Ack(ack) => {
+                        A2AMessage::Ack(ack) | A2AMessage::PresentationAck(ack) => {
                             if ack.from_thread(&self.thread_id) {
-                                return Some((uid, A2AMessage::Ack(ack)));
+                                return Some((uid, A2AMessage::PresentationAck(ack)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
@@ -607,7 +607,7 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
                     "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 
@@ -627,7 +627,7 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
                     "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 
@@ -646,12 +646,12 @@ pub mod test {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
-                    "key_3".to_string() => A2AMessage::Ack(_ack())
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack())
                 );
 
                 let (uid, message) = prover.find_message_to_handle(messages).unwrap();
                 assert_eq!("key_3", uid);
-                assert_match!(A2AMessage::Ack(_), message);
+                assert_match!(A2AMessage::PresentationAck(_), message);
             }
 
             // Problem Report
@@ -672,7 +672,7 @@ pub mod test {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id("")),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id("")),
-                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id("")),
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack().set_thread_id("")),
                     "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
                 );
 
@@ -702,7 +702,7 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
                     "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 

@@ -4,8 +4,8 @@ use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
 use v3::messages::proof_presentation::presentation::Presentation;
+use v3::messages::proof_presentation::presentation_ack::PresentationAck;
 use v3::messages::error::ProblemReport;
-use v3::messages::ack::Ack;
 use v3::messages::status::Status;
 use connection::{get_pw_did, get_their_pw_verkey};
 use proof::Proof;
@@ -97,8 +97,8 @@ impl PresentationRequestSentState {
         }
 
         if presentation.please_ack.is_some() {
-            let ack = Ack::create().set_thread_id(&self.presentation_request.id.0);
-            connection::send_message(self.connection_handle, ack.to_a2a_message())?;
+            let ack = PresentationAck::create().set_thread_id(&self.presentation_request.id.0);
+            connection::send_message(self.connection_handle, A2AMessage::PresentationAck(ack))?;
         }
 
         Ok(())
@@ -449,7 +449,7 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
                     "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 
@@ -468,7 +468,7 @@ pub mod test {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
-                    "key_3".to_string() => A2AMessage::Ack(_ack())
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack())
                 );
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
@@ -481,7 +481,7 @@ pub mod test {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
                     "key_2".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
-                    "key_3".to_string() => A2AMessage::Ack(_ack())
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack())
                 );
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
@@ -493,7 +493,7 @@ pub mod test {
             {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-                    "key_2".to_string() => A2AMessage::Ack(_ack()),
+                    "key_2".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 
@@ -507,7 +507,7 @@ pub mod test {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id("")),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id("")),
-                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id("")),
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack().set_thread_id("")),
                     "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
                 );
 
@@ -536,7 +536,7 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
                     "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 
