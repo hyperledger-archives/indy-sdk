@@ -487,6 +487,28 @@ pub mod test {
             ::disclosed_proof::decline_presentation_request(self.presentation_handle, self.connection_handle, Some(String::from("reason")), None).unwrap();
         }
 
+        pub fn propose_presentation(&mut self) {
+            self.activate();
+            let presentation_request_json = self.get_proof_request_messages();
+
+            self.presentation_handle = ::disclosed_proof::create_proof("degree", &presentation_request_json).unwrap();
+            let proposal_data = json!({
+                "attributes": [
+                    {
+                        "name": "first name"
+                    }
+                ],
+                "predicates": [
+                    {
+                        "name": "age",
+                        "predicate": ">",
+                        "threshold": 18
+                    }
+                ]
+            });
+            ::disclosed_proof::decline_presentation_request(self.presentation_handle, self.connection_handle, None, Some(proposal_data.to_string())).unwrap();
+        }
+
         pub fn ensure_presentation_verified(&self) {
             self.activate();
             ::disclosed_proof::update_state(self.presentation_handle, None).unwrap();
@@ -549,6 +571,11 @@ pub mod test {
         // Decline Presentation
         faber.request_presentation();
         alice.decline_presentation_request();
+        faber.update_proof_state(4, 2);
+
+        // Propose Presentation
+        faber.request_presentation();
+        alice.propose_presentation();
         faber.update_proof_state(4, 2);
     }
 

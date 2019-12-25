@@ -331,7 +331,7 @@ impl ProverSM {
     fn _handle_reject_presentation_request(connection_handle: u32, reason: &str, presentation_request_id: &MessageId, thread_id: &str) -> VcxResult<()>{
         let problem_report = ProblemReport::create()
             .set_comment(reason.to_string())
-            .set_thread_id(thread_id.to_string());
+            .set_thread_id(thread_id);
 
         connection::send_message(connection_handle, problem_report.to_a2a_message())?;
         connection::remove_pending_message(connection_handle, presentation_request_id)?;
@@ -341,7 +341,7 @@ impl ProverSM {
     fn _handle_presentation_proposal(connection_handle: u32, preview: PresentationPreview, presentation_request_id: &MessageId, thread_id: &str) -> VcxResult<()>{
         let proposal = PresentationProposal::create()
             .set_presentation_preview(preview)
-            .set_thread_id(thread_id.to_string());
+            .set_thread_id(thread_id);
 
         connection::send_message(connection_handle, proposal.to_a2a_message())?;
         connection::remove_pending_message(connection_handle, &presentation_request_id)?;
