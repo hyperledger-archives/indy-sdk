@@ -599,6 +599,20 @@ pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: Str
     }).map(|_| error::SUCCESS.code_num)
 }
 
+pub fn decline_presentation_request(handle: u32, connection_handle: u32, reason: Option<String>, proposal: Option<String>) -> VcxResult<u32> {
+    HANDLE_MAP.get_mut(handle, |obj| {
+        match obj {
+            DisclosedProofs::V1(obj) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            },
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.decline_presentation_request(connection_handle, reason.clone(), proposal.clone())?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    }).map(|_| error::SUCCESS.code_num)
+}
+
 pub fn retrieve_credentials(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
