@@ -292,4 +292,56 @@ mod tests {
             id.validate().unwrap_err();
         }
     }
+
+    mod test_schema_validation {
+        use super::*;
+
+        #[test]
+        fn test_valid_schema() {
+            let schema_json = json!({
+                "id": _schema_id_qualified(),
+                "name": "gvt",
+                "ver": "1.0",
+                "version": "1.0",
+                "attrNames": [],
+            }).to_string();
+
+            let schema: Schema = serde_json::from_str(&schema_json).unwrap();
+            schema.validate().unwrap();
+            match schema {
+                Schema::SchemaV1(schema) => {
+                    assert_eq!(schema.name, "gvt");
+                    assert_eq!(schema.version, "1.0");
+                }
+            }
+        }
+
+        #[test]
+        fn test_invalid_name_schema() {
+            let schema_json = json!({
+                "id": _schema_id_qualified(),
+                "name": "gvt1",
+                "ver": "1.0",
+                "version": "1.0",
+                "attrNames": [],
+            }).to_string();
+
+            let schema: Schema = serde_json::from_str(&schema_json).unwrap();
+            schema.validate().unwrap_err();
+        }
+
+        #[test]
+        fn test_invalid_version_schema() {
+            let schema_json = json!({
+                "id": _schema_id_qualified(),
+                "name": "gvt",
+                "ver": "1.0",
+                "version": "1.1",
+                "attrNames": [],
+            }).to_string();
+
+            let schema: Schema = serde_json::from_str(&schema_json).unwrap();
+            schema.validate().unwrap_err();
+        }
+    }
 }
