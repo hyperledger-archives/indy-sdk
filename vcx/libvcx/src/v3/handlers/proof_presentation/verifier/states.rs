@@ -196,7 +196,7 @@ impl VerifierSM {
                     VerifierMessages::PresentationRejectReceived(problem_report) => {
                         VerifierState::Finished((state, problem_report).into())
                     }
-                    VerifierMessages::PresentationProposalReceived(presentation_proposal) => {
+                    VerifierMessages::PresentationProposalReceived(presentation_proposal) => { // TODO: handle Presentation Proposal
                         let problem_report =
                             ProblemReport::create()
                                 .set_comment(String::from("PresentationProposal is not supported"))
