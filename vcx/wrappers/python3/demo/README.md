@@ -13,7 +13,7 @@ alice.py - a script that acts as an individual by accepting a connection offer, 
 pool.txn - genesis files for connecting to an indy pool (existing file connects to libindy/sovtoken ledger)
 
 To run these follow the next steps:
- 1) install the latest [vcx python package](../README.md#how-to-install)
+ 1) install the python requirements: `pip install -r requirements.txt`
  2) install a payment plugin -- [libnullpay](../../../../libnullpay/README.md#binaries)
  3) start Dummy Cloud Agent according to [instruction](../../../dummy-cloud-agent/README.md)
  4) execute the faber.py script first with `python3.5 faber.py`.
