@@ -100,7 +100,8 @@ export enum VCXCode {
     /* EC 1096 - 1099 are reserved for proprietary forks of libVCX */
     INVALID_ATTACHMENT_ENCODING = 1100,
     UNKNOWN_ATTACHMENT_ENCODING = 1101,
-    UNKNOWN_MIME_TYPE = 1102
+    UNKNOWN_MIME_TYPE = 1102,
+    ACTION_NOT_SUPPORTED = 1103
 }
 export enum StateType {
     None = 0,

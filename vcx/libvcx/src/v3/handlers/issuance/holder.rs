@@ -5,9 +5,9 @@ use v3::handlers::issuance::messages::CredentialIssuanceMessage;
 use v3::messages::issuance::credential::Credential;
 use v3::messages::issuance::credential_offer::CredentialOffer;
 use v3::messages::issuance::credential_request::CredentialRequest;
+use v3::messages::issuance::credential_ack::CredentialAck;
 use v3::messages::error::ProblemReport;
 use v3::messages::a2a::A2AMessage;
-use v3::messages::ack::Ack;
 use v3::messages::status::Status;
 use connection;
 
@@ -139,8 +139,8 @@ impl HolderSM {
                     match result {
                         Ok(cred_id) => {
                             if credential.please_ack.is_some() {
-                                let ack = Ack::create().set_thread_id(&thread_id);
-                                connection::send_message(state_data.connection_handle, ack.to_a2a_message())?;
+                                let ack = CredentialAck::create().set_thread_id(&thread_id);
+                                connection::send_message(state_data.connection_handle, A2AMessage::CredentialAck(ack))?;
                             }
 
                             HolderState::Finished((state_data, cred_id, credential).into())
@@ -388,7 +388,7 @@ mod test {
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialOffer(_credential_offer())).unwrap();
             assert_match!(HolderState::RequestSent(_), holder_sm.state);
 
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Ack(_ack())).unwrap();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialAck(_ack())).unwrap();
             assert_match!(HolderState::RequestSent(_), holder_sm.state);
         }
 
@@ -406,7 +406,7 @@ mod test {
             holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Credential(_credential())).unwrap();
             assert_match!(HolderState::Finished(_), holder_sm.state);
 
-            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::Ack(_ack())).unwrap();
+            holder_sm = holder_sm.handle_message(CredentialIssuanceMessage::CredentialAck(_ack())).unwrap();
             assert_match!(HolderState::Finished(_), holder_sm.state);
         }
     }
@@ -428,7 +428,7 @@ mod test {
                     "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request()),
                     "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal()),
                     "key_4".to_string() => A2AMessage::Credential(_credential()),
-                    "key_5".to_string() => A2AMessage::Ack(_ack()),
+                    "key_5".to_string() => A2AMessage::CredentialAck(_ack()),
                     "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 
@@ -442,7 +442,7 @@ mod test {
 
             let holder = _holder_sm().to_request_sent_state();
 
-            // Ack
+            // CredentialAck
             {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
@@ -462,7 +462,7 @@ mod test {
                     "key_1".to_string() => A2AMessage::CredentialOffer(_credential_offer()),
                     "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request()),
                     "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal()),
-                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_4".to_string() => A2AMessage::CredentialAck(_ack()),
                     "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 
@@ -478,7 +478,7 @@ mod test {
                     "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request().set_thread_id("")),
                     "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal().set_thread_id("")),
                     "key_4".to_string() => A2AMessage::Credential(_credential().set_thread_id("")),
-                    "key_5".to_string() => A2AMessage::Ack(_ack().set_thread_id("")),
+                    "key_5".to_string() => A2AMessage::CredentialAck(_ack().set_thread_id("")),
                     "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
                 );
 
@@ -510,7 +510,7 @@ mod test {
                     "key_2".to_string() => A2AMessage::CredentialRequest(_credential_request()),
                     "key_3".to_string() => A2AMessage::CredentialProposal(_credential_proposal()),
                     "key_4".to_string() => A2AMessage::Credential(_credential()),
-                    "key_5".to_string() => A2AMessage::Ack(_ack()),
+                    "key_5".to_string() => A2AMessage::CredentialAck(_ack()),
                     "key_6".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 

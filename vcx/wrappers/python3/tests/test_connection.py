@@ -190,7 +190,7 @@ async def test_send_ping():
     connection = await Connection.create(source_id)
     with pytest.raises(VcxError) as e:
         await connection.send_ping()
-    assert ErrorCode.InvalidConnectionHandle == e.value.error_code
+    assert ErrorCode.ActionNotSupported == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -199,4 +199,4 @@ async def test_send_discovery_features():
     connection = await Connection.create(source_id)
     with pytest.raises(VcxError) as e:
         await connection.send_discovery_features()
-    assert ErrorCode.InvalidConnectionHandle == e.value.error_code
+    assert ErrorCode.ActionNotSupported == e.value.error_code

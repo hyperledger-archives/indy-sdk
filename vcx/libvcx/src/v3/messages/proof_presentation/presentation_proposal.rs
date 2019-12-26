@@ -1,4 +1,6 @@
 use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::a2a::message_type::MessageType;
+use v3::messages::a2a::message_family::MessageFamilies;
 use v3::messages::mime_type::MimeType;
 use messages::thread::Thread;
 
@@ -15,8 +17,11 @@ pub struct PresentationProposal {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct PresentationPreview {
+    #[serde(rename = "@type")]
+    #[serde(default = "default_presentation_preview_type")]
+    pub _type: MessageType,
     pub attributes: Vec<Attribute>,
-    pub predicates: Vec<Predicate>
+    pub predicates: Vec<Predicate>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -25,7 +30,8 @@ pub struct Attribute {
     pub cred_def_id: Option<String>,
     #[serde(rename = "mime-type")]
     pub mime_type: Option<MimeType>,
-    pub value: Option<String>
+    pub value: Option<String>,
+    pub filter: Option<Vec<::serde_json::Value>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -34,9 +40,12 @@ pub struct Predicate {
     pub cred_def_id: Option<String>,
     pub predicate: String,
     pub threshold: i64,
-    pub filter: Vec<::serde_json::Value>
+    pub filter: Option<Vec<::serde_json::Value>>,
 }
 
+fn default_presentation_preview_type() -> MessageType {
+    MessageType::build(MessageFamilies::CredentialIssuance, "presentation-preview")
+}
 impl PresentationProposal {
     pub fn create() -> Self {
         PresentationProposal::default()
@@ -69,15 +78,17 @@ pub mod tests {
         String::from("comment")
     }
 
-    fn _presentation_preview() -> PresentationPreview {
+    pub fn _presentation_preview() -> PresentationPreview {
         PresentationPreview {
             attributes: vec![Attribute {
                 name: String::from("name"),
                 cred_def_id: None,
                 mime_type: None,
                 value: None,
+                filter: None
             }],
-            predicates: vec![]
+            predicates: vec![],
+            ..Default::default()
         }
     }
 
@@ -86,7 +97,7 @@ pub mod tests {
             id: MessageId::id(),
             comment: Some(_comment()),
             thread: thread(),
-            presentation_proposal: _presentation_preview()
+            presentation_proposal: _presentation_preview(),
         }
     }
 

@@ -565,7 +565,7 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
 /// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
 ///
 /// Note that this function is useful in case `aries` communication method is used.
-/// In other cases it returns Invalid Connection Handle error.
+/// In other cases it returns ActionNotSupported error.
 ///
 /// #params
 ///
@@ -781,7 +781,7 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
 /// Send discovery features message to the specified connection to discover which features it supports, and to what extent.
 ///
 /// Note that this function is useful in case `aries` communication method is used.
-/// In other cases it returns Invalid Connection Handle error.
+/// In other cases it returns ActionNotSupported error.
 ///
 /// #params
 ///
