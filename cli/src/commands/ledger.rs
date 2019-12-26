@@ -2279,7 +2279,7 @@ fn timestamp_to_datetime(_time: i64) -> String {
     NaiveDateTime::from_timestamp(_time, 0).to_string()
 }
 
-pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Option<(String, String)>, ()> {
+pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Option<(String, String, String)>, ()> {
     let response = Ledger::build_get_txn_author_agreement_request(None, None)
         .and_then(|request| Ledger::submit_request(_pool_handle, &request))
         .map_err(|err| handle_indy_error(err, None, None, None))?;
@@ -2289,10 +2289,11 @@ pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Opti
 
     let text = response["result"]["data"]["text"].as_str();
     let version = response["result"]["data"]["version"].as_str();
+    let digest = response["result"]["data"]["digest"].as_str();
 
-    match (text, version) {
-        (Some(text), _) if text.is_empty() => Ok(None),
-        (Some(text), Some(version)) => Ok(Some((text.to_string(), version.to_string()))),
+    match (text, version, digest) {
+        (Some(text), _,  _) if text.is_empty() => Ok(None),
+        (Some(text), Some(version), Some(digest)) => Ok(Some((text.to_string(), version.to_string(), digest.to_string()))),
         _ => Ok(None)
     }
 }
@@ -4937,7 +4938,7 @@ pub mod tests {
     mod aml {
         use super::*;
 
-        const AML: &str = r#"{"Acceptance Mechanism 1": "Description 1", "Acceptance Mechanism 2": "Description 2"}"#;
+        pub const AML: &str = r#"{"Acceptance Mechanism 1": "Description 1", "Acceptance Mechanism 2": "Description 2"}"#;
 
         pub fn _get_version() -> String {
             Utc::now().timestamp().to_string()
@@ -4958,6 +4959,49 @@ pub mod tests {
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
             {
                 let cmd = get_acceptance_mechanisms_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet_and_pool(&ctx);
+        }
+    }
+
+    mod taa {
+        use super::*;
+
+        #[test]
+        pub fn taa_works() {
+            let ctx = setup_with_wallet_and_pool();
+            use_trustee(&ctx);
+            {
+                // Set AML
+                let cmd = aml_command::new();
+                let mut params = CommandParams::new();
+                params.insert("aml", super::aml::AML.to_string());
+                params.insert("version", super::aml::_get_version());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                // Set TAA
+                let cmd = taa_command::new();
+                let mut params = CommandParams::new();
+                params.insert("text", "test taa".to_string());
+                params.insert("version", super::aml::_get_version());
+                params.insert("ratification-timestamp", "123456789".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                // Send Nym
+                let (did, _) = create_new_did(&ctx);
+                ctx.set_taa_acceptance_mechanism("Acceptance Mechanism 1");
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did);
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                // Disable all TAAs
+                let cmd = taa_disable_all_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
