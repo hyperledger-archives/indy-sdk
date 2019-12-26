@@ -86,6 +86,14 @@ impl Validatable for Schema {
             Schema::SchemaV1(schema) => {
                 schema.attr_names.validate()?;
                 schema.id.validate()?;
+                if let Some((_, name, version)) = schema.id.parts() {
+                    if name != schema.name {
+                        return Err(format!("Inconsistent Schema Id and Schema Name: {:?} and {}", schema.id, schema.name))
+                    }
+                    if version != schema.version {
+                        return Err(format!("Inconsistent Schema Id and Schema Version: {:?} and {}", schema.id, schema.version))
+                    }
+                }
                 Ok(())
             }
         }
