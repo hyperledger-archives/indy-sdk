@@ -298,7 +298,7 @@ class Connection(VcxStateful):
         Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
 
         Note that this function is useful in case `aries` communication method is used.
-        In other cases it returns Invalid Connection Handle error.
+        In other cases it returns IActionNotSupported error.
         :param comment: (Optional) human-friendly description of the ping.
 
         :return: no value
@@ -321,7 +321,7 @@ class Connection(VcxStateful):
         Send discovery features message to the specified connection to discover which features it supports, and to what extent.
 
         Note that this function is useful in case `aries` communication method is used.
-        In other cases it returns Invalid Connection Handle error.
+        In other cases it returns ActionNotSupported error.
 
         :param query: (Optional) query string to match against supported message types.
         :param comment: (Optional) human-friendly description of the ping.

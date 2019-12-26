@@ -185,7 +185,7 @@ describe('Connection:', () => {
     it('success: send ping', async () => {
       const connection = await connectionCreate()
       const error = await shouldThrow(() => connection.sendPing('ping'))
-      assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
     })
   })
 
@@ -193,7 +193,7 @@ describe('Connection:', () => {
     it('success: send discovery features', async () => {
       const connection = await connectionCreate()
       const error = await shouldThrow(() => connection.sendDiscoveryFeatures('*', 'comment'))
-      assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
     })
   })
 })
