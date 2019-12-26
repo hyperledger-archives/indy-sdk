@@ -528,7 +528,7 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -586,7 +586,7 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -677,7 +677,7 @@ The proof contains either proof or self-attested attribute value for each reques
   {
       "name": string,
       "version": string,
-      "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+      "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
       "requested_attributes": { // set of requested attributes
            "<attr_referent>": <attr_info>, // see below
            ...,
@@ -792,7 +792,7 @@ as the keys for corresponding `schemas`, `credentialDefsJsons`, `revRegDefs`, `r
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,

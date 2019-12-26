@@ -13,7 +13,7 @@ IndySDK provides API to:
 * Build request for disabling all TAAs on the Ledger.
 * Append TAA acceptance data to request before signing and submitting of them to the Ledger.
 
-## Libindy
+### Libindy
 
 #####  Trustee set up AML on the Ledger
 ```
@@ -26,37 +26,48 @@ Please NOTE that AML should be set on the Ledger before setting a TAA.
 ##### Trustee set TAA on the Ledger
 
 * Indy Node <= 1.12.0
-```
-txn_author_agreement_request = build_txn_author_agreement_request(.., "example TAA text", "1.0", null, null)
-sign_and_submit_request(.., txn_author_agreement_request)
-```
+    ```
+    txn_author_agreement_request = build_txn_author_agreement_request(.., "example TAA text", "1.0", null, null)
+    sign_and_submit_request(.., txn_author_agreement_request)
+    ```
+
+    Please note that `ratification_ts` and `retirement_ts` parameters must be omitted.
 
 * Indy Node > 1.12.0
-```
-txn_author_agreement_request = build_txn_author_agreement_request(.., "example TAA text", "1.0", 123456789, null)
-sign_and_submit_request(.., txn_author_agreement_request)
-```
+    ```
+    txn_author_agreement_request = build_txn_author_agreement_request(.., "example TAA text", "1.0", 123456789, null)
+    sign_and_submit_request(.., txn_author_agreement_request)
+    ```
+    Please note that:
 
+    * `ratification_ts` must be specified in case of adding a new TAA
+    * `retirement_ts` must be omitted in case of adding a new (latest) TAA.
+    
 ##### Trustee change TAA on the Ledger
 * Indy Node <= 1.12.0
+    1. Send a new TAA:
     ```
     txn_author_agreement_request = build_txn_author_agreement_request(.., "new TAA text", "2.0", null, null)
     sign_and_submit_request(.., txn_author_agreement_request)
     ```
+    Note that it is impossible to change an existing TAA. The new one must be create with different version.
 
 * Indy Node > 1.12.0
-
-    1. Update the current TAA to specify a retirement date:
-    ```
-    update_txn_author_agreement_request = build_txn_author_agreement_request(.., null, "1.0", null, 654321)
-    sign_and_submit_request(.., update_txn_author_agreement_request)
-    ```
-    
-    2. Send a new TAA:
+    1. Send a new TAA:
     ```
     new_txn_author_agreement_request = build_txn_author_agreement_request(.., "new TAA text", "2.0", 345679890, null)
     sign_and_submit_request(.., new_txn_author_agreement_request)
     ```
+    
+    2. Update the current TAA to specify a retirement date:
+    ```
+    update_txn_author_agreement_request = build_txn_author_agreement_request(.., null, "1.0", null, 654321)
+    sign_and_submit_request(.., update_txn_author_agreement_request)
+    ```
+    Please note that:
+    
+    * `retirement_ts` should be used for updating (deactivating) non-latest TAA on the ledger.
+    * `ratification_ts` can be omitted in case of updating an existing TAA
 
 ##### Trustee disable TAA on the Ledger
 * Indy Node <= 1.12.0

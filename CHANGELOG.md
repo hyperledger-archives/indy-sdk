@@ -14,6 +14,9 @@
         * `ledger disable-all-txn-author-agreements` - to disable All Transaction Author Agreements on the ledger. 
         * `ledger get-acceptance-mechanisms` - to get a list of acceptance mechanisms set on the ledger.
 * Bugfixes
+    * Added validation for `nonce` field in the proof request message. Now it must be a decimal number only represented as a string. It is highly recommended to use `indy_generate_nonce` function to generate a correct nonce.
+    * others minor bugfixes
+
 
 ## 1.13.0 - 2019-12-03
 * LibVCX Aries support:

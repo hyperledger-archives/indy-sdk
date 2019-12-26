@@ -8,6 +8,9 @@ libindy (1.14.0) unstable; urgency=medium
         * `ratification_ts` - the date (timestamp) of TAA ratification by network government.
         * `retirement_ts` - the date (timestamp) of TAA retirement.
     * Added a new function `indy_build_disable_all_txn_author_agreements_request` to disable all Transaction Author Agreement on the ledger.
+* Bugfixes
+    * Added validation for `nonce` field in the proof request message. Now it must be a decimal number only represented as a string. It is highly recommended to use `indy_generate_nonce` function to generate a correct nonce.
+    * others minor bugfixes
 
 ## 1.13.0
 * Added "names" parameter to Proof Request Revealed Attributes (IS-1381)

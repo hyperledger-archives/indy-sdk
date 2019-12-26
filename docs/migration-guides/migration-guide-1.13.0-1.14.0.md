@@ -27,7 +27,7 @@ version you can check migration guides history:
 
 #### Ledger API
 
-We did some changes related to transaction author agreement functionality. 
+The v1.14 release contains some changes related to transaction author agreement functionality. 
 
 This changes allow to user to review and accept the TAA in advance of it being written to the ledger. 
 Thus when we submit a transaction we can report the real date of meaningful acceptance, 
