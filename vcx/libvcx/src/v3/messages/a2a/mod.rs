@@ -54,11 +54,13 @@ pub enum A2AMessage {
     CredentialOffer(CredentialOffer),
     CredentialRequest(CredentialRequest),
     Credential(Credential),
+    CredentialAck(Ack),
 
     /// proof presentation
     PresentationProposal(PresentationProposal),
     PresentationRequest(PresentationRequest),
     Presentation(Presentation),
+    PresentationAck(Ack),
 
     /// discovery features
     Query(Query),
@@ -143,6 +145,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::CredentialRequest(msg))
                     .map_err(de::Error::custom)
             }
+            (MessageFamilies::CredentialIssuance, A2AMessage::ACK) => {
+                Ack::deserialize(value)
+                    .map(|msg| A2AMessage::CredentialAck(msg))
+                    .map_err(de::Error::custom)
+            }
             (MessageFamilies::PresentProof, A2AMessage::PROPOSE_PRESENTATION) => {
                 PresentationProposal::deserialize(value)
                     .map(|msg| A2AMessage::PresentationProposal(msg))
@@ -156,6 +163,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
             (MessageFamilies::PresentProof, A2AMessage::PRESENTATION) => {
                 Presentation::deserialize(value)
                     .map(|msg| A2AMessage::Presentation(msg))
+                    .map_err(de::Error::custom)
+            }
+            (MessageFamilies::PresentProof, A2AMessage::ACK) => {
+                Ack::deserialize(value)
+                    .map(|msg| A2AMessage::PresentationAck(msg))
                     .map_err(de::Error::custom)
             }
             (MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY) => {
@@ -199,9 +211,11 @@ impl Serialize for A2AMessage {
             A2AMessage::Credential(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::CREDENTIAL),
             A2AMessage::CredentialProposal(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::PROPOSE_CREDENTIAL),
             A2AMessage::CredentialRequest(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::REQUEST_CREDENTIAL),
+            A2AMessage::CredentialAck(msg) => set_a2a_message_type(msg, MessageFamilies::CredentialIssuance, A2AMessage::ACK),
             A2AMessage::PresentationProposal(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PROPOSE_PRESENTATION),
             A2AMessage::PresentationRequest(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::REQUEST_PRESENTATION),
             A2AMessage::Presentation(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::PRESENTATION),
+            A2AMessage::PresentationAck(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::ACK),
             A2AMessage::Query(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY),
             A2AMessage::Disclose(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::DISCLOSE),
             A2AMessage::Generic(msg) => ::serde_json::to_value(msg),
