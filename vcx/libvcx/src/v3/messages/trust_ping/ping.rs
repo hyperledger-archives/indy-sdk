@@ -1,14 +1,16 @@
 use messages::thread::Thread;
 use v3::messages::a2a::{MessageId, A2AMessage};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Ping {
     #[serde(rename = "@id")]
     pub id: MessageId,
     #[serde(default)]
     pub response_requested: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     comment: Option<String>,
     #[serde(rename = "~thread")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub thread: Option<Thread>,
 }
 
@@ -22,26 +24,18 @@ impl Ping {
         self
     }
 
-    pub fn set_comment(mut self, comment: String) -> Ping {
-        self.comment = Some(comment);
+    pub fn set_comment(mut self, comment: Option<String>) -> Ping {
+        self.comment = comment;
         self
     }
 
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::Ping(self.clone()) // TODO: THINK how to avoid clone
+    pub fn request_response(mut self) -> Ping {
+        self.response_requested = true;
+        self
     }
 }
 
-impl Default for Ping {
-    fn default() -> Ping {
-        Ping {
-            id: MessageId::new(),
-            response_requested: false,
-            comment: None,
-            thread: None,
-        }
-    }
-}
+a2a_message!(Ping);
 
 #[cfg(test)]
 pub mod tests {
@@ -64,7 +58,7 @@ pub mod tests {
     #[test]
     fn test_ping_build_works() {
         let ping: Ping = Ping::default()
-            .set_comment(_comment())
+            .set_comment(Some(_comment()))
             .set_thread_id(_thread_id());
 
         assert_eq!(_ping(), ping);

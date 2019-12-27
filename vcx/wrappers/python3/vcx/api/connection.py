@@ -291,3 +291,52 @@ class Connection(VcxStateful):
                                 Connection.invite_details.cb)
 
         return json.loads(details.decode())
+
+
+    async def send_ping(self, comment: Optional[str] = None):
+        """
+        Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+
+        Note that this function is useful in case `aries` communication method is used.
+        In other cases it returns IActionNotSupported error.
+        :param comment: (Optional) human-friendly description of the ping.
+
+        :return: no value
+        """
+        if not hasattr(Connection.send_ping, "cb"):
+            self.logger.debug("vcx_connection_send_ping: Creating callback")
+            Connection.send_ping.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_comment = c_char_p(comment.encode('utf-8')) if comment is not None else None
+
+        await do_call('vcx_connection_send_ping',
+                      c_connection_handle,
+                      c_comment,
+                      Connection.send_ping.cb)
+
+
+    async def send_discovery_features(self, query: Optional[str] = None, comment: Optional[str] = None):
+        """
+        Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+
+        Note that this function is useful in case `aries` communication method is used.
+        In other cases it returns ActionNotSupported error.
+
+        :param query: (Optional) query string to match against supported message types.
+        :param comment: (Optional) human-friendly description of the ping.
+        :return: no value
+        """
+        if not hasattr(Connection.send_discovery_features, "cb"):
+            self.logger.debug("vcx_connection_send_discovery_features: Creating callback")
+            Connection.send_discovery_features.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_query = c_char_p(query.encode('utf-8')) if query is not None else None
+        c_comment = c_char_p(comment.encode('utf-8')) if comment is not None else None
+
+        await do_call('vcx_connection_send_discovery_features',
+                      c_connection_handle,
+                      c_query,
+                      c_comment,
+                      Connection.send_discovery_features.cb)

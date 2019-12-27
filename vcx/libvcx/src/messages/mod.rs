@@ -10,6 +10,7 @@ pub mod update_connection;
 pub mod update_message;
 pub mod message_type;
 pub mod payload;
+#[macro_use]
 pub mod thread;
 
 use std::u8;

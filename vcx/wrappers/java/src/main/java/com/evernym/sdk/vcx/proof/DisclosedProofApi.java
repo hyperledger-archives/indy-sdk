@@ -309,7 +309,6 @@ public class DisclosedProofApi extends VcxJava.API {
         return future;
     }
 
-
     private static Callback vcxProofDeserializeCB = new Callback() {
         public void callback(int command_handle, int err, int proofHandle) {
             logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "], proofHandle = [" + proofHandle + "]");
@@ -333,5 +332,32 @@ public class DisclosedProofApi extends VcxJava.API {
 
         return future;
     }
+
+	private static Callback vcxDeclinePresentationRequestCB = new Callback() {
+		public void callback(int command_handle, int err) {
+			logger.debug("callback() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(command_handle);
+			if (! checkCallback(future, err)) return;
+
+			future.complete(null);
+		}
+	};
+
+	public static CompletableFuture<Void> proofDeclineRequest(
+			int proofHandle,
+			int connectionHandle,
+			String reason,
+			String proposal
+	) throws VcxException {
+		logger.debug("declinePresentationRequest() called with: proofHandle = [" + proofHandle + "], connectionHandle = [" + connectionHandle + "], " +
+				"reason = [" + reason + "], proposal = [" + proposal + "]");
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_disclosed_proof_decline_presentation_request(commandHandle, proofHandle, connectionHandle, reason, proposal, vcxDeclinePresentationRequestCB);
+		checkResult(result);
+
+		return future;
+	}
 
 }

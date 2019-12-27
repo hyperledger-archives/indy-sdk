@@ -1497,8 +1497,10 @@ async def build_get_auth_rule_request(submitter_did: Optional[str],
 
 
 async def build_txn_author_agreement_request(submitter_did: str,
-                                             text: str,
-                                             version: str) -> str:
+                                             text: Optional[str],
+                                             version: str,
+                                             ratification_ts: Optional[int] = None,
+                                             retirement_ts: Optional[int] = None) -> str:
     """
     Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
 
@@ -1506,34 +1508,91 @@ async def build_txn_author_agreement_request(submitter_did: str,
 
     :param submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
                           Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
-    :param text: a content of the TTA.
+    :param text: (Optional) a content of the TTA.
+                          Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+                          for Indy Node version <= 1.12.0:
+                              Use empty string to reset TAA on the ledger
+                          for Indy Node version > 1.12.0
+                              Should be omitted in case of updating an existing TAA (setting `retirement_ts`)
     :param version: a version of the TTA (unique UTF-8 string).
+    :param ratification_ts: Optional) the date (timestamp) of TAA ratification by network government.
+                          for Indy Node version <= 1.12.0:
+                             Must be omitted
+                          for Indy Node version > 1.12.0:
+                             Must be specified in case of adding a new TAA
+                             Can be omitted in case of updating an existing TAA
+    :param retirement_ts: (Optional) the date (timestamp) of TAA retirement.
+                          for Indy Node version <= 1.12.0:
+                              Must be omitted
+                          for Indy Node version > 1.12.0:
+                              Must be omitted in case of adding a new (latest) TAA.
+                              Should be used for updating (deactivating) non-latest TAA on the ledger.
+
+    Note: Use `build_disable_all_txn_author_agreements_request` to disable all TAA's on the ledger.
 
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_txn_author_agreement_request: >>> submitter_did: %r, text: %r, version: %r",
+    logger.debug("build_txn_author_agreement_request: >>> submitter_did: %r, text: %r, version: %r, "
+                 "ratification_ts: %r, retirement_ts: %r",
                  submitter_did,
                  text,
-                 version)
+                 version,
+                 ratification_ts,
+                 retirement_ts)
 
     if not hasattr(build_txn_author_agreement_request, "cb"):
         logger.debug("build_txn_author_agreement_request: Creating callback")
         build_txn_author_agreement_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_text = c_char_p(text.encode('utf-8'))
+    c_text = c_char_p(text.encode('utf-8')) if text is not None else None
     c_version = c_char_p(version.encode('utf-8'))
+    c_ratification_ts = c_int64(ratification_ts) if ratification_ts is not None else c_int(-1)
+    c_retirement_ts = c_int64(retirement_ts) if retirement_ts is not None else c_int(-1)
 
     request_json = await do_call('indy_build_txn_author_agreement_request',
                                  c_submitter_did,
                                  c_text,
                                  c_version,
+                                 c_ratification_ts,
+                                 c_retirement_ts,
                                  build_txn_author_agreement_request.cb)
 
     res = request_json.decode()
     logger.debug("build_txn_author_agreement_request: <<< res: %r", res)
+    return res
+
+
+async def build_disable_all_txn_author_agreements_request(submitter_did: str) -> str:
+    """
+    Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+
+    EXPERIMENTAL
+
+    :param submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+                          Actual request sender may differ if Endorser is used (look at `append_request_endorser`)
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_disable_all_txn_author_agreements_request: >>> submitter_did: %r",
+                 submitter_did)
+
+    if not hasattr(build_disable_all_txn_author_agreements_request, "cb"):
+        logger.debug("build_disable_all_txn_author_agreements_request: Creating callback")
+        build_disable_all_txn_author_agreements_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+
+    request_json = await do_call('indy_build_disable_all_txn_author_agreements_request',
+                                 c_submitter_did,
+                                 build_disable_all_txn_author_agreements_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_disable_all_txn_author_agreements_request: <<< res: %r", res)
     return res
 
 

@@ -4,8 +4,8 @@ use v3::handlers::proof_presentation::verifier::messages::VerifierMessages;
 use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::{PresentationRequest, PresentationRequestData};
 use v3::messages::proof_presentation::presentation::Presentation;
+use v3::messages::proof_presentation::presentation_ack::PresentationAck;
 use v3::messages::error::ProblemReport;
-use v3::messages::ack::Ack;
 use v3::messages::status::Status;
 use connection::{get_pw_did, get_their_pw_verkey};
 use proof::Proof;
@@ -96,9 +96,10 @@ impl PresentationRequestSentState {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidProof, "Presentation verification failed"));
         }
 
-        let ack = Ack::create().set_thread_id(self.presentation_request.id.0.clone());
-
-        connection::send_message(self.connection_handle, ack.to_a2a_message())?;
+        if presentation.please_ack.is_some() {
+            let ack = PresentationAck::create().set_thread_id(&self.presentation_request.id.0);
+            connection::send_message(self.connection_handle, A2AMessage::PresentationAck(ack))?;
+        }
 
         Ok(())
     }
@@ -116,17 +117,17 @@ impl VerifierSM {
                 VerifierState::PresentationRequestSent(ref state) => {
                     match message {
                         A2AMessage::Presentation(presentation) => {
-                            if presentation.thread.is_reply(&self.thread_id()) {
+                            if presentation.from_thread(&self.thread_id()) {
                                 return Some((uid, A2AMessage::Presentation(presentation)));
                             }
                         }
                         A2AMessage::PresentationProposal(proposal) => {
-                            if proposal.thread.is_reply(&self.thread_id()) {
+                            if proposal.from_thread(&self.thread_id()) {
                                 return Some((uid, A2AMessage::PresentationProposal(proposal)));
                             }
                         }
                         A2AMessage::CommonProblemReport(problem_report) => {
-                            if problem_report.thread.is_reply(&self.thread_id()) {
+                            if problem_report.from_thread(&self.thread_id()) {
                                 return Some((uid, A2AMessage::CommonProblemReport(problem_report)));
                             }
                         }
@@ -185,7 +186,7 @@ impl VerifierSM {
                                 let problem_report =
                                     ProblemReport::create()
                                         .set_comment(err.to_string())
-                                        .set_thread_id(state.presentation_request.id.0.clone());
+                                        .set_thread_id(&state.presentation_request.id.0);
 
                                 connection::send_message(state.connection_handle, problem_report.to_a2a_message())?;
                                 VerifierState::Finished((state, problem_report).into())
@@ -195,11 +196,11 @@ impl VerifierSM {
                     VerifierMessages::PresentationRejectReceived(problem_report) => {
                         VerifierState::Finished((state, problem_report).into())
                     }
-                    VerifierMessages::PresentationProposalReceived(presentation_proposal) => {
+                    VerifierMessages::PresentationProposalReceived(presentation_proposal) => { // TODO: handle Presentation Proposal
                         let problem_report =
                             ProblemReport::create()
                                 .set_comment(String::from("PresentationProposal is not supported"))
-                                .set_thread_id(state.presentation_request.id.0.clone());
+                                .set_thread_id(&state.presentation_request.id.0);
 
                         connection::send_message(state.connection_handle, problem_report.to_a2a_message())?;
                         VerifierState::Finished((state, problem_report).into())
@@ -448,7 +449,7 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
                     "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 
@@ -467,7 +468,7 @@ pub mod test {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
-                    "key_3".to_string() => A2AMessage::Ack(_ack())
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack())
                 );
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
@@ -480,7 +481,7 @@ pub mod test {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
                     "key_2".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
-                    "key_3".to_string() => A2AMessage::Ack(_ack())
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack())
                 );
 
                 let (uid, message) = verifier.find_message_to_handle(messages).unwrap();
@@ -492,7 +493,7 @@ pub mod test {
             {
                 let messages = map!(
                     "key_1".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-                    "key_2".to_string() => A2AMessage::Ack(_ack()),
+                    "key_2".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 
@@ -504,10 +505,10 @@ pub mod test {
             // No messages for different Thread ID
             {
                 let messages = map!(
-                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id(String::new())),
-                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id(String::new())),
-                    "key_3".to_string() => A2AMessage::Ack(_ack().set_thread_id(String::new())),
-                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(String::new()))
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id("")),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id("")),
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack().set_thread_id("")),
+                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
                 );
 
                 assert!(verifier.find_message_to_handle(messages).is_none());
@@ -535,7 +536,7 @@ pub mod test {
                     "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
                     "key_2".to_string() => A2AMessage::Presentation(_presentation()),
                     "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-                    "key_4".to_string() => A2AMessage::Ack(_ack()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
                     "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
                 );
 

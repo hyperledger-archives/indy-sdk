@@ -61,30 +61,41 @@ impl<'de> Deserialize<'de> for ProofRequest
         #[derive(Deserialize)]
         struct Helper {
             ver: Option<String>,
+            nonce: String,
         }
 
         let v = Value::deserialize(deserializer)?;
 
         let helper = Helper::deserialize(&v).map_err(de::Error::custom)?;
+        let nonce_cleaned = helper.nonce.replace(" ", "").replace("_", "");
 
-        match helper.ver {
+        let proof_req = match helper.ver {
             Some(version) => {
                 match version.as_ref() {
                     "1.0" => {
                         let proof_request = ProofRequestPayload::deserialize(v).map_err(de::Error::custom)?;
-                        Ok(ProofRequest::ProofRequestV1(proof_request))
+                        ProofRequest::ProofRequestV1(proof_request)
                     }
                     "2.0" => {
                         let proof_request = ProofRequestPayload::deserialize(v).map_err(de::Error::custom)?;
-                        Ok(ProofRequest::ProofRequestV2(proof_request))
+                        ProofRequest::ProofRequestV2(proof_request)
                     }
-                    _ => Err(de::Error::unknown_variant(&version, &["2.0"]))
+                    _ => return Err(de::Error::unknown_variant(&version, &["2.0"]))
                 }
             }
             None => {
                 let proof_request = ProofRequestPayload::deserialize(v).map_err(de::Error::custom)?;
-                Ok(ProofRequest::ProofRequestV1(proof_request))
+                ProofRequest::ProofRequestV1(proof_request)
             }
+        };
+        let nonce_parsed = match &proof_req {
+            ProofRequest::ProofRequestV1(payload) => payload.nonce.to_dec().map_err(de::Error::custom)?,
+            ProofRequest::ProofRequestV2(payload) => payload.nonce.to_dec().map_err(de::Error::custom)?
+        };
+        if nonce_cleaned != nonce_parsed {
+            Err(de::Error::custom(format!("Invalid nonce provided: {}", nonce_cleaned)))
+        } else {
+            Ok(proof_req)
         }
     }
 }
@@ -320,6 +331,42 @@ fn _check_restriction(tag_name: &str, tag_value: &str, version: &ProofRequestsVe
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    mod invalid_nonce {
+        use super::*;
+
+        #[test]
+        fn proof_request_valid_nonce() {
+            let proof_req_json = json!({
+                "nonce": "123456",
+                "name": "name",
+                "version": "2.0",
+                "requested_attributes": {},
+                "requested_predicates": {},
+            }).to_string();
+
+            let proof_req: ProofRequest = serde_json::from_str(&proof_req_json).unwrap();
+            let payload = match proof_req {
+                ProofRequest::ProofRequestV1(p) => p,
+                ProofRequest::ProofRequestV2(p) => p,
+            };
+
+            assert_eq!(payload.nonce.to_dec().unwrap(), "123456");
+        }
+
+        #[test]
+        fn proof_request_invalid_nonce() {
+            let proof_req_json = json!({
+                "nonce": "123abc",
+                "name": "name",
+                "version": "2.0",
+                "requested_attributes": {},
+                "requested_predicates": {},
+            }).to_string();
+
+            serde_json::from_str::<ProofRequest>(&proof_req_json).unwrap_err();
+        }
+    }
 
     mod to_unqualified {
         use super::*;

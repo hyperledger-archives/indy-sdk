@@ -312,6 +312,17 @@ All these options are part of Indy wallet `config`/`credential` parameters.
 * `sdk_to_remote_did` - pairwise DID for agent
 * `sdk_to_remote_verkey` - pairwise Verkey for Agent
 
+##### Protocol related options
+* `communication_method` - the version of protocols to use (can be `aries` or `proprietary`) for connection establishment and messages exchange.
+    * `aries` - the public protocols described in the [repository](https://github.com/hyperledger/aries-rfcs).
+    * `proprietary` - the proprietary protocols.
+* `actors` - the set of actors which application supports. This setting is used within the `Feature Discovery` protocol to discover which features are supported by another connection side.
+
+    The following actors are supported by default: `[inviter, invitee, issuer, holder, prover, verifier, sender, receiver]`. 
+    You need to edit this list and add to an initialization config in case the application supports the fewer number of actors.
+
+    Note that option is applicable for `aries` communication method only.
+
 ### Logging
 libVCX provides two options for Logger initialization:
 
@@ -324,7 +335,6 @@ Library user can provide a custom logger implementation by passing a set of hand
 This function will also be used by `indy` and `plugins` for logging.
 
 WARNING: You can only set the logger **once**. Once it's been set, vcx won't let you change it.
-
 
 ##### Wrappers
 * The Python wrapper uses default Python logging module. So, to enable logs you need just to configure its usual way. 
