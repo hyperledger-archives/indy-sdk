@@ -237,7 +237,7 @@ class DisclosedProof(VcxStateful):
                              DisclosedProof.get_creds.cb)
         return json.loads(data.decode())
 
-    async def send_proof(self, connection: Connection):
+    async def send_proof(self, connection: Optional[Connection] = None):
         """
         Sends the proof to the Connection
         Example:
@@ -255,7 +255,7 @@ class DisclosedProof(VcxStateful):
             DisclosedProof.send_proof.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
 
         c_disclosed_proof_handle = c_uint32(self.handle)
-        c_connection_handle = c_uint32(connection.handle)
+        c_connection_handle = c_uint32(connection.handle) if connection else 0
 
         await do_call('vcx_disclosed_proof_send_proof',
                       c_disclosed_proof_handle,

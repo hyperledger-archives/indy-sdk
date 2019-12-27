@@ -93,6 +93,14 @@ impl Query {
         }
     }
 
+    pub fn clean(&self) -> Option<&Query> { // TODO: improve it to handle nested
+        match self {
+            Query::And(suboperators) if suboperators.is_empty() => None,
+            Query::Or(suboperators) if suboperators.is_empty() => None,
+            _ => Some(self)
+        }
+    }
+
     fn to_value(&self) -> serde_json::Value {
         match *self {
             Query::Eq(ref tag_name, ref tag_value) => json!({tag_name: tag_value}),
@@ -225,7 +233,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
 mod tests {
     use super::*;
     use rand::{thread_rng, Rng};
-    use rand::distributions::{Alphanumeric};
+    use rand::distributions::Alphanumeric;
 
     fn _random_string(len: usize) -> String {
         thread_rng().sample_iter(&Alphanumeric).take(len).collect()
