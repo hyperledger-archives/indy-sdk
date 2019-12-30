@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '0.4.2'
+PKG_VERSION = os.environ.get('PACKAGE_VERSION') or '0.6.0'
 PKG_NAME = os.environ.get('PACKAGE_NAME') or 'python3-wrapper-vcx'
 
 setup(
@@ -12,5 +12,6 @@ setup(
     author="Hyperledger Indy Contributors",
     author_email= "hyperledger-indy@lists.hyperledger.org",
     include_package_data=True,
-    packages=find_packages(exclude=['demo', 'tests'])
+    packages=find_packages(exclude=['demo', 'tests']),
+    license='Apache-2.0',
 )

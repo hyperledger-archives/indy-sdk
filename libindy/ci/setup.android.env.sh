@@ -48,23 +48,36 @@ delete_existing_avd(){
     avdmanager delete avd -n ${ABSOLUTE_ARCH}
 }
 
+download_emulator() {
+    curl -o emu.zip https://dl.google.com/android/repository/emulator-linux-5889189.zip
+}
+
 create_avd(){
 
     echo "${GREEN}Creating Android SDK${RESET}"
 
     yes | sdkmanager --licenses
 
-    echo "yes" |
-          sdkmanager --no_https \
-            "emulator" \
-            "platform-tools" \
-            "platforms;android-24" \
-            "system-images;android-24;default;${ABI}"
+    if [ ! -d "${ANDROID_SDK}/emulator/" ] ; then
+        echo "yes" |
+              sdkmanager --no_https \
+                "emulator" \
+                "platform-tools" \
+                "platforms;android-24" \
+                "system-images;android-24;default;${ABI}"
+
+        # TODO hack to downgrade Android Emulator. Should be removed as soon as headless mode will be fixed.
+        mv /home/indy/emu.zip emu.zip
+        mv emulator emulator_backup
+        unzip emu.zip
+    else
+        echo "Skipping sdkmanager activity"
+    fi
 
     echo "${BLUE}Creating android emulator${RESET}"
 
         echo "no" |
-             avdmanager create avd \
+             avdmanager -v create avd \
                 --name ${ABSOLUTE_ARCH} \
                 --package "system-images;android-24;default;${ABI}" \
                 -f \
@@ -92,7 +105,11 @@ download_and_unzip_if_missed() {
 download_sdk(){
     pushd ${ANDROID_SDK}
         download_and_unzip_if_missed "tools" "https://dl.google.com/android/repository/" "sdk-tools-linux-4333796.zip"
+    popd
+}
 
+recreate_avd(){
+    pushd ${ANDROID_SDK}
         set +e
         delete_existing_avd
         set -e
@@ -151,17 +168,19 @@ generate_arch_flags(){
 
 }
 
-
-download_and_unzip_dependencies(){
+prepare_dependencies() {
     pushd ${ANDROID_BUILD_FOLDER}
         download_and_unzip_if_missed "openssl_$1" "https://repo.sovrin.org/android/libindy/deps-libc++/openssl/" "openssl_$1.zip"
         download_and_unzip_if_missed "libsodium_$1" "https://repo.sovrin.org/android/libindy/deps-libc++/sodium/" "libsodium_$1.zip"
         download_and_unzip_if_missed "libzmq_$1" "https://repo.sovrin.org/android/libindy/deps-libc++/zmq/" "libzmq_$1.zip"
-
-        export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
-        export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
-        export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
     popd
+}
+
+
+setup_dependencies_env_vars(){
+    export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
+    export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
+    export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
 }
 
 

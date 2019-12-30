@@ -4,7 +4,6 @@ This Java wrapper currently requires Java 8 (e.g. the openjdk-8-jdk package in D
 
 Pull requests welcome!
 
-**Not ready for production use! Not all commands work properly! Use at your own risk!**
 ### How to install
 In your maven project add to pom.xml file next content:
 

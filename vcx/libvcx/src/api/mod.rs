@@ -78,6 +78,22 @@ enum_number!(VcxStateType
     VcxStateRevoked = 7,
 });
 
+impl VcxStateType {
+    pub fn from_u32(state: u32) -> VcxStateType {
+        match state {
+            0 => VcxStateType::VcxStateNone,
+            1 => VcxStateType::VcxStateInitialized,
+            2 => VcxStateType::VcxStateOfferSent,
+            3 => VcxStateType::VcxStateRequestReceived,
+            4 => VcxStateType::VcxStateAccepted,
+            5 => VcxStateType::VcxStateUnfulfilled,
+            6 => VcxStateType::VcxStateExpired,
+            7 => VcxStateType::VcxStateRevoked,
+            _ => VcxStateType::VcxStateNone,
+        }
+    }
+}
+
 // undefined is correlated with VcxStateNon -> Haven't received Proof
 // Validated is both validated by indy-sdk and by comparing proof-request
 // Invalid is that it failed one or both of validation processes

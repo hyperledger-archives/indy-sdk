@@ -10,6 +10,16 @@ We plan to migrate to this protocol and implementation soon.
 ## Run
     cargo run <path-to-config>
     
+### With PostgreSQL wallet
+
+The agency is by default using IndySDK builtin wallet stored in file. You can also store wallets created by the 
+agency in postgresql database. See sample postgresql [configuration](config/pgsql-config.json).
+
+In order for things to work, you will have to compile IndySDK postgresql wallet 
+[plugin](https://github.com/hyperledger/indy-sdk/tree/master/experimental/plugins/postgres_storage)
+and make sure it's in your system's library directory (`/usr/local/lib` for Mac, `/usr/lib` for Linux).     
+    
+    
 # Workflow
 Cloud agency is a little bit like mail server, but secure. It can receive messages on your behalf and you can download
 your messages on demand. You can also use it to route messages to other recipients and it knows how to do that. 
