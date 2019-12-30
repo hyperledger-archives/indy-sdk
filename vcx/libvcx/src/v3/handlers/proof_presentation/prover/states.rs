@@ -2,7 +2,7 @@ use api::VcxStateType;
 
 use connection;
 use v3::handlers::proof_presentation::prover::messages::ProverMessages;
-use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::a2a::A2AMessage;
 use v3::messages::proof_presentation::presentation_request::PresentationRequest;
 use v3::messages::proof_presentation::presentation_proposal::{PresentationProposal, PresentationPreview};
 use v3::messages::proof_presentation::presentation::Presentation;
@@ -247,11 +247,11 @@ impl ProverSM {
                         }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
-                        Self::_handle_reject_presentation_request(connection_handle, &reason, &state.presentation_request.id, &thread_id)?;
+                        Self::_handle_reject_presentation_request(connection_handle, &reason, &state.presentation_request, &thread_id)?;
                         ProverState::Finished(state.into())
                     }
                     ProverMessages::ProposePresentation((connection_handle, preview)) => {
-                        Self::_handle_presentation_proposal(connection_handle, preview, &state.presentation_request.id, &thread_id)?;
+                        Self::_handle_presentation_proposal(connection_handle, preview, &state.presentation_request, &thread_id)?;
                         ProverState::Finished(state.into())
                     }
                     _ => {
@@ -275,11 +275,11 @@ impl ProverSM {
                         }
                     }
                     ProverMessages::RejectPresentationRequest((connection_handle, reason)) => {
-                        Self::_handle_reject_presentation_request(connection_handle, &reason, &state.presentation_request.id, &thread_id)?;
+                        Self::_handle_reject_presentation_request(connection_handle, &reason, &state.presentation_request, &thread_id)?;
                         ProverState::Finished(state.into())
                     }
                     ProverMessages::ProposePresentation((connection_handle, preview)) => {
-                        Self::_handle_presentation_proposal(connection_handle, preview, &state.presentation_request.id, &thread_id)?;
+                        Self::_handle_presentation_proposal(connection_handle, preview, &state.presentation_request, &thread_id)?;
                         ProverState::Finished(state.into())
                     }
                     _ => {
@@ -315,7 +315,7 @@ impl ProverSM {
                         ProverState::Finished((state, problem_report).into())
                     }
                     ProverMessages::RejectPresentationRequest(_) => {
-                        return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Presentation is already sent"))
+                        return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Presentation is already sent"));
                     }
                     _ => {
                         ProverState::PresentationSent(state)
@@ -328,23 +328,31 @@ impl ProverSM {
         Ok(ProverSM { source_id, state, thread_id })
     }
 
-    fn _handle_reject_presentation_request(connection_handle: u32, reason: &str, presentation_request_id: &MessageId, thread_id: &str) -> VcxResult<()>{
+    fn _handle_reject_presentation_request(connection_handle: u32, reason: &str, presentation_request: &PresentationRequest, thread_id: &str) -> VcxResult<()> {
         let problem_report = ProblemReport::create()
             .set_comment(reason.to_string())
             .set_thread_id(thread_id);
 
-        connection::send_message(connection_handle, problem_report.to_a2a_message())?;
-        connection::remove_pending_message(connection_handle, presentation_request_id)?;
+        match presentation_request.service.clone() {
+            None => connection::send_message(connection_handle, problem_report.to_a2a_message())?,
+            Some(service) => connection::send_message_to_self_endpoint(problem_report.to_a2a_message(), &service.into())?
+        }
+
+        connection::remove_pending_message(connection_handle, &presentation_request.id)?;
         Ok(())
     }
 
-    fn _handle_presentation_proposal(connection_handle: u32, preview: PresentationPreview, presentation_request_id: &MessageId, thread_id: &str) -> VcxResult<()>{
+    fn _handle_presentation_proposal(connection_handle: u32, preview: PresentationPreview, presentation_request: &PresentationRequest, thread_id: &str) -> VcxResult<()> {
         let proposal = PresentationProposal::create()
             .set_presentation_preview(preview)
             .set_thread_id(thread_id);
 
-        connection::send_message(connection_handle, proposal.to_a2a_message())?;
-        connection::remove_pending_message(connection_handle, &presentation_request_id)?;
+        match presentation_request.service.clone() {
+            None => connection::send_message(connection_handle, proposal.to_a2a_message())?,
+            Some(service) => connection::send_message_to_self_endpoint(proposal.to_a2a_message(), &service.into())?
+        }
+
+        connection::remove_pending_message(connection_handle, &presentation_request.id)?;
         Ok(())
     }
 

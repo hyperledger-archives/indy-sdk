@@ -265,11 +265,12 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
    * await disclosedProof.sendProof(connection)
    * ```
    */
-  public async sendProof (connection: Connection): Promise<void> {
+  public async sendProof (connection? : Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_disclosed_proof_send_proof(0, this.handle, connection.handle, cb)
+            const connectionHandle = connection ? connection.handle : 0
+            const rc = rustAPI().vcx_disclosed_proof_send_proof(0, this.handle, connectionHandle, cb)
             if (rc) {
               reject(rc)
             }

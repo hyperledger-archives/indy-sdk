@@ -140,10 +140,6 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
         return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into()
     }
 
-    if !connection::is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
-    }
-
     let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
     trace!("vcx_disclosed_proof_send_proof(command_handle: {}, proof_handle: {}, connection_handle: {}) source_id: {}",
            command_handle, proof_handle, connection_handle, source_id);
