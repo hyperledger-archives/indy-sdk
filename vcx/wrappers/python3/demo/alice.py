@@ -42,8 +42,12 @@ async def main():
     config['institution_logo_url'] = 'http://robohash.org/456'
     config['genesis_path'] = 'docker.txn'
 
+    config = json.dumps(config)
+
+    print('Alice config:\n  ' + config)
+
     print("#8 Initialize libvcx with new configuration")
-    await vcx_init_with_config(json.dumps(config))
+    await vcx_init_with_config(config)
 
     print("#9 Input faber.py invitation details")
     details = input('invite details: ')
