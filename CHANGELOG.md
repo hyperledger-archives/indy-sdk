@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.14.1 - 2019-12-30
+* Bugfixes
+
 ## 1.14.0 - 2019-12-27
 * LibVCX Aries support:
     * Implemented Trust Ping RFC (IS-1435)
