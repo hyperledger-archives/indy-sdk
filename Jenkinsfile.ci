@@ -20,7 +20,7 @@ def testing() {
                 'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
-                // 'centos-test' : { centosTesting() },
+                'centos-test' : { centosTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -37,17 +37,22 @@ def staticValidation() {
 
 def runValdiationRust(dir) {
     node('ubuntu') {
-        checkout scm
-        def testEnv
-        if (dir == 'vcx/libvcx') {
-            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
-        } else {
-            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
-        }
-        testEnv.inside {
-            //FIXME waiting on IS-823
-            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
-            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        try {
+            cleanWs()
+            checkout scm
+            def testEnv
+            if (dir == 'vcx/libvcx') {
+                testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
+            } else {
+                testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
+            }
+            testEnv.inside {
+                //FIXME waiting on IS-823
+                //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
+                sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+            }
+        } finally {
+            cleanWs()
         }
     }
 }
@@ -57,6 +62,7 @@ def windowsTesting() {
         stage('Windows Test') {
             def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
             ws(ws_path) {
+                cleanWs()
                 try {
                     echo "Windows Test: Checkout scm"
                     checkout scm
@@ -201,6 +207,7 @@ def windowsTesting() {
 
 def macosTesting() {
     node('macos') {
+        cleanWs()
         stage('MacOS Test') {
             def pool_name = "indy_pool"
             try {
@@ -256,7 +263,7 @@ def macosModuleBuildingAndTest(library, testFeatures = "") {
 def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
-    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android")
+    linuxModuleTesting("ci/android.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android", "android", ["libindy": 'ci/ubuntu.dockerfile ci'])
 }
 
 def iosTesting() {
@@ -279,6 +286,7 @@ def iosTesting() {
     }
 
     node('macos') {
+        cleanWs()
         stage('iOS Test') {
             def pool_name = "indy_pool"
             try {
@@ -302,7 +310,6 @@ def iosTesting() {
                             rbenv install -s $(cat .ruby-version)
 
                             gem install bundler
-                            bundler exec gem env
 
                             bundler install
                             bundler list
@@ -366,6 +373,7 @@ def linuxTesting(file, env_name, network_name, full_testing) {
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
+                    cleanWs()
                     linuxLibindyBuild(file, env_name, network_name, full_testing)
                 }
             },
@@ -399,6 +407,7 @@ def vcxTesting(file, env_name, network_name, full_testing) {
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
                 node('ubuntu') {
+                    cleanWs()
                     linuxVcxBuild(file, env_name, network_name)
                 }
             },
@@ -550,10 +559,11 @@ def linuxVcxBuild(file, env_name, network_name) {
             '''
 
             echo "${env_name} Libvcx Test: Run tests"
-            // TODO in Rust 1.38.0 there was a problem with test name before "--". Temporary put test name after it.
+            // TODO in Rust 1.39.0 there was a problem with test name before "--". Temporary put test name after it.
             sh '''
                 cd vcx/libvcx
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency_v2" -- tests::test_real_proof_for_protocol_type_v2 --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests aries" -- v3::test::aries_demo --exact
             '''
         }
     }
@@ -566,8 +576,9 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     linuxModuleTesting(file, env_name, network_name, module_tester, "ubuntu")
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label, image_name="libindy", prebuilt_images = [:]) {
     node(node_label) {
+        cleanWs()
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
@@ -575,7 +586,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) 
 
             poolInst = openPool(env_name, network_name)
 
-            def testEnv = buildTestEnv(file, env_name)
+            def testEnv = buildTestEnv(file, env_name, image_name, prebuilt_images)
 
             module_tester(env_name, network_name, testEnv)
         } finally {
@@ -748,10 +759,13 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def buildTestEnv(file, env_name) {
+def buildTestEnv(file, env_name, name="libindy", prebuilt_images=[:]) {
     dir('libindy') {
-        echo "${env_name} Build test environment"
-        return dockerBuild('libindy', file)
+        echo "${env_name} Build  test environment"
+        for (entry in mapToList(prebuilt_images)) {
+            dockerBuild(entry[0], entry[1])
+        }
+        return dockerBuild(name, file)
     }
 }
 
@@ -834,11 +848,18 @@ def shell(command) {
 }
 
 def setupRust() {
-    shell("rustup default 1.38.0")
+    shell("rustup default 1.39.0")
 }
 
 def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
     sh "brew switch openssl 1.0.2q"
     sh "brew switch zeromq 4.2.3"
+}
+
+@NonCPS
+List<List<?>> mapToList(Map map) {
+    return map.collect { it ->
+        [it.key, it.value]
+    }
 }

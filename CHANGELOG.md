@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.14.0 - 2019-12-27
+* LibVCX Aries support:
+    * Implemented Trust Ping RFC (IS-1435)
+    * Implemented Discover Features RFC (IS-1155)
+    * Implemented Service Decorator RFC (IS-1449)
+* Transaction author agreement changes (IS-1427):
+    * Extended the definition of `indy_build_txn_author_agreement_request` function to accept new parameters:
+        * `ratification_ts` - the date (timestamp) of TAA ratification by network government.
+        * `retirement_ts` - the date (timestamp) of TAA retirement.
+    * Added a new function `indy_build_disable_all_txn_author_agreements_request` to disable all Transaction Author Agreement on the ledger.
+    * new Indy-CLI commands:
+        * `ledger disable-all-txn-author-agreements` - to disable All Transaction Author Agreements on the ledger. 
+        * `ledger get-acceptance-mechanisms` - to get a list of acceptance mechanisms set on the ledger.
+* Bugfixes
+    * Added validation for `nonce` field in the proof request message. Now it must be a decimal number only represented as a string. It is highly recommended to use `indy_generate_nonce` function to generate a correct nonce.
+    * others minor bugfixes
+
+
+## 1.13.0 - 2019-12-03
+* LibVCX Aries support:
+    * Implemented Connection RFC (IS-1180)
+    * Implemented Credential Issuance RFC (IS-1393)
+    * Implemented Credential Presentation RFC (IS-1394)
+    * Integrated Connection Protocol into Dummy Cloud Agent (IS-1392)
+* Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
+* Bugfixes:
+    * Fixed bool representation in Java wrapper (IS-1368)
+
 ## 1.12.0 - 2019-10-08
 * Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
     * general format of fully-qualified identifier is `<prefix>:<method>:<value>`.

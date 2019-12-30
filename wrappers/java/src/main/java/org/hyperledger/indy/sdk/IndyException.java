@@ -49,9 +49,9 @@ public class IndyException extends Exception {
 	}
 
 	/**
-	 * Sets the SDK error message for the exception.
+	 * Gets the SDK error message for the exception.
 	 */
-	private String setSdkMessage() {
+	public String getSdkMessage() {
 		return sdkMessage;
 	}
 

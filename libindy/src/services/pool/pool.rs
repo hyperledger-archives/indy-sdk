@@ -792,7 +792,7 @@ mod tests {
         #[test]
         pub fn pool_get_id_works() {
             let name = "pool_get_id_works";
-            let id = next_pool_handle();;
+            let id = next_pool_handle();
             let p: Pool<MockNetworker, MockRequestHandler> = Pool::new(name, id, PoolOpenConfig::default());
             assert_eq!(id, p.get_id());
         }

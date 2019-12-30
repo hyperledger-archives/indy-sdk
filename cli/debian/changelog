@@ -1,6 +1,17 @@
-indy-cli (1.12.0) unstable; urgency=medium
+indy-cli (1.14.0) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.14.0
+* Added new commands:
+    * `ledger disable-all-txn-author-agreements` - to disable All Transaction Author Agreements on the ledger.
+    * `ledger get-acceptance-mechanisms` - to get a list of acceptance mechanisms set on the ledger.
+* Updated `ledger txn-author-agreement` command to accept new parameters:
+    * `ratification-timestamp` - the date (timestamp) of TAA ratification by network government.
+    * `retirement-timestamp` - the date (timestamp) of TAA retirement.
+
+## 1.13.0
+* Bugfixes
 
 ## 1.12.0
 * added `qualify` command to `did` to qualify did for some namespace.

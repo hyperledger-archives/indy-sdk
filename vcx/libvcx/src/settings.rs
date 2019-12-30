@@ -10,6 +10,7 @@ use messages::validation;
 use std::fs;
 use std::io::prelude::*;
 use serde_json::Value;
+use strum::IntoEnumIterator;
 
 use error::prelude::*;
 
@@ -27,6 +28,7 @@ pub static CONFIG_INSTITUTION_DID: &str = "institution_did";
 pub static CONFIG_INSTITUTION_VERKEY: &str = "institution_verkey"; // functionally not used
 pub static CONFIG_INSTITUTION_NAME: &str = "institution_name";
 pub static CONFIG_INSTITUTION_LOGO_URL: &str = "institution_logo_url";
+pub static CONFIG_WEBHOOK_URL: &str = "webhook_url";
 pub static CONFIG_ENABLE_TEST_MODE: &str = "enable_test_mode";
 pub static CONFIG_GENESIS_PATH: &str = "genesis_path";
 pub static CONFIG_LOG_CONFIG: &str = "log_config";
@@ -46,6 +48,8 @@ pub static CONFIG_PAYMENT_METHOD: &str = "payment_method";
 pub static CONFIG_TXN_AUTHOR_AGREEMENT: &str = "author_agreement";
 pub static CONFIG_POOL_CONFIG: &str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
+pub static COMMUNICATION_METHOD: &str = "communication_method"; // proprietary or aries
+pub static ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -105,6 +109,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_INSTITUTION_DID.to_string(), DEFAULT_DID.to_string());
     settings.insert(CONFIG_INSTITUTION_NAME.to_string(), DEFAULT_DEFAULT.to_string());
     settings.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(), DEFAULT_URL.to_string());
+    settings.insert(CONFIG_WEBHOOK_URL.to_string(), DEFAULT_URL.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(), DEFAULT_DID.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(), DEFAULT_VERKEY.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_ROLE.to_string(), DEFAULT_ROLE.to_string());
@@ -145,6 +150,10 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
     validate_optional_config_val(config.get(CONFIG_AGENCY_ENDPOINT), VcxErrorKind::InvalidUrl, Url::parse)?;
     validate_optional_config_val(config.get(CONFIG_INSTITUTION_LOGO_URL), VcxErrorKind::InvalidUrl, Url::parse)?;
 
+    validate_optional_config_val(config.get(CONFIG_WEBHOOK_URL), VcxErrorKind::InvalidUrl, Url::parse)?;
+
+    validate_optional_config_val(config.get(ACTORS), VcxErrorKind::InvalidOption, validation::validate_actors)?;
+
     Ok(error::SUCCESS.code_num)
 }
 
@@ -173,7 +182,7 @@ pub fn test_indy_mode_enabled() -> bool {
 
     match config.get(CONFIG_ENABLE_TEST_MODE) {
         None => false,
-        Some(value) => value == "true" ||  value == "indy"
+        Some(value) => value == "true" || value == "indy"
     }
 }
 
@@ -207,12 +216,17 @@ pub fn process_config_string(config: &str, do_validation: bool) -> VcxResult<u32
 
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
-            set_config_value(key, value.as_str().ok_or(VcxError::from(VcxErrorKind::InvalidJson))?);
+            match value {
+                Value::String(value_) => set_config_value(key, &value_),
+                Value::Array(value_) => set_config_value(key, &json!(value_).to_string()),
+                Value::Object(value_) => set_config_value(key, &json!(value_).to_string()),
+                _ => return Err(VcxError::from(VcxErrorKind::InvalidJson)),
+            }
         }
     }
 
     if do_validation {
-        validate_config(&SETTINGS.read().or(Err(VcxError::from(VcxErrorKind::InvalidConfiguration)))?.clone() )
+        validate_config(&SETTINGS.read().or(Err(VcxError::from(VcxErrorKind::InvalidConfiguration)))?.clone())
     } else {
         Ok(error::SUCCESS.code_num)
     }
@@ -305,6 +319,34 @@ pub fn validate_payment_method() -> VcxResult<()> {
 pub fn get_payment_method() -> String {
     get_config_value(CONFIG_PAYMENT_METHOD).unwrap_or(DEFAULT_PAYMENT_METHOD.to_string())
 }
+
+pub fn get_communication_method() -> VcxResult<String> {
+    get_config_value(COMMUNICATION_METHOD)
+}
+
+pub fn get_actors() -> Vec<Actors> {
+    get_config_value(ACTORS)
+        .and_then(|actors|
+            ::serde_json::from_str(&actors)
+                .map_err(|err| VcxError::from(VcxErrorKind::InvalidOption))
+        ).unwrap_or_else(|_| Actors::iter().collect())
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, EnumIter)]
+#[serde(rename_all="lowercase")]
+pub enum Actors {
+    Inviter,
+    Invitee,
+    Issuer,
+    Holder,
+    Prover,
+    Verifier,
+    Sender,
+    Receiver
+}
+
+pub const ARIES_COMMUNICATION_METHOD: &str = "aries";
+
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ProtocolTypes {
@@ -421,6 +463,8 @@ pub mod tests {
 
     #[test]
     fn test_process_file() {
+        clear_config();
+
         let config_path_buf = get_temp_dir_path(Some("test_init.json"));
         let config_path = config_path_buf.to_str().unwrap();
 
@@ -447,6 +491,8 @@ pub mod tests {
 
     #[test]
     fn test_process_config_str() {
+        clear_config();
+
         let content = json!({
             "pool_name" : "pool1",
             "config_name":"config1",
@@ -551,6 +597,11 @@ pub mod tests {
         config.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidUrl);
         config.drain();
+
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
+        config.insert(CONFIG_WEBHOOK_URL.to_string(), invalid.to_string());
+        assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::InvalidUrl);
+        config.drain();
     }
 
     #[test]
@@ -635,5 +686,34 @@ pub mod tests {
         assert_eq!(get_config_value("institution_name").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
         assert_eq!(get_config_value("genesis_path").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
         assert_eq!(get_config_value("wallet_key").unwrap_err().kind(), VcxErrorKind::InvalidConfiguration);
+    }
+
+    #[test]
+    fn test_process_config_str_for_actors() {
+        clear_config();
+
+        let mut config = json!({
+            "pool_name" : "pool1",
+            "config_name":"config1",
+            "wallet_name":"test_read_config_file",
+            "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
+            "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
+            "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
+            "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "institution_name" : "evernym enterprise",
+            "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "genesis_path":"/tmp/pool1.txn",
+            "wallet_key":"key",
+            "actors": ["invitee", "holder"]
+        });
+
+        process_config_string(&config.to_string(), true).unwrap();
+
+        assert_eq!(vec![Actors::Invitee, Actors::Holder], get_actors());
+
+        // passed invalid actor
+        config["actors"] = json!(["wrong"]);
+        assert_eq!(process_config_string(&config.to_string(), true).unwrap_err().kind(), VcxErrorKind::InvalidOption);
     }
 }

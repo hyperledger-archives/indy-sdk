@@ -95,4 +95,16 @@ npm run demo:faber:pg
 npm run demo:alice:pg
 ```
 
+### Demo with webhook notifications
+Another feature are webhook notifications. If you run sample webhook notification server by running:
+`npm run demo:notifyserver` 
+
+This will start new http server on `localhost:7209`.
+
+Opened port on `localhost:7209` will modify `Faber` and `Alice` in the demo in following way: 
+They will register their notification webhook in cloud agency. Everytime cloud agent will receive
+a message on behalf of the owner, it will send notification to webhook url specified in agent configuration.
+In the case of this demo, it's by default `localhost:7209/notifications/faber` and 
+`localhost:7209/notifications/alice`. 
+
 
