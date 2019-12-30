@@ -303,7 +303,7 @@ mod tests {
                 "name": "gvt",
                 "ver": "1.0",
                 "version": "1.0",
-                "attrNames": [],
+                "attrNames": ["aaa", "bbb", "ccc"],
             }).to_string();
 
             let schema: Schema = serde_json::from_str(&schema_json).unwrap();
@@ -323,7 +323,7 @@ mod tests {
                 "name": "gvt1",
                 "ver": "1.0",
                 "version": "1.0",
-                "attrNames": [],
+                "attrNames": ["aaa", "bbb", "ccc"],
             }).to_string();
 
             let schema: Schema = serde_json::from_str(&schema_json).unwrap();
@@ -337,7 +337,7 @@ mod tests {
                 "name": "gvt",
                 "ver": "1.0",
                 "version": "1.1",
-                "attrNames": [],
+                "attrNames": ["aaa", "bbb", "ccc"],
             }).to_string();
 
             let schema: Schema = serde_json::from_str(&schema_json).unwrap();
