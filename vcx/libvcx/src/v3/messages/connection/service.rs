@@ -5,8 +5,7 @@ use v3::messages::connection::did_doc::DidDoc;
 pub struct Service {
     #[serde(default)]
     pub recipient_keys: Vec<String>,
-    #[serde(default)]
-    pub routing_keys: Vec<String>,
+    pub routing_keys: Option<Vec<String>>,
     pub service_endpoint: String,
 }
 
@@ -21,7 +20,7 @@ impl Service {
     }
 
     pub fn set_routing_keys(mut self, routing_keys: Vec<String>) -> Self {
-        self.routing_keys = routing_keys;
+        self.routing_keys = Some(routing_keys);
         self
     }
 
@@ -35,7 +34,7 @@ impl Into<DidDoc> for Service {
     fn into(self) -> DidDoc {
         let mut did_doc: DidDoc = DidDoc::default();
         did_doc.set_service_endpoint(self.service_endpoint.clone());
-        did_doc.set_keys(self.recipient_keys, self.routing_keys);
+        did_doc.set_keys(self.recipient_keys, self.routing_keys.unwrap_or_default());
         did_doc
     }
 }
@@ -48,7 +47,7 @@ pub mod tests {
     pub fn _service() -> Service {
         Service {
             recipient_keys: _recipient_keys(),
-            routing_keys: _routing_keys(),
+            routing_keys: Some(_routing_keys()),
             service_endpoint: _service_endpoint(),
         }
     }

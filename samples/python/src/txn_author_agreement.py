@@ -64,7 +64,9 @@ async def demo():
     txn_agreement_req = \
         await ledger.build_txn_author_agreement_request(trustee['did'],
                                                         trustee['txn_agreement']['text'],
-                                                        trustee['txn_agreement']['version'])
+                                                        trustee['txn_agreement']['version'],
+                                                        int(time.time()),
+                                                        None)
     await ledger.sign_and_submit_request(trustee['pool'], trustee['wallet'], trustee['did'], txn_agreement_req)
 
     # User initialization
@@ -136,7 +138,7 @@ async def demo():
 
     # Trustee reset Transaction Agreement
     txn_agreement_req = \
-        await ledger.build_txn_author_agreement_request(trustee['did'], '', str(randint(0, 1000)))
+        await ledger.build_disable_all_txn_author_agreements_request(trustee['did'])
     await ledger.sign_and_submit_request(trustee['pool'], trustee['wallet'], trustee['did'], txn_agreement_req)
 
     #       User sends ATTRIB transaction to Ledger without Transaction Agreement

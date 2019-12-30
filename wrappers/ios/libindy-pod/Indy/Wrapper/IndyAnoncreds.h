@@ -534,7 +534,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -626,7 +626,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     {
          "name": string,
          "version": string,
-         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
          "requested_attributes": { // set of requested attributes
               "<attr_referent>": <attr_info>, // see below
               ...,
@@ -762,7 +762,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      {
          "name": string,
          "version": string,
-         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
          "requested_attributes": { // set of requested attributes
               "<attr_referent>": <attr_info>, // see below
               ...,
@@ -916,7 +916,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      {
          "name": string,
          "version": string,
-         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
          "requested_attributes": { // set of requested attributes
               "<attr_referent>": <attr_info>, // see below
               ...,
