@@ -904,6 +904,14 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_succeeds_with_self_attest_allowed() {
+        let handle = create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let serialized = to_string(handle).unwrap();
+        let p = DisclosedProof::from_str(&serialized).unwrap();
+        assert_eq!(p.proof_request.unwrap().proof_request_data.requested_attributes.get("attr1_referent").unwrap().self_attest_allowed, Some(true))
+    }
+
+    #[test]
     fn test_find_schemas() {
         init!("true");
 
