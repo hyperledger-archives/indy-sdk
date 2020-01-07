@@ -369,7 +369,8 @@ pub struct PostgresConfig {
     url: String,
     tls: Option<String>,             // default off
     max_connections: Option<u32>,    // default 5
-    min_idle_time: Option<u32>,      // default 0
+    min_idle_time: Option<u32>,      // default 0, deprecated
+    min_idle_count: Option<u32>,     // default 0
     connection_timeout: Option<u64>, // default 5
     wallet_scheme: Option<WalletScheme>,   // default DatabasePerWallet
     database_name: Option<String>,   // default _WALLET_DB
@@ -400,18 +401,27 @@ impl PostgresConfig {
             None => TlsMode::None
         }
     }
+    /// Sets the maximum number of connections managed by the pool.
     fn max_connections(&self) -> u32 {
         match &self.max_connections {
             Some(conn) => *conn,
             None => 5
         }
     }
-    fn min_idle_time(&self) -> u32 {
-        match &self.min_idle_time {
-            Some(idle) => *idle,
-            None => 0
+    /// Sets the minimum idle connection count maintained by the pool.
+    fn min_idle_count(&self) -> u32 {
+        match self.min_idle_count {
+            Some(idle_count) => idle_count,
+            None => match self.min_idle_time {
+                Some(idle_count_deprecated) => {
+                    warn!("Configuration option min_idle_time is deprecated. Use min_idle_count instead.");
+                    idle_count_deprecated
+                },
+                None => 0
+            }
         }
     }
+    /// Sets the idle timeout used by the pool.
     fn connection_timeout(&self) -> u64 {
         match &self.connection_timeout {
             Some(timeout) => *timeout,
@@ -475,6 +485,7 @@ impl WalletStrategy for DatabasePerWalletStrategy {
     fn init_storage(&self, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
         env_logger::init();
         // no-op
+        debug!("Initializing storage strategy DatabasePerWalletStrategy.");
         Ok(())
     }
     // initialize a single wallet based on wallet storage strategy
@@ -558,7 +569,11 @@ impl WalletStrategy for DatabasePerWalletStrategy {
             Ok(manager) => manager,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
-        let pool = match r2d2::Pool::builder().min_idle(Some(config.min_idle_time())).max_size(config.max_connections()).idle_timeout(Some(Duration::new(config.connection_timeout(), 0))).build(manager) {
+        let pool = match r2d2::Pool::builder()
+            .min_idle(Some(config.min_idle_count()))
+            .max_size(config.max_connections())
+            .idle_timeout(Some(Duration::new(config.connection_timeout(), 0)))
+            .build(manager) {
             Ok(pool) => pool,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
@@ -638,6 +653,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         debug!("Entering init_storage");
         // create database and tables for storage
         // if admin user and password aren't provided then bail
+        debug!("Initializing storage strategy MultiWalletSingleTableStrategy.");
         if credentials.admin_account == None || credentials.admin_password == None {
             return Ok(())
         }
@@ -770,7 +786,11 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
             Ok(manager) => manager,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
-        let pool = match r2d2::Pool::builder().min_idle(Some(config.min_idle_time())).max_size(config.max_connections()).idle_timeout(Some(Duration::new(config.connection_timeout(), 0))).build(manager) {
+        let pool = match r2d2::Pool::builder()
+            .min_idle(Some(config.min_idle_count()))
+            .max_size(config.max_connections())
+            .idle_timeout(Some(Duration::new(config.connection_timeout(), 0)))
+            .build(manager) {
             Ok(pool) => pool,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
@@ -2377,7 +2397,7 @@ mod tests {
             "url": "localhost:5432".to_owned(),
             "tls": "None",
             "max_connections": 4,
-            "min_idle_time": 0,
+            "min_idle_count": 0,
             "connection_timeout": 10
         }).to_string();
         config

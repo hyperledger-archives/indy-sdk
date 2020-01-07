@@ -1,35 +1,33 @@
-#[macro_use]
-mod utils;
-
-inject_indy_dependencies!();
-
 extern crate indyrs as indy;
 extern crate indyrs as api;
-
-use self::indy::ErrorCode;
-#[cfg(feature = "local_nodes_pool")]
-use crate::utils::{pool, ledger, did, anoncreds};
-use crate::utils::types::*;
-use crate::utils::constants::*;
-use crate::utils::Setup;
-
-use self::rand::distributions::Alphanumeric;
-
-use crate::utils::domain::ledger::constants;
-use crate::utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
-use crate::utils::domain::ledger::nym::NymData;
-use crate::utils::domain::anoncreds::schema::SchemaV1;
-use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
-use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
-use crate::utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
-use crate::utils::domain::crypto::did::DidValue;
 
 use std::collections::HashMap;
 use std::thread;
 
-use crate::api::INVALID_WALLET_HANDLE;
 use crate::api::INVALID_POOL_HANDLE;
+use crate::api::INVALID_WALLET_HANDLE;
+#[cfg(feature = "local_nodes_pool")]
+use crate::utils::{anoncreds, did, ledger, pool};
+use crate::utils::constants::*;
+use crate::utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
+use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use crate::utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
+use crate::utils::domain::anoncreds::schema::SchemaV1;
+use crate::utils::domain::crypto::did::DidValue;
+use crate::utils::domain::ledger::constants;
+use crate::utils::domain::ledger::nym::NymData;
+use crate::utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
+use crate::utils::Setup;
+use crate::utils::types::*;
+
+use self::indy::ErrorCode;
+use self::rand::distributions::Alphanumeric;
+
+#[macro_use]
+mod utils;
+
+inject_indy_dependencies!();
 
 mod high_cases {
     use super::*;
@@ -2232,8 +2230,9 @@ mod high_cases {
             });
 
             let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
-                                                                     TEXT,
-                                                                     VERSION).unwrap();
+                                                                     Some(TEXT),
+                                                                     VERSION,
+                                                                     None, None).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -2246,8 +2245,27 @@ mod high_cases {
             });
 
             let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
-                                                                     "",
-                                                                     VERSION).unwrap();
+                                                                     Some(""),
+                                                                     VERSION,
+                                                                     None,
+                                                                     None).unwrap();
+            check_request_operation(&request, expected_result);
+        }
+
+        #[test]
+        fn indy_build_txn_author_agreement_request_works_for_retired_and_ratificated_wo_text() {
+            let expected_result = json!({
+                "type": constants::TXN_AUTHR_AGRMT,
+                "version": VERSION,
+                "retirement_ts": 54321,
+                "ratification_ts": 12345,
+            });
+
+            let request = ledger::build_txn_author_agreement_request(DID_TRUSTEE,
+                                                                     None,
+                                                                     VERSION,
+                                                                     Some(12345),
+                                                                     Some(54321)).unwrap();
             check_request_operation(&request, expected_result);
         }
 
@@ -2395,8 +2413,9 @@ mod high_cases {
     }
 
     mod author_agreement_acceptance {
-        use super::*;
         use rand::Rng;
+
+        use super::*;
 
         const TEXT: &str = "some agreement text";
         const VERSION: &str = "1.0.0";
@@ -2532,45 +2551,59 @@ mod high_cases {
             version.to_string()
         }
 
-        fn _gen_aml_data() -> (String, String, String, String) {
+        fn _gen_aml_data() -> (serde_json::Value, String, String, String) {
             let aml_label = _rand_string();
             let aml = json!({
                 aml_label.clone(): _rand_string()
-            }).to_string();
+            });
             let version: String = _rand_version();
             let aml_context: String = _rand_string();
             (aml, aml_label, version, aml_context)
         }
 
-        fn _gen_taa_data() -> (String, String) {
+        fn _gen_taa_data() -> (String, String, String, u64) {
             let text: String = _rand_string();
             let version: String = _rand_version();
-            (text, version)
+            let digest = ledger::calculate_hash(&text, &version);
+            let ratification_ts = time::get_time().sec as u64;
+            (text, version, digest, ratification_ts)
         }
 
-        fn _send_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str, taa_text: &str, taa_version: &str) {
-            let request = ledger::build_txn_author_agreement_request(&trustee_did, &taa_text, &taa_version).unwrap();
+        fn _send_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str, taa_text: &str, taa_version: &str, ratification_ts: u64) -> String {
+            let request = ledger::build_txn_author_agreement_request(&trustee_did, Some(taa_text), &taa_version, Some(ratification_ts), None).unwrap();
+            let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
+            response
+        }
+
+        fn _set_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str) -> (String, String, String, u64) {
+            let (taa_text, taa_version, taa_digest, ratification_ts) = _gen_taa_data();
+            _send_taa(pool_handle, wallet_handle, trustee_did, &taa_text, &taa_version, ratification_ts);
+            (taa_text, taa_version, taa_digest, ratification_ts)
+        }
+
+        fn _disable_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str) {
+            let request = ledger::build_disable_all_txn_author_agreements_request(&trustee_did).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
         }
 
-        fn _set_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str) -> (String, String) {
-            let (taa_text, taa_version) = _gen_taa_data();
-            _send_taa(pool_handle, wallet_handle, trustee_did, &taa_text, &taa_version);
-            (taa_text, taa_version)
-        }
-
-        fn _reset_taa(pool_handle: i32, wallet_handle: i32, trustee_did: &str) {
-            let taa_version = _rand_version();
-            _send_taa(pool_handle, wallet_handle, trustee_did, "", &taa_version);
-        }
-
         fn _set_aml(pool_handle: i32, wallet_handle: i32, trustee_did: &str) -> (String, String, String, String) {
             let (aml, aml_label, aml_version, aml_context) = _gen_aml_data();
-            let request = ledger::build_acceptance_mechanisms_request(trustee_did, &aml, &aml_version, Some(&aml_context)).unwrap();
+            let request = ledger::build_acceptance_mechanisms_request(trustee_did, &aml.to_string(), &aml_version, Some(&aml_context)).unwrap();
             let response = ledger::sign_and_submit_request(pool_handle, wallet_handle, trustee_did, &request).unwrap();
             pool::check_response_type(&response, ResponseType::REPLY);
-            (aml, aml_label, aml_version, aml_context)
+            (aml.to_string(), aml_label, aml_version, aml_context)
+        }
+
+        fn _check_taa(pool_handle: i32, txn_author_agreement_response: &str, version: &str, expected_data: serde_json::Value) {
+            let data = json!({"version": version}).to_string();
+            let get_txn_author_agreement_request = ledger::build_get_txn_author_agreement_request(None, Some(&data)).unwrap();
+            let get_txn_author_agreement_response = ledger::submit_request_with_retries(pool_handle, &get_txn_author_agreement_request, txn_author_agreement_response).unwrap();
+            pool::check_response_type(&get_txn_author_agreement_response, ResponseType::REPLY);
+
+            let response: serde_json::Value = serde_json::from_str(&get_txn_author_agreement_response).unwrap();
+            assert_eq!(response["result"]["data"], expected_data);
         }
 
         #[test]
@@ -2579,21 +2612,16 @@ mod high_cases {
 
             _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
 
-            let (taa_text, taa_version) = _gen_taa_data();
+            let (taa_text, taa_version, taa_digest, ratification_ts) = _gen_taa_data();
 
-            let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&setup.did, &taa_text, &taa_version).unwrap();
+            let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&setup.did, Some(&taa_text), &taa_version, Some(ratification_ts), None).unwrap();
             let txn_author_agreement_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &txn_author_agreement_request).unwrap();
             pool::check_response_type(&txn_author_agreement_response, ResponseType::REPLY);
 
-            let get_txn_author_agreement_request = ledger::build_get_txn_author_agreement_request(Some(&setup.did), None).unwrap();
-            let get_txn_author_agreement_response = ledger::submit_request_with_retries(setup.pool_handle, &get_txn_author_agreement_request, &txn_author_agreement_response).unwrap();
-            pool::check_response_type(&get_txn_author_agreement_response, ResponseType::REPLY);
+            let expected_data = json!({"digest": taa_digest, "text": taa_text, "version": taa_version, "ratification_ts": ratification_ts});
+            _check_taa(setup.pool_handle, &txn_author_agreement_response, &taa_version, expected_data);
 
-            let response: serde_json::Value = serde_json::from_str(&get_txn_author_agreement_response).unwrap();
-            let expected_data = json!({"text": taa_text, "version": taa_version});
-            assert_eq!(response["result"]["data"], expected_data);
-
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
 
         #[test]
@@ -2602,19 +2630,19 @@ mod high_cases {
 
             let (aml, _, aml_version, aml_context) = _gen_aml_data();
 
-            let acceptance_mechanisms_request = ledger::build_acceptance_mechanisms_request(&setup.did, &aml, &aml_version, Some(&aml_context)).unwrap();
+            let acceptance_mechanisms_request = ledger::build_acceptance_mechanisms_request(&setup.did, &aml.to_string(), &aml_version, Some(&aml_context)).unwrap();
             let acceptance_mechanisms_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &acceptance_mechanisms_request).unwrap();
             pool::check_response_type(&acceptance_mechanisms_response, ResponseType::REPLY);
 
-            //            {
-            //                let request = ledger::build_get_acceptance_mechanisms_request(Some(&trustee_did), None, None).unwrap();
-            //                let response = ledger::submit_request(pool_handle, &request).unwrap();
-            //                pool::check_response_type(&response, ResponseType::REPLY);
-            //
-            //                let response: serde_json::Value = serde_json::from_str(&response).unwrap();
-            //                let expected_data = json!({"aml": aml, "version": aml_version, "amlContext": aml_context});
-            //                assert_eq!(response["result"]["data"], expected_data);
-            //            }
+            {
+                let request = ledger::build_get_acceptance_mechanisms_request(None, None, None).unwrap();
+                let response = ledger::submit_request_with_retries(setup.pool_handle, &request, &acceptance_mechanisms_response).unwrap();
+                pool::check_response_type(&response, ResponseType::REPLY);
+
+                let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+                let expected_data = json!({"aml": aml, "version": aml_version, "amlContext": aml_context});
+                assert_eq!(response["result"]["data"], expected_data);
+            }
         }
 
         #[test]
@@ -2622,7 +2650,7 @@ mod high_cases {
             let setup = Setup::trustee();
 
             let (_, aml_label, _, _) = _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            let (taa_text, taa_version) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text, taa_version, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -2643,7 +2671,7 @@ mod high_cases {
             let get_nym_resp = ledger::submit_request_with_retries(setup.pool_handle, &get_nym_req, &nym_resp).unwrap();
             pool::check_response_type(&get_nym_resp, ResponseType::REPLY);
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
 
         #[test]
@@ -2652,28 +2680,32 @@ mod high_cases {
             let setup = Setup::trustee();
 
             _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (_, taa_version, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
-            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
+            {
+                let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REJECT);
+            }
 
-            let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
-            pool::check_response_type(&nym_resp, ResponseType::REJECT);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
-
-            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
-            let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
-            pool::check_response_type(&nym_resp, ResponseType::REPLY);
+            {
+                let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REPLY);
+            }
         }
 
         #[test]
+        #[cfg(not(feature = "only_high_cases"))]
         fn indy_author_agreement_works_for_using_invalid_taa() {
             let setup = Setup::trustee();
 
             let (_, aml_label, _, _) = _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (_, taa_version, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -2690,7 +2722,7 @@ mod high_cases {
                 pool::check_response_type(&nym_resp, ResponseType::REJECT);
             }
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
 
         #[test]
@@ -2699,7 +2731,7 @@ mod high_cases {
             let setup = Setup::trustee();
 
             _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            let (taa_text, taa_version) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text, taa_version, taa_digest, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -2716,35 +2748,67 @@ mod high_cases {
                 pool::check_response_type(&nym_resp, ResponseType::REJECT);
             }
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
 
         #[test]
         #[cfg(not(feature = "only_high_cases"))]
-        fn indy_author_agreement_works_for_using_not_last_taa() {
+        fn indy_txn_author_agreement_requests_works_for_set_retirement_ts() {
+            let setup = Setup::trustee();
+
+            _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
+
+            // send TAA 1
+            let (taa_text, taa_version, taa_digest, ratification_ts) = _gen_taa_data();
+            let txn_author_agreement_response = _send_taa(setup.pool_handle, setup.wallet_handle, &setup.did, &taa_text, &taa_version, ratification_ts);
+
+            let expected_data = json!({"digest": taa_digest, "text": taa_text, "version": taa_version, "ratification_ts": ratification_ts});
+            _check_taa(setup.pool_handle, &txn_author_agreement_response, &taa_version, expected_data);
+
+            // Send TAA 2 to be able make the first one retired
+            _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+
+            let retirement_ts = time::get_time().sec as u64;
+
+            // update TAA to make retired
+            {
+                let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&setup.did, None, &taa_version, None, Some(retirement_ts)).unwrap();
+                let txn_author_agreement_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &txn_author_agreement_request).unwrap();
+                pool::check_response_type(&txn_author_agreement_response, ResponseType::REPLY);
+            }
+
+            let expected_data = json!({"digest": taa_digest, "text": taa_text, "version": taa_version, "ratification_ts": ratification_ts, "retirement_ts": retirement_ts});
+            _check_taa(setup.pool_handle, &txn_author_agreement_response, &taa_version, expected_data);
+
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+        }
+
+        #[test]
+        #[cfg(not(feature = "only_high_cases"))]
+        fn indy_author_agreement_works_for_using_not_latest_taa() {
             let setup = Setup::trustee();
 
             let (_, aml_label, _, _) = _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            let (taa_text, taa_version) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
-            let (taa_text_2, taa_version_2) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text, taa_version, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text_2, taa_version_2, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
-            let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
-
-            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
-
+            // Send NYM with TAA 1
             {
+                let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+                let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
                 let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
                                                                                         Some(&taa_text), Some(&taa_version),
                                                                                         None, &aml_label,
                                                                                         time::get_time().sec as u64).unwrap();
 
                 let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
-                pool::check_response_type(&nym_resp, ResponseType::REJECT);
+                pool::check_response_type(&nym_resp, ResponseType::REPLY);
             }
 
-            let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
-
+            // Send NYM with TAA 2
             {
+                let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+                let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
                 let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
                                                                                         Some(&taa_text_2), Some(&taa_version_2),
                                                                                         None, &aml_label,
@@ -2754,7 +2818,89 @@ mod high_cases {
                 pool::check_response_type(&nym_resp, ResponseType::REPLY);
             }
 
-            _reset_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            {
+                // Update TAA 1 to make retired
+                let retirement_ts = time::get_time().sec as u64 - 60 * 60 * 24;
+                let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&setup.did, None, &taa_version, None, Some(retirement_ts)).unwrap();
+                ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &txn_author_agreement_request).unwrap();
+            }
+
+            // Send NYM with TAA 1
+            {
+                let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+                let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
+                                                                                        Some(&taa_text), Some(&taa_version),
+                                                                                        None, &aml_label,
+                                                                                        time::get_time().sec as u64).unwrap();
+                let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
+
+                pool::check_response_type(&nym_resp, ResponseType::REJECT);
+            }
+
+            // Send NYM with TAA 2
+            {
+                let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+                let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
+                                                                                        Some(&taa_text_2), Some(&taa_version_2),
+                                                                                        None, &aml_label,
+                                                                                        time::get_time().sec as u64).unwrap();
+
+                let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REPLY);
+            }
+
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+
+            let (_, taa_version_3, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+
+            {
+                // Update TAA 3 to make retired
+                let retirement_ts = time::get_time().sec as u64 - 60 * 60 * 24;
+                let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&setup.did, None, &taa_version_3, None, Some(retirement_ts)).unwrap();
+                ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &txn_author_agreement_request).unwrap();
+            }
+
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+        }
+
+        #[test]
+        #[cfg(not(feature = "only_high_cases"))]
+        fn indy_txn_author_agreement_requests_works_for_missed_ratification_ts() {
+            let setup = Setup::trustee();
+
+            _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
+
+            let (taa_text, taa_version, _, _) = _gen_taa_data();
+
+            let txn_author_agreement_request = ledger::build_txn_author_agreement_request(&setup.did, Some(&taa_text), &taa_version, None, None).unwrap();
+            let txn_author_agreement_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &txn_author_agreement_request).unwrap();
+            pool::check_response_type(&txn_author_agreement_response, ResponseType::REJECT);
+        }
+
+        #[test]
+        #[cfg(not(feature = "only_high_cases"))]
+        fn indy_author_agreement_works_for_acceptance_time_earlier_ratification_ts() {
+            let setup = Setup::trustee();
+
+            let (_, aml_label, _, _) = _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text, taa_version, _, ratification_ts) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+
+            // Send NYM with using acceptance time that earlier ratification_ts
+            {
+                let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
+                let nym_req = ledger::build_nym_request(&setup.did, &did_, Some(&verkey_), None, None).unwrap();
+                let nym_req = ledger::append_txn_author_agreement_acceptance_to_request(&nym_req,
+                                                                                        Some(&taa_text), Some(&taa_version),
+                                                                                        None, &aml_label,
+                                                                                        ratification_ts - 60 * 60 * 24).unwrap();
+
+                let nym_resp = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &nym_req).unwrap();
+                pool::check_response_type(&nym_resp, ResponseType::REJECT);
+            }
+
+            _disable_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
         }
     }
 
@@ -2845,10 +2991,12 @@ mod high_cases {
 
 #[cfg(not(feature = "only_high_cases"))]
 mod medium_cases {
-    use super::*;
-    use openssl::hash::{MessageDigest, Hasher};
+    use openssl::hash::{Hasher, MessageDigest};
     use sodiumoxide::crypto::secretbox;
+
     use crate::utils::domain::anoncreds::schema::Schema;
+
+    use super::*;
 
     mod requests {
         use super::*;
@@ -3306,8 +3454,9 @@ mod medium_cases {
     }
 
     mod schemas_requests {
-        use super::*;
         use crate::utils::domain::anoncreds::schema::SchemaId;
+
+        use super::*;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]

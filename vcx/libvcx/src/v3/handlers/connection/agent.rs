@@ -124,7 +124,14 @@ impl AgentInfo {
 
     pub fn send_message(&self, message: &A2AMessage, did_dod: &DidDoc) -> VcxResult<()> {
         trace!("Agent::send_message >>> message: {:?}, did_doc: {:?}", message, did_dod);
-        let envelope = EncryptionEnvelope::create(&message, &self.pw_vk, &did_dod)?;
+        let envelope = EncryptionEnvelope::create(&message, Some(&self.pw_vk), &did_dod)?;
+        httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
+        Ok(())
+    }
+
+    pub fn send_message_anonymously(message: &A2AMessage, did_dod: &DidDoc) -> VcxResult<()> {
+        trace!("Agent::send_message_anonymously >>> message: {:?}, did_doc: {:?}", message, did_dod);
+        let envelope = EncryptionEnvelope::create(&message, None, &did_dod)?;
         httpclient::post_message(&envelope.0, &did_dod.get_endpoint())?;
         Ok(())
     }

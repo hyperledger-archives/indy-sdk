@@ -26,16 +26,19 @@ extern crate indyrs;
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
+extern crate libc;
+extern crate libloading;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;
-use domain::config::Config;
+use domain::config::{Config, WalletStorageConfig};
 use domain::protocol_type::ProtocolType;
 use failure::*;
 use std::env;
 use std::fs::File;
 use actors::admin::Admin;
 use app::start_app_server;
+use indy::wallet_plugin::{load_storage_library, serialize_storage_plugin_configuration, finish_loading_postgres};
 
 #[macro_use]
 pub(crate) mod utils;
@@ -69,6 +72,33 @@ fn main() {
     _print_help();
 }
 
+
+fn _init_wallet(wallet_storage_config: &WalletStorageConfig) -> Result<(), String> {
+    match wallet_storage_config.xtype.as_ref() {
+        Some(wallet_type) => {
+            let (plugin_library_path_serialized,
+                plugin_init_function_serialized,
+                storage_config_serialized,
+                storage_credentials_serialized)
+                = serialize_storage_plugin_configuration(wallet_type,
+                                                         &wallet_storage_config.config,
+                                                         &wallet_storage_config.credentials,
+                                                         &wallet_storage_config.plugin_library_path,
+                                                         &wallet_storage_config.plugin_init_function)?;
+            let lib= load_storage_library(&plugin_library_path_serialized, &plugin_init_function_serialized)?;
+            if wallet_type == "postgres_storage" {
+                finish_loading_postgres(lib, &storage_config_serialized, &storage_credentials_serialized)?;
+            }
+            info!("Successfully loaded wallet plugin {}.", wallet_type);
+            Ok(())
+        }
+        None => {
+            info!("Using default builtin IndySDK wallets.");
+            Ok(())
+        }
+    }
+}
+
 fn _start(config_path: &str) {
     info!("Starting Indy Dummy Agent with config: {}", config_path);
 
@@ -83,6 +113,11 @@ fn _start(config_path: &str) {
         .and_then(|reader| serde_json::from_reader(reader)
             .context("Can't parse config file"))
         .expect("Invalid configuration file");
+
+    match _init_wallet(&wallet_storage_config) {
+        Err(err) => panic!("Failed to load and initialize storage library. {:}", err),
+        Ok(()) => {}
+    }
 
     let sys = actix::System::new("indy-dummy-agent");
 

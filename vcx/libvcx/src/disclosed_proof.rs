@@ -486,18 +486,18 @@ fn handle_err(err: VcxError) -> VcxError {
 }
 
 pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
+    // Received request of new format -- redirect to v3 folder
+    if let Ok(presentation_request) = serde_json::from_str::<::v3::messages::proof_presentation::presentation_request::PresentationRequest>(proof_req) {
+        let new_proof = Prover::create(source_id, presentation_request)?;
+        return HANDLE_MAP.add(DisclosedProofs::V3(new_proof));
+    }
+
     // Setup Aries protocol to use -- redirect to v3 folder
     if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
         let proof_request_message: ProofRequestMessage = serde_json::from_str(proof_req)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize PresentationRequest: {}", err)))?;
 
         let new_proof = Prover::create(source_id, proof_request_message.try_into()?)?;
-        return HANDLE_MAP.add(DisclosedProofs::V3(new_proof));
-    }
-
-    // Received request of new format -- redirect to v3 folder
-    if let Ok(presentation_request) = serde_json::from_str::<::v3::messages::proof_presentation::presentation_request::PresentationRequest>(proof_req) {
-        let new_proof = Prover::create(source_id, presentation_request)?;
         return HANDLE_MAP.add(DisclosedProofs::V3(new_proof));
     }
 
@@ -593,6 +593,20 @@ pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: Str
             }
             DisclosedProofs::V3(ref mut obj) => {
                 obj.generate_presentation(credentials.clone(), self_attested_attrs.clone())?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    }).map(|_| error::SUCCESS.code_num)
+}
+
+pub fn decline_presentation_request(handle: u32, connection_handle: u32, reason: Option<String>, proposal: Option<String>) -> VcxResult<u32> {
+    HANDLE_MAP.get_mut(handle, |obj| {
+        match obj {
+            DisclosedProofs::V1(obj) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            },
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.decline_presentation_request(connection_handle, reason.clone(), proposal.clone())?;
                 Ok(error::SUCCESS.code_num)
             }
         }
