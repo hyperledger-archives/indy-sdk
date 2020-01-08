@@ -120,7 +120,7 @@ impl UpdateProfileDataBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<()> {
-        let mut response = parse_response_from_agency(&response)?;
+        let mut response = parse_response_from_agency(&response, &settings::get_protocol_type())?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(_)) => Ok(()),

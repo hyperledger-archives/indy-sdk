@@ -102,7 +102,7 @@ impl UpdateMessageStatusByConnectionsBuilder {
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
         trace!("parse_create_keys_response >>>");
 
-        let mut response = parse_response_from_agency(response)?;
+        let mut response = parse_response_from_agency(response, &settings::get_protocol_type())?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(_)) => Ok(()),

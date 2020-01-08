@@ -6,6 +6,7 @@ use utils::httpclient;
 use utils::constants::*;
 use utils::uuid::uuid;
 use error::prelude::*;
+use settings::ProtocolTypes;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SendInviteMessageDetails {
@@ -72,6 +73,22 @@ pub struct AcceptInviteMessageDetails {
     answer_status_code: Option<MessageStatusCode>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct RedirectConnectionMessageDetails {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypeV1,
+    #[serde(rename = "keyDlgProof")]
+    key_dlg_proof: KeyDlgProof,
+    #[serde(rename = "senderDetail")]
+    sender_detail: Option<SenderDetail>,
+    #[serde(rename = "redirectDetail")]
+    redirect_detail: Option<RedirectDetail>,
+    #[serde(rename = "senderAgencyDetail")]
+    sender_agency_detail: Option<SenderAgencyDetail>,
+    #[serde(rename = "answerStatusCode")]
+    answer_status_code: Option<MessageStatusCode>,
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ConnectionRequestAnswer {
     #[serde(rename = "@type")]
@@ -86,6 +103,30 @@ pub struct ConnectionRequestAnswer {
     key_dlg_proof: KeyDlgProof,
     #[serde(rename = "senderDetail")]
     sender_detail: Option<SenderDetail>,
+    #[serde(rename = "senderAgencyDetail")]
+    sender_agency_detail: Option<SenderAgencyDetail>,
+    #[serde(rename = "answerStatusCode")]
+    answer_status_code: Option<MessageStatusCode>,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub struct ConnectionRequestRedirect {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypeV2,
+    #[serde(rename = "sendMsg")]
+    send_msg: bool,
+    #[serde(rename = "@id")]
+    id: String,
+    #[serde(rename = "replyToMsgId")]
+    reply_to_msg_id: Option<String>,
+    #[serde(rename = "keyDlgProof")]
+    key_dlg_proof: KeyDlgProof,
+    #[serde(rename = "senderDetail")]
+    sender_detail: Option<SenderDetail>,
+    #[serde(rename = "redirectDetail")]
+    redirect_detail: Option<RedirectDetail>,
     #[serde(rename = "senderAgencyDetail")]
     sender_agency_detail: Option<SenderAgencyDetail>,
     #[serde(rename = "answerStatusCode")]
@@ -144,6 +185,24 @@ pub struct InviteDetail {
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct RedirectDetail {
+    #[serde(rename = "DID")]
+    pub did: String,
+    #[serde(rename = "verKey")]
+    pub verkey: String,
+    #[serde(rename = "publicDID")]
+    pub public_did: Option<String>,
+    #[serde(rename = "theirDID")]
+    pub their_did: String,
+    #[serde(rename = "theirVerKey")]
+    pub their_verkey: String,
+    #[serde(rename = "theirPublicDID")]
+    pub their_public_did: Option<String>,
+    pub signature: String,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct SendInviteMessageDetailsResponse {
     #[serde(rename = "@type")]
     msg_type: MessageTypeV1,
@@ -161,7 +220,8 @@ pub struct SendInviteBuilder {
     agent_did: String,
     agent_vk: String,
     public_did: Option<String>,
-    thread: Thread
+    thread: Thread,
+    version: settings::ProtocolTypes
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -171,6 +231,17 @@ pub struct ConnectionRequestAnswerResponse {
     #[serde(rename = "@id")]
     id: String,
     sent: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub struct ConnectionRequestRedirectResponse {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypeV2,
+    #[serde(rename = "@id")]
+    id: String,
+    sent: Option<bool>,
+    recipient_verkey: Option<String>,
+    sender_verkey: Option<String>
 }
 
 impl InviteDetail {
@@ -220,6 +291,7 @@ impl SendInviteBuilder {
             agent_vk: String::new(),
             public_did: None,
             thread: Thread::new(),
+            version: settings::get_connecting_protocol_version()
         }
     }
 
@@ -275,7 +347,7 @@ impl SendInviteBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<(InviteDetail, String)> {
-        let mut response = parse_response_from_agency(&response)?;
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
         let index = match settings::get_protocol_type() {
             // TODO: THINK better
@@ -301,7 +373,8 @@ pub struct AcceptInviteBuilder {
     agent_did: String,
     agent_vk: String,
     reply_to_msg_id: Option<String>,
-    thread: Thread
+    thread: Thread,
+    version: ProtocolTypes
 }
 
 impl AcceptInviteBuilder {
@@ -322,6 +395,7 @@ impl AcceptInviteBuilder {
             agent_vk: String::new(),
             reply_to_msg_id: None,
             thread: Thread::new(),
+            version: settings::get_connecting_protocol_version()
         }
     }
 
@@ -379,7 +453,7 @@ impl AcceptInviteBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<String> {
-        let mut response = parse_response_from_agency(&response)?;
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
@@ -389,10 +463,130 @@ impl AcceptInviteBuilder {
     }
 }
 
+#[derive(Debug)]
+pub struct RedirectConnectionBuilder {
+    to_did: String,
+    to_vk: String,
+    payload: RedirectConnectionMessageDetails,
+    agent_did: String,
+    agent_vk: String,
+    reply_to_msg_id: Option<String>,
+    thread: Thread,
+    version: settings::ProtocolTypes
+}
+
+impl RedirectConnectionBuilder {
+    pub fn create() -> RedirectConnectionBuilder {
+        trace!("RedirectConnection::create_message >>>");
+
+        RedirectConnectionBuilder {
+            to_did: String::new(),
+            to_vk: String::new(),
+            payload: RedirectConnectionMessageDetails {
+                msg_type: MessageTypes::build_v1(A2AMessageKinds::MessageDetail),
+                key_dlg_proof: KeyDlgProof { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() },
+                sender_detail: None,
+                redirect_detail: None,
+                sender_agency_detail: None,
+                answer_status_code: None,
+            },
+            agent_did: String::new(),
+            agent_vk: String::new(),
+            reply_to_msg_id: None,
+            thread: Thread::new(),
+            version: DEFAULT_ACK_CONNECTION_VERSION.clone()
+        }
+    }
+
+    pub fn key_delegate(&mut self, key: &str) -> VcxResult<&mut Self> {
+        validation::validate_key_delegate(key)?;
+        self.payload.key_dlg_proof.agent_delegated_key = key.to_string();
+        Ok(self)
+    }
+
+    pub fn sender_details(&mut self, details: &SenderDetail) -> VcxResult<&mut Self> {
+        self.payload.sender_detail = Some(details.clone());
+        Ok(self)
+    }
+
+    pub fn redirect_details(&mut self, details: &RedirectDetail) -> VcxResult<&mut Self> {
+        self.payload.redirect_detail = Some(details.clone());
+        Ok(self)
+    }
+
+    pub fn sender_agency_details(&mut self, details: &SenderAgencyDetail) -> VcxResult<&mut Self> {
+        self.payload.sender_agency_detail = Some(details.clone());
+        Ok(self)
+    }
+
+    pub fn answer_status_code(&mut self, code: &MessageStatusCode) -> VcxResult<&mut Self> {
+        self.payload.answer_status_code = Some(code.clone());
+        Ok(self)
+    }
+
+    pub fn reply_to(&mut self, id: &str) -> VcxResult<&mut Self> {
+        self.reply_to_msg_id = Some(id.to_string());
+        Ok(self)
+    }
+
+    pub fn thread(&mut self, thread: &Thread) -> VcxResult<&mut Self> {
+        self.thread = thread.clone();
+        Ok(self)
+    }
+
+    pub fn version(&mut self, version: Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version,
+            None => settings::get_connecting_protocol_version()
+        };
+        Ok(self)
+    }
+
+    pub fn generate_signature(&mut self) -> VcxResult<()> {
+        let signature = format!("{}{}", self.payload.key_dlg_proof.agent_did, self.payload.key_dlg_proof.agent_delegated_key);
+        let signature = crypto::sign(&self.to_vk, signature.as_bytes())?;
+        let signature = base64::encode(&signature);
+        self.payload.key_dlg_proof.signature = signature;
+
+        Ok(())
+    }
+
+    pub fn send_secure(&mut self) -> VcxResult<String> {
+        trace!("RedirectConnection::send >>>");
+
+        if settings::test_agency_mode_enabled() {
+            match self.version {
+                settings::ProtocolTypes::V1 => return self.parse_response(ACCEPT_INVITE_RESPONSE.to_vec()),
+                settings::ProtocolTypes::V2 => return self.parse_response(ACCEPT_INVITE_V2_RESPONSE.to_vec()),
+            }
+        }
+
+        let data = self.prepare_request()?;
+
+        let response = httpclient::post_u8(&data)?;
+
+        self.parse_response(response)
+    }
+
+    fn parse_response(&self, response: Vec<u8>) -> VcxResult<String> {
+        let mut response = parse_response_from_agency(&response, &self.version)?;
+
+        match response.remove(0) {
+            A2AMessage::Version1(A2AMessageV1::MessageCreated(res)) => Ok(res.uid),
+            A2AMessage::Version2(A2AMessageV2::ConnectionRequestRedirectResponse(res)) => Ok(res.id),
+            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectionRequestRedirectResponse"))
+        }
+    }
+}
+
 
 //Todo: Every GeneralMessage extension, duplicates code
 impl GeneralMessage for SendInviteBuilder {
     type Msg = SendInviteBuilder;
+
+    fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
+
+    fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
 
     fn set_agent_did(&mut self, did: String) {
         self.agent_did = did;
@@ -403,10 +597,6 @@ impl GeneralMessage for SendInviteBuilder {
         self.agent_vk = vk;
         self.payload.key_dlg_proof.agent_delegated_key = self.agent_vk.clone();
     }
-
-    fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
-
-    fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
         self.generate_signature()?;
@@ -444,25 +634,25 @@ impl GeneralMessage for SendInviteBuilder {
                 }
             };
 
-        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk)
+        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
 
 impl GeneralMessage for AcceptInviteBuilder {
     type Msg = AcceptInviteBuilder;
 
+    fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
+
+    fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
+
     fn set_agent_did(&mut self, did: String) {
         self.agent_did = did;
         self.payload.key_dlg_proof.agent_did = self.agent_did.to_string();
     }
-
     fn set_agent_vk(&mut self, vk: String) {
         self.agent_vk = vk;
         self.payload.key_dlg_proof.agent_delegated_key = self.agent_vk.to_string();
     }
-
-    fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
-    fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
         self.generate_signature()?;
@@ -498,7 +688,62 @@ impl GeneralMessage for AcceptInviteBuilder {
                 }
             };
 
-        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk)
+        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
+    }
+}
+
+impl GeneralMessage for RedirectConnectionBuilder {
+    type Msg = RedirectConnectionBuilder;
+
+    fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
+
+    fn set_to_did(&mut self, to_did: String) { self.to_did = to_did; }
+
+    fn set_agent_did(&mut self, did: String) {
+        self.agent_did = did;
+        self.payload.key_dlg_proof.agent_did = self.agent_did.to_string();
+    }
+    fn set_agent_vk(&mut self, vk: String) {
+        self.agent_vk = vk;
+        self.payload.key_dlg_proof.agent_delegated_key = self.agent_vk.to_string();
+    }
+
+    fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
+        self.generate_signature()?;
+
+        let messages =
+            match self.version {
+                settings::ProtocolTypes::V1 => {
+                    let msg_created = CreateMessage {
+                        msg_type: MessageTypes::build_v1(A2AMessageKinds::CreateMessage),
+                        mtype: RemoteMessageType::ConnReqRedirect,
+                        reply_to_msg_id: self.reply_to_msg_id.clone(),
+                        send_msg: true,
+                        uid: None,
+                    };
+
+                    vec![A2AMessage::Version1(A2AMessageV1::CreateMessage(msg_created)),
+                         A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestRedirect(self.payload.clone())))]
+                }
+                settings::ProtocolTypes::V2 => {
+                    let msg = ConnectionRequestRedirect {
+                        msg_type: MessageTypes::build_v2(A2AMessageKinds::ConnectionRequestRedirect),
+                        send_msg: true,
+                        id: uuid(),
+                        reply_to_msg_id: self.reply_to_msg_id.clone(),
+                        key_dlg_proof: self.payload.key_dlg_proof.clone(),
+                        sender_detail: self.payload.sender_detail.clone(),
+                        redirect_detail: self.payload.redirect_detail.clone(),
+                        sender_agency_detail: self.payload.sender_agency_detail.clone(),
+                        answer_status_code: self.payload.answer_status_code.clone(),
+                        thread: self.thread.clone(),
+                    };
+
+                    vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestRedirect(msg))]
+                }
+            };
+
+        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
 
@@ -515,6 +760,12 @@ pub struct Payload {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct AcceptanceDetails {
     pub sender_detail: SenderDetail,
+}
+
+#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct RedirectionDetails {
+    pub redirect_detail: RedirectDetail,
 }
 
 pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> VcxResult<SenderDetail> {
@@ -593,5 +844,28 @@ mod tests {
         assert!(!string.contains("phoneNo"));
         assert!(!string.contains("targetName"));
         assert!(string.contains("includePublicDID"));
+    }
+
+    #[test]
+    fn test_redirect_connection_set_values_and_post() {
+        init!("false");
+        let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
+        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
+        let (_, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (_, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+
+        settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
+        settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
+        settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
+
+        let msg = redirect_connection()
+            .to(&user_did).unwrap()
+            .to_vk(&user_vk).unwrap()
+            .agent_did(&agent_did).unwrap()
+            .agent_vk(&agent_vk).unwrap()
+            .key_delegate("key").unwrap()
+            .prepare_request().unwrap();
+
+        assert!(msg.len() > 0);
     }
 }

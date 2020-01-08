@@ -52,6 +52,8 @@ pub enum VcxErrorKind {
     InvalidConnectionHandle,
     #[fail(display = "Invalid invite details structure")]
     InvalidInviteDetail,
+    #[fail(display = "Invalid redirect details structure")]
+    InvalidRedirectDetail,
     #[fail(display = "Cannot Delete Connection. Check status of connection is appropriate to be deleted from agency.")]
     DeleteConnection,
     #[fail(display = "Error with Connection")]
@@ -307,6 +309,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::CreateConnection => error::CREATE_CONNECTION_ERROR.code_num,
             VcxErrorKind::InvalidConnectionHandle => error::INVALID_CONNECTION_HANDLE.code_num,
             VcxErrorKind::InvalidInviteDetail => error::INVALID_INVITE_DETAILS.code_num,
+            VcxErrorKind::InvalidRedirectDetail => error::INVALID_REDIRECT_DETAILS.code_num,
             VcxErrorKind::DeleteConnection => error::CANNOT_DELETE_CONNECTION.code_num,
             VcxErrorKind::CreateCredDef => error::CREATE_CREDENTIAL_DEF_ERR.code_num,
             VcxErrorKind::CredDefAlreadyCreated => error::CREDENTIAL_DEF_ALREADY_CREATED.code_num,

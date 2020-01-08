@@ -3,6 +3,7 @@ use messages::*;
 use messages::message_type::MessageTypes;
 use utils::httpclient;
 use error::prelude::*;
+use settings::ProtocolTypes;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -39,6 +40,7 @@ pub struct CreateKeyResponse {
 pub struct CreateKeyBuilder {
     for_did: String,
     for_verkey: String,
+    version: ProtocolTypes
 }
 
 impl CreateKeyBuilder {
@@ -48,6 +50,7 @@ impl CreateKeyBuilder {
         CreateKeyBuilder {
             for_did: String::new(),
             for_verkey: String::new(),
+            version: settings::get_connecting_protocol_version()
         }
     }
 
@@ -97,7 +100,7 @@ impl CreateKeyBuilder {
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<(String, String)> {
         trace!("parse_response >>>");
 
-        let mut response = parse_response_from_agency(response)?;
+        let mut response = parse_response_from_agency(response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),

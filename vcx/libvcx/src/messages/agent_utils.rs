@@ -405,7 +405,7 @@ fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<A2AM
     let response = httpclient::post_u8(&data)
         .map_err(|err| err.map(VcxErrorKind::InvalidHttpResponse, error::INVALID_HTTP_RESPONSE.message))?;
 
-    parse_response_from_agency(&response)
+    parse_response_from_agency(&response, &settings::get_protocol_type())
 }
 
 #[cfg(test)]

@@ -5,6 +5,8 @@ use messages::MessageStatusCode;
 use messages::payload::Payloads;
 use utils::httpclient;
 use error::prelude::*;
+use settings::ProtocolTypes;
+use utils::constants::DEFAULT_GET_MSG_VERSION;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -71,6 +73,7 @@ pub struct GetMessagesBuilder {
     uids: Option<Vec<String>>,
     status_codes: Option<Vec<MessageStatusCode>>,
     pairwise_dids: Option<Vec<String>>,
+    version: ProtocolTypes
 }
 
 impl GetMessagesBuilder {
@@ -86,6 +89,7 @@ impl GetMessagesBuilder {
             exclude_payload: None,
             status_codes: None,
             pairwise_dids: None,
+            version: DEFAULT_GET_MSG_VERSION.clone()
         }
     }
 
@@ -129,7 +133,7 @@ impl GetMessagesBuilder {
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<Vec<Message>> {
         trace!("parse_get_messages_response >>>");
 
-        let mut response = parse_response_from_agency(&response)?;
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesResponse(res)) => Ok(res.msgs),
@@ -149,7 +153,7 @@ impl GetMessagesBuilder {
             return Ok(Vec::new());
         }
 
-        let response = GetMessagesBuilder::parse_download_messages_response(response)?;
+        let response = GetMessagesBuilder::parse_download_messages_response(response, &self.version)?;
 
         Ok(response)
     }
@@ -181,9 +185,9 @@ impl GetMessagesBuilder {
         prepare_message_for_agency(&message, &agency_did)
     }
 
-    fn parse_download_messages_response(response: Vec<u8>) -> VcxResult<Vec<MessageByConnection>> {
-        trace!("parse_get_connection_messages_response >>>");
-        let mut response = parse_response_from_agency(&response)?;
+    fn parse_download_messages_response(response: Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<MessageByConnection>> {
+        trace!("parse_download_messages_response >>> version {:?}", version);
+        let mut response = parse_response_from_agency(&response, version)?;
 
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
@@ -235,7 +239,7 @@ impl GeneralMessage for GetMessagesBuilder {
                 )
         };
 
-        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk)
+        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
 
@@ -288,7 +292,7 @@ impl Message {
             let decrypted_payload = match payload {
                 MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
                     .map(Payloads::PayloadV1),
-                MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&payload)
+                MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
                     .map(Payloads::PayloadV2)
             };
 
@@ -438,7 +442,7 @@ mod tests {
     fn test_parse_get_connection_messages_response() {
         init!("true");
 
-        let result = GetMessagesBuilder::parse_download_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
+        let result = GetMessagesBuilder::parse_download_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec(), &ProtocolTypes::V1).unwrap();
         assert_eq!(result.len(), 1)
     }
 

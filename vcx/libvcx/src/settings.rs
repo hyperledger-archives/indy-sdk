@@ -46,6 +46,7 @@ pub static CONFIG_WALLET_KEY_DERIVATION: &str = "wallet_key_derivation";
 pub static CONFIG_PROTOCOL_VERSION: &str = "protocol_version";
 pub static CONFIG_PAYMENT_METHOD: &str = "payment_method";
 pub static CONFIG_TXN_AUTHOR_AGREEMENT: &str = "author_agreement";
+pub static CONFIG_USE_LATEST_PROTOCOLS: &'static str = "use_latest_protocols";
 pub static CONFIG_POOL_CONFIG: &str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
 pub static COMMUNICATION_METHOD: &str = "communication_method"; // proprietary or aries
@@ -72,6 +73,7 @@ pub static MASK_VALUE: &str = "********";
 pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "RAW";
 pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
 pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
+pub static DEFAULT_USE_LATEST_PROTOCOLS: &str = "false";
 pub static DEFAULT_PAYMENT_METHOD: &str = "null";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
@@ -299,6 +301,14 @@ pub fn get_wallet_credentials(_storage_creds: Option<&str>) -> String { // TODO:
     if let Some(_creds) = storage_creds { credentials["storage_credentials"] = serde_json::from_str(&_creds).unwrap(); }
 
     credentials.to_string()
+}
+
+pub fn get_connecting_protocol_version() -> ProtocolTypes {
+    let protocol = get_config_value(CONFIG_USE_LATEST_PROTOCOLS).unwrap_or(DEFAULT_USE_LATEST_PROTOCOLS.to_string());
+    match protocol.as_ref() {
+        "true" | "TRUE" | "True" => return ProtocolTypes::V2,
+        "false" | "FALSE" | "False" | _ => return ProtocolTypes::V1,
+    }
 }
 
 pub fn validate_payment_method() -> VcxResult<()> {
