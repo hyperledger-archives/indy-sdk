@@ -1,6 +1,6 @@
 [package]
 name = "libindy"
-version = "1.14.0"
+version = "1.14.1"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 edition = "2018"
 
