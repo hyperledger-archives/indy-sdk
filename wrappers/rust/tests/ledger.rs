@@ -410,7 +410,7 @@ mod test_build_get_attrib_request {
 mod test_build_schema_request {
     use super::*;
 
-    const SCHEMA_DATA: &str = r#"{"id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0","attrNames": ["name", "male"],"name":"gvt2","version":"3.1","ver":"1.0"}"#;
+    const SCHEMA_DATA: &str = r#"{"id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt2:1.0","attrNames": ["name", "male"],"name":"gvt2","version":"3.1","ver":"1.0"}"#;
 
     #[test]
     pub fn build_schema_request_success() {
@@ -454,7 +454,7 @@ mod test_parse_get_schema_response {
     use super::*;
 
     const SCHEMA_NAME: &str = "schema_1234";
-    const SCHEMA_DATA: &str = r#"{"id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0","attrNames": ["name", "male"],"name":"schema_1234","version":"1.0","ver":"1.0"}"#;
+    const SCHEMA_DATA: &str = r#"{"id":"NcYxiDXkpYi6ov5FcYDi1e:2:schema_1234:1.0","attrNames": ["name", "male"],"name":"schema_1234","version":"1.0","ver":"1.0"}"#;
 
 
     fn create_build_schema_request(did: &String) -> String {
