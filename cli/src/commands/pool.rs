@@ -424,7 +424,9 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
 
         println!("Transaction Author Agreement");
         println!("Version: {:?}", version);
-        println!("Digest: {:?}", digest);
+        if let Some(digest_) = digest {
+            println!("Digest: {:?}", digest_);
+        }
         println!("Content: \n {:?}", text);
 
         accept_transaction_author_agreement(ctx, &text, &version);
