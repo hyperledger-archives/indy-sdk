@@ -483,8 +483,12 @@ struct MultiWalletMultiTableStrategy {}
 impl WalletStrategy for DatabasePerWalletStrategy {
     // initialize storage based on wallet storage strategy
     fn init_storage(&self, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
-        env_logger::try_init()
-            .expect("Can't init env logger");
+        match env_logger::try_init() {
+            Ok(_) => {}
+            Err(_) => {
+                error!("failed to init logging, probably already initialized");
+            }
+        }
         // no-op
         debug!("Initializing storage strategy DatabasePerWalletStrategy.");
         Ok(())
@@ -650,8 +654,12 @@ fn get_multi_database_name(config: &PostgresConfig) -> &str {
 impl WalletStrategy for MultiWalletSingleTableStrategy {
     // initialize storage based on wallet storage strategy
     fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
-        env_logger::try_init()
-            .expect("Can't init env logger");
+        match env_logger::try_init() {
+            Ok(_) => {}
+            Err(_) => {
+                error!("failed to init logging, probably already initialized");
+            }
+        }
         debug!("Entering init_storage");
         // create database and tables for storage
         // if admin user and password aren't provided then bail
