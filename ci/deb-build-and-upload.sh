@@ -4,7 +4,8 @@ set -e
 set -x
 
 if [ "$1" = "--help" ] ; then
-  echo "Usage: <package> <version> <key> <type> <suffix> <repo> <host> <key> <package_type> <extra_flags>"
+  echo "Usage: <package> <version> <type> <suffix> <repo> <host> <key> <package_type> <extra_flags>"
+  echo "Usage: <package> <version> <type> <suffix> <repo> <host> <key> <package_type>"
   return
 fi
 
@@ -28,6 +29,7 @@ extra_flags="$9"
 [ -z $package_type ] && exit 8
 
 sed -i -E -e 'H;1h;$!d;x' -e "s/$package ([(,),0-9,.]+)/$package ($version$suffix)/" debian/changelog
+sed -i -e "s/RELEASE=\(%RELEASE%\)/RELEASE=$type/" debian/postinst
 
 dpkg-buildpackage -tc
 
