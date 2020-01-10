@@ -1,6 +1,9 @@
-libindy (1.14.0) unstable; urgency=medium
+libindy (1.14.1) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.14.1
+* Bugfixes
 
 ## 1.14.0
 * Transaction author agreement changes (IS-1427):
