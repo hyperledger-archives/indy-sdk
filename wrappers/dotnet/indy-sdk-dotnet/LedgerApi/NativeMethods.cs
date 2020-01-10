@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using static Hyperledger.Indy.Utils.CallbackHelper;
 
 namespace Hyperledger.Indy.LedgerApi
 {
@@ -110,88 +111,24 @@ namespace Hyperledger.Indy.LedgerApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_ddo_request(int command_handle, string submitter_did, string target_did, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds a NYM request.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="target_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="verkey">verification key</param>
-        /// <param name="alias">Alias.</param>
-        /// <param name="role">Role of a user NYM record</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_nym_request(int command_handle, string submitter_did, string target_did, string verkey, string alias, string role, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds an ATTRIB request.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="target_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="hash">Hash of attribute data</param>
-        /// <param name="raw">represented as json, where key is attribute name and value is it's value</param>
-        /// <param name="enc">Encrypted attribute data</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_attrib_request(int command_handle, string submitter_did, string target_did, string hash, string raw, string enc, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds a GET_ATTRIB request.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="target_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="raw"> name (attribute name)</param>
-        /// <param name="hash"></param>
-        /// <param name="enc"></param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_attrib_request(int command_handle, string submitter_did, string target_did, string raw, string hash, string enc, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds a GET_NYM request.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="target_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_nym_request(int command_handle, string submitter_did, string target_did, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds a SCHEMA request.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="data"> name, version, type, attr_names (ip, port, keys)</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_schema_request(int command_handle, string submitter_did, string data, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Indies the build get schema request.
-        /// </summary>
-        /// <returns>The build get schema request.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="submitter_did">Submitter did.</param>
-        /// <param name="id">Identifier.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_schema_request(int command_handle, string submitter_did, string id, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Indies the parse get schema response.
-        /// </summary>
-        /// <returns>The parse get schema response.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="get_schema_response">Get schema response.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_parse_get_schema_response(int command_handle, string get_schema_response, ParseResponseCompletedDelegate cb);
 
@@ -199,118 +136,30 @@ namespace Hyperledger.Indy.LedgerApi
 
         internal delegate void ParseRegistryResponseCompletedDelegate(int xcommand_handle, int err, string id, string object_json, ulong timestamp);
 
-        /// <summary>
-        /// Indies the build cred def request.
-        /// </summary>
-        /// <returns>The build cred def request.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="submitter_did">Submitter did.</param>
-        /// <param name="data">Data.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_cred_def_request(int command_handle, string submitter_did, string data, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Indies the build get cred def request.
-        /// </summary>
-        /// <returns>The build get cred def request.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="submitter_did">Submitter did.</param>
-        /// <param name="id">Identifier.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_cred_def_request(int command_handle, string submitter_did, string id, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Indies the parse get cred def response.
-        /// </summary>
-        /// <returns>The parse get cred def response.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="get_cred_def_response">Get cred def response.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_parse_get_cred_def_response(int command_handle, string get_cred_def_response, ParseResponseCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds a NODE request.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="target_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="data">id of a target NYM record</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_node_request(int command_handle, string submitter_did, string target_did, string data, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds a GET_VALIDATOR_INFO request.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_validator_info_request(int command_handle, string submitter_did, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds a GET_TXN request.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="ledger_type">(Optional) type of the ledger the requested transaction belongs to:
-        ///     DOMAIN - used default,
-        ///     POOL,
-        ///     CONFIG
-        ///     any number</param>
-        /// <param name="seq_no">seq_no of transaction in ledger</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_get_txn_request(int command_handle, string submitter_did, string ledger_type, int seq_no, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds a POOL_CONFIG request.
-        /// </summary>
-        /// <returns>Request result as json.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="writes">If set to <c>true</c> writes.</param>
-        /// <param name="force">If set to <c>true</c> force.</param>
-        /// <param name="cb">Callback that takes command result as parameter.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_pool_config_request(int command_handle, string submitter_did, bool writes, bool force, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Action that pool has to do after received transaction.
-        /// </summary>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="action">Action that pool has to do after received transaction.</param>
-        /// <param name="datetime">Restart time in datetime format. Skip to restart as early as possible.</param>
-        /// <param name="cb">Callback that takes command result as parameter.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_pool_restart_request(int command_handle, string submitter_did, string action, string datetime, BuildRequestCompletedDelegate cb);
 
-        /// <summary>
-        /// Builds a POOL_UPGRADE request.
-        /// </summary>
-        /// <returns>Request result as json.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="submitter_did">Submitter did.</param>
-        /// <param name="name">Name.</param>
-        /// <param name="version">Version.</param>
-        /// <param name="action">Either start or cancel.</param>
-        /// <param name="sha256">Sha256.</param>
-        /// <param name="timeout">Timeout.</param>
-        /// <param name="schedule">Schedule.</param>
-        /// <param name="justification">Justification.</param>
-        /// <param name="reinstall">If set to <c>true</c> reinstall.</param>
-        /// <param name="force">If set to <c>true</c> force.</param>
-        /// <param name="package">Package to be upgraded.</param>
-        /// <param name="cb">Callback that takes command result as parameter.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_pool_upgrade_request(int command_handle, string submitter_did, string name, string version, string action, string sha256, int timeout, string schedule, string justification, bool reinstall, bool force, string package, BuildRequestCompletedDelegate cb);
 
@@ -340,7 +189,36 @@ namespace Hyperledger.Indy.LedgerApi
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_get_response_metadata(int command_handle, string response, GetResponseMetadataCompletedDelegate cb);
-
         internal delegate void GetResponseMetadataCompletedDelegate(int xcommand_handle, int err, string response_metadata);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_build_auth_rule_request(int command_handle, string submitter_did, string txn_type, string action, string field, string old_value, string new_value, string constraint, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_build_auth_rules_request(int command_handle, string submitter_did, string rules, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_build_get_auth_rule_request(int command_handle, string submitter_did, string txn_type, string action, string field, string old_value, string new_value, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_build_txn_author_agreement_request(int command_handle, string submitter_did, string text, string version, long ratification_ts, long retirement_ts, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_build_disable_all_txn_author_agreements_request(int command_handle, string submitter_did, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_build_get_txn_author_agreement_request(int command_handle, string submitter_did, string data, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_build_acceptance_mechanisms_request(int command_handle, string submitter_did, string aml, string version, string aml_context, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_build_get_acceptance_mechanisms_request(int command_handle, string submitter_did, long timestamp, string version, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_append_txn_author_agreement_acceptance_to_request(int command_handle, string request_json, string text, string version, string taa_digest, string mechanism, ulong time, BuildRequestCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_append_request_endorser(int command_handle, string request_json, string endorser_did, BuildRequestCompletedDelegate cb);
     }
 }

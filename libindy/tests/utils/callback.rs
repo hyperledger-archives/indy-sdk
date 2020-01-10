@@ -1,9 +1,8 @@
-extern crate libc;
 extern crate indy_sys;
 
 use self::indy_sys::Error as ErrorCode;
 
-use self::libc::c_char;
+use super::libc::c_char;
 use std::ffi::CStr;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -21,7 +20,7 @@ pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
     let (sender, receiver) = channel();
 
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode) + Send>>> = Default::default();
     }
 
     let closure = Box::new(move |err| {
@@ -47,7 +46,7 @@ pub fn _closure_to_cb_ec_i32() -> (Receiver<(ErrorCode, i32)>, i32,
     let (sender, receiver) = channel();
 
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode, i32) + Send>>> = Default::default();
     }
 
     let closure = Box::new(move |err, val| {
@@ -73,7 +72,7 @@ pub fn _closure_to_cb_ec_i32_usize() -> (Receiver<(ErrorCode, i32, usize)>, i32,
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32, usize) + Send>>> = Default::default();
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode, i32, usize) + Send>>> = Default::default();
         }
 
     let closure = Box::new(move |err, val, val_2| {
@@ -99,7 +98,7 @@ pub fn _closure_to_cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, i32,
     let (sender, receiver) = channel();
 
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, bool) + Send>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, Box<dyn FnMut(ErrorCode, bool) + Send>>> = Default::default();
     }
 
     let closure = Box::new(move |err, val| {
@@ -126,7 +125,7 @@ pub fn _closure_to_cb_ec_string() -> (Receiver<(ErrorCode, String)>, i32,
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
 
     let closure = Box::new(move |err, val| {
@@ -155,7 +154,7 @@ pub fn _closure_to_cb_ec_string_string() -> (Receiver<(ErrorCode, String, String
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, String) + Send > >> = Default::default();
     }
 
     let closure = Box::new(move |err, val1, val2| {
@@ -186,7 +185,7 @@ pub fn _closure_to_cb_ec_string_string_string() -> (Receiver<(ErrorCode, String,
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String, String) + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, String, String) + Send > >> = Default::default();
     }
 
     let closure = Box::new(move |err, val1, val2, val3| {
@@ -216,7 +215,7 @@ pub fn _closure_to_cb_ec_opt_string() -> (Receiver<(ErrorCode, Option<String>)>,
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Option<String>) + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, Option<String>) + Send > >> = Default::default();
     }
 
     let closure = Box::new(move |err, val1| {
@@ -247,7 +246,7 @@ pub fn _closure_to_cb_ec_string_opt_string() -> (Receiver<(ErrorCode, String, Op
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, Option<String>) + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, Option<String>) + Send > >> = Default::default();
     }
 
     let closure = Box::new(move |err, val1, val2| {
@@ -280,7 +279,7 @@ pub fn _closure_to_cb_ec_string_opt_string_opt_string() -> (Receiver<(ErrorCode,
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, Option<String>, Option<String>) + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, Option<String>, Option<String>) + Send > >> = Default::default();
     }
 
     let closure = Box::new(move |err, val1, val2, val3| {
@@ -315,7 +314,7 @@ pub fn _closure_to_cb_ec_vec_u8() -> (Receiver<(ErrorCode, Vec<u8>)>, i32,
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
         }
 
     let closure = Box::new(move |err, val1| {
@@ -345,7 +344,7 @@ pub fn _closure_to_cb_ec_string_vec_u8() -> (Receiver<(ErrorCode, String, Vec<u8
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, Vec<u8>) + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, Vec<u8>) + Send > >> = Default::default();
         }
 
     let closure = Box::new(move |err, val1, val2| {
@@ -376,7 +375,7 @@ pub fn _closure_to_cb_ec_string_string_u64() -> (Receiver<(ErrorCode, String, St
     let (sender, receiver) = channel();
 
     lazy_static! {
-            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String, u64) + Send > >> = Default::default();
+            static ref CALLBACKS: Mutex < HashMap < i32, Box <dyn FnMut(ErrorCode, String, String, u64) + Send > >> = Default::default();
     }
 
     let closure = Box::new(move |err, val1, val2, val3| {

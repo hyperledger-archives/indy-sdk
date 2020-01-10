@@ -1,6 +1,6 @@
 extern crate sodiumoxide;
 
-use errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 use failure::{err_msg, ResultExt};
 use self::sodiumoxide::crypto::secretbox;
 use self::sodiumoxide::crypto::secretbox::xsalsa20poly1305;

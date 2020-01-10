@@ -1,17 +1,17 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
-use commands::*;
-use utils::table::print_list_table;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
+use crate::commands::*;
+use crate::utils::table::print_list_table;
 
 use indy::ErrorCode;
 
-use libindy::did::Did;
-use libindy::ledger::Ledger;
+use crate::libindy::did::Did;
+use crate::libindy::ledger::Ledger;
 
 use std::fs::File;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use commands::ledger::{
+use crate::commands::ledger::{
     handle_transaction_response,
     set_request_fees,
     parse_response_with_fees,
@@ -31,9 +31,11 @@ pub mod new_command {
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_optional_param("did", "Known DID for new wallet instance")
                 .add_optional_deferred_param("seed", "Seed for creating DID key-pair (UTF-8, base64 or hex)")
+                .add_optional_param("method", "Method name to create fully qualified DID")
                 .add_optional_param("metadata", "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
+                .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX method=indy")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX seed=00000000000000000000000000000My1")
                 .add_example("did new seed=00000000000000000000000000000My1 metadata=did_metadata")
                 .finalize()
@@ -46,12 +48,14 @@ pub mod new_command {
 
         let did = get_opt_str_param("did", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
+        let method = get_opt_str_param("method", params).map_err(error_err!())?;
         let metadata = get_opt_empty_str_param("metadata", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
             update_json_map_opt_key!(json, "did", did);
             update_json_map_opt_key!(json, "seed", seed);
+            update_json_map_opt_key!(json, "method_name", method);
             JSONValue::from(json).to_string()
         };
 
@@ -62,7 +66,7 @@ pub mod new_command {
                 .and_then(|(did, vk)|
                     match Did::abbreviate_verkey(&did, &vk) {
                         Ok(vk) => Ok((did, vk)),
-                        Err(err) => Err(err)
+                        Err(_) => Ok((did, vk))
                     });
 
         trace!(r#"Did::new return: {:?}"#, res);
@@ -72,15 +76,24 @@ pub mod new_command {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
             }
-            Err(err) => Err(handle_indy_error(err, None, None, None))
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            }
         };
 
         let res = if let Some(metadata) = metadata {
             res.and_then(|did| {
                 let res = Did::set_metadata(wallet_handle, &did, metadata);
                 match res {
-                    Ok(()) => Ok(println_succ!("Metadata has been saved for DID \"{}\"", did)),
-                    Err(err) => Err(handle_indy_error(err, None, None, None))
+                    Ok(()) => {
+                        println_succ!("Metadata has been saved for DID \"{}\"", did);
+                        Ok(())
+                    },
+                    Err(err) => {
+                        handle_indy_error(err, None, None, None);
+                        Err(())
+                    }
                 }
             })
         } else {
@@ -150,14 +163,15 @@ pub mod import_command {
                     })
             });
 
-        let res = if let Err(err) = res {
-            Err(println_err!("{}", err))
-        } else {
-            Ok(println_succ!("DIDs import finished"))
+        match res {
+            Err(err) =>
+                println_err!("{}", err),
+            Ok(_) =>
+                println_succ!("DIDs import finished")
         };
 
-        trace!("execute << {:?}", res);
-        res
+        trace!("execute << ");
+        Ok(())
     }
 }
 
@@ -165,7 +179,7 @@ pub mod use_command {
     use super::*;
 
     command!(CommandMetadata::build("use", "Use DID")
-                .add_main_param("did", "Did stored in wallet")
+                .add_main_param_with_dynamic_completion("did", "Did stored in wallet", DynamicCompletionType::Did)
                 .add_example("did use VsKV7grR1BUE29mG2Fm2kX")
                 .finalize());
 
@@ -179,12 +193,19 @@ pub mod use_command {
         let res = match Did::get_did_with_meta(wallet_handle, did) {
             Ok(_) => {
                 set_active_did(ctx, Some(did.to_owned()));
-                Ok(println_succ!("Did \"{}\" has been set as active", did))
+                println_succ!("Did \"{}\" has been set as active", did);
+                Ok(())
             }
             Err(err) => {
                 match err.error_code {
-                    ErrorCode::WalletItemNotFound => Err(println_err!("Requested DID not found")),
-                    _ => Err(handle_indy_error(err, Some(&did), None, None)),
+                    ErrorCode::WalletItemNotFound => {
+                        println_err!("Requested DID not found");
+                        Err(())
+                    },
+                    _ => {
+                        handle_indy_error(err, Some(&did), None, None);
+                        Err(())
+                    },
                 }
             }
         };
@@ -199,6 +220,8 @@ pub mod rotate_key_command {
 
     command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
                 .add_optional_deferred_param("seed", "If not provide then a random one will be created (UTF-8, base64 or hex)")
+                .add_optional_param("source_payment_address","Payment address of sender.")
+                .add_optional_param("fee","Transaction fee set on the ledger.")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
@@ -212,9 +235,7 @@ pub mod rotate_key_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
 
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
-        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
-        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
+
         let resume = get_opt_bool_param("resume", params).map_err(error_err!())?.unwrap_or(false);
 
         let did = ensure_active_did(&ctx)?;
@@ -231,11 +252,17 @@ pub mod rotate_key_command {
                         .and_then(|did_info| {
                             let temp_verkey = match did_info["tempVerkey"].as_str() {
                                 Some(temp_verkey) => Ok(temp_verkey.to_owned()),
-                                None => Err(println_err!("Unable to resume, have you already run rotate-key?"))
+                                None => {
+                                    println_err!("Unable to resume, have you already run rotate-key?");
+                                    Err(())
+                                }
                             }?;
                             let verkey = match did_info["verkey"].as_str() {
                                 Some(verkey) => Ok(verkey.to_owned()),
-                                None => Err(println_err!("Fatal error, no verkey in wallet"))
+                                None => {
+                                    println_err!("Fatal error, no verkey in wallet");
+                                    Err(())
+                                }
                             }?;
                             Ok((temp_verkey, verkey))
                         })
@@ -269,10 +296,14 @@ pub mod rotate_key_command {
                         Ok((temp_verkey, true))
                     } else {
                         // some invalid state
-                        Err(println_err!("Unable to resume, verkey on ledger is completely different from verkey in wallet"))
+                        println_err!("Unable to resume, verkey on ledger is completely different from verkey in wallet");
+                        Err(())
                     }
                 }
-                None => Err(println_err!("No verkey on ledger for did: {}", did))
+                None => {
+                    println_err!("No verkey on ledger for did: {}", did);
+                    Err(())
+                }
             }?
         } else {
             let identity_json = {
@@ -285,8 +316,14 @@ pub mod rotate_key_command {
                 Ok(request) => Ok(request),
                 Err(err) => {
                     match err.error_code {
-                        ErrorCode::WalletItemNotFound => Err(println_err!("Active DID: \"{}\" not found", did)),
-                        _ => Err(handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))),
+                        ErrorCode::WalletItemNotFound => {
+                            println_err!("Active DID: \"{}\" not found", did);
+                            Err(())
+                        },
+                        _ => {
+                            handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name));
+                            Err(())
+                        },
                     }
                 }
             }?;
@@ -300,7 +337,7 @@ pub mod rotate_key_command {
 
             ledger::set_author_agreement(ctx, &mut request)?;
 
-            let payment_method = set_request_fees(&mut request, wallet_handle, Some(&did), &fees_inputs, &fees_outputs, extra)?;
+            let payment_method = set_request_fees(ctx, params, &mut request, wallet_handle, Some(&did))?;
 
             let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
                 .map_err(|err| {
@@ -323,14 +360,21 @@ pub mod rotate_key_command {
 
         match Did::replace_keys_apply(wallet_handle, &did)
             .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
-            Ok(vk) => Ok({
+            Ok(vk) => {
                 println_succ!("Verkey for did \"{}\" has been updated", did);
-                println_succ!("New verkey is \"{}\"", vk)
-            }),
+                println_succ!("New verkey is \"{}\"", vk);
+                Ok(())
+            },
             Err(err) => {
                 match err.error_code {
-                    ErrorCode::WalletItemNotFound => Err(println_err!("Active DID: \"{}\" not found", did)),
-                    _ => Err(handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))),
+                    ErrorCode::WalletItemNotFound => {
+                        println_err!("Active DID: \"{}\" not found", did);
+                        Err(())
+                    },
+                    _ => {
+                        handle_indy_error(err, Some(&did), Some(&pool_name), Some(&wallet_name));
+                        Err(())
+                    },
                 }
             }
         }?;
@@ -376,21 +420,27 @@ pub mod list_command {
                     match Did::abbreviate_verkey(did_info["did"].as_str().unwrap_or(""),
                                                  did_info["verkey"].as_str().unwrap_or("")) {
                         Ok(vk) => did_info["verkey"] = serde_json::Value::String(vk),
-                        Err(err) => return Err(handle_indy_error(err, None, None, None))
+                        Err(err) => {
+                            handle_indy_error(err, None, None, None);
+                            return Err(())
+                        }
                     }
                 }
 
                 print_list_table(&dids,
-                                 &vec![("did", "Did"),
-                                       ("verkey", "Verkey"),
-                                       ("metadata", "Metadata")],
+                                 &[("did", "Did"),
+                                     ("verkey", "Verkey"),
+                                     ("metadata", "Metadata")],
                                  "There are no dids");
                 if let Some(cur_did) = get_active_did(ctx) {
                     println_succ!("Current did \"{}\"", cur_did);
                 }
                 Ok(())
             }
-            Err(err) => Err(handle_indy_error(err, None, None, None)),
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
@@ -398,14 +448,95 @@ pub mod list_command {
     }
 }
 
+pub mod qualify_command {
+    use super::*;
+
+    command!(CommandMetadata::build("qualify", "Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.")
+                .add_main_param_with_dynamic_completion("did", "Did stored in wallet", DynamicCompletionType::Did)
+                .add_main_param("method", "Method to apply to the DID.")
+                .add_example("did qualify did=VsKV7grR1BUE29mG2Fm2kX prefix=did:peer")
+                .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?}, params {:?}", ctx, params);
+
+        let did = get_str_param("did", params).map_err(error_err!())?;
+        let method = get_str_param("method", params).map_err(error_err!())?;
+
+        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+
+        let res = match Did::qualify_did(wallet_handle, &did, &method) {
+            Ok(full_qualified_did) => {
+                println_succ!("Fully qualified DID \"{}\"", full_qualified_did);
+
+                if let Some(active_did) = get_active_did(&ctx) {
+                    if active_did == did {
+                        set_active_did(ctx, Some(full_qualified_did.to_owned()));
+                        println_succ!("Target DID is the same as CLI active. Active DID has been updated");
+                    }
+                }
+
+                Ok(())
+            }
+            Err(err) => {
+                match err.error_code {
+                    ErrorCode::WalletItemNotFound => {
+                        println_err!("Requested DID not found");
+                        Err(())
+                    },
+                    _ => {
+                        handle_indy_error(err, Some(&did), None, None);
+                        Err(())
+                    },
+                }
+            }
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+fn _list_dids(ctx: &CommandContext) -> Vec<serde_json::Value> {
+    get_opened_wallet(ctx)
+        .and_then(|(wallet_handle, _)|
+            Did::list_dids_with_meta(wallet_handle).ok()
+        )
+        .and_then(|dids|
+            serde_json::from_str::<Vec<serde_json::Value>>(&dids).ok()
+        )
+        .unwrap_or(vec![])
+}
+
+pub fn dids(ctx: &CommandContext) -> Vec<(String, String)> {
+    _list_dids(ctx)
+        .into_iter()
+        .map(|did|
+            (did["did"].as_str().map(String::from).unwrap_or(String::new()), did["verkey"].as_str().map(String::from).unwrap_or(String::new()))
+        )
+        .map(|(did, verkey)| {
+            let verkey_ = Did::abbreviate_verkey(&did, &verkey).unwrap_or(verkey);
+            (did, verkey_)
+        })
+        .collect()
+}
+
+pub fn list_dids(ctx: &CommandContext) -> Vec<String> {
+    _list_dids(ctx)
+        .into_iter()
+        .map(|did|
+            did["did"].as_str().map(String::from).unwrap_or(String::new())
+        )
+        .collect()
+}
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use libindy::did::Did;
-    use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
-    use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
-    use commands::ledger::tests::send_nym;
+    use crate::libindy::did::Did;
+    use crate::commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
+    use crate::commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
+    use crate::commands::ledger::tests::send_nym;
 
     pub const SEED_TRUSTEE: &'static str = "000000000000000000000000Trustee1";
     pub const DID_TRUSTEE: &'static str = "V4SGRU86Z58d6TV7PBUe6f";
@@ -520,6 +651,44 @@ pub mod tests {
             }
             tear_down_with_wallet(&ctx);
         }
+
+        #[test]
+        pub fn new_works_for_method_name() {
+            let ctx = setup_with_wallet();
+            let method = "sov";
+            {
+                let cmd = new_command::new();
+                let mut params = CommandParams::new();
+                params.insert("seed", SEED_TRUSTEE.to_string());
+                params.insert("method", method.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let expected_did = format!("did:{}:{}", method, DID_TRUSTEE);
+            let did = get_did_info(&ctx, &expected_did);
+            assert_eq!(did["did"].as_str().unwrap(), &expected_did);
+            assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn new_works_for_not_abbreviatable() {
+            let ctx = setup_with_wallet();
+            let method = "indy";
+            {
+                let cmd = new_command::new();
+                let mut params = CommandParams::new();
+                params.insert("seed", SEED_TRUSTEE.to_string());
+                params.insert("method", method.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let expected_did = format!("did:{}:{}", method, DID_TRUSTEE);
+            let did = get_did_info(&ctx, &expected_did);
+            assert_eq!(did["did"].as_str().unwrap(), &expected_did);
+            assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+
+            tear_down_with_wallet(&ctx);
+        }
     }
 
     mod did_use {
@@ -608,7 +777,7 @@ pub mod tests {
     mod did_rotate_key {
         use super::*;
         #[cfg(feature = "nullpay_plugin")]
-        use commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
+        use crate::commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
 
         fn ensure_nym_written(ctx: &CommandContext, did: &str, verkey: &str) {
             let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
@@ -807,6 +976,54 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             tear_down_with_wallet_and_pool(&ctx);
+        }
+    }
+
+    mod qualify_did {
+        use super::*;
+
+        const METHOD: &str = "peer";
+
+        #[test]
+        pub fn qualify_did_works() {
+            let ctx = setup_with_wallet();
+            new_did(&ctx, SEED_MY1);
+            {
+                let cmd = qualify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("method", METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn qualify_did_works_for_active() {
+            let ctx = setup_with_wallet();
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_MY1);
+            {
+                let cmd = qualify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("method", METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn qualify_did_works_for_unknown_did() {
+            let ctx = setup_with_wallet();
+            {
+                let cmd = qualify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("method", METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            tear_down_with_wallet(&ctx);
         }
     }
 

@@ -5,11 +5,11 @@ use self::futures::Future;
 use serde_json;
 
 use indy::wallet;
-use utils::{test};
-use utils::constants::WALLET_CREDENTIALS;
-use utils::types::WalletRecord;
+use crate::utils::{test};
+use crate::utils::constants::WALLET_CREDENTIALS;
+use crate::utils::types::WalletRecord;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use std::collections::HashMap;
 
 pub const SEARCH_COMMON_WALLET_CONFIG: &'static str = r#"{"id":"search_common"}"#;
@@ -116,54 +116,60 @@ pub fn record_5() -> WalletRecord {
     WalletRecord { id: ID_5.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_5.to_string()), tags: Some(tags_5()) }
 }
 
-pub fn populate_wallet_for_search() {
+pub fn init_non_secret_test_wallet(name: &str, wallet_config: &str) {
+
+    test::cleanup_storage(name);
+
+    //1. Create and Open wallet
+    wallet::create_wallet(wallet_config, WALLET_CREDENTIALS).wait().unwrap();
+    let wallet_handle = wallet::open_wallet(wallet_config, WALLET_CREDENTIALS).wait().unwrap();
+
+    let record_1 = record_1();
+    add_wallet_record(wallet_handle,
+                      TYPE,
+                      &record_1.id,
+                      &record_1.value.clone().unwrap(),
+                      Some(TAGS)).unwrap();
+
+    let record_2 = record_2();
+    add_wallet_record(wallet_handle,
+                      TYPE,
+                      &record_2.id,
+                      &record_2.value.clone().unwrap(),
+                      Some(TAGS_2)).unwrap();
+
+    let record_3 = record_3();
+    add_wallet_record(wallet_handle,
+                      TYPE,
+                      &record_3.id,
+                      &record_3.value.clone().unwrap(),
+                      Some(TAGS_3)).unwrap();
+
+    let record_4 = record_4();
+    add_wallet_record(wallet_handle,
+                      TYPE,
+                      &record_4.id,
+                      &record_4.value.clone().unwrap(),
+                      Some(TAGS_4)).unwrap();
+
+    let record_5 = record_5();
+    add_wallet_record(wallet_handle,
+                      TYPE,
+                      &record_5.id,
+                      &record_5.value.clone().unwrap(),
+                      Some(TAGS_5)).unwrap();
+
+    wallet::close_wallet(wallet_handle).wait().unwrap();
+}
+
+pub fn populate_common_wallet_for_search() {
     lazy_static! {
-                    static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
+                    static ref COMMON_WALLET_INIT: Once = Once::new();
 
                 }
 
     COMMON_WALLET_INIT.call_once(|| {
-        test::cleanup_storage();
-
-        //1. Create and Open wallet
-        wallet::create_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).wait().unwrap();
-        let wallet_handle = wallet::open_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).wait().unwrap();
-
-        let record_1 = record_1();
-        add_wallet_record(wallet_handle,
-                                           TYPE,
-                                           &record_1.id,
-                                           &record_1.value.clone().unwrap(),
-                                           Some(TAGS)).unwrap();
-
-        let record_2 = record_2();
-        add_wallet_record(wallet_handle,
-                                           TYPE,
-                                           &record_2.id,
-                                           &record_2.value.clone().unwrap(),
-                                           Some(TAGS_2)).unwrap();
-
-        let record_3 = record_3();
-        add_wallet_record(wallet_handle,
-                                           TYPE,
-                                           &record_3.id,
-                                           &record_3.value.clone().unwrap(),
-                                           Some(TAGS_3)).unwrap();
-
-        let record_4 = record_4();
-        add_wallet_record(wallet_handle,
-                                           TYPE,
-                                           &record_4.id,
-                                           &record_4.value.clone().unwrap(),
-                                           Some(TAGS_4)).unwrap();
-
-        let record_5 = record_5();
-        add_wallet_record(wallet_handle,
-                                           TYPE,
-                                           &record_5.id,
-                                           &record_5.value.clone().unwrap(),
-                                           Some(TAGS_5)).unwrap();
-
-        wallet::close_wallet(wallet_handle).wait().unwrap();
+        const SEARCH_WALLET_CONFIG: &str = r#"{"id":"common_non_secret_wallet"}"#;
+        init_non_secret_test_wallet("common_non_secret_wallet", SEARCH_WALLET_CONFIG)
     });
 }

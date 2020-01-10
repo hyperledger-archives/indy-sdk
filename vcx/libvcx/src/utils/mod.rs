@@ -32,6 +32,7 @@ pub mod libindy;
 pub mod threadpool;
 pub mod uuid;
 pub mod author_agreement;
+pub mod qualifier;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::path::PathBuf;
@@ -42,8 +43,7 @@ lazy_static! {
 }
 // allows all threads to atomically get a unique command handle
 pub fn generate_command_handle() -> i32 {
-    let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
-    command_handle
+    (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
 }
 
 pub fn get_temp_dir_path(filename: Option<&str>) -> PathBuf {

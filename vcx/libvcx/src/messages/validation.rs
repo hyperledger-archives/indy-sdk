@@ -3,16 +3,22 @@ extern crate openssl;
 
 use self::openssl::bn::BigNum;
 use self::rust_base58::FromBase58;
+use utils::qualifier::Qualifier;
 use url::Url;
 use error::prelude::*;
+use settings::Actors;
 
 pub fn validate_did(did: &str) -> VcxResult<String> {
-    //    assert len(base58.b58decode(did)) == 16
-    let check_did = String::from(did);
-    match check_did.from_base58() {
-        Ok(ref x) if x.len() == 16 => Ok(check_did),
-        Ok(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidDid, "Invalid DID length")),
-        Err(x) => Err(VcxError::from_msg(VcxErrorKind::NotBase58, format!("Invalid DID: {}", x))),
+    if Qualifier::is_fully_qualified(did) {
+        Ok(did.to_string())
+    } else {
+        //    assert len(base58.b58decode(did)) == 16
+        let check_did = String::from(did);
+        match check_did.from_base58() {
+            Ok(ref x) if x.len() == 16 => Ok(check_did),
+            Ok(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidDid, "Invalid DID length")),
+            Err(x) => Err(VcxError::from_msg(VcxErrorKind::NotBase58, format!("Invalid DID: {}", x))),
+        }
     }
 }
 
@@ -45,6 +51,11 @@ pub fn validate_url(url: &str) -> VcxResult<String> {
     Url::parse(url)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidUrl, err))?;
     Ok(url.to_string())
+}
+
+pub fn validate_actors(actors: &str) -> VcxResult<Vec<Actors>> {
+    ::serde_json::from_str(&actors)
+        .map_err(|err| VcxError::from(VcxErrorKind::InvalidOption))
 }
 
 pub fn validate_phone_number(p_num: &str) -> VcxResult<String> {

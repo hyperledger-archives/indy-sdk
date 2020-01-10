@@ -4,8 +4,8 @@ pub mod merkletree;
 
 use self::tree::*;
 use self::merkletree::*;
-use errors::prelude::*;
-use utils::crypto::hash::Hash;
+use indy_api_types::errors::prelude::*;
+use indy_utils::crypto::hash::Hash;
 
 impl MerkleTree {
     fn count_bits(v: usize) -> usize {
@@ -197,10 +197,8 @@ impl MerkleTree {
 
 #[cfg(test)]
 mod tests {
-    extern crate rust_base58;
-
     use super::*;
-    use self::rust_base58::FromBase58;
+    use rust_base58::FromBase58;
 
     #[test]
     fn append_works() {

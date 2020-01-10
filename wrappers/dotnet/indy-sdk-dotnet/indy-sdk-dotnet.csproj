@@ -1,11 +1,11 @@
-﻿<Project Sdk="MSBuild.Sdk.Extras/1.6.46">
+﻿<Project Sdk="MSBuild.Sdk.Extras/2.0.54">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452;xamarinios10</TargetFrameworks>
-    <AssemblyName>Hyperledger.Indy.Sdk</AssemblyName>
+    <AssemblyName>Hyperledger.Indy</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.8.0</Version>
+    <Version>1.11.1</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Authors>Symon Rottem, Tomislav Markovski</Authors>
     <Company>Hyperledger Indy</Company>
@@ -17,14 +17,14 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
     <RepositoryUrl>https://github.com/hyperledger/indy-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>hyperledger indy sdk</PackageTags>
-    <PackageLicenseUrl>https://github.com/hyperledger/indy-sdk/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageIconUrl></PackageIconUrl>
-    <AssemblyVersion>1.8.0</AssemblyVersion>
-    <FileVersion>1.8.0</FileVersion>
+    <AssemblyVersion>1.11.1</AssemblyVersion>
+    <FileVersion>1.11.1</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Hyperledger.Indy.Sdk.xml</DocumentationFile>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Hyperledger.Indy.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

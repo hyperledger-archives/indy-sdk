@@ -1,34 +1,14 @@
 #[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate named_type_derive;
-
-#[macro_use]
-extern crate derivative;
-
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde_json;
-
-extern crate byteorder;
-extern crate indyrs as indy;
-extern crate indyrs as api;
-extern crate ursa;
-extern crate uuid;
-extern crate named_type;
-extern crate rmp_serde;
-extern crate rust_base58;
-extern crate time;
-extern crate serde;
-
-#[macro_use]
 mod utils;
 
-use utils::wallet;
-use utils::cache::*;
+inject_indy_dependencies!();
+
+extern crate indyrs as indy;
+extern crate indyrs as api;
+
+use crate::utils::cache::*;
+use crate::utils::Setup;
+use crate::utils::domain::crypto::did::DidValue;
 
 use self::indy::ErrorCode;
 
@@ -39,78 +19,72 @@ mod high_cases {
 
     mod schema_cache {
         use super::*;
-        use utils::domain::anoncreds::schema::{Schema, SchemaV1};
-        use utils::constants::*;
+        use crate::utils::domain::anoncreds::schema::{SchemaV1, SchemaId};
+        use crate::utils::constants::*;
         use std::thread::sleep;
 
         #[test]
         fn indy_get_schema_empty_options() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
             let options_json = json!({}).to_string();
 
             let schema_json = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json).unwrap();
 
             let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_schema_empty_options_for_unknown_id() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let options_json = json!({}).to_string();
 
             let res = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
-                &Schema::schema_id(DID, "other_schema", "1.0"),
+                &SchemaId::new(&DidValue(DID.to_string()), "other_schema", "1.0").0,
                 &options_json);
 
             assert_code!(ErrorCode::LedgerNotFound, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_schema_only_cache_no_cached_data() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
             let options_json = json!({"noUpdate": true}).to_string();
 
             let res = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json);
 
             assert_code!(ErrorCode::LedgerNotFound, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_schema_cache_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
             let options_json = json!({}).to_string();
             let schema_json1 = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json
@@ -120,8 +94,8 @@ mod high_cases {
             // now retrieve it from cache
             let options_json = json!({"noUpdate": true}).to_string();
             let schema_json2 = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json
@@ -129,20 +103,18 @@ mod high_cases {
             let _schema: SchemaV1 = serde_json::from_str(&schema_json2).unwrap();
 
             assert_eq!(schema_json1, schema_json2);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_schema_no_store_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
             let options_json = json!({"noStore": true}).to_string();
             let schema_json1 = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json
@@ -152,27 +124,25 @@ mod high_cases {
             // it should not be present inside of cache, because of noStore option in previous request.
             let options_json = json!({"noUpdate": true}).to_string();
             let res = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_schema_no_cache_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
             let options_json = json!({}).to_string();
             let schema_json1 = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json
@@ -182,27 +152,44 @@ mod high_cases {
             // it should not be present inside of cache, because of noStore option in previous request.
             let options_json = json!({"noUpdate": true, "noCache": true}).to_string();
             let res = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
+        }
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        #[test]
+        fn indy_get_schema_fully_qualified_ids() {
+            let setup = Setup::wallet_and_pool();
+
+            let (schema_id, _) = utils::ledger::post_qualified_entities();
+
+            let options_json = json!({}).to_string();
+
+            let schema_json = get_schema_cache(
+                setup.pool_handle,
+                setup.wallet_handle,
+                DID_MY1_V1,
+                &schema_id,
+                &options_json).unwrap();
+
+            let schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
+            assert_eq!(schema_id, schema.id.0);
         }
 
         #[test]
         fn indy_get_schema_min_fresh_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (schema_id, _, _) = utils::ledger::post_entities();
 
             let options_json = json!({}).to_string();
             let schema_json1 = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json
@@ -214,102 +201,87 @@ mod high_cases {
             // it should not be present inside of cache, because of noStore option in previous request.
             let options_json = json!({"noUpdate": true, "minFresh": 1}).to_string();
             let res = get_schema_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 schema_id,
                 &options_json
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_purge_schema_cache_no_options() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            purge_schema_cache(wallet_handle, "{}").unwrap();
-
-            wallet::close_wallet(wallet_handle).unwrap();
+            let setup = Setup::wallet();
+            purge_schema_cache(setup.wallet_handle, "{}").unwrap();
         }
 
         #[test]
         fn indy_purge_schema_cache_all_data() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            purge_schema_cache(wallet_handle, &json!({"minFresh": -1}).to_string()).unwrap();
-
-            wallet::close_wallet(wallet_handle).unwrap();
+            let setup = Setup::wallet();
+            purge_schema_cache(setup.wallet_handle, &json!({"minFresh": -1}).to_string()).unwrap();
         }
 
         #[test]
         fn indy_purge_schema_cache_older_than_1000_seconds() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            purge_schema_cache(wallet_handle, &json!({"minFresh": 1000}).to_string()).unwrap();
-
-            wallet::close_wallet(wallet_handle).unwrap();
+            let setup = Setup::wallet();
+            purge_schema_cache(setup.wallet_handle, &json!({"minFresh": 1000}).to_string()).unwrap();
         }
     }
 
     mod cred_def_cache {
         use super::*;
-        use utils::domain::anoncreds::credential_definition::{CredentialDefinition};
-        use utils::constants::*;
+        use crate::utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+        use crate::utils::constants::*;
         use std::thread::sleep;
 
 
         #[test]
         fn indy_get_cred_def_empty_options() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
             let options_json = json!({}).to_string();
 
             let cred_def_json = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json).unwrap();
 
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json).unwrap();
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_cred_def_only_cache_no_cached_data() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
             let options_json = json!({"noUpdate": true}).to_string();
 
             let res = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json);
 
             assert_code!(ErrorCode::LedgerNotFound, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_cred_def_cache_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
             let options_json = json!({}).to_string();
             let cred_def_json1 = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json
@@ -319,8 +291,8 @@ mod high_cases {
             // now retrieve it from cache
             let options_json = json!({"noUpdate": true}).to_string();
             let cred_def_json2 = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json
@@ -328,20 +300,18 @@ mod high_cases {
             let _cred_def: CredentialDefinition = serde_json::from_str(&cred_def_json2).unwrap();
 
             assert_eq!(cred_def_json1, cred_def_json2);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_cred_def_no_store_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
             let options_json = json!({"noStore": true}).to_string();
             let cred_def_json1 = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json
@@ -351,27 +321,25 @@ mod high_cases {
             // it should not be present inside of cache, because of noStore option in previous request.
             let options_json = json!({"noUpdate": true}).to_string();
             let res = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_cred_def_no_cache_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
             let options_json = json!({}).to_string();
             let cred_def_json1 = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json
@@ -381,27 +349,25 @@ mod high_cases {
             // it should not be present inside of cache, because of noStore option in previous request.
             let options_json = json!({"noUpdate": true, "noCache": true}).to_string();
             let res = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
-
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
 
         #[test]
         fn indy_get_cred_def_min_fresh_works() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let setup = Setup::wallet_and_pool();
 
             let (_, cred_def_id, _) = utils::ledger::post_entities();
 
             let options_json = json!({}).to_string();
             let cred_def_json1 = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json
@@ -413,42 +379,51 @@ mod high_cases {
             // it should not be present inside of cache, because of noStore option in previous request.
             let options_json = json!({"noUpdate": true, "minFresh": 1}).to_string();
             let res = get_cred_def_cache(
-                pool_handle,
-                wallet_handle,
+                setup.pool_handle,
+                setup.wallet_handle,
                 DID_MY1,
                 cred_def_id,
                 &options_json
             );
             assert_code!(ErrorCode::LedgerNotFound, res);
+        }
 
-            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        #[test]
+        fn indy_get_cred_def_fully_qualified_ids() {
+            let setup = Setup::wallet_and_pool();
+
+            let (_, cred_def_id) = utils::ledger::post_qualified_entities();
+
+            let options_json = json!({}).to_string();
+
+            let cred_def_json = get_cred_def_cache(
+                setup.pool_handle,
+                setup.wallet_handle,
+                DID_MY1_V1,
+                &cred_def_id,
+                &options_json).unwrap();
+
+            let cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
+            assert_eq!(cred_def_id, cred_def.id.0);
+
         }
 
         #[test]
         fn indy_purge_cred_def_cache_no_options() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            purge_cred_def_cache(wallet_handle, "{}").unwrap();
-
-            wallet::close_wallet(wallet_handle).unwrap();
+            let setup = Setup::wallet();
+            purge_cred_def_cache(setup.wallet_handle, "{}").unwrap();
         }
 
         #[test]
         fn indy_purge_cred_def_cache_all_data() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            purge_cred_def_cache(wallet_handle, &json!({"minFresh": -1}).to_string()).unwrap();
-
-            wallet::close_wallet(wallet_handle).unwrap();
+            let setup = Setup::wallet();
+            purge_cred_def_cache(setup.wallet_handle, &json!({"minFresh": -1}).to_string()).unwrap();
         }
 
         #[test]
         fn indy_purge_cred_def_cache_older_than_1000_seconds() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            purge_cred_def_cache(wallet_handle, &json!({"minFresh": 1000}).to_string()).unwrap();
-
-            wallet::close_wallet(wallet_handle).unwrap();
+            let setup = Setup::wallet();
+            purge_cred_def_cache(setup.wallet_handle, &json!({"minFresh": 1000}).to_string()).unwrap();
         }
     }
 }

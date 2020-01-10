@@ -1,12 +1,12 @@
 extern crate serde_json;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, wait_for_user_reply};
-use commands::*;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, wait_for_user_reply, DynamicCompletionType};
+use crate::commands::*;
 
 use indy::{ErrorCode, IndyError};
-use libindy::pool::Pool;
-use utils::table::print_list_table;
+use crate::libindy::pool::Pool;
+use crate::utils::table::print_list_table;
 
 use self::chrono::prelude::*;
 use serde_json::Value as JSONValue;
@@ -46,12 +46,24 @@ pub mod create_command {
         trace!(r#"Pool::create_pool_ledger_config return: {:?}"#, res);
 
         let res = match res {
-            Ok(()) => Ok(println_succ!("Pool config \"{}\" has been created", name)),
+            Ok(()) => {
+                println_succ!("Pool config \"{}\" has been created", name);
+                Ok(())
+            },
             Err(err) => {
                 match err.error_code {
-                    ErrorCode::CommonIOError => Err(println_err!("Pool genesis file is invalid or does not exist.")),
-                    ErrorCode::PoolLedgerConfigAlreadyExistsError => Err(println_err!("Pool config \"{}\" already exists", name)),
-                    _ => Err(handle_indy_error(err, None, Some(&name), None)),
+                    ErrorCode::CommonIOError => {
+                        println_err!("Pool genesis file is invalid or does not exist.");
+                        Err(())
+                    },
+                    ErrorCode::PoolLedgerConfigAlreadyExistsError => {
+                        println_err!("Pool config \"{}\" already exists", name);
+                        Err(())
+                    },
+                    _ => {
+                        handle_indy_error(err, None, Some(&name), None);
+                        Err(())
+                    },
                 }
             }
         };
@@ -65,11 +77,12 @@ pub mod connect_command {
     use super::*;
 
     command_with_cleanup!(CommandMetadata::build("connect", "Connect to pool with specified name. Also disconnect from previously connected.")
-                .add_main_param("name", "The name of pool")
+                .add_main_param_with_dynamic_completion("name", "The name of pool", DynamicCompletionType::Pool)
                 .add_optional_param("protocol-version", "Pool protocol version will be used for requests. One of: 1, 2. (2 by default)")
                 .add_optional_param("timeout", "Timeout for network request (in sec)")
                 .add_optional_param("extended-timeout", "Extended timeout for network request (in sec)")
                 .add_optional_param("pre-ordered-nodes", "Names of nodes which will have a priority during request sending")
+                .add_optional_param("number-read-nodes", "The number of nodes to send read requests (2 by default)")
                 .add_example("pool connect pool1")
                 .add_example("pool connect pool1 protocol-version=2")
                 .add_example("pool connect pool1 protocol-version=2 timeout=100")
@@ -85,12 +98,14 @@ pub mod connect_command {
         let timeout = get_opt_number_param::<i64>("timeout", params).map_err(error_err!())?;
         let extended_timeout = get_opt_number_param::<i64>("extended-timeout", params).map_err(error_err!())?;
         let pre_ordered_nodes = get_opt_str_array_param("pre-ordered-nodes", params).map_err(error_err!())?;
+        let number_read_nodes = get_opt_number_param::<u8>("number-read-nodes", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
             update_json_map_opt_key!(json, "timeout", timeout);
             update_json_map_opt_key!(json, "extended_timeout", extended_timeout);
             update_json_map_opt_key!(json, "preordered_nodes", pre_ordered_nodes);
+            update_json_map_opt_key!(json, "number_read_nodes", number_read_nodes);
             JSONValue::from(json).to_string()
         };
 
@@ -101,9 +116,13 @@ pub mod connect_command {
                         Ok(()) => {
                             set_connected_pool(ctx, None);
                             set_transaction_author_info(ctx, None);
-                            Ok(println_succ!("Pool \"{}\" has been disconnected", name))
+                            println_succ!("Pool \"{}\" has been disconnected", name);
+                            Ok(())
                         }
-                        Err(err) => Err(handle_indy_error(err, None, None, Some(name.as_ref())))
+                        Err(err) => {
+                            handle_indy_error(err, None, None, Some(name.as_ref()));
+                            Err(())
+                        }
                     }
                 } else {
                     Ok(())
@@ -113,8 +132,14 @@ pub mod connect_command {
                 match Pool::set_protocol_version(protocol_version) {
                     Ok(_) => Ok(()),
                     Err(IndyError { error_code: ErrorCode::PoolIncompatibleProtocolVersion, .. }) =>
-                        Err(println_err!("Unsupported Protocol Version has been specified \"{}\".", protocol_version)),
-                    Err(err) => Err(handle_indy_error(err, None, Some(&name), None)),
+                        {
+                            println_err!("Unsupported Protocol Version has been specified \"{}\".", protocol_version);
+                            Err(())
+                        },
+                    Err(err) => {
+                        handle_indy_error(err, None, Some(&name), None);
+                        Err(())
+                    },
                 }
             })
             .and_then(|_| {
@@ -126,12 +151,27 @@ pub mod connect_command {
                     }
                     Err(err) => {
                         match err.error_code {
-                            ErrorCode::PoolLedgerNotCreatedError => Err(println_err!("Pool \"{}\" does not exist.", name)),
-                            ErrorCode::PoolLedgerTimeout => Err(println_err!("Pool \"{}\" has not been connected.", name)),
+                            ErrorCode::PoolLedgerNotCreatedError => {
+                                println_err!("Pool \"{}\" does not exist.", name);
+                                Err(())
+                            },
+                            ErrorCode::PoolLedgerTimeout => {
+                                println_err!("Pool \"{}\" has not been connected.", name);
+                                Err(())
+                            },
                             ErrorCode::PoolIncompatibleProtocolVersion =>
-                                Err(println_err!("Pool \"{}\" is not compatible with Protocol Version \"{}\".", name, protocol_version)),
-                            ErrorCode::LedgerNotFound => Err(println_err!("Item not found in pool \"{}\"", name)),
-                            _ => Err(handle_indy_error(err, None, Some(&name), None)),
+                                {
+                                    println_err!("Pool \"{}\" is not compatible with Protocol Version \"{}\".", name, protocol_version);
+                                    Err(())
+                                },
+                            ErrorCode::LedgerNotFound => {
+                                println_err!("Item not found in pool \"{}\"", name);
+                                Err(())
+                            },
+                            _ => {
+                                handle_indy_error(err, None, Some(&name), None);
+                                Err(())
+                            },
                         }
                     }
                 }
@@ -175,7 +215,7 @@ pub mod list_command {
                 let pools: Vec<serde_json::Value> = serde_json::from_str(&pools)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                print_list_table(&pools, &vec![("pool", "Pool")], "There are no pools defined");
+                print_list_table(&pools, &[("pool", "Pool")], "There are no pools defined");
 
                 if let Some((_, cur_pool)) = get_connected_pool(ctx) {
                     println_succ!("Current pool \"{}\"", cur_pool);
@@ -183,7 +223,10 @@ pub mod list_command {
 
                 Ok(())
             }
-            Err(err) => Err(handle_indy_error(err, None, None, None))
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -204,11 +247,12 @@ pub mod show_taa_command {
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
         let res = match set_transaction_author_agreement(ctx, pool_handle, false) {
-            Ok(Some(_)) => { Ok(()) }
+            Err(_) => Err(()),
+            Ok(Some(_)) => Ok(()),
             Ok(None) => {
-                Ok(println!("There is no transaction agreement set on the Pool."))
+                println!("There is no transaction agreement set on the Pool.");
+                Ok(())
             }
-            Err(err) => Err(err)
         };
 
         trace!("execute << {:?}", res);
@@ -229,8 +273,19 @@ pub mod refresh_command {
         let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
 
         let res = match Pool::refresh(pool_handle) {
-            Ok(_) => Ok(println_succ!("Pool \"{}\"  has been refreshed", pool_name)),
-            Err(err) => Err(handle_indy_error(err, None, None, None))
+            Ok(_) => {
+                println_succ!("Pool \"{}\"  has been refreshed", pool_name);
+                Ok(())
+            }
+            Err(ref err) if err.error_code == ErrorCode::PoolLedgerTimeout => {
+                println_err!("Cannot refresh pool. Transaction response has not been received");
+                close_pool(ctx, pool_handle, &pool_name)
+                    .map(|_| println_err!("Pool \"{}\" has been disconnected", pool_name))
+            }
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            }
         };
 
         trace!("execute << {:?}", res);
@@ -248,23 +303,27 @@ pub mod disconnect_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let (handle, name) = if let Some(pool) = get_connected_pool(ctx) {
-            pool
-        } else {
-            return Err(println_err!("There is no connected pool now"));
-        };
+        let (handle, name) = ensure_connected_pool(ctx)?;
 
-        let res = match Pool::close(handle) {
-            Ok(()) => {
-                set_connected_pool(ctx, None);
-                set_transaction_author_info(ctx, None);
-                Ok(println_succ!("Pool \"{}\" has been disconnected", name))
-            }
-            Err(err) => Err(handle_indy_error(err, None, Some(&name), None))
-        };
+        let res = close_pool(ctx, handle, &name)
+            .map(|_| println_err!("Pool \"{}\" has been disconnected", name));
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+fn close_pool(ctx: &CommandContext, handle: i32, name: &str) -> Result<(), ()> {
+    match Pool::close(handle) {
+            Ok(()) => {
+                set_connected_pool(ctx, None);
+                set_transaction_author_info(ctx, None);
+                Ok(())
+            }
+            Err(err) => {
+                handle_indy_error(err, None, Some(&name), None);
+                Err(())
+            }
     }
 }
 
@@ -272,7 +331,7 @@ pub mod delete_command {
     use super::*;
 
     command!(CommandMetadata::build("delete", "Delete pool config with specified name")
-                .add_main_param("name", "The name of deleted pool config")
+                .add_main_param_with_dynamic_completion("name", "The name of deleted pool config", DynamicCompletionType::Pool)
                 .add_example("pool delete pool1")
                 .finalize()
     );
@@ -289,11 +348,20 @@ pub mod delete_command {
         trace!(r#"Pool::delete return: {:?}"#, res);
 
         let res = match res {
-            Ok(()) => Ok(println_succ!("Pool \"{}\" has been deleted.", name)),
+            Ok(()) => {
+                println_succ!("Pool \"{}\" has been deleted.", name);
+                Ok(())
+            },
             Err(err) => {
                 match err.error_code {
-                    ErrorCode::CommonIOError => Err(println_err!("Pool \"{}\" does not exist.", name)),
-                    _ => Err(handle_indy_error(err, None, Some(&name), None))
+                    ErrorCode::CommonIOError => {
+                        println_err!("Pool \"{}\" does not exist.", name);
+                        Err(())
+                    },
+                    _ => {
+                        handle_indy_error(err, None, Some(&name), None);
+                        Err(())
+                    }
                 }
             }
         };
@@ -303,10 +371,23 @@ pub mod delete_command {
     }
 }
 
+pub fn pool_list() -> Vec<String> {
+    Pool::list().ok()
+        .and_then(|pools|
+            serde_json::from_str::<Vec<serde_json::Value>>(&pools).ok()
+        )
+        .unwrap_or(vec![])
+        .into_iter()
+        .map(|pool|
+            pool["pool"].as_str().map(String::from).unwrap_or(String::new())
+        )
+        .collect()
+}
+
 pub fn accept_transaction_author_agreement(ctx: &CommandContext, text: &str, version: &str) {
     println!("Would you like to accept it? (y/n)");
 
-    let accept_agreement = wait_for_user_reply();
+    let accept_agreement = wait_for_user_reply(ctx);
 
     if !accept_agreement {
         println_warn!("The Transaction Author Agreement has NOT been Accepted.");
@@ -323,7 +404,7 @@ pub fn accept_transaction_author_agreement(ctx: &CommandContext, text: &str, ver
 }
 
 pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, ask_for_showing: bool) -> Result<Option<()>, ()> {
-    if let Some((text, version)) = ledger::get_active_transaction_author_agreement(pool_handle)? {
+    if let Some((text, version, digest)) = ledger::get_active_transaction_author_agreement(pool_handle)? {
         if ask_for_showing {
             println!();
             println!("There is a Transaction Author Agreement set on the connected Pool.");
@@ -331,7 +412,7 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
             println!("You can postpone accepting the Agreement. Accept it later by calling `pool show-taa` command");
             println!("Would you like to read it? (y/n)");
 
-            let read_agreement = wait_for_user_reply();
+            let read_agreement = wait_for_user_reply(ctx);
 
             if !read_agreement {
                 println_warn!("The Transaction Author Agreement has NOT been Accepted.");
@@ -343,6 +424,9 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
 
         println!("Transaction Author Agreement");
         println!("Version: {:?}", version);
+        if let Some(digest_) = digest {
+            println!("Digest: {:?}", digest_);
+        }
         println!("Content: \n {:?}", text);
 
         accept_transaction_author_agreement(ctx, &text, &version);
@@ -357,7 +441,7 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use libindy::pool::Pool;
+    use crate::libindy::pool::Pool;
 
     const POOL: &'static str = "pool";
 

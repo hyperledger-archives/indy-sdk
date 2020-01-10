@@ -39,6 +39,7 @@ async def vcx_agent_provision(config: str) -> None:
     logger.debug("vcx_agent_provision completed")
     return result.decode()
 
+
 async def vcx_agent_update_info(config: str) -> None:
     """
     Update information on the agent (ie, comm method and type)
@@ -60,6 +61,7 @@ async def vcx_agent_update_info(config: str) -> None:
     logger.debug("vcx_agent_update_info completed")
     return result
 
+
 async def vcx_ledger_get_fees() -> str:
     """
     Get ledger fees from the sovrin network
@@ -78,6 +80,7 @@ async def vcx_ledger_get_fees() -> str:
 
     logger.debug("vcx_ledger_get_fees completed")
     return result
+
 
 async def vcx_messages_download(status: str = None, uids: str = None, pw_dids: str = None) -> str:
     """
@@ -142,6 +145,16 @@ async def vcx_messages_update_status(msg_json: str):
     return result
 
 
+def vcx_pool_set_handle(handle: int) -> None:
+    """
+    Sets the pool handle for libvcx to use, called before vcx_init_minimal
+    :param handle: pool handle
+    """
+    c_handle = c_uint32(handle)
+
+    do_call_sync('vcx_pool_set_handle', c_handle)
+
+
 async def vcx_get_ledger_author_agreement():
     """
     Retrieve author agreement set on the Ledger
@@ -176,3 +189,63 @@ def vcx_set_active_txn_author_agreement_meta(text: Optional[str],
 
     do_call_sync(name, c_text, c_version, c_hash, c_acc_mech_type, c_time_of_acceptance)
     logger.debug("set_active_txn_author_agreement_meta completed")
+
+
+async def vcx_get_request_price(action_json: str,
+                                requester_info_json: Optional[str]):
+    """
+    Update the status of messages from the specified connection
+    :param action_json: {
+         "auth_type": ledger transaction alias or associated value,
+         "auth_action": type of an action.,
+         "field": transaction field,
+         "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+         "new_value": (Optional) new value that can be used to fill the field,
+     }
+    :param requester_info_json: (Optional) {
+         "role": string - role of a user which can sign transaction.
+         "count": string - count of users.
+         "is_owner": bool - if user is an owner of transaction.
+     } otherwise context info will be used
+
+    :return: price - tokens amount required for action performing
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_get_request_price, "cb"):
+        logger.debug("vcx_get_request_price: Creating callback")
+        vcx_get_request_price.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint64))
+
+    c_action_json = c_char_p(action_json.encode('utf-8'))
+    c_requester_info_json = c_char_p(requester_info_json.encode('utf-8')) if requester_info_json is not None else None
+
+    result = await do_call('vcx_get_request_price',
+                           c_action_json,
+                           c_requester_info_json,
+                           vcx_get_request_price.cb)
+
+    logger.debug("vcx_get_request_price completed")
+    return result
+
+
+async def vcx_endorse_transaction(transaction: str) -> None:
+    """
+    Endorse transaction to the ledger preserving an original author
+    :param transaction: transaction to endorse
+    :return:
+    """
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_endorse_transaction, "cb"):
+        logger.debug("vcx_endorse_transaction: Creating callback")
+        vcx_endorse_transaction.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+    c_transaction = c_char_p(transaction.encode('utf-8'))
+
+    result = await do_call('vcx_endorse_transaction',
+                           c_transaction,
+                           vcx_endorse_transaction.cb)
+
+    logger.debug("vcx_endorse_transaction completed")
+    return result
+

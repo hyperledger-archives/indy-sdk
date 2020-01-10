@@ -1,7 +1,7 @@
         # 1.
         print_log('\n1. Creates a new local pool ledger configuration that is used '
                 'later when connecting to ledger.\n')
-        pool_config = json.dumps({'genesis_txn': genesis_file_path})
+        pool_config = json.dumps({'genesis_txn': str(genesis_file_path)})
         try:
             await pool.create_pool_ledger_config(pool_name, pool_config)
         except IndyError:

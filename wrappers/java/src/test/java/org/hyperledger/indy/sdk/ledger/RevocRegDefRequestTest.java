@@ -13,10 +13,10 @@ public class RevocRegDefRequestTest extends LedgerIntegrationTest {
 		String expectedResult =
 				"\"operation\":{" +
 						"\"type\":\"113\"," +
-						"\"id\":\"RevocRegID\"," +
+						"\"id\":\"NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:CL_ACCUM:TAG_1\"," +
 						"\"revocDefType\":\"CL_ACCUM\"," +
 						"\"tag\":\"TAG1\"," +
-						"\"credDefId\":\"CredDefID\"," +
+						"\"credDefId\":\"NcYxiDXkpYi6ov5FcYDi1e:3:CL:1\"," +
 						"\"value\":{" +
 						"   \"issuanceType\":\"ISSUANCE_ON_DEMAND\"," +
 						"   \"maxCredNum\":5," +
@@ -28,10 +28,10 @@ public class RevocRegDefRequestTest extends LedgerIntegrationTest {
 
 		String data = "{\n" +
 				"        \"ver\": \"1.0\",\n" +
-				"        \"id\": \"RevocRegID\",\n" +
+				"        \"id\": \"NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:CL_ACCUM:TAG_1\",\n" +
 				"        \"revocDefType\": \"CL_ACCUM\",\n" +
 				"        \"tag\": \"TAG1\",\n" +
-				"        \"credDefId\": \"CredDefID\",\n" +
+				"        \"credDefId\": \"NcYxiDXkpYi6ov5FcYDi1e:3:CL:1\",\n" +
 				"        \"value\": {\n" +
 				"            \"issuanceType\": \"ISSUANCE_ON_DEMAND\",\n" +
 				"            \"maxCredNum\": 5,\n" +

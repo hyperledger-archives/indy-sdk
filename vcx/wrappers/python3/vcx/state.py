@@ -16,3 +16,8 @@ class ProofState(IntEnum):
     Undefined = 0,
     Verified = 1,
     Invalid = 2
+
+
+class PublicEntityState(IntEnum):
+    Built = 0,
+    Published = 1

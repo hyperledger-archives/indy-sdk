@@ -23,14 +23,6 @@ public class KeyForLocalDidTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testKeyForLocalDidWorksForTheirDid() throws Exception {
-		Did.storeTheirDid(wallet, String.format(IDENTITY_JSON_TEMPLATE, DID_MY1, VERKEY_MY1)).get();
-
-		String receivedKey = Did.keyForLocalDid(wallet, DID_MY1).get();
-		assertEquals(VERKEY_MY1, receivedKey);
-	}
-
-	@Test
 	public void testKeyForDidWorksForNoKey() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletItemNotFoundException.class));

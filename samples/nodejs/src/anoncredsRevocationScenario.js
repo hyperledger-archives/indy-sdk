@@ -332,8 +332,9 @@ async function run() {
     await indy.proverStoreCredential(prover.wallet, undefined, prover.credReqMetadata, prover.cred, prover.credDef, prover.revRegDef)
 
     logVerifier("Verifier creates proof request")
+    const nonce = await indy.generateNonce()
     verifier.proofReq = {
-        "nonce": "123432421212",
+        "nonce": nonce,
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attributes": {

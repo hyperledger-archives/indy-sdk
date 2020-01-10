@@ -1,11 +1,9 @@
 import json
 
-from indy import IndyError
-from indy import did
-from indy.error import ErrorCode
-
 import base58
 import pytest
+
+from indy import did, error
 
 
 @pytest.mark.asyncio
@@ -22,15 +20,5 @@ async def test_create_key_works_without_seed(wallet_handle):
 
 @pytest.mark.asyncio
 async def test_create_my_did_works_for_invalid_seed(wallet_handle):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await did.create_key(wallet_handle, json.dumps({'seed': 'invalidSeedLength'}))
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
-
-
-
-@pytest.mark.asyncio
-async def test_create_my_did_works_for_invalid_handle(wallet_handle):
-    with pytest.raises(IndyError) as e:
-        invalid_wallet_handle = wallet_handle + 1
-        await did.create_key(invalid_wallet_handle, '{}')
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code

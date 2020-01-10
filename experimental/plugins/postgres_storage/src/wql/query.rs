@@ -7,8 +7,8 @@ use language::{Operator,TagName,TargetValue};
 // Translates Wallet Query Language to SQL
 // WQL input is provided as a reference to a top level Operator
 // Result is a tuple of query string and query arguments
-pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&str>) -> Result<(String, Vec<&'a ToSql>), WalletQueryError> {
-    let mut arguments: Vec<&ToSql> = Vec::new();
+pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&str>) -> Result<(String, Vec<&'a dyn ToSql>), WalletQueryError> {
+    let mut arguments: Vec<&dyn ToSql> = Vec::new();
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments)?;
     let mut query_string = "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = $$".to_string();
@@ -20,8 +20,8 @@ pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, _options: Option<&st
 }
 
 
-pub fn wql_to_sql_count<'a>(class: &'a Vec<u8>, op: &'a Operator) -> Result<(String, Vec<&'a ToSql>), WalletQueryError> {
-    let mut arguments: Vec<&ToSql> = Vec::new();
+pub fn wql_to_sql_count<'a>(class: &'a Vec<u8>, op: &'a Operator) -> Result<(String, Vec<&'a dyn ToSql>), WalletQueryError> {
+    let mut arguments: Vec<&dyn ToSql> = Vec::new();
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments)?;
     let mut query_string = "SELECT count(*) FROM items as i WHERE i.type = $$".to_string();
@@ -43,7 +43,7 @@ fn convert_query_to_psql_args(query: &str) -> String {
     s
 }
 
-fn operator_to_sql<'a>(op: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn operator_to_sql<'a>(op: &'a Operator, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     match *op {
         Operator::Eq(ref tag_name, ref target_value) => eq_to_sql(tag_name, target_value, arguments),
         Operator::Neq(ref tag_name, ref target_value) => neq_to_sql(tag_name, target_value, arguments),
@@ -60,7 +60,7 @@ fn operator_to_sql<'a>(op: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> Resu
 }
 
 
-fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
@@ -77,7 +77,7 @@ fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
 }
 
 
-fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
@@ -94,7 +94,7 @@ fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
 }
 
 
-fn gt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn gt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
@@ -106,7 +106,7 @@ fn gt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
 }
 
 
-fn gte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn gte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
@@ -118,7 +118,7 @@ fn gte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
 }
 
 
-fn lt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn lt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
@@ -130,7 +130,7 @@ fn lt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
 }
 
 
-fn lte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn lte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
@@ -142,7 +142,7 @@ fn lte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
 }
 
 
-fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
@@ -154,7 +154,7 @@ fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Ve
 }
 
 
-fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     let mut in_string = String::new();
     match name {
         &TagName::PlainTagName(ref queried_name) => {
@@ -198,23 +198,23 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
 }
 
 
-fn and_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn and_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     join_operators(suboperators, " AND ", arguments)
 }
 
 
-fn or_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn or_to_sql<'a>(suboperators: &'a [Operator], arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     join_operators(suboperators, " OR ", arguments)
 }
 
 
-fn not_to_sql<'a>(suboperator: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn not_to_sql<'a>(suboperator: &'a Operator, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     let suboperator_string = operator_to_sql(suboperator, arguments)?;
     Ok("NOT (".to_string() + &suboperator_string + ")")
 }
 
 
-fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
+fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut Vec<&'a dyn ToSql>) -> Result<String, WalletQueryError> {
     let mut s = String::new();
     if operators.len() > 0 {
         s.push('(');

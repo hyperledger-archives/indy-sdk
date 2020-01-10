@@ -22,18 +22,6 @@ public class DeleteRecordTest extends NonSecretsIntegrationTest {
 	}
 
 	@Test
-	public void testDeleteRecordWorksForTwice() throws Exception {
-		WalletRecord.add(wallet, type, id, value, tags).get();
-
-		WalletRecord.delete(wallet, type, id).get();
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletItemNotFoundException.class));
-
-		WalletRecord.delete(wallet, type, id).get();
-	}
-
-	@Test
 	public void testDeleteRecordWorksForNotFoundRecord() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletItemNotFoundException.class));

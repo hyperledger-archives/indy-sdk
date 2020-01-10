@@ -24,9 +24,9 @@ here are some resources to increase your understanding:
 
   * Visit the main resource for all things "Indy" to get acquainted with the code base, 
     helpful resources, and up-to-date information: 
-    `Hyperledger Wiki-Indy <https://wiki.hyperledger.org/projects/indy>`_
+    `Hyperledger Wiki-Indy <https://wiki.hyperledger.org/display/indy>`_
 
-  * The next page contains an extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
+  * The next page contains an extended tutorial that introduces Indy, explains how the whole ecosystem works, and how the
     functions in the SDK can be used to construct rich clients.
 
 

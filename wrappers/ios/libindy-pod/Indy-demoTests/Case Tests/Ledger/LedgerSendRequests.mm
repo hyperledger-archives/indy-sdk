@@ -222,68 +222,7 @@
     XCTAssertEqual(ret.code, WalletItemNotFound, @"LedgerUtils::signRequestWithWalletHandle() returned wrong code!");
 }
 
-- (void)testSignRequestWorksFowInvalidMessageFormat {
-    // 1. create my did
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                       myDidJson:@"{}"
-                                                        outMyDid:&myDid
-                                                     outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed!");
-
-    NSString *message = @"1495034346617224651";
-
-    ret = [[LedgerUtils sharedInstance] signRequestWithWalletHandle:walletHandle
-                                                       submitterdid:myDid
-                                                        requestJson:message
-                                                         resultJson:nil];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"LedgerUtils::signRequestWithWalletHandle() returned wrong code!");
-}
-
 // MARK: - NYM Requests
-
-- (void)testNymRequestWorksWithoutSignature {
-    // 1. Build NYM Request
-    NSString *nymRequest;
-    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:[TestUtils trusteeDid]
-                                                              targetDid:[TestUtils myDid1]
-                                                                 verkey:nil
-                                                                  alias:nil
-                                                                   role:nil
-                                                             outRequest:&nymRequest];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
-
-    // 2. Send request
-    NSString *nymResponse;
-    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:nymRequest
-                                                       response:&nymResponse];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::sendRequestWithPoolHandle() returned not Success");
-    XCTAssertNotNil(nymResponse, @"nymResponse is nil!");
-
-    NSDictionary *response = [NSDictionary fromString:nymResponse];
-    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
-}
-
-- (void)testSendGetNymRequestWorks {
-    // 1. Build get NYM Request
-    NSString *getNymRequest;
-    ret = [[LedgerUtils sharedInstance] buildGetNymRequestWithSubmitterDid:[TestUtils trusteeDid]
-                                                                 targetDid:[TestUtils trusteeDid]
-                                                                outRequest:&getNymRequest];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
-
-    // 2. Send request
-    NSString *getNymResponseJson;
-    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getNymRequest
-                                                       response:&getNymResponseJson];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
-
-    NSDictionary *getNymResponse = [NSDictionary fromString:getNymResponseJson];
-    XCTAssertNotNil(getNymResponse[@"result"][@"seqNo"], @"getNymResponse seqNo is empty");
-}
-
 
 - (void)testNymRequestsWorks {
     // 1. Obtain trustee did
@@ -330,66 +269,8 @@
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
 
     // 6. Send getNymRequest
-    NSString *getNymResponseJson = nil;
-    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getNymRequest
-                                                       response:&getNymResponseJson];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
-
-    NSDictionary *getNymResponse = [NSDictionary fromString:getNymResponseJson];
-    XCTAssertNotNil(getNymResponse[@"result"][@"seqNo"], @"getNymResponse seqNo is empty");
-}
-
-- (void)testSendNymRequestWorksWithOptionFields {
-    // 1. Obtain trustee did
-    NSString *trusteeDid = nil;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                    seed:[TestUtils trusteeSeed]
-                                                                outMyDid:&trusteeDid
-                                                             outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for trustee");
-
-    // 2. Obtain my did
-    NSString *myDid = nil;
-    NSString *myVerKey = nil;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                    seed:nil
-                                                                outMyDid:&myDid
-                                                             outMyVerkey:&myVerKey];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for myDid");
-
-    // 3. Build nym request;
-    NSString *nymRequest;
-    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
-                                                              targetDid:myDid
-                                                                 verkey:myVerKey
-                                                                  alias:@"some_alias"
-                                                                   role:@"STEWARD"
-                                                             outRequest:&nymRequest];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed");
-
-    // 4. Send and submit nym request
-    NSString *nymResponse;
-    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
-                                                              walletHandle:walletHandle
-                                                              submitterDid:trusteeDid
-                                                               requestJson:nymRequest
-                                                           outResponseJson:&nymResponse];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed");
-
-    // 5. Build get nym request
-    NSString *getNymRequest = nil;
-    ret = [[LedgerUtils sharedInstance] buildGetNymRequestWithSubmitterDid:myDid
-                                                                 targetDid:myDid
-                                                                outRequest:&getNymRequest];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
-
-    // 6. Send getNymRequest
-    NSString *getNymResponseJson = nil;
-    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getNymRequest
-                                                       response:&getNymResponseJson];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
+    NSString *getNymResponseJson = [[LedgerUtils sharedInstance] submitRetry:getNymRequest
+                                                                  poolHandle:poolHandle];
 
     NSDictionary *getNymResponse = [NSDictionary fromString:getNymResponseJson];
     XCTAssertNotNil(getNymResponse[@"result"][@"seqNo"], @"getNymResponse seqNo is empty");
@@ -436,11 +317,8 @@
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetAttribRequest() failed");
 
     // 5. Send getAttribRequest
-    NSString *getAttribResponse = nil;
-    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getAttribRequest
-                                                       response:&getAttribResponse];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
+    NSString *getAttribResponse = [[LedgerUtils sharedInstance] submitRetry:getAttribRequest
+                                                                 poolHandle:poolHandle];
 }
 
 // MARK: - Schema request
@@ -489,13 +367,8 @@
     [NSThread sleepForTimeInterval:10];
 
     // 5. Send getSchemaRequest
-    NSString *getSchemaResponse = nil;
-
-    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getSchemaRequest
-                                                       response:&getSchemaResponse];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequest() failed");
-    XCTAssertNotNil(getSchemaResponse, @"getSchemaResponse is nil!");
+    NSString *getSchemaResponse = [[LedgerUtils sharedInstance] submitRetry:getSchemaRequest
+                                                                 poolHandle:poolHandle];
 
     // 6. Parse getSchemaResponse
     ret = [[LedgerUtils sharedInstance] parseGetSchemaResponse:getSchemaResponse
@@ -618,11 +491,8 @@
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetSchemaRequest() failed");
 
     // 5. Send getSchemaRequest
-    NSString *getSchemaResponse = nil;
-    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getSchemaRequest
-                                                       response:&getSchemaResponse];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequest() failed");
+    NSString *getSchemaResponse = [[LedgerUtils sharedInstance] submitRetry:getSchemaRequest
+                                                                 poolHandle:poolHandle];
 
     ret = [[LedgerUtils sharedInstance] parseGetSchemaResponse:getSchemaResponse
                                                       schemaId:&schemaId
@@ -667,11 +537,8 @@
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetCredDefRequestWithSubmitterDid() failed");
 
     // 10. Send getCredDefRequest
-    NSString *getCredDefResponse;
-    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getCredDefRequest
-                                                       response:&getCredDefResponse];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
+    NSString *getCredDefResponse = [[LedgerUtils sharedInstance] submitRetry:getCredDefRequest
+                                                                  poolHandle:poolHandle];
 
     ret = [[LedgerUtils sharedInstance] parseGetCredDefResponse:getCredDefResponse
                                                       credDefId:&credentialDefId
@@ -966,13 +833,20 @@
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetNymRequestWithSubmitterDid() failed");
 
     // 7. Send getNymRequest
-    NSString *getNymResponse = nil;
-    ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getNymRequest
-                                                       response:&getNymResponse];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
+    NSString *getNymResponse = [[LedgerUtils sharedInstance] submitRetry:getNymRequest
+                                                              poolHandle:poolHandle];
 
-    // 8. Get GET_NYM response metadata
+    // 8. Get GET_NYM response data
+    NSString *getNymResponseDataJson = nil;
+    ret = [[LedgerUtils sharedInstance] parseGetNymResponse:getNymResponse
+                                                    nymData:&getNymResponseDataJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::parseGetNymResponse() failed");
+
+    NSDictionary *getNymResponseData = [NSDictionary fromString:getNymResponseDataJson];
+    XCTAssertEqual(myDid, getNymResponseData[@"did"], @"LedgerUtils::sendRequestWithPoolHandle() failed");
+    XCTAssertEqual(myVerKey, getNymResponseData[@"verkey"], @"LedgerUtils::sendRequestWithPoolHandle() failed");
+
+    // 9. Get GET_NYM response metadata
     NSString *getNymResponseMetadataJson = nil;
     ret = [[LedgerUtils sharedInstance] getResponseMetadata:getNymResponse
                                            responseMetadata:&getNymResponseMetadataJson];

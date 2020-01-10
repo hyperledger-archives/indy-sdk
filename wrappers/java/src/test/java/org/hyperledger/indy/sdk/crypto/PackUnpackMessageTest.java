@@ -3,7 +3,6 @@ package org.hyperledger.indy.sdk.crypto;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.InvalidParameterException;
-import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -58,32 +57,6 @@ public class PackUnpackMessageTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expectCause(isA(InvalidParameterException.class));
 
 		Crypto.packMessage(wallet, receivers.toString(), null, message.getBytes()).get();
-
-		// this assert should never trigger since unpackMessage should throw exception
-		assertTrue(false);
-	}
-
-	@Test
-	public void testPackMessageErrorsInvalidReceivers() throws Exception {
-		JSONArray receivers = new JSONArray(new String[]{"IndyIntegrationTest.VERKEY_MY1"});
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		Crypto.packMessage(wallet, receivers.toString(), null, message.getBytes()).get();
-
-		// this assert should never trigger since unpackMessage should throw exception
-		assertTrue(false);
-	}
-
-	@Test
-	public void testUnpackMessageErrorsWithInvalidPackedMessageStructure() throws Exception {
-		String packedMessage = "jibberish";
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		Crypto.unpackMessage(wallet, packedMessage.getBytes()).get();
 
 		// this assert should never trigger since unpackMessage should throw exception
 		assertTrue(false);

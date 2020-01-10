@@ -1,8 +1,12 @@
 #!groovy
 
 
-libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
-libvcxBuildFinished = ["Ubuntu": false, "RedHat": false]
+Ubuntu16 = "Ubuntu 16.04"
+Ubuntu18 = "Ubuntu 18.04"
+RedHat = "RedHat"
+
+libindyBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
+libvcxBuildFinished = [(Ubuntu16): false, (Ubuntu18): false, (RedHat): false]
 
 testing()
 
@@ -16,7 +20,7 @@ def testing() {
                 'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
-                //  FIXME 'redhat-test' : { rhelTesting() }, https://jira.hyperledger.org/browse/IS-1212
+                'centos-test' : { centosTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -24,26 +28,31 @@ def testing() {
 
 def staticValidation() {
     parallel([
-        'libindy'    : { runValdiationRust('libindy') },
-        'libnullpay' : { runValdiationRust('libnullpay') },
-        'libvcx'     : { runValdiationRust('vcx/libvcx') },
-        'cli'        : { runValdiationRust('cli') }
+            'libindy'   : { runValdiationRust('libindy') },
+            'libnullpay': { runValdiationRust('libnullpay') },
+            'libvcx'    : { runValdiationRust('vcx/libvcx') },
+            'cli'       : { runValdiationRust('cli') }
     ])
 }
 
 def runValdiationRust(dir) {
     node('ubuntu') {
-        checkout scm
-        def testEnv
-        if (dir == 'vcx/libvcx') {
-            testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
-        } else {
-            testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
-        }
-        testEnv.inside {
-            //FIXME waiting on IS-823
-            //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
-            sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+        try {
+            cleanWs()
+            checkout scm
+            def testEnv
+            if (dir == 'vcx/libvcx') {
+                testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
+            } else {
+                testEnv = dockerBuild("static-validation-libindy", "libindy/ci/ubuntu.dockerfile libindy/ci")
+            }
+            testEnv.inside {
+                //FIXME waiting on IS-823
+                //sh "cargo clippy --manifest-path ${dir}/Cargo.toml"
+                sh "cargo clippy --manifest-path ${dir}/Cargo.toml -- -W clippy::style -W clippy::correctness -W clippy::complexity -W clippy::perf"
+            }
+        } finally {
+            cleanWs()
         }
     }
 }
@@ -53,6 +62,7 @@ def windowsTesting() {
         stage('Windows Test') {
             def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
             ws(ws_path) {
+                cleanWs()
                 try {
                     echo "Windows Test: Checkout scm"
                     checkout scm
@@ -80,7 +90,11 @@ def windowsTesting() {
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --features fatal_warnings"
-                            bat "cargo test --no-run"
+                            bat 'cargo test --no-run --features only_high_cases'
+
+                            echo "Windows Libindy before Test: Deleting %TEMP\\indy_client"
+                            bat "DEL /S /Q /F %TEMP%\\indy_client"
+                            bat "DEL /S /Q /F %UserProfile%\\.indy_client"
 
                             echo "Windows Libindy Test: Run tests"
                             withEnv([
@@ -88,8 +102,13 @@ def windowsTesting() {
                                     "RUST_LOG=indy::=debug,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
-                                bat "cargo test"
+                                bat 'cargo test --features only_high_cases'
                             }
+
+                            echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
+                            bat "DEL /S /Q /F %TEMP%\\indy_client"
+                            bat "DEL /S /Q /F %UserProfile%\\.indy_client"
+
                         }
                     }
 
@@ -165,6 +184,12 @@ def windowsTesting() {
 
                 } finally {
                     try {
+                        echo "Windows Libindy after Test: Deleting %TEMP\\indy_client"
+                        bat "DEL /S /Q /F %TEMP%\\indy_client"
+                        bat "DEL /S /Q /F %UserProfile%\\.indy_client"
+                    } catch (ignore) {
+                    }
+                    try {
                         bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
                     } catch (ignore) {
                     }
@@ -182,7 +207,9 @@ def windowsTesting() {
 
 def macosTesting() {
     node('macos') {
+        cleanWs()
         stage('MacOS Test') {
+            def pool_name = "indy_pool"
             try {
                 echo "MacOS Test: Checkout scm"
                 checkout scm
@@ -190,50 +217,58 @@ def macosTesting() {
                 setupRust()
                 setupBrewPackages()
 
-                macosModuleBuilding('libindy') // TODO: testing
+                macosRunPool(pool_name)
+                macosCleanIndyDir()
+
+                macosModuleBuildingAndTest('libindy', "--features only_high_cases")
 
                 sh "cp libindy/target/debug/libindy.dylib libnullpay"
                 sh "cp libindy/target/debug/libindy.dylib vcx/libvcx"
+                sh "cp libindy/target/debug/libindy.dylib cli"
 
-                macosModuleBuilding('libnullpay') // TODO: testing
+                macosModuleBuildingAndTest('libnullpay')
 
                 sh "cp libnullpay/target/debug/libnullpay.dylib vcx/libvcx"
 
-                macosModuleBuilding('vcx/libvcx')
-                macosModuleTesting('vcx/libvcx')
+                macosModuleBuildingAndTest('vcx/libvcx')
+
+                sh "sed -i'.original' -e 's/10.0.0.2/127.0.0.1/g' cli/docker_pool_transactions_genesis"
+                macosModuleBuildingAndTest('cli')
 
                 //TODO wrappers testing
             } finally {
+                macosStopPool(pool_name)
+                macosCleanIndyDir()
                 step([$class: 'WsCleanup'])
             }
         }
     }
 }
 
-def macosModuleBuilding(library) {
+def macosCleanIndyDir() {
+    sh "rm -rf ~/.indy_client || true"
+}
+
+def macosModuleBuildingAndTest(library, testFeatures = "") {
     dir(library) {
         echo "MacOS ${library} Testing: Build"
         sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
-        sh "LIBRARY_PATH=./ cargo test --no-run"
-    }
-}
 
-def macosModuleTesting(library) {
-    dir(library) {
         echo "MacOS ${library} Testing: Run Tests"
-        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test"
+        sh "LIBRARY_PATH=./ cargo test --no-run ${testFeatures}"
+        sh "LIBRARY_PATH=./ RUST_TEST_THREADS=1 cargo test ${testFeatures}"
     }
 }
 
 def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
-    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android")
+    linuxModuleTesting("ci/android.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, "android", "android", ["libindy": 'ci/ubuntu.dockerfile ci'])
 }
 
 def iosTesting() {
 
-    def setupRustIOS ={
+    def setupRustIOS = {
         sh "rustup target add x86_64-apple-ios"
     }
 
@@ -251,7 +286,9 @@ def iosTesting() {
     }
 
     node('macos') {
+        cleanWs()
         stage('iOS Test') {
+            def pool_name = "indy_pool"
             try {
                 echo "iOS Test: Checkout scm"
                 checkout scm
@@ -273,7 +310,6 @@ def iosTesting() {
                             rbenv install -s $(cat .ruby-version)
 
                             gem install bundler
-                            bundler exec gem env
 
                             bundler install
                             bundler list
@@ -286,9 +322,7 @@ def iosTesting() {
                     }
 
                     echo "iOS Test: Running pool"
-                    sh "docker rm -f indy_pool || true"
-                    sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
-                    sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+                    macosRunPool(pool_name)
 
                     sh 'chmod -R 777 ci'
                     echo "iOS Test: build libindy pod"
@@ -308,14 +342,7 @@ def iosTesting() {
                     cleanSimulators()
                 } catch (ignore) {
                 }
-                try {
-                    sh "docker stop indy_pool"
-                } catch (ignore) {
-                }
-                try {
-                    sh "docker rm indy_pool"
-                } catch (ignore) {
-                }
+                macosStopPool(pool_name)
                 step([$class: 'WsCleanup'])
             }
         }
@@ -324,22 +351,30 @@ def iosTesting() {
 
 def ubuntuTesting() {
     stage('Ubuntu Test') {
-        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network")
+        parallel([
+                "ubuntu:16.04": {
+                    linuxTesting("ci/ubuntu.dockerfile ci", Ubuntu16, "pool_network", false)
+                },
+                "ubuntu:18.04": {
+                    linuxTesting("ci/ubuntu18.dockerfile ci", Ubuntu18, "pool_network", true)
+                }
+        ])
     }
 }
 
-def rhelTesting() {
+def centosTesting() {
     stage('RedHat Test') {
-        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
+        linuxTesting("ci/centos.dockerfile ci", "RedHat", "pool_network", false)
     }
 }
 
-def linuxTesting(file, env_name, network_name) {
+def linuxTesting(file, env_name, network_name, full_testing) {
     parallel([
             failFast                                  : true,
             "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
-                    linuxLibindyBuild(file, env_name, network_name)
+                    cleanWs()
+                    linuxLibindyBuild(file, env_name, network_name, full_testing)
                 }
             },
             "${env_name} Test: test other components" : {
@@ -347,28 +382,19 @@ def linuxTesting(file, env_name, network_name) {
                     libindyBuildFinished[env_name]
                 }
                 def jobs = [
-                        "${env_name}-nodejs-test"     : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
-                        },
-                        "${env_name}-cli-test"        : {
+                        "${env_name}-cli-test": {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
-                        "${env_name}-rust-test"       : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
-                        },
-                        "${env_name}-vcx-test"        : {
-                            vcxTesting(file, env_name, network_name)
-                        },
-                        "${env_name}-cloud-agent-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
+                        "${env_name}-vcx-test": {
+                            vcxTesting(file, env_name, network_name, full_testing)
                         }
                 ]
-                if (env_name == "Ubuntu") {
-                    jobs["${env_name}-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+                if (full_testing) {
+                    jobs["${env_name}wrappers-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxIndyWrappersTesting)
                     }
-                    jobs["${env_name}-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                    jobs["${env_name}-cloud-agent-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
                     }
                 }
                 parallel(jobs)
@@ -376,37 +402,27 @@ def linuxTesting(file, env_name, network_name) {
     ])
 }
 
-def vcxTesting(file, env_name, network_name) {
+def vcxTesting(file, env_name, network_name, full_testing) {
     parallel([
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
                 node('ubuntu') {
+                    cleanWs()
                     linuxVcxBuild(file, env_name, network_name)
                 }
             },
             "${env_name} Test: test other vcx components": {
-                waitUntil {
-                    libvcxBuildFinished[env_name]
-                }
-                def jobs = [
-                        "${env_name}-vcx-nodejs-test": {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
-                        }
-                ]
-                if (env_name == "Ubuntu") {
-                    jobs["${env_name}-vcx-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                if (full_testing) {
+                    waitUntil {
+                        libvcxBuildFinished[env_name]
                     }
-                    jobs["${env_name}-vcx-python-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
-                    }
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxVcxWrappersTesting)
                 }
-                parallel(jobs)
             },
     ])
 }
 
-def linuxLibindyBuild(file, env_name, network_name) {
+def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -466,11 +482,13 @@ def linuxLibindyBuild(file, env_name, network_name) {
 
         echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
-            sh '''
+            def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
+
+            sh """
                 cd libindy
-                RUST_BACKTRACE=1 cargo test --no-run --features sodium_static
-                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features sodium_static
-            '''
+                RUST_BACKTRACE=1 cargo test --no-run ${features_args}
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test ${features_args}
+            """
         }
 
         echo "${env_name} Libnullpay Test: Test"
@@ -541,9 +559,11 @@ def linuxVcxBuild(file, env_name, network_name) {
             '''
 
             echo "${env_name} Libvcx Test: Run tests"
+            // TODO in Rust 1.39.0 there was a problem with test name before "--". Temporary put test name after it.
             sh '''
                 cd vcx/libvcx
-                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency_v2" tests::test_real_proof_for_protocol_type_v2 -- --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests agency_v2" -- tests::test_real_proof_for_protocol_type_v2 --exact
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=vcx=debug,indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "pool_tests aries" -- v3::test::aries_demo --exact
             '''
         }
     }
@@ -556,8 +576,9 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     linuxModuleTesting(file, env_name, network_name, module_tester, "ubuntu")
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) {
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_label, image_name="libindy", prebuilt_images = [:]) {
     node(node_label) {
+        cleanWs()
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
@@ -565,7 +586,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester, node_label) 
 
             poolInst = openPool(env_name, network_name)
 
-            def testEnv = buildTestEnv(file, env_name)
+            def testEnv = buildTestEnv(file, env_name, image_name, prebuilt_images)
 
             module_tester(env_name, network_name, testEnv)
         } finally {
@@ -580,10 +601,25 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
     def emu_arch = "x86"
 
-    echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
     testEnv.inside("--network=${network_name}") {
-        sh "cd libindy && ./android.test.sh ${emu_arch} --release"
+        for (directory in ["libindy", "libnullpay", "vcx/libvcx"]) {
+            echo "${env_name} ${directory} Test: Test on ${emu_arch} emulator"
+            sh "cd ${directory} && ./android.test.sh ${emu_arch}"
+        }
     }
+}
+
+def linuxIndyWrappersTesting(env_name, network_name, testEnv) {
+    linuxJavaTesting(env_name, network_name, testEnv)
+    linuxPythonTesting(env_name, network_name, testEnv)
+    linuxNodejsTesting(env_name, network_name, testEnv)
+    linuxRustTesting(env_name, network_name, testEnv)
+}
+
+def linuxVcxWrappersTesting(env_name, network_name, testEnv) {
+    linuxVcxNodejsTesting(env_name, network_name, testEnv)
+    linuxVcxJavaTesting(env_name, network_name, testEnv)
+    linuxVcxPythonTesting(env_name, network_name, testEnv)
 }
 
 def linuxJavaTesting(env_name, network_name, testEnv) {
@@ -604,8 +640,8 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Libindy Test: Test python wrapper"
 
             sh '''
-                python3.5 -m pip install --user -e .
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                python3 -m pip install --user -e .[test]
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3 -m pytest
             '''
         }
     }
@@ -662,8 +698,8 @@ def linuxVcxPythonTesting(env_name, network_name, testEnv) {
             echo "${env_name} Vcx Test: Test python wrapper"
 
             sh '''
-                    python3.5 -m pip install --user pytest==3.6.4 pytest-asyncio
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest -s
+                    python3 -m pip install --user pytest==3.6.4 pytest-asyncio
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3 -m pytest -s
             '''
         }
     }
@@ -677,6 +713,7 @@ def linuxCLITesting(env_name, network_name, testEnv) {
     testEnv.inside("--network=${network_name}") {
         sh '''
             cd cli
+            LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --features fatal_warnings
             LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --features "nullpay_plugin" --no-run
             LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "nullpay_plugin"
         '''
@@ -722,10 +759,13 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def buildTestEnv(file, env_name) {
+def buildTestEnv(file, env_name, name="libindy", prebuilt_images=[:]) {
     dir('libindy') {
-        echo "${env_name} Build test environment"
-        return dockerBuild('libindy', file)
+        echo "${env_name} Build  test environment"
+        for (entry in mapToList(prebuilt_images)) {
+            dockerBuild(entry[0], entry[1])
+        }
+        return dockerBuild(name, file)
     }
 }
 
@@ -733,16 +773,33 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
     return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
 }
 
+def macosRunPool(pool_name) {
+    sh "docker rm -f ${pool_name} || true"
+    sh "docker build -f ci/indy-pool.dockerfile -t ${pool_name} ci"
+    sh "docker run -d --name ${pool_name} -p 9701-9708:9701-9708 ${pool_name}"
+}
+
+def macosStopPool(pool_name) {
+    try {
+        sh "docker stop ${pool_name}"
+    } catch (ignore) {
+    }
+    try {
+        sh "docker rm ${pool_name}"
+    } catch (ignore) {
+    }
+}
+
 def dockerClean(env_name, network_name) {
     try {
         try {
-            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true"//TODO: FIXME
+            sh returnStatus: true, script: "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
         } catch (error) {
             echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
         }
         try {
             echo "${env_name} Test: remove pool network ${network_name}"
-            sh "docker network rm ${network_name} || true" //TODO: FIXME
+            sh returnStatus: true, script: "docker network rm ${network_name}"
         } catch (error) {
             echo "${env_name} Test: error while delete ${network_name} - ${error}"
         }
@@ -791,11 +848,18 @@ def shell(command) {
 }
 
 def setupRust() {
-    shell("rustup default 1.34.1")
+    shell("rustup default 1.39.0")
 }
 
 def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
     sh "brew switch openssl 1.0.2q"
     sh "brew switch zeromq 4.2.3"
+}
+
+@NonCPS
+List<List<?>> mapToList(Map map) {
+    return map.collect { it ->
+        [it.key, it.value]
+    }
 }

@@ -84,9 +84,7 @@ impl DeleteConnectionBuilder {
 
         let response = httpclient::post_u8(&data)?;
 
-        let response = self.parse_response(&response)?;
-
-        Ok(response)
+        self.parse_response(&response)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
@@ -97,7 +95,7 @@ impl DeleteConnectionBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(res)) => Ok(()),
             A2AMessage::Version2(A2AMessageV2::UpdateConnectionResponse(res)) => Ok(()),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
         }
     }
 
@@ -108,6 +106,16 @@ impl DeleteConnectionBuilder {
         println!("self.agent_did: {}", &self.agent_did);
         println!("self.agent_vk: {}", &self.agent_vk);
     }
+}
+
+pub fn send_delete_connection_message(pw_did: &str, pw_verkey: &str, agent_did: &str, agent_vk: &str) -> VcxResult<()> {
+    delete_connection()
+        .to(pw_did)?
+        .to_vk(pw_verkey)?
+        .agent_did(agent_did)?
+        .agent_vk(agent_vk)?
+        .send_secure()
+        .map_err(|err| err.extend("Cannot delete connection"))
 }
 
 //TODO Every GeneralMessage extension, duplicates code

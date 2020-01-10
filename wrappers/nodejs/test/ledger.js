@@ -45,8 +45,10 @@ test('ledger', async function (t) {
   t.false(resMetadata.hasOwnProperty('lastSeqNo'))
 
   req = await indy.buildGetNymRequest(trusteeDid, myDid)
-  t.is(req.identifier, trusteeDid)
-  t.is(req.operation.dest, myDid)
+  res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
+  var data = await indy.parseGetNymResponse(res)
+  t.is(myDid, data['did'])
+  t.is(myVerkey, data['verkey'])
 
   // Schema
   req = await indy.buildSchemaRequest(myDid, schema)
@@ -55,7 +57,7 @@ test('ledger', async function (t) {
 
   req = await indy.buildGetSchemaRequest(myDid, schemaId)
   res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
-  var data = await indy.parseGetSchemaResponse(res)
+  data = await indy.parseGetSchemaResponse(res)
   t.is(data[0], schemaId)
   t.is(data[1].name, schema.name)
   req = await indy.buildGetTxnRequest(myDid, null, data[1].seqNo)
@@ -173,27 +175,43 @@ test('ledger', async function (t) {
   res = await indy.submitRequest(pool.handle, req)
   t.deepEqual(res['result']['data'][0]['constraint'], constraint)
 
+  var expectedAuthRule = {
+    'auth_type': '1',
+    'auth_action': 'ADD',
+    'field': 'role',
+    'new_value': '101',
+    'constraint': constraint
+  }
+
+  var authRulesData = [expectedAuthRule]
+  req = await indy.buildAuthRulesRequest(trusteeDid, authRulesData)
+  res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
+  t.is(res.op, 'REPLY')
+
   // author agreement
-  req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
-  t.deepEqual(req['operation'], { 'type': '4', 'text': 'indy agreement', 'version': '1.0.0' })
+  req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0', 12345, 54321)
+  t.deepEqual(req['operation'], { 'type': '4', 'text': 'indy agreement', 'version': '1.0.0', 'ratification_ts': 12345, 'retirement_ts': 54321 })
 
   req = await indy.buildGetTxnAuthorAgreementRequest(null, { 'version': '1.0.0' })
   t.deepEqual(req['operation'], { 'type': '6', 'version': '1.0.0' })
+
+  req = await indy.buildDisableAllTxnAuthorAgreementsRequest(trusteeDid)
+  t.deepEqual(req['operation'], { 'type': '8' })
 
   // acceptance mechanism
   var aml = { 'acceptance mechanism label 1': 'some acceptance mechanism description 1' }
   req = await indy.buildAcceptanceMechanismsRequest(trusteeDid, aml, '1.0.0', null)
   t.deepEqual(req['operation'], { 'type': '5', 'aml': aml, 'version': '1.0.0' })
 
-  req = await indy.buildGetAcceptanceMechanismsRequest(null, 123456789, null)
-  t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123456789 })
+  req = await indy.buildGetAcceptanceMechanismsRequest(null, 123379200, null)
+  t.deepEqual(req['operation'], { 'type': '7', 'timestamp': 123379200 })
 
   // author agreement acceptance data
-  req = await indy.appendTxnAuthorAgreementAcceptanceToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123456789)
+  req = await indy.appendTxnAuthorAgreementAcceptanceToRequest(req, 'indy agreement', '1.0.0', null, 'acceptance mechanism label 1', 123379200)
   var expectedMeta = {
     'mechanism': 'acceptance mechanism label 1',
     'taaDigest': '7213b9aabf8677edf6b17d20a9fbfaddb059ea4cb122d163bdf658ea67196120',
-    'time': 123456789
+    'time': 123379200
   }
   t.deepEqual(req['taaAcceptance'], expectedMeta)
 
@@ -201,6 +219,11 @@ test('ledger', async function (t) {
   req = await indy.buildAuthRuleRequest(trusteeDid, 'NYM', 'ADD', 'role', null, '101', defaultConstraint)
   res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.op, 'REPLY')
+
+  // endorser
+  req = await indy.buildSchemaRequest(myDid, schema)
+  req = await indy.appendRequestEndorser(req, trusteeDid)
+  t.is(req['endorser'], trusteeDid)
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)

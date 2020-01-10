@@ -71,6 +71,17 @@ public class VcxApi extends VcxJava.API {
         return future;
     }
 
+    public static int vcxInitMinimal(String configJson) throws VcxException {
+        ParamGuard.notNullOrWhiteSpace(configJson, "config");
+        logger.debug("vcxInitMinimal() called with: configJson = [" + configJson + "]");
+
+        int result = LibVcx.api.vcx_init_minimal(
+                configJson);
+        checkResult(result);
+
+        return result;
+    }
+
     public static int vcxShutdown(Boolean deleteWallet) throws VcxException {
         logger.debug("vcxShutdown() called with: deleteWallet = [" + deleteWallet + "]");
         int result = LibVcx.api.vcx_shutdown(deleteWallet);

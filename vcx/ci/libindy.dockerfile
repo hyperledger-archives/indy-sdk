@@ -41,7 +41,7 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
     && apt-get install -y nodejs
 
 # Install Rust
-ARG RUST_VER="1.34.1"
+ARG RUST_VER="1.39.0"
 ENV RUST_ARCHIVE=rust-${RUST_VER}-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
@@ -58,7 +58,7 @@ COPY ./vcx/ci/scripts/installCert.sh /tmp
 RUN /tmp/installCert.sh
 
 # Add sovrin to sources.list
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master" && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" && \
     add-apt-repository 'deb https://repo.sovrin.org/deb xenial master' && \

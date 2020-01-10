@@ -24,9 +24,9 @@ public class LedgerIntegrationTest extends IndyIntegrationTestWithPoolAndSingleW
 
 	private static Boolean entitiesPosted = false;
 
-	static String schemaId;
-	static String credDefId;
-	static String revRegDefId;
+	static String schemaId = "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
+	static String credDefId = "NcYxiDXkpYi6ov5FcYDi1e:3:CL:1";
+	static String revRegDefId = "NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:CL_ACCUM:TAG_1";
 
 	void postEntities() throws Exception {
 

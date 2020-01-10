@@ -12,15 +12,16 @@ infrastructure.
 * VCX requires some payment plugin.
 [Here](https://github.com/hyperledger/indy-sdk/tree/master/libnullpay/README.md) is the simple plugin that can be used.
 
-### Ubuntu based distributions (Ubuntu 16.04)
+### Ubuntu based distributions (Ubuntu 16.04 and 18.04)
 It is recommended to install the VCX packages with APT:
 
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
-    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
+    sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb (xenial|bionic) {release channel}"
     sudo apt-get update
     sudo apt-get install -y libvcx
 
-{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+* (xenial|bionic) xenial for 16.04 Ubuntu and bionic for 18.04 Ubuntu.
+* {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 Please See the section [Release channels](../README.md/#release-channels) for more details.
 
 ### Windows
@@ -49,6 +50,29 @@ that may be need for your applications.
  `You must add to PATH environment variable path to lib`. It's necessary for dynamic linkage
  your application with libvcx.
 
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+
+#### Centos
+1. Go to https://repo.sovrin.org/rpm/libvcx/{release-channel}.
+2. Download and unzip the last version of library.
+3. Install with `rpm -i libvcx-version.rpm`.
+
+### MacOS
+
+1. Go to `https://repo.sovrin.org/macos/libvcx/{release-channel}`.
+2. Download the latest version of libvcx.
+3. Unzip archives to the directory where you want to save working library.
+4. After unzip you will get next structure of files:
+
+* `Your working directory`
+    * `include` - contains c-header files which contains all necessary declarations that may be need for your applications.
+        * `...`
+    * `lib` - contains library binaries (static and dynamic).
+        * `libvcx.a`
+        * `libvcx.dylib`
+    
+You need add the path to lib folder to LIBRARY_PATH environment variable. 
+    
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
 
 ### OSX
@@ -89,7 +113,7 @@ it should finish successfully.
 To build libvcx on your own you can follow these steps --
 1) Install rust and rustup (https://www.rust-lang.org/install.html).
 2) Install or build libindy (https://repo.evernym.com/libindy/).
-    - As of now there is no distribution channel for OSX for LibIndy. [You have to build it manually.](https://github.com/hyperledger/indy-sdk/blob/master/docs/source/build-guides/mac-build.md) 
+    - As of now there is no distribution channel for OSX for LibIndy. [You have to build it manually.](https://github.com/hyperledger/indy-sdk/blob/master/docs/build-guides/mac-build.md)
     - Copy generated `libindy.dylib` file to `/usr/local/lib`
         - Or create a symlink in `/usr/local/lib` pointing to newly generated `libindy.dylib`, this will help in updating the libindy in future.
 3) Clone this repo to your local machine.
@@ -140,7 +164,7 @@ To build libvcx on your own you can follow these steps --
     - Copy generated `libindy.a` file to whatever location you want
     - Set env variable `LIBINDY_DIR=<Directory_containing_libindy.a>`. e.g `export LIBINDY_DIR=/usr/local/aarch64-linux-android/libindy` libindy directory holds libindy.a
 4) Run `install_toolchains.sh`. You need to run this once to setup toolchains for android
-5) Run `android_build.sh aarm64` to build libvcx for aarm64 architecture.(Other architerctures will follow soon)
+5) Run `android.build.sh aarm64` to build libvcx for aarm64 architecture.(Other architerctures will follow soon)
 6) Tests are not working on Android as of now.
 
 ## How to build VCX from source
@@ -167,7 +191,15 @@ The following wrappers are tested and complete.
 * [NodeJS](wrappers/node/README.md)
 
 ## Getting started guide
-[The tutorial](docs/source/getting-started/getting-started.md) which introduces Libvcx and explains how the whole ecosystem works, and how the functions in the SDK can be used to construct rich clients.
+[The tutorial](docs/getting-started/getting-started.md) which introduces Libvcx and explains how the whole ecosystem works, and how the functions in the SDK can be used to construct rich clients.
 
 ### Example use
 For the main workflow example check [demo](https://github.com/hyperledger/indy-sdk/tree/master/vcx/wrappers/python3/demo).
+
+## How to migrate
+The documents that provide necessary information for Libvcx migrations.
+ 
+* [v0.1.x → v0.2.0](docs/migration-guide-0.1.x-0.2.0.md)
+* [v0.2.x → v0.3.0](docs/migration-guide-0.2.x-0.3.0.md)
+* [v0.3.x → v0.4.0](docs/migration-guide-0.3.x-0.4.0.md)
+* [v0.4.x → v0.5.0](docs/migration-guide-0.4.x-0.5.0.md)

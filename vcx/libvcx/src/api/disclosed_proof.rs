@@ -39,7 +39,7 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
         match disclosed_proof::create_proof(&source_id, &proof_req) {
             Ok(x) => {
                 trace!("vcx_disclosed_proof_create_with_request_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                       command_handle,error::SUCCESS.message, x, source_id);
+                       command_handle, error::SUCCESS.message, x, source_id);
                 cb(command_handle, 0, x);
             }
             Err(x) => {
@@ -140,10 +140,6 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
         return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into()
     }
 
-    if !connection::is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
-    }
-
     let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
     trace!("vcx_disclosed_proof_send_proof(command_handle: {}, proof_handle: {}, connection_handle: {}) source_id: {}",
            command_handle, proof_handle, connection_handle, source_id);
@@ -167,6 +163,55 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
 
     error::SUCCESS.code_num
 }
+
+/// Get the proof message for sending.
+///
+/// #params
+/// command_handle: command handle to map callback to API user context.
+///
+/// proof_handle: proof handle that was provided duration creation.  Used to identify proof object.
+///
+/// cb: Callback that provides error status of proof send request
+///
+/// #Returns
+/// Error code as u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_get_proof_msg(command_handle: u32,
+                                                proof_handle: u32,
+                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+    info!("vcx_disclosed_proof_get_proof_msg >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !disclosed_proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into()
+    }
+
+    let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
+    trace!("vcx_disclosed_proof_get_proof_msg(command_handle: {}, proof_handle: {}) source_id: {}",
+           command_handle, proof_handle, source_id);
+
+    spawn(move || {
+        match disclosed_proof::generate_proof_msg(proof_handle) {
+            Ok(msg) => {
+                let msg = CStringUtils::string_to_cstring(msg);
+                trace!("vcx_disclosed_proof_get_proof_msg_cb(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, source_id);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            }
+            Err(x) => {
+                error!("vcx_disclosed_proof_get_proof_msg_cb(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, x, source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 
 /// Queries agency for proof requests from the given connection.
 ///
@@ -290,7 +335,7 @@ pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
            command_handle, proof_handle, source_id);
 
     spawn(move || {
-        match disclosed_proof::update_state(proof_handle) {
+        match disclosed_proof::update_state(proof_handle, None) {
             Ok(s) => {
                 trace!("vcx_disclosed_proof_update_state_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
                        command_handle, error::SUCCESS.message, s, source_id);
@@ -298,6 +343,57 @@ pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
             }
             Err(e) => {
                 error!("vcx_disclosed_proof_update_state_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
+                       command_handle, e, 0, source_id);
+                cb(command_handle, e.into(), 0)
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Checks for any state change from the given message and updates the the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Credential handle that was provided during creation. Used to identify disclosed proof object
+///
+/// message: message to parse for state changes
+///
+/// cb: Callback that provides most current state of the disclosed proof and error status of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_update_state_with_message(command_handle: u32,
+                                                            proof_handle: u32,
+                                                            message: *const c_char,
+                                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+    info!("vcx_disclosed_proof_update_state_with_message >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(message, VcxErrorKind::InvalidOption);
+
+    if !disclosed_proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into()
+    }
+
+    let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
+    trace!("vcx_disclosed_proof_update_state_with_message(command_handle: {}, proof_handle: {}) source_id: {}",
+           command_handle, proof_handle, source_id);
+
+    spawn(move || {
+        match disclosed_proof::update_state(proof_handle, Some(message)) {
+            Ok(s) => {
+                trace!("vcx_disclosed_proof_update_state__with_message_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, s, source_id);
+                cb(command_handle, error::SUCCESS.code_num, s)
+            }
+            Err(e) => {
+                error!("vcx_disclosed_proof_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
                        command_handle, e, 0, source_id);
                 cb(command_handle, e.into(), 0)
             }
@@ -530,6 +626,113 @@ pub extern fn vcx_disclosed_proof_generate_proof(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Declines presentation request.
+/// There are two ways of following interaction:
+///     - Prover wants to propose using a different presentation - pass `proposal` parameter
+///     - Prover doesn't want to continue interaction - pass `reason` parameter.
+/// Note that only one of these parameters can be passed.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to identify the disclosed proof object
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// reason: human-readable string that explain the reason of decline
+///
+/// proposal: the proposed format of presentation request
+/// (see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#presentation-preview for details)
+/// {
+///    "attributes": [
+///        {
+///            "name": "<attribute_name>",
+///            "cred_def_id": Optional("<cred_def_id>"),
+///            "mime-type": Optional("<type>"),
+///            "value": Optional("<value>")
+///        },
+///        // more attributes
+///    ],
+///    "predicates": [
+///        {
+///            "name": "<attribute_name>",
+///            "cred_def_id": Optional("<cred_def_id>"),
+///            "predicate": "<predicate>", - one of "<", "<=", ">=", ">"
+///            "threshold": <threshold>
+///        },
+///        // more predicates
+///    ]
+/// }
+///
+/// # Example
+///  proposal ->
+///     {
+///          "attributes": [
+///              {
+///                  "name": "first name"
+///              }
+///          ],
+///          "predicates": [
+///              {
+///                  "name": "age",
+///                  "predicate": ">",
+///                  "threshold": 18
+///              }
+///          ]
+///      }
+///
+/// cb: Callback that returns error status
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_decline_presentation_request(command_handle: u32,
+                                                               proof_handle: u32,
+                                                               connection_handle: u32,
+                                                               reason: *const c_char,
+                                                               proposal: *const c_char,
+                                                               cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_disclosed_proof_decline_presentation_request >>>");
+
+    check_useful_opt_c_str!(reason, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(proposal, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
+    }
+
+    if !disclosed_proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into();
+    }
+
+    let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
+    trace!("vcx_disclosed_proof_decline_presentation_request(command_handle: {}, proof_handle: {}, connection_handle: {}, reason: {:?}, proposal: {:?}) source_id: {}",
+           command_handle, proof_handle, connection_handle, reason, proposal, source_id);
+
+    spawn(move || {
+        match disclosed_proof::decline_presentation_request(proof_handle, connection_handle, reason, proposal) {
+            Ok(_) => {
+                trace!("vcx_disclosed_proof_decline_presentation_request(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, source_id);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(x) => {
+                error!("vcx_disclosed_proof_decline_presentation_request(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, x, source_id);
+                cb(command_handle, x.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 
 /// Releases the disclosed proof object by de-allocating memory
 ///
@@ -640,6 +843,20 @@ mod tests {
 
         let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
         assert!(handle > 0);
+    }
+
+    #[test]
+    fn test_generate_msg() {
+        init!("true");
+
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        assert_eq!(vcx_disclosed_proof_get_proof_msg(cb.command_handle,
+                                                     handle,
+                                                     Some(cb.get_callback())), error::SUCCESS.code_num);
+        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+        println!("{}", s);
+        assert!(s.len() > 0);
     }
 
     #[test]

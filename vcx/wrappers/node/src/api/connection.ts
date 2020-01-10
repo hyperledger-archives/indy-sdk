@@ -50,7 +50,7 @@ export interface ISignatureData {
   signature: Buffer
 }
 
-function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
+export function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
   /**
    * Read the contents of the pointer and copy it into a new Buffer
    */
@@ -122,6 +122,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
 
   protected _releaseFn = rustAPI().vcx_connection_release
   protected _updateStFn = rustAPI().vcx_connection_update_state
+  protected _updateStWithMessageFn = rustAPI().vcx_connection_update_state_with_message
   protected _getStFn = rustAPI().vcx_connection_get_state
   protected _serializeFn = rustAPI().vcx_connection_serialize
   protected _deserializeFn = rustAPI().vcx_connection_deserialize
@@ -354,6 +355,70 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
           })
       )
       return data
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+   *
+   * Note that this function is useful in case `aries` communication method is used.
+   * In other cases it returns ActionNotSupported error.
+   *
+   */
+  public async sendPing (comment: string | null | undefined): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_send_ping(0, this.handle, comment, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+   *
+   * Note that this function is useful in case `aries` communication method is used.
+   * In other cases it returns ActionNotSupported error.
+   *
+   */
+  public async sendDiscoveryFeatures (query: string | null | undefined, comment: string | null | undefined): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_send_discovery_features(0, this.handle, query, comment, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
     } catch (err) {
       throw new VCXInternalError(err)
     }

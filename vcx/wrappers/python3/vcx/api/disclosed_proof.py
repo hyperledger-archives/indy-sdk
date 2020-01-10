@@ -179,6 +179,19 @@ class DisclosedProof(VcxStateful):
         """
         return await self._update_state(DisclosedProof, 'vcx_disclosed_proof_update_state')
 
+    async def update_state_with_message(self, message: str) -> int:
+        """
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        assert await disclosed_proof.update_state_with_message(msg) == State.RequestReceived
+        :return:
+        """
+        return await self._update_state_with_message(DisclosedProof, message, 'vcx_disclosed_proof_update_state_with_message')
+
     async def get_state(self) -> int:
         """
 
@@ -224,7 +237,7 @@ class DisclosedProof(VcxStateful):
                              DisclosedProof.get_creds.cb)
         return json.loads(data.decode())
 
-    async def send_proof(self, connection: Connection):
+    async def send_proof(self, connection: Optional[Connection] = None):
         """
         Sends the proof to the Connection
         Example:
@@ -242,12 +255,31 @@ class DisclosedProof(VcxStateful):
             DisclosedProof.send_proof.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
 
         c_disclosed_proof_handle = c_uint32(self.handle)
-        c_connection_handle = c_uint32(connection.handle)
+        c_connection_handle = c_uint32(connection.handle) if connection else 0
 
         await do_call('vcx_disclosed_proof_send_proof',
                       c_disclosed_proof_handle,
                       c_connection_handle,
                       DisclosedProof.send_proof.cb)
+
+    async def get_send_proof_msg(self):
+        """
+        Example:
+        msg = await disclosed_proof.get_send_proof_msg()
+        :param
+        :return:
+        """
+        if not hasattr(DisclosedProof.get_send_proof_msg, "cb"):
+            self.logger.debug("vcx_proof_send_request: Creating callback")
+            DisclosedProof.get_send_proof_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_proof_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_disclosed_proof_get_proof_msg',
+                      c_proof_handle,
+                      DisclosedProof.get_send_proof_msg.cb)
+
+        return json.loads(msg.decode())
 
 
     async def generate_proof(self, selected_creds: dict, self_attested_attrs: dict):
@@ -277,3 +309,66 @@ class DisclosedProof(VcxStateful):
                       c_selected_creds,
                       c_self_attested_attrs,
                       DisclosedProof.generate_proof.cb)
+
+
+    async def decline_presentation_request(self, connection: Connection,
+                                           reason: Optional[str] = None, proposal: Optional[dict] = None):
+        """
+        Declines presentation request.
+        There are two ways of following interaction:
+            - Prover wants to propose using a different presentation - pass `proposal` parameter
+            - Prover doesn't want to continue interaction - pass `reason` parameter.
+        Note that only one of these parameters can be passed.
+
+        Note that this function is useful in case `aries` communication method is used.
+        In other cases it returns ActionNotSupported error.
+
+        :param connection: Connection
+        :param reason: human-readable string that explain the reason of decline
+        :param proposal: the proposed format of presentation request
+           (see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#presentation-preview for details)
+           {
+              "attributes": [
+                  {
+                      "name": "<attribute_name>",
+                      "cred_def_id": Optional("<cred_def_id>"),
+                      "mime-type": Optional("<type>"),
+                      "value": Optional("<value>")
+                  },
+                  // more attributes
+              ],
+              "predicates": [
+                  {
+                      "name": "<attribute_name>",
+                      "cred_def_id": Optional("<cred_def_id>"),
+                      "predicate": "<predicate>", - one of "<", "<=", ">=", ">"
+                      "threshold": <threshold>
+                  },
+                  // more predicates
+              ]
+           }
+
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        await disclosed_proof.decline_presentation_request(connection, 'reason', None)
+        :return: None
+        """
+        if not hasattr(DisclosedProof.decline_presentation_request, "cb"):
+            self.logger.debug("vcx_disclosed_proof_decline_presentation_request: Creating callback")
+            DisclosedProof.decline_presentation_request.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_disclosed_proof_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+        c_reason = c_char_p(reason.encode('utf-8')) if reason else None
+        c_proposal = c_char_p(json.dumps(proposal).encode('utf-8')) if proposal else None
+
+        await do_call('vcx_disclosed_proof_decline_presentation_request',
+                      c_disclosed_proof_handle,
+                      c_connection_handle,
+                      c_reason,
+                      c_proposal,
+                      DisclosedProof.decline_presentation_request.cb)

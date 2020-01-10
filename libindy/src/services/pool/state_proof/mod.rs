@@ -1,41 +1,30 @@
-extern crate digest;
-extern crate hex;
 extern crate log_derive;
-extern crate ursa;
-extern crate rlp;
 extern crate rmp_serde;
-extern crate rust_base58;
-extern crate sha2;
-extern crate sha3;
 
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
+use indy_utils::crypto::hash::{Hash};
+use rust_base58::ToBase58;
 
 use base64;
+use rlp::UntrustedRlp;
 use serde_json;
 use serde_json::Value as SJsonValue;
 
-use api::ErrorCode;
-use domain::ledger::{constants, request::ProtocolVersion};
-use errors::prelude::*;
-use services::pool::events::{REQUESTS_FOR_STATE_PROOFS, REQUESTS_FOR_MULTI_STATE_PROOFS};
-use utils::crypto::hash::hash as openssl_hash;
+use indy_api_types::ErrorCode;
+use crate::domain::ledger::{constants, request::ProtocolVersion};
+use indy_api_types::errors::prelude::*;
+use crate::services::pool::events::{REQUESTS_FOR_STATE_PROOFS, REQUESTS_FOR_MULTI_STATE_PROOFS};
+use indy_utils::crypto::hash::hash as openssl_hash;
 
 use super::PoolService;
 use super::types::*;
 
-use self::digest::FixedOutput;
-use self::digest::Input;
-use self::hex::ToHex;
 use self::log_derive::logfn;
-use self::ursa::bls::{Bls, Generator, MultiSignature, VerKey};
+use ursa::bls::{Bls, Generator, MultiSignature, VerKey};
 use self::node::{Node, TrieDB};
-use self::rlp::{
-    encode as rlp_encode,
-    UntrustedRlp,
-};
-use self::rust_base58::FromBase58;
-use self::sha3::Digest;
+use rust_base58::FromBase58;
+use crate::services::pool::Nodes;
 
 mod node;
 
@@ -54,7 +43,7 @@ pub fn parse_generic_reply_for_proof_checking(json_msg: &SJsonValue, raw_msg: &s
             _parse_reply_for_builtin_sp(json_msg, type_, sp_key)
         } else {
             warn!("parse_generic_reply_for_proof_checking: can't get key in sp for built-in type");
-            return None;
+            None
         }
     } else if let Some((parser, free)) = PoolService::get_sp_parser(type_) {
         trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugged: parser {:?}, free {:?}",
@@ -87,12 +76,14 @@ pub fn parse_generic_reply_for_proof_checking(json_msg: &SJsonValue, raw_msg: &s
 }
 
 pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
-                        nodes: &HashMap<String, Option<VerKey>>,
+                        nodes: &Nodes,
                         f: usize,
                         gen: &Generator) -> bool {
     for parsed_sp in parsed_sps {
         if parsed_sp.multi_signature["value"]["state_root_hash"].as_str().ne(
+            &Some(&parsed_sp.root_hash)) && parsed_sp.multi_signature["value"]["txn_root_hash"].as_str().ne(
             &Some(&parsed_sp.root_hash)) {
+            error!("Given signature is not for current root hash, aborting");
             return false;
         }
 
@@ -111,18 +102,40 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
         let root_hash = unwrap_or_return!(parsed_sp.root_hash.from_base58(), false);
         match parsed_sp.kvs_to_verify {
             KeyValuesInSP::Simple(kvs) => {
-                for (k, v) in kvs.kvs {
-                    let key = unwrap_or_return!(base64::decode(&k), false);
-                    if !_verify_proof(proof_nodes.as_slice(),
-                                      root_hash.as_slice(),
-                                      &key,
-                                      v.as_ref().map(String::as_str)) {
-                        return false;
+                match kvs.verification_type {
+                    KeyValueSimpleDataVerificationType::Simple => {
+                        for (k, v) in kvs.kvs {
+                            let key = unwrap_or_return!(base64::decode(&k), false);
+                            if !_verify_proof(proof_nodes.as_slice(),
+                                              root_hash.as_slice(),
+                                              &key,
+                                              v.as_ref().map(String::as_str)) {
+                                return false;
+                            }
+                        }
+                    }
+                    KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(data) => {
+                        if !_verify_proof_range(proof_nodes.as_slice(),
+                                                root_hash.as_slice(),
+                                                data.prefix.as_str(),
+                                                data.from,
+                                                data.next,
+                                                &kvs.kvs) {
+                            return false;
+                        }
+                    }
+                    KeyValueSimpleDataVerificationType::MerkleTree(length) => {
+                        if !_verify_merkle_tree(proof_nodes.as_slice(),
+                                                root_hash.as_slice(),
+                                                &kvs.kvs,
+                                                length){
+                            return false;
+                        }
                     }
                 }
             }
             //TODO IS-713 support KeyValuesInSP::SubTrie
-            kvs @ _ => {
+            kvs => {
                 warn!("Unsupported parsed state proof format for key-values {:?} ", kvs);
                 return false;
             }
@@ -139,14 +152,13 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
     let key_suffix: String = match type_ {
         constants::GET_ATTR => {
             if let Some(attr_name) = json_msg["raw"].as_str()
-                .or(json_msg["enc"].as_str())
-                .or(json_msg["hash"].as_str()) {
+                .or_else(|| json_msg["enc"].as_str())
+                .or_else(|| json_msg["hash"].as_str()) {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_ATTR attr_name {:?}", attr_name);
 
-                let mut hasher = sha2::Sha256::default();
-                hasher.process(attr_name.as_bytes());
                 let marker = if ProtocolVersion::is_node_1_3() { '\x01' } else { '1' };
-                format!(":{}:{}", marker, hasher.fixed_result().to_hex())
+                let hash = openssl_hash(attr_name.as_bytes()).ok()?;
+                format!(":{}:{}", marker, hex::encode(hash))
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_ATTR No key suffix");
                 return None;
@@ -158,7 +170,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_CRED_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
                 let marker = if ProtocolVersion::is_node_1_3() { '\x03' } else { '3' };
                 let tag = if ProtocolVersion::is_node_1_3() { None } else { json_msg["tag"].as_str() };
-                let tag = tag.map(|t| format!(":{}", t)).unwrap_or("".to_owned());
+                let tag = tag.map(|t| format!(":{}", t)).unwrap_or_else(|| "".to_owned());
                 format!(":{}:{}:{}{}", marker, sign_type, sch_seq_no, tag)
             } else {
                 trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_CRED_DEF No key suffix");
@@ -247,19 +259,25 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 "3:latest".to_owned()
             }
         }
+        constants::GET_TXN => {
+            if let Some(seq_no) = json_msg["data"].as_u64() {
+                format!("{}", seq_no)
+            } else {
+                error!("parse_key_from_request_for_builtin_sp: <<< GET_TXN has no seq_no, skip AuditProof logic");
+                return None;
+            }
+        }
         _ => {
             trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< Unsupported transaction");
             return None;
         }
     };
 
-    let dest = json_msg["dest"].as_str().or(json_msg["origin"].as_str());
+    let dest = json_msg["dest"].as_str().or_else(|| json_msg["origin"].as_str());
     let key_prefix = match type_ {
         constants::GET_NYM => {
             if let Some(dest) = dest {
-                let mut hasher = sha2::Sha256::default();
-                hasher.process(dest.as_bytes());
-                hasher.fixed_result().to_vec()
+                openssl_hash(dest.as_bytes()).ok()?
             } else {
                 debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
                 return None;
@@ -277,6 +295,7 @@ pub fn parse_key_from_request_for_builtin_sp(json_msg: &SJsonValue) -> Option<Ve
                 return None;
             }
         }
+        constants::GET_TXN => vec![],
         _ => {
             if let Some(dest) = dest {
                 dest.as_bytes().to_vec()
@@ -319,6 +338,10 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str, key: &[u8]) -
         SJsonValue::Object(ref map) => {
             trace!("TransactionHandler::parse_reply_for_builtin_sp: Data is object");
             (Some(json_msg["data"].to_string()), SJsonValue::from(map.clone()))
+        }
+        SJsonValue::Array(ref array) => {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: Data is array");
+            (Some(json_msg["data"].to_string()), SJsonValue::from(array.clone()))
         }
         _ => {
             trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< Data field is invalid type");
@@ -363,18 +386,46 @@ fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str, key: &[u8]) -
 fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &SJsonValue, xtype: &str, sp_key: &[u8]) -> Result<ParsedSP, String> {
     trace!("TransactionHandler::_parse_reply_for_sp: data: {:?}, parsed_data: {:?}", data, parsed_data);
 
-    let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
-        trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", proof);
-        proof
-    } else {
-        return Err("No proof".to_string());
-    };
+    let (proof, root_hash, ver_type, multi_sig) = if xtype != constants::GET_TXN {
+        let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", proof);
+            proof.to_string()
+        } else {
+            return Err("No proof".to_string());
+        };
 
-    let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
-        trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
-        root_hash
+        let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
+            root_hash
+        } else {
+            return Err("No root hash".to_string());
+        };
+
+        (proof, root_hash, KeyValueSimpleDataVerificationType::Simple, json_msg["state_proof"]["multi_signature"].clone())
     } else {
-        return Err("No root hash".to_string());
+        let proof = if let Some(path) = parsed_data["auditPath"].as_array() {
+            let path_str = json!(path).to_string();
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", path);
+            base64::encode(&path_str)
+        } else {
+            return Err("No proof".to_string());
+        };
+
+        let root_hash = if let Some(root_hash) = parsed_data["rootHash"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
+            root_hash
+        } else {
+            return Err("No root hash".to_string());
+        };
+
+        let len = if let Some(len) = parsed_data["ledgerSize"].as_u64() {
+            trace!("Ledger length: {}", len);
+            len
+        } else {
+            return Err("No ledger length for this proof".to_string())
+        };
+
+        (proof, root_hash, KeyValueSimpleDataVerificationType::MerkleTree(len), json_msg["state_proof"]["multi_signature"].clone())
     };
 
     let value: Option<String> = match _parse_reply_for_proof_value(json_msg, data, parsed_data, xtype, sp_key) {
@@ -389,9 +440,10 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
     Ok(ParsedSP {
         root_hash: root_hash.to_owned(),
         proof_nodes: proof.to_owned(),
-        multi_signature: json_msg["state_proof"]["multi_signature"].clone(),
+        multi_signature: multi_sig,
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
-            kvs: vec![(base64::encode(sp_key), value)]
+            kvs: vec![(base64::encode(sp_key), value)],
+            verification_type: ver_type,
         }),
     })
 }
@@ -442,7 +494,8 @@ fn _parse_reply_for_multi_sp(_json_msg: &SJsonValue, data: Option<&str>, parsed_
         proof_nodes,
         multi_signature,
         kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
-            kvs: vec![(base64::encode(sp_key), value)]
+            kvs: vec![(base64::encode(sp_key), value)],
+            verification_type: KeyValueSimpleDataVerificationType::Simple,
         }),
     }))
 }
@@ -468,16 +521,112 @@ fn _parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&
     }
 }
 
+fn _verify_merkle_tree(proof_nodes: &[u8], root_hash: &[u8], kvs: &[(String, Option<String>)], length: u64) -> bool {
+    let nodes = match std::str::from_utf8(proof_nodes) {
+        Ok(res) => res,
+        Err(err) => {
+            error!("Wrong state during mapping bytes to string: {:?}", err);
+            return false;
+        }
+    };
+    trace!("_verify_merkle_tree >> nodes: {:?}", nodes);
+    let hashes: Vec<String> = match serde_json::from_str(nodes) {
+        Ok(vec) => vec,
+        Err(err) => {
+            error!("Errors during deserialization: {:?}", err);
+            return false;
+        }
+    };
+
+    trace!("_verify_merkle_tree >> hashes: {:?}", hashes);
+
+    let (key, value) = &kvs[0];
+    let key = unwrap_or_return!(base64::decode(&key), false);
+    let key = unwrap_or_return!(std::str::from_utf8(&key), false);
+    let seq_no = match key.parse::<u64>() {
+        Ok(num) => num,
+        Err(err) => {
+            error!("Error while parsing seq_no: {:?}", err);
+            return false;
+        }
+    };
+
+    let turns = _calculate_turns(length, seq_no - 1);
+    trace!("_verify_merkle_tree >> turns: {:?}", turns);
+
+    if hashes.len() != turns.len() {
+        error!("Different count of hashes and turns, unable to verify");
+        return false;
+    }
+
+    let hashes_with_turns = hashes.iter().zip(turns).collect::<Vec<(&String, bool)>>();
+
+    let value = match value{
+        Some(val) => val,
+        None => {return false;}
+    };
+
+    trace!("Value to hash: {}", value);
+
+    let value = unwrap_or_return!(serde_json::from_str::<serde_json::Value>(&value), false);
+    trace!("serde json success: {:?}", value);
+    let value = unwrap_or_return!(rmp_serde::to_vec(&value), false);
+    trace!("rmp serde success: {:?}", value);
+    let mut hash = match Hash::hash_leaf(&value) {
+        Ok(hash) => hash,
+        Err(err) => {
+            error!("Error while hashing: {:?}", err);
+            return false;
+        }
+    };
+
+    trace!("Hashed leaf in b58: {}", hash.to_base58());
+
+    for (next_hash, turn_right) in hashes_with_turns {
+        let _next_hash = unwrap_or_return!(next_hash.from_base58(), false);
+        let turned_hash = if turn_right {
+            Hash::hash_nodes(&hash, &_next_hash)
+        } else {
+            Hash::hash_nodes(&_next_hash, &hash)
+        };
+        hash = match turned_hash {
+            Ok(hash) => hash,
+            Err(err) => {
+                error!("Error while hashing: {:?}", err);
+                return false;
+            }
+        }
+    }
+
+    let result = hash.as_slice() == root_hash;
+    trace!("_verify_merkle_tree << res: {}, hash: {:?}, root_hash: {:?}", result, hash, root_hash);
+
+    result
+}
+
+// true is right
+// false is left
+fn _calculate_turns(length: u64, idx: u64) -> Vec<bool> {
+    let mut idx = idx;
+    let mut length = length;
+    let mut result: Vec<bool> = vec![];
+    while length != 1 {
+        let middle = length.next_power_of_two()/2;
+        let right = idx < middle;
+        result.push(right);
+        idx = if right {idx} else {idx - middle};
+        length = if right {middle} else {length - middle};
+    }
+    result.reverse();
+    result
+}
+
 fn _verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
     debug!("verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
-    let mut map: TrieDB = HashMap::new();
+    let mut map: TrieDB = HashMap::with_capacity(nodes.len());
     for node in &nodes {
-        let encoded = rlp_encode(node);
-        let mut hasher = sha3::Sha3_256::default();
-        hasher.input(encoded.to_vec().as_slice());
-        let hash = hasher.result();
-        map.insert(hash, node);
+        map.insert(node.get_hash(), node);
     }
     map.get(root_hash).map(|root| {
         root
@@ -488,15 +637,79 @@ fn _verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value
     }).unwrap_or(false)
 }
 
+fn _verify_proof_range(proofs_rlp: &[u8],
+                       root_hash: &[u8],
+                       prefix: &str,
+                       from: Option<u64>,
+                       next: Option<u64>,
+                       kvs: &[(String, Option<String>)]) -> bool {
+    debug!("verify_proof_range >> from {:?}, prefix {:?}, kvs {:?}", from, prefix, kvs);
+    let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
+    let mut map: TrieDB = HashMap::with_capacity(nodes.len());
+    for node in &nodes {
+        map.insert(node.get_hash(), node);
+    }
+    map.get(root_hash).map(|root| {
+        let res = root.get_all_values(&map, Some(prefix.as_bytes())).map_err(map_err_err!());
+        trace!("All values from trie: {:?}", res);
+        let vals = if let Ok(vals) = res {
+            vals
+        } else {
+            error!("Some errors happened while collecting values from state proof");
+            return false;
+        };
+        // Preparation of data for verification
+        // Fetch numerical suffixes
+        let vals_for_sort_check: Vec<Option<(u64, (String, Option<String>))>> = vals.into_iter()
+            .filter(|(key, _)| key.starts_with(prefix))
+            .map(|(key, value)| {
+                let no = key.replacen(prefix, "", 1).parse::<u64>();
+                no.ok().map(|a| (a, (key, Some(value))))
+            }).collect();
+        if !vals_for_sort_check.iter().all(|a| a.is_some()) {
+            error!("Some values in state proof are not correlating with state proof rule, aborting.");
+            return false;
+        }
+        let mut vals_for_sort: Vec<(u64, (String, Option<String>))> = vals_for_sort_check.into_iter().flat_map(|a| a).collect();
+        // Sort by numerical suffixes in ascending order
+        vals_for_sort.sort_by_key(|&(a, _)| a);
+        trace!("Sorted trie values: {:?}", vals_for_sort);
+        // Shift on the left side by from
+        let vals_with_from = if let Some(from_seqno) = from {
+            match vals_for_sort.binary_search_by_key(&from_seqno, |&(a, _)| a) {
+                Ok(idx) | Err(idx) => vals_for_sort[idx..].to_vec()
+            }
+        } else {
+            vals_for_sort
+        };
+        // Verification
+        // Check that all values from response match the trie
+        trace!("Got values from trie: {:?}", vals_with_from);
+        let vals_slice = if let Some(next_seqno) = next {
+            match vals_with_from.binary_search_by_key(&next_seqno, |&(a, _)| a) {
+                Ok(idx) => &vals_with_from[..idx],
+                Err(_) => {
+                    error!("Next seqno is incorrect");
+                    return false;
+                }
+            }
+        } else {
+            vals_with_from.as_slice()
+        };
+        let vals_prepared: Vec<(String, Option<String>)> = vals_slice.iter().map(|&(_, ref pair)| pair.clone()).collect();
+        vals_prepared[..] == kvs[..]
+    }).unwrap_or(false)
+}
+
 fn _verify_proof_signature(signature: &str,
                            participants: &[&str],
                            value: &[u8],
-                           nodes: &HashMap<String, Option<VerKey>>,
+                           nodes: &Nodes,
                            f: usize,
                            gen: &Generator) -> IndyResult<bool> {
     trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, value);
 
-    let mut ver_keys: Vec<&VerKey> = Vec::new();
+    let mut ver_keys: Vec<&VerKey> = Vec::with_capacity(nodes.len());
 
     for (name, verkey) in nodes {
         if participants.contains(&name.as_str()) {
@@ -555,24 +768,44 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
         }
 
         match xtype {
-            //TODO constants::GET_TXN => check ledger MerkleTree proofs?
             //TODO constants::GET_DDO => support DDO
+            constants::GET_TXN => {
+                value = json!({});
+                if parsed_data["txn"].is_null() && parsed_data["txnMetadata"].is_null() &&
+                    parsed_data["ver"].is_null() && parsed_data["reqSignature"].is_null() {
+                    return Ok(None);
+                }
+                if !parsed_data["txn"].is_null() {
+                    value["txn"] = parsed_data["txn"].clone();
+                }
+                if !parsed_data["txnMetadata"].is_null() {
+                    value["txnMetadata"] = parsed_data["txnMetadata"].clone();
+                }
+                if !parsed_data["ver"].is_null() {
+                    value["ver"] = parsed_data["ver"].clone();
+                }
+                if !parsed_data["reqSignature"].is_null() {
+                    value["reqSignature"] = parsed_data["reqSignature"].clone();
+                }
+            }
             constants::GET_NYM => {
                 value["identifier"] = parsed_data["identifier"].clone();
                 value["role"] = parsed_data["role"].clone();
                 value["verkey"] = parsed_data["verkey"].clone();
             }
             constants::GET_ATTR => {
-                let mut hasher = sha2::Sha256::default();
-                hasher.process(data.as_bytes());
-                value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
+                value["val"] = SJsonValue::String(hex::encode(openssl_hash(data.as_bytes()).unwrap()));
             }
             constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
                 value["val"] = parsed_data.clone();
             }
             constants::GET_AUTH_RULE => {
-                match parsed_data.as_object().and_then(|data| data.values().next()) {
-                    Some(ref x) => value = x.clone().clone(),
+                let constraint = parsed_data
+                    .as_array()
+                    .and_then(|data| data.first())
+                    .map(|auth_rule| auth_rule["constraint"].clone());
+                match constraint {
+                    Some(ref x) => value = x.clone(),
                     None => return Ok(None)
                 };
             }
@@ -591,16 +824,19 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 };
             }
             constants::GET_REVOC_REG_DELTA => {
-                value["val"] = parsed_data["value"]["accum_to"].clone();
+                if !parsed_data["value"]["accum_to"].is_null() {
+                    value["val"] = parsed_data["value"]["accum_to"].clone()
+                } else {
+                    return Ok(None);
+                }
             }
             constants::GET_TXN_AUTHR_AGRMT => {
                 if _is_full_taa_state_value_expected(sp_key) {
                     value["val"] = parsed_data.clone();
                 } else {
-                    value = SJsonValue::String(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
-                                                                     parsed_data["version"].as_str().unwrap_or(""))
-                        .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?
-                        .to_hex());
+                    value = SJsonValue::String(hex::encode(_calculate_taa_digest(parsed_data["text"].as_str().unwrap_or(""),
+                                                                                 parsed_data["version"].as_str().unwrap_or(""))
+                        .map_err(|err| format!("Can't calculate expected TAA digest to verify StateProof on the request ({})", err))?));
                 }
             }
             _ => {
@@ -626,22 +862,118 @@ fn _calculate_taa_digest(text: &str, version: &str) -> IndyResult<Vec<u8>> {
 }
 
 fn _is_full_taa_state_value_expected(expected_state_key: &[u8]) -> bool {
-    expected_state_key.starts_with("2:d:".as_bytes())
+    expected_state_key.starts_with(b"2:d:")
 }
 
 fn _if_rev_delta_multi_state_proof_expected(sp_key: &[u8]) -> bool {
-    sp_key.starts_with("\x06:".as_bytes()) || sp_key.starts_with("6:".as_bytes())
+    sp_key.starts_with(b"\x06:") || sp_key.starts_with(b"6:")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use self::hex::FromHex;
-    use self::libc::c_char;
+    use hex::FromHex;
+    use libc::c_char;
 
-    extern crate hex;
-    extern crate libc;
+    /// For audit proofs tree looks like this
+    ///         12345
+    ///         /  \
+    ///      1234  5
+    ///     /    \
+    ///   12     34
+    ///  /  \   /  \
+    /// 1   2  3   4
+
+    #[test]
+    fn audit_proof_verify_works() {
+        let nodes = json!(
+            [
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
+            ]
+        ).to_string();
+        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
+        assert!(_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_proof() {
+        let nodes = json!(
+            [
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgM3", //wrong hash here
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
+            ]
+        ).to_string();
+        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_root_hash() {
+        let nodes = json!(
+            [
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
+            ]
+        ).to_string();
+        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4G1".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_ledger_length() {
+        let nodes = json!(
+            [
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
+            ]
+        ).to_string();
+        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 9));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_value() {
+        let nodes = json!(
+            [
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
+            ]
+        ).to_string();
+        let kvs = vec![(base64::encode("3"), Some(r#"{"4":"4"}"#.to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
+
+    #[test]
+    fn audit_proof_verify_works_for_invalid_seqno() {
+        let nodes = json!(
+            [
+                "Gf9aBhHCtBpTYbJXQWnt1DU8q33hwi6nN4f3NhnsBgMZ",
+                "68TGAdRjeQ29eNcuFYhsX5uLakGQLgKMKp5wSyPzt9Nq",
+                "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
+            ]
+        ).to_string();
+        let kvs = vec![(base64::encode("4"), Some(r#"{"3":"3"}"#.to_string()))];
+        let node_bytes = &nodes;
+        let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
+        assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
+    }
 
     #[test]
     fn state_proof_nodes_parse_and_get_works() {
@@ -662,14 +994,10 @@ mod tests {
             info!("{:?}", rlp.as_raw());
         }
         info!("parsed");
-        let mut map: TrieDB = HashMap::new();
+        let mut map: TrieDB = HashMap::with_capacity(proofs.len());
         for node in &proofs {
             info!("{:?}", node);
-            let encoded = rlp_encode(node);
-            info!("{:?}", encoded);
-            let mut hasher = sha3::Sha3_256::default();
-            hasher.input(encoded.to_vec().as_slice());
-            let out = hasher.result();
+            let out = node.get_hash();
             info!("{:?}", out);
             map.insert(out, node);
         }
@@ -697,6 +1025,409 @@ mod tests {
         assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "34".as_bytes(), Some("v2")));
         assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "3C".as_bytes(), Some("v3")));
         assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "4".as_bytes(), Some("v4")));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(99),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_empty_from() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(101),
+            None,
+            &vec![]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_fails_missing_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        // no "abcdefgh11" value in kvs
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(99),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_fails_extra_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        // no "abcdefgh11" value in kvs
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(99),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh13".to_string(), Some("4234".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_fails_changed_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(99),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh12".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_fails_wrong_next() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            Some(100),
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_next() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            None,
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+                ("abcdefgh99".to_string(), Some("4522".to_string())),
+                ("abcdefgh100".to_string(), Some("3833".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_next_fails_missing_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            None,
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+//                ("abcdefgh24".to_string(), Some("4905".to_string())),
+                ("abcdefgh99".to_string(), Some("4522".to_string())),
+                ("abcdefgh100".to_string(), Some("3833".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_next_fails_extra_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            None,
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh24".to_string(), Some("4905".to_string())),
+                ("abcdefgh25".to_string(), Some("4905".to_string())),
+                ("abcdefgh99".to_string(), Some("4522".to_string())),
+                ("abcdefgh100".to_string(), Some("3833".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_next_fails_changed_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            Some(10),
+            None,
+            &vec![
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh25".to_string(), Some("4905".to_string())),
+                ("abcdefgh99".to_string(), Some("4522".to_string())),
+                ("abcdefgh100".to_string(), Some("3833".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(24),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from_fails_missing_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(24),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+//                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from_fails_extra_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(24),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+                ("abcdefgh12".to_string(), Some("4373".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from_fails_changed_values() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(24),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh12".to_string(), Some("4373".to_string())),
+            ]));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_in_range_no_from_fails_wrong_next() {
+        /*
+            'abcdefgh1'     -> '3630'
+            'abcdefgh4'     -> '3037'
+            'abcdefgh10'    -> '4970'
+            'abcdefgh11'    -> '4373'
+            'abcdefgh24'    -> '4905'
+            'abcdefgh99'    -> '4522'
+            'abcdefgh100'   -> '3833'
+        */
+        let proofs = base64::decode("+QEO34CAgMgwhsWEMzgzM4CAgICAgICAgICAgIbFhDQ5NzD4TYCgWvV3JP22NK5fmfA2xp0DgkFi9rkBdw4ADHTeyez/RtzKgiA0hsWENDkwNYDIIIbFhDMwMzeAgICAyoIgOYbFhDQ1MjKAgICAgICA94CAgKCwvJK5hgh1xdoCVjFsZLAr2Ct5ADxnseuJtF+m80+y64CAgICAgICAgICAgIbFhDM2MzD4OaAfBo1nqEW9/DhdOYucHjHAgqpZsF3f96awYBKZkmR2i8gghsWENDM3M4CAgICAgICAgICAgICAgOuJFhYmNkZWZnaDoNDKeVFnNI85QpRhrd2t8hS4By3wpD4R5ZyUegAPUtga").unwrap();
+        let root_hash = "EA9zTfmf5Ex4ZUTPpMwpsQxQzTkevtwg9PADTqJczhSF".from_base58().unwrap();
+        assert!(!_verify_proof_range(
+            proofs.as_slice(),
+            root_hash.as_slice(),
+            "abcdefgh",
+            None,
+            Some(99),
+            &vec![
+                ("abcdefgh1".to_string(), Some("3630".to_string())),
+                ("abcdefgh4".to_string(), Some("3037".to_string())),
+                ("abcdefgh10".to_string(), Some("4970".to_string())),
+                ("abcdefgh11".to_string(), Some("4373".to_string())),
+            ]));
     }
 
     #[test]
@@ -734,6 +1465,127 @@ mod tests {
     }
 
     #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_get_txn() {
+        let json_msg = &json!({
+            "type": constants::GET_TXN,
+            "data": {
+                "auditPath": ["1", "2"],
+                "ledgerSize": 2,
+                "rootHash": "123",
+                "txn": {"test1": "test2", "seqNo": 2},
+            },
+            "state_proof": {
+                "multi_signature": "ms"
+            }
+        });
+
+        let nodes_str = base64::encode(&json!(["1", "2"]).to_string());
+
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(json_msg,
+                                                                           "",
+                                                                           Some("2".as_bytes()))
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "123");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, nodes_str);
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: vec![(base64::encode("2"), Some(json!({"txn":{"test1": "test2", "seqNo": 2}}).to_string()))],
+                       verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
+                   }));
+    }
+
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_get_txn_no_multi_signature() {
+        let json_msg = &json!({
+            "type": constants::GET_TXN,
+            "data": {
+                "auditPath": ["1", "2"],
+                "ledgerSize": 2,
+                "rootHash": "123",
+                "txn": {"test1": "test2", "seqNo": 2},
+//              "multi_signature": "ms"
+            }
+        });
+
+        let nodes_str = base64::encode(&json!(["1", "2"]).to_string());
+
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(json_msg,
+                                                                           "",
+                                                                           Some("2".as_bytes()))
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "123");
+        assert!(parsed_sp.multi_signature.is_null());
+        assert_eq!(parsed_sp.proof_nodes, nodes_str);
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: vec![(base64::encode("2"), Some(json!({"txn":{"test1": "test2", "seqNo": 2}}).to_string()))],
+                       verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
+                   }));
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_get_txn_no_ledger_length() {
+        let json_msg = &json!({
+            "type": constants::GET_TXN,
+            "data": {
+                "auditPath": ["1", "2"],
+//                "ledgerSize": 2,
+                "rootHash": "123",
+                "txn": {"test1": "test2", "seqNo": 2},
+                "state_proof": {
+                    "multi_signature": "ms"
+                }
+            }
+        });
+
+        assert!(super::parse_generic_reply_for_proof_checking(json_msg,
+                                                              "",
+                                                              Some("2".as_bytes())).is_none());
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_get_txn_no_txn() {
+        let json_msg = &json!({
+            "type": constants::GET_TXN,
+            "data": {
+                "auditPath": ["1", "2"],
+                "ledgerSize": 2,
+                "rootHash": "123",
+//                "txn": {"test1": "test2", "seqNo": 2},
+            },
+            "state_proof": {
+                "multi_signature": "ms"
+            }
+        });
+
+        let nodes_str = base64::encode(&json!(["1", "2"]).to_string());
+
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(json_msg,
+                                                                           "",
+                                                                           Some("2".as_bytes()))
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "123");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, nodes_str);
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: vec![(base64::encode("2"), None)],
+                       verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
+                   }));
+    }
+
+    #[test]
     fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged() {
         extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
             unsafe { *parsed = msg; }
@@ -763,6 +1615,103 @@ mod tests {
         assert_eq!(parsed_sp.multi_signature, "ms");
         assert_eq!(parsed_sp.proof_nodes, "pns");
         assert_eq!(parsed_sp.kvs_to_verify,
-                   KeyValuesInSP::Simple(KeyValueSimpleData { kvs: Vec::new() }));
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: Vec::new(),
+                       verification_type: KeyValueSimpleDataVerificationType::Simple,
+                   }));
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged_range() {
+        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+            unsafe { *parsed = msg; }
+            ErrorCode::Success
+        }
+        extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
+
+        let parsed_sp = json!([{
+            "root_hash": "rh",
+            "proof_nodes": "pns",
+            "multi_signature": "ms",
+            "kvs_to_verify": {
+                "type": "Simple",
+                "kvs": [],
+                "verification_type": {
+                    "type": "NumericalSuffixAscendingNoGaps",
+                    "from": 1,
+                    "next": 2,
+                    "prefix": "abc"
+                }
+            },
+        }]);
+
+        PoolService::register_sp_parser("test", parse, free).unwrap();
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
+                                                                           parsed_sp.to_string().as_str(),
+                                                                           None)
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "rh");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, "pns");
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: Vec::new(),
+                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
+                           NumericalSuffixAscendingNoGapsData {
+                               from: Some(1),
+                               next: Some(2),
+                               prefix: "abc".to_string(),
+                           }),
+                   }));
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged_range_nones() {
+        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+            unsafe { *parsed = msg; }
+            ErrorCode::Success
+        }
+        extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
+
+        let parsed_sp = json!([{
+            "root_hash": "rh",
+            "proof_nodes": "pns",
+            "multi_signature": "ms",
+            "kvs_to_verify": {
+                "type": "Simple",
+                "kvs": [],
+                "verification_type": {
+                    "type": "NumericalSuffixAscendingNoGaps",
+                    "from": serde_json::Value::Null,
+                    "next": serde_json::Value::Null,
+                    "prefix": "abc"
+                }
+            },
+        }]);
+
+        PoolService::register_sp_parser("test", parse, free).unwrap();
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
+                                                                           parsed_sp.to_string().as_str(),
+                                                                           None)
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "rh");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, "pns");
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData {
+                       kvs: Vec::new(),
+                       verification_type: KeyValueSimpleDataVerificationType::NumericalSuffixAscendingNoGaps(
+                           NumericalSuffixAscendingNoGapsData {
+                               from: None,
+                               next: None,
+                               prefix: "abc".to_string(),
+                           }),
+                   }));
     }
 }

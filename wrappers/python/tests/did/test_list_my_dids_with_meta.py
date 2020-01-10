@@ -1,10 +1,8 @@
 import json
 
-from indy import IndyError
-from indy import did
-from indy.error import ErrorCode
-
 import pytest
+
+from indy import did, error
 
 
 @pytest.mark.asyncio
@@ -22,6 +20,5 @@ async def test_list_my_dids_works(wallet_handle, seed_my1, did_my1, verkey_my1, 
 
 @pytest.mark.asyncio
 async def test_list_my_dids_works_for_invalid_handle(wallet_handle):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletInvalidHandle):
         await did.list_my_dids_with_meta(wallet_handle + 1)
-    assert ErrorCode.WalletInvalidHandle == e.value.error_code

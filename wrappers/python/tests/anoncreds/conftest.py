@@ -77,11 +77,6 @@ def id_credential_3():
 
 
 @pytest.fixture(scope="session")
-def id_credential_x():
-    return "id_credential_x"
-
-
-@pytest.fixture(scope="session")
 def issuer_did():
     return "NcYxiDXkpYi6ov5FcYDi1e"
 
@@ -332,7 +327,7 @@ def credential_def_json(credential_def):
 async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, gvt_cred_values_json,
                               gvt_2_cred_values_json, xyz_cred_values_json, issuer_did, issuer_did_2, master_secret_id,
                               prover_did, tag, default_cred_def_config, id_credential_1, id_credential_2,
-                              id_credential_3, id_credential_x):
+                              id_credential_3):
     # Create GVT credential by Issuer1
     (issuer1_gvt_cred_deg_id, issuer1_gvt_credential_def_json) = \
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, issuer_did, gvt_schema_json, tag,
@@ -390,8 +385,5 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
     await anoncreds.prover_store_credential(wallet_handle, id_credential_3, issuer_2_gvt_cred_req_metadata,
                                             issuer_2_gvt_cred, issuer2_gvt_credential_def_json, None)
 
-    await anoncreds.prover_store_credential(wallet_handle, id_credential_x, issuer_2_gvt_cred_req_metadata,
-                                            issuer_2_gvt_cred, issuer2_gvt_credential_def_json, None)
-
     return issuer1_gvt_credential_def_json, issuer_1_gvt_credential_offer_json, issuer_1_gvt_cred_req, \
-           issuer_1_gvt_cred_req_metadata, issuer_1_gvt_cred,
+           issuer_1_gvt_cred_req_metadata, issuer_1_gvt_cred

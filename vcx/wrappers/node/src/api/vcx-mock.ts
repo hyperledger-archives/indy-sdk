@@ -9,7 +9,8 @@ export enum VCXMockMessage {
   UpdateProof = 5, // get_message response for updating proof state
   IssuerCredentialReq = 6, // get_message response with claim req
   Proof = 7, // get_message response with proof,
-  CredentialResponse = 8 // reply to credential request with an actual credential
+  CredentialResponse = 8, // reply to credential request with an actual credential
+  AcceptInvite = 9 // connection invite was accepted
 }
 
 export class VCXMock {

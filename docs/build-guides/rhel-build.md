@@ -2,6 +2,7 @@
 These instructions have been tested on:
 - Amazon Linux 2017.03
 - Fedora 27
+- Centos
 
 Please follow the instructions appropriate for your distribution.
 
@@ -42,7 +43,7 @@ dnf install -y \
 For Amazon Linux 2017.03 or other distributions without `libsodium` available in system repositories:
 ```
 cd /tmp
-curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz | tar -xz
+curl https://download.libsodium.org/libsodium/releases/old/unsupported/libsodium-1.0.14.tar.gz | tar -xz
 cd /tmp/libsodium-1.0.14
 ./configure
 make

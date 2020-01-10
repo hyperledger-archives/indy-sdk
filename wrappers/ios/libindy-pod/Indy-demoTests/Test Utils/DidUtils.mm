@@ -496,4 +496,23 @@
     return err;
 }
 
+- (NSError *)qualifyDid:(NSString *)did
+                 method:(NSString *)method
+           walletHandle:(IndyHandle)walletHandle
+       fullQualifiedDid:(NSString **)fullQualifiedDid
+{
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyDid qualifyDid:did method:method walletHandle:walletHandle completion:^(NSError *error, NSString *did_) {
+        err = error;
+        if (fullQualifiedDid) *fullQualifiedDid = did_;
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+}
+
 @end

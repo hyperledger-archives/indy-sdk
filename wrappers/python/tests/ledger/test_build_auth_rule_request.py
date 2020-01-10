@@ -77,3 +77,36 @@ async def test_build_get_auth_rule_request_works():
     request = json.loads(
         await ledger.build_get_auth_rule_request(identifier, txn_type, add_auth_action, field, None, new_value))
     assert expected_request.items() <= request.items()
+
+
+@pytest.mark.asyncio
+async def test_build_auth_rules_request_works():
+    data = [
+        {
+            "auth_type": auth_type_code,
+            "auth_action": add_auth_action,
+            "field": field,
+            "new_value": new_value,
+            "constraint": constraint
+        },
+        {
+            "auth_type": auth_type_code,
+            "auth_action": edit_auth_action,
+            "field": field,
+            "old_value": old_value,
+            "new_value": new_value,
+            "constraint": constraint
+        }
+    ]
+
+    expected_request = {
+        "identifier": identifier,
+        "operation": {
+            "type": "122",
+            "rules": data
+        }
+    }
+
+    request = json.loads(
+        await ledger.build_auth_rules_request(identifier, json.dumps(data)))
+    assert expected_request.items() <= request.items()

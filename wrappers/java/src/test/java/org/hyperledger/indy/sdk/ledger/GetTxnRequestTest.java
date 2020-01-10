@@ -61,21 +61,4 @@ public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWalle
 		});
 		assertNotNull(getTxnResponse);
 	}
-
-	@Test
-	public void testGetTxnRequestWorksForInvalidSeqNo() throws Exception {
-		String did = createStoreAndPublishDidFromTrustee();
-
-		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
-		String schemaResponse = Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
-
-		JSONObject schemaResponseObj = new JSONObject(schemaResponse);
-		int seqNo = schemaResponseObj.getJSONObject("result").getJSONObject("txnMetadata").getInt("seqNo") + 1;
-
-		String getTxnRequest = Ledger.buildGetTxnRequest(did, null, seqNo).get();
-		String getTxnResponse = Ledger.submitRequest(pool, getTxnRequest).get();
-
-		JSONObject getTxnResponseObj = new JSONObject(getTxnResponse);
-		assertTrue(getTxnResponseObj.getJSONObject("result").isNull("data"));
-	}
 }

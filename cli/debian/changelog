@@ -1,6 +1,53 @@
-indy-cli (1.9.0) unstable; urgency=medium
+indy-cli (1.14.1) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.14.1
+* Bugfixes
+
+## 1.14.0
+* Added new commands:
+    * `ledger disable-all-txn-author-agreements` - to disable All Transaction Author Agreements on the ledger.
+    * `ledger get-acceptance-mechanisms` - to get a list of acceptance mechanisms set on the ledger.
+* Updated `ledger txn-author-agreement` command to accept new parameters:
+    * `ratification-timestamp` - the date (timestamp) of TAA ratification by network government.
+    * `retirement-timestamp` - the date (timestamp) of TAA retirement.
+
+## 1.13.0
+* Bugfixes
+
+## 1.12.0
+* added `qualify` command to `did` to qualify did for some namespace.
+
+## 1.11.1
+* Supported endorsing of transactions:
+    * added `endorser` parameter into `nym`, `attrib`, `ledger`, `cred def` command to set endorser for transaction.
+    * added `ledger endorse` command to endorse a transaction.
+* Added optional `number-read-nodes` parameter into `pool connect` to set a number of nodes to send read requests.
+* Bugfixes
+
+## 1.11.0
+* Added new `payment-address sign/verify` commands to sign/verify a message with a payment address.
+* Updated Indy CLI behavior to complete values for the following parameters: wallet names, pool names, dids, payment addresses.
+* Updated  behavior to work with payment addresses for `ledger payment` command and commands providing the ability to set fees for a request.
+* Updated `constraint` parameter of `ledger auth-rule` command to accept optional `off_ledger_signature` field that specifies if a signature of unknown `DID` is allowed for an action performing (false by default).
+* Bugfixes:
+    * CLI to build transactions without adding a signature.
+    * CLI to handle exit signals proper way.
+    * CLI to persist both successes and failed commands.
+    * others minor bugfixes
+
+## 1.10.1
+* Updated behavior to persist command history between sessions.
+* Bugfixes:
+    * Corrected behavior of `ledger set-fees-prepare` command to not add `Transaction Author Agreement` to request.
+    * Corrected response data types in `ledger get-fees` command.
+    * others minor bugfixes
+
+## 1.10.0
+* Added `ledger auth-rules` command to change multiple auth rules.
+* Allowed offline signing of transactions.
+* Handle `exit` command within a batch mode.
 
 ## 1.9.0
 * Updated Indy-CLI to use session based approach to support work with `Transaction Author Agreement` concept.

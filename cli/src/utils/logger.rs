@@ -13,7 +13,7 @@ impl IndyCliLogger {
             .map_err(|err| format!("Cannot init Indy CLI logger: {}", err.description()))?;
 
         indy::logger::set_logger(log::logger())
-            .map_err(|_| format!("Cannot init Libindy logger"))
+            .map_err(|_| "Cannot init Libindy logger".to_string())
     }
 }
 

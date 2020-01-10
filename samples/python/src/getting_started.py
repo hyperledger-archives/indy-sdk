@@ -38,6 +38,18 @@ if args.storage_type:
         print("Error unable to load wallet storage", result)
         parser.print_help()
         sys.exit(0)
+    
+    # for postgres storage, also call the storage init (non-standard)
+    if args.storage_type == "postgres_storage":
+        try:
+            print("Calling init_storagetype() for postgres:", args.config, args.creds)
+            init_storagetype = stg_lib["init_storagetype"]
+            c_config = c_char_p(args.config.encode('utf-8'))
+            c_credentials = c_char_p(args.creds.encode('utf-8'))
+            result = init_storagetype(c_config, c_credentials)
+            print(" ... returns ", result)
+        except RuntimeError as e:
+            print("Error initializing storage, ignoring ...", e)
 
     print("Success, loaded wallet storage", args.storage_type)
 
@@ -387,8 +399,9 @@ async def run():
     logger.info("------------------------------")
 
     logger.info("\"Acme\" -> Create \"Job-Application\" Proof Request")
+    nonce = await anoncreds.generate_nonce()
     acme['job_application_proof_request'] = json.dumps({
-        'nonce': '1432422343242122312411212',
+        'nonce': nonce,
         'name': 'Job-Application',
         'version': '0.1',
         'requested_attributes': {
@@ -636,8 +649,9 @@ async def run():
         logger.info("------------------------------")
 
         logger.info("\"Thrift\" -> Create \"Loan-Application-Basic\" Proof Request")
+        nonce = await anoncreds.generate_nonce()
         thrift['apply_loan_proof_request'] = json.dumps({
-            'nonce': '123432421212',
+            'nonce': nonce,
             'name': 'Loan-Application-Basic',
             'version': '0.1',
             'requested_attributes': {
@@ -761,8 +775,9 @@ async def run():
     logger.info("------------------------------")
 
     logger.info("\"Thrift\" -> Create \"Loan-Application-KYC\" Proof Request")
+    nonce = await anoncreds.generate_nonce()
     thrift['apply_loan_kyc_proof_request'] = json.dumps({
-        'nonce': '123432421212',
+        'nonce': nonce,
         'name': 'Loan-Application-KYC',
         'version': '0.1',
         'requested_attributes': {

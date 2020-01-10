@@ -1,5 +1,3 @@
-extern crate rust_base58;
-
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -7,12 +5,12 @@ use std::path::PathBuf;
 
 use serde_json;
 
-use errors::prelude::*;
-use utils::environment;
+use indy_api_types::errors::prelude::*;
+use crate::utils::environment;
 
 use super::{WritableBlob, Writer, WriterType};
 
-use self::rust_base58::ToBase58;
+use rust_base58::ToBase58;
 
 #[allow(dead_code)]
 pub struct DefaultWriter {
@@ -29,7 +27,7 @@ struct DefaultWriterConfig {
 }
 
 impl WriterType for DefaultWriterType {
-    fn open(&self, config: &str) -> IndyResult<Box<Writer>> {
+    fn open(&self, config: &str) -> IndyResult<Box<dyn Writer>> {
         let config: DefaultWriterConfig = serde_json::from_str(config)
             .to_indy(IndyErrorKind::InvalidStructure, "Can't deserialize DefaultWriterConfig")?;
 
@@ -38,7 +36,7 @@ impl WriterType for DefaultWriterType {
 }
 
 impl Writer for DefaultWriterConfig {
-    fn create(&self, id: i32) -> IndyResult<Box<WritableBlob>> {
+    fn create(&self, id: i32) -> IndyResult<Box<dyn WritableBlob>> {
         let path = PathBuf::from(&self.base_dir);
 
         fs::DirBuilder::new()

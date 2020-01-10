@@ -24,24 +24,6 @@ public class CryptoAuthCryptTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testAuthCryptWorksForCreatedDid() throws Exception {
-		DidResults.CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, MY1_IDENTITY_JSON).get();
-		String myVk = result.getVerkey();
-
-		byte[] encryptedMsg = Crypto.authCrypt(wallet, myVk, VERKEY_MY2, MESSAGE).get();
-		assertNotNull(encryptedMsg);
-	}
-
-	@Test
-	public void testAuthCryptWorksForCreatedDidAsCid() throws Exception {
-		DidResults.CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, MY1_IDENTITY_JSON).get();
-		String myVk = result.getVerkey();
-
-		byte[] encryptedMsg = Crypto.authCrypt(wallet, myVk, VERKEY_MY2, MESSAGE).get();
-		assertNotNull(encryptedMsg);
-	}
-
-	@Test
 	public void testAuthCryptWorksForUnknownSenderVerkey() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletItemNotFoundException.class));

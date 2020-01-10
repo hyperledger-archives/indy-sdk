@@ -12,7 +12,8 @@ import {
   updateMessages,
   VCXCode,
   setActiveTxnAuthorAgreementMeta,
-  getLedgerAuthorAgreement
+  getLedgerAuthorAgreement,
+  endorseTransaction
 } from 'src'
 import { errorMessage } from '../../src/utils/error-message'
 describe('utils:', () => {
@@ -125,6 +126,13 @@ describe('utils:', () => {
     it('success', async () => {
       const agreement = await getLedgerAuthorAgreement()
       assert.equal(agreement, '{"text":"Default indy agreement", "version":"1.0.0", "aml": {"acceptance mechanism label1": "description"}}')
+    })
+  })
+
+  describe('endorseTransaction:', () => {
+    it('success', async () => {
+      let transaction = '{"req_id":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "signature": "gkVDhwe2", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}'
+      await endorseTransaction(transaction)
     })
   })
 

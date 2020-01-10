@@ -1,8 +1,7 @@
-from indy import ledger
-from indy.error import *
-
 import json
 import pytest
+
+from indy import ledger, error
 
 
 @pytest.mark.asyncio
@@ -67,8 +66,5 @@ async def test_build_attrib_request_works_for_missed_attribute():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "Th7MpTaRZVRYnPiabds81Y"
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.CommonInvalidStructure):
         await ledger.build_attrib_request(identifier, destination, None, None, None)
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
-
-

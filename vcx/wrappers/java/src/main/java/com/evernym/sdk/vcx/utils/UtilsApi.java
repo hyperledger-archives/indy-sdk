@@ -30,7 +30,6 @@ public class UtilsApi extends VcxJava.API {
         }
     };
 
-
     public static String vcxProvisionAgent(String config) {
         ParamGuard.notNullOrWhiteSpace(config, "config");
         logger.debug("vcxProvisionAgent() called with: config = [" + config + "]");
@@ -171,7 +170,6 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
-
     public static void setActiveTxnAuthorAgreementMeta(String text, String version,
                                                          String hash, String accMechType, long timeOfAcceptance) throws VcxException {
         ParamGuard.notNull(accMechType, "accMechType");
@@ -181,4 +179,61 @@ public class UtilsApi extends VcxJava.API {
         checkResult(result);
     }
 
+    public static void vcxMockSetAgencyResponse(int messageIndex) {
+        logger.debug("vcxMockSetAgencyResponse() called");
+        LibVcx.api.vcx_set_next_agency_response(messageIndex);
+    }
+
+    public static void setPoolHandle(int handle) {
+        LibVcx.api.vcx_pool_set_handle(handle);
+    }
+
+    private static Callback getReqPriceAsyncCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, long price) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], price = [" + price + "]");
+            CompletableFuture<Long> future = (CompletableFuture<Long>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+
+            long result = price;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Long> vcxGetRequestPrice(String actionJson, String requesterInfoJson) throws VcxException {
+        ParamGuard.notNull(actionJson, "actionJson");
+        logger.debug("vcxGetRequestPrice() called with: actionJson = [" + actionJson + "], requesterInfoJson = [" + requesterInfoJson + "]");
+        CompletableFuture<Long> future = new CompletableFuture<Long>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_get_request_price(
+                commandHandle, actionJson, requesterInfoJson,
+                getReqPriceAsyncCB);
+        checkResult(result);
+        return future;
+    }
+
+    private static Callback vcxEndorseTransactionCb = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            Integer result = commandHandle;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Integer> vcxEndorseTransaction(String transactionJson) throws VcxException {
+        ParamGuard.notNull(transactionJson, "transactionJson");
+        logger.debug("vcxEndorseTransaction() called with: transactionJson = [" + transactionJson + "]");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_endorse_transaction(
+                commandHandle, transactionJson,
+                vcxEndorseTransactionCb);
+        checkResult(result);
+        return future;
+    }
 }

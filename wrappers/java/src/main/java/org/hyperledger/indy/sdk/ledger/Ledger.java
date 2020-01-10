@@ -127,6 +127,23 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when parseRegistryRequest completes.
+	 */
+	private static Callback parseRegistryRespaonseCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, long timestamp) {
+
+			CompletableFuture<Long> future = (CompletableFuture<Long>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			long result = timestamp;
+			future.complete(result);
+		}
+	};
+
+
 
 	/*
 	 * STATIC METHODS
@@ -361,7 +378,8 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a NYM request. Request to create a new NYM record for a specific user.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param targetDid    Target DID as base58-encoded string for 16 or 32 bit DID value.
 	 * @param verkey       Target identity verification key as base58-encoded string.
 	 * @param alias        NYM's alias.
@@ -406,7 +424,8 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds an ATTRIB request. Request to add attribute to a NYM record.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param targetDid    Target DID as base58-encoded string for 16 or 32 bit DID value.
 	 * @param hash         (Optional) Hash of attribute data.
 	 * @param raw          (Optional) Json, where key is attribute name and value is attribute value.
@@ -507,9 +526,47 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Parse a GET_NYM response to get NYM data.
+	 *
+	 * @param response     response on GET_NYM request.
+	 * @return A future resolving to a request result as json.
+	 * {
+	 *     did: DID as base58-encoded string for 16 or 32 bit DID value.
+	 *     verkey: verification key as base58-encoded string.
+	 *     role: Role associated number
+	 *                             null (common USER)
+	 *                             0 - TRUSTEE
+	 *                             2 - STEWARD
+	 *                             101 - TRUST_ANCHOR
+	 *                             101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+	 *                             201 - NETWORK_MONITOR
+	 * }
+	 * 
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> parseGetNymResponse(
+			String response) throws IndyException {
+
+		ParamGuard.notNull(response, "response");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_parse_get_nym_response(
+				commandHandle,
+				response,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
 	 * Builds a SCHEMA request. Request to add Credential's schema.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param data         Credential schema.
 	 *                     {
 	 *                         id: identifier of schema
@@ -606,7 +663,8 @@ public class Ledger extends IndyJava.API {
 	 * Builds an CRED_DEF request. Request to add a credential definition (in particular, public key),
 	 * that Issuer creates for a particular Credential Schema.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param data         Credential definition json
 	 * {
 	 *     id: string - identifier of credential definition
@@ -711,7 +769,8 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param targetDid    Target Node's DID. It differs from submitter_did field.
 	 * @param data         Data associated with the Node: {
 	 *     alias: string - Node's alias
@@ -811,7 +870,8 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a POOL_CONFIG request. Request to change Pool's configuration.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param writes       Whether any write requests can be processed by the pool
 	 *                     (if false, then pool goes to read-only state). True by default.
 	 * @param force        Whether we should apply transaction (for example, move pool to read-only state)
@@ -844,7 +904,8 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a POOL_RESTART request.
 	 *
-	 * @param submitterDid Id of Identity that sender transaction
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param action       Action that pool has to do after received transaction. Can be "start" or "cancel"
 	 * @param datetime     Restart time in datetime format. Skip to restart as early as possible.
 	 * @return A future resolving to a JSON request string.
@@ -876,7 +937,8 @@ public class Ledger extends IndyJava.API {
 	 * Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
 	 * It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
 	 *
-	 * @param submitterDid  DID of the submitter stored in secured Wallet.
+	 * @param submitterDid  Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param name          Human-readable name for the upgrade.
 	 * @param version       The version of indy-node package we perform upgrade to.
 	 *                      Must be greater than existing one (or equal if reinstall flag is True).
@@ -933,7 +995,8 @@ public class Ledger extends IndyJava.API {
 	 * Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
 	 * to an exists credential definition.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param data         Revocation Registry data:
 	 *     {
 	 *         "id": string - ID of the Revocation Registry,
@@ -1046,7 +1109,8 @@ public class Ledger extends IndyJava.API {
 	 * This is just a delta of indices, not the whole list.
 	 * So, it can be sent each time a new credential is issued/revoked.
 	 *
-	 * @param submitterDid  DID of the submitter stored in secured Wallet.
+	 * @param submitterDid  Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param revocRegDefId ID of the corresponding RevocRegDef.
 	 * @param revDefType    Revocation Registry type (only CL_ACCUM is supported for now).
 	 * @param value         Registry-specific data: {
@@ -1270,7 +1334,8 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param txnType - ledger transaction alias or associated value.
 	 * @param action - type of an action.
 	 *     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
@@ -1281,10 +1346,11 @@ public class Ledger extends IndyJava.API {
 	 *     {
 	 *         constraint_id - [string] type of a constraint.
 	 *             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-	 *         role - [string] role of a user which satisfy to constrain.
+	 *         role - [string] (optional) role of a user which satisfy to constrain.
 	 *         sig_count - [u32] the number of signatures required to execution action.
-	 *         need_to_be_owner - [bool] if user must be an owner of transaction.
-	 *         metadata - [object] additional parameters of the constraint.
+	 *         need_to_be_owner - [bool] (optional) if user must be an owner of transaction (false by default).
+	 *         off_ledger_signature - [bool] (optional) allow signature of unknow for ledger did (false by default).
+	 *         metadata - [object] (optional) additional parameters of the constraint.
 	 *     }
 	 * can be combined by
 	 *     {
@@ -1332,13 +1398,57 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+	 *
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
+	 * @param data - a list of auth rules: [
+	 *     {
+	 *         "auth_type": ledger transaction alias or associated value,
+	 *         "auth_action": type of an action,
+	 *         "field": transaction field,
+	 *         "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+	 *         "new_value": (Optional) new value that can be used to fill the field,
+	 *         "constraint": set of constraints required for execution of an action in the format described above for `buildAuthRuleRequest` function.
+	 *     }
+	 * ]
+	 *
+	 * Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+	 *
+	 * More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+	 *
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildAuthRulesRequest(
+			String submitterDid,
+			String data) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNull(data, "data");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_auth_rules_request(
+				commandHandle,
+				submitterDid,
+				data,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
 	 * Builds a GET_AUTH_RULE request. Request to get authentication rules for a ledger transaction.
 	 *
 	 * NOTE: Either none or all transaction related parameters must be specified (`oldValue` can be skipped for `ADD` action).
 	 *     * none - to get all authentication rules for all ledger transactions
 	 *     * all - to get authentication rules for specific action (`oldValue` can be skipped for `ADD` action)
 	 * 
-	 * @param submitterDid (Optional) DID of the read request sender.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param txnType - (Optional) target ledger transaction alias or associated value.
 	 * @param action - (Optional) type of action for which authentication rules will be applied.
 	 *     Can be either "ADD" (to add new rule) or "EDIT" (to edit an existing one).
@@ -1381,12 +1491,32 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
-	 * 
+	 *
 	 * EXPERIMENTAL
-	 * 
-	 * @param submitterDid DID of the request sender.
-	 * @param text -  a content of the TTA.
+	 *
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
+	 * @param text - (Optional)  a content of the TTA.
+	 *                  Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+	 *                  for Indy Node version <= 1.12.0:
+	 *                      Use empty string to reset TAA on the ledger
+	 *                  for Indy Node version > 1.12.0
+	 *                      Should be omitted in case of updating an existing TAA (setting `retirementTimestamp`)
 	 * @param version -  a version of the TTA (unique UTF-8 string).
+	 * @param ratificationTimestamp - (Optional) the date (timestamp) of TAA ratification by network government. (-1 to omit)
+	 *                  for Indy Node version <= 1.12.0:
+	 *                     Must be omitted
+	 *                  for Indy Node version > 1.12.0:
+	 *                     Must be specified in case of adding a new TAA
+	 *                     Can be omitted in case of updating an existing TAA
+	 * @param retirementTimestamp - (Optional) the date (timestamp) of TAA retirement. (-1 to omit)
+	 *                 for Indy Node version <= 1.12.0:
+	 *                     Must be omitted
+	 *                 for Indy Node version > 1.12.0:
+	 *                     Must be omitted in case of adding a new (latest) TAA.
+	 *                     Should be used for updating (deactivating) non-latest TAA on the ledger.
+	 *
+	 *  Note: Use `buildDisableAllTxnAuthorAgreementsRequest` to disable all TAA's on the ledger.
 	 *
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -1394,10 +1524,11 @@ public class Ledger extends IndyJava.API {
 	public static CompletableFuture<String> buildTxnAuthorAgreementRequest(
 			String submitterDid,
 			String text,
-			String version) throws IndyException {
+			String version,
+			long ratificationTimestamp,
+			long retirementTimestamp) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-		ParamGuard.notNull(text, "text");
 		ParamGuard.notNull(version, "version");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -1408,6 +1539,37 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				text,
 				version,
+				ratificationTimestamp,
+				retirementTimestamp,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+	 *
+	 * EXPERIMENTAL
+	 *
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
+	 *
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildDisableAllTxnAuthorAgreementsRequest(
+			String submitterDid) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_disable_all_txn_author_agreements_request(
+				commandHandle,
+				submitterDid,
 				buildRequestCb);
 
 		checkResult(future, result);
@@ -1420,7 +1582,7 @@ public class Ledger extends IndyJava.API {
 	 * 
 	 * EXPERIMENTAL
 	 * 
-	 * @param submitterDid (Optional) DID of the request sender.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param data -  (Optional) specifies a condition for getting specific TAA.
 	 * Contains 3 mutually exclusive optional fields:
 	 * {
@@ -1457,7 +1619,8 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * EXPERIMENTAL
 	 * 
-	 * @param submitterDid DID of the request sender.
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 	 * @param aml - a set of new acceptance mechanisms:
 	 * {
 	 *     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
@@ -1502,7 +1665,7 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * EXPERIMENTAL
 	 *
-	 * @param submitterDid (Optional) DID of the request sender.
+	 * @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 	 * @param timestamp - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
 	 * @param version - (Optional) version of acceptance mechanisms.
 	 *
@@ -1546,9 +1709,11 @@ public class Ledger extends IndyJava.API {
 	 * @param version - (Optional) raw version about TAA from ledger.
 	 *     `text` and `version` parameters should be passed together.
 	 *     `text` and `version` parameters are required if taaDigest parameter is omitted.
-	 * @param taaDigest - (Optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+	 * @param taaDigest - (Optional) digest on text and version.
+	 *     Digest is sha256 hash calculated on concatenated strings: version || text.
+	 *     This parameter is required if text and version parameters are omitted.
 	 * @param mechanism - mechanism how user has accepted the TAA
-	 * @param time - UTC timestamp when user has accepted the TAA
+	 * @param time - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
 	 *
 	 * @return A future resolving to an updated request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -1575,6 +1740,45 @@ public class Ledger extends IndyJava.API {
 				taaDigest,
 				mechanism,
 				time,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Append Endorser to an existing request.
+	 *
+	 * An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+	 * But it is expecting that the transaction will be sent by the specified Endorser.
+	 *
+	 * Note: Both Transaction Author and Endorser must sign output request after that.
+	 *
+	 * More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
+	 *                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+	 *
+	 * @param requestJson original request data json.
+	 * @param endorserDid - DID of the Endorser that will submit the transaction.
+	 *                      The Endorser's DID must be present on the ledger.
+	 *
+	 * @return A future resolving to an updated request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> appendRequestEndorser(
+			String requestJson,
+			String endorserDid) throws IndyException {
+
+		ParamGuard.notNull(requestJson, "requestJson");
+		ParamGuard.notNull(endorserDid, "endorserDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_append_request_endorser(
+				commandHandle,
+				requestJson,
+				endorserDid,
 				buildRequestCb);
 
 		checkResult(future, result);

@@ -1,7 +1,6 @@
 import pytest
 
-from indy import pool
-from indy.error import ErrorCode, IndyError
+from indy import pool, error
 
 
 @pytest.mark.parametrize(
@@ -14,10 +13,8 @@ async def test_open_pool_ledger_works(pool_handle):
 
 @pytest.mark.asyncio
 async def test_open_pool_ledger_works_for_twice(pool_name, pool_config, pool_handle):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.PoolLedgerInvalidPoolHandle):
         await pool.open_pool_ledger(pool_name, pool_config)
-
-    assert ErrorCode.PoolLedgerInvalidPoolHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -25,9 +22,7 @@ async def test_open_pool_ledger_works_for_incompatible_protocol_version(pool_led
                                                                         protocol_version):
     await pool.set_protocol_version(1)
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.PoolIncompatibleProtocolVersion):
         await pool.open_pool_ledger(pool_name, None)
-
-    assert ErrorCode.PoolIncompatibleProtocolVersion == e.value.error_code
 
     await pool.set_protocol_version(protocol_version)

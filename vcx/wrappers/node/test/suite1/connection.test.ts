@@ -2,6 +2,7 @@ import '../module-resolver-helper'
 
 import { assert } from 'chai'
 import { connectionCreate, connectionCreateConnect, dataConnectionCreate } from 'helpers/entities'
+import { INVITE_ACCEPTED_MESSAGE } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow, sleep } from 'helpers/utils'
 import { Connection, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
@@ -128,14 +129,21 @@ describe('Connection:', () => {
 
     it(`returns ${StateType.OfferSent}: connected`, async () => {
       const connection = await connectionCreateConnect()
+      VCXMock.setVcxMock(VCXMockMessage.AcceptInvite)
       await connection.updateState()
-      assert.equal(await connection.getState(), StateType.OfferSent)
+      assert.equal(await connection.getState(), StateType.Accepted)
     })
 
     it(`returns ${StateType.Accepted}: mocked accepted`, async () => {
       const connection = await connectionCreateConnect()
       VCXMock.setVcxMock(VCXMockMessage.GetMessages)
       await connection.updateState()
+      assert.equal(await connection.getState(), StateType.Accepted)
+    })
+
+    it(`returns ${StateType.Accepted}: mocked accepted`, async () => {
+      const connection = await connectionCreateConnect()
+      await connection.updateStateWithMessage(INVITE_ACCEPTED_MESSAGE)
       assert.equal(await connection.getState(), StateType.Accepted)
     })
 
@@ -173,4 +181,19 @@ describe('Connection:', () => {
     })
   })
 
+  describe('sendPing:', () => {
+    it('success: send ping', async () => {
+      const connection = await connectionCreate()
+      const error = await shouldThrow(() => connection.sendPing('ping'))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
+
+  describe('sendDiscoveryFeatures:', () => {
+    it('success: send discovery features', async () => {
+      const connection = await connectionCreate()
+      const error = await shouldThrow(() => connection.sendDiscoveryFeatures('*', 'comment'))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
 })

@@ -5,7 +5,7 @@
 	<groupId>org.hyperledger</groupId>
 	<artifactId>indy</artifactId>
 	<packaging>jar</packaging>
-	<version>1.9.0</version>
+	<version>1.14.1</version>
 	<name>indy</name>
 	<description>This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects),
 		which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org).
@@ -180,7 +180,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.8.0-beta1</version>
+			<version>1.7.26</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>

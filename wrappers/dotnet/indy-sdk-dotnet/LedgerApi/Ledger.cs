@@ -1179,5 +1179,385 @@ namespace Hyperledger.Indy.LedgerApi
 
             return taskCompletionSource.Task;
         }
+
+        /// <summary>
+        /// Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
+        /// </summary>
+        /// <param name="submitter_did">DID of the request sender.</param>
+        /// <param name="txn_type">ledger transaction alias or associated value.</param>
+        /// <param name="action">type of an action.
+        ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).</param>
+        /// <param name="field">transaction field.</param>
+        /// <param name="old_value">(Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action).</param>
+        /// <param name="new_value">(Optional) new value that can be used to fill the field.</param>
+        /// <param name="constraint">
+        /// set of constraints required for execution of an action in the following format:
+        ///     {
+        ///         constraint_id - &lt;string> type of a constraint.
+        ///             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
+        ///         role - &lt;string> role of a user which satisfy to constrain.
+        ///         sig_count - &lt;u32> the number of signatures required to execution action.
+        ///         need_to_be_owner - &lt;bool> if user must be an owner of transaction.
+        ///         metadata - &lt;object> additional parameters of the constraint.
+        ///     }
+        /// can be combined by
+        ///     {
+        ///         'constraint_id': &lt;"AND" or "OR">
+        ///         'auth_constraints': [&lt;constraint_1>, &lt;constraint_2>]
+        ///     }
+        ///
+        /// Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+        ///
+        /// More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule
+        /// </param>
+        /// <returns>Request result as json.</returns>
+        public static Task<string> BuildAuthRuleRequestAsync(string submitter_did, string txn_type, string action, string field, string old_value, string new_value, string constraint)
+        {
+            ParamGuard.NotNullOrWhiteSpace(submitter_did, "submitter_did");
+            ParamGuard.NotNullOrWhiteSpace(txn_type, "txn_type");
+            ParamGuard.NotNullOrWhiteSpace(action, "action");
+            ParamGuard.NotNullOrWhiteSpace(field, "field");
+            ParamGuard.NotNullOrWhiteSpace(constraint, "constraint");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_auth_rule_request(
+                commandHandle,
+                submitter_did,
+                txn_type,
+                action,
+                field,
+                old_value,
+                new_value,
+                constraint,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+        /// </summary>
+        /// <param name="submitter_did">DID of the request sender.</param>
+        /// <param name="rules">
+        /// a list of auth rules: [
+        ///     {
+        ///         "auth_type": ledger transaction alias or associated value,
+        ///         "auth_action": type of an action,
+        ///         "field": transaction field,
+        ///         "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+        ///         "new_value": (Optional) new value that can be used to fill the field,
+        ///         "constraint": set of constraints required for execution of an action in the format described above for `indy_build_auth_rule_request` function.
+        ///     },
+        ///     ...
+        /// ]
+        ///
+        /// Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+        ///
+        /// More about AUTH_RULES request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules
+        ///</param>
+        /// <returns>Request result as json.</returns>
+        public static Task<string> BuildAuthRulesRequestAsync(string submitter_did, string rules)
+        {
+            ParamGuard.NotNullOrWhiteSpace(submitter_did, "submitter_did");
+            ParamGuard.NotNullOrWhiteSpace(rules, "rules");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_auth_rules_request(
+                commandHandle,
+                submitter_did,
+                rules,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds a GET_AUTH_RULE request. Request to get authentication rules for ledger transactions.
+        ///
+        /// NOTE: Either none or all transaction related parameters must be specified (`old_value` can be skipped for `ADD` action).
+        ///     * none - to get all authentication rules for all ledger transactions
+        ///     * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
+        ///
+        /// </summary>
+        /// <param name="submitter_did">(Optional) DID of the read request sender.</param>
+        /// <param name="txn_type">(Optional) target ledger transaction alias or associated value.</param>
+        /// <param name="action">(Optional) target action type. Can be either "ADD" or "EDIT".</param>
+        /// <param name="field">(Optional) target transaction field.</param>
+        /// <param name="old_value">(Optional) old value of field, which can be changed to a new_value (mandatory for EDIT action).</param>
+        /// <param name="new_value">(Optional) new value that can be used to fill the field.</param>
+        /// <returns>Request result as json.</returns>
+        public static Task<string> BuildGetAuthRuleRequestAsync(string submitter_did, string txn_type, string action, string field, string old_value, string new_value)
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_get_auth_rule_request(
+                commandHandle,
+                submitter_did,
+                txn_type,
+                action,
+                field,
+                old_value,
+                new_value,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
+        ///
+        /// EXPERIMENTAL
+        /// </summary>
+        /// <param name="submitter_did">DID of the request sender.</param>
+        /// <param name="text">a content of the TAA.</param>
+        /// <param name="version">a version of the TAA (unique UTF-8 string).</param>
+        /// <param name="ratification_ts">i64 - the date (timestamp) of TAA ratification by network government.</param>
+        /// <param name="retirement_ts">i64 - the date (timestamp) of TAA retirement.
+        ///                                   -1 to omit. Should be omitted in case of adding the new (latest) TAA,
+        ///                                   Should be used to deactivate non-latest TAA on the ledger.</param>
+        /// <returns>Request result as json.</returns>
+        public static Task<string> BuildTxnAuthorAgreementRequestAsync(string submitter_did, string text, string version, long ratification_ts, long retirement_ts)
+        {
+            ParamGuard.NotNullOrWhiteSpace(submitter_did, "submitter_did");
+            ParamGuard.NotNullOrWhiteSpace(version, "version");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_txn_author_agreement_request(
+                commandHandle,
+                submitter_did,
+                text,
+                version,
+                ratification_ts,
+                retirement_ts,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+        ///
+        /// EXPERIMENTAL
+        /// </summary>
+        /// <param name="submitter_did"> Identifier (DID) of the transaction author as base58-encoded string.
+        ///                              Actual request sender may differ if Endorser is used (look at `AppendRequestEndorser`)</param>
+        /// <returns>Request result as json.</returns>
+        public static Task<string> BuildDisableAllTxnAuthorAgreementsRequestAsync(string submitter_did)
+        {
+            ParamGuard.NotNullOrWhiteSpace(submitter_did, "submitter_did");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_disable_all_txn_author_agreements_request(
+                commandHandle,
+                submitter_did,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
+        ///
+        /// EXPERIMENTAL
+        /// </summary>
+        /// <param name="submitter_did">(Optional) DID of the request sender.</param>
+        /// <param name="data">
+        /// (Optional) specifies a condition for getting specific TAA.
+        /// Contains 3 mutually exclusive optional fields:
+        /// {
+        ///     hash: Optional&lt;str> - hash of requested TAA,
+        ///     version: Optional&lt;str> - version of requested TAA.
+        ///     timestamp: Optional&lt;u64> - ledger will return TAA valid at requested timestamp.
+        /// }
+        /// Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
+        ///</param>
+        /// <returns></returns>
+        public static Task<string> BuildGetTxnAuthorAgreementRequestAsync(string submitter_did, string data)
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_get_txn_author_agreement_request(
+                commandHandle,
+                submitter_did,
+                data,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds a SET_TXN_AUTHR_AGRMT_AML request. Request to add a new list of acceptance mechanisms for transaction author agreement.
+        /// Acceptance Mechanism is a description of the ways how the user may accept a transaction author agreement.
+        ///
+        /// EXPERIMENTAL
+        /// </summary>
+        /// <param name="submitter_did">DID of the request sender.</param>
+        /// <param name="aml">a set of new acceptance mechanisms:
+        /// {
+        ///     “&lt;acceptance mechanism label 1>”: { acceptance mechanism description 1},
+        ///     “&lt;acceptance mechanism label 2>”: { acceptance mechanism description 2},
+        ///     ...
+        /// }</param>
+        /// <param name="version">a version of new acceptance mechanisms. (Note: unique on the Ledger)</param>
+        /// <param name="aml_context">(Optional) common context information about acceptance mechanisms (may be a URL to external resource).</param>
+        /// <returns>Request result as json.</returns>
+        public static Task<string> BuildAcceptanceMechanismsRequestAsync(string submitter_did, string aml, string version, string aml_context)
+        {
+            ParamGuard.NotNullOrWhiteSpace(submitter_did, "submitter_did");
+            ParamGuard.NotNullOrWhiteSpace(aml, "aml");
+            ParamGuard.NotNullOrWhiteSpace(version, "version");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_acceptance_mechanisms_request(
+                commandHandle,
+                submitter_did,
+                aml,
+                version,
+                aml_context,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds a GET_TXN_AUTHR_AGRMT_AML request. Request to get a list of  acceptance mechanisms from the ledger
+        /// valid for specified time or the latest one.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// NOTE: timestamp and version cannot be specified together.
+        /// </summary>
+        /// <param name="submitter_did">(Optional) DID of the request sender.</param>
+        /// <param name="timestamp">i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.</param>
+        /// <param name="version">(Optional) version of acceptance mechanisms.</param>
+        /// <remarks>NOTE: timestamp and version cannot be specified together.</remarks>
+        /// <returns>Request result as json.</returns>
+        public static Task<string> BuildGetAcceptanceMechanismsRequestAsync(string submitter_did, long timestamp, string version)
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_get_acceptance_mechanisms_request(
+                commandHandle,
+                submitter_did,
+                timestamp,
+                version,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Append transaction author agreement acceptance data to a request.
+        /// This function should be called before signing and sending a request
+        /// if there is any transaction author agreement set on the Ledger.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// This function may calculate digest by itself or consume it as a parameter.
+        /// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+        ///
+        /// </summary>
+        /// <param name="request_json">original request data json.</param>
+        /// <param name="text">
+        /// text and version - (optional) raw data about TAA from ledger.
+        ///     These parameters should be passed together.
+        ///     These parameters are required if taa_digest parameter is omitted.
+        ///     </param>
+        /// <param name="version">
+        /// text and version - (optional) raw data about TAA from ledger.
+        ///     These parameters should be passed together.
+        ///     These parameters are required if taa_digest parameter is omitted.
+        ///     </param>
+        /// <param name="taa_digest">(optional) digest on text and version. This parameter is required if text and version parameters are omitted.</param>
+        /// <param name="mechanism">mechanism how user has accepted the TAA</param>
+        /// <param name="time">UTC timestamp when user has accepted the TAA</param>
+        /// <returns></returns>
+        public static Task<string> AppendTxnAuthorAgreementAcceptanceToRequestAsync(string request_json, string text, string version, string taa_digest, string mechanism, ulong time)
+        {
+            ParamGuard.NotNullOrWhiteSpace(request_json, "request_json");
+            ParamGuard.NotNullOrWhiteSpace(mechanism, "mechanism");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_append_txn_author_agreement_acceptance_to_request(
+                commandHandle,
+                request_json,
+                text,
+                version,
+                taa_digest,
+                mechanism,
+                time,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Append Endorser to an existing request.
+        ///
+        /// An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+        /// But it is expecting that the transaction will be sent by the specified Endorser.
+        ///
+        /// Note: Both Transaction Author and Endorser must sign output request after that.
+        ///
+        /// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
+        ///                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+        /// </summary>
+        /// <param name="requestJson">Original request</param>
+        /// <param name="endorserDid">
+        /// DID of the Endorser that will submit the transaction.
+        /// The Endorser's DID must be present on the ledger.
+        /// </param>
+        /// <returns>Request JSON with Endorser field appended.</returns>
+        public static Task<string> AppendRequestEndorserAsync(string requestJson, string endorserDid)
+        {
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
+            ParamGuard.NotNullOrWhiteSpace(endorserDid, "endorserDid");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_append_request_endorser(
+                commandHandle,
+                requestJson,
+                endorserDid,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
     }
 }

@@ -63,6 +63,20 @@ indy.issuerCreateAndStoreCredentialDef = function issuerCreateAndStoreCredential
   return cb.promise
 }
 
+indy.issuerRotateCredentialDefStart = function issuerRotateCredentialDefStart (wh, credDefId, config, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data[0])
+  })
+  capi.issuerRotateCredentialDefStart(wh, credDefId, toJson(config), cb)
+  return cb.promise
+}
+
+indy.issuerRotateCredentialDefApply = function issuerRotateCredentialDefApply (wh, credDefId, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.issuerRotateCredentialDefApply(wh, credDefId, cb)
+  return cb.promise
+}
+
 indy.issuerCreateAndStoreRevocReg = function issuerCreateAndStoreRevocReg (wh, issuerDid, revocDefType, tag, credDefId, config, tailsWriterHandle, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1]), fromJson(data[2])]
@@ -192,6 +206,18 @@ indy.createRevocationState = function createRevocationState (blobStorageReaderHa
 indy.updateRevocationState = function updateRevocationState (blobStorageReaderHandle, revState, revRegDef, revRegDelta, timestamp, credRevId, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.updateRevocationState(blobStorageReaderHandle, toJson(revState), toJson(revRegDef), toJson(revRegDelta), timestamp, credRevId, cb)
+  return cb.promise
+}
+
+indy.generateNonce = function generateNonce (cb) {
+  cb = wrapIndyCallback(cb)
+  capi.generateNonce(cb)
+  return cb.promise
+}
+
+indy.toUnqualified = function toUnqualified (entity, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.toUnqualified(entity, cb)
   return cb.promise
 }
 
@@ -351,6 +377,12 @@ indy.abbreviateVerkey = function abbreviateVerkey (did, fullVerkey, cb) {
   return cb.promise
 }
 
+indy.qualifyDid = function qualifyDid (wh, did, method, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.qualifyDid(wh, did, method, cb)
+  return cb.promise
+}
+
 indy.signAndSubmitRequest = function signAndSubmitRequest (poolHandle, wh, submitterDid, request, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.signAndSubmitRequest(poolHandle, wh, submitterDid, toJson(request), cb)
@@ -408,6 +440,14 @@ indy.buildGetAttribRequest = function buildGetAttribRequest (submitterDid, targe
 indy.buildGetNymRequest = function buildGetNymRequest (submitterDid, targetDid, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildGetNymRequest(submitterDid, targetDid, cb)
+  return cb.promise
+}
+
+indy.parseGetNymResponse = function parseGetNymResponse (response, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data)
+  })
+  capi.parseGetNymResponse(toJson(response), cb)
   return cb.promise
 }
 
@@ -547,15 +587,28 @@ indy.buildAuthRuleRequest = function buildAuthRuleRequest (submitterDid, txnType
   return cb.promise
 }
 
+indy.buildAuthRulesRequest = function buildAuthRulesRequest (submitterDid, data, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildAuthRulesRequest(submitterDid, toJson(data), cb)
+  return cb.promise
+}
+
 indy.buildGetAuthRuleRequest = function buildGetAuthRuleRequest (submitterDid, txnType, action, field, oldValue, newValue, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildGetAuthRuleRequest(submitterDid, txnType, action, field, oldValue, newValue, cb)
   return cb.promise
 }
 
-indy.buildTxnAuthorAgreementRequest = function buildTxnAuthorAgreementRequest (submitterDid, text, version, cb) {
+indy.buildTxnAuthorAgreementRequest = function buildTxnAuthorAgreementRequest (submitterDid, text, version, ratificationTimestamp, retirementTimestamp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildTxnAuthorAgreementRequest(submitterDid, text, version, cb)
+  capi.buildTxnAuthorAgreementRequest(submitterDid, text, version, ratificationTimestamp == null ? -1 : ratificationTimestamp,
+    retirementTimestamp == null ? -1 : retirementTimestamp, cb)
+  return cb.promise
+}
+
+indy.buildDisableAllTxnAuthorAgreementsRequest = function buildDisableAllTxnAuthorAgreementsRequest (submitterDid, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildDisableAllTxnAuthorAgreementsRequest(submitterDid, cb)
   return cb.promise
 }
 
@@ -580,6 +633,12 @@ indy.buildGetAcceptanceMechanismsRequest = function buildGetAcceptanceMechanisms
 indy.appendTxnAuthorAgreementAcceptanceToRequest = function appendTxnAuthorAgreementAcceptanceToRequest (request, text, version, taaDigest, accMechType, timeOfAcceptance, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.appendTxnAuthorAgreementAcceptanceToRequest(toJson(request), text, version, taaDigest, accMechType, timeOfAcceptance, cb)
+  return cb.promise
+}
+
+indy.appendRequestEndorser = function appendRequestEndorser (request, endorserDid, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.appendRequestEndorser(toJson(request), endorserDid, cb)
   return cb.promise
 }
 
@@ -743,9 +802,25 @@ indy.buildGetPaymentSourcesRequest = function buildGetPaymentSourcesRequest (wh,
   return cb.promise
 }
 
+indy.buildGetPaymentSourcesWithFromRequest = function buildGetPaymentSourcesWithFromRequest (wh, submitterDid, paymentAddress, from, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.buildGetPaymentSourcesWithFromRequest(wh, submitterDid, paymentAddress, from, cb)
+  return cb.promise
+}
+
 indy.parseGetPaymentSourcesResponse = function parseGetPaymentSourcesResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.parseGetPaymentSourcesResponse(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
+indy.parseGetPaymentSourcesWithFromResponse = function parseGetPaymentSourcesWithFromResponse (paymentMethod, resp, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.parseGetPaymentSourcesWithFromResponse(paymentMethod, toJson(resp), cb)
   return cb.promise
 }
 
@@ -806,6 +881,26 @@ indy.buildVerifyPaymentReq = function buildVerifyPaymentReq (wh, submitterDid, r
 indy.parseVerifyPaymentResponse = function parseVerifyPaymentResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.parseVerifyPaymentResponse(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
+indy.getRequestInfo = function getRequestInfo (getAuthRuleResponse, requesterInfo, fees, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data)
+  })
+  capi.getRequestInfo(toJson(getAuthRuleResponse), toJson(requesterInfo), toJson(fees), cb)
+  return cb.promise
+}
+
+indy.signWithAddress = function signWithAddress (wh, address, message, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.signWithAddress(wh, address, message, cb)
+  return cb.promise
+}
+
+indy.verifyWithAddress = function verifyWithAddress (address, message, signature, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.verifyWithAddress(address, message, signature, cb)
   return cb.promise
 }
 

@@ -16,16 +16,8 @@
   },
   "contributors": [
     {
-      "name": "Spencer Holman",
-      "email": "sah14@byu.edu"
-    },
-    {
-      "name": "Matthew Hailstone",
-      "email": "matthew_hailstone@byu.edu"
-    },
-    {
-      "name": "Xavier NOPRE",
-      "email": "xnopre@twinpeek.net"
+      "name": "Hyperledger Indy Contributors",
+      "email": "hyperledger-indy@lists.hyperledger.org"
     }
   ],
   "license": "Apache-2.0",
@@ -36,7 +28,7 @@
   "dependencies": {
     "cryptiles": "^4.1.1",
     "home-dir": "^1.0.0",
-    "indy-sdk": "file:../../wrappers/nodejs",
+    "indy-sdk": "^1.11.0",
     "mkdirp": "^0.5.1"
   }
 }

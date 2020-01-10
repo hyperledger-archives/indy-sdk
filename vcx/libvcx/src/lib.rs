@@ -37,6 +37,12 @@ extern crate failure;
 
 extern crate rmp_serde;
 
+extern crate base64;
+
+extern crate strum;
+#[macro_use]
+extern crate strum_macros;
+
 #[macro_use]
 pub mod utils;
 pub mod settings;
@@ -55,6 +61,8 @@ pub mod error;
 pub mod credential;
 pub mod object_cache;
 pub mod disclosed_proof;
+
+pub mod v3;
 
 #[allow(unused_imports)]
 #[cfg(test)]
@@ -182,14 +190,14 @@ mod tests {
 
     fn send_credential(issuer_handle: u32, connection: u32, credential_handle: u32) {
         set_institution();
-        issuer_credential::update_state(issuer_handle).unwrap();
+        issuer_credential::update_state(issuer_handle, None).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, issuer_credential::get_state(issuer_handle).unwrap());
         println!("sending credential");
         issuer_credential::send_credential(issuer_handle, connection).unwrap();
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER STORE CREDENTIAL
         tests::set_consumer();
-        credential::update_state(credential_handle).unwrap();
+        credential::update_state(credential_handle, None).unwrap();
         thread::sleep(Duration::from_millis(2000));
         println!("storing credential");
         credential::get_credential_id(credential_handle).unwrap();
@@ -311,7 +319,7 @@ mod tests {
 
         // AS INSTITUTION VALIDATE PROOF
         set_institution();
-        proof::update_state(proof_req_handle).unwrap();
+        proof::update_state(proof_req_handle, None).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof validated!");
     }
@@ -367,7 +375,7 @@ mod tests {
 
         // AS INSTITUTION VALIDATE PROOF
         set_institution();
-        proof::update_state(proof_req_handle).unwrap();
+        proof::update_state(proof_req_handle, None).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof validated!");
         let wallet = ::utils::libindy::payments::get_wallet_token_info().unwrap();
@@ -389,7 +397,7 @@ mod tests {
 
         // AS INSTITUTION VALIDATE REVOKED PROOF
         set_institution();
-        proof::update_state(proof_req_handle2).unwrap();
+        proof::update_state(proof_req_handle2, None).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle2).unwrap(), ProofStateType::ProofInvalid as u32);
         println!("proof invalid - revoked!");
 
@@ -404,7 +412,7 @@ mod tests {
 
         // AS INSTITUTION VALIDATE REVOKED PROOF - VALID
         set_institution();
-        proof::update_state(proof_req_handle3).unwrap();
+        proof::update_state(proof_req_handle3, None).unwrap();
         assert_eq!(proof::get_proof_state(proof_req_handle3).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof valid for specified interval!");
 

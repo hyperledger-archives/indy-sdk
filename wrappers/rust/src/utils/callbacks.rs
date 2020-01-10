@@ -21,6 +21,7 @@ lazy_static! {
     static ref CALLBACKS_HANDLE_USIZE: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(CommandHandle, usize), IndyError>>>> = Default::default();
     static ref CALLBACKS_STR_STR_U64: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String, u64), IndyError>>>> = Default::default();
     static ref CALLBACKS_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
+    static ref CALLBACKS_STR_I64: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, i64), IndyError>>>> = Default::default();
     static ref CALLBACKS_STR_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String), IndyError>>>> = Default::default();
     static ref CALLBACKS_STR_OPTSTR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, Option<String>), IndyError>>>> = Default::default();
     static ref CALLBACKS_STR_STR_STR: Mutex<HashMap<CommandHandle, oneshot::Sender<Result<(String, String, String), IndyError>>>> = Default::default();
@@ -72,6 +73,10 @@ impl ClosureHandler {
            CALLBACKS_STR,
            rust_str!(str1));
 
+    cb_ec!(cb_ec_string_i64(str1:*const c_char, num: i64)->(String, i64),
+           CALLBACKS_STR_I64,
+           (rust_str!(str1), num));
+
     cb_ec!(cb_ec_string_string(str1:*const c_char, str2:*const c_char)->(String, String),
            CALLBACKS_STR_STR,
            (rust_str!(str1), rust_str!(str2)));
@@ -105,7 +110,7 @@ macro_rules! result_handler {
     ($name:ident($res_type:ty), $map:ident) => (
     pub fn $name(command_handle: CommandHandle,
                  err: ErrorCode,
-                 rx: sync::oneshot::Receiver<Result<$res_type, IndyError>>) -> Box<Future<Item=$res_type, Error= IndyError>> {
+                 rx: sync::oneshot::Receiver<Result<$res_type, IndyError>>) -> Box<dyn Future<Item=$res_type, Error= IndyError>> {
         if err != ErrorCode::Success {
             let mut callbacks = $map.lock().unwrap();
             callbacks.remove(&command_handle).unwrap();
@@ -127,6 +132,7 @@ impl ResultHandler {
     result_handler!(slice(Vec<u8>), CALLBACKS_SLICE);
     result_handler!(bool(bool), CALLBACKS_BOOL);
     result_handler!(str(String), CALLBACKS_STR);
+    result_handler!(str_i64((String, i64)), CALLBACKS_STR_I64);
     result_handler!(handle_usize((CommandHandle, usize)), CALLBACKS_HANDLE_USIZE);
     result_handler!(str_slice((String, Vec<u8>)), CALLBACKS_STR_SLICE);
     result_handler!(str_str((String, String)), CALLBACKS_STR_STR);

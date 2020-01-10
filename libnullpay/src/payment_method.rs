@@ -145,7 +145,7 @@ pub mod parse_response_with_fees {
 pub mod build_get_payment_sources_request {
     use super::*;
 
-    pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, payment_address: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
+    pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, payment_address: *const c_char, _from: i64, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(payment_address, ErrorCode::CommonInvalidState);
         trace!("libnullpay::build_get_payment_sources_request::handle << payment_address: {}, submitter_did: {:?}", payment_address, submitter_did);
@@ -170,10 +170,33 @@ pub mod build_get_payment_sources_request {
 
 pub mod parse_get_payment_sources_response {
     use super::*;
+    use std::sync::Mutex;
 
-    pub extern fn handle(cmd_handle: i32, resp_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
+    pub extern fn handle(cmd_handle: i32, resp_json: *const c_char, cb: Option<extern fn(command_handle_: i32,
+                                                                                         err: ErrorCode,
+                                                                                         sources_json: *const c_char,
+                                                                                         next: i64) -> ErrorCode>) -> ErrorCode {
         trace!("libnullpay::parse_get_payment_sources_response::handle <<");
-        _process_parse_response(cmd_handle, resp_json, cb)
+        lazy_static! {
+            static ref CB_ST: Mutex<Vec<Option<extern fn(command_handle_: i32,
+                                                   err: ErrorCode,
+                                                   sources_json: *const c_char,
+                                                   next: i64) -> ErrorCode>>> = Default::default();
+        }
+        {
+            let mut cbs = CB_ST.lock().unwrap();
+            cbs.push(cb)
+        }
+        extern fn cb_wrap(command_handle_: i32,
+                          err: ErrorCode,
+                          payment_address: *const c_char) -> ErrorCode {
+            let mut cbs = CB_ST.lock().unwrap();
+            match cbs.pop() {
+                Some(Some(cb)) => cb(command_handle_, err, payment_address, -1),
+                _ => ErrorCode::Success
+            }
+        }
+        _process_parse_response(cmd_handle, resp_json, Some(cb_wrap))
     }
 }
 
@@ -238,7 +261,7 @@ pub mod build_payment_req {
                         }),
                     );
                 });
-            })
+            }),
         )
     }
 }
@@ -380,6 +403,53 @@ pub mod parse_verify_payment_response {
     pub extern fn handle(cmd_handle: i32, resp_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         trace!("libnullpay::parse_verify_payment_response::handle <<");
         _process_parse_response(cmd_handle, resp_json, cb)
+    }
+}
+
+pub mod sign_with_address {
+    use super::*;
+
+    pub extern fn handle(command_handle: i32, wallet_handle: i32, address: *const c_char, message_raw: *const u8, message_len: u32,
+                                        cb: Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32)>) -> ErrorCode {
+        check_useful_c_str!(address, ErrorCode::CommonInvalidState);
+        check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidState, ErrorCode::CommonInvalidState);
+        trace!("libnullpay::sign_with_address::handle << wallet_handle: {}\n    address: {:?}\n    message_raw: {:?}, message_len: {}", wallet_handle, address, message_raw, message_len);
+
+        if let Some(cb) = cb {
+            let signature = rand::gen_rand_signature(&address, message_raw.as_slice());
+            cb(command_handle, ErrorCode::Success, signature.as_slice().as_ptr() as *const u8, signature.len() as u32);
+        }
+
+        ErrorCode::Success
+    }
+}
+
+pub mod verify_with_address {
+    use super::*;
+
+    pub extern fn handle(command_handle: i32, address: *const c_char,
+                         message_raw: *const u8, message_len: u32,
+                         signature_raw: *const u8, signature_len: u32,
+                         cb: Option<extern fn(command_handle: i32, err: ErrorCode, result: bool)>) -> ErrorCode {
+        check_useful_c_str!(address, ErrorCode::CommonInvalidState);
+        check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidState, ErrorCode::CommonInvalidState);
+        check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidState, ErrorCode::CommonInvalidState);
+        trace!("libnullpay::verify_with_address::handle << address: {:?}\n    message: {:?}\n    message_len: {}\n    signature: {:?}\n    signature_len: {}", address, message_raw, message_len, signature_raw, signature_len);
+        if let Some(cb) = cb {
+            let signature = rand::gen_rand_signature(&address, message_raw.as_slice());
+            trace!("generated signature: {:?}", signature);
+            let mut i = 0usize;
+            let len = signature.len();
+            let mut check = len == signature_raw.len();
+            while check && i < len {
+                check &= signature[i] == signature_raw[i];
+                i += 1;
+            }
+
+            cb(command_handle, ErrorCode::Success, check);
+        }
+
+        ErrorCode::Success
     }
 }
 

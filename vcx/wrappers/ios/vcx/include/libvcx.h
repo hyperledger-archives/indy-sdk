@@ -148,7 +148,13 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
 
 /** Deletes a connection, send an API call to agency to stop sending messages from this connection */
 vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t err));
-    
+
+/** Generate a signature for the specified data */
+vcx_error_t vcx_connection_sign_data(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, uint8_t const* data_raw, unsigned int data_len, void (*cb)(vcx_command_handle_t, vcx_error_t err, uint8_t const* signature_raw, unsigned int signature_len));
+
+/** Verify the signature is valid for the specified data */
+vcx_error_t vcx_connection_verify_signature(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, uint8_t const* data_raw, unsigned int data_len, uint8_t const* signature_raw, unsigned int signature_len, void (*cb)(vcx_command_handle_t, vcx_error_t err, vcx_bool_t valid));
+
 /**
  * credential issuer object
  *

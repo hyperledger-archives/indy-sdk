@@ -28,6 +28,8 @@ pub struct ForwardAgentConfig {
 pub struct AppConfig {
     // Http application prefix
     pub prefix: String,
+    // enable or disable http api for fetching information about agency status
+    pub enable_admin_api: Option<bool>
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -43,6 +45,12 @@ pub struct WalletStorageConfig {
     // Wallet storage type for agents wallets
     #[serde(rename = "type")]
     pub xtype: Option<String>,
+    // Optional to override default library path. Default value is determined based on value of
+    // xtype and OS
+    pub plugin_library_path: Option<String>,
+    // Optional to override default storage initialization function. Default value is  determined
+    // based on value of xtype and OS
+    pub plugin_init_function: Option<String>,
     // Wallet storage config for agents wallets
     pub config: Option<Value>,
     // Wallet storage credentials for agents wallets

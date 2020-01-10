@@ -24,131 +24,59 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testBuildNymRequestWorksForOnlyRequiredFields() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"type\":\"1\"}", DID, dest);
+		JSONObject expectedResult = new JSONObject()
+				.put("identifier", DID)
+				.put("operation",
+						new JSONObject()
+								.put("dest", dest)
+								.put("type", "1")
+				);
 
-		String nymRequest = Ledger.buildNymRequest(DID, dest, null, null, null).get();
-		assertTrue(nymRequest.contains(expectedResult));
-	}
-
-	@Test
-	public void testBuildNymRequestWorksForEmptyRole() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"role\":null,\"type\":\"1\"}", DID, dest);
-
-		String nymRequest = Ledger.buildNymRequest(DID, dest, null, null, "").get();
-		assertTrue(nymRequest.contains(expectedResult));
+		String request = Ledger.buildNymRequest(DID, dest, null, null, null).get();
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
 	}
 
 	@Test
 	public void testBuildNymRequestWorksForOnlyOptionalFields() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\"," +
-				"\"operation\":{" +
-				"\"alias\":\"%s\"," +
-				"\"dest\":\"%s\"," +
-				"\"role\":\"2\"," +
-				"\"type\":\"1\"," +
-				"\"verkey\":\"%s\"" +
-				"}", DID, alias, dest, VERKEY_TRUSTEE);
+		JSONObject expectedResult = new JSONObject()
+				.put("identifier", DID)
+				.put("operation",
+						new JSONObject()
+								.put("alias", alias)
+								.put("dest", dest)
+								.put("verkey", VERKEY_TRUSTEE)
+								.put("role", "2")
+								.put("type", "1")
+				);
 
-		String nymRequest = Ledger.buildNymRequest(DID, dest, VERKEY_TRUSTEE, alias, role).get();
-		assertTrue(nymRequest.contains(expectedResult));
+
+		String request = Ledger.buildNymRequest(DID, dest, VERKEY_TRUSTEE, alias, role).get();
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
 	}
 
 	@Test
 	public void testBuildGetNymRequestWorks() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"type\":\"105\",\"dest\":\"%s\"}", DID, dest);
+		JSONObject expectedResult = new JSONObject()
+				.put("identifier", DID)
+				.put("operation",
+						new JSONObject()
+								.put("dest", dest)
+								.put("type", "105")
+				);
 
-		String nymRequest = Ledger.buildGetNymRequest(DID, dest).get();
-		assertTrue(nymRequest.contains(expectedResult));
+		String request = Ledger.buildGetNymRequest(DID, dest).get();
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
 	}
 
 	@Test
 	public void testBuildGetNymRequestWorksForDefaultSubmitter() throws Exception {
 		Ledger.buildGetNymRequest(null, dest).get();
-	}
-
-	@Test
-	public void testNymRequestWorksWithoutSignature() throws Exception {
-		DidResults.CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
-		String did = result.getDid();
-
-		String nymRequest = Ledger.buildNymRequest(did, did, null, null, null).get();
-		String response = Ledger.submitRequest(pool, nymRequest).get();
-		checkResponseType(response, "REQNACK");
-	}
-
-	@Test
-	public void testSendNymRequestsWorksForOnlyRequiredFields() throws Exception {
-		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String trusteeDid = trusteeDidResult.getDid();
-
-		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, null, null, null).get();
-		String nymResponse = Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
-		assertNotNull(nymResponse);
-	}
-
-	@Test
-	public void testSendNymRequestsWorksForOptionalFields() throws Exception {
-		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String trusteeDid = trusteeDidResult.getDid();
-
-		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-		String myVerkey = myDidResult.getVerkey();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, alias, role).get();
-		String nymResponse = Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
-		assertNotNull(nymResponse);
-	}
-
-	@Test
-	public void testGetNymRequestWorks() throws Exception {
-		DidResults.CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = result.getDid();
-
-		String getNymRequest = Ledger.buildGetNymRequest(did, did).get();
-		String getNymResponseJson = Ledger.submitRequest(pool, getNymRequest).get();
-
-		JSONObject getNymResponse = new JSONObject(getNymResponseJson);
-		assertEquals(did, getNymResponse.getJSONObject("result").getString("dest"));
-	}
-
-	@Test
-	public void testSendNymRequestsWorksForWrongSignerRole() throws Exception {
-		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String trusteeDid = trusteeDidResult.getDid();
-
-		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, null, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
-
-		DidResults.CreateAndStoreMyDidResult myDidResult2 = Did.createAndStoreMyDid(wallet, "{}").get();
-		String myDid2 = myDidResult2.getDid();
-
-		String nymRequest2 = Ledger.buildNymRequest(myDid, myDid2, null, null, null).get();
-		String response = Ledger.signAndSubmitRequest(pool, wallet, myDid, nymRequest2).get();
-		checkResponseType(response, "REQNACK");
-
-	}
-
-	@Test
-	public void testSendNymRequestsWorksForUnknownSigner() throws Exception {
-		String identityJson =
-				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee9", null, null).toJson();
-
-		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, identityJson).get();
-		String trusteeDid = trusteeDidResult.getDid();
-
-		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, null, null, null).get();
-		String response = Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
-		checkResponseType(response, "REQNACK");
 	}
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
@@ -165,15 +93,15 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 		String getNymRequest = Ledger.buildGetNymRequest(myDid, myDid).get();
 		String getNymResponse = PoolUtils.ensurePreviousRequestApplied(pool, getNymRequest,
-				response -> compareResponseType(response, "REPLY"));
+				innerResponse -> {
+					JSONObject innerResponseObject = new JSONObject(innerResponse);
+					return !innerResponseObject.getJSONObject("result").isNull("seqNo");
+				});
 		assertNotNull(getNymResponse);
-	}
 
-	@Test
-	public void testSendNymRequestsWorksForWrongRole() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		Ledger.buildNymRequest(DID, dest, null, null, "WRONG_ROLE").get();
+		String nymDataJson = Ledger.parseGetNymResponse(getNymResponse).get();
+		JSONObject nymData = new JSONObject(nymDataJson);
+		assertEquals(myDid, nymData.getString("did"));
+		assertEquals(myVerkey, nymData.getString("verkey"));
 	}
 }

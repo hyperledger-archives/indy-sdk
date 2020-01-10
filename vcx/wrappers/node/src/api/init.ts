@@ -90,3 +90,7 @@ export async function initVcxWithConfig (config: string, options: IInitVCXOption
     throw new VCXInternalError(err)
   }
 }
+
+export function initMinimal (config: string): number {
+  return rustAPI().vcx_init_minimal(config)
+}

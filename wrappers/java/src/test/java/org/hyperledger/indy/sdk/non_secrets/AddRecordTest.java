@@ -16,12 +16,6 @@ public class AddRecordTest extends NonSecretsIntegrationTest {
 	}
 
 	@Test
-	public void testAddRecordWorksForDifferentIds() throws Exception {
-		WalletRecord.add(wallet, type, id, value, tagsEmpty).get();
-		WalletRecord.add(wallet, type, id2, value, tagsEmpty).get();
-	}
-
-	@Test
 	public void testAddRecordWorksForDuplicate() throws Exception {
 		WalletRecord.add(wallet, type, id, value, tagsEmpty).get();
 

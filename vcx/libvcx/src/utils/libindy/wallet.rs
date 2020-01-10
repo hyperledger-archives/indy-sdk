@@ -151,7 +151,7 @@ pub fn export(wallet_handle: i32, path: &Path, backup_key: &str) -> VcxResult<()
 pub fn import(config: &str) -> VcxResult<()> {
     trace!("import >>> config {}", config);
 
-    settings::process_config_string(config)?;
+    settings::process_config_string(config, true)?;
 
     let key = settings::get_config_value(settings::CONFIG_WALLET_KEY)
         .or(Err(VcxError::from(VcxErrorKind::MissingWalletKey)))?;

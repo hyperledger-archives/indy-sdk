@@ -2,7 +2,7 @@ use indy::IndyError;
 use indy::wallet;
 use indy::future::Future;
 
-pub const DEFAULT_WALLET_CREDENTIALS: &'static str = r#"{"key":"key"}"#;
+pub const DEFAULT_WALLET_CREDENTIALS: &'static str = r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;
 
 pub fn create_wallet(config: &str) -> Result<(), IndyError> {
     wallet::create_wallet(config, DEFAULT_WALLET_CREDENTIALS).wait()

@@ -53,8 +53,9 @@ async def test_anoncreds_demo_works(pool_name, path_home, wallet_config, credent
                                             cred_json, cred_def_json, None)
 
     # 8. Prover gets credentials for Proof Request
+    nonce = await anoncreds.generate_nonce()
     proof_req_json = json.dumps({
-        'nonce': '123432421212',
+        'nonce': nonce,
         'name': 'proof_req_1',
         'version': '0.1',
         'requested_attributes': {

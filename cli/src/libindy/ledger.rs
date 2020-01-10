@@ -92,6 +92,11 @@ impl Ledger {
                                         old_value, new_value, constraint).wait()
     }
 
+    pub fn build_auth_rules_request(submitter_did: &str,
+                                    rules: &str, ) -> Result<String, IndyError> {
+        ledger::build_auth_rules_request(submitter_did, rules).wait()
+    }
+
     pub fn build_get_auth_rule_request(submitter_did: Option<&str>,
                                        auth_type: Option<&str>,
                                        auth_action: Option<&str>,
@@ -102,12 +107,20 @@ impl Ledger {
                                             old_value, new_value).wait()
     }
 
-    pub fn build_txn_author_agreement_request(submitter_did: &str, text: &str, version: &str, ) -> Result<String, IndyError> {
-        ledger::build_txn_author_agreement_request(submitter_did, text, version).wait()
+    pub fn build_txn_author_agreement_request(submitter_did: &str, text: Option<&str>, version: &str, ratification_ts: Option<u64>, retirement_ts: Option<u64>) -> Result<String, IndyError> {
+        ledger::build_txn_author_agreement_request(submitter_did, text, version, ratification_ts, retirement_ts).wait()
     }
 
-    pub fn build_acceptance_mechanisms_request(submitter_did: &str, aml: &str, version: &str, aml_context: Option<&str>, ) -> Result<String, IndyError> {
+    pub fn build_disable_all_txn_author_agreements_request(submitter_did: &str) -> Result<String, IndyError> {
+        ledger::build_disable_all_txn_author_agreements_request(submitter_did).wait()
+    }
+
+    pub fn build_acceptance_mechanisms_request(submitter_did: &str, aml: &str, version: &str, aml_context: Option<&str>) -> Result<String, IndyError> {
         ledger::build_acceptance_mechanisms_request(submitter_did, aml, version, aml_context).wait()
+    }
+
+    pub fn build_get_acceptance_mechanisms_request(submitter_did: Option<&str>, timestamp: Option<i64>, version: Option<&str>) -> Result<String, IndyError> {
+        ledger::build_get_acceptance_mechanisms_request(submitter_did, timestamp, version).wait()
     }
 
     pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
@@ -127,5 +140,10 @@ impl Ledger {
                                                                   hash,
                                                                   acc_mech_type,
                                                                   time_of_acceptance).wait()
+    }
+
+    pub fn append_request_endorser(request_json: &str,
+                                   endorser_did: &str) -> Result<String, IndyError> {
+        ledger::append_request_endorser(request_json, endorser_did).wait()
     }
 }

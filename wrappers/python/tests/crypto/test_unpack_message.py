@@ -1,10 +1,7 @@
 import json
 import pytest
 
-from indy import IndyError
-from indy import crypto
-
-from indy.error import ErrorCode
+from indy import crypto, error
 
 
 @pytest.mark.asyncio
@@ -52,6 +49,5 @@ async def test_pack_message_and_unpack_message_missing_verkey(wallet_handle, ide
     # run pack and unpack
     packed_message = await crypto.pack_message(wallet_handle, pack_message, recipient_verkeys, sender_vk)
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletItemNotFound):
         await crypto.unpack_message(wallet_handle, packed_message)
-    assert ErrorCode.WalletItemNotFound == e.value.error_code

@@ -41,6 +41,9 @@ pub type TailsWriterHandle = i32;
 
 pub type Error = i32;
 
+pub const INVALID_POOL_HANDLE: PoolHandle = 0;
+pub const INVALID_WALLET_HANDLE: WalletHandle = 0;
+
 pub type ResponseEmptyCB = extern fn(xcommand_handle: CommandHandle, err: Error);
 pub type ResponseBoolCB = extern fn(xcommand_handle: CommandHandle, err: Error, bool1: bool);
 pub type ResponseI32CB = extern fn(xcommand_handle: CommandHandle, err: Error, handle: IndyHandle);
@@ -51,6 +54,7 @@ pub type ResponseStringStringStringCB = extern fn(xcommand_handle: CommandHandle
 pub type ResponseSliceCB = extern fn(xcommand_handle: CommandHandle, err: Error, raw: BString, len: u32);
 pub type ResponseStringSliceCB = extern fn(xcommand_handle: CommandHandle, err: Error, str1: CString, raw: BString, len: u32);
 pub type ResponseStringStringU64CB = extern fn(xcommand_handle: CommandHandle, err: Error, arg1: CString, arg2: CString, arg3: u64);
+pub type ResponseStringI64CB = extern fn(xcommand_handle: CommandHandle, err: Error, arg1: CString, arg3: i64);
 
 extern {
     #[no_mangle]

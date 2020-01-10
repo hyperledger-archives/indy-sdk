@@ -3,8 +3,10 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use std::ptr;
-use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection};
+use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection, update_state_with_message, send_generic_message, send_ping, send_discovery_features};
+
 use error::prelude::*;
+use messages::get_message::Message;
 
 /// Delete a Connection object and release its handle
 ///
@@ -29,19 +31,19 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
     trace!("vcx_connection_delete_connection(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
-    spawn(move|| {
+    spawn(move || {
         match delete_connection(connection_handle) {
             Ok(_) => {
                 trace!("vcx_connection_delete_connection_cb(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);
                 cb(command_handle, error::SUCCESS.code_num);
-            },
+            }
             Err(e) => {
                 trace!("vcx_connection_delete_connection_cb(command_handle: {}, rc: {})", command_handle, e);
                 cb(command_handle, e.into());
-            },
+            }
         }
 
         Ok(())
@@ -73,18 +75,18 @@ pub extern fn vcx_connection_create(command_handle: u32,
 
     trace!("vcx_connection_create(command_handle: {}, source_id: {})", command_handle, source_id);
 
-    spawn(move|| {
+    spawn(move || {
         match create_connection(&source_id) {
             Ok(handle) => {
                 trace!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, error::SUCCESS.message, handle, source_id);
+                       command_handle, error::SUCCESS.message, handle, source_id);
                 cb(command_handle, error::SUCCESS.code_num, handle);
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, x, 0, source_id);
                 cb(command_handle, x.into(), 0);
-            },
+            }
         };
 
         Ok(())
@@ -117,18 +119,18 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
     check_useful_c_str!(source_id, VcxErrorKind::InvalidOption);
     check_useful_c_str!(invite_details, VcxErrorKind::InvalidOption);
     trace!("vcx_connection_create_with_invite(command_handle: {}, source_id: {})", command_handle, source_id);
-    spawn(move|| {
+    spawn(move || {
         match create_connection_with_invite(&source_id, &invite_details) {
             Ok(handle) => {
                 trace!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                      command_handle, error::SUCCESS.message, handle, source_id);
+                       command_handle, error::SUCCESS.message, handle, source_id);
                 cb(command_handle, error::SUCCESS.code_num, handle);
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, x, 0, source_id);
                 cb(command_handle, x.into(), 0);
-            },
+            }
         };
 
         Ok(())
@@ -153,7 +155,7 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_connect(command_handle:u32,
+pub extern fn vcx_connection_connect(command_handle: u32,
                                      connection_handle: u32,
                                      connection_options: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, invite_details: *const c_char)>) -> u32 {
@@ -163,43 +165,42 @@ pub extern fn vcx_connection_connect(command_handle:u32,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     let options = if !connection_options.is_null() {
         check_useful_opt_c_str!(connection_options, VcxErrorKind::InvalidOption);
         connection_options.to_owned()
-    }
-    else {
+    } else {
         None
     };
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     trace!("vcx_connection_connect(command_handle: {}, connection_handle: {}, connection_options: {:?}), source_id: {:?}",
-          command_handle, connection_handle, options, source_id);
+           command_handle, connection_handle, options, source_id);
 
-    spawn(move|| {
+    spawn(move || {
         match connect(connection_handle, options) {
             Ok(_) => {
-                match get_invite_details(connection_handle,true) {
+                match get_invite_details(connection_handle, true) {
                     Ok(x) => {
                         trace!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
-                              command_handle, connection_handle, error::SUCCESS.message, x, source_id);
+                               command_handle, connection_handle, error::SUCCESS.message, x, source_id);
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
-                    },
+                    }
                     Err(e) => {
                         warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
                               command_handle, connection_handle, error::SUCCESS.message, "null", source_id); // TODO: why Success?????
                         cb(command_handle, error::SUCCESS.code_num, ptr::null_mut());
-                    },
+                    }
                 }
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {})",
                       command_handle, connection_handle, x, "null", source_id);
-                cb(command_handle,x.into(), ptr::null_mut());
-            },
+                cb(command_handle, x.into(), ptr::null_mut());
+            }
         };
 
         Ok(())
@@ -229,26 +230,26 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     trace!("vcx_connection_serialize(command_handle: {}, connection_handle: {}), source_id: {:?}",
-          command_handle, connection_handle, source_id);
+           command_handle, connection_handle, source_id);
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
+    spawn(move || {
         match to_string(connection_handle) {
             Ok(json) => {
                 trace!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), source_id: {:?}",
-                      command_handle, connection_handle, error::SUCCESS.message, json, source_id);
+                       command_handle, connection_handle, error::SUCCESS.message, json, source_id);
                 let msg = CStringUtils::string_to_cstring(json);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), source_id: {:?}",
                       command_handle, connection_handle, x, "null", source_id);
                 cb(command_handle, x.into(), ptr::null_mut());
-            },
+            }
         };
 
         Ok(())
@@ -270,8 +271,8 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_connection_deserialize(command_handle: u32,
-                                      connection_data: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, connection_handle: u32)>) -> u32 {
+                                         connection_data: *const c_char,
+                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, connection_handle: u32)>) -> u32 {
     info!("vcx_connection_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -279,19 +280,19 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
 
     trace!("vcx_connection_deserialize(command_handle: {}, connection_data: {})", command_handle, connection_data);
 
-    spawn(move|| {
+    spawn(move || {
         let (rc, handle) = match from_string(&connection_data) {
             Ok(x) => {
                 let source_id = get_source_id(x).unwrap_or_default();
                 trace!("vcx_connection_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
-                      command_handle, error::SUCCESS.message, x, source_id);
+                       command_handle, error::SUCCESS.message, x, source_id);
                 (error::SUCCESS.code_num, x)
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_deserialize_cb(command_handle: {}, rc: {}, handle: {} )",
                       command_handle, x, 0);
                 (x.into(), 0)
-            },
+            }
         };
 
         cb(command_handle, rc, handle);
@@ -324,25 +325,84 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     trace!("vcx_connection_update_state(command_handle: {}, connection_handle: {}), source_id: {:?}",
-          command_handle, connection_handle, source_id);
+           command_handle, connection_handle, source_id);
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
-        let rc = match update_state(connection_handle) {
+    spawn(move || {
+        let rc = match update_state(connection_handle, None) {
             Ok(x) => {
                 trace!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
-                      command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
+                       command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
                 x
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
                       command_handle, x, connection_handle, get_state(connection_handle), source_id);
                 x.into()
-            },
+            }
+        };
+        let state = get_state(connection_handle);
+        cb(command_handle, rc, state);
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Checks the message any state change and updates the the state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: was provided during creation. Used to identify connection object
+///
+/// message: message to process
+///
+/// cb: Callback that provides most current state of the credential and error status of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_update_state_with_message(command_handle: u32,
+                                                       connection_handle: u32,
+                                                       message: *const c_char,
+                                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+    info!("vcx_connection_update_state_with_message >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+    check_useful_c_str!(message, VcxErrorKind::InvalidOption);
+
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    trace!("vcx_connection_update_state(command_handle: {}, connection_handle: {}), source_id: {:?}",
+           command_handle, connection_handle, source_id);
+
+    if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
+    }
+
+    let message: Message = match serde_json::from_str(&message) {
+        Ok(x) => x,
+        Err(_) => return VcxError::from(VcxErrorKind::InvalidJson).into(),
+    };
+
+    spawn(move || {
+        let rc = match update_state_with_message(connection_handle, message) {
+            Ok(x) => {
+                trace!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
+                       command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
+                x
+            }
+            Err(x) => {
+                warn!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, x, connection_handle, get_state(connection_handle), source_id);
+                x.into()
+            }
         };
         let state = get_state(connection_handle);
         cb(command_handle, rc, state);
@@ -373,16 +433,16 @@ pub extern fn vcx_connection_get_state(command_handle: u32,
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     trace!("vcx_connection_get_state(command_handle: {}, connection_handle: {}), source_id: {:?}",
-          command_handle, connection_handle, source_id);
+           command_handle, connection_handle, source_id);
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
+    spawn(move || {
         trace!("vcx_connection_get_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
-              command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
+               command_handle, error::SUCCESS.message, connection_handle, get_state(connection_handle), source_id);
         cb(command_handle, error::SUCCESS.code_num, get_state(connection_handle));
 
         Ok(())
@@ -415,21 +475,21 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     trace!("vcx_connection_invite_details(command_handle: {}, connection_handle: {}, abbreviated: {}), source_id: {:?}",
-          command_handle, connection_handle, abbreviated, source_id);
+           command_handle, connection_handle, abbreviated, source_id);
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
-    spawn(move|| {
-        match get_invite_details(connection_handle, abbreviated){
+    spawn(move || {
+        match get_invite_details(connection_handle, abbreviated) {
             Ok(str) => {
                 trace!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
-                      command_handle, connection_handle, error::SUCCESS.message, str, source_id);
+                       command_handle, connection_handle, error::SUCCESS.message, str, source_id);
                 let msg = CStringUtils::string_to_cstring(str);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
-            },
+            }
             Err(x) => {
                 warn!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {:?})",
                       command_handle, connection_handle, x, "null", source_id);
@@ -464,13 +524,12 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 ///
 /// #Returns
 /// Error code as a u32
-
 #[no_mangle]
 pub extern fn vcx_connection_send_message(command_handle: u32,
-                               connection_handle: u32,
-                               msg: *const c_char,
-                               send_msg_options: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: u32, err: u32, msg_id: *const c_char)>) -> u32 {
+                                          connection_handle: u32,
+                                          msg: *const c_char,
+                                          send_msg_options: *const c_char,
+                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, msg_id: *const c_char)>) -> u32 {
     info!("vcx_message_send >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -480,21 +539,72 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
     trace!("vcx_message_send(command_handle: {}, connection_handle: {}, msg: {}, send_msg_options: {})",
            command_handle, connection_handle, msg, send_msg_options);
 
-    spawn(move|| {
-        match ::messages::send_message::send_generic_message(connection_handle, &msg, &send_msg_options) {
+    spawn(move || {
+        match send_generic_message(connection_handle, &msg, &send_msg_options) {
             Ok(x) => {
                 trace!("vcx_connection_send_message_cb(command_handle: {}, rc: {}, msg_id: {})",
-                    command_handle, error::SUCCESS.message, x);
+                       command_handle, error::SUCCESS.message, x);
 
                 let msg_id = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg_id.as_ptr());
-            },
+            }
             Err(e) => {
                 warn!("vcx_connection_send_message_cb(command_handle: {}, rc: {})",
                       command_handle, e);
 
                 cb(command_handle, e.into(), ptr::null_mut());
-            },
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// comment: (Optional) human-friendly description of the ping.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_send_ping(command_handle: u32,
+                                       connection_handle: u32,
+                                       comment: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_connection_send_ping >>>");
+
+    check_useful_opt_c_str!(comment, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_send_ping(command_handle: {}, connection_handle: {}, comment: {:?})",
+           command_handle, connection_handle, comment);
+
+    spawn(move || {
+        match send_ping(connection_handle, comment) {
+            Ok(()) => {
+                trace!("vcx_connection_send_ping(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_connection_send_ping(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
         };
 
         Ok(())
@@ -521,13 +631,13 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_connection_sign_data(command_handle: u32,
-                                  connection_handle: u32,
-                                  data_raw: *const u8,
-                                  data_len: u32,
-                                  cb: Option<extern fn(command_handle_: u32,
-                                                       err: u32,
-                                                       signature_raw: *const u8,
-                                                       signature_len: u32)>) -> u32  {
+                                       connection_handle: u32,
+                                       data_raw: *const u8,
+                                       data_len: u32,
+                                       cb: Option<extern fn(command_handle_: u32,
+                                                            err: u32,
+                                                            signature_raw: *const u8,
+                                                            signature_len: u32)>) -> u32 {
     trace!("vcx_connection_sign_data: >>> connection_handle: {}, data_raw: {:?}, data_len: {}",
            connection_handle, data_raw, data_len);
 
@@ -539,7 +649,7 @@ pub extern fn vcx_connection_sign_data(command_handle: u32,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_sign - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     let vk = match ::connection::get_pw_verkey(connection_handle) {
@@ -547,7 +657,7 @@ pub extern fn vcx_connection_sign_data(command_handle: u32,
         Err(e) => return e.into(),
     };
 
-    spawn (move || {
+    spawn(move || {
         match ::utils::libindy::crypto::sign(&vk, &data_raw) {
             Ok(x) => {
                 trace!("vcx_connection_sign_data_cb(command_handle: {}, connection_handle: {}, rc: {}, signature: {:?})",
@@ -555,13 +665,13 @@ pub extern fn vcx_connection_sign_data(command_handle: u32,
 
                 let (signature_raw, signature_len) = ::utils::cstring::vec_to_pointer(&x);
                 cb(command_handle, error::SUCCESS.code_num, signature_raw, signature_len);
-            },
+            }
             Err(e) => {
                 warn!("vcx_messages_sign_data_cb(command_handle: {}, rc: {}, signature: null)",
                       command_handle, e);
 
                 cb(command_handle, e.into(), ptr::null_mut(), 0);
-            },
+            }
         };
 
         Ok(())
@@ -592,14 +702,14 @@ pub extern fn vcx_connection_sign_data(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_connection_verify_signature(command_handle: u32,
-                                  connection_handle: u32,
-                                  data_raw: *const u8,
-                                  data_len: u32,
-                                  signature_raw: *const u8,
-                                  signature_len: u32,
-                                  cb: Option<extern fn(command_handle_: u32,
-                                                       err: u32,
-                                                       valid: bool)>) -> u32 {
+                                              connection_handle: u32,
+                                              data_raw: *const u8,
+                                              data_len: u32,
+                                              signature_raw: *const u8,
+                                              signature_len: u32,
+                                              cb: Option<extern fn(command_handle_: u32,
+                                                                   err: u32,
+                                                                   valid: bool)>) -> u32 {
     trace!("vcx_connection_verify_signature: >>> connection_handle: {}, data_raw: {:?}, data_len: {}, signature_raw: {:?}, signature_len: {}",
            connection_handle, data_raw, data_len, signature_raw, signature_len);
 
@@ -612,7 +722,7 @@ pub extern fn vcx_connection_verify_signature(command_handle: u32,
 
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_verify_signature - invalid handle");
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
     }
 
     let vk = match ::connection::get_their_pw_verkey(connection_handle) {
@@ -620,20 +730,20 @@ pub extern fn vcx_connection_verify_signature(command_handle: u32,
         Err(e) => return e.into(),
     };
 
-    spawn (move || {
+    spawn(move || {
         match ::utils::libindy::crypto::verify(&vk, &data_raw, &signature_raw) {
             Ok(x) => {
                 trace!("vcx_connection_verify_signature_cb(command_handle: {}, rc: {}, valid: {})",
                        command_handle, error::SUCCESS.message, x);
 
                 cb(command_handle, error::SUCCESS.code_num, x);
-            },
+            }
             Err(e) => {
                 warn!("vcx_connection_verify_signature_cb(command_handle: {}, rc: {}, valid: {})",
                       command_handle, e, false);
 
                 cb(command_handle, e.into(), false);
-            },
+            }
         };
 
         Ok(())
@@ -657,15 +767,70 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
     match release(connection_handle) {
         Ok(_) => {
             trace!("vcx_connection_release(connection_handle: {}, rc: {}), source_id: {:?}",
-                       connection_handle, error::SUCCESS.message, source_id);
+                   connection_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
-        },
+        }
         Err(e) => {
             warn!("vcx_connection_release(connection_handle: {}), rc: {}), source_id: {:?}",
-                        connection_handle, e, source_id);
+                  connection_handle, e, source_id);
             e.into()
-        },
+        }
     }
+}
+
+/// Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// query: (Optional) query string to match against supported message types.
+///
+/// comment: (Optional) human-friendly description of the query.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_send_discovery_features(command_handle: u32,
+                                                     connection_handle: u32,
+                                                     query: *const c_char,
+                                                     comment: *const c_char,
+                                                     cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_connection_send_discovery_features >>>");
+
+    check_useful_opt_c_str!(query, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(comment, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    trace!("vcx_connection_send_discovery_features(command_handle: {}, connection_handle: {}, query: {:?}, comment: {:?})",
+           command_handle, connection_handle, query, comment);
+
+    spawn(move || {
+        match send_discovery_features(connection_handle, query, comment) {
+            Ok(()) => {
+                trace!("vcx_connection_send_discovery_features(command_handle: {}, rc: {})",
+                       command_handle, error::SUCCESS.message);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(e) => {
+                warn!("vcx_connection_send_discovery_features(command_handle: {}, rc: {})",
+                      command_handle, e);
+
+                cb(command_handle, e.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 #[cfg(test)]
@@ -678,7 +843,7 @@ mod tests {
     use std::time::Duration;
     use api::{return_types_u32, VcxStateType};
     use utils::httpclient;
-    use utils::constants::GET_MESSAGES_RESPONSE;
+    use utils::constants::{GET_MESSAGES_RESPONSE, INVITE_ACCEPTED_RESPONSE};
     use utils::error::SUCCESS;
 
     #[test]
@@ -710,12 +875,12 @@ mod tests {
     fn test_vcx_connection_connect() {
         init!("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let rc = vcx_connection_connect(cb.command_handle, 0, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
+        let rc = vcx_connection_connect(cb.command_handle, 0, CString::new("{}").unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
         let handle = build_test_connection();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let rc = vcx_connection_connect(cb.command_handle,handle, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
+        let rc = vcx_connection_connect(cb.command_handle, handle, CString::new("{}").unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
         let invite_details = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert!(invite_details.is_some());
@@ -726,10 +891,22 @@ mod tests {
         init!("true");
         let handle = build_test_connection();
         assert!(handle > 0);
-        connect(handle,None).unwrap();
+        connect(handle, None).unwrap();
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
-        let rc = vcx_connection_update_state(cb.command_handle,handle,Some(cb.get_callback()));
+        let rc = vcx_connection_update_state(cb.command_handle, handle, Some(cb.get_callback()));
+        assert_eq!(rc, error::SUCCESS.code_num);
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
+    }
+
+    #[test]
+    fn test_vcx_connection_update_state_with_message() {
+        init!("true");
+        let handle = build_test_connection();
+        assert!(handle > 0);
+        connect(handle, None).unwrap();
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_connection_update_state_with_message(cb.command_handle, handle, CString::new(INVITE_ACCEPTED_RESPONSE).unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
@@ -737,7 +914,7 @@ mod tests {
     #[test]
     fn test_vcx_connection_update_state_fails() {
         init!("true");
-        let rc = vcx_connection_update_state(0,0,None);
+        let rc = vcx_connection_update_state(0, 0, None);
         assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 
@@ -748,7 +925,7 @@ mod tests {
         assert!(handle > 0);
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let rc = vcx_connection_serialize(cb.command_handle,handle, Some(cb.get_callback()));
+        let rc = vcx_connection_serialize(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(rc, 0);
 
         // unwraps on the option, if none, then serializing failed and panic! ensues.
@@ -766,7 +943,7 @@ mod tests {
         let unknown_handle = handle + 1;
         assert_eq!(vcx_connection_release(unknown_handle), error::INVALID_CONNECTION_HANDLE.code_num);
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let rc = vcx_connection_connect(0,handle, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
+        let rc = vcx_connection_connect(0, handle, CString::new("{}").unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 
@@ -776,11 +953,11 @@ mod tests {
         let string = ::utils::constants::DEFAULT_CONNECTION;
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let err = vcx_connection_deserialize(cb.command_handle,
-                                                CString::new(string).unwrap().into_raw(),
-                                                Some(cb.get_callback()));
+                                             CString::new(string).unwrap().into_raw(),
+                                             Some(cb.get_callback()));
         assert_eq!(err, SUCCESS.code_num);
         let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
-        assert!(handle>0);
+        assert!(handle > 0);
     }
 
     #[test]
@@ -791,10 +968,10 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         connect(handle, None).unwrap();
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
-        let rc = vcx_connection_update_state(cb.command_handle,handle,Some(cb.get_callback()));
+        let rc = vcx_connection_update_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let rc = vcx_connection_get_state(cb.command_handle,handle,Some(cb.get_callback()));
+        let rc = vcx_connection_get_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32)
     }
@@ -831,7 +1008,8 @@ mod tests {
         use std::thread;
         init!("true");
 
-        let msg = format!("My message");;
+        let msg = format!("My message");
+
         let msg_len = msg.len();
 
         let connection_handle = ::connection::tests::build_test_connection();

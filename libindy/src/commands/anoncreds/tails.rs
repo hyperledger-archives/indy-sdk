@@ -1,16 +1,11 @@
-extern crate digest;
-extern crate ursa;
-extern crate sha2;
-extern crate rust_base58;
+use indy_api_types::errors::prelude::*;
+use crate::services::blob_storage::BlobStorageService;
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
-use errors::prelude::*;
-use services::blob_storage::BlobStorageService;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use ursa::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
+use ursa::errors::prelude::{UrsaCryptoError, UrsaCryptoErrorKind};
 
-use self::ursa::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
-use self::ursa::errors::prelude::{UrsaCryptoError, UrsaCryptoErrorKind};
-
-use self::rust_base58::{ToBase58, FromBase58};
+use rust_base58::{ToBase58, FromBase58};
 
 use std::rc::Rc;
 
@@ -51,7 +46,7 @@ impl Drop for SDKTailsAccessor {
 }
 
 impl RevocationTailsAccessor for SDKTailsAccessor {
-    fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), UrsaCryptoError> {
+    fn access_tail(&self, tail_id: u32, accessor: &mut dyn FnMut(&Tail)) -> Result<(), UrsaCryptoError> {
         debug!("access_tail >>> tail_id: {:?}", tail_id);
 
         let tail_bytes = self.tails_service
@@ -64,9 +59,8 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
         accessor(&tail);
 
-        let res = ();
-        debug!("access_tail <<< res: {:?}", res);
-        Ok(res)
+        debug!("access_tail <<< res: ()");
+        Ok(())
     }
 }
 

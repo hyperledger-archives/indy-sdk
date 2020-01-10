@@ -4,7 +4,7 @@ use messages::message_type::MessageTypes;
 use utils::constants::*;
 use utils::{error, httpclient};
 use utils::libindy::{wallet, anoncreds};
-use utils::libindy::signus::create_and_store_my_did;
+use utils::libindy::signus::create_my_did;
 use error::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -131,6 +131,10 @@ pub struct Config {
     path: Option<String>,
     storage_config: Option<String>,
     storage_credentials: Option<String>,
+    pool_config: Option<String>,
+    did_method: Option<String>,
+    communication_method: Option<String>,
+    webhook_url: Option<String>,
 }
 
 
@@ -163,6 +167,18 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     if let Some(_storage_credentials) = &my_config.storage_credentials {
         settings::set_config_value(settings::CONFIG_WALLET_STORAGE_CREDS, _storage_credentials);
     }
+    if let Some(pool_config) = &my_config.pool_config {
+        settings::set_config_value(settings::CONFIG_POOL_CONFIG, pool_config);
+    }
+    if let Some(did_method) = &my_config.did_method {
+        settings::set_config_value(settings::CONFIG_DID_METHOD, did_method);
+    }
+    if let Some(communication_method) = &my_config.communication_method {
+        settings::set_config_value(settings::COMMUNICATION_METHOD, communication_method);
+    }
+    if let Some(webhook_url) = &my_config.webhook_url {
+        settings::set_config_value(settings::CONFIG_WEBHOOK_URL, webhook_url);
+    }
 
     wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str),
                         my_config.storage_config.as_ref().map(String::as_str),
@@ -175,10 +191,12 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     let logo = my_config.logo.unwrap_or(String::from("<CHANGE_ME>"));
     let path = my_config.path.unwrap_or(String::from("<CHANGE_ME>"));
 
-    let (my_did, my_vk) = create_and_store_my_did(my_config.agent_seed.as_ref().map(String::as_str))?;
+    let method_name = my_config.did_method.as_ref().map(String::as_str);
+
+    let (my_did, my_vk) = create_my_did(my_config.agent_seed.as_ref().map(String::as_str), method_name)?;
 
     let (issuer_did, issuer_vk) = if my_config.enterprise_seed != my_config.agent_seed {
-        create_and_store_my_did(my_config.enterprise_seed.as_ref().map(String::as_str))?
+        create_my_did(my_config.enterprise_seed.as_ref().map(String::as_str), method_name)?
     } else {
         (my_did.clone(), my_vk.clone())
     };
@@ -216,14 +234,20 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     if let Some(wallet_type) = &my_config.wallet_type {
         final_config["wallet_type"] = json!(wallet_type);
     }
-    if let Some(_wallet_type) = &my_config.wallet_type {
-        final_config["wallet_type"] = json!(_wallet_type);
-    }
     if let Some(_storage_config) = &my_config.storage_config {
         final_config["storage_config"] = json!(_storage_config);
     }
     if let Some(_storage_credentials) = &my_config.storage_credentials {
         final_config["storage_credentials"] = json!(_storage_credentials);
+    }
+    if let Some(_pool_config) = &my_config.pool_config {
+        final_config["pool_config"] = json!(_pool_config);
+    }
+    if let Some(_communication_method) = &my_config.communication_method {
+        final_config["communication_method"] = json!(_communication_method);
+    }
+    if let Some(_webhook_url) = &my_config.webhook_url {
+        final_config["webhook_url"] = json!(_webhook_url);
     }
 
     wallet::close_wallet()?;
@@ -442,7 +466,7 @@ mod tests {
     fn test_update_agent_info_real() {
         init!("agency");
         ::utils::devsetup::tests::set_consumer();
-        assert!(update_agent_info("7b7f97f2","FCM:Value").is_ok());
+        assert!(update_agent_info("7b7f97f2", "FCM:Value").is_ok());
         teardown!("agency");
     }
 }

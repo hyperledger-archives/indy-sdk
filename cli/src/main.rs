@@ -25,11 +25,12 @@ mod command_executor;
 mod commands;
 mod libindy;
 
-use command_executor::CommandExecutor;
+use crate::command_executor::CommandExecutor;
 
-use commands::{common, did, ledger, pool, wallet, payment_address};
+use crate::commands::{common, did, ledger, pool, wallet, payment_address};
+use crate::utils::history;
 
-use linefeed::{Reader, ReadResult, Terminal};
+use linefeed::{Reader, ReadResult, Terminal, Signal};
 use linefeed::complete::{Completer, Completion};
 
 use std::env;
@@ -39,7 +40,7 @@ use std::rc::Rc;
 
 fn main() {
     #[cfg(target_os = "windows")]
-    ansi_term::enable_ansi_support().is_ok();
+    let _ = ansi_term::enable_ansi_support().is_ok();
 
     let mut args = env::args();
     args.next(); // skip library
@@ -69,7 +70,13 @@ fn main() {
                 let plugins = unwrap_or_return!(args.next(), println_err!("Plugins are not specified"));
                 _load_plugins(&command_executor, &plugins)
             }
-            _ if args.len() == 0 => execute_batch(&command_executor, Some(&arg)),
+            _ if args.len() == 0 => {
+                execute_batch(&command_executor, Some(&arg));
+
+                if command_executor.ctx().is_exit() {
+                    return;
+                }
+            },
             _ => {
                 println_err!("Unknown option");
                 return _print_help();
@@ -126,6 +133,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(did::use_command::new())
         .add_command(did::rotate_key_command::new())
         .add_command(did::list_command::new())
+        .add_command(did::qualify_command::new())
         .finalize_group()
         .add_group(pool::group::new())
         .add_command(pool::create_command::new())
@@ -170,15 +178,21 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::verify_payment_receipt_command::new())
         .add_command(ledger::sign_multi_command::new())
         .add_command(ledger::auth_rule_command::new())
+        .add_command(ledger::auth_rules_command::new())
         .add_command(ledger::get_auth_rule_command::new())
         .add_command(ledger::save_transaction_command::new())
         .add_command(ledger::load_transaction_command::new())
         .add_command(ledger::taa_command::new())
         .add_command(ledger::aml_command::new())
+        .add_command(ledger::get_acceptance_mechanisms_command::new())
+        .add_command(ledger::endorse_transaction_command::new())
+        .add_command(ledger::taa_disable_all_command::new())
         .finalize_group()
         .add_group(payment_address::group::new())
         .add_command(payment_address::create_command::new())
         .add_command(payment_address::list_command::new())
+        .add_command(payment_address::sign_command::new())
+        .add_command(payment_address::verify_command::new())
         .finalize_group()
         .finalize()
 }
@@ -195,23 +209,36 @@ fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<
     let command_executor = Rc::new(command_executor);
     reader.set_completer(command_executor.clone());
     reader.set_prompt(&command_executor.ctx().get_prompt());
+    history::load(&mut reader).ok();
 
-    while let Ok(ReadResult::Input(line)) = reader.read_line() {
-        if line.trim().is_empty() {
-            continue;
-        }
+    while let Ok(read_result) = reader.read_line() {
+        match read_result {
+            ReadResult::Input(line) => {
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
 
-        command_executor.execute(&line).is_ok();
-        reader.add_history(line);
-        reader.set_prompt(&command_executor.ctx().get_prompt());
+                let _ = command_executor.execute(&line).is_ok();
+                reader.add_history(line.to_string());
+                reader.set_prompt(&command_executor.ctx().get_prompt());
 
-        if command_executor.ctx().is_exit() {
-            break;
+                if command_executor.ctx().is_exit() {
+                    history::persist(&reader).ok();
+                    break;
+                }
+            },
+            ReadResult::Eof | ReadResult::Signal(Signal::Quit) | ReadResult::Signal(Signal::Break)| ReadResult::Signal(Signal::Interrupt) => {
+                history::persist(&reader).ok();
+                break;
+            },
+            _ => {break}
         }
     }
 }
 
 fn execute_batch(command_executor: &CommandExecutor, script_path: Option<&str>) {
+    command_executor.ctx().set_batch_mode();
     if let Some(script_path) = script_path {
         let file = match File::open(script_path) {
             Ok(file) => file,
@@ -222,11 +249,12 @@ fn execute_batch(command_executor: &CommandExecutor, script_path: Option<&str>) 
         let stdin = std::io::stdin();
         _iter_batch(command_executor, stdin.lock());
     };
+    command_executor.ctx().set_not_batch_mode();
 }
 
 fn _load_plugins(command_executor: &CommandExecutor, plugins_str: &str) {
-    for plugin in plugins_str.split(",") {
-        let parts: Vec<&str> = plugin.split(":").collect::<Vec<&str>>();
+    for plugin in plugins_str.split(',') {
+        let parts: Vec<&str> = plugin.split(':').collect::<Vec<&str>>();
 
         let name = unwrap_or_return!(parts.get(0), println_err!("Plugin Name not found in {}", plugin));
         let init_func = unwrap_or_return!(parts.get(1), println_err!("Plugin Init function not found in {}", plugin));
@@ -267,13 +295,13 @@ fn _iter_batch<T>(command_executor: &CommandExecutor, reader: T) where T: std::i
             return println_err!("Can't parse line #{}", line_num);
         };
 
-        if line.starts_with("#") || line.is_empty() {
+        if line.starts_with('#') || line.is_empty() {
             // Skip blank lines and lines starting with #
             continue;
         }
 
         println!("{}", line);
-        let (line, force) = if line.starts_with("-") {
+        let (line, force) = if line.starts_with('-') {
             (line[1..].as_ref(), true)
         } else {
             (line[0..].as_ref(), false)
@@ -283,17 +311,20 @@ fn _iter_batch<T>(command_executor: &CommandExecutor, reader: T) where T: std::i
         }
         println!();
         line_num += 1;
+
+        if command_executor.ctx().is_exit() {
+            break;
+        }
     }
 }
 
 impl<Term: Terminal> Completer<Term> for CommandExecutor {
     fn complete(&self, word: &str, reader: &Reader<Term>,
-                start: usize, end: usize) -> Option<Vec<Completion>> {
+                _start: usize, _end: usize) -> Option<Vec<Completion>> {
         Some(self
             .complete(reader.buffer(),
                       word,
-                      start,
-                      end)
+                      reader.cursor())
             .into_iter()
             .map(|c| Completion {
                 completion: c.0,

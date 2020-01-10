@@ -49,6 +49,12 @@ export interface IGenerateProofData {
   }
 }
 
+export interface IDeclinePresentationRequestData {
+  connection: Connection,
+  reason?: string,
+  proposal?: any
+}
+
 export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
   /**
    * Create a proof for fulfilling a corresponding proof request
@@ -198,6 +204,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
 
   protected _releaseFn = rustAPI().vcx_disclosed_proof_release
   protected _updateStFn = rustAPI().vcx_disclosed_proof_update_state
+  protected _updateStWithMessageFn = rustAPI().vcx_disclosed_proof_update_state_with_message
   protected _getStFn = rustAPI().vcx_disclosed_proof_get_state
   protected _serializeFn = rustAPI().vcx_disclosed_proof_serialize
   protected _deserializeFn = rustAPI().vcx_disclosed_proof_deserialize
@@ -258,11 +265,12 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
    * await disclosedProof.sendProof(connection)
    * ```
    */
-  public async sendProof (connection: Connection): Promise<void> {
+  public async sendProof (connection? : Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_disclosed_proof_send_proof(0, this.handle, connection.handle, cb)
+            const connectionHandle = connection ? connection.handle : 0
+            const rc = rustAPI().vcx_disclosed_proof_send_proof(0, this.handle, connectionHandle, cb)
             if (rc) {
               reject(rc)
             }
@@ -282,7 +290,49 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Generates the proof message for sending.
+   *
+   * Example:
+   * ```
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * { attrs } = await disclosedProof.getCredentials()
+   * valSelfAttested = 'testSelfAttestedVal'
+   * await disclosedProof.generateProof({
+   *    {},
+   *    mapValues(attrs, () => valSelfAttested)
+   *  })
+   * await disclosedProof.getProofMsg(connection)
+   * ```
+   */
+  public async getProofMessage (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_disclosed_proof_get_proof_msg(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`proof ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
   /**
    * Generates the proof
    *
@@ -308,6 +358,56 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
               this.handle,
               JSON.stringify(selectedCreds),
               JSON.stringify(selfAttestedAttrs),
+              cb
+            )
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32'],
+            (xcommandHandle: number, err: number) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve()
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Declines presentation request.
+   * There are two ways of following interaction:
+   *     - Prover wants to propose using a different presentation - pass `proposal` parameter
+   *     - Prover doesn't want to continue interaction - pass `reason` parameter.
+   * Note that only one of these parameters can be passed.
+   *
+   * Note that this function is useful in case `aries` communication method is used.
+   * In other cases it returns ActionNotSupported error.
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * await disclosedProof.declinePresentationRequest({connection, reason: 'some reason', proposal: null})
+   * ```
+   */
+  public async declinePresentationRequest ({ connection, reason, proposal }: IDeclinePresentationRequestData): Promise<void> {
+    try {
+      await createFFICallbackPromise<void>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_disclosed_proof_decline_presentation_request(
+              0,
+              this.handle,
+              connection.handle,
+              reason,
+              proposal ? JSON.stringify(proposal) : null,
               cb
             )
             if (rc) {

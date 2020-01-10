@@ -1,11 +1,11 @@
-extern crate ursa;
-extern crate serde;
-extern crate serde_json;
-
-use self::ursa::cl::RevocationRegistry as CryptoRevocationRegistry;
+use ursa::cl::RevocationRegistry as CryptoRevocationRegistry;
 use named_type::NamedType;
 
 use std::collections::HashMap;
+
+use indy_api_types::validation::Validatable;
+
+use super::revocation_registry_definition::RevocationRegistryId;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RevocationRegistryV1 {
@@ -27,16 +27,20 @@ impl From<RevocationRegistry> for RevocationRegistryV1 {
     }
 }
 
-pub fn rev_regs_map_to_rev_regs_local_map(rev_regs: HashMap<String, HashMap<u64, RevocationRegistry>>) -> HashMap<String, HashMap<u64, RevocationRegistryV1>> {
-    let mut rev_regs_local: HashMap<String, HashMap<u64, RevocationRegistryV1>> = HashMap::new();
+pub type RevocationRegistries = HashMap<RevocationRegistryId, HashMap<u64, RevocationRegistry>>;
 
-    for (rev_reg_id, rev_reg_to_timespams) in rev_regs {
-        let mut rev_regs_for_id: HashMap<u64, RevocationRegistryV1> = HashMap::new();
 
-        for (timestamp, rev_reg) in rev_reg_to_timespams {
-            rev_regs_for_id.insert(timestamp, RevocationRegistryV1::from(rev_reg));
-        }
-        rev_regs_local.insert(rev_reg_id, rev_regs_for_id);
-    }
-    rev_regs_local
+pub fn rev_regs_map_to_rev_regs_local_map(rev_regs: RevocationRegistries) -> HashMap<RevocationRegistryId, HashMap<u64, RevocationRegistryV1>> {
+    rev_regs
+        .into_iter()
+        .map(|(rev_reg_id, rev_reg_to_timespams)| {
+            let val = rev_reg_to_timespams
+                .into_iter()
+                .map(|(timestamp, rev_reg)| (timestamp, RevocationRegistryV1::from(rev_reg)))
+                .collect();
+            (rev_reg_id, val)
+        })
+        .collect()
 }
+
+impl Validatable for RevocationRegistry {}

@@ -1,5 +1,7 @@
 ﻿using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.PaymentsApi.NativeMethods;
 #if __IOS__
@@ -126,6 +128,20 @@ namespace Hyperledger.Indy.PaymentsApi
         static ParsePaymentResponseDelegate ParsePaymentResponseCallback = ParsePaymentResponseCallbackMethod;
 
 #if __IOS__
+        [MonoPInvokeCallback(typeof(PreparePaymentExtraWithAcceptanceDataDelegate))]
+#endif
+        static void PreparePaymentExtraWithAcceptanceDataCallbackMethod(int xcommand_handle, int err, string extra_with_acceptance)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(extra_with_acceptance);
+        }
+        static PreparePaymentExtraWithAcceptanceDataDelegate PreparePaymentExtraWithAcceptanceDataCallback = PreparePaymentExtraWithAcceptanceDataCallbackMethod;
+
+#if __IOS__
         [MonoPInvokeCallback(typeof(BuildMintReqDelegate))]
 #endif
         static void BuildMintRequestCallbackMethod(int xcommand_handle, int err, string mint_req_json, string payment_method)
@@ -208,6 +224,51 @@ namespace Hyperledger.Indy.PaymentsApi
             taskCompletionSource.SetResult(txn_json);
         }
         static ParseVerifyPaymentResponseDelegate ParseVerifyPaymentResponseDelegate = ParseVerifyPaymentResponseDelegateMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GetRequestInfoDelegate))]
+#endif
+        static void GetRequestInfoDelegateMethod(int xcommand_handle, int err, string request_info_json)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(request_info_json);
+        }
+        static GetRequestInfoDelegate GetRequestInfoDelegate = GetRequestInfoDelegateMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(SignWithAddressDelegate))]
+#endif
+        static void SignWithAddressDelegateMethod(int xcommand_handle, int err, IntPtr signature_raw, uint signature_len)
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var signatureBytes = new byte[signature_len];
+            Marshal.Copy(signature_raw, signatureBytes, 0, (int)signature_len);
+
+            taskCompletionSource.SetResult(signatureBytes);
+        }
+        static SignWithAddressDelegate SignWithAddressDelegate = SignWithAddressDelegateMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(VerifyWithAddressDelegate))]
+#endif
+        static void VerifyWithAddressDelegateMethod(int xcommand_handle, int err, bool result)
+        {
+            var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(result);
+        }
+        static VerifyWithAddressDelegate VerifyWithAddressDelegate = VerifyWithAddressDelegateMethod;
 
         /// <summary>
         /// Create the payment address for this payment method.
@@ -353,7 +414,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<PaymentResult> AddRequestFeesAsync(Wallet wallet, string submitterDid, string reqJson, string inputsJson, string outputsJson, string extra)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
 
             var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -422,7 +482,6 @@ namespace Hyperledger.Indy.PaymentsApi
         /// <param name="paymentAddress">target payment address</param>
         public static Task<PaymentResult> BuildGetPaymentSourcesAsync(Wallet wallet, string submittedDid, string paymentAddress)
         {
-            ParamGuard.NotNullOrWhiteSpace(submittedDid, "submittedDid");
             ParamGuard.NotNullOrWhiteSpace(paymentAddress, "paymentAddress");
 
             var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
@@ -502,7 +561,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<PaymentResult> BuildPaymentRequestAsync(Wallet wallet, string submitterDid, string inputsJson, string outputsJson, string extra)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(inputsJson, "inputsJson");
             ParamGuard.NotNullOrWhiteSpace(outputsJson, "outputsJson");
 
@@ -559,6 +617,51 @@ namespace Hyperledger.Indy.PaymentsApi
         }
 
         /// <summary>
+        /// Prepare payment extra JSON with TAA acceptance data
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// This function may calculate digest by itself or consume it as a parameter.
+        /// If all text, version and taa_digest parameters are specified, a check integrity of them will be done.
+        /// </summary>
+        /// <param name="extra_json">(optional) original extra json.</param>
+        /// <param name="text">
+        /// text and version - (optional) raw data about TAA from ledger.
+        ///     These parameters should be passed together.
+        ///     These parameters are required if taa_digest parameter is omitted.
+        /// </param>
+        /// <param name="version">
+        /// text and version - (optional) raw data about TAA from ledger.
+        ///     These parameters should be passed together.
+        ///     These parameters are required if taa_digest parameter is omitted.
+        /// </param>
+        /// <param name="taa_digest">(optional) digest on text and version. This parameter is required if text and version parameters are omitted.</param>
+        /// <param name="mechanism">mechanism how user has accepted the TAA</param>
+        /// <param name="time">UTC timestamp when user has accepted the TAA</param>
+        /// <returns>Updated request result as json.</returns>
+        public static Task<string> PreparePaymentExtraWithAcceptanceDataAsync(string extra_json, string text, string version, string taa_digest, string mechanism, ulong time)
+        {
+            ParamGuard.NotNullOrWhiteSpace(mechanism, "mechanism");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_prepare_payment_extra_with_acceptance_data(
+                commandHandle,
+                extra_json,
+                text,
+                version,
+                taa_digest,
+                mechanism,
+                time,
+                PreparePaymentExtraWithAcceptanceDataCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
         /// Builds Indy request for doing tokens minting
         /// according to this payment method.
         ///
@@ -578,7 +681,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<PaymentResult> BuildMintRequestAsync(Wallet wallet, string submitterDid, string outputsJson, string extra)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(outputsJson, "outputsJson");
 
             var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
@@ -617,7 +719,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<string> BuildSetTxnFeesRequestAsync(Wallet wallet, string submitterDid, string paymentMethod, string feesJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(paymentMethod, "paymentMethod");
             ParamGuard.NotNullOrWhiteSpace(feesJson, "feesJson");
 
@@ -650,7 +751,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<string> BuildGetTxnFeesRequestAsync(Wallet wallet, string submitterDid, string paymentMethod)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(paymentMethod, "paymentMethod");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -711,7 +811,6 @@ namespace Hyperledger.Indy.PaymentsApi
         public static Task<PaymentResult> BuildVerifyPaymentRequestAsync(Wallet wallet, string submitterDid, string receipt)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(receipt, "receipt");
 
             var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
@@ -756,6 +855,115 @@ namespace Hyperledger.Indy.PaymentsApi
                 paymentMethod,
                 responseJson,
                 ParseVerifyPaymentResponseDelegate);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Gets request requirements (with minimal price) correspondent to specific auth rule
+        /// in case the requester can perform this action.
+        ///
+        /// EXPERIMENTAL
+        ///
+        /// If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
+        /// </summary>
+        /// <param name="getAuthRuleResponseJson">Response on `GET_AUTH_RULE` request returning action constraints set on the ledger.</param>
+        /// <param name="requesterInfoJson">
+        /// {
+        ///     "role": string (optional) - role of a user which can sign a transaction.
+        ///     "sig_count": u64 - number of signers.
+        ///     "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+        ///     "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
+        /// }</param>
+        /// <param name="feesJson">fees set on the ledger (result of <see cref="ParseGetTxnFeesResponseAsync" />).</param>
+        /// <returns>
+        /// request info if a requester match to the action constraints.
+        /// {
+        ///     "price": u64 - fee required for the action performing,
+        ///     "requirements": [{
+        ///         "role": string (optional) - role of users who should sign,
+        ///         "sig_count": u64 - number of signers,
+        ///         "need_to_be_owner": bool - if requester need to be owner,
+        ///         "off_ledger_signature": bool - allow signature of unknow for ledger did (false by default).
+        ///     }]
+        /// }
+        /// </returns>
+        public static Task<string> GetRequestInfoAsync(string getAuthRuleResponseJson, string requesterInfoJson, string feesJson)
+        {
+            ParamGuard.NotNullOrWhiteSpace(getAuthRuleResponseJson, "getAuthRuleResponseJson");
+            ParamGuard.NotNullOrWhiteSpace(requesterInfoJson, "requesterInfoJson");
+            ParamGuard.NotNullOrWhiteSpace(feesJson, "feesJson");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_get_request_info(
+                commandHandle,
+                getAuthRuleResponseJson,
+                requesterInfoJson,
+                feesJson,
+                GetRequestInfoDelegate);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Signs a message with a payment address.
+        /// </summary>
+        /// <param name="wallet">Wallet handle</param>
+        /// <param name="address">Payment address of message signer. The key must be created by calling <see cref="CreatePaymentAddressAsync" /></param>
+        /// <param name="message">Message to be signed</param>
+        /// <returns></returns>
+        public static Task<byte[]> SignWithAddressAsync(Wallet wallet, string address, byte[] message)
+        {
+            ParamGuard.NotNullOrWhiteSpace(address, "address");
+            ParamGuard.NotNull(message, "message");
+            ParamGuard.NotNull(wallet, "wallet");
+
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_sign_with_address(
+                commandHandle,
+                wallet.Handle,
+                address,
+                message,
+                (uint)message.Length,
+                SignWithAddressDelegate);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Verify a signature with a payment address.
+        /// </summary>
+        /// <param name="address">Payment address of the message signer</param>
+        /// <param name="message">Message data</param>
+        /// <param name="signature">Signed message data</param>
+        /// <returns><c>true</c> - if signature is valid, <c>false</c> - otherwise</returns>
+        public static Task<bool> VerifyWithAddressAsync(string address, byte[] message, byte[] signature)
+        {
+            ParamGuard.NotNullOrWhiteSpace(address, "address");
+            ParamGuard.NotNull(message, "message");
+            ParamGuard.NotNull(signature, "signature");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_verify_with_address(
+                commandHandle,
+                address,
+                message,
+                (uint)message.Length,
+                signature,
+                (uint)signature.Length,
+                VerifyWithAddressDelegate);
 
             CallbackHelper.CheckResult(result);
 

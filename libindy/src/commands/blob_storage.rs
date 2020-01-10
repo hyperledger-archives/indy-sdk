@@ -1,17 +1,17 @@
-use services::blob_storage::BlobStorageService;
+use crate::services::blob_storage::BlobStorageService;
 use std::rc::Rc;
 
-use errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
 pub enum BlobStorageCommand {
     OpenReader(
         String, // type
         String, // config
-        Box<Fn(IndyResult<i32 /* handle */>) + Send>),
+        Box<dyn Fn(IndyResult<i32 /* handle */>) + Send>),
     OpenWriter(
         String, // writer type
         String, // writer config JSON
-        Box<Fn(IndyResult<i32 /* handle */>) + Send>),
+        Box<dyn Fn(IndyResult<i32 /* handle */>) + Send>),
 }
 
 pub struct BlobStorageCommandExecutor {
@@ -28,11 +28,11 @@ impl BlobStorageCommandExecutor {
     pub fn execute(&self, command: BlobStorageCommand) {
         match command {
             BlobStorageCommand::OpenReader(type_, config, cb) => {
-                info!("OpenReader command received");
+                debug!("OpenReader command received");
                 cb(self.open_reader(&type_, &config));
             }
             BlobStorageCommand::OpenWriter(writer_type, writer_config, cb) => {
-                info!("OpenWriter command received");
+                debug!("OpenWriter command received");
                 cb(self.open_writer(&writer_type, &writer_config));
             }
         }

@@ -79,9 +79,11 @@ test('anoncreds', async function (t) {
 
   await indy.proverCloseCredentialsSearch(sh)
 
+  var nonce = await indy.generateNonce()
+
   // Prover gets credentials for Proof Request
   var proofReq = {
-    'nonce': '123432421212',
+    'nonce': nonce,
     'name': 'proof_req_1',
     'version': '0.1',
     'requested_attributes': {
@@ -164,6 +166,17 @@ test('anoncreds', async function (t) {
   var revocedDelta = await indy.issuerRevokeCredential(wh, blobReaderHandle, revocRegId, revId)
 
   await indy.issuerMergeRevocationRegistryDeltas(revDelta, revocedDelta)
+
+  // Rotate credential definition
+  var tempCredDef = await indy.issuerRotateCredentialDefStart(wh, credDefId, null)
+  t.not(cred, tempCredDef)
+
+  await indy.issuerRotateCredentialDefApply(wh, credDefId)
+
+  var qualified = 'did:sov:NcYxiDXkpYi6ov5FcYDi1e'
+  var unqualified = 'NcYxiDXkpYi6ov5FcYDi1e'
+  t.is(unqualified, await indy.toUnqualified(qualified))
+  t.is(unqualified, await indy.toUnqualified(unqualified))
 
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)

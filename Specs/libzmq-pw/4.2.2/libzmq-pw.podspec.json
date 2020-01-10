@@ -9,7 +9,7 @@
     "file": "COPYING"
   },
   "authors": {
-    "Anastasia Tarasova": "anastasiya.tarasova@dsr-company.com"
+    "Hyperledger Indy Contributors": "hyperledger-indy@lists.hyperledger.org"
   },
   "platforms": {
     "ios": "6.0",

@@ -35,3 +35,4 @@ async def cleanup():
 def wait_libindy():
     yield
     time.sleep(1) # FIXME IS-1060
+

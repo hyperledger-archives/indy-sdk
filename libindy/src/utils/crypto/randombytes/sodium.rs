@@ -1,14 +1,14 @@
-extern crate libc;
 extern crate sodiumoxide;
-extern crate zeroize;
 
-use errors::prelude::*;
-use self::libc::size_t;
+use indy_api_types::errors::prelude::*;
+use libc::size_t;
 
-use self::zeroize::Zeroize;
+use zeroize::Zeroize;
 
 pub const SEEDBYTES: usize = 32; // randombytes_seedbytes
 
+#[derive(Zeroize)]
+#[zeroize(drop)]
 pub struct Seed([u8; SEEDBYTES]);
 
 impl Seed {
@@ -27,8 +27,6 @@ impl Seed {
         Ok(seed)
     }
 }
-
-memzeroize!(Seed, 0);
 
 pub fn randombytes(size: usize) -> Vec<u8> {
     self::sodiumoxide::randombytes::randombytes(size)

@@ -1,12 +1,11 @@
-extern crate libc;
 
-use api::{ErrorCode, IndyHandle, CommandHandle};
-use commands::{Command, CommandExecutor};
-use commands::blob_storage::BlobStorageCommand;
-use errors::prelude::*;
-use utils::ctypes;
+use indy_api_types::{ErrorCode, IndyHandle, CommandHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::blob_storage::BlobStorageCommand;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
-use self::libc::c_char;
+use libc::c_char;
 
 #[no_mangle]
 pub extern fn indy_open_blob_storage_reader(command_handle: CommandHandle,

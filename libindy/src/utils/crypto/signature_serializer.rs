@@ -1,11 +1,7 @@
-extern crate hex;
-extern crate serde_json;
-
-use errors::prelude::*;
-use self::hex::ToHex;
-use self::serde_json::Value;
-use utils::crypto::hash::Hash;
-use domain::ledger::constants::{ATTRIB, GET_ATTR};
+use indy_api_types::errors::prelude::*;
+use serde_json::Value;
+use indy_utils::crypto::hash::Hash;
+use crate::domain::ledger::constants::{ATTRIB, GET_ATTR};
 
 pub fn serialize_signature(v: Value) -> Result<String, IndyError> {
     let _type = v["operation"]["type"].clone();
@@ -42,10 +38,10 @@ fn _serialize_signature(v: Value, is_top_level: bool, _type: Option<&str>) -> Re
 
                     ctx.update(&value
                         .as_str()
-                        .ok_or(IndyError::from_msg(IndyErrorKind::InvalidState, "Cannot update hash context"))?
+                        .ok_or_else(|| IndyError::from_msg(IndyErrorKind::InvalidState, "Cannot update hash context"))?
                         .as_bytes())?;
 
-                    value = Value::String(ctx.finish()?.as_ref().to_hex());
+                    value = Value::String(hex::encode(ctx.finish()?.as_ref()));
                 }
                 result = result + key + ":" + &_serialize_signature(value, false, _type)?;
                 in_middle = true;

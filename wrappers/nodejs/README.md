@@ -52,7 +52,7 @@ First, make sure you have the latest libindy for your platform. Also make sure y
 Second, make sure it's in the linker search path. The easiest way is to use the system library path.
 * ubuntu `/usr/lib/libindy.so`
 * osx `/usr/local/lib/libindy.dylib`
-* windows `c:\windows\system32\indy.dll`
+* windows use LD_LIBRARY_PATH to indicate the location of dll as specified below
 
 If you want to put the library in a custom folder i.e. `/foo/bar/libindy.so` then you can do this:
 ```sh
@@ -101,6 +101,10 @@ Collecting of backtrace can be enabled by:
 
 ### anoncreds
 
+These functions wrap the Ursa algorithm as documented in this [paper](https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf):
+
+And is documented in this [HIPE](https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md):
+
 #### issuerCreateSchema \( issuerDid, name, version, attrNames \) -&gt; \[ id, schema \]
 
 Create credential schema entity that describes credential attributes list and allows credentials
@@ -133,17 +137,53 @@ to Indy distributed ledger.
 
 It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no to save compatibility with Ledger.
 
+Note: Use combination of `issuerRotateCredentialDefStart` and `indy_issuer_rotate_credential_def_apply` functions
+to generate new keys for an existing credential definition.
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `issuerDid`: String - a DID of the issuer signing cred\_def transaction to the Ledger
 * `schema`: Json - credential schema as a json
 * `tag`: String - allows to distinct between credential definitions for the same issuer and schema
 * `signatureType`: String - credential definition type \(optional, 'CL' by default\) that defines credentials signature and revocation math. Supported types are:
-  *  'CL': Camenisch-Lysyanskaya credential signature type
+  *  'CL': Camenisch-Lysyanskaya credential signature type that is implemented according to the algorithm in this paper:
+                https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+           And is documented in this HIPE:
+               https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336fdc8cc1/text/anoncreds-protocol/README.md
+
 * `config`: Json - \(optional\) type-specific configuration of credential definition as json:
   *  'CL':
     *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
 * __->__ [ `credDefId`: String, `credDef`: Json ] - cred\_def\_id: identifier of created credential definition
 cred\_def\_json: public part of created credential definition
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### issuerRotateCredentialDefStart \( wh, credDefId, config \) -&gt; credDef
+
+ Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+ 
+ Use `issuerRotateCredentialDefApply` function to set temporary keys as the main.
+ 
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+ 
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credDefId`: String - an identifier of created credential definition stored in the wallet
+* `config`: Json - \(optional\) type-specific configuration of credential definition as json:
+  *  'CL':
+    *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
+* __->__  `credDef`: Json - public part of temporary created credential definition
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### issuerRotateCredentialDefApply \( wh, credDefId \) -&gt; void
+
+ Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+ 
+ **WARNING**: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+ 
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credDefId`: String - an identifier of created credential definition stored in the wallet
+* __->__  void
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
@@ -169,7 +209,9 @@ This call requires access to pre-configured blob storage writer instance handle 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `issuerDid`: String - a DID of the issuer signing transaction to the Ledger
 * `revocDefType`: String - revocation registry type \(optional, default value depends on credential definition type\). Supported types are:
-  *  'CL\_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+  *  'CL\_ACCUM': Type-3 pairing based accumulator implemented according to the algorithm in this paper:
+                    https://github.com/hyperledger/ursa/blob/master/libursa/docs/AnonCred.pdf
+                  This type is default for 'CL' credential definition type.
 * `tag`: String - allows to distinct between revocation registries for the same issuer and credential definition
 * `credDefId`: String - id of stored in ledger credential definition
 * `config`: Json - type-specific configuration of revocation registry as json:
@@ -183,7 +225,13 @@ This call requires access to pre-configured blob storage writer instance handle 
     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 }
 ````
-* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails
+* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails 
+
+NOTE:
+Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
+in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+
 * __->__ [ `revocRegId`: String, `revocRegDef`: Json, `revocRegEntry`: Json ] - revoc\_reg\_id: identifier of created revocation registry definition
 revoc\_reg\_def\_json: public part of revocation registry definition
 revoc\_reg\_entry\_json: revocation registry entry that defines initial state of revocation registry
@@ -205,7 +253,9 @@ for authentication between protocol steps and integrity checking.
         "cred_def_id": string,
         // Fields below can depend on Cred Def type
         "nonce": string,
-        "key_correctness_proof" : <key_correctness_proof>
+        "key_correctness_proof" : key correctness proof for credential definition correspondent to cred_def_id
+                                  (opaque type that contains data structures internal to Ursa.
+                                  It should not be parsed and are likely to change in future versions).
     }
 ````
 
@@ -235,6 +285,7 @@ Example:
      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
     }
 ````
+  If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
 * `revRegId`: String - id of revocation registry stored in the wallet
 * `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * __->__ [ `cred`: Json, `credRevocId`: String, `revocRegDelta`: Json ] - cred\_json: Credential json containing signed credential values
@@ -245,8 +296,12 @@ Example:
         "rev_reg_def_id", Optional<string>,
         "values": <see cred_values_json above>,
         // Fields below can depend on Cred Def type
-        "signature": <signature>,
+        "signature": <credential signature>,
+                     (opaque type that contains data structures internal to Ursa.
+                     It should not be parsed and are likely to change in future versions).
         "signature_correctness_proof": <signature_correctness_proof>
+                                       (opaque type that contains data structures internal to Ursa.
+                                        It should not be parsed and are likely to change in future versions).
     }
 cred_revoc_id: local id for revocation info (Can be used for revocation of this credential)
 revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
@@ -314,7 +369,11 @@ The blinded master secret is a part of the credential request.
      "cred_def_id" : string,
         // Fields below can depend on Cred Def type
      "blinded_ms" : <blinded_master_secret>,
+                   (opaque type that contains data structures internal to Ursa.
+                    It should not be parsed and are likely to change in future versions).
      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+                                       (opaque type that contains data structures internal to Ursa.
+                                        It should not be parsed and are likely to change in future versions).
      "nonce": string
    }
 cred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.
@@ -469,7 +528,7 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -482,6 +541,10 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
                        // If specified prover must proof non-revocation
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
     }
 where
 ````
@@ -523,7 +586,7 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -536,6 +599,10 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
                        // If specified prover must proof non-revocation
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
     }
 ````
 * `extraQuery`: Json - \(Optional\) List of extra queries that will be applied to correspondent attribute\/predicate:
@@ -605,7 +672,30 @@ The proof request also contains nonce.
 The proof contains either proof or self-attested attribute value for each requested attribute.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `proofReq`: Json
+* `proofReq`: Json - proof request json
+```
+  {
+      "name": string,
+      "version": string,
+      "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
+      "requested_attributes": { // set of requested attributes
+           "<attr_referent>": <attr_info>, // see below
+           ...,
+      },
+      "requested_predicates": { // set of requested predicates
+           "<predicate_referent>": <predicate_info>, // see below
+           ...,
+       },
+      "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                     // If specified prover must proof non-revocation
+                     // for date in this interval for each attribute
+                     // (can be overridden on attribute level)
+      "ver": Optional<str>  - proof request version:
+          - omit to use unqualified identifiers for restrictions
+          - "1.0" to use unqualified identifiers for restrictions
+          - "2.0" to use fully qualified identifiers for restrictions
+  }
+````
 * `requestedCredentials`: Json - either a credential or self-attested attribute for each requested attribute
 ```
     {
@@ -681,7 +771,8 @@ There is also aggregated proof part common for all credential proofs.
         "proof": {
             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
             "aggregated_proof": <aggregated_proof>
-        }
+        } (opaque type that contains data structures internal to Ursa.
+            It should not be parsed and are likely to change in future versions).
         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
     }
 ````
@@ -693,12 +784,15 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 Verifies a proof \(of multiple credential\).
 All required schemas, public keys and revocation registries must be provided.
 
+IMPORTANT: You must use *_id's (`schema_id`, `cred_def_id`, `rev_reg_id`) listed in `proof[identifiers]`
+as the keys for corresponding `schemas`, `credentialDefsJsons`, `revRegDefs`, `revRegs` objects.
+
 * `proofRequest`: Json - proof request json
 ```
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -711,6 +805,10 @@ All required schemas, public keys and revocation registries must be provided.
                        // If specified prover must proof non-revocation
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+          - omit to use unqualified identifiers for restrictions
+          - "1.0" to use unqualified identifiers for restrictions
+          - "2.0" to use fully qualified identifiers for restrictions
     }
 ````
 * `proof`: Json - created for request proof json
@@ -816,6 +914,26 @@ at the particular time moment \(to reduce calculation time\).
 ````
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### generateNonce \( \) -&gt; nonce
+
+Generates 80-bit numbers that can be used as a nonce for proof request.
+
+* __->__ `nonce`: Json - generated number as a string
+
+Errors: `Common*`
+
+#### toUnqualified \( entity \) -&gt; res
+
+Get unqualified form (short form without method) of a fully qualified entity like DID.
+
+This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+1) Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+2) Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+3) another case when casting to unqualified form needed
+
+* `entity`: String - target entity to disqualify. Can be one of: Did, SchemaId, CredentialDefinitionId, RevocationRegistryId, Schema, CredentialDefinition, RevocationRegistryDefinition, CredentialOffer, CredentialRequest, ProofRequest.
+* __->__ `res`: Json - entity either in unqualified form or original if casting isn't possible
 
 ### blob_storage
 
@@ -1084,7 +1202,21 @@ Saves the Identity DID with keys in a secured Wallet, so that it can be used to 
 and encrypt transactions.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `did`: Json
+* `did`: Json - Identity information as json
+```
+{
+    "did": string, (optional;
+            if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
+            if not provided and cid is true then the full verkey will be used as a new DID;
+            if provided, then keys will be replaced - key rotation use case)
+    "seed": string, (optional) Seed that allows deterministic did creation (if not set random one will be created).
+                               Can be UTF-8, base64 or hex string.
+    "crypto_type": string, (optional; if not set then ed25519 curve is used;
+              currently only 'ed25519' value is supported for this field)
+    "cid": bool, (optional; if not set then false is used;)
+    "method_name": string, (optional) method name to create fully qualified did (Example:  `did:method_name:NcYxiDXkpYi6ov5FcYDi1e`).
+}
+```
 * __->__ [ `did`: String, `verkey`: String ] - did: DID generated and stored in the wallet
 verkey: The DIDs verification key
 
@@ -1254,6 +1386,21 @@ Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
+#### qualifyDid \( wh, did, method \) -&gt; fullQualifiedDid
+
+Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+   - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
+   - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
+
+Update DID related entities stored in the wallet.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `did`: String - target DID stored in the wallet.
+* `method`: String - method to apply to the DID.
+* __->__ `fullQualifiedDid`: String - fully qualified did
+
+Errors: `Common*`, `Wallet*`, `Crypto*`
+
 ### ledger
 
 #### signAndSubmitRequest \( poolHandle, wh, submitterDid, request \) -&gt; requestResult
@@ -1346,7 +1493,8 @@ Errors: `Common*`
 
 Builds a NYM request. Request to create a new NYM record for a specific user.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+    Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * `verkey`: String - Target identity verification key as base58-encoded string.
 * `alias`: String - NYM's alias.
@@ -1365,7 +1513,8 @@ Errors: `Common*`
 
 Builds an ATTRIB request. Request to add attribute to a NYM record.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * `hash`: String - \(Optional\) Hash of attribute data.
 * `raw`: Json - \(Optional\) Json, where key is attribute name and value is attribute value.
@@ -1397,11 +1546,34 @@ Builds a GET\_NYM request. Request to get information about a DID \(NYM\).
 
 Errors: `Common*`
 
+#### parseGetNymResponse \( response \) -&gt; nymData
+
+Parse a GET_NYM response to get NYM data.
+
+* `response`: String - response on GET_NYM request.
+* __->__ `nymData`: Json 
+```
+   {
+       did: DID as base58-encoded string for 16 or 32 bit DID value.
+       verkey: verification key as base58-encoded string.
+       role: Role associated number
+                               null (common USER)
+                               0 - TRUSTEE
+                               2 - STEWARD
+                               101 - TRUST_ANCHOR
+                               101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+                               201 - NETWORK_MONITOR
+   }
+```
+
+Errors: `Common*`
+
 #### buildSchemaRequest \( submitterDid, data \) -&gt; request
 
 Builds a SCHEMA request. Request to add Credential's schema.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `data`: Json - Credential schema.
 ```
 {
@@ -1449,7 +1621,8 @@ Errors: `Common*`
 Builds an CRED\_DEF request. Request to add a Credential Definition \(in particular, public key\),
 that Issuer creates for a particular Credential Schema.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `data`: Json - credential definition json
 ```
 {
@@ -1506,7 +1679,8 @@ Errors: `Common*`
 
 Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `targetDid`: String - Target Node's DID.  It differs from submitter\_did field.
 * `data`: Json - Data associated with the Node:
 ```
@@ -1553,7 +1727,8 @@ Errors: `Common*`
 
 Builds a POOL\_CONFIG request. Request to change Pool's configuration.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `writes`: Boolean - Whether any write requests can be processed by the pool
 \(if false, then pool goes to read-only state\). True by default.
 * `force`: Boolean - Whether we should apply transaction \(for example, move pool to read-only state\)
@@ -1566,7 +1741,8 @@ Errors: `Common*`
 
 Builds a POOL\_RESTART request.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `action`: String - Action that pool has to do after received transaction.
 * `datetime`: String - &lt;Optional&gt; Restart time in datetime format. Skip to restart as early as possible.
 * __->__ `request`: Json
@@ -1578,7 +1754,8 @@ Errors: `Common*`
 Builds a POOL\_UPGRADE request. Request to upgrade the Pool \(sent by Trustee\).
 It upgrades the specified Nodes \(either all nodes in the Pool, or some specific ones\).
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `name`: String - Human-readable name for the upgrade.
 * `version`: String - The version of indy-node package we perform upgrade to.
 Must be greater than existing one \(or equal if reinstall flag is True\).
@@ -1600,7 +1777,8 @@ Errors: `Common*`
 Builds a REVOC\_REG\_DEF request. Request to add the definition of revocation registry
 to an exists credential definition.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `data`: Json - Revocation Registry data:
 ```
     {
@@ -1666,7 +1844,8 @@ the new accumulator value and issued\/revoked indices.
 This is just a delta of indices, not the whole list.
 So, it can be sent each time a new credential is issued\/revoked.
 
-* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `revocRegDefId`: String - ID of the corresponding RevocRegDef.
 * `revDefType`: String - Revocation Registry type \(only CL\_ACCUM is supported for now\).
 * `value`: Json - Registry-specific data:
@@ -1753,7 +1932,8 @@ Errors: `Common*`
 
 Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 
-* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `txnType`: String - ledger transaction alias or associated value.
 * `action`: String - type of an action.
     * "ADD" - to add a new rule
@@ -1766,10 +1946,11 @@ Builds a AUTH_RULE request. Request to change authentication rules for a ledger 
  {
      constraint_id - <string> type of a constraint.
          Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-     role - <string> role of a user which satisfy to constrain.
+     role - <string> (optional) role of a user which satisfy to constrain.
      sig_count - <u32> the number of signatures required to execution action.
-     need_to_be_owner - <bool> if user must be an owner of transaction.
-     metadata - <object> additional parameters of the constraint.
+     need_to_be_owner - <bool> (optional) if user must be an owner of transaction (false by default).
+     off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default). 
+     metadata - <object> (optional) additional parameters of the constraint.
  }
 can be combined by
  {
@@ -1781,6 +1962,35 @@ can be combined by
 Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
 
 More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rule   
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildAuthRulesRequest \( submitterDid, data \) -&gt; request
+
+Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
+
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
+* `constraint`: Json - a list of auth rules:
+```
+[
+    {
+        "auth_type": ledger transaction alias or associated value,
+        "auth_action": type of an action,
+        "field": transaction field,
+        "old_value": (Optional) old value of a field, which can be changed to a new_value (mandatory for EDIT action),
+        "new_value": (Optional) new value that can be used to fill the field,
+        "constraint": set of constraints required for execution of an action in the format described above for `buildAuthRuleRequest` function.
+    },
+    ...
+]
+```
+
+Default ledger auth rules: https://github.com/hyperledger/indy-node/blob/master/docs/source/auth_rules.md
+
+More about AUTH_RULE request: https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md#auth_rules   
 
 * __->__ `request`: Json
 
@@ -1806,16 +2016,51 @@ NOTE: Either none or all transaction related parameters must be specified (`oldV
 
 Errors: `Common*`
 
-#### buildTxnAuthorAgreementRequest \( submitterDid, text, version \) -&gt; request
+#### buildTxnAuthorAgreementRequest \( submitterDid, text, version, ratificationTimestamp, retirementTimestamp \) -&gt; request
 
 Builds a TXN_AUTHR_AGRMT request. 
 Request to add a new version of Transaction Author Agreement to the ledger.
 
 EXPERIMENTAL
 
-* `submitterDid`: String - DID of the request sender.
-* `text`: String - a content of the TTA.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
+* `text`: String - \(Optional\)  a content of the TTA.
+    * Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+    * for Indy Node version <= 1.12.0:
+        * Use empty string to reset TAA on the ledger
+    * for Indy Node version > 1.12.0
+        * Should be omitted in case of updating an existing TAA (setting `retirementTimestamp`)
 * `version`: String - a version of the TTA (unique UTF-8 string).
+* `version`: String - the date (timestamp) of TAA ratification by network government.
+* `ratificationTimestamp`: Number - \(Optional\) Еhe date (timestamp) of TAA ratification by network government.
+    * for Indy Node version <= 1.12.0:
+        * Must be omitted
+    * for Indy Node version > 1.12.0:
+        * Must be specified in case of adding a new TAA
+        * Can be omitted in case of updating an existing TAA
+* `retirementTimestamp`: Number - \(Optional\) the date \(timestamp\) of TAA retirement.
+    * for Indy Node version <= 1.12.0:
+        * Must be omitted
+    * for Indy Node version > 1.12.0:
+        * Must be omitted in case of adding a new (latest) TAA.
+        * Should be used for updating (deactivating) non-latest TAA on the ledger.
+
+Note: Use `buildDisableAllTxnAuthorAgreementsRequest` to disable all TAA's on the ledger.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildDisableAllTxnAuthorAgreementsRequest \( submitterDid \) -&gt; request
+
+Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. 
+Request to disable all Transaction Author Agreement on the ledger.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 
 * __->__ `request`: Json
 
@@ -1853,7 +2098,8 @@ Acceptance Mechanism is a description of the ways how the user may accept a tran
 
 EXPERIMENTAL
 
-* `submitterDid`: String - DID of the request sender.
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 * `aml`: Json - a set of new acceptance mechanisms:
 ```
 {
@@ -1902,9 +2148,29 @@ If all text, version and taaDigest parameters are specified, a check integrity o
 * `version`: String - \(Optional\) raw data about TAA from ledger.
      * `text` and `version` parameters should be passed together.
      * `text` and `version` parameters are required if taaDigest parameter is omitted.
-* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. Digest is sha256 hash calculated on concatenated strings: version || text. This parameter is required if text and version parameters are omitted.
 * `accMechType`: String - mechanism how user has accepted the TAA.
-* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA.
+* `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk. 
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### appendRequestEndorser \( requestJson, endorserDid \) -&gt; request
+
+Append Endorser to an existing request.
+
+An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+But it is expecting that the transaction will be sent by the specified Endorser.
+
+Note: Both Transaction Author and Endorser must sign output request after that.
+
+More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
+                                 https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+
+* `requestJson`: Json - original request data json.
+* `endorser_did`: String - DID of the Endorser that will submit the transaction.
+                           The Endorser's DID must be present on the ledger.
 
 * __->__ `request`: Json
 
@@ -2457,6 +2723,63 @@ amount: &lt;int&gt;, \/\/ amount
 extra: &lt;str&gt;, \/\/optional data
 }
 
+#### getRequestInfo \( getAuthRuleResponse, requesterInfo, fees \) -&gt; requestInfo
+
+Gets request requirements (with minimal price) correspondent to specific auth rule
+in case the requester can perform this action.
+
+*EXPERIMENTAL*
+
+If the requester does not match to the request constraints `TransactionNotAllowed` error will be thrown.
+
+* `getAuthRuleResponse`: String - response on GET_AUTH_RULE request returning action constraints set on the ledger.
+* `requesterInfo`: Json:
+```
+{
+    "role": string (optional) - role of a user which can sign a transaction.
+    "sig_count": u64 - number of signers.
+    "is_owner": bool (optional) - if user is an owner of transaction (false by default).
+    "is_off_ledger_signature": bool (optional) - if user did is unknow for ledger (false by default).
+}
+```
+* `fees`: Json - fees set on the ledger (result of `parseGetTxnFeesResponse`).
+* __->__ `requestInfo`: Json - request info if a requester match to the action constraints.
+```
+{
+    "price": u64 - fee required for the action performing,
+    "requirements": [{
+        "role": string (optional) - role of users who should sign,
+        "sig_count": u64 - number of signers,
+        "need_to_be_owner": bool - if requester need to be owner,
+        "off_ledger_signature": bool - allow signature of unknow for ledger did (false by default).
+    }]
+}
+```
+
+Errors: `Common*`, `Ledger*`
+
+#### signWithAddress \( wh, address, message \) -&gt; signature
+
+Signs a message with a payment address.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `address`: String - payment address of message signer. The key must be created by calling createPaymentAddress
+* `message`: Buffer - a pointer to first byte of message to be signed
+* __->__ `signature`: Buffer - a signature string
+
+Errors: `Common*`, `Wallet*`, `Payment*`
+
+#### verifyWithAddress \( address, message, signature \) -&gt; valid
+
+Verify a signature with a payment address.
+
+* `address`: String - payment address of the message signer
+* `message`: Buffer - a pointer to first byte of message that has been signed
+* `signature`: Buffer - a pointer to first byte of signature to be verified
+* __->__ `valid`: Boolean - valid: true - if signature is valid, false - otherwise
+
+Errors: `Common*`, `Wallet*`, `Payment*`
+
 
 ### pool
 
@@ -2494,6 +2817,7 @@ if NULL, then default config will be used. Example:
     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
         Note: Not specified nodes will be placed in a random way.
+    "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
 }
 ````
 

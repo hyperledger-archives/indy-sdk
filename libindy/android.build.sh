@@ -56,7 +56,7 @@ normalize_dir(){
 
 setup_dependencies(){
     if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
-        download_and_unzip_dependencies ${ABSOLUTE_ARCH}
+        setup_dependencies_env_vars ${ABSOLUTE_ARCH}
         else
             echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
             if [ -z "${OPENSSL_DIR}" ]; then
@@ -108,15 +108,12 @@ statically_link_dependencies_with_libindy(){
     echo "${BLUE}Output will be available at ${ANDROID_BUILD_FOLDER}/libindy_${ABSOLUTE_ARCH}/lib/libindy.so${RESET}"
     $CC -v -shared -o${ANDROID_BUILD_FOLDER}/libindy_${ABSOLUTE_ARCH}/lib/libindy.so -Wl,--whole-archive \
         ${WORKDIR}/target/${TRIPLET}/release/libindy.a \
-        ${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}/libz.so \
-        ${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}/libm.a \
-        ${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}/liblog.so \
+        ${TOOLCHAIN_DIR}/sysroot/usr/lib/${ANDROID_TRIPLET}/libm.a \
         ${OPENSSL_DIR}/lib/libssl.a \
         ${OPENSSL_DIR}/lib/libcrypto.a \
         ${SODIUM_LIB_DIR}/libsodium.a \
         ${LIBZMQ_LIB_DIR}/libzmq.a \
-        ${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/${TOOLCHAIN_SYSROOT_LIB}/libgnustl_shared.so \
-        -Wl,--no-whole-archive -z muldefs
+        -Wl,--no-whole-archive -z muldefs -L${TOOLCHAIN_DIR}/sysroot/usr/lib/${ANDROID_TRIPLET}/${TARGET_API} -lz -llog -lc++_shared
 }
 
 package_library(){
@@ -158,8 +155,7 @@ build(){
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
         cargo clean
-        LD_LIBRARY_PATH=${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} \
-        RUSTFLAGS="-C link-args=-Wl,-rpath,${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/${TOOLCHAIN_SYSROOT_LIB} -lgnustl_shared" \
+        RUSTFLAGS="-C link-args=-Wl -lc++_shared" \
         cargo build --release --target=${TRIPLET}
 
     popd
@@ -168,7 +164,6 @@ build(){
 
 generate_arch_flags ${TARGET_ARCH}
 setup_dependencies
-download_and_setup_toolchain
 set_env_vars
 create_standalone_toolchain_and_rust_target
 create_cargo_config

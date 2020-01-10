@@ -4,11 +4,11 @@ use std::collections::HashSet;
 use serde_json;
 use failure::Context;
 
-use errors::prelude::*;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::merkle_tree_factory;
-use services::pool::rust_base58::{FromBase58, ToBase58};
-use services::pool::types::{CatchupReq, Message};
+use indy_api_types::errors::prelude::*;
+use crate::services::ledger::merkletree::merkletree::MerkleTree;
+use crate::services::pool::merkle_tree_factory;
+use rust_base58::{FromBase58, ToBase58};
+use crate::services::pool::types::{CatchupReq, Message};
 
 pub enum CatchupProgress {
     ShouldBeStarted(
@@ -31,8 +31,8 @@ pub fn build_catchup_req(merkle: &MerkleTree, target_mt_size: usize) -> IndyResu
 
     let cr = CatchupReq {
         ledgerId: 0,
-        seqNoStart: seq_no_start.clone(),
-        seqNoEnd: seq_no_end.clone(),
+        seqNoStart: seq_no_start,
+        seqNoEnd: seq_no_end,
         catchupTill: target_mt_size,
     };
 
@@ -127,7 +127,7 @@ fn _try_to_catch_up(ledger_status: &(String, usize, Option<Vec<String>>), merkle
     } else if target_mt_size > cur_mt_size {
         let target_mt_root = target_mt_root
             .from_base58()
-            .map_err(|err| Context::new(err))
+            .map_err(Context::new)
             .to_indy(IndyErrorKind::InvalidStructure, "Can't parse target MerkleTree hash from nodes responses")?; // FIXME: review kind
 
         match *hashes {
@@ -150,7 +150,7 @@ pub fn check_cons_proofs(mt: &MerkleTree, cons_proofs: &Vec<String>, target_mt_r
         bytes_proofs.push(
             cons_proof
                 .from_base58()
-                .map_err(|err| Context::new(err))
+                .map_err(Context::new)
                 .to_indy(IndyErrorKind::InvalidStructure, "Can't decode node consistency proof")? // FIXME: review kind
         );
     }
