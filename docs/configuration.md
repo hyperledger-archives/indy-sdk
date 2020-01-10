@@ -44,10 +44,18 @@ This function accepts a `config` parameter that defines the behavior of the clie
     {
         "timeout": int (optional) - specifies the maximum number of seconds to wait for pool response (ACK, REPLY).
         "extended_timeout": int (optional), an additional number of seconds to wait for REPLY in case ACK has been received.
+        "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default). 
+            Libindy sends write transactions (like `NYM)` to all nodes in the ledger. 
+            In case of read request (like `GET_NYM`) it's enough to receive a reply with valid `state proof` only from one node.
+            By default Libindy sends a read requests to 2 (`number_read_nodes`) nodes in the pool. 
+            If Reply isn't received or response `state proof` is invalid Libindy sends the request again but to 2 (`number_read_nodes`) * 2 = 4 nodes and so far until completion.
+            So using `number_read_nodes` parameter you can set the number of nodes to send read requests.  
         "preordered_nodes": array<string> -  (optional), names of nodes which will have priority during request sending.
             This can be useful if a user prefers querying specific nodes.
+            Assume that `Node1` and `Node2` nodes reply faster. 
+            If you pass them to `preordered_nodes` parameter Libindy always sends a read request to these nodes first and only then (if not enough) to others.
             Note: Nodes not specified will be placed randomly.
-        "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+            
     }
     ```
 
