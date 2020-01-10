@@ -410,7 +410,7 @@ mod test_build_get_attrib_request {
 mod test_build_schema_request {
     use super::*;
 
-    const SCHEMA_DATA: &str = r#"{"id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt2:1.0","attrNames": ["name", "male"],"name":"gvt2","version":"3.1","ver":"1.0"}"#;
+    const SCHEMA_DATA: &str = r#"{"id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt2:3.1","attrNames": ["name", "male"],"name":"gvt2","version":"3.1","ver":"1.0"}"#;
 
     #[test]
     pub fn build_schema_request_success() {
