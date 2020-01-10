@@ -678,21 +678,6 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         debug!("connecting to postgres, url_base: {:?}", url_base);
         let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
-        /*
-        debug!("creating wallets DB");
-        if let Err(error) = conn.execute(&_CREATE_WALLETS_DATABASE, &[]) {
-            if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
-                debug!("error creating database, Error: {}", error);
-                conn.finish()?;
-                return Err(WalletStorageError::IOError(format!("Error occurred while creating the database: {}", error)))
-            } else {
-                // if database already exists, assume tables are created already and return
-                debug!("database already exists");
-                conn.finish()?;
-                return Ok(());
-            }
-        }
-        */
         debug!("creating wallets DB");
         let create_db_sql: String = str::replace(_CREATE_WALLET_DATABASE, "$1", wallet_db_name);
         debug!("create_db_sql: {:?}", create_db_sql);
@@ -898,8 +883,6 @@ impl PostgresStorageType {
 
     fn _admin_postgres_url(config: &PostgresConfig, credentials: &PostgresCredentials) -> String {
         let mut url_base = "postgresql://".to_owned();
-        debug!("_admin_postgres_url, credentials.admin_account: {:?}", credentials.account);
-        debug!("_admin_postgres_url, credentials.admin_password: {:?}", credentials.password);
 
         match credentials.admin_account {
             Some(ref account) => url_base.push_str(&account[..]),
