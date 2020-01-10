@@ -45,7 +45,7 @@
       "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
           ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
           This can be useful if a user prefers querying specific nodes.
-          Assume that you trust more to `Node1` and `Node2` nodes or they reply faster.
+          Assume that `Node1` and `Node2` nodes reply faster.
           If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
           Note: Nodes not specified will be placed randomly.
       "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)

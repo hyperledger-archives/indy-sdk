@@ -52,7 +52,7 @@ This function accepts a `config` parameter that defines the behavior of the clie
             So using `number_read_nodes` parameter you can set the number of nodes to send read requests.  
         "preordered_nodes": array<string> -  (optional), names of nodes which will have priority during request sending.
             This can be useful if a user prefers querying specific nodes.
-            Assume that you trust more to `Node1` and `Node2` nodes or they reply faster. 
+            Assume that `Node1` and `Node2` nodes reply faster. 
             If you pass them to `preordered_nodes` parameter Libindy always sends a read request to these nodes first and only then (if not enough) to others.
             Note: Nodes not specified will be placed randomly.
             
