@@ -1,28 +1,27 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
 use v3::messages::attachment::{Attachments, AttachmentEncoding};
+use v3::messages::connection::service::Service;
 use error::prelude::*;
 use std::convert::TryInto;
 
 pub use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, ProofRequestVersion};
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct PresentationRequest {
     #[serde(rename = "@id")]
     pub id: MessageId,
-    #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
     #[serde(rename = "request_presentations~attach")]
-    pub request_presentations_attach: Attachments
+    pub request_presentations_attach: Attachments,
+    #[serde(rename = "~service")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service: Option<Service>,
 }
 
 impl PresentationRequest {
     pub fn create() -> Self {
-        PresentationRequest {
-            id: MessageId::new(),
-            comment: None,
-            request_presentations_attach: Attachments::new(),
-        }
+        PresentationRequest::default()
     }
 
     pub fn set_id(mut self, id: String) -> Self {
@@ -40,25 +39,18 @@ impl PresentationRequest {
         Ok(self)
     }
 
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::PresentationRequest(self.clone()) // TODO: THINK how to avoid clone
-    }
+    pub fn set_service(mut self, service: Option<Service>) -> Self {
+        self.service = service;
+        self
 
+    }
     pub fn to_json(&self) -> VcxResult<String> {
         serde_json::to_string(self)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize PresentationRequest: {}", err)))
     }
 }
 
-impl Default for PresentationRequest {
-    fn default() -> PresentationRequest {
-        PresentationRequest {
-            id: MessageId::new(),
-            comment: None,
-            request_presentations_attach: Attachments::new(),
-        }
-    }
-}
+a2a_message!(PresentationRequest);
 
 impl TryInto<PresentationRequest> for ProofRequestMessage {
     type Error = VcxError;
@@ -66,7 +58,8 @@ impl TryInto<PresentationRequest> for ProofRequestMessage {
     fn try_into(self) -> Result<PresentationRequest, Self::Error> {
         let presentation_request = PresentationRequest::create()
             .set_id(self.thread_id.unwrap_or_default())
-            .set_request_presentations_attach(&self.proof_request_data)?;
+            .set_request_presentations_attach(&self.proof_request_data)?
+            .set_service(self.service);
 
         Ok(presentation_request)
     }
@@ -84,6 +77,7 @@ impl TryInto<ProofRequestMessage> for PresentationRequest {
             .type_version("1.0")?
             .proof_data_version("0.1")?
             .set_thread_id(self.id.0.clone())?
+            .set_service(self.service)?
             .clone();
 
         Ok(proof_request)
@@ -96,14 +90,17 @@ pub type PresentationRequestData = ProofRequestData;
 pub mod tests {
     use super::*;
     use messages::thread::Thread;
+    use v3::messages::connection::service::tests::_service;
 
     pub fn _presentation_request_data() -> PresentationRequestData {
         PresentationRequestData::default()
             .set_requested_attributes(json!([{"name": "name"}]).to_string()).unwrap()
     }
 
-    fn _attachment() -> ::serde_json::Value {
-        json!(_presentation_request_data())
+    fn _attachment() -> Attachments {
+        let mut attachment = Attachments::new();
+        attachment.add_json_attachment(json!(_presentation_request_data()), AttachmentEncoding::Base64).unwrap();
+        attachment
     }
 
     fn _comment() -> String {
@@ -119,13 +116,20 @@ pub mod tests {
     }
 
     pub fn _presentation_request() -> PresentationRequest {
-        let mut attachment = Attachments::new();
-        attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
-
         PresentationRequest {
             id: MessageId::id(),
             comment: Some(_comment()),
-            request_presentations_attach: attachment,
+            request_presentations_attach: _attachment(),
+            service: None,
+        }
+    }
+
+    pub fn _presentation_request_with_service() -> PresentationRequest {
+        PresentationRequest {
+            id: MessageId::id(),
+            comment: Some(_comment()),
+            request_presentations_attach: _attachment(),
+            service: Some(_service()),
         }
     }
 
@@ -136,5 +140,15 @@ pub mod tests {
             .set_request_presentations_attach(&_presentation_request_data()).unwrap();
 
         assert_eq!(_presentation_request(), presentation_request);
+    }
+
+    #[test]
+    fn test_presentation_request_build_works_for_service() {
+        let presentation_request: PresentationRequest = PresentationRequest::default()
+            .set_comment(_comment())
+            .set_service(Some(_service()))
+            .set_request_presentations_attach(&_presentation_request_data()).unwrap();
+
+        assert_eq!(_presentation_request_with_service(), presentation_request);
     }
 }

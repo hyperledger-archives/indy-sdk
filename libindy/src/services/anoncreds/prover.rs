@@ -451,7 +451,7 @@ impl Prover {
             return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Proof Request attribute restriction should contain "name" or "names" param"#));
         };
 
-        if let Some(restrictions_) = restrictions {
+        if let Some(restrictions_) = restrictions.as_ref().and_then(|r| r.clean()) {
             match version {
                 ProofRequestsVersion::V1 => {
                     queries.push(self.double_restrictions(restrictions_.clone())?)

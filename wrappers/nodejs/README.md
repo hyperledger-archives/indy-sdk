@@ -285,6 +285,7 @@ Example:
      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
     }
 ````
+  If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
 * `revRegId`: String - id of revocation registry stored in the wallet
 * `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * __->__ [ `cred`: Json, `credRevocId`: String, `revocRegDelta`: Json ] - cred\_json: Credential json containing signed credential values
@@ -527,7 +528,7 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -585,7 +586,7 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -676,7 +677,7 @@ The proof contains either proof or self-attested attribute value for each reques
   {
       "name": string,
       "version": string,
-      "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+      "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
       "requested_attributes": { // set of requested attributes
            "<attr_referent>": <attr_info>, // see below
            ...,
@@ -791,7 +792,7 @@ as the keys for corresponding `schemas`, `credentialDefsJsons`, `revRegDefs`, `r
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -2015,7 +2016,7 @@ NOTE: Either none or all transaction related parameters must be specified (`oldV
 
 Errors: `Common*`
 
-#### buildTxnAuthorAgreementRequest \( submitterDid, text, version \) -&gt; request
+#### buildTxnAuthorAgreementRequest \( submitterDid, text, version, ratificationTimestamp, retirementTimestamp \) -&gt; request
 
 Builds a TXN_AUTHR_AGRMT request. 
 Request to add a new version of Transaction Author Agreement to the ledger.
@@ -2024,8 +2025,42 @@ EXPERIMENTAL
 
 * `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
                            Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
-* `text`: String - a content of the TTA.
+* `text`: String - \(Optional\)  a content of the TTA.
+    * Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+    * for Indy Node version <= 1.12.0:
+        * Use empty string to reset TAA on the ledger
+    * for Indy Node version > 1.12.0
+        * Should be omitted in case of updating an existing TAA (setting `retirementTimestamp`)
 * `version`: String - a version of the TTA (unique UTF-8 string).
+* `version`: String - the date (timestamp) of TAA ratification by network government.
+* `ratificationTimestamp`: Number - \(Optional\) Еhe date (timestamp) of TAA ratification by network government.
+    * for Indy Node version <= 1.12.0:
+        * Must be omitted
+    * for Indy Node version > 1.12.0:
+        * Must be specified in case of adding a new TAA
+        * Can be omitted in case of updating an existing TAA
+* `retirementTimestamp`: Number - \(Optional\) the date \(timestamp\) of TAA retirement.
+    * for Indy Node version <= 1.12.0:
+        * Must be omitted
+    * for Indy Node version > 1.12.0:
+        * Must be omitted in case of adding a new (latest) TAA.
+        * Should be used for updating (deactivating) non-latest TAA on the ledger.
+
+Note: Use `buildDisableAllTxnAuthorAgreementsRequest` to disable all TAA's on the ledger.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildDisableAllTxnAuthorAgreementsRequest \( submitterDid \) -&gt; request
+
+Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. 
+Request to disable all Transaction Author Agreement on the ledger.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 
 * __->__ `request`: Json
 
@@ -2781,8 +2816,13 @@ if NULL, then default config will be used. Example:
     "extended_timeout": int (optional), extended timeout for network request (in sec).
     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
-        Note: Not specified nodes will be placed in a random way.
+        This can be useful if a user prefers querying specific nodes.
+        Assume that `Node1` and `Node2` nodes reply faster.
+        If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
+        Note: Nodes not specified will be placed randomly.
     "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+        By default Libindy sends a read requests to 2 nodes in the pool.
+        If response isn't received or `state proof` is invalid Libindy sends the request again but to 2 (`number_read_nodes`) * 2 = 4 nodes and so far until completion.
 }
 ````
 

@@ -44,10 +44,18 @@ This function accepts a `config` parameter that defines the behavior of the clie
     {
         "timeout": int (optional) - specifies the maximum number of seconds to wait for pool response (ACK, REPLY).
         "extended_timeout": int (optional), an additional number of seconds to wait for REPLY in case ACK has been received.
+        "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default). 
+            Libindy sends write transactions (like `NYM)` to all nodes in the ledger. 
+            In case of read request (like `GET_NYM`) it's enough to receive a reply with valid `state proof` only from one node.
+            By default Libindy sends a read requests to 2 (`number_read_nodes`) nodes in the pool. 
+            If Reply isn't received or response `state proof` is invalid Libindy sends the request again but to 2 (`number_read_nodes`) * 2 = 4 nodes and so far until completion.
+            So using `number_read_nodes` parameter you can set the number of nodes to send read requests.  
         "preordered_nodes": array<string> -  (optional), names of nodes which will have priority during request sending.
             This can be useful if a user prefers querying specific nodes.
+            Assume that `Node1` and `Node2` nodes reply faster. 
+            If you pass them to `preordered_nodes` parameter Libindy always sends a read request to these nodes first and only then (if not enough) to others.
             Note: Nodes not specified will be placed randomly.
-        "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+            
     }
     ```
 
@@ -312,6 +320,17 @@ All these options are part of Indy wallet `config`/`credential` parameters.
 * `sdk_to_remote_did` - pairwise DID for agent
 * `sdk_to_remote_verkey` - pairwise Verkey for Agent
 
+##### Protocol related options
+* `communication_method` - the version of protocols to use (can be `aries` or `proprietary`) for connection establishment and messages exchange.
+    * `aries` - the public protocols described in the [repository](https://github.com/hyperledger/aries-rfcs).
+    * `proprietary` - the proprietary protocols.
+* `actors` - the set of actors which application supports. This setting is used within the `Feature Discovery` protocol to discover which features are supported by another connection side.
+
+    The following actors are supported by default: `[inviter, invitee, issuer, holder, prover, verifier, sender, receiver]`. 
+    You need to edit this list and add to an initialization config in case the application supports the fewer number of actors.
+
+    Note that option is applicable for `aries` communication method only.
+
 ### Logging
 libVCX provides two options for Logger initialization:
 
@@ -324,7 +343,6 @@ Library user can provide a custom logger implementation by passing a set of hand
 This function will also be used by `indy` and `plugins` for logging.
 
 WARNING: You can only set the logger **once**. Once it's been set, vcx won't let you change it.
-
 
 ##### Wrappers
 * The Python wrapper uses default Python logging module. So, to enable logs you need just to configure its usual way. 

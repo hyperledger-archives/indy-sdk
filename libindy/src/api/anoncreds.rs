@@ -555,6 +555,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: CommandHandle,
 ///      "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
 ///      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
 ///     }
+///   If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
 /// rev_reg_id: id of revocation registry stored in the wallet
 /// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails (returned by `indy_open_blob_storage_reader`)
 /// cb: Callback that takes command result as parameter.
@@ -1502,7 +1503,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+///         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1629,7 +1630,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+///         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -1859,7 +1860,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+///         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
@@ -2061,7 +2062,7 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 ///     {
 ///         "name": string,
 ///         "version": string,
-///         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+///         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 ///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,

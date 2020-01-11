@@ -4,7 +4,7 @@ use v3::messages::mime_type::MimeType;
 use error::VcxResult;
 use messages::thread::Thread;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct CredentialProposal {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -12,20 +12,14 @@ pub struct CredentialProposal {
     pub credential_proposal: CredentialPreviewData,
     pub schema_id: String,
     pub cred_def_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "~thread")]
     pub thread: Option<Thread>
 }
 
 impl CredentialProposal {
     pub fn create() -> Self {
-        CredentialProposal {
-            id: MessageId::new(),
-            comment: String::new(),
-            credential_proposal: CredentialPreviewData::new(),
-            schema_id: String::new(),
-            cred_def_id: String::new(),
-            thread: None,
-        }
+        CredentialProposal::default()
     }
 
     pub fn set_comment(mut self, comment: String) -> Self {
@@ -48,15 +42,13 @@ impl CredentialProposal {
         Ok(self)
     }
 
-    pub fn set_thread_id(mut self, id: String) -> Self {
-        self.thread = Some(Thread::new().set_thid(id));
+    pub fn set_thread_id(mut self, id: &str) -> Self {
+        self.thread = Some(Thread::new().set_thid(id.to_string()));
         self
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::CredentialProposal(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+a2a_message!(CredentialProposal);
 
 #[cfg(test)]
 pub mod tests {
@@ -99,7 +91,7 @@ pub mod tests {
 
         let credential_proposal: CredentialProposal = CredentialProposal::create()
             .set_comment(_comment())
-            .set_thread_id(thread_id())
+            .set_thread_id(&thread_id())
             .set_cred_def_id(_cred_def_id())
             .set_schema_id(_schema_id())
             .add_credential_preview_data(name, value, MimeType::Plain).unwrap();

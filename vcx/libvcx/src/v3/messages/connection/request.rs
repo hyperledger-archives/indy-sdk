@@ -1,7 +1,7 @@
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::did_doc::*;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct Request {
     #[serde(rename = "@id")]
     pub id: MessageId,
@@ -9,25 +9,12 @@ pub struct Request {
     pub connection: ConnectionData
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct ConnectionData {
     #[serde(rename = "DID")]
     pub did: String,
     #[serde(rename = "DIDDoc")]
     pub did_doc: DidDoc,
-}
-
-impl Default for Request {
-    fn default() -> Request {
-        Request {
-            id: MessageId::new(),
-            label: String::new(),
-            connection: ConnectionData {
-                did: String::new(),
-                did_doc: DidDoc::default()
-            }
-        }
-    }
 }
 
 impl Request {
@@ -55,11 +42,9 @@ impl Request {
         self.connection.did_doc.set_keys(recipient_keys, routing_keys);
         self
     }
-
-    pub fn to_a2a_message(&self) -> A2AMessage {
-        A2AMessage::ConnectionRequest(self.clone()) // TODO: THINK how to avoid clone
-    }
 }
+
+a2a_message!(Request, ConnectionRequest);
 
 #[cfg(test)]
 pub mod tests {

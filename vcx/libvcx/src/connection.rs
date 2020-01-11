@@ -653,7 +653,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
     })
 }
 
-pub fn process_acceptance_message(handle: u32, message: Message) -> VcxResult<u32> {
+pub fn update_state_with_message(handle: u32, message: Message) -> VcxResult<u32> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
             Connections::V1(ref mut connection) => {
@@ -919,6 +919,7 @@ impl From<(Connection, ActorDidExchangeState)> for ConnectionV3 {
 }
 
 use v3::messages::a2a::{A2AMessage, MessageId};
+use v3::messages::connection::did_doc::DidDoc;
 
 pub fn get_messages(handle: u32) -> VcxResult<HashMap<String, A2AMessage>> {
     CONNECTION_MAP.get_mut(handle, |connection| {
@@ -948,13 +949,11 @@ pub fn get_message_by_id(handle: u32, msg_id: String) -> VcxResult<A2AMessage> {
 }
 
 pub fn decode_message(handle: u32, message: Message) -> VcxResult<A2AMessage> {
-    CONNECTION_MAP.get(handle, |connection| {
-        CONNECTION_MAP.get_mut(handle, |connection| {
-            match connection {
-                Connections::V3(ref mut connection) => connection.decode_message(&message),
-                _ => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
-            }
-        })
+    CONNECTION_MAP.get_mut(handle, |connection| {
+        match connection {
+            Connections::V3(ref mut connection) => connection.decode_message(&message),
+            _ => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
+        }
     })
 }
 
@@ -965,6 +964,10 @@ pub fn send_message(handle: u32, message: A2AMessage) -> VcxResult<()> {
             Connections::V3(ref mut connection) => connection.send_message(&message)
         }
     })
+}
+
+pub fn send_message_to_self_endpoint(message: A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
+    ConnectionV3::send_message_to_self_endpoint(&message, did_doc)
 }
 
 pub fn add_pending_messages(handle: u32, messages: HashMap<MessageId, String>) -> VcxResult<()> {
@@ -992,6 +995,24 @@ pub fn is_v3_connection(connection_handle: u32) -> VcxResult<bool> {
             Connections::V3(ref connection) => Ok(true)
         }
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+}
+
+pub fn send_ping(connection_handle: u32, comment: Option<String>) -> VcxResult<()> {
+    CONNECTION_MAP.get_mut(connection_handle, |connection| {
+        match connection {
+            Connections::V1(ref connection) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
+            Connections::V3(ref mut connection) => connection.send_ping(comment.clone())
+        }
+    })
+}
+
+pub fn send_discovery_features(connection_handle: u32, query: Option<String>, comment: Option<String>) -> VcxResult<()> {
+    CONNECTION_MAP.get_mut(connection_handle, |connection| {
+        match connection {
+            Connections::V1(ref connection) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
+            Connections::V3(ref mut connection) => connection.send_discovery_features(query.clone(), comment.clone())
+        }
+    })
 }
 
 #[cfg(test)]
@@ -1340,7 +1361,7 @@ pub mod tests {
         init!("true");
         let handle = create_connection("test_process_acceptance_message").unwrap();
         let message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
-        assert_eq!(error::SUCCESS.code_num, process_acceptance_message(handle, message).unwrap());
+        assert_eq!(error::SUCCESS.code_num, update_state_with_message(handle, message).unwrap());
     }
 
     #[test]
@@ -1386,7 +1407,6 @@ pub mod tests {
 
         // release throws a connection Error
         assert_eq!(release(1234).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-
     }
 
     #[test]
@@ -1409,7 +1429,6 @@ pub mod tests {
         assert_eq!(set_invite_details(1, &details).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
 
         assert_eq!(set_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
-
     }
 
     #[test]

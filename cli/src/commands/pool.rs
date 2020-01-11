@@ -404,7 +404,7 @@ pub fn accept_transaction_author_agreement(ctx: &CommandContext, text: &str, ver
 }
 
 pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, ask_for_showing: bool) -> Result<Option<()>, ()> {
-    if let Some((text, version)) = ledger::get_active_transaction_author_agreement(pool_handle)? {
+    if let Some((text, version, digest)) = ledger::get_active_transaction_author_agreement(pool_handle)? {
         if ask_for_showing {
             println!();
             println!("There is a Transaction Author Agreement set on the connected Pool.");
@@ -424,6 +424,9 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
 
         println!("Transaction Author Agreement");
         println!("Version: {:?}", version);
+        if let Some(digest_) = digest {
+            println!("Digest: {:?}", digest_);
+        }
         println!("Content: \n {:?}", text);
 
         accept_transaction_author_agreement(ctx, &text, &version);

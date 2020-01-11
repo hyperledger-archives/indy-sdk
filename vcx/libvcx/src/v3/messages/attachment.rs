@@ -4,12 +4,12 @@ use serde_json;
 use error::{VcxResult, VcxError, VcxErrorKind};
 use v3::messages::a2a::MessageId;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Attachments(pub Vec<Attachment>);
 
 impl Attachments {
     pub fn new() -> Attachments {
-        Attachments(Vec::new())
+        Attachments::default()
     }
 
     pub fn get(&self) -> Option<&Attachment> {
