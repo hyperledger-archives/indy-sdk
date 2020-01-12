@@ -10,7 +10,7 @@ use std::ptr::null;
 
 use utils::ctypes::c_str_to_string;
 
-static mut LOGGER: Option<Box<(&'static dyn Log)>> = None;
+static mut LOGGER: Option<Box<&'static dyn Log>> = None;
 
 /// Set default logger implementation.
 ///
