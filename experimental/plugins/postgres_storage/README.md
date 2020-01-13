@@ -75,19 +75,28 @@ cd indy-sdk/experimental/plugins/postgres_storage
 RUST_BACKTRACE=1 cargo test -- --nocapture --test-threads=1
 ```
 
-## Database-per-wallet vs Multi-wallet database
+## Wallet management modes 
+The plug-in supports three modes 
+- `DatabasePerWallet` - each wallet has its own database
+- `MultiWalletSingleTable` - all wallets are stored in single table in single database. Each wallet has its own 
+connection pool.
+- `MultiWalletSingleTableSharedPool` - all wallets are stored in single table in single database. The plugin
+will create only 1 connection pool reused by all wallets. This can be useful if intend to open many different 
+wallets. Postgres has by default limitation of ~100 simultaneous connections and using this strategy you can
+limit number of DB connections significantly.
 
-The plug-in supports two schemes - a database per wallet, or a single database containing multiple wallets.
+By default is used `DatabasePerWallet` mode, however you can override this by specifying 
+value of `wallet_scheme` with value `MultiWalletSingleTable` or `MultiWalletSingleTableSharedPool`. 
+The wallet configuration must be passed into external function
+ `init_storagetype(config, credentials)` when using pgsql as plugin from external code.
 
-Note to use the multi-wallet-database mode you need to call an initial init() function in the plug-in.
-
-In the initial wallet config:
+Here's sample wallet configuration which will initialize plugin to use `MultiWalletSingleTable` strategy.
 
 ```
 {"url":"localhost:5432", "wallet_scheme":"MultiWalletSingleTable"}
 ```
 
-The default if not specified is database-per-wallet.
+If `wallet_scheme` is not defined in wallet configuration, `DatabasePerWallet` scheme is used by default.
 
 To run unit tests in each mode, specify:
 
