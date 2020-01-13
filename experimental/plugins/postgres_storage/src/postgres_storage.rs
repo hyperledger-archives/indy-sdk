@@ -21,6 +21,7 @@ use wql::transaction;
 
 use wql::storage::{StorageIterator, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
 use self::r2d2_postgres::r2d2::Pool;
+use errors::wallet::WalletStorageError::{ConfigError};
 
 fn default_true() -> bool { true }
 
@@ -563,11 +564,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategySharedPool {
         ret
     }
     // open a wallet based on wallet storage strategy
-    fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
-        debug!("    MultiWalletSingleTableStrategySharedPool open >> ");
-        let _url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
-
-        debug!("MultiWalletSingleTableStrategySharedPool open <<");
+    fn open_wallet(&self, id: &str, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
         Ok(Box::new(PostgresStorage {
             pool: self.pool.clone(),
             wallet_id: id.to_string(),
@@ -1699,7 +1696,6 @@ fn create_connection_pool(config: &PostgresConfig, credentials: &PostgresCredent
     let _url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
     let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
 
-
     let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
         Ok(manager) => manager,
         Err(e) => { return Err(WalletStorageError::GenericError(format!("Problem creating PostgresConnectionManager. Details {:?}", e))); }
@@ -1796,6 +1792,15 @@ impl WalletStorageType for PostgresStorageType {
                     set_wallet_strategy(Box::new(MultiWalletMultiTableStrategy {}));
                 }
                 WalletScheme::MultiWalletSingleTableSharedPool => {
+                    if (&config as &PostgresConfig).min_idle_count() > 0 {
+                        // TODO: This restriction can be removed  but we would have make sure that
+                        // we don't attempt to construct connection pool before we have constructed
+                        // database. Currently we are creating database (if doesn't exists) in
+                        // strategy.init_storage(&config, &credentials) at the end of this function.
+                        error!("MultiWalletSingleTableSharedPool does not support 'min_idle_count' \
+                               (or its deprecated equivalent 'min_idle_time') to be > 0");
+                        return Err(ConfigError)
+                    }
                     debug!("Initialising postgresql using MultiWalletSingleTableSharedPool strategy.");
                     let pool = create_connection_pool(&config, &credentials)?;
                     set_wallet_strategy(Box::new(MultiWalletSingleTableStrategySharedPool { pool }));
