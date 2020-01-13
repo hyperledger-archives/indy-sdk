@@ -2680,7 +2680,7 @@ mod high_cases {
             let setup = Setup::trustee();
 
             _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            let (_, taa_version, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (_, _taa_version, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -2705,7 +2705,7 @@ mod high_cases {
             let setup = Setup::trustee();
 
             let (_, aml_label, _, _) = _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            let (_, taa_version, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (_, _taa_version, _, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
@@ -2731,7 +2731,7 @@ mod high_cases {
             let setup = Setup::trustee();
 
             _set_aml(setup.pool_handle, setup.wallet_handle, &setup.did);
-            let (taa_text, taa_version, taa_digest, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
+            let (taa_text, taa_version, _taa_digest, _) = _set_taa(setup.pool_handle, setup.wallet_handle, &setup.did);
 
             let (did_, verkey_) = did::create_and_store_my_did(setup.wallet_handle, None).unwrap();
 
