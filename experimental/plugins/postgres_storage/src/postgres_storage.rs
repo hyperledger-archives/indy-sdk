@@ -21,7 +21,6 @@ use wql::transaction;
 
 use wql::storage::{StorageIterator, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
 use self::r2d2_postgres::r2d2::Pool;
-use errors::wallet::WalletStorageError::UninitializedStorageError;
 
 fn default_true() -> bool { true }
 
@@ -480,6 +479,7 @@ trait WalletStrategy {
     // determine additional query parameters based on wallet strategy
     fn query_qualifier(&self) -> Option<String>;
 }
+
 
 pub struct PostgresStorageType {}
 
@@ -1702,7 +1702,7 @@ fn create_connection_pool(config: &PostgresConfig, credentials: &PostgresCredent
 
     let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
         Ok(manager) => manager,
-        Err(e) => {return Err(WalletStorageError::GenericError(format!("Problem creating PostgresConnectionManager. Details {:?}", e)))}
+        Err(e) => { return Err(WalletStorageError::GenericError(format!("Problem creating PostgresConnectionManager. Details {:?}", e))); }
     };
 
     debug!("MultiWalletSingleTableStrategySharedPool open >> building connection pool");
@@ -1724,7 +1724,9 @@ fn set_wallet_strategy(strategy: Box<dyn WalletStrategy + Send + Sync>) {
 fn get_wallet_strategy_qualifier() -> Result<Option<String>, WalletStorageError> {
     let read_strategy = SELECTED_STRATEGY.read().unwrap();
     read_strategy.as_ref()
-        .map_or(Err(UninitializedStorageError), |strategy| Ok(strategy.query_qualifier()))
+        .map_or(Err(WalletStorageError::GenericError(format!("Storage was not yet initialized."))),
+                |strategy| Ok(strategy.query_qualifier()),
+        )
 }
 
 
@@ -1774,8 +1776,8 @@ impl WalletStorageType for PostgresStorageType {
             let r1 = SELECTED_STRATEGY.read().unwrap();
             match r1.as_ref() {
                 Some(_) => {
-                    panic!("Storage was already initialized!")
-                },
+                    return Err(WalletStorageError::GenericError(format!("Storage was already initialized.")));
+                }
                 None => info!("Initializing postgresql storage for the first time")
             };
         };
@@ -1799,14 +1801,19 @@ impl WalletStorageType for PostgresStorageType {
                     set_wallet_strategy(Box::new(MultiWalletSingleTableStrategySharedPool { pool }));
                 }
             },
-            None => ()
+            None => {
+                debug!("Initialising postgresql but strategy was not specified in storage \
+                        configuration. Using DatabasePerWallet strategy by default.");
+                set_wallet_strategy(Box::new(DatabasePerWalletStrategy {}));
+            }
         };
         let r1 = SELECTED_STRATEGY.read().unwrap();
         match r1.as_ref() {
             Some(strategy) => {
                 strategy.init_storage(&config, &credentials)
             }
-            None => panic!("Was about to initialize postgresql storage strategy, but not strategy was yet set. You should never see this error.")
+            None => panic!("Was about to initialize postgresql storage strategy, but not strategy \
+                            was yet set. You should never see this error.")
         }
     }
 
@@ -1910,7 +1917,6 @@ impl WalletStorageType for PostgresStorageType {
         let r1 = SELECTED_STRATEGY.read().unwrap();
         match r1.as_ref() {
             Some(strategy) => {
-                println!("Found some strategy!");
                 strategy.create_wallet(id, &config, &credentials, metadata)
             }
             None => panic!("Should never happen")
@@ -1967,7 +1973,6 @@ impl WalletStorageType for PostgresStorageType {
         let r1 = SELECTED_STRATEGY.read().unwrap();
         match r1.as_ref() {
             Some(strategy) => {
-                println!("Found some strategy!");
                 strategy.open_wallet(id, &config, &credentials)
             }
             None => panic!("Should never happen")
@@ -2449,7 +2454,10 @@ mod tests {
 
     fn _cleanup() {
         let storage_type = PostgresStorageType::new();
-
+        {
+            let mut write_strategy = SELECTED_STRATEGY.write().unwrap();
+            *write_strategy = None;
+        }
         let _res = storage_type.init_storage(Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
         let _ret = storage_type.delete_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
         let res = test::cleanup_storage();

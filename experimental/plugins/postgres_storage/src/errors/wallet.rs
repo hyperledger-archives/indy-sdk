@@ -180,8 +180,7 @@ pub enum WalletStorageError {
     PluggedStorageError(ErrorCode),
     CommonError(CommonError),
     QueryError(WalletQueryError),
-    GenericError(String),
-    UninitializedStorageError
+    GenericError(String)
 }
 
 impl From<postgres::error::Error> for WalletStorageError {
@@ -238,7 +237,6 @@ impl error::Error for WalletStorageError {
             WalletStorageError::CommonError(ref e) => e.description(),
             WalletStorageError::QueryError(ref e) => e.description(),
             WalletStorageError::GenericError(ref s) => s,
-            WalletStorageError::UninitializedStorageError => "Postgresql wallet was not yet initialized"
 
         }
     }
@@ -256,8 +254,7 @@ impl fmt::Display for WalletStorageError {
             WalletStorageError::PluggedStorageError(err_code) => write!(f, "Plugged storage error: {}", err_code as i32),
             WalletStorageError::CommonError(ref e) => write!(f, "Common error: {}", e.description()),
             WalletStorageError::QueryError(ref e) => write!(f, "Query error: {}", e.description()),
-            WalletStorageError::GenericError(ref s) =>  write!(f, "Generic postgresql error: {}", s),
-            WalletStorageError::UninitializedStorageError => write!(f, "Postgresql wallet was not yet initialized"),
+            WalletStorageError::GenericError(ref s) =>  write!(f, "Generic postgresql error: {}", s)
         }
     }
 }
