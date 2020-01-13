@@ -13,7 +13,8 @@ pub const SERVICE_TYPE: &str = "IndyAgent";
 pub struct DidDoc {
     #[serde(rename = "@context")]
     pub context: String,
-    pub id: String,
+    #[serde(default)]
+    pub id: String, // FIXME id is mandatory according to the specification. Commented to be compatible with Streetcred
     #[serde(default)]
     #[serde(rename = "publicKey")]
     pub public_key: Vec<Ed25519PublicKey>, // TODO: A DID document MAY include a publicKey property??? (https://w3c.github.io/did-core/#public-keys)
@@ -118,6 +119,7 @@ impl DidDoc {
         routing_keys
             .iter()
             .for_each(|key| {
+                // Note: comment lines 123 - 134 and append key instead key_reference to be compatible with Streetcred
                 id += 1;
 
                 let key_id = id.to_string();
@@ -144,7 +146,7 @@ impl DidDoc {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)))
         }
 
-        if self.id.is_empty() {
+        if self.id.is_empty() { // FIXME id is mandatory according to the specification. Commented to be compatible with Streetcred
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"))
         }
         
@@ -159,13 +161,6 @@ impl DidDoc {
                         .and_then(|public_key|
                             self.validate_authentication(&public_key.id)
                         )
-                })
-                .collect::<VcxResult<()>>()?;
-
-            service.routing_keys
-                .iter()
-                .map(|key| {
-                    self.validate_public_key(key).map(|_| ())
                 })
                 .collect::<VcxResult<()>>()?;
         }
@@ -246,7 +241,7 @@ impl DidDoc {
 
         self.public_key.iter().find(|key_| key_.id == id.to_string() || key_.public_key_base_58 == id.to_string())
             .map(|key| key.public_key_base_58.clone())
-            .unwrap_or_default()
+            .unwrap_or(id)
     }
 
     fn _build_key_reference(did: &str, id: &str) -> String {
@@ -427,6 +422,25 @@ pub mod tests {
         }
     }
 
+    pub fn _did_doc_5() -> DidDoc {
+        DidDoc {
+            context: String::from(CONTEXT),
+            id: _id(),
+            public_key: vec![
+                Ed25519PublicKey { id: _key_reference_1(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
+            ],
+            authentication: vec![
+                Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
+            ],
+            service: vec![Service {
+                service_endpoint: _service_endpoint(),
+                recipient_keys: vec![_key_1()],
+                routing_keys: vec![_key_2(), _key_3()],
+                ..Default::default()
+            }],
+        }
+    }
+
     #[test]
     fn test_did_doc_build_works() {
         let mut did_doc: DidDoc = DidDoc::default();
@@ -443,6 +457,7 @@ pub mod tests {
         _did_doc_2().validate().unwrap();
         _did_doc_3().validate().unwrap();
         _did_doc_4().validate().unwrap();
+        _did_doc_5().validate().unwrap();
     }
 
     #[test]
@@ -453,6 +468,10 @@ pub mod tests {
     #[test]
     fn test_did_doc_resolve_keys_works() {
         let (recipient_keys, routing_keys) = _did_doc().resolve_keys();
+        assert_eq!(_recipient_keys(), recipient_keys);
+        assert_eq!(_routing_keys(), routing_keys);
+
+        let (recipient_keys, routing_keys) = _did_doc_2().resolve_keys();
         assert_eq!(_recipient_keys(), recipient_keys);
         assert_eq!(_routing_keys(), routing_keys);
     }
