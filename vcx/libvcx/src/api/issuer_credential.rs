@@ -34,6 +34,7 @@ use indy_sys::CommandHandle;
 /// Error code as a u32
 ///
 /// # Example crendetial_data -> "{"state":"UT"}"
+/// Note, that value can be empty: "{"middle_name":""}"
 /// # Example credential_data -> "{"state":["UT"]}"  please note: this format is deprecated
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]

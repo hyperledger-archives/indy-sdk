@@ -42,7 +42,7 @@ impl ForwardAgentConnection {
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig,
                   admin: Addr<Admin>) -> BoxedFuture<(String, String), Error> {
-        trace!("ForwardAgentConnection::create >> {:?}, {:?}, {:?}, {:?}, {:?}",
+        debug!("ForwardAgentConnection::create >> {:?}, {:?}, {:?}, {:?}, {:?}",
                wallet_handle, their_did, their_verkey, forward_agent_detail, wallet_storage_config);
 
         future::ok(())
@@ -114,7 +114,7 @@ impl ForwardAgentConnection {
                    wallet_storage_config: WalletStorageConfig,
                    router: Addr<Router>,
                    admin: Addr<Admin>) -> BoxedFuture<(), Error> {
-        trace!("ForwardAgentConnection::restore >> {:?}, {:?}, {:?}, {:?}",
+        debug!("ForwardAgentConnection::restore >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, their_did, forward_agent_detail, wallet_storage_config);
 
         future::ok(())

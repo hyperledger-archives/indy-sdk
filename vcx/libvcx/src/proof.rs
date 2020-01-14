@@ -1118,7 +1118,7 @@ mod tests {
         assert_eq!(proof.send_proof_request(bad_handle).unwrap_err().kind(), VcxErrorKind::NotReady);
         // TODO: Add test that returns a INVALID_PROOF_CREDENTIAL_DATA
         assert_eq!(proof.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
-        ;
+
 
         let empty = r#""#;
 
@@ -1127,14 +1127,14 @@ mod tests {
                                 "{}".to_string(),
                                 r#"{"support_revocation":false}"#.to_string(),
                                 "my name".to_string()).unwrap_err().kind(), VcxErrorKind::InvalidJson);
-        ;
+
 
         assert_eq!(to_string(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
-        ;
+
         assert_eq!(get_source_id(bad_handle).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
-        ;
+
         assert_eq!(from_string(empty).unwrap_err().kind(), VcxErrorKind::InvalidJson);
-        ;
+
         let mut proof_good = create_boxed_proof();
         assert_eq!(proof_good.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
     }

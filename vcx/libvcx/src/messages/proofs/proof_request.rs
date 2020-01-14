@@ -7,6 +7,7 @@ use messages::validation;
 use error::prelude::*;
 use utils::libindy::anoncreds;
 use utils::qualifier::Qualifier;
+use v3::messages::connection::service::Service;
 
 static PROOF_REQUEST: &str = "PROOF_REQUEST";
 static PROOF_DATA: &str = "proof_request_data";
@@ -96,7 +97,10 @@ pub struct ProofRequestMessage {
     pub msg_ref_id: Option<String>,
     from_timestamp: Option<u64>,
     to_timestamp: Option<u64>,
-    pub thread_id: Option<String>
+    pub thread_id: Option<String>,
+    #[serde(rename = "~service")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service: Option<Service>,
 }
 
 impl ProofPredicates {
@@ -131,6 +135,7 @@ impl ProofRequestMessage {
             from_timestamp: None,
             to_timestamp: None,
             thread_id: None,
+            service: None,
         }
     }
 
@@ -260,6 +265,11 @@ impl ProofRequestMessage {
 
     pub fn set_thread_id(&mut self, thid: String) -> VcxResult<&mut Self> {
         self.thread_id = Some(thid);
+        Ok(self)
+    }
+
+    pub fn set_service(&mut self, service: Option<Service>) -> VcxResult<&mut Self> {
+        self.service = service;
         Ok(self)
     }
 

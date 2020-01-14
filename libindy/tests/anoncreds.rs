@@ -2928,6 +2928,48 @@ mod high_cases {
 
                 wallet::close_wallet(wallet_handle).unwrap();
             }
+
+            #[test]
+            fn prover_search_credentials_for_proof_req_works_for_empty_restrictions() {
+                anoncreds::init_common_wallet();
+
+                let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": {}
+                       }),
+                       "attr2_referent": json!({
+                           "name":"age",
+                           "restrictions": []
+                       })
+                   }),
+                   "requested_predicates": json!({ }),
+                }).to_string();
+
+                let search_handle = anoncreds::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, None).unwrap();
+
+                let credentials_json = anoncreds::prover_fetch_next_credentials_for_proof_req(
+                    search_handle, "attr1_referent", 100).unwrap();
+
+                let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 2);
+
+                let credentials_json = anoncreds::prover_fetch_next_credentials_for_proof_req(
+                    search_handle, "attr2_referent", 100).unwrap();
+
+                let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 2);
+
+                anoncreds::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                wallet::close_wallet(wallet_handle).unwrap();
+            }
         }
 
         mod validation {

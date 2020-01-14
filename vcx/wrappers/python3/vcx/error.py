@@ -111,7 +111,8 @@ class ErrorCode(IntEnum):
     # EC 1096 - 1099 are reserved for proprietary forks of libVCX
     InvalidAttachmentEncoding = 1100,
     UnknownAttachmentEncoding = 1101,
-    UnknownMimeType = 1102
+    UnknownMimeType = 1102,
+    ActionNotSupported = 1103
 
 
 class VcxError(Exception):

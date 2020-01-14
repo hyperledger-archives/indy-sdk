@@ -3,6 +3,7 @@ extern crate indy_sys;
 
 use indy::{IndyError, ErrorCode};
 use indy::ledger;
+use indy_utils::crypto::hash::hash;
 use self::futures::Future;
 use self::indy_sys::ledger::{CustomTransactionParser, CustomFree, indy_register_transaction_parser_for_sp};
 
@@ -76,6 +77,12 @@ fn _submit_retry<F>(minimal_timestamp: u64, submit_action: F) -> Result<String, 
         }
     };
     Ok(action_result)
+}
+
+pub fn calculate_hash(text: &str, version: &str) -> String {
+    let content: String = version.to_string() + text;
+    let digest = hash(content.as_bytes()).unwrap();
+    hex::encode(digest)
 }
 
 pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, IndyError> {
@@ -233,9 +240,15 @@ pub fn build_get_auth_rule_request(submitter_did: Option<&str>,
 }
 
 pub fn build_txn_author_agreement_request(submitter_did: &str,
-                                          text: &str,
-                                          version: &str) -> Result<String, IndyError> {
-    ledger::build_txn_author_agreement_request(submitter_did, text, version).wait()
+                                          text: Option<&str>,
+                                          version: &str,
+                                          ratification_ts: Option<u64>,
+                                          retirement_ts: Option<u64>) -> Result<String, IndyError> {
+    ledger::build_txn_author_agreement_request(submitter_did, text, version, ratification_ts, retirement_ts).wait()
+}
+
+pub fn build_disable_all_txn_author_agreements_request(submitter_did: &str) -> Result<String, IndyError> {
+    ledger::build_disable_all_txn_author_agreements_request(submitter_did).wait()
 }
 
 pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,

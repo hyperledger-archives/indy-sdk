@@ -1491,13 +1491,32 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a TXN_AUTHR_AGRMT request. Request to add a new version of Transaction Author Agreement to the ledger.
-	 * 
+	 *
 	 * EXPERIMENTAL
-	 * 
+	 *
 	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
 	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
-	 * @param text -  a content of the TTA.
+	 * @param text - (Optional)  a content of the TTA.
+	 *                  Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+	 *                  for Indy Node version <= 1.12.0:
+	 *                      Use empty string to reset TAA on the ledger
+	 *                  for Indy Node version > 1.12.0
+	 *                      Should be omitted in case of updating an existing TAA (setting `retirementTimestamp`)
 	 * @param version -  a version of the TTA (unique UTF-8 string).
+	 * @param ratificationTimestamp - (Optional) the date (timestamp) of TAA ratification by network government. (-1 to omit)
+	 *                  for Indy Node version <= 1.12.0:
+	 *                     Must be omitted
+	 *                  for Indy Node version > 1.12.0:
+	 *                     Must be specified in case of adding a new TAA
+	 *                     Can be omitted in case of updating an existing TAA
+	 * @param retirementTimestamp - (Optional) the date (timestamp) of TAA retirement. (-1 to omit)
+	 *                 for Indy Node version <= 1.12.0:
+	 *                     Must be omitted
+	 *                 for Indy Node version > 1.12.0:
+	 *                     Must be omitted in case of adding a new (latest) TAA.
+	 *                     Should be used for updating (deactivating) non-latest TAA on the ledger.
+	 *
+	 *  Note: Use `buildDisableAllTxnAuthorAgreementsRequest` to disable all TAA's on the ledger.
 	 *
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -1505,10 +1524,11 @@ public class Ledger extends IndyJava.API {
 	public static CompletableFuture<String> buildTxnAuthorAgreementRequest(
 			String submitterDid,
 			String text,
-			String version) throws IndyException {
+			String version,
+			long ratificationTimestamp,
+			long retirementTimestamp) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-		ParamGuard.notNull(text, "text");
 		ParamGuard.notNull(version, "version");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -1519,6 +1539,37 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				text,
 				version,
+				ratificationTimestamp,
+				retirementTimestamp,
+				buildRequestCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+	 *
+	 * EXPERIMENTAL
+	 *
+	 * @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+	 *                     Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
+	 *
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildDisableAllTxnAuthorAgreementsRequest(
+			String submitterDid) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_disable_all_txn_author_agreements_request(
+				commandHandle,
+				submitterDid,
 				buildRequestCb);
 
 		checkResult(future, result);

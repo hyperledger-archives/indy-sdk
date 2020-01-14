@@ -1,9 +1,9 @@
-# LibVCX migration guide from 0.3.x to 0.4.0
+# LibVCX migration guide from 0.4.x to 0.5.0
 
 ## A Developer Guide for LibVCX migration
 
 This document is written for developers using LibVCX to provide necessary information and
-to simplify their transition to LibVCX 0.4 from LibVCX 0.3.x.
+to simplify their transition to LibVCX 0.5 from LibVCX 0.4.x.
 
 * [API]()
     * [Vcx API](#vcx-api)

@@ -119,7 +119,7 @@ fn anoncreds_demo_works() {
     let prover_did = "VsKV7grR1BUE29mG2Fm2kX";
     let schema_name = "gvt";
     let version = "1.0";
-    let attrs = r#"["name", "age", "sex", "height"]"#;
+    let attrs = r#"["name", "age", "sex", "height", "empty_param"]"#;
 
     // Issuer create Schema
     let err =
@@ -237,7 +237,8 @@ fn anoncreds_demo_works() {
         "sex": { "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103" },
         "name": { "raw": "Alex", "encoded": "1139481716457488690172217916278103335" },
         "height": { "raw": "175", "encoded": "175" },
-        "age": { "raw": "28", "encoded": "28" }
+        "age": { "raw": "28", "encoded": "28" },
+        "empty_param": {"raw": "", "encoded": "111222333"}
     }).to_string();
 
     // Creating credential requires access to Tails: Issuer configure blob storage to read
@@ -302,6 +303,12 @@ fn anoncreds_demo_works() {
                 "restrictions": {
                     "attr::name::value": "Alex",
                     "attr::sex::value": "male"
+                }
+            },
+            "attr2_referent": {
+                "name": "empty_param",
+                "restrictions": {
+                    "attr::empty_param::value": ""
                 }
             }
         },
@@ -370,6 +377,11 @@ fn anoncreds_demo_works() {
         "self_attested_attributes": {},
         "requested_attributes": {
             "attr1_referent": {
+                "cred_id": credential.referent,
+                "timestamp": issue_ts,
+                "revealed": true
+            },
+            "attr2_referent": {
                 "cred_id": credential.referent,
                 "timestamp": issue_ts,
                 "revealed": true

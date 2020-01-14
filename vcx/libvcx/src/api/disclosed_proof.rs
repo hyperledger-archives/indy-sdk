@@ -40,7 +40,7 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: CommandHan
         match disclosed_proof::create_proof(&source_id, &proof_req) {
             Ok(x) => {
                 trace!("vcx_disclosed_proof_create_with_request_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
-                       command_handle,error::SUCCESS.message, x, source_id);
+                       command_handle, error::SUCCESS.message, x, source_id);
                 cb(command_handle, 0, x);
             }
             Err(x) => {
@@ -139,10 +139,6 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: CommandHandle,
 
     if !disclosed_proof::is_valid_handle(proof_handle) {
         return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into()
-    }
-
-    if !connection::is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
     }
 
     let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
@@ -620,6 +616,113 @@ pub extern fn vcx_disclosed_proof_generate_proof(command_handle: CommandHandle,
             }
             Err(x) => {
                 error!("vcx_disclosed_proof_generate_proof(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, x, source_id);
+                cb(command_handle, x.into());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Declines presentation request.
+/// There are two ways of following interaction:
+///     - Prover wants to propose using a different presentation - pass `proposal` parameter
+///     - Prover doesn't want to continue interaction - pass `reason` parameter.
+/// Note that only one of these parameters can be passed.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to identify the disclosed proof object
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// reason: human-readable string that explain the reason of decline
+///
+/// proposal: the proposed format of presentation request
+/// (see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#presentation-preview for details)
+/// {
+///    "attributes": [
+///        {
+///            "name": "<attribute_name>",
+///            "cred_def_id": Optional("<cred_def_id>"),
+///            "mime-type": Optional("<type>"),
+///            "value": Optional("<value>")
+///        },
+///        // more attributes
+///    ],
+///    "predicates": [
+///        {
+///            "name": "<attribute_name>",
+///            "cred_def_id": Optional("<cred_def_id>"),
+///            "predicate": "<predicate>", - one of "<", "<=", ">=", ">"
+///            "threshold": <threshold>
+///        },
+///        // more predicates
+///    ]
+/// }
+///
+/// # Example
+///  proposal ->
+///     {
+///          "attributes": [
+///              {
+///                  "name": "first name"
+///              }
+///          ],
+///          "predicates": [
+///              {
+///                  "name": "age",
+///                  "predicate": ">",
+///                  "threshold": 18
+///              }
+///          ]
+///      }
+///
+/// cb: Callback that returns error status
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_decline_presentation_request(command_handle: u32,
+                                                               proof_handle: u32,
+                                                               connection_handle: u32,
+                                                               reason: *const c_char,
+                                                               proposal: *const c_char,
+                                                               cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+    info!("vcx_disclosed_proof_decline_presentation_request >>>");
+
+    check_useful_opt_c_str!(reason, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(proposal, VcxErrorKind::InvalidOption);
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    if !connection::is_valid_handle(connection_handle) {
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into();
+    }
+
+    if !disclosed_proof::is_valid_handle(proof_handle) {
+        return VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle).into();
+    }
+
+    let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
+    trace!("vcx_disclosed_proof_decline_presentation_request(command_handle: {}, proof_handle: {}, connection_handle: {}, reason: {:?}, proposal: {:?}) source_id: {}",
+           command_handle, proof_handle, connection_handle, reason, proposal, source_id);
+
+    spawn(move || {
+        match disclosed_proof::decline_presentation_request(proof_handle, connection_handle, reason, proposal) {
+            Ok(_) => {
+                trace!("vcx_disclosed_proof_decline_presentation_request(command_handle: {}, rc: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, source_id);
+                cb(command_handle, error::SUCCESS.code_num);
+            }
+            Err(x) => {
+                error!("vcx_disclosed_proof_decline_presentation_request(command_handle: {}, rc: {}) source_id: {}",
                        command_handle, x, source_id);
                 cb(command_handle, x.into());
             }

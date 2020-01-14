@@ -279,6 +279,8 @@ public class VcxException extends Exception {
                 return new CreateProofErrorException();
             case INSUFFICIENT_TOKEN_AMOUNT:
                 return new InsufficientTokenAmountException();
+            case ACTION_NOT_SUPPORTED:
+                return new ActionNotSupportedException();
             case UNIDENTIFIED_ERROR_CODE:
                 String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
                 return new VcxException(message, sdkErrorCode);

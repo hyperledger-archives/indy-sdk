@@ -5,6 +5,7 @@ pub mod rand;
 #[allow(unused)] // FIXME:
 #[cfg(test)]
 pub mod tests;
+pub mod dyn_lib;
 
 macro_rules! map (
     { $($key:expr => $value:expr),+ } => {

@@ -3,11 +3,12 @@ use error::prelude::*;
 
 use v3::handlers::connection::states::{DidExchangeSM, Actor, ActorDidExchangeState};
 use v3::handlers::connection::messages::DidExchangeMessages;
+use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::invite::Invitation;
-use v3::handlers::connection::agent::AgentInfo;
 
 use std::collections::HashMap;
+use v3::messages::connection::did_doc::DidDoc;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,7 +73,13 @@ impl Connection {
         if let Some(invitation) = self.connection_sm.get_invitation() {
             return Ok(json!(invitation.to_a2a_message()).to_string());
         } else if let Some(did_doc) = self.connection_sm.did_doc() {
-            return Ok(json!(Invitation::from(did_doc)).to_string());
+            let mut info = json!(Invitation::from(did_doc));
+
+            if let Some(protocols) = self.connection_sm.get_protocols() {
+                info["protocols"] = json!(protocols)
+            }
+
+            return Ok(info.to_string());
         } else {
             Ok(json!({}).to_string())
         }
@@ -122,13 +129,16 @@ impl Connection {
     pub fn update_state_with_message(&mut self, message: &str) -> VcxResult<()> {
         trace!("Connection: update_state_with_message: {}", message);
 
+        let agent_info = self.agent_info().clone();
+
         let message: Message = ::serde_json::from_str(&message)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption,
                                               format!("Cannot updated state with messages: Message deserialization failed: {:?}", err)))?;
 
         let a2a_message = self.decode_message(&message)?;
         self.handle_message(a2a_message.into())?;
-        self.update_message_status(message.uid)?;
+
+        agent_info.update_message_status(message.uid)?;
 
         Ok(())
     }
@@ -149,7 +159,16 @@ impl Connection {
     }
 
     pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
-        self.agent_info().decode_message(message)
+        match message.decrypted_payload {
+            Some(ref payload) => {
+                let message: ::messages::payload::PayloadV1 = ::serde_json::from_str(&payload)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize message: {}", err)))?;
+
+                ::serde_json::from_str::<A2AMessage>(&message.msg)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))
+            }
+            None => self.agent_info().decode_message(message)
+        }
     }
 
     pub fn send_message(&self, message: &A2AMessage) -> VcxResult<()> {
@@ -161,10 +180,21 @@ impl Connection {
         self.agent_info().send_message(message, &did_doc)
     }
 
+    pub fn send_message_to_self_endpoint(message: &A2AMessage, did_doc: &DidDoc) -> VcxResult<()> {
+        trace!("Connection::send_message_to_self_endpoint >>> message: {:?}, did_doc: {:?}", message, did_doc);
+
+        AgentInfo::send_message_anonymously(message, did_doc)
+    }
+
     pub fn send_generic_message(&self, message: &str, _message_options: &str) -> VcxResult<String> {
         trace!("Connection::send_generic_message >>> message: {:?}", message);
 
         self.send_message(&A2AMessage::Generic(message.to_string())).map(|_| String::new())
+    }
+
+    pub fn send_ping(&mut self, comment: Option<String>) -> VcxResult<()> {
+        trace!("Connection::send_ping >>> comment: {:?}", comment);
+        self.handle_message(DidExchangeMessages::SendPing(comment))
     }
 
     pub fn delete(&self) -> VcxResult<()> {
@@ -185,5 +215,10 @@ impl Connection {
     pub fn remove_pending_message(&mut self, id: MessageId) -> VcxResult<()> {
         trace!("Connection::remove_pending_message >>> id: {:?}", id);
         self.connection_sm.remove_pending_message(id)
+    }
+
+    pub fn send_discovery_features(&mut self, query: Option<String>, comment: Option<String>) -> VcxResult<()> {
+        trace!("Connection::send_discovery_features_query >>> query: {:?}, comment: {:?}", query, comment);
+        self.handle_message(DidExchangeMessages::DiscoverFeatures((query, comment)))
     }
 }

@@ -38,7 +38,7 @@ impl Agent {
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig,
                   admin: Addr<Admin>) -> BoxedFuture<(String, String, String, String), Error> {
-        trace!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
+        debug!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
                owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
         let wallet_id = format!("dummy_{}_{}", owner_did, rand::rand_string(10));
@@ -112,7 +112,7 @@ impl Agent {
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
                    admin: Addr<Admin>) -> BoxedFuture<(), Error> {
-        trace!("Agent::restore >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
+        debug!("Agent::restore >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
                wallet_id, did, owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
         let wallet_config = json!({
@@ -132,8 +132,9 @@ impl Agent {
 
         future::ok(())
             .and_then(move |_| {
+                debug!("Opening agent wallet {:?}", &wallet_config);
                 wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
-                    .map_err(|err| err.context("Can't open Agent wallet.").into())
+                    .map_err(move |err| err.context(format!("Can't open Agent wallet using config {:?}.", wallet_config.clone())).into())
             })
             .and_then(move |wallet_handle| {
                 did::key_for_local_did(wallet_handle, &did)
@@ -153,6 +154,7 @@ impl Agent {
                 // Resolve information about existing connections from the wallet
                 // and start Agent Connection actor for each exists connection
 
+                debug!("Agent restore. Agent configs to be loaded: {:?}", metadata);
                 let configs: HashMap<String, String> = serde_json::from_str(&metadata).expect("Can't restore Agent config.");
 
                 Agent::_restore_connections(wallet_handle,

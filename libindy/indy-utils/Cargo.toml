@@ -27,4 +27,3 @@ serde_json = "1.0.40"
 serde_derive = "1.0.99"
 sodiumoxide = {version = "0.0.16"}
 time = "0.1.42"
-ursa = "0.2.0"
