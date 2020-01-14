@@ -575,11 +575,14 @@ mod high_cases {
         fn indy_store_their_did_works_twice() {
             let setup = Setup::wallet();
 
-            let identity_json = json!({"did": DID}).to_string();
+            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
             did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
 
-            let res = did::store_their_did(setup.wallet_handle, &identity_json);
-            assert_code!(ErrorCode::WalletItemAlreadyExists, res);
+            let identity_json = json!({"did": DID, "verkey": VERKEY_TRUSTEE}).to_string();
+            did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
+
+            let verkey = did::key_for_local_did(setup.wallet_handle, DID).unwrap();
+            assert_eq!(VERKEY_TRUSTEE, verkey);
         }
     }
 

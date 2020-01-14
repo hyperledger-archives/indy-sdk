@@ -82,6 +82,7 @@
 
 /**
  Saves their DID for a pairwise connection in a secured Wallet, so that it can be used to verify transaction.
+ Updates DID associated verkey in case DID already exists in the Wallet.
 
  @code
  {
@@ -93,6 +94,10 @@
  @endcode
  
  @param identityJSON Identity information as json. See example above.
+    {
+       "did": string, (required)
+       "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+    }
  @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
  @param completion Callback that takes command result as parameter.Returns error code.
  */

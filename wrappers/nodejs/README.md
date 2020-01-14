@@ -1248,6 +1248,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Saves their DID for a pairwise connection in a secured Wallet,
 so that it can be used to verify transaction.
+Updates DID associated verkey in case DID already exists in the Wallet.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `identity`: Json - Identity information as json. Example:

@@ -196,6 +196,7 @@ pub  extern fn indy_replace_keys_apply(command_handle: CommandHandle,
 
 /// Saves their DID for a pairwise connection in a secured Wallet,
 /// so that it can be used to verify transaction.
+/// Updates DID associated verkey in case DID already exists in the Wallet.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).

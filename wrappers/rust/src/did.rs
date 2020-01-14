@@ -108,6 +108,7 @@ fn _replace_keys_apply(command_handle: CommandHandle, wallet_handle: WalletHandl
 
 /// Saves their DID for a pairwise connection in a secured Wallet,
 /// so that it can be used to verify transaction.
+/// Updates DID associated verkey in case DID already exists in the Wallet.
 ///
 /// # Arguments
 /// * `wallet_handle` - wallet handler (created by Wallet::open).
