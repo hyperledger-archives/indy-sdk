@@ -101,18 +101,30 @@ fn _init_wallet(wallet_storage_config: &WalletStorageConfig) -> Result<(), Strin
 
 fn _start(config_path: &str) {
     info!("Starting Indy Dummy Agent with config: {}", config_path);
-
     let Config {
         app: app_config,
         forward_agent: forward_agent_config,
         server: server_config,
         wallet_storage: wallet_storage_config,
         protocol_type: protocol_type_config,
+        indy_runtime
     } = File::open(config_path)
         .context("Can't open config file")
         .and_then(|reader| serde_json::from_reader(reader)
             .context("Can't parse config file"))
         .expect("Invalid configuration file");
+
+    match indy_runtime {
+        Some(x) => {
+            let runtime_config_str = serde_json::to_string(&x)
+                .expect("Failed to re-serialize indy_runtime.");
+            info!("Setting indy runtime configuration: {}", &runtime_config_str);
+            indyrs::set_runtime_config(&runtime_config_str);
+        }
+        None => {
+            info!("Will use IndySDK default number of threads for expensive crypto.");
+        }
+    }
 
     match _init_wallet(&wallet_storage_config) {
         Err(err) => panic!("Failed to load and initialize storage library. {:}", err),
