@@ -4,7 +4,7 @@ set -e
 set -x
 
 if [ "$1" = "--help" ] ; then
-  echo "Usage: <package> <version> <key> <type> <suffix> <repo> <host> <key> <package_type>"
+  echo "Usage: <package> <version> <key> <type> <suffix> <repo> <host> <key> <package_type> <extra_flags>"
   return
 fi
 
@@ -16,6 +16,7 @@ repo="$5"
 host="$6"
 key="$7"
 package_type="$8"
+extra_flags="$9"
 
 [ -z $package ] && exit 1
 [ -z $version ] && exit 2
@@ -32,4 +33,4 @@ dpkg-buildpackage -tc
 
 mkdir debs &&  mv ../*.deb ./debs/
 
-./sovrin-packaging/upload_debs.py ./debs $repo $type --distro=$package_type --host $host --ssh-key $key
+./sovrin-packaging/upload_debs.py ./debs $repo $type --distro=$package_type --host $host --ssh-key $key $extra_flags

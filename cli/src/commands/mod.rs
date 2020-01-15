@@ -58,11 +58,23 @@ pub fn _get_int_param<T>(name: &str, params: &CommandParams) -> Result<T, ()>
     }
 }
 
+pub fn get_number_param<T>(key: &str, params: &CommandParams) -> Result<T, ()>
+    where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
+    match params.get(key) {
+        Some(value) => value.parse::<T>().map_err(|err|
+            println_err!("Can't parse number parameter \"{}\": value: \"{}\", err \"{}\"", key, value, err)),
+        None => {
+            println_err!("No required \"{}\" parameter present", key);
+            Err(())
+        }
+    }
+}
+
 pub fn get_opt_number_param<T>(key: &str, params: &CommandParams) -> Result<Option<T>, ()>
     where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
     let res = match params.get(key) {
         Some(value) => Some(value.parse::<T>().map_err(|err|
-            println_err!("Can't parse integer parameter \"{}\": err {}", key, err))?),
+            println_err!("Can't parse number parameter \"{}\": value: \"{}\", err \"{}\"", key, value, err))?),
         None => None
     };
     Ok(res)
@@ -300,10 +312,23 @@ pub fn get_transaction_author_info(ctx: &CommandContext) -> Option<(String, Stri
     let acc_mech_type = ctx.get_taa_acceptance_mechanism();
     let time_of_acceptance = ctx.get_uint_value("AGREEMENT_TIME_OF_ACCEPTANCE");
 
-    if let (Some(text), Some(version),Some(time_of_acceptance)) = (text, version, time_of_acceptance) {
+    if let (Some(text), Some(version), Some(time_of_acceptance)) = (text, version, time_of_acceptance) {
         Some((text, version, acc_mech_type, time_of_acceptance))
     } else {
         None
+    }
+}
+
+const DEFAULT_POOL_PROTOCOL_VERSION: usize = 2;
+
+pub fn set_pool_protocol_version(ctx: &CommandContext, protocol_version: usize) {
+    ctx.set_uint_value("POOL_PROTOCOL_VERSION", Some(protocol_version as u64));
+}
+
+pub fn get_pool_protocol_version(ctx: &CommandContext) -> usize {
+    match ctx.get_uint_value("POOL_PROTOCOL_VERSION") {
+        Some(protocol_version) => protocol_version as usize,
+        None => DEFAULT_POOL_PROTOCOL_VERSION
     }
 }
 
