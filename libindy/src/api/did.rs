@@ -204,7 +204,9 @@ pub  extern fn indy_replace_keys_apply(command_handle: CommandHandle,
 /// identity_json: Identity information as json. Example:
 ///     {
 ///        "did": string, (required)
-///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+///        "verkey": string
+///             - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+///             - mandatory in case of updating an existing DID
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///

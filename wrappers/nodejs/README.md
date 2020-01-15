@@ -1255,7 +1255,9 @@ Updates DID associated verkey in case DID already exists in the Wallet.
 ```
     {
        "did": string, (required)
-       "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+       "verkey": string 
+                     - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+                     - mandatory in case of updating an existing DID   
     }
 ````
 * __->__ void

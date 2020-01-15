@@ -96,7 +96,9 @@
  @param identityJSON Identity information as json. See example above.
     {
        "did": string, (required)
-       "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+       "verkey": string
+                   - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+                   - mandatory in case of updating an existing DID
     }
  @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
  @param completion Callback that takes command result as parameter.Returns error code.
