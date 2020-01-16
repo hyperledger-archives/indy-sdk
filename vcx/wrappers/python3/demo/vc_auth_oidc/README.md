@@ -14,17 +14,14 @@ This is the script which shows how Vcx can be used to pass [VC-AuthN OIDC Demo](
     * Issue Credential for Alice:
         * start Dummy Cloud Agent.
         * modify `demo/faber.py` script to issue a credential with required attributes (`schema` and `schema_attrs` structures).
-        * run regular faber/alice demo to issue a credential for Alice.
-        * find Alice config json in output and save it. It will be needed for `vc-auth-oidc/alice-vc-auth.py` later to skip the preparation steps.
-        * now Alice is ready to pass `VC-AuthN OIDC` challenge.
+        * run regular faber/alice demo to issue a credential for Alice. (After connection is established - choose option `1` from Faber and Alice scripts to issue a credential)
+        * Since credential is issued Alice is ready to pass `VC-AuthN OIDC` challenge. Keep Alice running.
 1. Go to keycloaks `Login In` page and click `Verified Credential Access`. QR and URL should be showed.
-    * run `vc-auth-oidc/alice-vc-auth.py` script.
-    * it will ask for Alice config json
-    * next it will ask for URL printed below QR code.
+    * go to Alice and choose option `3`. It will ask for URL.
     * proof will be automatically generated and send to VC-AuthN provider.
 1. On success authentication: `Login In` page will be redirected to `Update Account Information` page.
 
 ## Steps to pass OIDC challenge using VCX
 1. Scan QR code -> send GET request to encoded URL -> take `location` header of response.
 2. Take base64 string after `?m=` -> decode string -> presentation request
-3. handle presentation request using VCX usual way
+3. handle presentation request using VCX usual way. (`connection` object on `send_proof` function isn't required here)

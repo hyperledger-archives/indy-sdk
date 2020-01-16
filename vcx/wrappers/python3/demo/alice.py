@@ -2,9 +2,6 @@ import asyncio
 import json
 from ctypes import cdll
 from time import sleep
-import platform
-
-import logging
 
 from demo_utils import file_ext
 from vcx.api.connection import Connection
@@ -13,12 +10,13 @@ from vcx.api.disclosed_proof import DisclosedProof
 from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State
+from vc_auth_oidc.alice_vc_auth import handle_challenge
 
 
 # logging.basicConfig(level=logging.DEBUG) uncomment to get logs
 
 provisionConfig = {
-    'agency_url': 'http://localhost:8080',
+    'agency_url': 'http://192.168.54.174:8080',
     'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
     'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
     'wallet_name': 'alice_wallet',
@@ -62,10 +60,34 @@ async def main():
         await connection_to_faber.update_state()
         connection_state = await connection_to_faber.get_state()
 
-    print("#11 Wait for faber.py to issue a credential offer")
-    sleep(10)
-    offers = await Credential.get_offers(connection_to_faber)
+    print("Connection is established")
 
+    while True:
+        answer = input(
+            "Would you like to do? \n "
+            "1 - check for credential offer \n "
+            "2 - check for proof request \n "
+            "3 - pass vc_auth_oidc-challenge \n "
+            "else finish \n") \
+            .lower().strip()
+        if answer == '1':
+            print("Check agency for a credential offer")
+            offers = await Credential.get_offers(connection_to_faber)
+            await accept_offer(connection_to_faber, offers)
+        elif answer == '2':
+            print("Check agency for a proof request")
+            requests = await DisclosedProof.get_requests(connection_to_faber)
+            await create_proof(connection_to_faber, requests[0])
+        elif answer == '3':
+            request = await handle_challenge()
+            await create_proof(None, request)
+        else:
+            break
+
+    print("Finished")
+
+
+async def accept_offer(connection_to_faber, offers):
     # Create a credential object from the credential offer
     credential = await Credential.create('credential', offers[0])
 
@@ -79,11 +101,10 @@ async def main():
         await credential.update_state()
         credential_state = await credential.get_state()
 
-    print("#22 Poll agency for a proof request")
-    requests = await DisclosedProof.get_requests(connection_to_faber)
 
+async def create_proof(connection_to_faber, request):
     print("#23 Create a Disclosed proof object from proof request")
-    proof = await DisclosedProof.create('proof', requests[0])
+    proof = await DisclosedProof.create('proof', request)
 
     print("#24 Query for credentials in the wallet that satisfy the proof request")
     credentials = await proof.get_creds()
@@ -97,7 +118,7 @@ async def main():
     print("#25 Generate the proof")
     await proof.generate_proof(credentials, {})
 
-    print("#26 Send the proof to faber")
+    print("#26 Send the proof")
     await proof.send_proof(connection_to_faber)
 
     proof_state = await proof.get_state()
