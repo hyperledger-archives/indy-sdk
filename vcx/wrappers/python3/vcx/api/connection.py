@@ -58,6 +58,18 @@ class Connection(VcxStateful):
         Invite details are provided by the entity offering a connection and generally pulled from a provided QRCode.
         :param source_id: Institution's unique ID for the connection
         :param invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
+            Invite format depends on communication method:
+                proprietary:
+                    {"targetName": "", "statusMsg": "message created", "connReqId": "mugIkrWeMr", "statusCode": "MS-101", "threadId": null, "senderAgencyDetail": {"endpoint": "http://localhost:8080", "verKey": "key", "DID": "did"}, "senderDetail": {"agentKeyDlgProof": {"agentDID": "8f6gqnT13GGMNPWDa2TRQ7", "agentDelegatedKey": "5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1", "signature": "TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/7Cyteep7U3m9Gw6ilu8SOOW59YR1rft+D8ZDg=="}, "publicDID": "7YLxxEfHRiZkCMVNii1RCy", "name": "Faber", "logoUrl": "http://robohash.org/234", "verKey": "CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx", "DID": "Ney2FxHT4rdEyy6EDCCtxZ"}}
+                aries: https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+                 {
+                    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
+                    "label": "Alice",
+                    "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+                    "serviceEndpoint": "https://example.com/endpoint",
+                    "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+                 }
+        
         Example:
         connection2 = await Connection.create_with_details('MyBank', invite_details)
         :return: connection object
@@ -76,9 +88,9 @@ class Connection(VcxStateful):
     @staticmethod
     async def deserialize(data: dict):
         """
-        Create the object from a previously serialized object.
+        Takes a json string representing a connection object and recreates an object matching the json.
 
-        :param data: The output of the "serialize" call
+        :param data: json string representing a connection object. Is an output of `serialize` function.
         Example:
         data = await connection1.serialize()
         connection2 = await Connection.deserialize(data)
@@ -117,11 +129,21 @@ class Connection(VcxStateful):
     async def send_message(self, msg: str, msg_type: str, msg_title: str, ref_msg_id: str = None) -> str:
         """
             Send a generic message to the connection
-            :param msg:
-            :param msg_type:
-            :param msg_title:
+            :param msg: actual message to send
+            :param msg_type: type of message to send. can be any string.
+            :param msg_title: message title (user notification)
             :param ref_msg_id: if responding to a message, provide msg id
-            :return:
+
+            Example options:
+            msg: "HI" or "{"key": "value"}" or "{ "@type": "type", "@id": "518be002-de8e-456e-b3d5-8fe472477a86", "comment": "Hi. Are you listening?"}"
+            msg_type: "Greeting"
+            msg_title: "Hi There"
+
+            Example code:
+            connection = await Connection.create_with_details('MyBank', invite_details)
+            await connection.send_message("HI", "Greeting", "Hi There")
+
+            :return: response message
             """
         if not hasattr(Connection.send_message, "cb"):
             self.logger.debug("vcx_connection_send_message: Creating callback")
@@ -148,7 +170,7 @@ class Connection(VcxStateful):
     async def sign_data(self, msg: bytes) -> bytes:
         """
         Sign data using connection's pairwise key
-        :param msg:
+        :param msg: message to sign represented as bytes
         :return: signature
         """
 
@@ -173,10 +195,10 @@ class Connection(VcxStateful):
 
     async def verify_signature(self, msg: bytes, signature: bytes) -> bool:
         """
-        Verification the signature of a msg
-        :param msg:
-        :param signature:
-        :return: bool
+        Verify the signature is valid for the specified data using connection pairwise keys
+        :param msg: message was signed
+        :param signature: generated signature
+        :return: bool - whether the signature was valid or not
         """
         if not hasattr(Connection.verify_signature, "cb"):
             self.logger.debug("vcx_connection_verify_signature: Creating callback")
@@ -206,7 +228,7 @@ class Connection(VcxStateful):
 
     async def serialize(self) -> dict:
         """
-        Serialize the object for storage
+        Takes the Connection object and returns a json string of all its attributes
         Example:
         data = await connection1.serialize()
         :return: serialized object
@@ -215,29 +237,43 @@ class Connection(VcxStateful):
 
     async def update_state(self) -> int:
         """
-        Query the agency for the current state of the connection.  Used to determine whether the connection
-        has been accepted by both endpoints.
+        Query the agency for the received messages.
+        Checks for any messages changing state in the connection object and updates the state attribute.
         Example:
         connection = await Connection.create(source_id)
         assert await connection.update_state() == State.Initialized
-        :return: Current state of the connection
+        :return: Current state of the connection. Possible states:
+                                                     1 - Initialized
+                                                     2 - Request Sent
+                                                     3 - Offer Received
+                                                     4 - Accepted
         """
         return await self._update_state(Connection, 'vcx_connection_update_state')
 
     async def update_state_with_message(self, message: str) -> int:
         """
         Update the state of the connection based on the given message.
+        :param msg: message to process
         Example:
         connection = await Connection.create(source_id)
         assert await connection.update_state_with_message(message) == State.Accepted
-        :param message:
-        :return Current state of the connection
+        :param message: message to process for state changes
+        :return Current state of the connection. Possible states:
+                                                    1 - Initialized
+                                                    2 - Request Sent
+                                                    3 - Offer Received
+                                                    4 - Accepted
         """
         return await self._update_state_with_message(Connection, message, 'vcx_connection_update_state_with_message')
 
     async def get_state(self) -> int:
         """
-        Returns the current internal state of the connection.  Does NOT query agency for state updates.
+        Returns the current internal state of the connection. Does NOT query agency for state updates.
+        Possible states:
+            1 - Initialized
+            2 - Offer Sent
+            3 - Request Received
+            4 - Accepted
         Example:
         connection = await Connection.create(source_id)
         assert await connection.get_state() == State.Initialized
@@ -268,15 +304,27 @@ class Connection(VcxStateful):
 
     async def invite_details(self, abbreviated: bool) -> dict:
         """
-        Get the invite details that were sent or can be sent to the endpoint.
+        Get the invite details that were sent or can be sent to the remote side.
 
-        :param abbreviated: abbreviate invite details or not
+        :param abbreviated: abbreviate invite details or not (applicable for `proprietary` communication method only)
         Example:
         phone_number = '8019119191'
         connection = await Connection.create('foobar123')
         invite_details = await connection.connect(phone_number)
         inivte_details_again = await connection.invite_details()
         :return: JSON of invite_details sent to connection
+            Invite format depends on communication method:
+                proprietary:
+                    {"targetName": "", "statusMsg": "message created", "connReqId": "mugIkrWeMr", "statusCode": "MS-101", "threadId": null, "senderAgencyDetail": {"endpoint": "http://localhost:8080", "verKey": "key", "DID": "did"}, "senderDetail": {"agentKeyDlgProof": {"agentDID": "8f6gqnT13GGMNPWDa2TRQ7", "agentDelegatedKey": "5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1", "signature": "TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/7Cyteep7U3m9Gw6ilu8SOOW59YR1rft+D8ZDg=="}, "publicDID": "7YLxxEfHRiZkCMVNii1RCy", "name": "Faber", "logoUrl": "http://robohash.org/234", "verKey": "CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx", "DID": "Ney2FxHT4rdEyy6EDCCtxZ"}}
+                aries: https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+                 {
+                    "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
+                    "label": "Alice",
+                    "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+                    "serviceEndpoint": "https://example.com/endpoint",
+                    "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+                 }
+
         """
         if not hasattr(Connection.invite_details, "cb"):
             self.logger.debug("vcx_connection_invite_details: Creating callback")
@@ -298,7 +346,7 @@ class Connection(VcxStateful):
         Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
 
         Note that this function is useful in case `aries` communication method is used.
-        In other cases it returns IActionNotSupported error.
+        In other cases it returns ActionNotSupported error.
         :param comment: (Optional) human-friendly description of the ping.
 
         :return: no value

@@ -98,7 +98,7 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
   }
 
   /**
-   * Create a Credential object that requests and receives a credential for an institution
+   * Create a Credential object based off of a known message id for a given connection.
    *
    * ```
    * credential = Credential.createWithMsgId({
@@ -227,7 +227,7 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
     }
   }
   /**
-   * Gets the credential request message for sending to the specifed connection.
+   * Gets the credential request message for sending to the specified connection.
    *
    * ```
    * connection = await Connection.create({id: 'foobar'})

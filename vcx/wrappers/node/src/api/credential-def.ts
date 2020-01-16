@@ -122,7 +122,9 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
   }
 
   /**
-   * Builds a generic Schema object that will be published by Endorser later
+   * Create a new CredentialDef object that will be published by Endorser later.
+   *
+   * Note that CredentialDef can't be used for credential issuing until it will be published on the ledger.
    *
    * Example:
    * ```

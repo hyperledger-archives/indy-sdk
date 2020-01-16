@@ -108,7 +108,8 @@ pub extern fn vcx_proof_create(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change and updates the proof state attribute
+/// Query the agency for the received messages.
+/// Checks for any messages changing state in the object and updates the state attribute.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -116,6 +117,11 @@ pub extern fn vcx_proof_create(command_handle: u32,
 /// proof_handle: Proof handle that was provided during creation. Used to access proof object
 ///
 /// cb: Callback that provides most current state of the proof and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Request Sent
+///         3 - Proof Received
+///         4 - Accepted
 ///
 /// #Returns
 /// Error code as a u32
@@ -155,16 +161,21 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change from the given message and updates the proof state attribute
+/// Update the state of the proof based on the given message.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// proof_handle: Proof handle that was provided during creation. Used to access proof object
 ///
-/// message: String containing updated status
+/// message: message to process for state changes
 ///
 /// cb: Callback that provides most current state of the proof and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Request Sent
+///         3 - Proof Received
+///         4 - Accepted
 ///
 /// #Returns
 /// Error code as a u32
@@ -206,7 +217,7 @@ pub extern fn vcx_proof_update_state_with_message(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Get the current state of the proof object from the given message
+/// Get the current state of the proof object
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -214,6 +225,11 @@ pub extern fn vcx_proof_update_state_with_message(command_handle: u32,
 /// proof_handle: Proof handle that was provided during creation. Used to access proof object
 ///
 /// cb: Callback that provides most current state of the proof and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Request Sent
+///         3 - Proof Received
+///         4 - Accepted
 ///
 /// #Returns
 /// Error code as a u32
@@ -426,7 +442,7 @@ pub extern fn vcx_proof_send_request(command_handle: u32,
 }
 
 
-/// Get the proof request message.
+/// Get the proof request message that can be sent to the specified connection
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -436,6 +452,8 @@ pub extern fn vcx_proof_send_request(command_handle: u32,
 /// connection_handle: Connection handle that identifies pairwise connection
 ///
 /// cb: provides any error status of the proof_request
+///
+/// # Example proof_request -> "{'@topic': {'tid': 0, 'mid': 0}, '@type': {'version': '1.0', 'name': 'PROOF_REQUEST'}, 'proof_request_data': {'name': 'proof_req', 'nonce': '118065925949165739229152', 'version': '0.1', 'requested_predicates': {}, 'non_revoked': None, 'requested_attributes': {'attribute_0': {'name': 'name', 'restrictions': {'$or': [{'issuer_did': 'did'}]}}}, 'ver': '1.0'}, 'thread_id': '40bdb5b2'}"
 ///
 /// #Returns
 /// Error code as a u32
@@ -478,7 +496,7 @@ pub extern fn vcx_proof_get_request_msg(command_handle: u32,
 
 
 
-/// Get Proof
+/// Get Proof message
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

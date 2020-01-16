@@ -77,7 +77,7 @@ export class SchemaPaymentManager extends PaymentManager {
 
 export class Schema extends VCXBase<ISchemaSerializedData> {
   /**
-   * Builds a generic Schema object
+   * Creates a new Schema object that is written to the ledger
    *
    * Example:
    * ```
@@ -116,7 +116,7 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
   }
 
   /**
-   * Builds a generic Schema object that will be published by Endorser later.
+   * Builds a new Schema object that will be published by Endorser later.
    *
    * Example:
    * ```

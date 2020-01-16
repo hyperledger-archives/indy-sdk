@@ -59,7 +59,8 @@ export class IssuerCredentialPaymentManager extends PaymentManager {
  */
 export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   /**
-   * Builds a generic Issuer Credential object
+   * Create a Issuer Credential object that provides a credential for an enterprise's user
+    * Assumes a credential definition has been already written to the ledger.
    * ```
    * issuerCredential = await IssuerCredential.create({sourceId: "12",
    * credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: "0"})

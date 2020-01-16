@@ -24,7 +24,9 @@ class IssuerCredential(VcxStateful):
     @staticmethod
     async def create(source_id: str, attrs: dict, cred_def_handle: int, name: str, price: str):
         """
-            Creates a Class representing an Issuer Credential
+            Create a Issuer Credential object that provides a credential for an enterprise's user
+            Assumes a credential definition has been already written to the ledger.
+
             :param source_id: Tag associated by user of sdk
             :param attrs: attributes that will form the credential
             :param cred_def_handle: Handle from previously created credential def object
@@ -59,7 +61,7 @@ class IssuerCredential(VcxStateful):
     @staticmethod
     async def deserialize(data: dict):
         """
-            Creates IssuerCredential object from a dict.
+            Create a IssuerCredential object from a previously serialized object
             :param data: dict representing a serialized IssuerCredential Object
             :return: IssuerCredential object
 
@@ -86,7 +88,7 @@ class IssuerCredential(VcxStateful):
 
     async def serialize(self) -> dict:
         """
-            Serializes a issuer credential.
+            Serializes the  issuer credential object for storage and later deserialization.
 
             Example:
             source_id = '1'
@@ -104,7 +106,9 @@ class IssuerCredential(VcxStateful):
 
     async def update_state(self) -> int:
         """
-        Communicates with the agent service for polling and setting the state of the entity.
+        Query the agency for the received messages.
+        Checks for any messages changing state in the object and updates the state attribute.
+        
         Example:
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_id, name, price)
         issuer_credential.update_state()
@@ -118,18 +122,22 @@ class IssuerCredential(VcxStateful):
         Example:
         cred = await IssuerCredential.create(source_id)
         assert await cred.update_state_with_message(message) == State.Accepted
-        :param message:
+        :param message: message to process for state changes
         :return Current state of the IssuerCredential
         """
         return await self._update_state_with_message(IssuerCredential, message, 'vcx_issuer_credential_update_state_with_message')
 
     async def get_state(self) -> int:
         """
-        Gets the state of the entity.
+        Get the current state of the issuer credential object
         Example:
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_id, name, price)
         issuer_credential.update_state()
-        :return: State of the Object
+        :return: State of the Object. Possible states:
+                                         1 - Initialized
+                                         2 - Offer Sent
+                                         3 - Request Received
+                                         4 - Issued
         """
         return await self._get_state(IssuerCredential, 'vcx_issuer_credential_get_state')
 
@@ -142,8 +150,8 @@ class IssuerCredential(VcxStateful):
 
     async def send_offer(self, connection: Connection):
         """
-        Sends an offer to a prover.  Once accepted, a request will be recieved.
-        :param connection: vcx.api.connection.Connection
+        Send a credential offer to a holder showing what will be included in the actual credential
+        :param connection: Connection that identifies pairwise connection
         :return: None
 
         Example:
@@ -172,8 +180,8 @@ class IssuerCredential(VcxStateful):
 
     async def get_offer_msg(self, connection: Connection):
         """
-        Gets the offer message to send to specified connection.
-        :param connection: vcx.api.connection.Connection
+        Gets the offer message that can be sent to the specified connection
+        :param connection: Connection that identifies pairwise connection
         :return: None
 
         Example:
@@ -204,8 +212,8 @@ class IssuerCredential(VcxStateful):
 
     async def send_credential(self, connection: Connection):
         """
-        Sends the credential to the end user (prover).
-        :param connection: Connection Object
+        Sends the credential to the end user (holder).
+        :param connection: Connection that identifies pairwise connection
         :return: None
             Example:
             credential.send_credential(connection)
@@ -224,8 +232,8 @@ class IssuerCredential(VcxStateful):
 
     async def get_credential_msg(self, connection: Connection):
         """
-        Get the credential to send to the end user (prover).
-        :param connection: Connection Object
+        Gets the credential message that can be sent to the user
+        :param connection: Connection that identifies pairwise connection
         :return: None
             Example:
             credential.send_credential(connection)
@@ -263,10 +271,24 @@ class IssuerCredential(VcxStateful):
 
     async def get_payment_txn(self):
         """
-        Retrieve Payment Transaction that was used to pay for this Credential
+        Retrieve the payment transaction associated with this credential. This can be used to get the txn that
+        was used to pay the issuer from the prover.  This could be considered a receipt of payment from the payer to
+        the issuer.
+
         Example:
         txn = credential.get_payment_txn()
-        :return:
+        :return: payment transaction
+          {
+              "amount":25,
+              "inputs":[
+                  "pay:null:1_3FvPC7dzFbQKzfG",
+                  "pay:null:1_lWVGKc07Pyc40m6"
+              ],
+              "outputs":[
+                  {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
+                  {"recipient":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
+              ]
+          }
         """
         if not hasattr(IssuerCredential.get_payment_txn, "cb"):
             self.logger.debug("vcx_issuer_credential_get_payment_txn: Creating callback")

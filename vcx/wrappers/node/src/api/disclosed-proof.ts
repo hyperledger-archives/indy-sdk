@@ -111,7 +111,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
   }
 
   /**
-   * Create a proof for fulfilling a corresponding proof request with MsgId from Agency Service
+   * Create a proof based off of a known message id for a given connection.
    *
    * Example:
    * ```
@@ -150,7 +150,8 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
     }
   }
   /**
-   * Serializes the object
+   * Builds a proof object with defined attributes.
+   * Attributes are provided by a previous call to the serialize function.
    *
    * Example:
    * ```
@@ -169,7 +170,8 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
     }
   }
   /**
-   * Serializes the object
+   * Queries agency for all pending proof requests from the given connection.
+   *
    *
    * Example:
    * ```
@@ -211,7 +213,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
   private _proofReq: string = ''
 
   /**
-   * Gets the credentials from a disclosed proof
+   * Get credentials from wallet matching to the proof request associated with proof object
    *
    * Example:
    * ```
@@ -334,7 +336,8 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
     }
   }
   /**
-   * Generates the proof
+   * Accept proof request associated with proof object and
+   * generates a proof from the selected credentials and self attested attributes
    *
    * Example:
    * ```

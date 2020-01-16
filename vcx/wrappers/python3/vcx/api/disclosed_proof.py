@@ -31,7 +31,7 @@ class DisclosedProof(VcxStateful):
         """
         Create a proof for fulfilling a corresponding proof request
         :param source_id: Tag associated by user of sdk
-        :param proof_request: Proof Request data sent by requestor.
+        :param proof_request: Proof Request data sent by requester.
         Example:
         source_id = 'sourceId'
         request = {
@@ -78,10 +78,11 @@ class DisclosedProof(VcxStateful):
     @staticmethod
     async def create_with_msgid(source_id: str, connection: Connection, msg_id: str):
         """
+        Create a proof based off of a known message id for a given connection.
 
-        :param source_id:
-        :param connection:
-        :param msg_id:
+        :param source_id: user defined id of object.
+        :param connection: connection to receive proof request from
+        :param msg_id: id of the message that contains the proof request
         Example:
         msg_id = '1'
         phone_number = '8019119191'
@@ -112,7 +113,8 @@ class DisclosedProof(VcxStateful):
     @staticmethod
     async def deserialize(data: dict):
         """
-        :param data: Data provided by the serialize method
+        Create a DisclosedProof object from a previously serialized proof object
+        :param data: JSON data from a serialized object.
         Example:
         msg_id = '1'
         phone_number = '8019119191'
@@ -131,6 +133,8 @@ class DisclosedProof(VcxStateful):
     @staticmethod
     async def get_requests(connection: Connection) -> dict:
         """
+        Retrieves all pending proof requests for a given connection.
+
         Example:
         msg_id = '1'
         phone_number = '8019119191'
@@ -140,6 +144,7 @@ class DisclosedProof(VcxStateful):
         requests = await DisclosedProof.get_requests(connection)
         :param connection: Connection
         :return: requests associated with the connection
+            [{'@topic': {'tid': 0, 'mid': 0}, '@type': {'version': '1.0', 'name': 'PROOF_REQUEST'}, 'proof_request_data': {'name': 'proof_req', 'nonce': '118065925949165739229152', 'version': '0.1', 'requested_predicates': {}, 'non_revoked': None, 'requested_attributes': {'attribute_0': {'name': 'name', 'restrictions': {'$or': [{'issuer_did': 'did'}]}}}, 'ver': '1.0'}, 'thread_id': '40bdb5b2'}]
         """
         if not hasattr(DisclosedProof.get_requests, "cb"):
             DisclosedProof.get_requests.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
@@ -154,7 +159,7 @@ class DisclosedProof(VcxStateful):
 
     async def serialize(self) -> dict:
         """
-        Serialize the object
+        Serializes the proof object for storage and later deserialization.
         Example:
         msg_id = '1'
         phone_number = '8019119191'
@@ -168,6 +173,9 @@ class DisclosedProof(VcxStateful):
 
     async def update_state(self) -> int:
         """
+        Query the agency for the received messages.
+        Checks for any messages changing state in the proof object and updates the state attribute.
+
         Example:
         msg_id = '1'
         phone_number = '8019119191'
@@ -181,6 +189,7 @@ class DisclosedProof(VcxStateful):
 
     async def update_state_with_message(self, message: str) -> int:
         """
+        Update the state of the proof based on the given message.
         Example:
         msg_id = '1'
         phone_number = '8019119191'
@@ -188,14 +197,14 @@ class DisclosedProof(VcxStateful):
         await connection.connect(phone_number)
         disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
         assert await disclosed_proof.update_state_with_message(msg) == State.RequestReceived
+        :param message: - message to process for state changes
         :return:
         """
         return await self._update_state_with_message(DisclosedProof, message, 'vcx_disclosed_proof_update_state_with_message')
 
     async def get_state(self) -> int:
         """
-
-        Gets the state of the entity.
+        Get the current state of the credential object
         Example:
         msg_id = '1'
         phone_number = '8019119191'
@@ -203,7 +212,9 @@ class DisclosedProof(VcxStateful):
         await connection.connect(phone_number)
         disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
         assert await proof.get_state() == State.Initialized
-        :return: StateType
+        :return: credential state of the object. Possible states:
+                                                     3 - Request Received
+                                                     4 - Accepted
         """
         return await self._get_state(DisclosedProof, 'vcx_disclosed_proof_get_state')
 
@@ -216,7 +227,7 @@ class DisclosedProof(VcxStateful):
 
     async def get_creds(self) -> dict:
         """
-        Gets the credentials from a disclosed proof
+        Get credentials from wallet matching to the proof request associated with proof object
         Example:
         msg_id = '1'
         phone_number = '8019119191'
@@ -225,6 +236,7 @@ class DisclosedProof(VcxStateful):
         disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
         creds = await disclosed_proof.get_creds()
         :return: credentials
+            {'attrs': {'attribute_0': [{'cred_info': {'schema_id': 'id', 'cred_def_id': 'id', 'attrs': {'attr_name': 'attr_value', ...}, 'referent': '914c7e11'}}]}}
         """
         if not hasattr(DisclosedProof.get_creds, "cb"):
             self.logger.debug("vcx_disclosed_proof_retrieve_credentials: Creating callback")
@@ -264,6 +276,7 @@ class DisclosedProof(VcxStateful):
 
     async def get_send_proof_msg(self):
         """
+        Gets the proof message that can be sent to the specified connection
         Example:
         msg = await disclosed_proof.get_send_proof_msg()
         :param
@@ -284,7 +297,7 @@ class DisclosedProof(VcxStateful):
 
     async def generate_proof(self, selected_creds: dict, self_attested_attrs: dict):
         """
-        Generates the proof
+        Accept proof request associated with proof object and generates a proof from the selected credentials and self attested attributes
         Example:
         msg_id = '1'
         phone_number = '8019119191'
@@ -292,8 +305,36 @@ class DisclosedProof(VcxStateful):
         await connection.connect(phone_number)
         disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
         await disclosed_proof.generate_proof({}, {})
-        :param selected_creds: Credentials issued
-        :param self_attested_attrs: Self Attested Attributes
+        :param selected_creds: a json with a credential for each proof request attribute.
+            List of possible credentials for each attribute is returned from vcx_disclosed_proof_retrieve_credentials,
+                (user needs to select specific credential to use from list of credentials)
+                {
+                    "attrs":{
+                        String:{// Attribute key: This may not be the same as the attr name ex. "age_1" where attribute name is "age"
+                            "credential": {
+                                "cred_info":{
+                                    "referent":String,
+                                    "attrs":{ String: String }, // ex. {"age": "111", "name": "Bob"}
+                                    "schema_id": String,
+                                    "cred_def_id": String,
+                                    "rev_reg_id":Option<String>,
+                                    "cred_rev_id":Option<String>,
+                                    },
+                                "interval":Option<{to: Option<u64>, from:: Option<u64>}>
+                            }, // This is the exact credential information selected from list of
+                               // credentials returned from vcx_disclosed_proof_retrieve_credentials
+                            "tails_file": Option<"String">, // Path to tails file for this credential
+                        },
+                   },
+                  "predicates":{ TODO: will be implemented as part of IS-1095 ticket. }
+               }
+           selected_credentials can be empty "{}" if the proof only contains self_attested_attrs
+        :param self_attested_attrs: a json with attributes self attested by user
+        
+        Example:
+         self_attested_attrs: {"self_attested_attr_0":"attested_val"} or {}
+         selected_credentials -> {'attrs': {'attribute_0': {'credential': {'cred_info': {'cred_def_id': 'od', 'schema_id': 'id', 'referent': '0c212108-9433-4199-a21f-336a44164f38', 'attrs': {'attr_name': 'attr_value', ...}}}}}}
+
         :return: None
         """
         if not hasattr(DisclosedProof.generate_proof, "cb"):

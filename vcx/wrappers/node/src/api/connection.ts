@@ -130,6 +130,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
 
   /**
    * Delete the object from the agency and release any memory associated with it
+   * NOTE: This eliminates the connection and any ability to use it for any communication.
    *
    * Example:
    * ```
@@ -245,7 +246,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
     }
   }
   /**
-   * Sign data using pairwise key.
+   * Sign data using connection pairwise key.
    *
    * Example:
    * ```
@@ -284,7 +285,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
     }
   }
   /**
-   * Verify the signature of the data using pairwise key.
+   * Verify the signature of the data using connection pairwise key.
    *
    * Example:
    * ```
@@ -320,7 +321,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   }
 
   /**
-   * Gets the details of the invitation that was returned from the Agent Service.
+   * Get the invite details that were sent or can be sent to the remote side.
    *
    * Example:
    * ```

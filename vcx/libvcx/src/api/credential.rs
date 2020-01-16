@@ -8,7 +8,10 @@ use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
 
-/// Retrieves Payment Info from a Credential
+/// Retrieve Payment Transaction Information for this Credential. Typically this will include
+/// how much payment is requried by the issuer, which needs to be provided by the prover, before the issuer will
+/// issue the credential to the prover. Ideally a prover would want to know how much payment is being asked before
+/// submitting the credential request (which triggers the payment to be made).
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -16,6 +19,14 @@ use error::prelude::*;
 /// credential_handle: credential handle that was provided during creation. Used to identify credential object
 ///
 /// cb: Callback that provides Payment Info of a Credential
+///
+/// # Example:
+/// payment_info ->
+///     {
+///         "payment_required":"one-time",
+///         "payment_addr":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j",
+///         "price":1
+///     }
 ///
 /// #Returns
 /// Error code as a u32
@@ -66,7 +77,12 @@ pub extern fn vcx_credential_get_payment_info(command_handle: u32,
 ///
 /// offer: credential offer received via "vcx_credential_get_offers"
 ///
-/// # Example offer -> "[{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]
+/// # Example
+/// offer -> depends on communication method:
+///     proprietary:
+///         [{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]
+///     aries:
+///         {"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential", "@id":"<uuid-of-offer-message>", "comment":"somecomment", "credential_preview":<json-ldobject>, "offers~attach":[{"@id":"libindy-cred-offer-0", "mime-type":"application/json", "data":{"base64":"<bytesforbase64>"}}]}
 ///
 /// cb: Callback that provides credential handle or error status
 ///
@@ -117,6 +133,13 @@ pub extern fn vcx_credential_create_with_offer(command_handle: u32,
 ///
 /// cb: Callback that provides error status of api call, or returns the credential in json format of "{uuid:credential}".
 ///
+/// # Example
+/// credential -> depends on communication method:
+///     proprietary:
+///         {"credential_id":"cred_id", "credential": {"libindy_cred":"{....}","rev_reg_def_json":"","cred_def_id":"cred_def_id","msg_type":"CLAIM","claim_offer_id":"1234","version":"0.1","from_did":"did"}}
+///     aries:
+///         https://github.com/hyperledger/aries-rfcs/tree/master/features/0036-issue-credential#issue-credential
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
@@ -156,7 +179,7 @@ pub extern fn vcx_get_credential(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Create a Credential object that requests and receives a credential for an institution
+/// Create a Credential object based off of a known message id for a given connection.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -217,7 +240,7 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Send a credential request to the connection, called after having received a credential offer
+/// Approves the credential offer and submits a credential request. The result will be a credential stored in the prover's wallet.
 ///
 /// #params
 /// command_handle: command handle to map callback to user context
@@ -272,7 +295,7 @@ pub extern fn vcx_credential_send_request(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Get the credential request message that can be sent to the specified connection
+/// Approves the credential offer and gets the credential request message that can be sent to the specified connection
 ///
 /// #params
 /// command_handle: command handle to map callback to user context
@@ -337,6 +360,8 @@ pub extern fn vcx_credential_get_request_msg(command_handle: u32,
 ///
 /// cb: Callback that provides any credential offers and error status of query
 ///
+/// # Example offers -> "[[{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]]"
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
@@ -375,8 +400,9 @@ pub extern fn vcx_credential_get_offers(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change in the credential and updates the the state attribute.  If it detects a credential it
-/// will store the credential in the wallet and update the state.
+/// Query the agency for the received messages.
+/// Checks for any messages changing state in the credential object and updates the state attribute.
+/// If it detects a credential it will store the credential in the wallet.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -432,15 +458,14 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change from the given message and updates the the state attribute.  If it detects a credential it
-/// will store the credential in the wallet and update the state.
+/// Update the state of the credential based on the given message.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// credential_handle: Credential handle that was provided during creation. Used to identify credential object
 ///
-/// message: string containing updated status
+/// message: message to process for state changes
 ///
 /// cb: Callback that provides most current state of the credential and error status of request
 ///
@@ -501,6 +526,10 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: u32,
 /// proof_handle: Credential handle that was provided during creation.
 ///
 /// cb: Callback that provides most current state of the credential and error status of request
+///     Credential statuses:
+///         2 - Request Sent
+///         3 - Request Received
+///         4 - Accepted
 ///
 /// #Returns
 #[no_mangle]
@@ -660,7 +689,9 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
     }
 }
 
-/// Retrieve the txn associated with paying for the credential
+/// Retrieve the payment transaction associated with this credential. This can be used to get the txn that
+/// was used to pay the issuer from the prover.  This could be considered a receipt of payment from the payer to
+/// the issuer.
 ///
 /// #param
 /// handle: credential handle that was provided during creation.  Used to access credential object.
@@ -670,12 +701,10 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
 /// example: {
 ///         "amount":25,
 ///         "inputs":[
-///             "pay:null:1_3FvPC7dzFbQKzfG",
-///             "pay:null:1_lWVGKc07Pyc40m6"
+///             "pay:null:1_3FvPC7dzFbQKzfG"
 ///         ],
 ///         "outputs":[
-///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
-///             {"recipient":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
+///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null}
 ///         ]
 ///     }
 #[no_mangle]

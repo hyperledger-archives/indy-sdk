@@ -114,6 +114,8 @@ class Schema(VcxStateful):
         """
         Create a new Schema object that will be published by Endorser later.
 
+        Note that CredentialDef can't be used for credential issuing until it will be published on the ledger.
+
         :param source_id: Institution's unique ID for the schema
         :param name: Name of schema
         :param version: Version of the schema
@@ -281,7 +283,7 @@ class Schema(VcxStateful):
 
     async def get_payment_txn(self):
         """
-        Get the payment transaction information generated when paying the ledger fee
+        Retrieve the txn associated with paying for the schema
 
         Example:
         source_id = 'foobar123'
@@ -292,6 +294,15 @@ class Schema(VcxStateful):
         schema1 = await Schema.create(source_id, name, version, attrs, payment_handle)
         txn = await schema1.get_payment_txn()
         :return: JSON object with input address and output UTXOs
+         {
+             "amount":25,
+             "inputs":[
+                 "pay:null:1_3FvPC7dzFbQKzfG"
+             ],
+             "outputs":[
+                 {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null}
+             ]
+         }
         """
         if not hasattr(Schema.get_payment_txn, "cb"):
             self.logger.debug("vcx_schema_get_payment_txn: Creating callback")
@@ -309,6 +320,9 @@ class Schema(VcxStateful):
     async def update_state(self) -> int:
         """
         Checks if schema is published on the Ledger and updates the the state
+        Possible states:
+             0 = Built
+             1 = Published
         Example:
         source_id = 'foobar123'
         name = 'Address Schema'
@@ -325,6 +339,9 @@ class Schema(VcxStateful):
     async def get_state(self) -> int:
         """
         Get the current state of the schema object
+        Possible states:
+             0 = Built
+             1 = Published
         Example:
         source_id = 'foobar123'
         name = 'Address Schema'
