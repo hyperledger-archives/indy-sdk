@@ -35,9 +35,15 @@ If the concepts of cryptography and blockchain details feel mysterious, fear not
 
 Our goal is to introduce you to many of the concepts of Indy and give you some idea of what happens behind the scenes to make it all work.
 
-**Please take note** that we are not going to cover peer-to-peer interaction as part of this tutorial. 
-This interaction is not part of Indy library but Indy can be used as a tool for interaction implementation.
-Look at [Aries](https://github.com/hyperledger/aries) project that allows trusted online peer-to-peer interactions based on decentralized identities and verifiable credentials.  
+**Please take note** that we are not going to cover how sides set up connection and interact with each other as part of this tutorial.
+We assume that already there is established some communication channel between each pair and this channel can be used for message exchange.
+Instead of message sending we will just use construction like:
+```
+    faber['alice_reply'] = alice['reply']
+    alice['faber_response'] = faber['response']
+```
+
+How this communication channel can be built you can find at [Aries](https://github.com/hyperledger/aries) project which describes it in great details.
 
 We're going to frame the exploration with a story. Alice, a graduate of the fictional Faber College, wants to apply for a job at the fictional company Acme Corp. As soon as she has the job, she wants to apply for a loan in Thrift Bank so she can buy a car. She would like to use her college transcript as proof of her education on the job application and once hired, Alice would like to use the fact of employment as evidence of her creditworthiness for the loan.
 
@@ -132,8 +138,8 @@ After the wallet is opened we can create a DID record in this wallet by calling 
 
 ### Step 4: Getting Verinym for Faber, Acme, Thrift and Government by Steward
 
-In this tutorial we assume that connection is already established and sides can exchange any messages within this connection.
-Go to [Aries](https://github.com/hyperledger/aries) to deep into connection establishment and peer-to-peer interaction details.  
+Remind that in this tutorial we assume that already there is established some communication channel between each pair and this channel can be used for message exchange.
+How this communication channel can be built you can find at [Aries](https://github.com/hyperledger/aries) project which describes it in great details.
 
 **Faber, Acme, Thrift and Government should now establish a Connection with the Steward.**
 
