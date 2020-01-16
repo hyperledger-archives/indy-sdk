@@ -204,6 +204,12 @@ Refresh a local copy of a pool ledger and updates pool nodes connections.
 indy> pool refresh
 ```
 
+#### Set Protocol Version
+Set protocol version that will be used for ledger requests. One of: 1, 2. Unless command is called the default protocol version 2 is used.
+```
+indy> pool set-protocol-version [protocol-version=]<version>
+```
+
 #### Disconnect
 Disconnect from Indy nodes pool
 ```

@@ -23,6 +23,7 @@ impl ProtocolRegistry {
                 family @ MessageFamilies::CredentialIssuance |
                 family @ MessageFamilies::PresentProof |
                 family @ MessageFamilies::TrustPing |
+                family @ MessageFamilies::Basicmessage |
                 family @ MessageFamilies::DiscoveryFeatures => registry.add_protocol(&actors, family),
                 MessageFamilies::Signature => {}
                 MessageFamilies::Unknown(_) => {}

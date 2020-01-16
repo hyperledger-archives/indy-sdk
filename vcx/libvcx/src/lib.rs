@@ -43,6 +43,8 @@ extern crate strum;
 #[macro_use]
 extern crate strum_macros;
 
+extern crate chrono;
+
 #[macro_use]
 pub mod utils;
 pub mod settings;

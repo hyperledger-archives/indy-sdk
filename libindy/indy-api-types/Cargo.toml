@@ -17,8 +17,11 @@ rusqlite = "0.20" # Make sure rusqlite for android is also bumped with this. Rus
 serde = "1.0.99"
 serde_json = "1.0.40"
 serde_derive = "1.0.99"
-ursa = "0.2.0"
 zmq = "0.9.1"
+
+[dependencies.ursa]
+version =  "0.3.0"
+default-features = false
 
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 rusqlite = { version = "0.20", features=["bundled"] }
