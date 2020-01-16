@@ -438,7 +438,7 @@ indy> payment-address <subcommand>
 #### New
 Create the payment address for specified payment method. Requires opened wallet.
 ```
-payment-address new create payment_method=<payment_method> [seed=<seed-value>]
+payment-address new payment_method=<payment_method> [seed=<seed-value>]
 ```
 
 #### Create
