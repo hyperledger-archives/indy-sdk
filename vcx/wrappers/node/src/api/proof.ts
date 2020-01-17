@@ -101,7 +101,8 @@ export class Proof extends VCXBaseWithState<IProofData> {
    * data = {
    *   attrs: [
    *     { name: 'attr1' },
-   *     { name: 'attr2' }],
+   *     { name: 'attr2' },
+   *     { names: ['attr3', 'attr4'] }],
    *   name: 'Proof',
    *   sourceId: 'testProofSourceId',
    *   revocationInterval: {from: 1, to: 2}

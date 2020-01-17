@@ -16,7 +16,10 @@ use error::prelude::*;
 ///
 /// requested_attrs: Describes requested attribute
 ///     {
-///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+///                                              // NOTE: should either be "name" or "names", not both and not none of them.
+///                                              // Use "names" to specify several attributes that have to match a single credential.
 ///         "restrictions":  (filter_json) {
 ///            "schema_id": string, (Optional)
 ///            "schema_issuer_did": string, (Optional)
