@@ -273,3 +273,8 @@ async def create_postgres_wallet(provisionConfig):
         if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
             pass
     print("Postgres wallet provisioned")
+
+
+def load_payment_library():
+    payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
+    payment_plugin.nullpay_init()
