@@ -16,6 +16,9 @@ If you have just started learning about self-sovereign identity, here are some r
 * This extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
 functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](docs/getting-started/indy-walkthrough.md)
 
+    * **Please take note** that this tutorial doesn't cover how sides set up a connection and exchange messages.
+    How this communication channel can be built you can find at [Aries](https://github.com/hyperledger/aries) project which describes it in great details.
+
 * Hyperledger Indy Working Group calls happen every Thursday at 8amPT, 9amMT, 11amET, 4pmBST. Add to your calendar and join from any device: https://zoom.us/j/232861185
 
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
