@@ -978,17 +978,17 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      }
  @param revocRegsJSON: all revocation registries json participating in the proof
      {
-         "rev_reg_def1_id": {
+         "rev_reg_def1_id  or credential_1_id": {
              "timestamp1": <rev_reg1>,
              "timestamp2": <rev_reg2>,
          },
-         "rev_reg_def2_id": {
+         "rev_reg_def2_id"  or credential_3_id: {
              "timestamp3": <rev_reg3>
          },
-         "rev_reg_def3_id": {
+         "rev_reg_def3_id  or credential_3_id": {
              "timestamp4": <rev_reg4>
          },
-     }
+     } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
      
  where
  attr_referent: Proof-request local identifier of requested attribute
