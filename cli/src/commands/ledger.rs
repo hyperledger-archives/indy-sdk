@@ -2279,7 +2279,7 @@ fn timestamp_to_datetime(_time: i64) -> String {
     NaiveDateTime::from_timestamp(_time, 0).to_string()
 }
 
-pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Option<(String, String, String)>, ()> {
+pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Option<(String, String, Option<String>)>, ()> {
     let response = Ledger::build_get_txn_author_agreement_request(None, None)
         .and_then(|request| Ledger::submit_request(_pool_handle, &request))
         .map_err(|err| handle_indy_error(err, None, None, None))?;
@@ -2293,7 +2293,7 @@ pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Opti
 
     match (text, version, digest) {
         (Some(text), _,  _) if text.is_empty() => Ok(None),
-        (Some(text), Some(version), Some(digest)) => Ok(Some((text.to_string(), version.to_string(), digest.to_string()))),
+        (Some(text), Some(version), digest) => Ok(Some((text.to_string(), version.to_string(), digest.as_ref().map(|digest_| digest_.to_string())))),
         _ => Ok(None)
     }
 }
@@ -2800,6 +2800,36 @@ pub mod tests {
             let transaction: serde_json::Value = serde_json::from_str(&transaction).unwrap();
             assert!(transaction["signature"].is_null());
             tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_for_disconnected_pool_and_specific_protocol_version() {
+            let ctx = setup_with_wallet();
+            use_trustee(&ctx);
+            let (did, _) = create_new_did(&ctx);
+            // Set Custom Pool protocol version
+            {
+                let cmd = pool::set_protocol_version_command::new();
+                let mut params = CommandParams::new();
+                params.insert("protocol-version", "1".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            // Build NYM request
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did.clone());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            // Reset Custom Pool protocol version
+            {
+                let cmd = pool::set_protocol_version_command::new();
+                let mut params = CommandParams::new();
+                params.insert("protocol-version", DEFAULT_POOL_PROTOCOL_VERSION.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
         }
     }
 

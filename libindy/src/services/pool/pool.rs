@@ -698,7 +698,7 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(Nodes, Vec<RemoteN
         (HashMap::new(), vec![]), |(mut map, mut vec), res| {
             match res {
                 Err(e) => {
-                    error!("Error during retrieving nodes: {:?}", e);
+                    debug!("Error during retrieving nodes: {:?}", e);
                 }
                 Ok(((alias, verkey), remote)) => {
                     map.insert(alias.clone(), verkey);
