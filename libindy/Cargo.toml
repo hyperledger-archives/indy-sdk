@@ -62,7 +62,7 @@ serde_derive = "1.0.99"
 sha2 = "0.8"
 sha3 = "0.8"
 rmp-serde = "0.13.7"
-sodiumoxide = {version = "0.0.16", optional = true}
+sodiumoxide = {version = "0.2.5", optional = true}
 time = "0.1.42"
 threadpool = "1.7.1"
 zmq = "0.9.1"
