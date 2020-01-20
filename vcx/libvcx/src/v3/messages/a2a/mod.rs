@@ -30,6 +30,8 @@ use v3::messages::proof_presentation::presentation::Presentation;
 use v3::messages::discovery::query::Query;
 use v3::messages::discovery::disclose::Disclose;
 
+use v3::messages::basic_message::message::BasicMessage;
+
 #[derive(Debug, PartialEq)]
 pub enum A2AMessage {
     /// routing
@@ -65,6 +67,9 @@ pub enum A2AMessage {
     /// discovery features
     Query(Query),
     Disclose(Disclose),
+
+    /// basic message
+    BasicMessage(BasicMessage),
 
     /// Any Raw Message
     Generic(String),
@@ -180,6 +185,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
                     .map(|msg| A2AMessage::Disclose(msg))
                     .map_err(de::Error::custom)
             }
+            (MessageFamilies::Basicmessage, A2AMessage::BASIC_MESSAGE) => {
+                BasicMessage::deserialize(value)
+                    .map(|msg| A2AMessage::BasicMessage(msg))
+                    .map_err(de::Error::custom)
+            }
             (_, other_type) => {
                 warn!("Unexpected @type field structure: {}", other_type);
                 Ok(A2AMessage::Generic(value.to_string()))
@@ -218,6 +228,7 @@ impl Serialize for A2AMessage {
             A2AMessage::PresentationAck(msg) => set_a2a_message_type(msg, MessageFamilies::PresentProof, A2AMessage::ACK),
             A2AMessage::Query(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::QUERY),
             A2AMessage::Disclose(msg) => set_a2a_message_type(msg, MessageFamilies::DiscoveryFeatures, A2AMessage::DISCLOSE),
+            A2AMessage::BasicMessage(msg) => set_a2a_message_type(msg, MessageFamilies::Basicmessage, A2AMessage::BASIC_MESSAGE),
             A2AMessage::Generic(msg) => ::serde_json::to_value(msg),
         }.map_err(ser::Error::custom)?;
 
@@ -271,6 +282,7 @@ impl A2AMessage {
     const PRESENTATION: &'static str = "presentation";
     const QUERY: &'static str = "query";
     const DISCLOSE: &'static str = "disclose";
+    const BASIC_MESSAGE: &'static str = "message";
 }
 
 #[macro_export]

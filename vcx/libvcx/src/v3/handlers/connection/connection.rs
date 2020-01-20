@@ -9,6 +9,7 @@ use v3::messages::connection::invite::Invitation;
 
 use std::collections::HashMap;
 use v3::messages::connection::did_doc::DidDoc;
+use v3::messages::basic_message::message::BasicMessage;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -189,7 +190,23 @@ impl Connection {
     pub fn send_generic_message(&self, message: &str, _message_options: &str) -> VcxResult<String> {
         trace!("Connection::send_generic_message >>> message: {:?}", message);
 
-        self.send_message(&A2AMessage::Generic(message.to_string())).map(|_| String::new())
+        let message = match ::serde_json::from_str::<A2AMessage>(message) {
+            Ok(A2AMessage::Generic(message))=> {
+                BasicMessage::create()
+                    .set_content(message.to_string())
+                    .set_time()
+                    .to_a2a_message()
+            }
+            Ok(a2a_message) => a2a_message,
+            Err(_) => {
+                BasicMessage::create()
+                    .set_content(message.to_string())
+                    .set_time()
+                    .to_a2a_message()
+            }
+        };
+
+        self.send_message(&message).map(|_| String::new())
     }
 
     pub fn send_ping(&mut self, comment: Option<String>) -> VcxResult<()> {
