@@ -22,7 +22,7 @@ use crate::domain::anoncreds::proof::{Identifier, Proof, RequestedProof, Reveale
 use crate::domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestPayload, ProofRequestsVersion, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
 use crate::domain::anoncreds::requested_credential::ProvingCredentialKey;
 use crate::domain::anoncreds::requested_credential::RequestedCredentials;
-use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use crate::domain::anoncreds::revocation_state::RevocationState;
 use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
 use indy_api_types::errors::prelude::*;
@@ -108,7 +108,7 @@ impl Prover {
                         master_secret: &MasterSecret,
                         schemas: &HashMap<SchemaId, SchemaV1>,
                         cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinition>,
-                        rev_states: &HashMap<RevocationRegistryId, HashMap<u64, RevocationState>>) -> IndyResult<Proof> {
+                        rev_states: &HashMap<String, HashMap<u64, RevocationState>>) -> IndyResult<Proof> {
         trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret: {:?}, schemas: {:?}, cred_defs: {:?}, rev_states: {:?}",
                credentials, proof_req, requested_credentials, secret!(&master_secret), schemas, cred_defs, rev_states);
 
@@ -140,7 +140,8 @@ impl Prover {
                     .clone()
                     .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
 
-                let rev_states_for_timestamp = rev_states.get(&rev_reg_id)
+                let rev_states_for_timestamp = rev_states.get(&rev_reg_id.0)
+                    .or(rev_states.get(cred_key.cred_id.as_str()))
                     .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationState not found by id: {:?}", rev_reg_id)))?;
 
                 Some(rev_states_for_timestamp.get(&timestamp)
@@ -384,7 +385,7 @@ impl Prover {
                     }
                     requested_proof.revealed_attr_groups.insert(attr_info.attr_referent.clone(), RevealedAttributeGroupInfo {
                         sub_proof_index,
-                        values: value_map
+                        values: value_map,
                     });
                 }
             } else {
@@ -546,6 +547,7 @@ mod tests {
 
     mod build_credential_tags {
         use super::*;
+        use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
 
         fn _credential() -> Credential {
             // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
