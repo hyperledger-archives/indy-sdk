@@ -976,24 +976,25 @@ mod medium_cases {
         }
 
         #[test]
-        fn indy_store_their_did_works_for_is_802() {
+        fn indy_store_my_did_works_for_is_802() {
             let setup = Setup::wallet();
 
-            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
+            let identity_json = json!({"did": DID}).to_string();
 
-            // 1. Try 'storeTheirDid' operation with say did1 and verkey1
-            did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
+            // 1. Try 'createAndStoreMyDid' operation with say did1 and verkey1
+            did::create_my_did(setup.wallet_handle, &identity_json).unwrap();
 
             // 2. Repeat above operation (with same did and ver key used in #1)
             // but this time catch and swallow the exception (it will throw the exception WalletItemAlreadyExistsException)
-            let res = did::store_their_did(setup.wallet_handle, &identity_json);
-            assert_code!(ErrorCode::WalletItemAlreadyExists, res);
+            let res = did::create_my_did(setup.wallet_handle, &identity_json);
+            assert_code!(ErrorCode::DidAlreadyExistsError, res);
 
-            // 3. Then, now if you try 'storeTheirDid' operation
+            // 3. Then, now if you try 'createAndStoreMyDid' operation
             // (either with same did and verkey or you can choose different did and verkey),
             // in IS-802 it fails with error 'Storage error occurred during wallet operation.'
-            let res = did::store_their_did(setup.wallet_handle, &identity_json);
-            assert_code!(ErrorCode::WalletItemAlreadyExists, res);
+            let res = did::create_my_did
+                (setup.wallet_handle, &identity_json);
+            assert_code!(ErrorCode::DidAlreadyExistsError, res);
         }
     }
 
