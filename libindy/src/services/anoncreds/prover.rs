@@ -547,6 +547,7 @@ mod tests {
 
     mod build_credential_tags {
         use super::*;
+        use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
 
         fn _credential() -> Credential {
             // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786

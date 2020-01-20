@@ -3570,7 +3570,7 @@ mod demos {
                                                         &schemas_json,
                                                         &credential_defs_json,
                                                         &rev_states_json).unwrap();
-        let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+        let _proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
         //9. Verifier verifies proof
         let rev_reg_defs_json = json!({
