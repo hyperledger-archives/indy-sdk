@@ -204,6 +204,12 @@ Refresh a local copy of a pool ledger and updates pool nodes connections.
 indy> pool refresh
 ```
 
+#### Set Protocol Version
+Set protocol version that will be used for ledger requests. One of: 1, 2. Unless command is called the default protocol version 2 is used.
+```
+indy> pool set-protocol-version [protocol-version=]<version>
+```
+
 #### Disconnect
 Disconnect from Indy nodes pool
 ```
@@ -435,8 +441,17 @@ ledger get-acceptance-mechanisms [timestamp=<timestamp>] [version=<version>] [se
 indy> payment-address <subcommand>
 ```
 
+#### New
+Create the payment address for specified payment method. Requires opened wallet.
+```
+payment-address new payment_method=<payment_method> [seed=<seed-value>]
+```
+
 #### Create
 Create the payment address for specified payment method. Requires opened wallet.
+
+Take note that this command will be removed in one of the future releases in favor `payment-address new` command.
+
 ```
 payment-address create payment_method=<payment_method> [seed=<seed-value>]
 ```

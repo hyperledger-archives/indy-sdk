@@ -11,6 +11,7 @@ pub enum MessageFamilies {
     PresentProof,
     TrustPing,
     DiscoveryFeatures,
+    Basicmessage,
     Unknown(String)
 }
 
@@ -28,6 +29,7 @@ impl MessageFamilies {
             MessageFamilies::PresentProof => "1.0",
             MessageFamilies::TrustPing => "1.0",
             MessageFamilies::DiscoveryFeatures => "1.0",
+            MessageFamilies::Basicmessage => "1.0",
             MessageFamilies::Unknown(_) => "1.0"
         }
     }
@@ -47,6 +49,7 @@ impl MessageFamilies {
             MessageFamilies::PresentProof => Some((Actors::Prover, Actors::Verifier)),
             MessageFamilies::TrustPing => Some((Actors::Sender, Actors::Receiver)),
             MessageFamilies::DiscoveryFeatures => Some((Actors::Sender, Actors::Receiver)),
+            MessageFamilies::Basicmessage => Some((Actors::Sender, Actors::Receiver)),
             MessageFamilies::Unknown(_) => None
         }
     }
@@ -64,6 +67,7 @@ impl From<String> for MessageFamilies {
             "present-proof" => MessageFamilies::PresentProof,
             "trust_ping" => MessageFamilies::TrustPing,
             "discover-features" => MessageFamilies::DiscoveryFeatures,
+            "basicmessage" => MessageFamilies::Basicmessage,
             family @ _ => MessageFamilies::Unknown(family.to_string())
         }
     }
@@ -81,6 +85,7 @@ impl ::std::string::ToString for MessageFamilies {
             MessageFamilies::PresentProof => "present-proof".to_string(),
             MessageFamilies::TrustPing => "trust_ping".to_string(),
             MessageFamilies::DiscoveryFeatures => "discover-features".to_string(),
+            MessageFamilies::Basicmessage => "basicmessage".to_string(),
             MessageFamilies::Unknown(family) => family.to_string()
         }
     }

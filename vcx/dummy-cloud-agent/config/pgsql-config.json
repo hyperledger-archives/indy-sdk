@@ -34,5 +34,8 @@
     "plugin_init_function": null,
     "plugin_library_path": null
   },
+  "indy_runtime": {
+    "crypto_thread_pool_size": 4
+  },
   "protocol_type": "1.0"
 }
