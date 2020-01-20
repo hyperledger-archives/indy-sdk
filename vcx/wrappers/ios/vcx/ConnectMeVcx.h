@@ -98,6 +98,11 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)deleteConnection:(VcxHandle)connectionHandle
           withCompletion:(void (^)(NSError *error))completion;
 
+- (void)connectionSendMessage:(VcxHandle)connectionHandle
+                  withMessage:(NSString *)message
+       withSendMessageOptions:(NSString *)sendMessageOptions
+               withCompletion:(void (^)(NSError *error, NSString *msg_id))completion;
+
 - (void)connectionSignData:(VcxHandle)connectionHandle
                    data:(NSData *)data
                 completion:(void (^)(NSError *, NSData *signature))completion;
