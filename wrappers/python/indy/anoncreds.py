@@ -1150,7 +1150,10 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
     attr_referent: Proof-request local identifier of requested attribute
     attr_info: Describes requested attribute
         {
-            "name": string, // attribute name, (case insensitive and ignore spaces)
+            "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+            "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                                 // NOTE: should either be "name" or "names", not both and not none of them.
+                                                 // Use "names" to specify several attributes that have to match a single credential.
             "restrictions": Optional<filter_json>, // see below
             "non_revoked": Optional<<non_revoc_interval>>, // see below,
                            // If specified prover must proof non-revocation
@@ -1270,8 +1273,11 @@ async def prover_search_credentials_for_proof_req(wallet_handle: int,
     where
     attr_info: Describes requested attribute
         {
-            "name": string, // attribute name, (case insensitive and ignore spaces)
-            "restrictions": Optional<wql query>, // see below
+            "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+            "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                                 // NOTE: should either be "name" or "names", not both and not none of them.
+                                                 // Use "names" to specify several attributes that have to match a single credential.
+            "restrictions": Optional<filter_json>, // see below
             "non_revoked": Optional<<non_revoc_interval>>, // see below,
                            // If specified prover must proof non-revocation
                            // for date in this interval this attribute
@@ -1498,12 +1504,15 @@ async def prover_create_proof(wallet_handle: int,
         attr_referent: Proof-request local identifier of requested attribute
         attr_info: Describes requested attribute
             {
-                "name": string, // attribute name, (case insensitive and ignore spaces)
-                "restrictions": Optional<wql query>, // see below
+                "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+                "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                                     // NOTE: should either be "name" or "names", not both and not none of them.
+                                                     // Use "names" to specify several attributes that have to match a single credential.
+                "restrictions": Optional<filter_json>, // see below
                 "non_revoked": Optional<<non_revoc_interval>>, // see below,
                                // If specified prover must proof non-revocation
                                // for date in this interval this attribute
-                               // (overrides proof level interval)
+                           // (overrides proof level interval)
             }
         predicate_referent: Proof-request local identifier of requested attribute predicate
         predicate_info: Describes requested attribute predicate
@@ -1542,6 +1551,17 @@ async def prover_create_proof(wallet_handle: int,
                     "revealed_attrs": {
                         "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                         "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+                    },
+                    "revealed_attr_groups": {
+                        "requested_attr5_id": {
+                            "sub_proof_index": number,
+                            "values": {
+                                "attribute_name": {
+                                    "raw": string,
+                                    "encoded": string
+                                }
+                            },
+                        }
                     },
                     "unrevealed_attrs": {
                         "requested_attr3_id": {sub_proof_index: number}
@@ -1642,6 +1662,17 @@ async def verifier_verify_proof(proof_request_json: str,
                 "revealed_attrs": {
                     "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
                     "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
+                },
+                "revealed_attr_groups": {
+                    "requested_attr5_id": {
+                        "sub_proof_index": number,
+                        "values": {
+                            "attribute_name": {
+                                "raw": string,
+                                "encoded": string
+                            }
+                        }, // NOTE: check that `encoded` value match to `raw` value on application level
+                    }
                 },
                 "unrevealed_attrs": {
                     "requested_attr3_id": {sub_proof_index: number}

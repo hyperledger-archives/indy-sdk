@@ -546,7 +546,36 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
             - "1.0" to use unqualified identifiers for restrictions
             - "2.0" to use fully qualified identifiers for restrictions
     }
-where
+where:
+ attr_info: Describes requested attribute
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ predicate_referent: Proof-request local identifier of requested attribute predicate
+ predicate_info: Describes requested attribute predicate
+     {
+         "name": attribute name, (case insensitive and ignore spaces)
+         "p_type": predicate type (">=", ">", "<=", "<")
+         "p_value": predicate value
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ non_revoc_interval: Defines non-revocation interval
+     {
+         "from": Optional<int>, // timestamp of interval beginning
+         "to": Optional<int>, // timestamp of interval ending
+     }
 ````
 * __->__ `credentials`: Json - credentials\_json: json with credentials for the given proof request.
 ```
@@ -604,6 +633,36 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
             - "1.0" to use unqualified identifiers for restrictions
             - "2.0" to use fully qualified identifiers for restrictions
     }
+where:
+ attr_info: Describes requested attribute
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ predicate_referent: Proof-request local identifier of requested attribute predicate
+ predicate_info: Describes requested attribute predicate
+     {
+         "name": attribute name, (case insensitive and ignore spaces)
+         "p_type": predicate type (">=", ">", "<=", "<")
+         "p_value": predicate value
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ non_revoc_interval: Defines non-revocation interval
+     {
+         "from": Optional<int>, // timestamp of interval beginning
+         "to": Optional<int>, // timestamp of interval ending
+     }
 ````
 * `extraQuery`: Json - \(Optional\) List of extra queries that will be applied to correspondent attribute\/predicate:
 ```
@@ -695,6 +754,36 @@ The proof contains either proof or self-attested attribute value for each reques
           - "1.0" to use unqualified identifiers for restrictions
           - "2.0" to use fully qualified identifiers for restrictions
   }
+where:
+ attr_info: Describes requested attribute
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ predicate_referent: Proof-request local identifier of requested attribute predicate
+ predicate_info: Describes requested attribute predicate
+     {
+         "name": attribute name, (case insensitive and ignore spaces)
+         "p_type": predicate type (">=", ">", "<=", "<")
+         "p_value": predicate value
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ non_revoc_interval: Defines non-revocation interval
+     {
+         "from": Optional<int>, // timestamp of interval beginning
+         "to": Optional<int>, // timestamp of interval ending
+     }
 ````
 * `requestedCredentials`: Json - either a credential or self-attested attribute for each requested attribute
 ```
@@ -757,6 +846,17 @@ There is also aggregated proof part common for all credential proofs.
                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
             },
+            "revealed_attr_groups": {
+                "requested_attr5_id": {
+                    "sub_proof_index": number,
+                    "values": {
+                        "attribute_name": {
+                            "raw": string,
+                            "encoded": string
+                        }
+                    },
+                }
+            },
             "unrevealed_attrs": {
                 "requested_attr3_id": {sub_proof_index: number}
             },
@@ -816,8 +916,19 @@ as the keys for corresponding `schemas`, `credentialDefsJsons`, `revRegDefs`, `r
     {
         "requested_proof": {
             "revealed_attrs": {
-                "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
-                "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+                "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
+                "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
+            },
+            "revealed_attr_groups": {
+                "requested_attr5_id": {
+                    "sub_proof_index": number,
+                    "values": {
+                        "attribute_name": {
+                            "raw": string,
+                            "encoded": string
+                        }
+                    }, // NOTE: check that `encoded` value match to `raw` value on application level
+                }
             },
             "unrevealed_attrs": {
                 "requested_attr3_id": {sub_proof_index: number}

@@ -69,7 +69,10 @@ mod demos {
                                             "attr2_referent":{
                                                 "name":"sex"
                                             },
-                                            "attr3_referent":{"name":"phone"}
+                                            "attr3_referent":{"name":"phone"},
+                                            "attr4_referent":{
+                                                "names": ["name", "height"]
+                                            }
                                        },
                                        "requested_predicates":{
                                             "predicate1_referent":{"name":"age","p_type":">=","p_value":18}
@@ -86,12 +89,13 @@ mod demos {
                                                   "self_attested_attributes":{{"attr3_referent":"{}"}},
                                                   "requested_attributes":{{
                                                         "attr1_referent":{{ "cred_id":"{}", "revealed":true }},
-                                                        "attr2_referent":{{ "cred_id":"{}", "revealed":false }}
+                                                        "attr2_referent":{{ "cred_id":"{}", "revealed":false }},
+                                                        "attr4_referent":{{ "cred_id":"{}", "revealed":true }}
                                                   }},
                                                   "requested_predicates":{{
                                                         "predicate1_referent":{{ "cred_id":"{}" }}
                                                   }}
-                                                }}"#, self_attested_value, credential.referent, credential.referent, credential.referent);
+                                                }}"#, self_attested_value, credential.referent, credential.referent, credential.referent, credential.referent);
 
         let schemas_json = json!({schema_id: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
         let cred_defs_json = json!({cred_def_id: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
@@ -111,6 +115,9 @@ mod demos {
         assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
         assert_eq!(0, proof.requested_proof.unrevealed_attrs.get("attr2_referent").unwrap().sub_proof_index);
         assert_eq!(self_attested_value, proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap());
+        let revealed_attr_groups = proof.requested_proof.revealed_attr_groups.get("attr4_referent").unwrap();
+        assert_eq!("Alex", revealed_attr_groups.values.get("name").unwrap().raw);
+        assert_eq!("175", revealed_attr_groups.values.get("height").unwrap().raw);
 
         let rev_reg_defs_json = json!({}).to_string();
         let rev_regs_json = json!({}).to_string();
