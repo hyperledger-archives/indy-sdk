@@ -255,7 +255,7 @@ class CredentialDef(VcxStateful):
 
     async def update_state(self) -> int:
         """
-        Checks if credential definition is published on the Ledger and updates the the state.
+        Checks if credential definition is published on the Ledger and updates the state.
         Possible states:
              0 = Built
              1 = Published

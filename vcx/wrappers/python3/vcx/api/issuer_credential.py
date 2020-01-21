@@ -7,7 +7,73 @@ from vcx.api.vcx_stateful import VcxStateful
 import json
 
 class IssuerCredential(VcxStateful):
-    """Class representing an Issuer Credential"""
+    """
+    The object of the VCX API representing an Issuer side in the credential issuance process.
+    Assumes that pairwise connection between Issuer and Holder is already established.
+
+    # State
+
+    The set of object states and transitions depends on communication method is used.
+    The communication method can be specified as config option on one of *_init function. The default communication method us `proprietary`.
+
+    proprietary:
+        VcxStateType::VcxStateInitialized - once `vcx_issuer_create_credential` (create IssuerCredential object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_issuer_send_credential_offer` (send `CRED_OFFER` message) is called.
+
+        VcxStateType::VcxStateRequestReceived - once `CRED_REQ` messages is received.
+                                                use `vcx_issuer_credential_update_state` or `vcx_issuer_credential_update_state_with_message` functions for state updates.
+        VcxStateType::VcxStateAccepted - once `vcx_issuer_send_credential` (send `CRED` message) is called.
+
+    aries:
+        VcxStateType::VcxStateInitialized - once `vcx_issuer_create_credential` (create IssuerCredential object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_issuer_send_credential_offer` (send `CredentialOffer` message) is called.
+
+        VcxStateType::VcxStateRequestReceived - once `CredentialRequest` messages is received.
+        VcxStateType::None - once `ProblemReport` messages is received.
+                                                use `vcx_issuer_credential_update_state` or `vcx_issuer_credential_update_state_with_message` functions for state updates.
+
+        VcxStateType::VcxStateAccepted - once `vcx_issuer_send_credential` (send `Credential` message) is called.
+
+    # Transitions
+
+    proprietary:
+        VcxStateType::None - `vcx_issuer_create_credential` - VcxStateType::VcxStateInitialized
+
+        VcxStateType::VcxStateInitialized - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `CRED_REQ` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential` - VcxStateType::VcxStateAccepted
+
+    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+        VcxStateType::None - `vcx_issuer_create_credential` - VcxStateType::VcxStateInitialized
+
+        VcxStateType::VcxStateInitialized - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `CredentialRequest` - VcxStateType::VcxStateRequestReceived
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+
+        VcxStateType::VcxStateRequestReceived - vcx_issuer_send_credential` - VcxStateType::VcxStateAccepted
+
+        VcxStateType::VcxStateAccepted - received `Ack` - VcxStateType::VcxStateAccepted
+
+    # Messages
+
+    proprietary:
+        CredentialOffer (`CRED_OFFER`)
+        CredentialRequest (`CRED_REQ`)
+        Credential (`CRED`)
+
+    aries:
+        CredentialProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#propose-credential
+        CredentialOffer - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#offer-credential
+        CredentialRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#request-credential
+        Credential - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#issue-credential
+        ProblemReport - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0035-report-problem#the-problem-report-message-type
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+    """
 
     def __init__(self, source_id: str, attrs: dict, cred_def_id: str, name: str, price: float):
 

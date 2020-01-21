@@ -319,7 +319,7 @@ class Schema(VcxStateful):
 
     async def update_state(self) -> int:
         """
-        Checks if schema is published on the Ledger and updates the the state
+        Checks if schema is published on the Ledger and updates the state
         Possible states:
              0 = Built
              1 = Published

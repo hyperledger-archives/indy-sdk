@@ -7,6 +7,124 @@ import { ISerializedData, StateType } from './common'
 import { VCXBaseWithState } from './vcx-base-with-state'
 
 /**
+ *   The object of the VCX API representing a pairwise relationship with another identity owner.
+ *   Once the relationship, or connection, is established communication can happen securely and privately.
+ *   Credentials and Proofs are exchanged using this object.
+ *
+ *   # States
+ *
+ *   The set of object states and transitions depends on communication method is used.
+ *   The communication method can be specified as config option on one of *_init function. The default communication method us `proprietary`.
+ *
+ *   proprietary:
+ *       Inviter:
+ *           VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+ *
+ *           VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (send Connection invite) is called.
+ *
+ *           VcxStateType::VcxStateAccepted - once `connReqAnswer` messages is received.
+ *                                            use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+ *
+ *       Invitee:
+ *           VcxStateType::VcxStateRequestReceived - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+ *
+ *           VcxStateType::VcxStateAccepted - once `vcx_connection_connect` (accept Connection invite) is called.
+ *
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+ *
+ *   aries:
+ *       Inviter:
+ *           VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+ *
+ *           VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (prepared Connection invite) is called.
+ *
+ *           VcxStateType::VcxStateRequestReceived - once `ConnectionRequest` messages is received.
+ *                                                   accept `ConnectionRequest` and send `ConnectionResponse` message.
+ *                                                   use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *
+ *           VcxStateType::VcxStateAccepted - once `Ack` messages is received.
+ *                                            use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+ *                                           OR
+ *                                       `ConnectionProblemReport` messages is received on state updates.
+ *
+ *       Invitee:
+ *           VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+ *
+ *           VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
+ *
+ *           VcxStateType::VcxStateAccepted - once `ConnectionResponse` messages is received.
+ *                                            send `Ack` message if requested.
+ *                                            use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+ *                                           OR
+ *                                       `ConnectionProblemReport` messages is received on state updates.
+ *
+ *   # Transitions
+ *
+ *   proprietary:
+ *       Inviter:
+ *           VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+ *           VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+ *           VcxStateType::VcxStateOfferSent - received `connReqAnswer` - VcxStateType::VcxStateAccepted
+ *           any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+ *
+ *       Invitee:
+ *           VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateRequestReceived
+ *           VcxStateType::VcxStateRequestReceived - `vcx_connection_connect` - VcxStateType::VcxStateAccepted
+ *           any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+ *
+ *   aries - RFC: https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+ *       Inviter:
+ *           VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+ *
+ *           VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+ *
+ *           VcxStateType::VcxStateOfferSent - received `ConnectionRequest` - VcxStateType::VcxStateRequestReceived
+ *           VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateRequestReceived - received `Ack` - VcxStateType::VcxStateAccepted
+ *           VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+ *
+ *           any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+ *
+ *       Invitee:
+ *           VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateOfferSent
+ *
+ *           VcxStateType::VcxStateOfferSent - `vcx_connection_connect` - VcxStateType::VcxStateRequestReceived
+ *           VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateRequestReceived - received `ConnectionResponse` - VcxStateType::VcxStateAccepted
+ *           VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+ *
+ *           any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+ *
+ *   # Messages
+ *
+ *   proprietary:
+ *       ConnectionRequest (`connReq`)
+ *       ConnectionRequestAnswer (`connReqAnswer`)
+ *
+ *   aries:
+ *       Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+ *       ConnectionRequest - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#1-connection-request
+ *       ConnectionResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#2-connection-response
+ *       ConnectionProblemReport - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#error-message-example
+ *       Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+ *       Ping - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+ *       PingResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+ *       Query - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#query-message-type
+ *       Disclose - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#disclose-message-type
+ */
+
+/**
  * @description Interface that represents the attributes of a Connection object.
  * This data is expected as the type for deserialize's parameter and serialize's return value
  * @interface
@@ -24,29 +142,59 @@ export interface IConnectionData {
   state: StateType
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.create` function.
+ * @interface
+ */
 export interface IConnectionCreateData {
+  // Institution's personal identification for the connection
   id: string
 }
 
+// A string representing a invitation json object.
 export type IConnectionInvite = string
 
+/**
+ * @description Interface that represents the parameters for `Connection.createWithInvite` function.
+ * @interface
+ */
 export interface IRecipientInviteInfo extends IConnectionCreateData {
+  // Invitation provided by an entity that wishes to make a connection.
   invite: IConnectionInvite
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.connect` function.
+ * @interface
+ */
 export interface IConnectOptions {
+  // Provides details indicating if the connection will be established by text or QR Code
   data: string
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.sendMessage` function.
+ * @interface
+ */
 export interface IMessageData {
+  // Actual message to send
   msg: string,
+  // Type of message to send. Can be any string
   type: string,
+  // Message title (user notification)
   title: string,
+  // If responding to a message, id of the message
   refMsgId?: string,
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.verifySignature` function.
+ * @interface
+ */
 export interface ISignatureData {
+  // Message was signed
   data: Buffer,
+  // Generated signature
   signature: Buffer
 }
 
@@ -328,7 +476,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * phoneNumber = '8019119191'
    * connection = await Connection.create('foobar123')
    * inviteDetails = await connection.connect({phone: phoneNumber})
-   * inivteDetailsAgain = await connection.inviteDetails()
+   * inviteDetailsAgain = await connection.inviteDetails()
    * ```
    */
   public async inviteDetails (abbr: boolean = false): Promise<IConnectionInvite> {

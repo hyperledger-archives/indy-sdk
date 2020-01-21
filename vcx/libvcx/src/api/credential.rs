@@ -8,6 +8,66 @@ use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
 
+/*
+    The API represents a Holder side in credential issuance process.
+    Assumes that pairwise connection between Issuer and Holder is already established.
+
+    # State
+
+    The set of object states, messages and transitions depends on the communication method is used.
+    There are two communication methods: `proprietary` and `aries`. The default communication method is `proprietary`.
+    The communication method can be specified as a config option on one of *_init functions.
+
+    proprietary:
+        VcxStateType::VcxStateRequestReceived - once `vcx_credential_create_with_offer` (create Credential object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `CRED_REQ` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `CRED` messages is received.
+                                         use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+
+    aries:
+        VcxStateType::VcxStateRequestReceived - once `vcx_credential_create_with_offer` (create Credential object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `CredentialRequest` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `Credential` messages is received.
+        VcxStateType::None - once `ProblemReport` messages is received.
+                                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+
+    # Transitions
+
+    proprietary:
+        VcxStateType::None - `vcx_credential_create_with_offer` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `CRED` - VcxStateType::VcxStateAccepted
+
+    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+        VcxStateType::None - `vcx_credential_create_with_offer` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `Credential` - VcxStateType::VcxStateAccepted
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+
+    # Messages
+
+    proprietary:
+        CredentialOffer (`CRED_OFFER`)
+        CredentialRequest (`CRED_REQ`)
+        Credential (`CRED`)
+
+    aries:
+        CredentialProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#propose-credential
+        CredentialOffer - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#offer-credential
+        CredentialRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#request-credential
+        Credential - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#issue-credential
+        ProblemReport - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0035-report-problem#the-problem-report-message-type
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+*/
+
 /// Retrieve Payment Transaction Information for this Credential. Typically this will include
 /// how much payment is requried by the issuer, which needs to be provided by the prover, before the issuer will
 /// issue the credential to the prover. Ideally a prover would want to know how much payment is being asked before

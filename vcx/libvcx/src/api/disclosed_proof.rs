@@ -7,6 +7,67 @@ use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
 
+/*
+    The API represents an Prover side in credential presentation process.
+    Assumes that pairwise connection between Verifier and Prover is already established.
+
+    # State
+
+    The set of object states, messages and transitions depends on the communication method is used.
+    There are two communication methods: `proprietary` and `aries`. The default communication method is `proprietary`.
+    The communication method can be specified as a config option on one of *_init functions.
+
+    proprietary:
+        VcxStateType::VcxStateRequestReceived - once `vcx_disclosed_proof_create_with_request` (create DisclosedProof object) is called.
+
+        VcxStateType::VcxStateRequestReceived - once `vcx_disclosed_proof_generate_proof` is called.
+
+        VcxStateType::VcxStateAccepted - once `vcx_disclosed_proof_send_proof` (send `PROOF` message) is called.
+
+    aries:
+        VcxStateType::VcxStateRequestReceived - once `vcx_disclosed_proof_create_with_request` (create DisclosedProof object) is called.
+
+        VcxStateType::VcxStateRequestReceived - once `vcx_disclosed_proof_generate_proof` is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_disclosed_proof_send_proof` (send `Presentation` message) is called.
+        VcxStateType::None - once `vcx_disclosed_proof_decline_presentation_request` (send `PresentationReject` or `PresentationProposal` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `Ack` messages is received.
+        VcxStateType::None - once `ProblemReport` messages is received.
+
+    # Transitions
+
+    proprietary:
+        VcxStateType::None - `vcx_disclosed_proof_create_with_request` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_generate_proof` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_send_proof` - VcxStateType::VcxStateAccepted
+
+    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+        VcxStateType::None - `vcx_disclosed_proof_create_with_request` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_generate_proof` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_send_proof` - VcxStateType::VcxStateAccepted
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_decline_presentation_request` - VcxStateType::None
+
+        VcxStateType::VcxStateOfferSent - received `Ack` - VcxStateType::VcxStateAccepted
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+
+    # Messages
+
+    proprietary:
+        ProofRequest (`PROOF_REQ`)
+        Proof (`PROOF`)
+
+    aries:
+        PresentationRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#request-presentation
+        Presentation - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#presentation
+        PresentationProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+*/
+
 /// Create a Proof object for fulfilling a corresponding proof request
 ///
 /// #Params
@@ -313,7 +374,7 @@ pub extern fn vcx_disclosed_proof_get_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change in the disclosed proof and updates the the state attribute
+/// Checks for any state change in the disclosed proof and updates the state attribute
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -360,7 +421,7 @@ pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change from the given message and updates the the state attribute
+/// Checks for any state change from the given message and updates the state attribute
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

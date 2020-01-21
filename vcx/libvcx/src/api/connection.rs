@@ -8,6 +8,126 @@ use connection::{get_source_id, create_connection, create_connection_with_invite
 use error::prelude::*;
 use messages::get_message::Message;
 
+/*
+    Tha API represents a pairwise connection with another identity owner.
+    Once the connection, is established communication can happen securely and privately.
+    Credentials and Presentations are exchanged using this object.
+
+    # States
+
+    The set of object states, messages and transitions depends on the communication method is used.
+    There are two communication methods: `proprietary` and `aries`. The default communication method is `proprietary`.
+    The communication method can be specified as a config option on one of *_init functions.
+
+    proprietary:
+        Inviter:
+            VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+
+            VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (send Connection invite) is called.
+
+            VcxStateType::VcxStateAccepted - once `connReqAnswer` messages is received.
+                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+            VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+
+        Invitee:
+            VcxStateType::VcxStateRequestReceived - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+
+            VcxStateType::VcxStateAccepted - once `vcx_connection_connect` (accept Connection invite) is called.
+
+            VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+
+    aries:
+        Inviter:
+            VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+
+            VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (prepared Connection invite) is called.
+
+            VcxStateType::VcxStateRequestReceived - once `ConnectionRequest` messages is received.
+                                                    accept `ConnectionRequest` and send `ConnectionResponse` message.
+                                                    use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+
+            VcxStateType::VcxStateAccepted - once `Ack` messages is received.
+                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+
+            VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+                                            OR
+                                        `ConnectionProblemReport` messages is received on state updates.
+
+        Invitee:
+            VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+
+            VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
+
+            VcxStateType::VcxStateAccepted - once `ConnectionResponse` messages is received.
+                                             send `Ack` message if requested.
+                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+
+            VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+                                            OR
+                                        `ConnectionProblemReport` messages is received on state updates.
+
+    # Transitions
+
+    proprietary:
+        Inviter:
+            VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+            VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+            VcxStateType::VcxStateOfferSent - received `connReqAnswer` - VcxStateType::VcxStateAccepted
+            any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+
+        Invitee:
+            VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateRequestReceived
+            VcxStateType::VcxStateRequestReceived - `vcx_connection_connect` - VcxStateType::VcxStateAccepted
+            any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+
+    aries - RFC: https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+        Inviter:
+            VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+
+            VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+
+            VcxStateType::VcxStateOfferSent - received `ConnectionRequest` - VcxStateType::VcxStateRequestReceived
+            VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+
+            VcxStateType::VcxStateRequestReceived - received `Ack` - VcxStateType::VcxStateAccepted
+            VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+
+            VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+
+            any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+
+
+        Invitee:
+            VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateOfferSent
+
+            VcxStateType::VcxStateOfferSent - `vcx_connection_connect` - VcxStateType::VcxStateRequestReceived
+            VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+
+            VcxStateType::VcxStateRequestReceived - received `ConnectionResponse` - VcxStateType::VcxStateAccepted
+            VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+
+            VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+
+            any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+
+    # Messages
+
+    proprietary:
+        ConnectionRequest (`connReq`)
+        ConnectionRequestAnswer (`connReqAnswer`)
+
+    aries:
+        Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+        ConnectionRequest - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#1-connection-request
+        ConnectionResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#2-connection-response
+        ConnectionProblemReport - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#error-message-example
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+        Ping - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+        PingResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+        Query - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#query-message-type
+        Disclose - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#disclose-message-type
+*/
+
 /// Delete a Connection object from the agency and release its handle.
 ///
 /// NOTE: This eliminates the connection and any ability to use it for any communication.

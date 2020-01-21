@@ -15,55 +15,8 @@ use error::prelude::*;
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// config: config as json. All options are optional. {
-///   # User info options
-///     "institution_did": string - DID associated with institution.
-///     "institution_verkey": string - Verkey associated with institution.
-///     "institution_name": string - name associated with institution (it is used like a label for connection/credential offer/proof request).
-///     "institution_logo_url": string - url containing institution logo.
-///
-///   # Pool related options
-///     "pool_name" : string - name of the pool ledger configuration will be created.
-///     "genesis_path" : string - path to the genesis transaction file to use fot pool creation.
-///     "pool_config" : string - runtime pool configuration json (see config parameter of indy_open_pool_ledger function).
-///
-///   # Wallet related options
-///     "wallet_name" : string - name of the wallet to use. Note that wallet must be already created.
-///     "wallet_key" : string - key or passphrase used for wallet creation.
-///     "wallet_key_derivation" : string - key derivation method.
-///     "wallet_type" : string - type of the wallet (default Libindy or some plugged one).
-///     "storage_config" : string - an addition configuration related to the wallet storage.
-///     "storage_credentials" : string -  storage configuration json.
-///     "backup_key" : string - key or passphrase used for wallet import.
-///     "exported_wallet_path" : string - nkey or passphrase used for wallet export.
-///     "wallet_handle" : string - handle to the already opened wallet to use.
-///
-///   # Agency related options
-///     "agency_endpoint" : string - agency endpoint to connect.
-///     "agency_did" : string - agency DID.
-///     "agency_verkey" : string - agency Verkey.
-///     "remote_to_sdk_did" : string - agent DID
-///     "remote_to_sdk_verkey" : string - agent Verkey
-///     "sdk_to_remote_did" : string - pairwise DID for Agent
-///     "sdk_to_remote_verkey" : string - pairwise Verkey for Agent
-///
-///   # Protocol related options
-///     "protocol_version": string - message protocol to use for agent to agency and agent to agent communication. Can be one of:
-///         "1.0" - use bundled messages, auth/anon cryptography.
-///         "2.0" - use aries cross domain message format, pack/unpack functions.
-///     "communication_method": string - the version of protocols to use (can be aries or proprietary) for connection establishment and messages exchange.
-///     "actors": string - the set of actors which application supports. This setting is used within the Feature Discovery protocol to discover which features are supported by another connection side. Note that option is applicable for aries communication method only.
-///
-///   # Common library related options
-///     "payment_method": string - name of used payment method which was registered by a plugin (plugin must be registered independently).
-///     "threadpool_size": string - size of thread pool used for command execution (8 by default).
-///     "author_agreement": string - accept and use transaction author agreement data containing the following fields:
-///         "acceptanceMechanismType" - (string) mechanism how user has accepted the TAA.
-///         "timeOfAcceptance" - (u64) UTC timestamp when user has accepted the TAA.
-///         "text" and "version" - (string) text and version of TAA.
-///         "taaDigest" - (string) sha256 hash calculated on concatenated strings: version || text.
-///
-/// }
+/// config: config as json.
+/// The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
 ///
 /// cb: Callback that provides error status of initialization
 ///
@@ -100,7 +53,7 @@ pub extern fn vcx_init_with_config(command_handle: u32,
 /// Initializes VCX with config file
 ///
 /// An example file is at libvcx/sample_config/config.json
-/// The list of available options see at the documentation for `vcx_init_with_config` function.
+/// The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

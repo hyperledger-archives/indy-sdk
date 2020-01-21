@@ -7,6 +7,66 @@ use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
 
+/*
+    The API represents an Verifier side in credential presentation process.
+    Assumes that pairwise connection between Verifier and Prover is already established.
+
+    # State
+
+    The set of object states, messages and transitions depends on the communication method is used.
+    There are two communication methods: `proprietary` and `aries`. The default communication method is `proprietary`.
+    The communication method can be specified as a config option on one of *_init functions.
+
+    proprietary:
+        VcxStateType::VcxStateInitialized - once `vcx_proof_create` (create Proof object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `PROOF_REQ` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `PROOF` messages is received.
+                                         use `vcx_proof_update_state` or `vcx_proof_update_state_with_message` functions for state updates.
+
+    aries:
+        VcxStateType::VcxStateInitialized - once `vcx_proof_create` (create Proof object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `PresentationRequest` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `Presentation` messages is received.
+        VcxStateType::None - once `ProblemReport` messages is received.
+        VcxStateType::None - once `PresentationProposal` messages is received.
+        VcxStateType::None - on `Presentation` validation failed.
+                                                use `vcx_proof_update_state` or `vcx_proof_update_state_with_message` functions for state updates.
+
+    # Transitions
+
+    proprietary:
+        VcxStateType::None - `vcx_proof_create` - VcxStateType::VcxStateInitialized
+
+        VcxStateType::VcxStateInitialized - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `PROOF` - VcxStateType::VcxStateAccepted
+
+    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+        VcxStateType::None - `vcx_proof_create` - VcxStateType::VcxStateInitialized
+
+        VcxStateType::VcxStateInitialized - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `Presentation` - VcxStateType::VcxStateAccepted
+        VcxStateType::VcxStateOfferSent - received `PresentationProposal` - VcxStateType::None
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+
+    # Messages
+
+    proprietary:
+        ProofRequest (`PROOF_REQ`)
+        Proof (`PROOF`)
+
+    aries:
+        PresentationRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#request-presentation
+        Presentation - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#presentation
+        PresentationProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+*/
+
 /// Create a new Proof object that requests a proof for an enterprise
 ///
 /// #Params

@@ -428,7 +428,7 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
     }
 }
 
-/// Checks if credential definition is published on the Ledger and updates the the state if it is.
+/// Checks if credential definition is published on the Ledger and updates the state if it is.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

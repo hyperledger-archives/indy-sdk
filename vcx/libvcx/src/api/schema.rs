@@ -421,7 +421,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks if schema is published on the Ledger and updates the the state
+/// Checks if schema is published on the Ledger and updates the  state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
