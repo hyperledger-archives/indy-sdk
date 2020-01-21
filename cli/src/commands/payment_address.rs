@@ -25,8 +25,8 @@ pub mod new_command {
     command!(CommandMetadata::build("new", "Create the payment address for specified payment method.")
                 .add_required_param("payment_method", "Payment method to use")
                 .add_optional_param("seed", "Seed for creating payment address")
-                .add_example("payment-address create payment_method=sov")
-                .add_example("payment-address create payment_method=sov seed=000000000000000000000000000Seed1")
+                .add_example("payment-address new payment_method=sov")
+                .add_example("payment-address new payment_method=sov seed=000000000000000000000000000Seed1")
                 .finalize()
     );
 
@@ -63,9 +63,7 @@ pub mod new_command {
 pub mod create_command {
     use super::*;
 
-    command!(CommandMetadata::build("create", r#"Create the payment address for specified payment method.
-
-        Take note that this command will be removed in one of the future releases in favor `payment-address new` command."#)
+    command!(CommandMetadata::build("create", r#"Create the payment address for specified payment method. TAKE NOTE that this command will be removed in one of the future releases in favor `payment-address new` command."#)
                 .add_required_param("payment_method", "Payment method to use")
                 .add_optional_param("seed", "Seed for creating payment address")
                 .add_example("payment-address create payment_method=sov")
