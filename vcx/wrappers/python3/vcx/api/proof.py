@@ -30,10 +30,40 @@ class Proof(VcxStateful):
         :param source_id: Tag associated by user of sdk
         :param name: Name of the Proof
         :param requested_attrs: Attributes associated with the Proof
+           {
+               "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+               "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                                    // NOTE: should either be "name" or "names", not both and not none of them.
+                                                    // Use "names" to specify several attributes that have to match a single credential.
+               "restrictions":  (filter_json) {
+                  "schema_id": string, (Optional)
+                  "schema_issuer_did": string, (Optional)
+                  "schema_name": string, (Optional)
+                  "schema_version": string, (Optional)
+                  "issuer_did": string, (Optional)
+                  "cred_def_id": string, (Optional)
+              },
+               "non_revoked": {
+                   "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+                   "to": Optional<(u64)>
+                       //Requested time represented as a total number of seconds from Unix Epoch, Optional
+               }
+           }
+        :param requested_predicates: Predicates associated with the Proof
+           { // set of requested predicates
+              "name": attribute name, (case insensitive and ignore spaces)
+              "p_type": predicate type (Currently ">=" only)
+              "p_value": int predicate value
+              "restrictions": Optional<filter_json>, // see above
+              "non_revoked": Optional<{
+                  "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+                  "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+              }>
+           }
         :param revocation_interval: interval applied to all requested attributes indicating when the claim must be valid (NOT revoked)
         Example:
         name = "proof name"
-        requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
+        requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "names":["name", "male"], "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
         revocation_interval = {"from": 1, "to": 2}  // Both values are optional
         proof = await Proof.create(source_id, name, requested_attrs)
         :return: Proof Object
