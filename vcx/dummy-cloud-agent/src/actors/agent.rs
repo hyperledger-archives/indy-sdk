@@ -739,7 +739,7 @@ mod tests {
 
     #[test]
     fn agent_create_key_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .and_then(|()| {
                     setup_agent(forward_agent)
@@ -823,7 +823,7 @@ mod tests {
 
     #[test]
     fn agent_configs_happy_path() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .and_then(|()| {
                     setup_agent(forward_agent)
