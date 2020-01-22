@@ -486,7 +486,7 @@ impl WalletStrategy for DatabasePerWalletStrategy {
         match env_logger::try_init() {
             Ok(_) => {}
             Err(_) => {
-                error!("failed to init logging, probably already initialized");
+                debug!("failed to init logging, probably already initialized");
             }
         }
         // no-op
@@ -657,7 +657,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         match env_logger::try_init() {
             Ok(_) => {}
             Err(_) => {
-                error!("failed to init logging, probably already initialized");
+                debug!("failed to init logging, probably already initialized");
             }
         }
         debug!("Entering init_storage");

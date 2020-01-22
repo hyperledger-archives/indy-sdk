@@ -1741,7 +1741,8 @@ mod tests {
     fn _wallet_config_multi() -> Option<CString> {
         let config = Some(json!({
             "url": "localhost:5432".to_owned(),
-            "wallet_scheme": "MultiWalletSingleTable".to_owned()
+            "wallet_scheme": "MultiWalletSingleTable".to_owned(),
+            "database_name": "multi_wallet_db".to_owned()
         }).to_string());
         config.map(CString::new)
             .map_or(Ok(None), |r| r.map(Some)).unwrap()
