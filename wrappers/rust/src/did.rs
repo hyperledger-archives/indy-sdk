@@ -108,6 +108,7 @@ fn _replace_keys_apply(command_handle: CommandHandle, wallet_handle: WalletHandl
 
 /// Saves their DID for a pairwise connection in a secured Wallet,
 /// so that it can be used to verify transaction.
+/// Updates DID associated verkey in case DID already exists in the Wallet.
 ///
 /// # Arguments
 /// * `wallet_handle` - wallet handler (created by Wallet::open).
@@ -116,7 +117,9 @@ fn _replace_keys_apply(command_handle: CommandHandle, wallet_handle: WalletHandl
 /// * `identity_json`
 ///     {
 ///        "did": string, (required)
-///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+///        "verkey": string
+///             - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+///             - mandatory in case of updating an existing DID
 ///     }
 pub fn store_their_did(wallet_handle: WalletHandle, identity_json: &str) -> Box<dyn Future<Item=(), Error=IndyError>> {
     let (receiver, command_handle, cb) = ClosureHandler::cb_ec();

@@ -342,9 +342,17 @@ public class Did extends IndyJava.API {
 
 	/**
 	 * Saves their DID for a pairwise connection in a secured Wallet so that it can be used to verify transaction.
+	 * Updates DID associated verkey in case DID already exists in the Wallet.
 	 *
 	 * @param wallet       The wallet.
 	 * @param identityJson Identity information as json.
+	 *     {
+	 *        "did": string, (required)
+	 *        "verkey": string
+	 *                     - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+	 *                     - mandatory in case of updating an existing DID
+	 *     }
+	 *
 	 * @return A future that does not resolve any value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
