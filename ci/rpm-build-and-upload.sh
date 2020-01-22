@@ -14,11 +14,12 @@ package="$6"
 dir=$(pwd)
 result_dir=$(pwd)/rpms
 
-[ -z $version ] && exit 1
-[ -z $key ] && exit 2
-[ -z $type ] && exit 3
-[ -z $release ] && exit 4
-[ -z $package ] && exit 5
+[ -z $version   ] && exit 1
+[ -z $release   ] && exit 2
+[ -z $key       ] && exit 3
+[ -z $repo_pass ] && exit 4
+[ -z $type      ] && exit 5
+[ -z $package   ] && exit 6
 
 sed \
 	-e "s|@version@|$version|g" \
