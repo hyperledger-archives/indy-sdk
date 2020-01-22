@@ -1019,8 +1019,6 @@ def rpmPublishing(testEnv, directory, packageName, version, inStashName) {
     }
 }
 
-def getRpmSnapshotTag()
-
 def ubuntuPublishing() {
     stage('Ubuntu Publishing') {
         def libindyVersion = linuxPublishing("ci/ubuntu.dockerfile ci", Ubuntu16, true)
@@ -1554,7 +1552,7 @@ def publishingRCtoStable() {
                 publishLibvcxDebRCtoStable(testEnv, env_name)
 
                 echo 'Moving RC artifacts to Stable: Build Centos docker image for wrappers publishing'
-                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu18.dockerfile libindy/ci')
+                testEnv = dockerBuild('indy-sdk', 'libindy/ci/centos.dockerfile libindy/ci')
 
                 env_name = Centos
 
