@@ -366,28 +366,7 @@ mod test_store_their_did {
 
         did::store_their_did(wallet.handle, &config).wait().unwrap();
 
-        let result = did::store_their_did(wallet.handle, &config).wait();
-
-        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err().error_code);
-    }
-
-    #[test]
-    /*
-    This test resulted from the ticket https://jira.hyperledger.org/browse/IS-802
-    Previously, an error was being thrown because rollback wasn't happening.
-    This test ensures the error is no longer occuring.
-    */
-    fn store_their_did_multiple_error_fixed() {
-        let wallet = Wallet::new();
-        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
-
         did::store_their_did(wallet.handle, &config).wait().unwrap();
-
-        let result = did::store_their_did(wallet.handle, &config).wait();
-        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err().error_code);
-
-        let result = did::store_their_did(wallet.handle, &config).wait();
-        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err().error_code);
     }
 }
 

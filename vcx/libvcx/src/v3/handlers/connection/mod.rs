@@ -116,12 +116,12 @@ pub mod tests {
                 assert_eq!(0, messages.len());
             }
 
-            // Send Generic Message works
+            // Send Basic Message works
             {
                 faber.activate();
 
-                let generic_message = r#"{"field":"value"}"#;
-                ::connection::send_generic_message(faber.connection_handle, generic_message, "").unwrap();
+                let basic_message = r#"Hi there"#;
+                ::connection::send_generic_message(faber.connection_handle, basic_message, "").unwrap();
 
                 alice.activate();
 
@@ -132,7 +132,7 @@ pub mod tests {
                 let message = messages.values().next().unwrap().clone();
 
                 match message {
-                    A2AMessage::Generic(message) => assert_eq!(generic_message, message),
+                    A2AMessage::BasicMessage(message) => assert_eq!(basic_message, message.content),
                     _ => assert!(false)
                 }
                 ::connection::update_message_status(alice.connection_handle, uid).unwrap();

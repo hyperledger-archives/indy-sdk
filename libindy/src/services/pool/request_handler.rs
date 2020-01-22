@@ -64,6 +64,10 @@ enum RequestState<T: Networker> {
     Finish(FinishState),
 }
 
+/*
+ The Generator is used for multi-signature verification.
+ It must be the same as on the Ledger side otherwise signatures verification will fail.
+*/
 pub const DEFAULT_GENERATOR: &str = "3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX";
 
 impl<T: Networker> RequestSM<T> {
