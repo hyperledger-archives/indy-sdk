@@ -444,7 +444,9 @@ impl Prover {
                                              extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<Query> {
         info!("name: {:?}, names: {:?}", name, names);
 
-        let mut queries: Vec<Query> = if let Some(names) = names.as_ref().or(name.as_ref().map(|s| vec![s.clone()]).as_ref()) {
+        let mut queries: Vec<Query> = Vec::new();
+        
+        let mut attr_queries: Vec<Query> = if let Some(names) = names.as_ref().or(name.as_ref().map(|s| vec![s.clone()]).as_ref()) {
             names.iter().map(|name| {
                 Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
             }).collect()
@@ -466,6 +468,10 @@ impl Prover {
         if let Some(extra_query_) = extra_query.as_ref().and_then(|query| query.get(referent)) {
             queries.push(extra_query_.clone())
         }
+
+        // put attr_queries last as this results in a better performing query with large datasets
+        // ref IS-1470
+        queries.append(&mut attr_queries);
 
         Ok(Query::And(queries))
     }
@@ -1024,11 +1030,11 @@ mod tests {
                                                              &None).unwrap();
 
             let expected_query = Query::And(vec![
-                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
                 Query::And(vec![
                     Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
                     Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
-                ])
+                ]),
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
             ]);
 
             assert_eq!(expected_query, query);
@@ -1050,8 +1056,8 @@ mod tests {
                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
-                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
                 Query::Eq("name".to_string(), "Alex".to_string()),
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
             ]);
 
             assert_eq!(expected_query, query);
@@ -1078,12 +1084,12 @@ mod tests {
                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
-                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
                 Query::And(vec![
                     Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
                     Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
                 ]),
                 Query::Eq("name".to_string(), "Alex".to_string()),
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
             ]);
 
             assert_eq!(expected_query, query);
@@ -1136,7 +1142,6 @@ mod tests {
                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
-                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
                 Query::Or(vec![
                     Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
                     Query::Eq("schema_id".to_string(), "schema_id_2".to_string()),
@@ -1144,7 +1149,8 @@ mod tests {
                 Query::Or(vec![
                     Query::Eq("name".to_string(), "Alex".to_string()),
                     Query::Eq("name".to_string(), "Alexander".to_string()),
-                ])
+                ]),
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
             ]);
 
             assert_eq!(expected_query, query);
