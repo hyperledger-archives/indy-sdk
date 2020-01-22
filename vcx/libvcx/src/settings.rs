@@ -353,7 +353,7 @@ pub enum Actors {
 pub const ARIES_COMMUNICATION_METHOD: &str = "aries";
 
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ProtocolTypes {
     #[serde(rename = "1.0")]
     V1,

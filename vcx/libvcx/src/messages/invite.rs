@@ -1,11 +1,11 @@
-use settings;
+use error::prelude::*;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
 use messages::thread::Thread;
+use utils::constants::DEFAULT_ACK_CONNECTION_VERSION;
 use utils::httpclient;
 use utils::constants::*;
 use utils::uuid::uuid;
-use error::prelude::*;
 use settings::ProtocolTypes;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -180,7 +180,8 @@ pub struct InviteDetail {
     pub sender_agency_detail: SenderAgencyDetail,
     pub target_name: String,
     pub status_msg: String,
-    pub thread_id: Option<String>
+    pub thread_id: Option<String>,
+    pub version: Option<settings::ProtocolTypes>
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -191,12 +192,14 @@ pub struct RedirectDetail {
     #[serde(rename = "verKey")]
     pub verkey: String,
     #[serde(rename = "publicDID")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub public_did: Option<String>,
     #[serde(rename = "theirDID")]
     pub their_did: String,
     #[serde(rename = "theirVerKey")]
     pub their_verkey: String,
     #[serde(rename = "theirPublicDID")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub their_public_did: Option<String>,
     pub signature: String,
 }
@@ -230,7 +233,9 @@ pub struct ConnectionRequestAnswerResponse {
     msg_type: MessageTypeV2,
     #[serde(rename = "@id")]
     id: String,
-    sent: bool,
+    sent: Option<bool>,
+    recipient_verkey: Option<String>,
+    sender_verkey: Option<String>
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -269,6 +274,7 @@ impl InviteDetail {
             target_name: String::new(),
             status_msg: String::new(),
             thread_id: None,
+            version: None
         }
     }
 }
@@ -330,11 +336,22 @@ impl SendInviteBuilder {
         Ok(())
     }
 
+    pub fn version(&mut self, version: &Option<String>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => settings::ProtocolTypes::from(version.to_string()),
+            None => settings::get_connecting_protocol_version()
+        };
+        Ok(self)
+    }
+
     pub fn send_secure(&mut self) -> VcxResult<(InviteDetail, String)> {
         trace!("SendInvite::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return self.parse_response(SEND_INVITE_RESPONSE.to_vec());
+            match self.version {
+                settings::ProtocolTypes::V1 => return self.parse_response(SEND_INVITE_RESPONSE.to_vec()),
+                settings::ProtocolTypes::V2 => return self.parse_response(SEND_INVITE_V2_RESPONSE.to_vec()),
+            }
         }
 
         let data = self.prepare_request()?;
@@ -349,7 +366,7 @@ impl SendInviteBuilder {
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<(InviteDetail, String)> {
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
-        let index = match settings::get_protocol_type() {
+        let index = match self.version {
             // TODO: THINK better
             settings::ProtocolTypes::V1 => 1,
             settings::ProtocolTypes::V2 => 0
@@ -395,7 +412,7 @@ impl AcceptInviteBuilder {
             agent_vk: String::new(),
             reply_to_msg_id: None,
             thread: Thread::new(),
-            version: settings::get_connecting_protocol_version()
+            version: DEFAULT_ACK_CONNECTION_VERSION.clone()
         }
     }
 
@@ -430,6 +447,14 @@ impl AcceptInviteBuilder {
         Ok(self)
     }
 
+    pub fn version(&mut self, version: Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version,
+            None => settings::get_connecting_protocol_version()
+        };
+        Ok(self)
+    }
+
     pub fn generate_signature(&mut self) -> VcxResult<()> {
         let signature = format!("{}{}", self.payload.key_dlg_proof.agent_did, self.payload.key_dlg_proof.agent_delegated_key);
         let signature = crypto::sign(&self.to_vk, signature.as_bytes())?;
@@ -442,7 +467,10 @@ impl AcceptInviteBuilder {
         trace!("AcceptInvite::send >>>");
 
         if settings::test_agency_mode_enabled() {
-            return self.parse_response(ACCEPT_INVITE_RESPONSE.to_vec());
+            match self.version {
+                settings::ProtocolTypes::V1 => return self.parse_response(ACCEPT_INVITE_RESPONSE.to_vec()),
+                settings::ProtocolTypes::V2 => return self.parse_response(ACCEPT_INVITE_V2_RESPONSE.to_vec()),
+            }
         }
 
         let data = self.prepare_request()?;
@@ -602,7 +630,7 @@ impl GeneralMessage for SendInviteBuilder {
         self.generate_signature()?;
 
         let messages =
-            match settings::get_protocol_type() {
+            match self.version {
                 settings::ProtocolTypes::V1 => {
                     let create_msg = CreateMessage {
                         msg_type: MessageTypes::build_v1(A2AMessageKinds::CreateMessage),
@@ -658,7 +686,7 @@ impl GeneralMessage for AcceptInviteBuilder {
         self.generate_signature()?;
 
         let messages =
-            match settings::get_protocol_type() {
+            match self.version {
                 settings::ProtocolTypes::V1 => {
                     let msg_created = CreateMessage {
                         msg_type: MessageTypes::build_v1(A2AMessageKinds::CreateMessage),
@@ -777,9 +805,9 @@ pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> VcxResult<Sender
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use messages::send_invite;
     use utils::libindy::signus::create_and_store_my_did;
+    use super::*;
 
     #[test]
     fn test_send_invite_set_values_and_post() {
@@ -806,13 +834,20 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_send_invite_response() {
+    fn test_parse_send_invite_v1_response() {
         init!("indy");
-        let (result, url) = SendInviteBuilder::create().parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
+        let (result, url) = SendInviteBuilder::create().version(&Some("1.0".to_string())).unwrap().parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
         let invite = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
 
         assert_eq!(result, invite);
         assert_eq!(url, "http://localhost:9001/agency/invite/WRUzXXuFVTYkT8CjSZpFvT?uid=NjcwOWU");
+    }
+
+    #[test]
+    fn test_parse_send_invite_v2_response() {
+        init!("indy");
+        let (_, _) = SendInviteBuilder::create().version(&Some("2.0".to_string())).unwrap().parse_response(SEND_INVITE_V2_RESPONSE.to_vec()).unwrap();
+        let _: InviteDetail = serde_json::from_str(INVITE_DETAIL_V2_STRING).unwrap();
     }
 
     #[test]

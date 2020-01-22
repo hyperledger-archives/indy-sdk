@@ -66,6 +66,14 @@ impl CreateKeyBuilder {
         Ok(self)
     }
 
+    pub fn version(&mut self, version: Option<ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version,
+            None => settings::get_connecting_protocol_version(),
+        };
+        Ok(self)
+    }
+
     pub fn send_secure(&self) -> VcxResult<(String, String)> {
         trace!("CreateKeyMsg::send >>>");
 

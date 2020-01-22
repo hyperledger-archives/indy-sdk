@@ -1,26 +1,26 @@
+use std::collections::HashMap;
+
+use rmp_serde;
 use serde_json;
 use serde_json::Value;
-use rmp_serde;
 
 use api::VcxStateType;
-use settings;
-use messages;
-use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, to_u8, SerializableObjectWithState};
-use messages::invite::{InviteDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectionDetails, RedirectDetail};
-use messages::payload::Payloads;
-use messages::thread::Thread;
-use messages::get_message::{Message, MessagePayload};
-use messages::send_message::SendMessageOptions;
-use messages::update_connection::send_delete_connection_message;
-use messages::payload::PayloadKinds;
-use object_cache::ObjectCache;
 use error::prelude::*;
+use messages;
+use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion, to_u8, SerializableObjectWithState};
+use messages::invite::{InviteDetail, RedirectDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectionDetails};
+use messages::payload::{Payloads, PayloadKinds};
+use messages::thread::Thread;
+use messages::send_message::SendMessageOptions;
+use messages::get_message::{Message, MessagePayload};
+use object_cache::ObjectCache;
+use settings;
+use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::error;
 use utils::libindy::signus::create_my_did;
 use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
 use utils::json::KeyMatch;
-use std::collections::HashMap;
 
 use v3::handlers::connection::connection::Connection as ConnectionV3;
 use v3::handlers::connection::states::ActorDidExchangeState;
@@ -93,7 +93,8 @@ struct Connection {
     // used by proofs/credentials when sending to edge device
     public_did: Option<String>,
     their_public_did: Option<String>,
-    version: Option<ProtocolTypes>
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<settings::ProtocolTypes>
 }
 
 
@@ -120,14 +121,20 @@ impl Connection {
         Ok(error::SUCCESS.code_num)
     }
 
-    pub fn delete_connection(&mut self) -> VcxResult<()> {
+    pub fn delete_connection(&mut self) -> VcxResult<u32> {
         trace!("Connection::delete_connection >>>");
 
-        send_delete_connection_message(&self.pw_did, &self.pw_verkey, &self.agent_did, &self.agent_vk)?;
+        messages::delete_connection()
+            .to(&self.pw_did)?
+            .to_vk(&self.pw_verkey)?
+            .agent_did(&self.agent_did)?
+            .agent_vk(&self.agent_vk)?
+            .send_secure()
+            .map_err(|err| err.extend("Cannot delete connection"))?;
 
         self.state = VcxStateType::VcxStateNone;
 
-        Ok(())
+        Ok(error::SUCCESS.code_num)
     }
 
     fn _connect_accept_invite(&mut self) -> VcxResult<u32> {
@@ -146,6 +153,7 @@ impl Connection {
             .answer_status_code(&MessageStatusCode::Accepted)?
             .reply_to(&details.conn_req_id)?
             .thread(&self._build_thread(&details))?
+            .version(self.version.clone())?
             .send_secure()
             .map_err(|err| err.extend("Cannot accept invite"))?;
 
@@ -269,20 +277,51 @@ impl Connection {
     fn set_endpoint(&mut self, endpoint: &str) { self.endpoint = endpoint.to_string(); }
 
     fn get_invite_detail(&self) -> &Option<InviteDetail> { &self.invite_detail }
-    fn set_invite_detail(&mut self, invite_detail: InviteDetail) { self.invite_detail = Some(invite_detail); }
+    fn set_invite_detail(&mut self, id: InviteDetail) {
+        self.version = match id.version.is_some() {
+            true => Some(settings::ProtocolTypes::from(id.version.clone().unwrap())),
+            false => Some(settings::get_connecting_protocol_version()),
+        };
+        self.invite_detail = Some(id);
+    }
 
     #[allow(dead_code)]
     fn get_redirect_detail(&self) -> &Option<RedirectDetail> { &self.redirect_detail }
     fn set_redirect_detail(&mut self, rd: RedirectDetail) { self.redirect_detail = Some(rd); }
 
+    fn get_version(&self) -> Option<settings::ProtocolTypes> {
+        self.version.clone()
+    }
 
     fn get_source_id(&self) -> &String { &self.source_id }
+
+    fn ready_to_connect(&self) -> bool {
+        self.state != VcxStateType::VcxStateNone && self.state != VcxStateType::VcxStateAccepted
+    }
+
+    fn from_str(data: &str) -> VcxResult<Self> {
+        ObjectWithVersion::deserialize(data)
+            .map(|obj: ObjectWithVersion<Self>| obj.data)
+            .map_err(|err| err.extend("Cannot deserialize Connection"))
+    }
+
+    fn to_string(&self) -> VcxResult<String> {
+        ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
+            .serialize()
+            .map_err(|err| err.extend("Cannot serialize Connection"))
+    }
 
     fn create_agent_pairwise(&mut self) -> VcxResult<u32> {
         debug!("creating pairwise keys on agent for connection {}", self.source_id);
 
-        let (for_did, for_verkey) = create_agent_keys(&self.source_id, &self.pw_did, &self.pw_verkey)?;
+        let (for_did, for_verkey) = messages::create_keys()
+            .for_did(&self.pw_did)?
+            .for_verkey(&self.pw_verkey)?
+            .version(self.version.clone())?
+            .send_secure()
+            .map_err(|err| err.extend("Cannot create pairwise keys"))?;
 
+        debug!("create key for connection: {} with did {:?}, vk: {:?}", self.source_id, for_did, for_verkey);
         self.set_agent_did(&for_did);
         self.set_agent_verkey(&for_verkey);
 
@@ -907,7 +946,8 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
                 connection.delete_connection()
             }
             Connections::V3(ref mut connection) => {
-                connection.delete()
+                connection.delete()?;
+                Ok(error::SUCCESS.code_num)
             }
         }
     })
@@ -1298,12 +1338,14 @@ pub fn send_discovery_features(connection_handle: u32, query: Option<String>, co
 
 #[cfg(test)]
 pub mod tests {
-    use utils::constants::*;
-    use utils::httpclient;
-    use messages::get_message::*;
     use std::thread;
     use std::time::Duration;
+
+    use messages::get_message::*;
+    use utils::constants::*;
     use utils::constants::INVITE_DETAIL_STRING;
+    use utils::httpclient;
+
     use super::*;
 
     pub fn build_test_connection() -> u32 {
@@ -1615,50 +1657,50 @@ pub mod tests {
     #[test]
     fn test_invite_detail_abbr2() {
         let un_abbr = json!({
-"statusCode": "MS-102",
-"connReqId": "yta2odh",
-"senderDetail":{
-"name": "ent-name",
-"agentKeyDlgProof":{
-"agentDID": "N2Uyi6SVsHZq1VWXuA3EMg",
-"agentDelegatedKey": "CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
-"signature":"/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg=="
-},
-"DID": "F2axeahCaZfbUYUcKefc3j",
-"logoUrl": "ent-logo-url",
-"verKey": "74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx"
-},
-"senderAgencyDetail":{
-"DID": "BDSmVkzxRYGE4HKyMKxd1H",
-"verKey": "6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
-"endpoint":"52.38.32.107:80/agency/msg"
-},
-"targetName": "there",
-"statusMsg": "message sent"
+  "statusCode":"MS-102",
+  "connReqId":"yta2odh",
+  "senderDetail":{
+    "name":"ent-name",
+    "agentKeyDlgProof":{
+      "agentDID":"N2Uyi6SVsHZq1VWXuA3EMg",
+      "agentDelegatedKey":"CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
+      "signature":"/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg=="
+    },
+    "DID":"F2axeahCaZfbUYUcKefc3j",
+    "logoUrl":"ent-logo-url",
+    "verKey":"74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx"
+  },
+  "senderAgencyDetail":{
+    "DID":"BDSmVkzxRYGE4HKyMKxd1H",
+    "verKey":"6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
+    "endpoint":"52.38.32.107:80/agency/msg"
+  },
+  "targetName":"there",
+  "statusMsg":"message sent"
 });
 
         let abbr = json!({
-"sc": "MS-102",
-"id": "yta2odh",
-"s": {
-"n": "ent-name",
-"dp": {
-"d": "N2Uyi6SVsHZq1VWXuA3EMg",
-"k": "CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
-"s":
-"/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg==",
-},
-"d": "F2axeahCaZfbUYUcKefc3j",
-"l": "ent-logo-url",
-"v": "74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx",
-},
-"sa": {
-"d": "BDSmVkzxRYGE4HKyMKxd1H",
-"v": "6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
-"e": "52.38.32.107:80/agency/msg",
-},
-"t": "there",
-"sm": "message sent"
+  "sc":"MS-102",
+  "id": "yta2odh",
+  "s": {
+    "n": "ent-name",
+    "dp": {
+      "d": "N2Uyi6SVsHZq1VWXuA3EMg",
+      "k": "CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
+      "s":
+        "/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg==",
+    },
+    "d": "F2axeahCaZfbUYUcKefc3j",
+    "l": "ent-logo-url",
+    "v": "74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx",
+  },
+  "sa": {
+    "d": "BDSmVkzxRYGE4HKyMKxd1H",
+    "v": "6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
+    "e": "52.38.32.107:80/agency/msg",
+  },
+  "t": "there",
+  "sm":"message sent"
 });
         let processed = abbrv_event_detail(un_abbr.clone()).unwrap();
         assert_eq!(processed, abbr);
@@ -1785,5 +1827,74 @@ pub mod tests {
         let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
         let handle = create_connection_with_invite("alice", &details).unwrap();
         assert_eq!(release(handle).unwrap(), ());
+    }
+    #[test]
+    fn test_different_protocol_version() {
+        init!("true");
+
+        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
+        let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
+        let details = serde_json::to_string(&unabbrv_details).unwrap();
+
+        let handle = create_connection_with_invite("alice", &details).unwrap();
+        let serialized = to_string(handle).unwrap();
+        println!("{}", serialized);
+        let details = r#"{"version":"2.0","id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
+                let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
+        let details = serde_json::to_string(&unabbrv_details).unwrap();
+
+        let handle = create_connection_with_invite("alice", &details).unwrap();
+        let serialized = to_string(handle).unwrap();
+        println!("{}", serialized);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_connection_redirection_real() {
+        init!("agency");
+        //0. Create initial connection
+        let (faber, alice) = ::connection::tests::create_connected_connections();
+
+        //1. Faber sends another invite
+        ::utils::devsetup::tests::set_institution(); //Faber to Alice
+        let alice2 = create_connection("alice2").unwrap();
+        let my_public_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let options = json!({"use_public_did": true}).to_string();
+        connect(alice2, Some(options)).unwrap();
+        let details_for_alice2 = get_invite_details(alice2, false).unwrap();
+        println!("alice2 details: {}", details_for_alice2);
+
+        //2. Alice receives (recognizes that there is already a connection), calls different api (redirect rather than regular connect)
+        //BE CONSUMER AND REDIRECT INVITE FROM INSTITUTION
+        ::utils::devsetup::tests::set_consumer();
+        let faber_duplicate = create_connection_with_invite("faber_duplicate", &details_for_alice2).unwrap();
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(faber_duplicate));
+        redirect(faber_duplicate, faber).unwrap();
+        let public_did = get_their_public_did(faber_duplicate).unwrap().unwrap();
+        assert_eq!(my_public_did, public_did);
+
+        //3. Faber waits for redirect state change
+        //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
+        ::utils::devsetup::tests::set_institution();
+        thread::sleep(Duration::from_millis(2000));
+        update_state(alice2, None).unwrap();
+        assert_eq!(VcxStateType::VcxStateRedirected as u32, get_state(alice2));
+
+        //4. Faber calls 'get_redirect_data' and based on data, finds old connection  (business logic of enterprise)
+        let redirect_data = get_redirect_details(alice2).unwrap();
+        println!("redirect_data: {}", redirect_data);
+
+        let rd: RedirectDetail = serde_json::from_str(&redirect_data).unwrap();
+        let alice_serialized = to_string(alice).unwrap();
+        let to_alice_old = Connection::from_str(&alice_serialized).unwrap();
+
+        // Assert redirected data match old connection to alice
+        assert_eq!(rd.did, to_alice_old.pw_did);
+        assert_eq!(rd.verkey, to_alice_old.pw_verkey);
+        assert_eq!(rd.public_did, to_alice_old.public_did);
+        assert_eq!(rd.their_did, to_alice_old.their_pw_did);
+        assert_eq!(rd.their_verkey, to_alice_old.their_pw_verkey);
+        assert_eq!(rd.their_public_did, to_alice_old.their_public_did);
     }
 }
