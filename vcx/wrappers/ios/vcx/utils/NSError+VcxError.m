@@ -15,11 +15,14 @@ static NSString *const VcxErrorDomain = @"VcxErrorDomain";
 {
     NSMutableDictionary *userInfo = [NSMutableDictionary new];
 
-    if (error != Success) {
+    if (error != 0) {
         const char * error_json_p;
             vcx_get_current_error(&error_json_p);
 
-            NSString *errorDetailsJson = [NSString stringWithUTF8String:error_json_p];
+            NSString *errorDetailsJson = nil;
+            if (error_json_p) {
+                errorDetailsJson = [NSString stringWithUTF8String:error_json_p];
+            }
 
             NSError *error;
             NSDictionary *errorDetails = [NSJSONSerialization JSONObjectWithData:[NSData dataWithBytes:[errorDetailsJson UTF8String]
@@ -27,7 +30,7 @@ static NSString *const VcxErrorDomain = @"VcxErrorDomain";
                                                                                             options:kNilOptions
                                                                                             error: &error];
 
-           [userInfo setValue:errorDetails[@"error"] forKey:@"sdk_message"];
+            [userInfo setValue:errorDetails[@"error"] forKey:@"sdk_message"];
             [userInfo setValue:errorDetails[@"message"] forKey:@"sdk_full_message"];
             [userInfo setValue:errorDetails[@"cause"] forKey:@"sdk_cause"];
             [userInfo setValue:errorDetails[@"backtrace"] forKey:@"sdk_backtrace"];

@@ -322,7 +322,9 @@ namespace Hyperledger.Indy.DidApi
         /// <code>
         /// {
         ///        "did": string, (required)
-        ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+        ///        "verkey": string
+        ///             - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+        ///             - mandatory in case of updating an existing DID
         /// }
         /// </code>
         /// <para>The <c>did</c> member specifies the DID to store.  This value is required.</para>
