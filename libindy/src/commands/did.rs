@@ -275,7 +275,7 @@ impl DidCommandExecutor {
 
         let their_did = self.crypto_service.create_their_did(their_did_info)?;
 
-        self.wallet_service.add_indy_object(wallet_handle, &their_did.did.0, &their_did, &HashMap::new())?;
+        self.wallet_service.upsert_indy_object(wallet_handle, &their_did.did.0, &their_did)?;
 
         debug!("store_their_did <<<");
 
