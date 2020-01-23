@@ -13,7 +13,7 @@ use domain::status::*;
 use env_logger;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{self, did, wallet, crypto};
+use indy::{self, did, wallet, crypto, WalletHandle};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -38,7 +38,7 @@ pub const EDGE_PAIRWISE_DID_2: &'static str = "WNnf2uJPZNmvMmA6LkdVAp";
 pub const EDGE_PAIRWISE_DID_INFO_2: &'static str = "{\"did\": \"WNnf2uJPZNmvMmA6LkdVAp\", \"seed\": \"0000000000000000000EdgePairwise2\"}";
 pub const EDGE_PAIRWISE_DID_VERKEY_2: &'static str = "H1d58X25s91rTXdd46hTfn7mhtPmohQFYRHD379UtytR";
 
-pub static mut FORWARD_AGENT_WALLET_HANDLE: i32 = 0;
+pub static mut FORWARD_AGENT_WALLET_HANDLE: WalletHandle = WalletHandle(0);
 pub const FORWARD_AGENT_WALLET_ID: &'static str = "forward_agent_wallet_id";
 pub const FORWARD_AGENT_WALLET_CONFIG: &'static str = "{\"id\": \"forward_agent_wallet_id\"}";
 pub const FORWARD_AGENT_WALLET_PASSPHRASE: &'static str = "forward_agent_wallet_passphrase";
@@ -137,8 +137,8 @@ pub fn run_test<F, B>(f: F)
 
 pub fn run_agent_test<F, B>(f: F)
     where
-        F: FnOnce((i32, String, String, String, String, Addr<ForwardAgent>)) -> B + 'static,
-        B: IntoFuture<Item=i32, Error=Error> + 'static {
+        F: FnOnce((WalletHandle, String, String, String, String, Addr<ForwardAgent>)) -> B + 'static,
+        B: IntoFuture<Item=WalletHandle, Error=Error> + 'static {
     run_test(|forward_agent, admin| {
         future::ok(())
             .and_then(|()| {
@@ -151,8 +151,8 @@ pub fn run_agent_test<F, B>(f: F)
 
 pub fn run_admin_test<F, B>(f: F)
     where
-        F: FnOnce((i32, String, String, String, String, Addr<ForwardAgent>, Addr<Admin>)) -> B + 'static,
-        B: IntoFuture<Item=i32, Error=Error> + 'static {
+        F: FnOnce((WalletHandle, String, String, String, String, Addr<ForwardAgent>, Addr<Admin>)) -> B + 'static,
+        B: IntoFuture<Item=WalletHandle, Error=Error> + 'static {
     run_test(|forward_agent, admin| {
         future::ok(())
             .and_then(|()| {
@@ -165,7 +165,7 @@ pub fn run_admin_test<F, B>(f: F)
     })
 }
 
-pub fn setup_agent(forward_agent: Addr<ForwardAgent>) -> ResponseFuture<(i32, String, String, String, String, Addr<ForwardAgent>), Error> {
+pub fn setup_agent(forward_agent: Addr<ForwardAgent>) -> ResponseFuture<(WalletHandle, String, String, String, String, Addr<ForwardAgent>), Error> {
     future::ok(())
         .and_then(|()| {
             let e_wallet_handle = edge_wallet_setup().wait().unwrap();
@@ -231,7 +231,7 @@ pub fn wallet_storage_config() -> WalletStorageConfig {
     }
 }
 
-pub fn edge_wallet_setup() -> BoxedFuture<i32, Error> {
+pub fn edge_wallet_setup() -> BoxedFuture<WalletHandle, Error> {
     future::ok(())
         .and_then(|_| {
             wallet::create_wallet(EDGE_AGENT_WALLET_CONFIG, EDGE_AGENT_WALLET_CREDENTIALS)

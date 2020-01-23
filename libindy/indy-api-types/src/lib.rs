@@ -11,6 +11,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
+#[cfg(feature = "casting_errors")]
 extern crate zmq;
 
 pub type IndyHandle = i32;

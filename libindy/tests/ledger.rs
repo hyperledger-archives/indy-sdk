@@ -4,8 +4,6 @@ extern crate indyrs as api;
 use std::collections::HashMap;
 use std::thread;
 
-use crate::api::INVALID_POOL_HANDLE;
-use crate::api::INVALID_WALLET_HANDLE;
 #[cfg(feature = "local_nodes_pool")]
 use crate::utils::{anoncreds, did, ledger, pool};
 use crate::utils::constants::*;

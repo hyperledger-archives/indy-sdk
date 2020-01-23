@@ -53,11 +53,11 @@ pub use ffi::{
     WalletHandle,
     PoolHandle,
     SearchHandle,
-    StorageHandle
+    StorageHandle,
+    INVALID_WALLET_HANDLE,
+    INVALID_POOL_HANDLE,
+    INVALID_COMMAND_HANDLE
 };
-
-pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0); // TODO: FIXME remove it
-pub const INVALID_POOL_HANDLE : PoolHandle = 0;  // TODO: FIXME remove it
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///

@@ -8,10 +8,8 @@ links = "indy"
 license = "MIT/Apache-2.0"
 
 [dependencies]
+indy-api-types = { path = "../../../libindy/indy-api-types", default-features = false}
 libc = "=0.2.60"
-serde_json = "1.0.40"
-serde_derive = "1.0.97"
-serde = "1.0.97"
 
 [build-dependencies]
 pkg-config = "0.3.9"

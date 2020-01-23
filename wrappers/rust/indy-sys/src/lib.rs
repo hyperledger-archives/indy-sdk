@@ -1,8 +1,5 @@
 extern crate libc;
 
-#[macro_use] extern crate serde_derive;
-extern crate serde;
-
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod crypto;
@@ -16,20 +13,20 @@ pub mod wallet;
 pub mod logger;
 pub mod cache;
 
+extern crate indy_api_types;
+
 use self::libc::{c_void, c_char};
 
 pub type CVoid = c_void;
 pub type BString = *const u8;
 pub type CString = *const c_char;
 
-#[repr(transparent)]
-#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
-pub struct WalletHandle(pub i32);
+pub use indy_api_types::{WalletHandle, INVALID_WALLET_HANDLE};
+pub use indy_api_types::{PoolHandle, INVALID_POOL_HANDLE};
+pub use indy_api_types::{CommandHandle, INVALID_COMMAND_HANDLE};
 
 //pub type Handle = i32;
 pub type IndyHandle = i32;
-pub type CommandHandle = i32;
-pub type PoolHandle = i32;
 pub type SearchHandle = i32;
 pub type RecordHandle = i32;
 pub type TailWriterHandle = i32;
@@ -41,8 +38,6 @@ pub type Timeout = i32;
 pub type TailsWriterHandle = i32;
 
 pub type Error = i32;
-
-pub const INVALID_POOL_HANDLE: PoolHandle = 0;
 
 pub type ResponseEmptyCB = extern fn(xcommand_handle: CommandHandle, err: Error);
 pub type ResponseBoolCB = extern fn(xcommand_handle: CommandHandle, err: Error, bool1: bool);
