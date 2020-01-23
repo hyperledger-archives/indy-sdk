@@ -1,0 +1,21 @@
+@startuml
+title
+ DisclosedProof API as Prover
+
+ The diagram shows DisclosedProof object state transitions in case acting as a Prover.
+end title
+
+[*] --> VcxStateRequestReceived: vcx_disclosed_proof_create_with_request
+
+VcxStateRequestReceived --> VcxStateRequestReceived: vcx_disclosed_proof_generate_proof
+
+VcxStateRequestReceived --> VcxStateOfferSent: vcx_disclosed_proof_send_proof
+
+VcxStateRequestReceived --> VcxStateNone: vcx_disclosed_proof_decline_presentation_request
+
+note left of VcxStateOfferSent : use vcx_disclosed_proof_update_state \n or vcx_disclosed_proof_update_state_with_message \n for connection status updates
+
+VcxStateOfferSent --> VcxStateAccepted: received `Ack` message
+VcxStateOfferSent --> VcxStateNone: received `ProblemReport` message
+
+@enduml
