@@ -409,7 +409,7 @@ mod tests {
 
     #[test]
     fn forward_agent_connection_signup_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .and_then(|()| {
                     let e_wallet_handle = edge_wallet_setup().wait().unwrap();
@@ -443,7 +443,7 @@ mod tests {
 
     #[test]
     fn forward_agent_connection_create_agent_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .and_then(|()| {
                     let e_wallet_handle = edge_wallet_setup().wait().unwrap();
