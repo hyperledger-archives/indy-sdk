@@ -1,7 +1,6 @@
 {
   "app": {
-    "prefix": "/agency",
-    "enable_admin_api": true
+    "prefix": "/agency"
   },
   "forward_agent": {
     "did": "VsKV7grR1BUE29mG2Fm2kX",
@@ -15,6 +14,12 @@
       "127.0.0.1:8080"
     ],
     "workers": 1
+  },
+  "server_admin": {
+    "enabled": false,
+    "addresses": [
+      "127.0.0.1:8090"
+    ]
   },
   "wallet_storage": {
     "config": {
@@ -33,6 +38,9 @@
     "type": "postgres_storage",
     "plugin_init_function": null,
     "plugin_library_path": null
+  },
+  "indy_runtime": {
+    "crypto_thread_pool_size": 4
   },
   "protocol_type": "1.0"
 }

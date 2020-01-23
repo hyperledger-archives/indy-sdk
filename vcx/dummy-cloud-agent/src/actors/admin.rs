@@ -4,7 +4,7 @@ use failure::{Error, err_msg};
 use std::collections::HashMap;
 use domain::admin_message::{AdminQuery, ResAdminQuery, ResQueryAdmin};
 use utils::futures::FutureExt;
-use futures::{Future};
+use futures::Future;
 use futures::future::ok;
 
 pub struct Admin {
@@ -149,5 +149,124 @@ impl Handler<AdminRegisterRouter> for Admin {
     fn handle(&mut self, _msg: AdminRegisterRouter, _cnxt: &mut Self::Context) -> Self::Result {
         trace!("Admin Handler<AdminRegisterRouter>::handle >>", );
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use utils::tests::*;
+    use regex::Regex;
+    use domain::admin_message::{GetDetailAgentParams, GetDetailAgentConnParams};
+
+    #[test]
+    fn get_actor_overview_returns_info() {
+        let legacy_or_qualified_did_regex = Regex::new("^[a-z0-9]+:([a-z0-9]+):(.*)$|[a-zA-Z0-9]{21,}").unwrap();
+
+        run_admin_test(|(e_wallet_handle, _, _, _, _, _, admin)| {
+            admin
+                .send(HandleAdminMessage(AdminQuery::GetActorOverview))
+                .from_err()
+                .map(move |res| {
+                    if let Ok(ResAdminQuery::Admin(details)) = res {
+                        assert_eq!(details.forward_agent_connections.len(), 1);
+                        assert!(legacy_or_qualified_did_regex.is_match(&details.forward_agent_connections[0]));
+                        assert_eq!(details.agents.len(), 1);
+                        assert!(legacy_or_qualified_did_regex.is_match(&details.agents[0]));
+                        assert_eq!(details.agent_connections.len(), 1);
+                        assert!(legacy_or_qualified_did_regex.is_match(&details.agent_connections[0]));
+                    } else {
+                        panic!("Response was expected to be AdminQuery::GetActorOverview variant, but got {:?}", res);
+                    }
+                    e_wallet_handle
+                })
+        });
+    }
+
+    #[test]
+    fn get_agent_detail_returns_info() {
+        let legacy_or_qualified_did_regex = Regex::new("^[a-z0-9]+:([a-z0-9]+):(.*)$|[a-zA-Z0-9]{21,}").unwrap();
+        let verkey_regex = Regex::new("[a-zA-Z0-9]{42,46}").unwrap();
+
+        run_admin_test(|(e_wallet_handle, _, _, _, _, _, admin)| {
+            admin.clone()
+                .send(HandleAdminMessage(AdminQuery::GetActorOverview))
+                .from_err()
+                .map(move |res| {
+                    if let Ok(ResAdminQuery::Admin(details)) = res {
+                        details.agents[0].to_owned()
+                    } else {
+                        panic!("Response was expected to be ResAdminQuery::Admin variant.");
+                    }
+                })
+                .and_then(move |agent_did| {
+                    admin
+                        .send(HandleAdminMessage(AdminQuery::GetDetailAgent(GetDetailAgentParams { agent_did: agent_did.clone() })))
+                        .from_err()
+                        .map(move |res| {
+                            if let Ok(ResAdminQuery::Agent(res_query_agent)) = res {
+                                assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent.owner_did));
+                                assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent.did));
+                                assert!(verkey_regex.is_match(&res_query_agent.owner_verkey));
+                                assert!(verkey_regex.is_match(&res_query_agent.verkey));
+                                assert_eq!(res_query_agent.configs.len(), 0);
+                                assert_eq!(res_query_agent.did, agent_did);
+                            } else {
+                                panic!("Response was expected to be AdminQuery::GetDetailAgent variant, but got {:?}", res);
+                            }
+                        })
+                })
+                .map(move |_| {
+                    e_wallet_handle
+                })
+        })
+    }
+
+
+    #[test]
+    fn get_agent_connection_detail_returns_info() {
+        let legacy_or_qualified_did_regex = Regex::new("^[a-z0-9]+:([a-z0-9]+):(.*)$|[a-zA-Z0-9]{21,}").unwrap();
+        let verkey_regex = Regex::new("[a-zA-Z0-9]{42,46}").unwrap();
+
+        run_admin_test(|(e_wallet_handle, _, _, _, _, _, admin)| {
+            admin.clone()
+                .send(HandleAdminMessage(AdminQuery::GetActorOverview))
+                .from_err()
+                .map(move |res| {
+                    if let Ok(ResAdminQuery::Admin(details)) = res {
+                        details.agent_connections[0].to_owned()
+                    } else {
+                        panic!("Response was expected to be ResAdminQuery::Admin variant.");
+                    }
+                })
+                .and_then(move |agent_did| {
+                    admin
+                        .send(HandleAdminMessage(AdminQuery::GetDetailAgentConnection(GetDetailAgentConnParams { agent_pairwise_did: agent_did.clone() })))
+                        .from_err()
+                        .map(move |res| {
+                            if let Ok(ResAdminQuery::AgentConn(res_query_agent_conn)) = res {
+                                assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent_conn.owner_did));
+                                assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent_conn.user_pairwise_did));
+                                assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent_conn.agent_pairwise_did));
+                                assert!(verkey_regex.is_match(&res_query_agent_conn.owner_verkey));
+                                assert!(verkey_regex.is_match(&res_query_agent_conn.user_pairwise_verkey));
+                                assert!(verkey_regex.is_match(&res_query_agent_conn.agent_pairwise_verkey));
+                                assert_eq!(res_query_agent_conn.name, "unknown");
+                                assert_eq!(res_query_agent_conn.logo, "unknown");
+                                assert_eq!(res_query_agent_conn.agent_configs.len(), 0);
+                                assert_eq!(res_query_agent_conn.remote_agent_detail_verkey, "unknown");
+                                assert_eq!(res_query_agent_conn.remote_agent_detail_did, "unknown");
+                                assert_eq!(res_query_agent_conn.remote_forward_agent_detail_verkey, "unknown");
+                                assert_eq!(res_query_agent_conn.remote_forward_agent_detail_did, "unknown");
+                                assert_eq!(res_query_agent_conn.remote_forward_agent_detail_endpoint, "unknown");
+                            } else {
+                                panic!("Response was expected to be AdminQuery::GetDetailAgentConnection variant, but got {:?}", res);
+                            }
+                        })
+                })
+                .map(move |_| {
+                    e_wallet_handle
+                })
+        })
     }
 }

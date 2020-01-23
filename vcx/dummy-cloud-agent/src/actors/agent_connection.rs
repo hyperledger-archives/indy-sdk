@@ -24,6 +24,7 @@ use indyrs::WalletHandle;
 use actors::admin::Admin;
 use domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
 use futures::future::ok;
+use futures::future::Either;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -82,7 +83,7 @@ pub struct AgentConnection {
     // Address of router agent
     router: Addr<Router>,
     // Address of admin agent
-    admin: Addr<Admin>
+    admin: Option<Addr<Admin>>
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -113,7 +114,7 @@ struct AgentConnectionState {
 impl AgentConnection {
     pub fn create(config: AgentConnectionConfig,
                   router: Addr<Router>,
-                  admin: Addr<Admin>) -> ResponseFuture<(), Error> {
+                  admin: Option<Addr<Admin>>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::create >> {:?}", config);
         future::ok(())
             .and_then(move |_| {
@@ -154,10 +155,13 @@ impl AgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
             })
             .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
-                admin.send(AdminRegisterAgentConnection(agent_pairwise_did, agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(|_| ())
-                    .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())
+                match admin {
+                    Some(admin) => Either::A(admin.send(AdminRegisterAgentConnection(agent_pairwise_did, agent_connection.clone().recipient()))
+                        .from_err()
+                        .map(|_| ())
+                        .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())),
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }
@@ -170,7 +174,7 @@ impl AgentConnection {
                    state: &str,
                    forward_agent_detail: &ForwardAgentDetail,
                    router: Addr<Router>,
-                   admin: Addr<Admin>,
+                   admin: Option<Addr<Admin>>,
                    agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
         trace!("AgentConnection::restore >> {:?}", wallet_handle);
 
@@ -234,10 +238,13 @@ impl AgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
             })
             .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
-                admin.send(AdminRegisterAgentConnection(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(|_| ())
-                    .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())
+                match admin {
+                    Some(admin) => Either::A(admin.send(AdminRegisterAgentConnection(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
+                        .from_err()
+                        .map(|_| ())
+                        .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())),
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }
@@ -1509,29 +1516,28 @@ impl Handler<HandleAdminMessage> for AgentConnection {
 
     fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
         trace!("Agent Connection Handler<HandleAdminMessage>::handle >>");
-        let res = match &self.state.remote_connection_detail {
-            Some(m) => {
-                ResQueryAgentConn {
-                    agent_detail_verkey: m.agent_detail.verkey.clone(),
-                    agent_detail_did: m.agent_detail.did.clone(),
-                    forward_agent_detail_verkey: m.forward_agent_detail.verkey.clone(),
-                    forward_agent_detail_did: m.forward_agent_detail.did.clone(),
-                    forward_agent_detail_endpoint: m.forward_agent_detail.endpoint.clone(),
-                    agent_configs: self.agent_configs.iter().map(|(key, value)| (key.clone(), value.clone())).collect(),
-                    logo: self.agent_configs.get("logoUrl").map_or_else(|| String::from("unknown"), |v| v.clone()),
-                    name: self.agent_configs.get("name").map_or_else(|| String::from("unknown"), |v| v.clone()),
-                }
-            }
-            None => ResQueryAgentConn {
-                agent_detail_verkey: "unknown".into(),
-                agent_detail_did: "unknown".into(),
-                forward_agent_detail_verkey: "unknown".into(),
-                forward_agent_detail_did: "unknown".into(),
-                forward_agent_detail_endpoint: "unknown".into(),
-                agent_configs: self.agent_configs.iter().map(|(key, value)| (key.clone(), value.clone())).collect(),
-                logo: self.agent_configs.get("logoUrl").map_or_else(|| String::from("unknown"), |v| v.clone()),
-                name: self.agent_configs.get("name").map_or_else(|| String::from("unknown"), |v| v.clone()),
-            }
+        let res = ResQueryAgentConn {
+            owner_did: self.owner_did.clone(),
+            owner_verkey: self.owner_verkey.clone(),
+            user_pairwise_did: self.user_pairwise_did.clone(),
+            user_pairwise_verkey: self.user_pairwise_verkey.clone(),
+            agent_pairwise_did: self.agent_pairwise_did.clone(),
+            agent_pairwise_verkey: self.agent_pairwise_verkey.clone(),
+
+            logo: self.agent_configs.get("logoUrl").map_or_else(|| String::from("unknown"), |v| v.clone()),
+            name: self.agent_configs.get("name").map_or_else(|| String::from("unknown"), |v| v.clone()),
+            agent_configs: self.agent_configs.iter().map(|(key, value)| (key.clone(), value.clone())).collect(),
+
+            remote_agent_detail_did: self.state.remote_connection_detail
+                .as_ref().map_or_else(|| "unknown".into(), |r| r.agent_detail.did.clone()),
+            remote_agent_detail_verkey: self.state.remote_connection_detail
+                .as_ref().map_or_else(|| "unknown".into(), |r| r.agent_detail.verkey.clone()),
+            remote_forward_agent_detail_did: self.state.remote_connection_detail
+                .as_ref().map_or_else(|| "unknown".into(), |r| r.forward_agent_detail.did.clone()),
+            remote_forward_agent_detail_verkey: self.state.remote_connection_detail
+                .as_ref().map_or_else(|| "unknown".into(), |r| r.forward_agent_detail.verkey.clone()),
+            remote_forward_agent_detail_endpoint: self.state.remote_connection_detail
+                .as_ref().map_or_else(|| "unknown".into(), |r| r.forward_agent_detail.endpoint.clone()),
         };
         Ok(ResAdminQuery::AgentConn(res))
     }

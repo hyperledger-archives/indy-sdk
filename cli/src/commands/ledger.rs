@@ -2801,6 +2801,36 @@ pub mod tests {
             assert!(transaction["signature"].is_null());
             tear_down_with_wallet_and_pool(&ctx);
         }
+
+        #[test]
+        pub fn nym_works_for_disconnected_pool_and_specific_protocol_version() {
+            let ctx = setup_with_wallet();
+            use_trustee(&ctx);
+            let (did, _) = create_new_did(&ctx);
+            // Set Custom Pool protocol version
+            {
+                let cmd = pool::set_protocol_version_command::new();
+                let mut params = CommandParams::new();
+                params.insert("protocol-version", "1".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            // Build NYM request
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did.clone());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            // Reset Custom Pool protocol version
+            {
+                let cmd = pool::set_protocol_version_command::new();
+                let mut params = CommandParams::new();
+                params.insert("protocol-version", DEFAULT_POOL_PROTOCOL_VERSION.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
     }
 
     mod get_nym {

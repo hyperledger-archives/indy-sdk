@@ -14,6 +14,7 @@ use utils::futures::*;
 use indyrs::WalletHandle;
 use actors::admin::Admin;
 use domain::admin_message::{ResAdminQuery, ResQueryForwardAgent};
+use futures::future::{ok, Either};
 
 pub struct ForwardAgent {
     wallet_handle: WalletHandle,
@@ -22,16 +23,15 @@ pub struct ForwardAgent {
     router: Addr<Router>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
-    admin: Addr<Admin>,
+    admin: Option<Addr<Admin>>,
 }
 
 impl ForwardAgent {
     pub fn create_or_restore(config: ForwardAgentConfig,
                              wallet_storage_config: WalletStorageConfig,
-                             admin: Addr<Admin>) -> ResponseFuture<Addr<ForwardAgent>, Error> {
+                             admin: Option<Addr<Admin>>) -> ResponseFuture<Addr<ForwardAgent>, Error> {
         debug!("ForwardAgent::create_or_restore >> {:?} {:?}", config, wallet_storage_config);
         let admin1 = admin.clone();
-        let admin2 = admin.clone();
         future::ok(())
             .and_then(move |_| {
                 // Ensure Forward Agent wallet created
@@ -91,12 +91,12 @@ impl ForwardAgent {
                     .map(move |verkey| (wallet_handle, config.did, verkey, config.endpoint, wallet_storage_config))
                     .map_err(|err| err.context("Can't get Forward Agent did key").into())
             })
-            .and_then(|(wallet_handle, did, verkey, endpoint, wallet_storage_config)| {
+            .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config)| {
                 Router::new(admin1)
-                    .map(move |router| (wallet_handle, did, verkey, endpoint, wallet_storage_config, router))
+                    .map(move |router| (wallet_handle, did, verkey, endpoint, wallet_storage_config, router, admin))
                     .map_err(|err| err.context("Can't create Router.").into())
             })
-            .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config, router)| {
+            .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config, router, admin)| {
                 // Resolve information about existing connections from the wallet
                 // and start Forward Agent Connection actor for each exists connection
 
@@ -132,14 +132,18 @@ impl ForwardAgent {
                 router
                     .send(AddA2ARoute(did, verkey, forward_agent.clone().recipient()))
                     .from_err()
-                    .map(move |_| forward_agent)
+                    .map(move |_| (forward_agent, admin))
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent").into())
             })
-            .and_then(move |forward_agent| {
-                admin2.send(AdminRegisterForwardAgent(forward_agent.clone().recipient()))
-                    .from_err()
-                    .map(move |_| forward_agent)
-                    .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into())
+            .and_then(move |(forward_agent, admin)| {
+                if let Some(admin) = admin {
+                    Either::A(admin.send(AdminRegisterForwardAgent(forward_agent.clone().recipient()))
+                        .from_err()
+                        .map(move |_| forward_agent)
+                        .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into()))
+                } else {
+                    Either::B(ok(forward_agent))
+                }
             })
             .into_box()
     }
@@ -148,7 +152,7 @@ impl ForwardAgent {
                             forward_agent_detail: ForwardAgentDetail,
                             wallet_storage_config: WalletStorageConfig,
                             router: Addr<Router>,
-                            admin: Addr<Admin>) -> ResponseFuture<(), Error> {
+                            admin: Option<Addr<Admin>>) -> ResponseFuture<(), Error> {
         debug!("ForwardAgent::_restore_connections >> {:?}", wallet_handle);
 
         future::ok(())
@@ -186,7 +190,7 @@ impl ForwardAgent {
 
                 future::join_all(futures)
                     .map(|_| ())
-//                    .map_err(|err| err.context("Can't restore Forward Agent connections").into())
+                    .map_err(|err| err.context("Can't restore Forward Agent connections").into())
             })
             .into_box()
     }
@@ -389,14 +393,14 @@ mod tests {
 
     #[test]
     fn forward_agent_create_or_restore_works() {
-        run_test(|_| {
+        run_test(|_, _| {
             Ok(())
         });
     }
 
     #[test]
     fn forward_agent_get_endpoint_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             forward_agent
                 .send(GetEndpoint {})
                 .from_err()
@@ -412,7 +416,7 @@ mod tests {
 
     #[test]
     fn forward_agent_connect_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .map(|_| {
                     let e_wallet_handle = edge_wallet_setup().wait().unwrap();
