@@ -392,14 +392,14 @@ mod tests {
 
     #[test]
     fn forward_agent_create_or_restore_works() {
-        run_test(|_| {
+        run_test(|_, _| {
             Ok(())
         });
     }
 
     #[test]
     fn forward_agent_get_endpoint_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             forward_agent
                 .send(GetEndpoint {})
                 .from_err()
@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn forward_agent_connect_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .map(|_| {
                     let e_wallet_handle = edge_wallet_setup().wait().unwrap();
