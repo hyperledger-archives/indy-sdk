@@ -20,8 +20,11 @@ pub struct RequestedProof {
     #[serde(skip_serializing_if="HashMap::is_empty")]
     #[serde(default)]
     pub revealed_attr_groups: HashMap<String, RevealedAttributeGroupInfo>,
+    #[serde(default)]
     pub self_attested_attrs: HashMap<String, String>,
+    #[serde(default)]
     pub unrevealed_attrs: HashMap<String, SubProofReferent>,
+    #[serde(default)]
     pub predicates: HashMap<String, SubProofReferent>
 }
 

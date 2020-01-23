@@ -13,6 +13,7 @@ use std::convert::Into;
 use utils::futures::*;
 use actors::admin::Admin;
 use domain::admin_message::{ResAdminQuery};
+use futures::future::Either;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ForwardAgentConnectionState {
@@ -28,7 +29,7 @@ pub struct ForwardAgentConnection {
     my_verkey: String,
     state: ForwardAgentConnectionState,
     router: Addr<Router>,
-    admin: Addr<Admin>,
+    admin: Option<Addr<Admin>>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
 }
@@ -40,7 +41,7 @@ impl ForwardAgentConnection {
                   router: Addr<Router>,
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig,
-                  admin: Addr<Admin>) -> BoxedFuture<(String, String), Error> {
+                  admin: Option<Addr<Admin>>) -> BoxedFuture<(String, String), Error> {
         debug!("ForwardAgentConnection::create >> {:?}, {:?}, {:?}, {:?}, {:?}",
                wallet_handle, their_did, their_verkey, forward_agent_detail, wallet_storage_config);
 
@@ -99,10 +100,14 @@ impl ForwardAgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
             })
             .and_then(move |(my_did, my_verkey, forward_agent_connection, admin)| {
-                admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(move |_| (my_did, my_verkey))
-                    .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into())
+                if let Some(admin) = admin {
+                    Either::A(admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
+                        .from_err()
+                        .map(move |_| (my_did, my_verkey))
+                        .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into()))
+                } else {
+                    Either::B(future::ok( (my_did, my_verkey)))
+                }
             })
             .into_box()
     }
@@ -112,7 +117,7 @@ impl ForwardAgentConnection {
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
                    router: Addr<Router>,
-                   admin: Addr<Admin>) -> BoxedFuture<(), Error> {
+                   admin: Option<Addr<Admin>>) -> BoxedFuture<(), Error> {
         debug!("ForwardAgentConnection::restore >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, their_did, forward_agent_detail, wallet_storage_config);
 
@@ -155,7 +160,7 @@ impl ForwardAgentConnection {
                                    router.clone(),
                                    forward_agent_detail.clone(),
                                    wallet_storage_config.clone(),
-                                    admin.clone())
+                                   admin.clone())
                         .into_box()
                 } else {
                     ok!(())
@@ -187,10 +192,15 @@ impl ForwardAgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
             })
             .and_then(move |(forward_agent_connection, my_did, admin )| {
-                admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(|_| ())
-                    .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into())
+                match admin {
+                    Some(admin) => {
+                        Either::A(admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
+                            .from_err()
+                            .map(|_| ())
+                            .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into()))
+                    },
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }

@@ -114,7 +114,8 @@ pub fn run_test<F, B>(f: F)
             let admin = Admin::create();
             let admin_for_test = admin.clone();
             future::ok(())
-                .and_then( |_| {
+                .and_then(move |_| {
+                    let admin = None;
                     ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config(), admin)
                 })
                 .and_then(move |fw_agent| {

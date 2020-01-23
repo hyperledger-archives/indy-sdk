@@ -2363,6 +2363,53 @@ mod high_cases {
 
             wallet::close_wallet(wallet_handle).unwrap();
         }
+
+        #[test]
+        fn prover_get_credentials_for_proof_req_works_for_omitting_attributes_or_predicates_field() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            {
+                // specify requested_attributes only
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": {
+                       "attr1_referent": {
+                           "name":"name"
+                       }
+                   }
+                }).to_string();
+
+                let credentials_json = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+
+                credentials.attrs.get("attr1_referent").unwrap();
+            }
+
+            {
+                // specify requested_predicates only
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_predicates": {
+                       "predicate1_referent": { "name":"age", "p_type":">=", "p_value":18 },
+                   }
+                }).to_string();
+
+                let credentials_json = anoncreds::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+
+                credentials.predicates.get("predicate1_referent").unwrap();
+            }
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
     }
 
     mod prover_search_credentials_for_proof_req {
