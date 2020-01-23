@@ -1,7 +1,7 @@
 #![warn(dead_code)]
 
 use ::{ErrorCode, IndyError};
-use indy_api_types::{WalletHandle, CommandHandle};
+use ffi::{WalletHandle, CommandHandle};
 
 use libc::c_char;
 

@@ -14,8 +14,6 @@ extern crate serde_json;
 
 extern crate indy_sys as ffi;
 
-extern crate indy_api_types;
-
 #[macro_use]
 mod macros;
 
@@ -42,7 +40,14 @@ use std::ffi::CStr;
 
 use failure::{Backtrace, Fail};
 
-pub use indy_api_types::{
+pub use ffi::{
+    RecordHandle,
+    TailWriterHandle,
+    BlobStorageReaderHandle,
+    BlobStorageReaderCfgHandle,
+    MetadataHandle,
+    Timeout,
+    TailsWriterHandle,
     IndyHandle,
     CommandHandle,
     WalletHandle,
@@ -51,16 +56,8 @@ pub use indy_api_types::{
     StorageHandle
 };
 
-pub use ffi::{
-    RecordHandle,
-    TailWriterHandle,
-    BlobStorageReaderHandle,
-    BlobStorageReaderCfgHandle,
-    MetadataHandle,
-    Timeout,
-    TailsWriterHandle
-};
-pub use indy_api_types::{INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE};
+pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0); // TODO: FIXME remove it
+pub const INVALID_POOL_HANDLE : PoolHandle = 0;  // TODO: FIXME remove it
 
 /// Set libindy runtime configuration. Can be optionally called to change current params.
 ///

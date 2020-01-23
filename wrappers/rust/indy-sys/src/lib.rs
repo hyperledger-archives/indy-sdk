@@ -1,6 +1,7 @@
 extern crate libc;
 
-extern crate indy_api_types;
+#[macro_use] extern crate serde_derive;
+extern crate serde;
 
 pub mod anoncreds;
 pub mod blob_storage;
@@ -21,7 +22,9 @@ pub type CVoid = c_void;
 pub type BString = *const u8;
 pub type CString = *const c_char;
 
-use indy_api_types::WalletHandle;
+#[repr(transparent)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
+pub struct WalletHandle(pub i32);
 
 //pub type Handle = i32;
 pub type IndyHandle = i32;

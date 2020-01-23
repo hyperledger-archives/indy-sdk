@@ -10,10 +10,12 @@ use ffi::{ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringI64CB,
           ResponseSliceCB,
-          ResponseBoolCB};
+          ResponseBoolCB,
+          WalletHandle,
+          CommandHandle
+};
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
-use indy_api_types::{WalletHandle, CommandHandle};
 use futures::IntoFuture;
 
 /// Create the payment address for specified payment method
