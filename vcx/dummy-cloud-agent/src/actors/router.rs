@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use utils::futures::*;
 use actors::admin::Admin;
 use domain::admin_message::{ResAdminQuery};
+use futures::future::Either;
 
 pub struct Router {
     routes: HashMap<String, Recipient<HandleA2AMsg>>,
@@ -16,7 +17,7 @@ pub struct Router {
 }
 
 impl Router {
-    pub fn new(admin: Addr<Admin>) -> ResponseFuture<Addr<Router>, Error> {
+    pub fn new(admin: Option<Addr<Admin>>) -> ResponseFuture<Addr<Router>, Error> {
         trace!("Router::new >>");
         future::ok(())
             .and_then(move |_| {
@@ -27,10 +28,15 @@ impl Router {
                     requester,
                 };
                 let router= router.start();
-                admin.send(AdminRegisterRouter(router.clone().recipient()))
-                    .from_err()
-                    .map(move |_| router)
-                    .map_err(|err: Error| err.context("Can't register Router in Admin").into())
+                if let Some(admin) = admin {
+                    Either::A(admin.send(AdminRegisterRouter(router.clone().recipient()))
+                        .from_err()
+                        .map(move |_| router)
+                        .map_err(|err: Error| err.context("Can't register Router in Admin").into())
+                    )
+                } else {
+                    Either::B(future::ok(router))
+                }
             })
             .into_box()
     }

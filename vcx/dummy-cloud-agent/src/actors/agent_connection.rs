@@ -23,6 +23,7 @@ use serde_json;
 use actors::admin::Admin;
 use domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
 use futures::future::ok;
+use futures::future::Either;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -81,7 +82,7 @@ pub struct AgentConnection {
     // Address of router agent
     router: Addr<Router>,
     // Address of admin agent
-    admin: Addr<Admin>
+    admin: Option<Addr<Admin>>
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -112,7 +113,7 @@ struct AgentConnectionState {
 impl AgentConnection {
     pub fn create(config: AgentConnectionConfig,
                   router: Addr<Router>,
-                  admin: Addr<Admin>) -> ResponseFuture<(), Error> {
+                  admin: Option<Addr<Admin>>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::create >> {:?}", config);
         future::ok(())
             .and_then(move |_| {
@@ -153,10 +154,13 @@ impl AgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
             })
             .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
-                admin.send(AdminRegisterAgentConnection(agent_pairwise_did, agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(|_| ())
-                    .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())
+                match admin {
+                    Some(admin) => Either::A(admin.send(AdminRegisterAgentConnection(agent_pairwise_did, agent_connection.clone().recipient()))
+                        .from_err()
+                        .map(|_| ())
+                        .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())),
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }
@@ -169,7 +173,7 @@ impl AgentConnection {
                    state: &str,
                    forward_agent_detail: &ForwardAgentDetail,
                    router: Addr<Router>,
-                   admin: Addr<Admin>,
+                   admin: Option<Addr<Admin>>,
                    agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
         trace!("AgentConnection::restore >> {:?}", wallet_handle);
 
@@ -233,10 +237,13 @@ impl AgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
             })
             .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
-                admin.send(AdminRegisterAgentConnection(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(|_| ())
-                    .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())
+                match admin {
+                    Some(admin) => Either::A(admin.send(AdminRegisterAgentConnection(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
+                        .from_err()
+                        .map(|_| ())
+                        .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())),
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }

@@ -16,6 +16,7 @@ use utils::rand;
 use serde_json;
 use actors::admin::Admin;
 use domain::admin_message::{ResAdminQuery, ResQueryAgent};
+use futures::future::Either;
 
 #[allow(unused)] //FIXME:
 pub struct Agent {
@@ -26,7 +27,7 @@ pub struct Agent {
     verkey: String,
     forward_agent_detail: ForwardAgentDetail,
     router: Addr<Router>,
-    admin: Addr<Admin>,
+    admin: Option<Addr<Admin>>,
     configs: HashMap<String, String>,
 }
 
@@ -36,7 +37,7 @@ impl Agent {
                   router: Addr<Router>,
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig,
-                  admin: Addr<Admin>) -> BoxedFuture<(String, String, String, String), Error> {
+                  admin: Option<Addr<Admin>>) -> BoxedFuture<(String, String, String, String), Error> {
         debug!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
                owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
@@ -94,10 +95,14 @@ impl Agent {
                     .map_err(|err: Error| err.context("Can't add route for Agent").into())
             })
             .and_then(move |(wallet_id, wallet_key, did, verkey, admin, agent)| {
-                admin.send(AdminRegisterAgent(did.clone(), agent.clone().recipient()))
-                    .from_err()
-                    .map(move |_| (wallet_id, wallet_key, did, verkey))
-                    .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into())
+                match admin {
+                    Some(admin) =>
+                        Either::A(admin.send(AdminRegisterAgent(did.clone(), agent.clone().recipient()))
+                            .from_err()
+                            .map(move |_| (wallet_id, wallet_key, did, verkey))
+                            .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into())),
+                    None => Either::B(future::ok((wallet_id, wallet_key, did, verkey)))
+                }
             })
             .into_box()
     }
@@ -110,7 +115,7 @@ impl Agent {
                    router: Addr<Router>,
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
-                   admin: Addr<Admin>) -> BoxedFuture<(), Error> {
+                   admin: Option<Addr<Admin>>) -> BoxedFuture<(), Error> {
         debug!("Agent::restore >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
                wallet_id, did, owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
@@ -187,10 +192,14 @@ impl Agent {
                     .map_err(|err: Error| err.context("Can't add route for Agent.").into())
             })
             .and_then(move |(admin, agent, agent_did)| {
-                admin.send(AdminRegisterAgent(agent_did.clone(), agent.clone().recipient()))
-                    .from_err()
-                    .map(|_| ())
-                    .map_err(|err: Error| err.context("Can't register Agent in Admin").into())
+                match admin {
+                    Some(admin) => Either::A(
+                        admin.send(AdminRegisterAgent(agent_did.clone(), agent.clone().recipient()))
+                        .from_err()
+                        .map(|_| ())
+                        .map_err(|err: Error| err.context("Can't register Agent in Admin").into())),
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }
@@ -200,7 +209,7 @@ impl Agent {
                             owner_verkey: &str,
                             forward_agent_detail: &ForwardAgentDetail,
                             router: Addr<Router>,
-                            admin: Addr<Admin>,
+                            admin: Option<Addr<Admin>>,
                             agent_configs: HashMap<String, String>) -> ResponseFuture<(), Error> {
         trace!("Agent::_restore_connections >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, owner_verkey, forward_agent_detail);
@@ -813,7 +822,7 @@ mod tests {
                             type_: RemoteMessageType::CredOffer,
                             payload: Some(MessageDetailPayload::V1(to_i8(&PAYLOAD.to_vec()))),
                             ref_msg_id: None,
-                        }]
+                        }],
                     };
                     assert_eq!(expected_message, messages[0]);
                     e_wallet_handle
