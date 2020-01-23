@@ -1,8 +1,5 @@
 extern crate libc;
 
-#[macro_use] extern crate serde_derive;
-extern crate serde;
-
 extern crate indy_api_types;
 
 pub mod anoncreds;

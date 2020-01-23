@@ -36,7 +36,7 @@ struct RemoteConnectionDetail {
     agent_key_dlg_proof: KeyDlgProof,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct AgentConnectionConfig {
     // Agent wallet handle
     pub wallet_handle: WalletHandle,

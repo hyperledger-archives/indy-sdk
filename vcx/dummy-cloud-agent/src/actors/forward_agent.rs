@@ -200,7 +200,7 @@ impl ForwardAgent {
         (self.did.clone(), self.verkey.clone())
     }
 
-    fn _get_forward_agent_details(&self) -> (String, Vec<String>, i32) {
+    fn _get_forward_agent_details(&self) -> (String, Vec<String>, WalletHandle) {
         trace!("ForwardAgent::_get_forward_agent_details >>");
         let endpoint = self.forward_agent_detail.endpoint.clone();
         let wallet_handle = self.wallet_handle.clone();
