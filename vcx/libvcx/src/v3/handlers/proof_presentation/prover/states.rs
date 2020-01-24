@@ -364,7 +364,12 @@ impl ProverSM {
             ProverState::PresentationPrepared(_) => VcxStateType::VcxStateInitialized as u32,
             ProverState::PresentationPreparationFailed(_) => VcxStateType::VcxStateInitialized as u32,
             ProverState::PresentationSent(_) => VcxStateType::VcxStateOfferSent as u32, // TODO: maybe VcxStateType::VcxStateAccepted
-            ProverState::Finished(_) => VcxStateType::VcxStateAccepted as u32,
+            ProverState::Finished(ref status) => {
+                match status.status {
+                    Status::Success => VcxStateType::VcxStateAccepted as u32,
+                    _ => VcxStateType::VcxStateNone as u32,
+                }
+            },
         }
     }
 

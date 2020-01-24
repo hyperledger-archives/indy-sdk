@@ -214,7 +214,7 @@ vcx_error_t vcx_connection_serialize(vcx_command_handle_t command_handle,
                                   vcx_connection_handle_t connection_handle,
                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the connection and updates the the state attribute
+// Checks for any state change in the connection and updates the state attribute
 //
 // #Params
 // command_handle: command handle to map callback to user context.
@@ -442,7 +442,7 @@ vcx_error_t vcx_credential_serialize(vcx_command_handle_t command_handle,
                                   vcx_credential_handle_t handle,
                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the credential and updates the the state attribute.  If it detects a credential it
+// Checks for any state change in the credential and updates the state attribute.  If it detects a credential it
 // will store the credential in the wallet and update the state.
 //
 // #Params
@@ -604,7 +604,7 @@ vcx_error_t vcx_credentialdef_serialize(vcx_command_handle_t command_handle,
                                      vcx_credential_handle_t credentialdef_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-/// Checks if credential definition is published on the Ledger and updates the the state
+/// Checks if credential definition is published on the Ledger and updates the state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -869,7 +869,7 @@ vcx_error_t vcx_disclosed_proof_serialize(vcx_command_handle_t command_handle,
                                        vcx_disclosed_proof_handle_t proof_handle,
                                        void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the disclosed proof and updates the the state attribute
+// Checks for any state change in the disclosed proof and updates the state attribute
 //
 // #Params
 // command_handle: command handle to map callback to user context.
@@ -1060,7 +1060,7 @@ vcx_error_t vcx_issuer_credential_serialize(vcx_command_handle_t command_handle,
                                          vcx_issuer_credential_handle_t credential_handle,
                                          void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the credential and updates the the state attribute
+// Checks for any state change in the credential and updates the state attribute
 //
 // #Params
 // command_handle: command handle to map callback to user context.
@@ -1435,7 +1435,7 @@ vcx_error_t vcx_schema_serialize(vcx_command_handle_t command_handle,
                               vcx_schema_handle_t schema_handle,
                               void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-/// Checks if schema is published on the Ledger and updates the the state
+/// Checks if schema is published on the Ledger and updates the state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

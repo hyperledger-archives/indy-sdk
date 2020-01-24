@@ -7,7 +7,9 @@ __all__ = ["vcx_init", "vcx_init_with_config"]
 async def vcx_init(config_path: str) -> None:
     """
     Initializes VCX with config file.
-    :param config_path: String
+    The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+
+    :param config_path: String - path to a config file to populate config attributes
     Example:
     await vcx_init('/home/username/vcxconfig.json')
     :return:
@@ -30,8 +32,11 @@ async def vcx_init(config_path: str) -> None:
 
 async def vcx_init_with_config(config: str) -> None:
     """
+    Initializes VCX with config settings
 
-    :param config:
+    :param config: config as json.
+    The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+
     Example:
     config = {
       "agency_did": "VsKV7grR1BUE29mG2Fm2kX",

@@ -41,7 +41,12 @@ impl HolderSM {
         match self.state {
             HolderState::OfferReceived(_) => VcxStateType::VcxStateRequestReceived as u32,
             HolderState::RequestSent(_) => VcxStateType::VcxStateOfferSent as u32,
-            HolderState::Finished(_) => VcxStateType::VcxStateAccepted as u32,
+            HolderState::Finished(ref status) => {
+                match status.status {
+                    Status::Success => VcxStateType::VcxStateAccepted as u32,
+                    _ => VcxStateType::VcxStateNone as u32,
+                }
+            },
         }
     }
 

@@ -1,28 +1,30 @@
+use std::collections::HashMap;
+
 use actix::prelude::*;
-use actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RemoteMsg, HandleAdminMessage, AdminRegisterAgentConnection, requester};
-use actors::router::Router;
-use domain::a2a::*;
-use domain::a2connection::*;
-use domain::status::{ConnectionStatus, MessageStatusCode};
-use domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail, AgentDetail};
-use domain::internal_message::InternalMessage;
-use domain::key_deligation_proof::KeyDlgProof;
-use domain::payload::{PayloadV1, PayloadV2, PayloadTypes, PayloadKinds, Thread};
-use domain::protocol_type::{ProtocolType, ProtocolTypes};
+use base64;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, crypto, pairwise, ErrorCode, IndyError};
-use std::convert::Into;
-use std::collections::HashMap;
-use utils::futures::*;
-use utils::to_i8;
-
-use base64;
+use futures::future::Either;
+use futures::future::ok;
 use rmp_serde;
 use serde_json;
-use actors::admin::Admin;
-use domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
-use futures::future::ok;
+use uuid::Uuid;
+
+use crate::actors::{AddA2ARoute, AddA2ConnRoute, AdminRegisterAgentConnection, HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage, RemoteMsg, requester};
+use crate::actors::admin::Admin;
+use crate::actors::router::Router;
+use crate::domain::a2a::*;
+use crate::domain::a2connection::*;
+use crate::domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
+use crate::domain::internal_message::InternalMessage;
+use crate::domain::invite::{AgentDetail, ForwardAgentDetail, InviteDetail, SenderDetail};
+use crate::domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::payload::{PayloadKinds, PayloadTypes, PayloadV1, PayloadV2, Thread};
+use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
+use crate::domain::status::{ConnectionStatus, MessageStatusCode};
+use crate::indy::{crypto, did, ErrorCode, IndyError, pairwise};
+use crate::utils::futures::*;
+use crate::utils::to_i8;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -81,7 +83,7 @@ pub struct AgentConnection {
     // Address of router agent
     router: Addr<Router>,
     // Address of admin agent
-    admin: Addr<Admin>
+    admin: Option<Addr<Admin>>
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -112,7 +114,7 @@ struct AgentConnectionState {
 impl AgentConnection {
     pub fn create(config: AgentConnectionConfig,
                   router: Addr<Router>,
-                  admin: Addr<Admin>) -> ResponseFuture<(), Error> {
+                  admin: Option<Addr<Admin>>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::create >> {:?}", config);
         future::ok(())
             .and_then(move |_| {
@@ -153,10 +155,13 @@ impl AgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
             })
             .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
-                admin.send(AdminRegisterAgentConnection(agent_pairwise_did, agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(|_| ())
-                    .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())
+                match admin {
+                    Some(admin) => Either::A(admin.send(AdminRegisterAgentConnection(agent_pairwise_did, agent_connection.clone().recipient()))
+                        .from_err()
+                        .map(|_| ())
+                        .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())),
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }
@@ -169,7 +174,7 @@ impl AgentConnection {
                    state: &str,
                    forward_agent_detail: &ForwardAgentDetail,
                    router: Addr<Router>,
-                   admin: Addr<Admin>,
+                   admin: Option<Addr<Admin>>,
                    agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
         trace!("AgentConnection::restore >> {:?}", wallet_handle);
 
@@ -233,10 +238,13 @@ impl AgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
             })
             .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
-                admin.send(AdminRegisterAgentConnection(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(|_| ())
-                    .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())
+                match admin {
+                    Some(admin) => Either::A(admin.send(AdminRegisterAgentConnection(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
+                        .from_err()
+                        .map(|_| ())
+                        .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())),
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }
@@ -890,7 +898,7 @@ impl AgentConnection {
                     their_pw_did: msg.sender_did.clone(),
                     msg_status_code: msg.status_code.clone(),
                     pw_did: self.user_pairwise_did.clone(),
-                    notification_id: uuid::Uuid::new_v4().to_string(),
+                    notification_id: Uuid::new_v4().to_string(),
                 };
                 self.send_webhook_notification(webhook_url, msg_notification)
             }
@@ -1240,7 +1248,6 @@ impl AgentConnection {
 
         let remote_connection_detail = self.state.remote_connection_detail.as_ref()
             .ok_or(err_msg("Missed Remote Connection Details."))?;
-
         let remote_forward_agent_detail = &remote_connection_detail.forward_agent_detail;
         let remote_agent_pairwise_detail = &remote_connection_detail.agent_key_dlg_proof;
 
@@ -1263,7 +1270,6 @@ impl AgentConnection {
         match ProtocolType::get() {
             ProtocolTypes::V1 => {
                 let msg = ftry!(rmp_serde::to_vec_named(&msg));
-                ;
 
                 let payload_msg = PayloadV1 {
                     type_: PayloadTypes::build_v1(PayloadKinds::from(type_), "json"),
@@ -1278,7 +1284,6 @@ impl AgentConnection {
             }
             ProtocolTypes::V2 => {
                 let msg = ftry!(serde_json::to_string(&msg));
-                ;
 
                 let payload_msg = PayloadV2 {
                     type_: PayloadTypes::build_v2(PayloadKinds::from(type_)),
@@ -1542,9 +1547,12 @@ enum MessageHandlerRole {
 
 #[cfg(test)]
 mod tests {
-    use actors::ForwardA2AMsg;
+    use crate::actors::ForwardA2AMsg;
+    use crate::utils::tests::*;
+    use crate::utils::tests::*;
+    use crate::utils::tests::compose_create_general_message;
+
     use super::*;
-    use utils::tests::*;
 
     #[test]
     fn agent_create_connection_request_works() {

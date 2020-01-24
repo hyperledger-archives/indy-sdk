@@ -124,7 +124,12 @@ impl IssuerSM {
             IssuerState::OfferSent(_) => VcxStateType::VcxStateOfferSent as u32,
             IssuerState::RequestReceived(_) => VcxStateType::VcxStateRequestReceived as u32,
             IssuerState::CredentialSent(_) => VcxStateType::VcxStateAccepted as u32,
-            IssuerState::Finished(_) => VcxStateType::VcxStateAccepted as u32,
+            IssuerState::Finished(ref status) => {
+                match status.status {
+                    Status::Success => VcxStateType::VcxStateAccepted as u32,
+                    _ => VcxStateType::VcxStateNone as u32,
+                }
+            },
         }
     }
 

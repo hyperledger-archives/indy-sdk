@@ -224,7 +224,12 @@ impl VerifierSM {
         match self.state {
             VerifierState::Initiated(_) => VcxStateType::VcxStateInitialized as u32,
             VerifierState::PresentationRequestSent(_) => VcxStateType::VcxStateOfferSent as u32,
-            VerifierState::Finished(_) => VcxStateType::VcxStateAccepted as u32,
+            VerifierState::Finished(ref status) => {
+                match status.status {
+                    Status::Success => VcxStateType::VcxStateAccepted as u32,
+                    _ => VcxStateType::VcxStateNone as u32,
+                }
+            },
         }
     }
 

@@ -68,7 +68,7 @@ pub mod tests {
             alice.update_state(4);
             faber.update_state(4);
 
-            let mut uid: String;
+            let uid: String;
             let message = _ack();
 
             // Send Message works
