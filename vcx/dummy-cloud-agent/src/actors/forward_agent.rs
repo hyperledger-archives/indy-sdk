@@ -1,19 +1,21 @@
+use std::convert::Into;
+
 use actix::prelude::*;
-use actors::{AddA2ARoute, Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, RouteA2AMsg, AdminRegisterForwardAgent, HandleAdminMessage};
-use actors::forward_agent_connection::ForwardAgentConnection;
-use actors::router::Router;
-use domain::a2a::*;
-use domain::config::{ForwardAgentConfig, WalletStorageConfig};
-use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet};
+use futures::future::{Either, ok};
 use serde_json;
-use std::convert::Into;
-use utils::futures::*;
-use actors::admin::Admin;
-use domain::admin_message::{ResAdminQuery, ResQueryForwardAgent};
-use futures::future::{ok, Either};
+
+use crate::actors::{AddA2ARoute, AdminRegisterForwardAgent, Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, HandleAdminMessage, RouteA2AMsg};
+use crate::actors::admin::Admin;
+use crate::actors::forward_agent_connection::ForwardAgentConnection;
+use crate::actors::router::Router;
+use crate::domain::a2a::*;
+use crate::domain::admin_message::{ResAdminQuery, ResQueryForwardAgent};
+use crate::domain::config::{ForwardAgentConfig, WalletStorageConfig};
+use crate::domain::invite::ForwardAgentDetail;
+use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet};
+use crate::utils::futures::*;
 
 pub struct ForwardAgent {
     wallet_handle: i32,
@@ -64,7 +66,7 @@ impl ForwardAgent {
             .and_then(move |(wallet_handle, config, wallet_storage_config)| {
                 #[cfg(test)]
                     unsafe {
-                    ::utils::tests::FORWARD_AGENT_WALLET_HANDLE = wallet_handle;
+                        crate::utils::tests::FORWARD_AGENT_WALLET_HANDLE = wallet_handle;
                 }
 
                 // Ensure Forward Agent DID created
@@ -387,8 +389,9 @@ impl Handler<HandleA2AMsg> for ForwardAgent {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::tests::*;
+
     use super::*;
-    use utils::tests::*;
 
     #[test]
     fn forward_agent_create_or_restore_works() {
@@ -436,7 +439,7 @@ mod tests {
                     assert!(!pairwise_verkey.is_empty());
                     e_wallet_handle
                 })
-                .map(|e_wallet_handle| ::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
+                .map(|e_wallet_handle| crate::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
         });
     }
 }

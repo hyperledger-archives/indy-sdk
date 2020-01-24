@@ -1,5 +1,6 @@
 use serde_json::Value;
-use domain::protocol_type::ProtocolTypes;
+
+use crate::domain::protocol_type::ProtocolTypes;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {

@@ -1,8 +1,9 @@
-use serde::{de, Deserializer, Deserialize, Serializer, Serialize};
-use serde_json::Value;
-use regex::{Regex, Match};
 use failure::{err_msg, Error};
-use domain::a2a::A2AMessageKinds;
+use regex::{Match, Regex};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::Value;
+
+use crate::domain::a2a::A2AMessageKinds;
 
 pub const DID: &str = "did:sov:123456789abcdefghi1234";
 pub const MESSAGE_VERSION_V1: &str = "1.0";

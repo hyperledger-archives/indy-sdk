@@ -1,26 +1,28 @@
-use actix::prelude::*;
-use actors::forward_agent::ForwardAgent;
-use actors::ForwardA2AMsg;
-use actors::agent::Agent;
-use dirs;
-use base64;
-use domain::a2a::*;
-use domain::a2connection::*;
-use domain::config::*;
-use domain::key_deligation_proof::*;
-use domain::invite::*;
-use domain::status::*;
-use env_logger;
-use failure::{err_msg, Error, Fail};
-use futures::*;
-use indy::{self, did, wallet, crypto};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+
+use actix::prelude::*;
+use base64;
+use dirs;
+use env_logger;
+use failure::{err_msg, Error, Fail};
+use futures::*;
 use tokio_core::reactor::Core;
-use utils::futures::*;
-use actors::admin::Admin;
-use domain::admin_message::AdminQuery;
+
+use crate::actors::admin::Admin;
+use crate::actors::agent::Agent;
+use crate::actors::forward_agent::ForwardAgent;
+use crate::actors::ForwardA2AMsg;
+use crate::domain::a2a::*;
+use crate::domain::a2connection::*;
+use crate::domain::admin_message::AdminQuery;
+use crate::domain::config::*;
+use crate::domain::invite::*;
+use crate::domain::key_deligation_proof::*;
+use crate::domain::status::*;
+use crate::indy::{crypto, did, wallet};
+use crate::utils::futures::*;
 
 pub const EDGE_AGENT_WALLET_ID: &'static str = "edge_agent_wallet_id";
 pub const EDGE_AGENT_WALLET_CONFIG: &'static str = "{\"id\": \"edge_agent_wallet_id\"}";
@@ -105,7 +107,7 @@ pub fn run_test<F, B>(f: F)
     where
         F: FnOnce(Addr<ForwardAgent>, Addr<Admin>) -> B + 'static,
         B: IntoFuture<Item=(), Error=Error> + 'static {
-    indy::logger::set_default_logger(None).ok();
+    crate::indy::logger::set_default_logger(None).ok();
     env_logger::try_init().ok();
     cleanup_storage();
 
@@ -351,7 +353,6 @@ pub fn decompose_key_created(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(Str
         })
         .into_box()
 }
-
 
 pub fn compose_create_connection_request(wallet_handle: i32,
                                          agent_did: &str,
