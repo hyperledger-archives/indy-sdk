@@ -1,11 +1,13 @@
-use actix::prelude::*;
-use actors::{HandleAdminMessage, AdminRegisterForwardAgent, AdminRegisterRouter, AdminRegisterForwardAgentConnection, AdminRegisterAgent, AdminRegisterAgentConnection};
-use failure::{Error, err_msg};
 use std::collections::HashMap;
-use domain::admin_message::{AdminQuery, ResAdminQuery, ResQueryAdmin};
-use utils::futures::FutureExt;
+
+use actix::prelude::*;
+use failure::{err_msg, Error};
 use futures::Future;
 use futures::future::ok;
+
+use crate::actors::{AdminRegisterAgent, AdminRegisterAgentConnection, AdminRegisterForwardAgent, AdminRegisterForwardAgentConnection, AdminRegisterRouter, HandleAdminMessage};
+use crate::domain::admin_message::{AdminQuery, ResAdminQuery, ResQueryAdmin};
+use crate::utils::futures::FutureExt;
 
 pub struct Admin {
     forward_agent: Option<Recipient<HandleAdminMessage>>,
@@ -154,10 +156,12 @@ impl Handler<AdminRegisterRouter> for Admin {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use utils::tests::*;
     use regex::Regex;
-    use domain::admin_message::{GetDetailAgentParams, GetDetailAgentConnParams};
+
+    use crate::domain::admin_message::{GetDetailAgentConnParams, GetDetailAgentParams};
+    use crate::utils::tests::*;
+
+    use super::*;
 
     #[test]
     fn get_actor_overview_returns_info() {
@@ -169,7 +173,6 @@ mod tests {
                 .from_err()
                 .map(move |res| {
                     if let Ok(ResAdminQuery::Admin(details)) = res {
-                        println!("details {:?}", details);
                         assert_eq!(details.forward_agent_connections.len(), 1);
                         assert!(legacy_or_qualified_did_regex.is_match(&details.forward_agent_connections[0]));
                         assert_eq!(details.agents.len(), 1);

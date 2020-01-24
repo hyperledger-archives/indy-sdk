@@ -3,10 +3,10 @@ use actix_web::*;
 use actix_web::web::Data;
 use bytes::Bytes;
 
-use actors::{ForwardA2AMsg, GetEndpoint};
-use actors::admin::Admin;
-use actors::forward_agent::ForwardAgent;
-use domain::config::{AppConfig, ServerConfig};
+use crate::actors::{ForwardA2AMsg, GetEndpoint};
+use crate::actors::admin::Admin;
+use crate::actors::forward_agent::ForwardAgent;
+use crate::domain::config::{AppConfig, ServerConfig};
 
 pub struct AppData {
     pub forward_agent: Addr<ForwardAgent>,

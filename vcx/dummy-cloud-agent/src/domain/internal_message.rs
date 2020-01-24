@@ -1,10 +1,9 @@
-use domain::a2a::RemoteMessageType;
-use domain::status::MessageStatusCode;
-use domain::payload::Thread;
-
-use utils::rand::rand_string;
-
 use std::collections::HashMap;
+
+use crate::domain::a2a::RemoteMessageType;
+use crate::domain::payload::Thread;
+use crate::domain::status::MessageStatusCode;
+use crate::utils::rand::rand_string;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InternalMessage {

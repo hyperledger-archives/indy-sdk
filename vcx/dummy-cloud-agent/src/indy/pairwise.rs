@@ -1,6 +1,7 @@
 use futures::*;
-use utils::futures::*;
-use indyrs::{pairwise, IndyError, WalletHandle};
+use indyrs::{IndyError, pairwise, WalletHandle};
+
+use crate::utils::futures::*;
 
 #[derive(Deserialize, Debug)]
 pub struct Pairwise {

@@ -3,6 +3,7 @@ name = "indy-dummy-agent"
 version = "0.1.0"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 exclude = ['config/*']
+edition = '2018'
 
 [dependencies]
 actix = "0.8.3"

@@ -1,19 +1,18 @@
 use failure::*;
 use futures::*;
-use indy::crypto;
 use rmp_serde;
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::{self, Value};
-use utils::futures::*;
 
-use domain::a2connection::*;
-use domain::invite::{InviteDetail, SenderDetail, ForwardAgentDetail};
-use domain::key_deligation_proof::KeyDlgProof;
-use domain::status::{MessageStatusCode, ConnectionStatus};
-use domain::message_type::*;
-use domain::protocol_type::{ProtocolType, ProtocolTypes};
-use domain::payload::Thread;
-use indyrs::WalletHandle;
+use crate::domain::a2connection::*;
+use crate::domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail};
+use crate::domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::message_type::*;
+use crate::domain::payload::Thread;
+use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
+use crate::domain::status::{ConnectionStatus, MessageStatusCode};
+use crate::indy::{crypto, WalletHandle};
+use crate::utils::futures::*;
 
 #[derive(Debug)]
 pub enum A2AMessageV1 {

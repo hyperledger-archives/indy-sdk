@@ -1,20 +1,21 @@
+use std::convert::Into;
+
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg, AdminRegisterForwardAgentConnection, HandleAdminMessage};
-use actors::agent::Agent;
-use actors::router::Router;
-use domain::a2a::*;
-use domain::config::WalletStorageConfig;
-use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, pairwise, pairwise::PairwiseInfo};
-use serde_json;
-use std::convert::Into;
-use utils::futures::*;
-use indyrs::WalletHandle;
-use actors::admin::Admin;
-use domain::admin_message::{ResAdminQuery};
 use futures::future::Either;
+use serde_json;
+
+use crate::actors::{AddA2ARoute, AdminRegisterForwardAgentConnection, HandleA2AMsg, HandleAdminMessage};
+use crate::actors::admin::Admin;
+use crate::actors::agent::Agent;
+use crate::actors::router::Router;
+use crate::domain::a2a::*;
+use crate::domain::admin_message::ResAdminQuery;
+use crate::domain::config::WalletStorageConfig;
+use crate::domain::invite::ForwardAgentDetail;
+use crate::indy::{did, pairwise, pairwise::PairwiseInfo, WalletHandle};
+use crate::utils::futures::*;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ForwardAgentConnectionState {
@@ -414,9 +415,10 @@ impl Handler<HandleAdminMessage> for ForwardAgentConnection {
 
 #[cfg(test)]
 mod tests {
-    use actors::ForwardA2AMsg;
+    use crate::actors::ForwardA2AMsg;
+    use crate::utils::tests::*;
+
     use super::*;
-    use utils::tests::*;
 
     #[test]
     fn forward_agent_connection_signup_works() {
@@ -448,7 +450,8 @@ mod tests {
                     assert_eq!(sender_verkey, pairwise_verkey);
                     e_wallet_handle
                 })
-                .map(|e_wallet_handle| ::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
+                .map(|e_wallet_handle|
+                    crate::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
         });
     }
 
@@ -496,7 +499,7 @@ mod tests {
                             e_wallet_handle
                         })
                 })
-                .map(|e_wallet_handle| ::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
+                .map(|e_wallet_handle| crate::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
         });
     }
 }
