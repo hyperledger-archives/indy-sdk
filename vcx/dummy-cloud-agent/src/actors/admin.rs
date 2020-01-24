@@ -29,7 +29,7 @@ impl Admin {
     }
 
     pub fn handle_admin_message(&self, admin_msg: &AdminQuery)
-                                -> Box<Future<Item=ResAdminQuery, Error=Error>> {
+                                -> Box<dyn Future<Item=ResAdminQuery, Error=Error>> {
         match admin_msg {
             AdminQuery::GetDetailForwardAgents => {
                 if let Some(addr) = self.forward_agent.as_ref() {
@@ -97,7 +97,7 @@ impl Actor for Admin {
 }
 
 impl Handler<HandleAdminMessage> for Admin {
-    type Result = Box<Future<Item=ResAdminQuery, Error=Error>>;
+    type Result = Box<dyn Future<Item=ResAdminQuery, Error=Error>>;
 
     fn handle(&mut self, msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
         trace!("Admin Handler<HandleAdminMessage>::handle");

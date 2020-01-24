@@ -42,7 +42,7 @@ pub fn start_app_server(server_config: ServerConfig, app_config: AppConfig, forw
 }
 
 
-fn _get_endpoint_details(state: Data<AppData>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn _get_endpoint_details(state: Data<AppData>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     let f = state.forward_agent
         .send(GetEndpoint {})
         .from_err()
@@ -53,7 +53,7 @@ fn _get_endpoint_details(state: Data<AppData>) -> Box<Future<Item=HttpResponse, 
     Box::new(f)
 }
 
-fn _forward_message(state: Data<AppData>, stream: web::Payload) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn _forward_message(state: Data<AppData>, stream: web::Payload) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     let f = stream.map_err(Error::from)
         .fold(web::BytesMut::new(), move |mut body, chunk| {
             body.extend_from_slice(&chunk);
