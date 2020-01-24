@@ -4,6 +4,7 @@ use self::futures::Future;
 use super::indy;
 use indy::IndyError;
 use utils::rand::random_string;
+use indy::{WalletHandle, INVALID_WALLET_HANDLE};
 
 static USEFUL_CREDENTIALS : &'static str =  r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;
 
@@ -28,14 +29,14 @@ assert!(wallet.handle > 0);
 */
 pub struct Wallet {
     name: String,
-    pub handle: i32,
+    pub handle: WalletHandle,
 }
 
 impl Wallet {
     /* constructors */
     pub fn new() -> Wallet {
         let wallet_name : String = random_string(20);
-        let mut wallet = Wallet { name : wallet_name , handle: -1 };
+        let mut wallet = Wallet { name : wallet_name , handle: INVALID_WALLET_HANDLE };
         wallet.create().unwrap();
         wallet.open().unwrap();
 
@@ -43,7 +44,7 @@ impl Wallet {
     }
 
     pub fn from_name(name: &str) -> Wallet {
-        let mut wallet = Wallet { name: name.to_string(), handle: -1 };
+        let mut wallet = Wallet { name: name.to_string(), handle: INVALID_WALLET_HANDLE };
         wallet.create().unwrap();
         wallet.open().unwrap();
 
@@ -58,7 +59,7 @@ impl Wallet {
 
     /* private instance methods for open/create/etc...*/
 
-    fn open(&mut self) -> Result<i32, IndyError> {
+    fn open(&mut self) -> Result<WalletHandle, IndyError> {
         let config : String = Wallet::create_wallet_config(&self.name);
         let handle = indy::wallet::open_wallet(&config, USEFUL_CREDENTIALS).wait()?;
         self.handle = handle;

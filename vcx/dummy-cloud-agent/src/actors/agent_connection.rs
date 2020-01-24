@@ -22,7 +22,7 @@ use crate::domain::key_deligation_proof::KeyDlgProof;
 use crate::domain::payload::{PayloadKinds, PayloadTypes, PayloadV1, PayloadV2, Thread};
 use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
 use crate::domain::status::{ConnectionStatus, MessageStatusCode};
-use crate::indy::{crypto, did, ErrorCode, IndyError, pairwise};
+use crate::indy::{crypto, did, ErrorCode, IndyError, pairwise, WalletHandle};
 use crate::utils::futures::*;
 use crate::utils::to_i8;
 
@@ -36,10 +36,10 @@ struct RemoteConnectionDetail {
     agent_key_dlg_proof: KeyDlgProof,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct AgentConnectionConfig {
     // Agent wallet handle
-    pub wallet_handle: i32,
+    pub wallet_handle: WalletHandle,
     // Agent Owner DID
     pub owner_did: String,
     // Agent Owner Verkey
@@ -61,7 +61,7 @@ pub struct AgentConnectionConfig {
 #[allow(unused)] //FIXME:
 pub struct AgentConnection {
     // Agent wallet handle
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     // Agent Owner DID
     owner_did: String,
     // Agent Owner Verkey
@@ -166,7 +166,7 @@ impl AgentConnection {
             .into_box()
     }
 
-    pub fn restore(wallet_handle: i32,
+    pub fn restore(wallet_handle: WalletHandle,
                    owner_did: &str,
                    owner_verkey: &str,
                    agent_pairwise_did: &str,

@@ -1105,6 +1105,7 @@ pub mod test {
 
         use v3::messages::connection::did_doc::tests::_service_endpoint;
         use ::utils::libindy::tests::create_key;
+        use indy_sys::WalletHandle;
 
         pub fn invitee_sm() -> DidExchangeSM {
             DidExchangeSM::new(Actor::Invitee, &source_id())
@@ -1122,7 +1123,7 @@ pub mod test {
                 self
             }
 
-            pub fn to_invitee_completed_state(mut self, wallet_handle: i32) -> DidExchangeSM {
+            pub fn to_invitee_completed_state(mut self, wallet_handle: WalletHandle) -> DidExchangeSM {
                 let key = create_key(wallet_handle, Some(::utils::libindy::tests::test_setup::TRUSTEE_SEED));
                 let invitation = Invitation::default().set_recipient_keys(vec![key.clone()]);
 

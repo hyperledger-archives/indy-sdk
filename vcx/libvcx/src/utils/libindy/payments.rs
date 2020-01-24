@@ -98,7 +98,7 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
         None => "{}".to_string(),
     };
 
-    payments::create_payment_address(get_wallet_handle() as i32, settings::get_payment_method().as_str(), &config)
+    payments::create_payment_address(get_wallet_handle(), settings::get_payment_method().as_str(), &config)
         .wait()
         .map_err(map_rust_indy_sdk_error)
 }
@@ -108,7 +108,7 @@ pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
 
     if settings::test_indy_mode_enabled() {return Ok(Vec::from(message).to_owned()); }
 
-    payments::sign_with_address(get_wallet_handle() as i32, address, message).wait().map_err(map_rust_indy_sdk_error)
+    payments::sign_with_address(get_wallet_handle(), address, message).wait().map_err(map_rust_indy_sdk_error)
 }
 
 pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> VcxResult<bool> {
@@ -145,7 +145,7 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, None)
+    let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle(), Some(&did), address, None)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
@@ -160,7 +160,7 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
     let mut next_seqno = next;
 
     while next_seqno.is_some() {
-        let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, next_seqno)
+        let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle(), Some(&did), address, next_seqno)
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
 
@@ -190,7 +190,7 @@ pub fn list_addresses() -> VcxResult<Vec<String>> {
         return Ok(::serde_json::from_value(addresses).unwrap());
     }
 
-    let addresses = payments::list_payment_addresses(get_wallet_handle() as i32)
+    let addresses = payments::list_payment_addresses(get_wallet_handle())
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
@@ -503,7 +503,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
             json!( { "recipient": payment_address, "amount": tokens_per_address } )
         ).collect();
         let outputs = serde_json::to_string(&mint).unwrap();
-        let (req, _) = payments::build_mint_req(get_wallet_handle() as i32, Some(&did_1), &outputs, None).wait().unwrap();
+        let (req, _) = payments::build_mint_req(get_wallet_handle(), Some(&did_1), &outputs, None).wait().unwrap();
 
         let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &req).unwrap();
         let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
@@ -517,7 +517,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
     }
 
     if let Some(fees_) = fees {
-        let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees_)
+        let txn = payments::build_set_txn_fees_req(get_wallet_handle(), Some(&did_1), settings::get_payment_method().as_str(), fees_)
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
 

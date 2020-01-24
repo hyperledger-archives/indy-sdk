@@ -8,7 +8,11 @@ use std::ptr;
 
 
 use failure::{Backtrace, Context, Fail};
+
+#[cfg(feature = "casting_errors")]
 use ursa::errors::{UrsaCryptoError, UrsaCryptoErrorKind};
+
+#[cfg(feature = "casting_errors")]
 use log;
 use libc::c_char;
 
@@ -193,6 +197,7 @@ impl From<io::Error> for IndyError {
     }
 }
 
+#[cfg(feature = "casting_errors")]
 impl From<zmq::Error> for IndyError {
     fn from(err: zmq::Error) -> Self {
         err.context(IndyErrorKind::IOError).into()
@@ -211,12 +216,14 @@ impl From<cell::BorrowMutError> for IndyError {
     }
 }
 
+#[cfg(feature = "casting_errors")]
 impl From<log::SetLoggerError> for IndyError {
     fn from(err: log::SetLoggerError) -> IndyError {
         err.context(IndyErrorKind::InvalidState).into()
     }
 }
 
+#[cfg(feature = "casting_errors")]
 impl From<UrsaCryptoError> for IndyError {
     fn from(err: UrsaCryptoError) -> Self {
         let message = format!("UrsaCryptoError: {}", Fail::iter_causes(&err).map(|e| e.to_string()).collect::<String>());
@@ -234,12 +241,14 @@ impl From<UrsaCryptoError> for IndyError {
     }
 }
 
+#[cfg(feature = "casting_errors")]
 impl From<rust_base58::base58::FromBase58Error> for IndyError {
     fn from(_err: rust_base58::base58::FromBase58Error) -> Self {
         IndyError::from_msg(IndyErrorKind::InvalidStructure, "The base58 input contained a character not part of the base58 alphabet")
     }
 }
 
+#[cfg(feature = "casting_errors")]
 impl From<openssl::error::ErrorStack> for IndyError {
     fn from(err: openssl::error::ErrorStack) -> IndyError {
         // TODO: FIXME: Analyze ErrorStack and split invalid structure errors from other errors
@@ -253,6 +262,7 @@ impl From<NulError> for IndyError {
     }
 }
 
+#[cfg(feature = "casting_errors")]
 impl From<rusqlite::Error> for IndyError {
     fn from(err: rusqlite::Error) -> IndyError {
         match err {

@@ -118,6 +118,7 @@ pub mod tests {
     static mut INSTITUTION_CONFIG: u32 = 0;
     static mut CONSUMER_CONFIG: u32 = 0;
     use indy::ErrorCode;
+    use indy::WalletHandle;
 
     static INIT_PLUGIN: std::sync::Once = std::sync::Once::new();
 
@@ -267,7 +268,7 @@ pub mod tests {
 
     fn change_wallet_handle() {
         let wallet_handle = settings::get_config_value(settings::CONFIG_WALLET_HANDLE).unwrap();
-        unsafe { wallet::WALLET_HANDLE = wallet_handle.parse::<i32>().unwrap() }
+        unsafe { wallet::WALLET_HANDLE = WalletHandle(wallet_handle.parse::<i32>().unwrap()) }
     }
 
     pub fn setup_local_env(protocol_type: &str) {
@@ -353,7 +354,7 @@ pub mod tests {
     pub fn config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
         let wallet_handle = wallet::open_wallet(wallet_n, None, None, None).unwrap();
         let mut config: serde_json::Value = serde_json::from_str(config).unwrap();
-        config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.to_string());
+        config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.0.to_string());
         config.to_string()
     }
 
@@ -364,7 +365,7 @@ pub mod tests {
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
     }
 
-    pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
+    pub fn setup_wallet_env(test_name: &str) -> Result<WalletHandle, String> {
         use utils::libindy::wallet::init_wallet;
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         init_wallet(test_name, None, None, None).map_err(|e| format!("Unable to init_wallet in tests: {}", e))

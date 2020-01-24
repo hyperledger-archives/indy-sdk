@@ -36,6 +36,7 @@ extern crate uuid;
 extern crate failure;
 
 extern crate rmp_serde;
+extern crate indy_sys;
 
 extern crate base64;
 

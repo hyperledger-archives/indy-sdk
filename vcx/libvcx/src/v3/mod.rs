@@ -13,6 +13,7 @@ pub mod test {
     use messages::agent_utils::connect_register_provision;
     use utils::libindy::wallet::*;
     use v3::messages::a2a::A2AMessage;
+    use indy_sys::WalletHandle;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -20,6 +21,7 @@ pub mod test {
 
     pub mod setup {
         use settings::{CONFIG_WALLET_KEY_DERIVATION, DEFAULT_WALLET_KEY};
+        use indy_sys::WalletHandle;
 
         pub fn base_config() -> ::serde_json::Value {
             json!({
@@ -56,7 +58,7 @@ pub mod test {
 
         pub struct AgencyModeSetup {
             pub wallet_name: String,
-            pub wallet_handle: i32,
+            pub wallet_handle: WalletHandle,
         }
 
         impl AgencyModeSetup {
@@ -123,7 +125,7 @@ pub mod test {
 
     pub struct Faber {
         pub wallet_name: String,
-        pub wallet_handle: i32,
+        pub wallet_handle: WalletHandle,
         pub connection_handle: u32,
         pub config: String,
         pub schema_handle: u32,
@@ -357,7 +359,7 @@ pub mod test {
 
     pub struct Alice {
         pub wallet_name: String,
-        pub wallet_handle: i32,
+        pub wallet_handle: WalletHandle,
         pub connection_handle: u32,
         pub config: String,
         pub credential_handle: u32,

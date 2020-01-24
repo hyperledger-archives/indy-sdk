@@ -8,6 +8,8 @@ links = "indy"
 license = "MIT/Apache-2.0"
 
 [dependencies]
+serde = "1.0.99"
+serde_derive = "1.0.99"
 libc = "=0.2.60"
 
 [build-dependencies]
