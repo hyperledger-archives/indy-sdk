@@ -1247,7 +1247,6 @@ impl AgentConnection {
 
         let remote_connection_detail = self.state.remote_connection_detail.as_ref()
             .ok_or(err_msg("Missed Remote Connection Details."))?;
-
         let remote_forward_agent_detail = &remote_connection_detail.forward_agent_detail;
         let remote_agent_pairwise_detail = &remote_connection_detail.agent_key_dlg_proof;
 
@@ -1270,7 +1269,6 @@ impl AgentConnection {
         match ProtocolType::get() {
             ProtocolTypes::V1 => {
                 let msg = ftry!(rmp_serde::to_vec_named(&msg));
-                ;
 
                 let payload_msg = PayloadV1 {
                     type_: PayloadTypes::build_v1(PayloadKinds::from(type_), "json"),
@@ -1285,7 +1283,6 @@ impl AgentConnection {
             }
             ProtocolTypes::V2 => {
                 let msg = ftry!(serde_json::to_string(&msg));
-                ;
 
                 let payload_msg = PayloadV2 {
                     type_: PayloadTypes::build_v2(PayloadKinds::from(type_)),
