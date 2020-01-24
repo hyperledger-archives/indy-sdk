@@ -4,11 +4,11 @@ use std::collections::HashSet;
 use serde_json;
 use failure::Context;
 
-use errors::prelude::*;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::merkle_tree_factory;
+use indy_api_types::errors::prelude::*;
+use crate::services::ledger::merkletree::merkletree::MerkleTree;
+use crate::services::pool::merkle_tree_factory;
 use rust_base58::{FromBase58, ToBase58};
-use services::pool::types::{CatchupReq, Message};
+use crate::services::pool::types::{CatchupReq, Message};
 
 pub enum CatchupProgress {
     ShouldBeStarted(

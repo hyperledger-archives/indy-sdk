@@ -37,6 +37,14 @@ extern crate failure;
 
 extern crate rmp_serde;
 
+extern crate base64;
+
+extern crate strum;
+#[macro_use]
+extern crate strum_macros;
+
+extern crate chrono;
+
 #[macro_use]
 pub mod utils;
 pub mod settings;
@@ -55,6 +63,8 @@ pub mod error;
 pub mod credential;
 pub mod object_cache;
 pub mod disclosed_proof;
+
+pub mod v3;
 
 #[allow(unused_imports)]
 #[cfg(test)]

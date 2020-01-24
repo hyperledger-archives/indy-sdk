@@ -16,6 +16,8 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
 
+import static org.hyperledger.indy.sdk.Callbacks.boolCallback;
+
 /**
  * anoncreds.rs API
  */
@@ -133,22 +135,6 @@ public class Anoncreds extends IndyJava.API {
 			if (! checkResult(future, err)) return;
 
 			ProverCreateCredentialRequestResult result = new ProverCreateCredentialRequestResult(credential_req_json, credential_req_metadata_json);
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when verifierVerifyProof completes.
-	 */
-	private static Callback verifierVerifyProofCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, Boolean valid) {
-
-			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
-			if (! checkResult(future, err)) return;
-
-			Boolean result = valid;
 			future.complete(result);
 		}
 	};
@@ -565,6 +551,7 @@ public class Anoncreds extends IndyJava.API {
 	 *                                  "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
 	 *                                  "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
 	 *                                }
+	 *                                If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
 	 * @param revRegId                (Optional) id of stored in ledger revocation registry definition
 	 * @param blobStorageReaderHandle Pre-configured blob storage reader instance handle that will allow to read revocation tails
 	 * @return A future resolving to a IssuerCreateCredentialResult containing:
@@ -1034,7 +1021,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+	 *         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "<attr_referent>": <attr_info>, // see below
 	 *              ...,
@@ -1056,8 +1043,11 @@ public class Anoncreds extends IndyJava.API {
 	 * attr_referent: Proof-request local identifier of requested attribute
 	 * attr_info: Describes requested attribute
 	 *     {
-	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
-	 *         "restrictions": Optional<filter_json>, // see below
+	 *         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+	 *         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+	 *                                              // NOTE: should either be "name" or "names", not both and not none of them.
+	 *                                              // Use "names" to specify several attributes that have to match a single credential.
+	 *         "restrictions": Optional<wql query>, // see below
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval this attribute
@@ -1143,7 +1133,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+	 *         "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "<attr_referent>": <attr_info>, // see below
 	 *              ...,
@@ -1190,22 +1180,25 @@ public class Anoncreds extends IndyJava.API {
 	 *     }
 	 * @param revStates            All revocation states json participating in the proof request
 	 *     {
-	 *         "rev_reg_def1_id": {
+	 *         "rev_reg_def1_id  or credential_1_id": {
 	 *             "timestamp1": {rev_state1},
 	 *             "timestamp2": {rev_state2},
 	 *         },
-	 *         "rev_reg_def2_id": {
+	 *         "rev_reg_def2_id  or credential_2_id": {
 	 *             "timestamp3": {rev_state3}
 	 *         },
-	 *         "rev_reg_def3_id": {
+	 *         "rev_reg_def3_id  or credential_3_id": {
 	 *             "timestamp4": {rev_state4}
 	 *         },
-	 *     }
+	 *     } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
 	 * where
 	 * attr_referent: Proof-request local identifier of requested attribute
 	 * attr_info: Describes requested attribute
 	 *     {
-	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
+	 *         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+	 *         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+	 *                                              // NOTE: should either be "name" or "names", not both and not none of them.
+	 *                                              // Use "names" to specify several attributes that have to match a single credential.
 	 *         "restrictions": Optional<wql query>, // see below
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
@@ -1249,6 +1242,17 @@ public class Anoncreds extends IndyJava.API {
 	 *             "revealed_attrs": {
 	 *                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 	 *                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+	 *             },
+	 *             "revealed_attr_groups": {
+	 *                 "requested_attr5_id": {
+	 *                     "sub_proof_index": number,
+	 *                     "values": {
+	 *                         "attribute_name": {
+	 *                             "raw": string,
+	 *                             "encoded": string
+	 *                         }
+	 *                     },
+	 *                 }
 	 *             },
 	 *             "unrevealed_attrs": {
 	 *                 "requested_attr3_id": {sub_proof_index: number}
@@ -1319,7 +1323,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "name": string,
 	 *         "version": string,
-	 *         "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+	 *         "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
 	 *         "requested_attributes": { // set of requested attributes
 	 *              "<attr_referent>": <attr_info>, // see below
 	 *              ...,
@@ -1343,6 +1347,17 @@ public class Anoncreds extends IndyJava.API {
 	 *             "revealed_attrs": {
 	 *                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
 	 *                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
+	 *             },
+	 *             "revealed_attr_groups": {
+	 *                 "requested_attr5_id": {
+	 *                     "sub_proof_index": number,
+	 *                     "values": {
+	 *                         "attribute_name": {
+	 *                             "raw": string,
+	 *                             "encoded": string
+	 *                         }
+	 *                     }, // NOTE: check that `encoded` value match to `raw` value on application level
+	 *                 }
 	 *             },
 	 *             "unrevealed_attrs": {
 	 *                 "requested_attr3_id": {sub_proof_index: number}
@@ -1421,7 +1436,7 @@ public class Anoncreds extends IndyJava.API {
 				credentialDefs,
 				revocRegDefs,
 				revocRegs,
-				verifierVerifyProofCb);
+				boolCallback);
 
 		checkResult(future, result);
 
@@ -1555,7 +1570,11 @@ public class Anoncreds extends IndyJava.API {
 	 *             SchemaId
 	 *             CredentialDefinitionId
 	 *             RevocationRegistryId
+	 *             Schema
+	 *             CredentialDefinition
+	 *             RevocationRegistryDefinition
 	 *             CredentialOffer
+	 *             CredentialRequest
 	 *             ProofRequest
 	 * @return A future that resolves to entity either in unqualified form or original if casting isn't possible
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.

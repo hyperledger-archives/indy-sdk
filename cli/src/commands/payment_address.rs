@@ -1,16 +1,16 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
-use commands::*;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
+use crate::commands::*;
 
 use indy::{ErrorCode, IndyError};
-use libindy::payment::Payment;
+use crate::libindy::payment::Payment;
 
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use utils::table::print_list_table;
+use crate::utils::table::print_list_table;
 
 
 pub mod group {
@@ -19,18 +19,18 @@ pub mod group {
     command_group!(CommandGroupMetadata::new("payment-address", "Payment address management commands"));
 }
 
-pub mod create_command {
+pub mod new_command {
     use super::*;
 
-    command!(CommandMetadata::build("create", "Create the payment address for specified payment method.")
+    command!(CommandMetadata::build("new", "Create the payment address for specified payment method.")
                 .add_required_param("payment_method", "Payment method to use")
                 .add_optional_param("seed", "Seed for creating payment address")
-                .add_example("payment-address create payment_method=sov")
-                .add_example("payment-address create payment_method=sov seed=000000000000000000000000000Seed1")
+                .add_example("payment-address new payment_method=sov")
+                .add_example("payment-address new payment_method=sov seed=000000000000000000000000000Seed1")
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+    pub(super) fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
@@ -57,6 +57,22 @@ pub mod create_command {
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+pub mod create_command {
+    use super::*;
+
+    command!(CommandMetadata::build("create", r#"Create the payment address for specified payment method. TAKE NOTE that this command will be removed in one of the future releases in favor `payment-address new` command."#)
+                .add_required_param("payment_method", "Payment method to use")
+                .add_optional_param("seed", "Seed for creating payment address")
+                .add_example("payment-address create payment_method=sov")
+                .add_example("payment-address create payment_method=sov seed=000000000000000000000000000Seed1")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        new_command::execute(ctx, params)
     }
 }
 
@@ -89,7 +105,7 @@ pub mod list_command {
 
                 print_list_table(&list_addresses,
                                  &[("address", "Payment Address"),
-                                       ("method", "Payment Method")],
+                                     ("method", "Payment Method")],
                                  "There are no payment addresses");
                 Ok(())
             }
@@ -231,20 +247,20 @@ pub fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
 #[cfg(feature = "nullpay_plugin")]
 pub mod tests {
     use super::*;
-    use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
-    use commands::did::tests::SEED_MY1;
+    use crate::commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
+    use crate::commands::did::tests::SEED_MY1;
 
     pub const INPUT: &str = "123456789";
 
-    mod create {
+    mod new {
         use super::*;
 
         #[test]
-        pub fn create_works() {
+        pub fn new_works() {
             let ctx = setup_with_wallet();
             load_null_payment_plugin(&ctx);
             {
-                let cmd = create_command::new();
+                let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -257,11 +273,11 @@ pub mod tests {
         }
 
         #[test]
-        pub fn create_works_for_seed() {
+        pub fn new_works_for_seed() {
             let ctx = setup_with_wallet();
             load_null_payment_plugin(&ctx);
             {
-                let cmd = create_command::new();
+                let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 params.insert("seed", SEED_MY1.to_string());
@@ -275,10 +291,10 @@ pub mod tests {
         }
 
         #[test]
-        pub fn create_works_for_unknown_payment_method() {
+        pub fn new_works_for_unknown_payment_method() {
             let ctx = setup_with_wallet();
             {
-                let cmd = create_command::new();
+                let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", "unknown_payment_method".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -287,11 +303,11 @@ pub mod tests {
         }
 
         #[test]
-        pub fn create_works_for_no_opened_wallet() {
+        pub fn new_works_for_no_opened_wallet() {
             let ctx = setup();
             load_null_payment_plugin(&ctx);
             {
-                let cmd = create_command::new();
+                let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();

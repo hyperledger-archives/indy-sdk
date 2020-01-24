@@ -5,7 +5,7 @@ extern crate indyrs as indy;
 
 pub mod callback;
 
-#[path = "../../src/utils/environment.rs"]
+#[path = "../../indy-utils/src/environment.rs"]
 pub mod environment;
 
 pub mod pool;
@@ -27,30 +27,28 @@ pub mod cache;
 
 #[macro_use]
 #[allow(unused_macros)]
-#[path = "../../src/utils/test.rs"]
+#[path = "../../indy-utils/src/test.rs"]
 pub mod test;
 
 pub mod timeout;
 
-#[path = "../../src/utils/sequence.rs"]
+#[path = "../../indy-utils/src/sequence.rs"]
 pub mod sequence;
 
 #[macro_use]
 #[allow(unused_macros)]
-#[path = "../../src/utils/ctypes.rs"]
+#[path = "../../indy-utils/src/ctypes.rs"]
 pub mod ctypes;
-
-#[path = "../../src/utils/validation.rs"]
-pub mod validation;
 
 #[macro_use]
 #[path = "../../src/utils/qualifier.rs"]
 pub mod qualifier;
 
-#[path = "../../src/utils/inmem_wallet.rs"]
+pub(crate) use indy::ErrorCode;
+#[path = "../../indy-utils/src/inmem_wallet.rs"]
 pub mod inmem_wallet;
 
-#[path = "../../src/utils/wql.rs"]
+#[path = "../../indy-utils/src/wql.rs"]
 pub mod wql;
 
 #[path = "../../src/domain/mod.rs"]
@@ -75,6 +73,7 @@ macro_rules! inject_indy_dependencies {
         #[macro_use]
         extern crate serde_json;
 
+        #[allow(unused_imports)]
         #[macro_use]
         extern crate log;
 
@@ -95,7 +94,7 @@ macro_rules! inject_indy_dependencies {
 }
 
 fn setup() -> String {
-    let name = ::utils::rand_utils::get_rand_string(10);
+    let name = crate::utils::rand_utils::get_rand_string(10);
     test::cleanup_storage(&name);
     logger::set_default_logger();
     name

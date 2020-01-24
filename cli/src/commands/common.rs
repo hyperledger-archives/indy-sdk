@@ -2,11 +2,11 @@ extern crate libloading;
 
 use indy::ErrorCode;
 
-use command_executor::{Command, CommandContext, CommandParams, CommandMetadata, CommandResult};
-use commands::get_str_param;
+use crate::command_executor::{Command, CommandContext, CommandParams, CommandMetadata, CommandResult};
+use crate::commands::get_str_param;
 
-use utils::logger;
-use utils::file::read_file;
+use crate::utils::logger;
+use crate::utils::file::read_file;
 
 pub mod about_command {
     use super::*;
@@ -192,7 +192,7 @@ pub mod tests {
 
     mod load {
         use super::*;
-        use utils::test::TestUtils;
+        use crate::utils::test::TestUtils;
 
         #[test]
         pub fn load_works() {

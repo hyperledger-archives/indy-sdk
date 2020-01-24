@@ -214,7 +214,7 @@ vcx_error_t vcx_connection_serialize(vcx_command_handle_t command_handle,
                                   vcx_connection_handle_t connection_handle,
                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the connection and updates the the state attribute
+// Checks for any state change in the connection and updates the state attribute
 //
 // #Params
 // command_handle: command handle to map callback to user context.
@@ -228,6 +228,53 @@ vcx_error_t vcx_connection_serialize(vcx_command_handle_t command_handle,
 vcx_error_t vcx_connection_update_state(vcx_command_handle_t command_handle,
                                      vcx_connection_handle_t connection_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t, vcx_state_t));
+
+/// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// comment: (Optional) human-friendly description of the ping.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_send_ping(vcx_u32_t command_handle,
+                                     vcx_connection_handle_t connection_handle,
+                                     const char* comment,
+                                     void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+/// Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to send message
+///
+/// query: (Optional) query string to match against supported message types.
+///
+/// comment: (Optional) human-friendly description of the query.
+///
+/// cb: Callback that provides success or failure of request
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_send_discovery_features(vcx_u32_t command_handle,
+                                                   vcx_connection_handle_t connection_handle,
+                                                   const char* query,
+                                                   const char* comment,
+                                                   void (*cb)(vcx_command_handle_t, vcx_error_t));
 
 // Create a Credential object that requests and receives a credential for an institution
 //
@@ -395,7 +442,7 @@ vcx_error_t vcx_credential_serialize(vcx_command_handle_t command_handle,
                                   vcx_credential_handle_t handle,
                                   void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the credential and updates the the state attribute.  If it detects a credential it
+// Checks for any state change in the credential and updates the state attribute.  If it detects a credential it
 // will store the credential in the wallet and update the state.
 //
 // #Params
@@ -557,7 +604,7 @@ vcx_error_t vcx_credentialdef_serialize(vcx_command_handle_t command_handle,
                                      vcx_credential_handle_t credentialdef_handle,
                                      void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-/// Checks if credential definition is published on the Ledger and updates the the state
+/// Checks if credential definition is published on the Ledger and updates the state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -667,6 +714,74 @@ vcx_error_t vcx_disclosed_proof_generate_proof(vcx_command_handle_t command_hand
                                             const char *self_attested_attrs,
                                             void (*cb)(vcx_command_handle_t, vcx_error_t));
 
+/// Declines presentation request.
+/// There are two ways of following interaction:
+///     - Prover wants to propose using a different presentation - pass `proposal` parameter.
+///     - Prover doesn't want to continue interaction - pass `reason` parameter.
+/// Note that only one of these parameters can be passed.
+///
+/// Note that this function is useful in case `aries` communication method is used.
+/// In other cases it returns ActionNotSupported error.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to identify the disclosed proof object
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// reason: human-readable string that explain the reason of decline
+///
+/// proposal: the proposed format of presentation request
+/// (see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#presentation-preview for details)
+/// {
+///    "attributes": [
+///        {
+///            "name": "<attribute_name>",
+///            "cred_def_id": Optional("<cred_def_id>"),
+///            "mime-type": Optional("<type>"),
+///            "value": Optional("<value>")
+///        },
+///        // more attributes
+///    ],
+///    "predicates": [
+///        {
+///            "name": "<attribute_name>",
+///            "cred_def_id": Optional("<cred_def_id>"),
+///            "predicate": "<predicate>", - one of "<", "<=", ">=", ">"
+///            "threshold": <threshold>
+///        },
+///        // more predicates
+///    ]
+/// }
+/// # Example
+///  proposal ->
+///     {
+///          "attributes": [
+///              {
+///                  "name": "first name"
+///              }
+///          ],
+///          "predicates": [
+///              {
+///                  "name": "age",
+///                  "predicate": ">",
+///                  "threshold": 18
+///              }
+///          ]
+///      }
+///
+/// cb: Callback that returns error status
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_disclosed_proof_decline_presentation_request(vcx_command_handle_t command_handle,
+                                                             vcx_disclosed_proof_handle_t proof_handle,
+                                                             vcx_connection_handle_t connection_handle,
+                                                             const char *reason,
+                                                             const char *proposal,
+                                                             void (*cb)(vcx_command_handle_t, vcx_error_t));
+
 // Queries agency for proof requests from the given connection.
 //
 // #Params
@@ -754,7 +869,7 @@ vcx_error_t vcx_disclosed_proof_serialize(vcx_command_handle_t command_handle,
                                        vcx_disclosed_proof_handle_t proof_handle,
                                        void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the disclosed proof and updates the the state attribute
+// Checks for any state change in the disclosed proof and updates the state attribute
 //
 // #Params
 // command_handle: command handle to map callback to user context.
@@ -945,7 +1060,7 @@ vcx_error_t vcx_issuer_credential_serialize(vcx_command_handle_t command_handle,
                                          vcx_issuer_credential_handle_t credential_handle,
                                          void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-// Checks for any state change in the credential and updates the the state attribute
+// Checks for any state change in the credential and updates the state attribute
 //
 // #Params
 // command_handle: command handle to map callback to user context.
@@ -1320,7 +1435,7 @@ vcx_error_t vcx_schema_serialize(vcx_command_handle_t command_handle,
                               vcx_schema_handle_t schema_handle,
                               void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
-/// Checks if schema is published on the Ledger and updates the the state
+/// Checks if schema is published on the Ledger and updates the state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

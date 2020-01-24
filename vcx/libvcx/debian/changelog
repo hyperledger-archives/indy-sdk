@@ -1,6 +1,34 @@
-libvcx (0.4.1) unstable; urgency=medium
+libvcx (0.6.1) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 0.6.1
+* Bugfixes
+
+## 0.6.0
+* LibVCX Aries support:
+    * Implemented Trust Ping RFC (IS-1435).
+        * added `vcx_connection_send_ping` function to send `Ping` message on remote connection.
+        * handle inbound `Ping` message after connection is established (use `vcx_connection_update_state` or `vcx_connection_update_state_with_message`).
+    * Implemented Discover Features RFC (IS-1155)
+        * added `vcx_connection_send_discovery_features` function to send discovery features request on remote connection.
+        * handle inbound `Query` and `Disclose` messages after connection is established (use `vcx_connection_update_state` or `vcx_connection_update_state_with_message`).
+    * Implemented Service Decorator RFC (IS-1449)
+    * Added new Vcx setting: `actors` which specifies the set of protocols application supports (is used for Discover Features protocol handling).
+
+## 0.5.0
+* LibVCX Aries support:
+    * Now you can keep old code without doing any changes and use Aries protocols if you have not parsed any messages. If you need more information -- see the migration guide.
+    * Implemented Connection RFC (IS-1180)
+    * Implemented Credential Issuance RFC (IS-1393)
+    * Implemented Credential Presentation RFC (IS-1394)
+    * Integrated Connection Protocol into Dummy Cloud Agent (IS-1392)
+
+## 0.4.2
+* *EXPERIMENTAL*
+  Extended provisioning config to accept optional `did_method` filed. This field should be used to create fully qualified DIDs.
+  The format of identifiers used on CredentialIssuance and ProofPresentation will determine based on the type of remote DID.
+* Bugfixes
 
 ## 0.4.1
 * Supported endorsing of transactions in Libvcx.
@@ -18,7 +46,7 @@ libvcx (0.4.1) unstable; urgency=medium
 This removes the dependency on an agency/cloud-agent and allows the user of the SDK to transport those messages themselves.
 There are two types of functions:
     * `vcx_*_get_request_msg` - gets a message that can be sent to the specified connection.
-    * `vcx_*_update_state_with_message` - checks for any state change from the given message and updates the the state attribute.
+    * `vcx_*_update_state_with_message` - checks for any state change from the given message and updates the state attribute.
 * Added new *EXPEREMENTAL* functions to get requirements and price for a ledger request.
     * `vcx_get_request_price` - returns request minimal request price for performing an action in case the requester can do it.
 * Updated Indy-SDK CI/CD pipelines to test, to build and to publish Android artifacts for Libvcx.

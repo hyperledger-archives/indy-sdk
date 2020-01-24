@@ -4,19 +4,20 @@ use std::rc::Rc;
 
 use serde_json;
 
-use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
-use commands::ledger::LedgerCommand;
-use domain::crypto::did::{Did, DidValue, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo, DidMethod};
-use domain::crypto::key::KeyInfo;
-use domain::ledger::attrib::{AttribData, Endpoint, GetAttrReplyResult};
-use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
-use domain::ledger::response::Reply;
-use domain::pairwise::Pairwise;
-use errors::prelude::*;
-use services::crypto::CryptoService;
-use services::ledger::LedgerService;
-use services::wallet::{RecordOptions, SearchOptions, WalletService};
-use api::{WalletHandle, PoolHandle, CommandHandle, next_command_handle};
+use crate::commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
+use crate::commands::ledger::LedgerCommand;
+use crate::domain::crypto::did::{Did, DidValue, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo, DidMethod};
+use crate::domain::crypto::key::KeyInfo;
+use crate::domain::ledger::attrib::{AttribData, Endpoint, GetAttrReplyResult};
+use crate::domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
+use crate::domain::ledger::response::Reply;
+use crate::domain::pairwise::Pairwise;
+use indy_api_types::errors::prelude::*;
+use crate::services::crypto::CryptoService;
+use crate::services::ledger::LedgerService;
+use indy_wallet::{RecordOptions, SearchOptions, WalletService};
+use indy_api_types::{WalletHandle, PoolHandle, CommandHandle};
+use indy_utils::next_command_handle;
 use rust_base58::{FromBase58, ToBase58};
 use named_type::NamedType;
 
@@ -274,7 +275,7 @@ impl DidCommandExecutor {
 
         let their_did = self.crypto_service.create_their_did(their_did_info)?;
 
-        self.wallet_service.add_indy_object(wallet_handle, &their_did.did.0, &their_did, &HashMap::new())?;
+        self.wallet_service.upsert_indy_object(wallet_handle, &their_did.did.0, &their_did)?;
 
         debug!("store_their_did <<<");
 

@@ -285,6 +285,7 @@ Example:
      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
     }
 ````
+  If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
 * `revRegId`: String - id of revocation registry stored in the wallet
 * `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * __->__ [ `cred`: Json, `credRevocId`: String, `revocRegDelta`: Json ] - cred\_json: Credential json containing signed credential values
@@ -527,7 +528,7 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -545,7 +546,36 @@ Use &lt;proverSearchCredentialsForProofReq&gt; to fetch records by small batches
             - "1.0" to use unqualified identifiers for restrictions
             - "2.0" to use fully qualified identifiers for restrictions
     }
-where
+where:
+ attr_info: Describes requested attribute
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ predicate_referent: Proof-request local identifier of requested attribute predicate
+ predicate_info: Describes requested attribute predicate
+     {
+         "name": attribute name, (case insensitive and ignore spaces)
+         "p_type": predicate type (">=", ">", "<=", "<")
+         "p_value": predicate value
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ non_revoc_interval: Defines non-revocation interval
+     {
+         "from": Optional<int>, // timestamp of interval beginning
+         "to": Optional<int>, // timestamp of interval ending
+     }
 ````
 * __->__ `credentials`: Json - credentials\_json: json with credentials for the given proof request.
 ```
@@ -585,7 +615,7 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -603,6 +633,36 @@ to fetch records by small batches \(with proverFetchCredentialsForProofReq\).
             - "1.0" to use unqualified identifiers for restrictions
             - "2.0" to use fully qualified identifiers for restrictions
     }
+where:
+ attr_info: Describes requested attribute
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ predicate_referent: Proof-request local identifier of requested attribute predicate
+ predicate_info: Describes requested attribute predicate
+     {
+         "name": attribute name, (case insensitive and ignore spaces)
+         "p_type": predicate type (">=", ">", "<=", "<")
+         "p_value": predicate value
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ non_revoc_interval: Defines non-revocation interval
+     {
+         "from": Optional<int>, // timestamp of interval beginning
+         "to": Optional<int>, // timestamp of interval ending
+     }
 ````
 * `extraQuery`: Json - \(Optional\) List of extra queries that will be applied to correspondent attribute\/predicate:
 ```
@@ -676,7 +736,7 @@ The proof contains either proof or self-attested attribute value for each reques
   {
       "name": string,
       "version": string,
-      "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+      "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
       "requested_attributes": { // set of requested attributes
            "<attr_referent>": <attr_info>, // see below
            ...,
@@ -694,6 +754,36 @@ The proof contains either proof or self-attested attribute value for each reques
           - "1.0" to use unqualified identifiers for restrictions
           - "2.0" to use fully qualified identifiers for restrictions
   }
+where:
+ attr_info: Describes requested attribute
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ predicate_referent: Proof-request local identifier of requested attribute predicate
+ predicate_info: Describes requested attribute predicate
+     {
+         "name": attribute name, (case insensitive and ignore spaces)
+         "p_type": predicate type (">=", ">", "<=", "<")
+         "p_value": predicate value
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ non_revoc_interval: Defines non-revocation interval
+     {
+         "from": Optional<int>, // timestamp of interval beginning
+         "to": Optional<int>, // timestamp of interval ending
+     }
 ````
 * `requestedCredentials`: Json - either a credential or self-attested attribute for each requested attribute
 ```
@@ -730,17 +820,17 @@ The proof contains either proof or self-attested attribute value for each reques
 * `revStates`: Json - all revocation states json participating in the proof request
 ```
     {
-        "rev_reg_def1_id": {
+        "rev_reg_def1_id  or credential_1_id"": {
             "timestamp1": <rev_state1>,
             "timestamp2": <rev_state2>,
         },
-        "rev_reg_def2_id": {
+        "rev_reg_def2_id  or credential_2_id"": {
             "timestamp3": <rev_state3>
         },
-        "rev_reg_def3_id": {
+        "rev_reg_def3_id  or credential_3_id"": {
             "timestamp4": <rev_state4>
         },
-    }
+    } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
 where
 where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
 ````
@@ -755,6 +845,17 @@ There is also aggregated proof part common for all credential proofs.
             "revealed_attrs": {
                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+            },
+            "revealed_attr_groups": {
+                "requested_attr5_id": {
+                    "sub_proof_index": number,
+                    "values": {
+                        "attribute_name": {
+                            "raw": string,
+                            "encoded": string
+                        }
+                    },
+                }
             },
             "unrevealed_attrs": {
                 "requested_attr3_id": {sub_proof_index: number}
@@ -791,7 +892,7 @@ as the keys for corresponding `schemas`, `credentialDefsJsons`, `revRegDefs`, `r
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `generateNonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `generateNonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -815,8 +916,19 @@ as the keys for corresponding `schemas`, `credentialDefsJsons`, `revRegDefs`, `r
     {
         "requested_proof": {
             "revealed_attrs": {
-                "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
-                "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+                "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
+                "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
+            },
+            "revealed_attr_groups": {
+                "requested_attr5_id": {
+                    "sub_proof_index": number,
+                    "values": {
+                        "attribute_name": {
+                            "raw": string,
+                            "encoded": string
+                        }
+                    }, // NOTE: check that `encoded` value match to `raw` value on application level
+                }
             },
             "unrevealed_attrs": {
                 "requested_attr3_id": {sub_proof_index: number}
@@ -931,7 +1043,7 @@ This function should be used to the proper casting of fully qualified entity to 
 2) Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
 3) another case when casting to unqualified form needed
 
-* `entity`: String - target entity to disqualify. Can be one of: Did, SchemaId, CredentialDefinitionId, RevocationRegistryId, CredentialOffer.
+* `entity`: String - target entity to disqualify. Can be one of: Did, SchemaId, CredentialDefinitionId, RevocationRegistryId, Schema, CredentialDefinition, RevocationRegistryDefinition, CredentialOffer, CredentialRequest, ProofRequest.
 * __->__ `res`: Json - entity either in unqualified form or original if casting isn't possible
 
 ### blob_storage
@@ -1247,13 +1359,16 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Saves their DID for a pairwise connection in a secured Wallet,
 so that it can be used to verify transaction.
+Updates DID associated verkey in case DID already exists in the Wallet.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `identity`: Json - Identity information as json. Example:
 ```
     {
        "did": string, (required)
-       "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+       "verkey": string 
+                     - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+                     - mandatory in case of updating an existing DID   
     }
 ````
 * __->__ void
@@ -1542,6 +1657,28 @@ Builds a GET\_NYM request. Request to get information about a DID \(NYM\).
 * `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * __->__ `request`: Json
+
+Errors: `Common*`
+
+#### parseGetNymResponse \( response \) -&gt; nymData
+
+Parse a GET_NYM response to get NYM data.
+
+* `response`: String - response on GET_NYM request.
+* __->__ `nymData`: Json 
+```
+   {
+       did: DID as base58-encoded string for 16 or 32 bit DID value.
+       verkey: verification key as base58-encoded string.
+       role: Role associated number
+                               null (common USER)
+                               0 - TRUSTEE
+                               2 - STEWARD
+                               101 - TRUST_ANCHOR
+                               101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+                               201 - NETWORK_MONITOR
+   }
+```
 
 Errors: `Common*`
 
@@ -1993,7 +2130,7 @@ NOTE: Either none or all transaction related parameters must be specified (`oldV
 
 Errors: `Common*`
 
-#### buildTxnAuthorAgreementRequest \( submitterDid, text, version \) -&gt; request
+#### buildTxnAuthorAgreementRequest \( submitterDid, text, version, ratificationTimestamp, retirementTimestamp \) -&gt; request
 
 Builds a TXN_AUTHR_AGRMT request. 
 Request to add a new version of Transaction Author Agreement to the ledger.
@@ -2002,8 +2139,42 @@ EXPERIMENTAL
 
 * `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
                            Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
-* `text`: String - a content of the TTA.
+* `text`: String - \(Optional\)  a content of the TTA.
+    * Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+    * for Indy Node version <= 1.12.0:
+        * Use empty string to reset TAA on the ledger
+    * for Indy Node version > 1.12.0
+        * Should be omitted in case of updating an existing TAA (setting `retirementTimestamp`)
 * `version`: String - a version of the TTA (unique UTF-8 string).
+* `version`: String - the date (timestamp) of TAA ratification by network government.
+* `ratificationTimestamp`: Number - \(Optional\) Еhe date (timestamp) of TAA ratification by network government.
+    * for Indy Node version <= 1.12.0:
+        * Must be omitted
+    * for Indy Node version > 1.12.0:
+        * Must be specified in case of adding a new TAA
+        * Can be omitted in case of updating an existing TAA
+* `retirementTimestamp`: Number - \(Optional\) the date \(timestamp\) of TAA retirement.
+    * for Indy Node version <= 1.12.0:
+        * Must be omitted
+    * for Indy Node version > 1.12.0:
+        * Must be omitted in case of adding a new (latest) TAA.
+        * Should be used for updating (deactivating) non-latest TAA on the ledger.
+
+Note: Use `buildDisableAllTxnAuthorAgreementsRequest` to disable all TAA's on the ledger.
+
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildDisableAllTxnAuthorAgreementsRequest \( submitterDid \) -&gt; request
+
+Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. 
+Request to disable all Transaction Author Agreement on the ledger.
+
+EXPERIMENTAL
+
+* `submitterDid`: String - Identifier (DID) of the transaction author as base58-encoded string.
+                           Actual request sender may differ if Endorser is used (look at `appendRequestEndorser`)
 
 * __->__ `request`: Json
 
@@ -2091,7 +2262,7 @@ If all text, version and taaDigest parameters are specified, a check integrity o
 * `version`: String - \(Optional\) raw data about TAA from ledger.
      * `text` and `version` parameters should be passed together.
      * `text` and `version` parameters are required if taaDigest parameter is omitted.
-* `taaDigest`: String - \(Optional\) hash on text and version. This parameter is required if text and version parameters are omitted.
+* `taaDigest`: String - \(Optional\) hash on text and version. Digest is sha256 hash calculated on concatenated strings: version || text. This parameter is required if text and version parameters are omitted.
 * `accMechType`: String - mechanism how user has accepted the TAA.
 * `timeOfAcceptance`: Timestamp (Number) - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk. 
 
@@ -2759,8 +2930,13 @@ if NULL, then default config will be used. Example:
     "extended_timeout": int (optional), extended timeout for network request (in sec).
     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
-        Note: Not specified nodes will be placed in a random way.
+        This can be useful if a user prefers querying specific nodes.
+        Assume that `Node1` and `Node2` nodes reply faster.
+        If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
+        Note: Nodes not specified will be placed randomly.
     "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+        By default Libindy sends a read requests to 2 nodes in the pool.
+        If response isn't received or `state proof` is invalid Libindy sends the request again but to 2 (`number_read_nodes`) * 2 = 4 nodes and so far until completion.
 }
 ````
 

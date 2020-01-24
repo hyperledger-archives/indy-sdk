@@ -443,6 +443,14 @@ indy.buildGetNymRequest = function buildGetNymRequest (submitterDid, targetDid, 
   return cb.promise
 }
 
+indy.parseGetNymResponse = function parseGetNymResponse (response, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data)
+  })
+  capi.parseGetNymResponse(toJson(response), cb)
+  return cb.promise
+}
+
 indy.buildSchemaRequest = function buildSchemaRequest (submitterDid, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildSchemaRequest(submitterDid, toJson(data), cb)
@@ -591,9 +599,16 @@ indy.buildGetAuthRuleRequest = function buildGetAuthRuleRequest (submitterDid, t
   return cb.promise
 }
 
-indy.buildTxnAuthorAgreementRequest = function buildTxnAuthorAgreementRequest (submitterDid, text, version, cb) {
+indy.buildTxnAuthorAgreementRequest = function buildTxnAuthorAgreementRequest (submitterDid, text, version, ratificationTimestamp, retirementTimestamp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildTxnAuthorAgreementRequest(submitterDid, text, version, cb)
+  capi.buildTxnAuthorAgreementRequest(submitterDid, text, version, ratificationTimestamp == null ? -1 : ratificationTimestamp,
+    retirementTimestamp == null ? -1 : retirementTimestamp, cb)
+  return cb.promise
+}
+
+indy.buildDisableAllTxnAuthorAgreementsRequest = function buildDisableAllTxnAuthorAgreementsRequest (submitterDid, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildDisableAllTxnAuthorAgreementsRequest(submitterDid, cb)
   return cb.promise
 }
 

@@ -49,6 +49,9 @@ export async function provisionAgent (configAgent: string, options: IInitVCXOpti
 }
 
 export async function updateAgentInfo (options: string): Promise<void> {
+  /**
+   * Update information on the agent (ie, comm method and type)
+   */
   try {
     return await createFFICallbackPromise<void>(
       (resolve, reject, cb) => {
@@ -140,11 +143,27 @@ export function setActiveTxnAuthorAgreementMeta (text: string | null | undefined
                                                  hash: string | null | undefined,
                                                  acc_mech_type: string,
                                                  time_of_acceptance: number) {
+  /**
+   * Set some accepted agreement as active.
+   * As result of successful call of this function appropriate metadata will be appended to each write request.
+   */
   return rustAPI().vcx_set_active_txn_author_agreement_meta(text, version, hash, acc_mech_type, time_of_acceptance)
 }
 
 export function shutdownVcx (deleteWallet: boolean): number {
   return rustAPI().vcx_shutdown(deleteWallet)
+}
+
+export interface IUpdateWebhookUrl {
+    webhookUrl: string,
+}
+
+export function vcxUpdateWebhookUrl ({ webhookUrl }: IUpdateWebhookUrl): number {
+    const rc = rustAPI().vcx_update_webhook_url(webhookUrl)
+    if (rc) {
+        throw new VCXInternalError(rc)
+    }
+    return rc
 }
 
 export interface IUpdateInstitutionConfigs {
@@ -167,6 +186,9 @@ export interface IDownloadMessagesConfigs {
 
 export async function downloadMessages
 ({ status, uids, pairwiseDids }: IDownloadMessagesConfigs): Promise<string> {
+  /**
+   *  Retrieve messages from the agency
+   */
   try {
     return await createFFICallbackPromise<string>(
       (resolve, reject, cb) => {
@@ -196,6 +218,9 @@ export interface IUpdateMessagesConfigs {
 }
 
 export async function updateMessages ({ msgJson }: IUpdateMessagesConfigs): Promise<number> {
+  /**
+   * Update the status of messages from the specified connection
+   */
   try {
     return await createFFICallbackPromise<number>(
       (resolve, reject, cb) => {
@@ -225,6 +250,9 @@ export function setPoolHandle (handle: number): void {
 }
 
 export async function endorseTransaction (transaction: string): Promise<void> {
+  /**
+   * Endorse transaction to the ledger preserving an original author
+   */
   try {
     return await createFFICallbackPromise<void>(
       (resolve, reject, cb) => {

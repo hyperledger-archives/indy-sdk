@@ -1,17 +1,17 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
-use commands::*;
-use utils::table::print_list_table;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
+use crate::commands::*;
+use crate::utils::table::print_list_table;
 
 use indy::ErrorCode;
 
-use libindy::did::Did;
-use libindy::ledger::Ledger;
+use crate::libindy::did::Did;
+use crate::libindy::ledger::Ledger;
 
 use std::fs::File;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use commands::ledger::{
+use crate::commands::ledger::{
     handle_transaction_response,
     set_request_fees,
     parse_response_with_fees,
@@ -533,10 +533,10 @@ pub fn list_dids(ctx: &CommandContext) -> Vec<String> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use libindy::did::Did;
-    use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
-    use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
-    use commands::ledger::tests::send_nym;
+    use crate::libindy::did::Did;
+    use crate::commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
+    use crate::commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
+    use crate::commands::ledger::tests::send_nym;
 
     pub const SEED_TRUSTEE: &'static str = "000000000000000000000000Trustee1";
     pub const DID_TRUSTEE: &'static str = "V4SGRU86Z58d6TV7PBUe6f";
@@ -777,7 +777,7 @@ pub mod tests {
     mod did_rotate_key {
         use super::*;
         #[cfg(feature = "nullpay_plugin")]
-        use commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
+        use crate::commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
 
         fn ensure_nym_written(ctx: &CommandContext, did: &str, verkey: &str) {
             let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();

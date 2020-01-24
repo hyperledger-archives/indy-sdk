@@ -16,6 +16,9 @@ If you have just started learning about self-sovereign identity, here are some r
 * This extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
 functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](docs/getting-started/indy-walkthrough.md)
 
+    * **Please take note** that this tutorial doesn't cover how sides set up a connection and exchange messages.
+    How this communication channel can be built you can find at [Aries](https://github.com/hyperledger/aries) project which describes it in great details.
+
 * Hyperledger Indy Working Group calls happen every Thursday at 8amPT, 9amMT, 11amET, 4pmBST. Add to your calendar and join from any device: https://zoom.us/j/232861185
 
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
@@ -124,7 +127,7 @@ Please See the section "Release channels" above for more details.
 
 ### Windows
 
-1. Go to https://repo.sovrin.org/windows/{library}/{release-channel}.
+1. Go to `https://repo.sovrin.org/windows/{library}/{release-channel}.`
 2. Download last version of library.
 3. Unzip archives to the directory where you want to save working library.
 4. After unzip you will get next structure of files:
@@ -198,7 +201,7 @@ See section "Release channels" for more details.
 
 ### Centos
 
-1. Go to https://repo.sovrin.org/rpm/{library}/{release-channel}.
+1. Go to `https://repo.sovrin.org/rpm/{library}/{release-channel}`.
 2. Download and unzip the last version of library.
 3. Install with `rpm -i library-version.rpm`.
 
@@ -334,9 +337,12 @@ The documents that provide necessary information for Libindy migrations.
 * [v1.8.0 → v1.9.x](docs/migration-guides/migration-guide-1.8.0-1.9.0.md)
 * [v1.9.0 → v1.10.x](docs/migration-guides/migration-guide-1.9.0-1.10.0.md)
 * [v1.10.0 → v1.11.x](docs/migration-guides/migration-guide-1.10.0-1.11.0.md)
+* [v1.11.0 → v1.12.x](docs/migration-guides/migration-guide-1.11.0-1.12.0.md)
+* [v1.12.0 → v1.13.x](docs/migration-guides/migration-guide-1.12.0-1.13.0.md)
+* [v1.13.0 → v1.14.x](docs/migration-guides/migration-guide-1.13.0-1.14.0.md)
 
 ## How to Contribute
-* We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
+* We'd love your help; see these [HL Indy Wiki](https://wiki.hyperledger.org/display/indy/How+to+Contribute) and [slides on how to contribute](http://bit.ly/2ugd0bq).
 * If you need to add a new call, read this [instruction](docs/how-tos/how-to-add-a-new-API-call.md).
 * You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,

@@ -204,6 +204,12 @@ Refresh a local copy of a pool ledger and updates pool nodes connections.
 indy> pool refresh
 ```
 
+#### Set Protocol Version
+Set protocol version that will be used for ledger requests. One of: 1, 2. Unless command is called the default protocol version 2 is used.
+```
+indy> pool set-protocol-version [protocol-version=]<version>
+```
+
 #### Disconnect
 Disconnect from Indy nodes pool
 ```
@@ -409,7 +415,13 @@ ledger load-transaction file=<path to file>
 #### TXN_AUTHR_AGRMT transaction.
 Request to add a new version of Transaction Author Agreement to the ledger.
 ```
-ledger ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
+ledger txn-author-agreement [text=<agreement content>] [file=<file with agreement>] version=<version> [ratification-timestamp=<timestamp>] [retirement-timestamp=<timestamp>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
+```
+
+#### DISABLE_ALL_TXN_AUTHR_AGRMTS transaction.
+Disable All Transaction Author Agreements on the ledger.
+```
+ledger disable-all-txn-author-agreements [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
 ```
 
 #### SET_TXN_AUTHR_AGRMT_AML transaction.
@@ -418,13 +430,28 @@ Request to add new acceptance mechanisms for transaction author agreement.
 ledger txn-acceptance-mechanisms [aml=<acceptance mechanisms>] [file=<file with acceptance mechanisms>] version=<version> [context=<some context>] [source_payment_address=<source_payment_address-value>] [fee=<fee-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>] [sign=<true or false>]  [send=<true or false>]
 ```
 
+#### GET_TXN_AUTHR_AGRMT_AML transaction.
+Get a list of acceptance mechanisms set on the ledger.
+```
+ledger get-acceptance-mechanisms [timestamp=<timestamp>] [version=<version>] [send=<true or false>]
+```
+
 ### Payment Address commands
 ```
 indy> payment-address <subcommand>
 ```
 
+#### New
+Create the payment address for specified payment method. Requires opened wallet.
+```
+payment-address new payment_method=<payment_method> [seed=<seed-value>]
+```
+
 #### Create
 Create the payment address for specified payment method. Requires opened wallet.
+
+Take note that this command will be removed in one of the future releases in favor `payment-address new` command.
+
 ```
 payment-address create payment_method=<payment_method> [seed=<seed-value>]
 ```

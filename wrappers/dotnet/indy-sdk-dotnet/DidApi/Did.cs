@@ -172,6 +172,20 @@ namespace Hyperledger.Indy.DidApi
         }
         private static AbbreviateVerkeyCompletedDelegate AbbreviateVerkeyCompletedCallback = AbbreviateVerkeyCompletedCallbackMethod;
 
+#if __IOS__
+        [MonoPInvokeCallback(typeof(QualifyDidCompletedDelegate))]
+#endif
+        private static void QualifyDidCompletedCallbackMethod(int xcommand_handle, int err, string full_qualified_did)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(full_qualified_did);
+        }
+        private static QualifyDidCompletedDelegate QualifyDidCompletedCallback = QualifyDidCompletedCallbackMethod;
+
         /// <summary>
         /// Creates signing and encryption keys in specified wallet for a new DID owned by the caller.
         /// </summary>
@@ -308,7 +322,9 @@ namespace Hyperledger.Indy.DidApi
         /// <code>
         /// {
         ///        "did": string, (required)
-        ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+        ///        "verkey": string
+        ///             - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+        ///             - mandatory in case of updating an existing DID
         /// }
         /// </code>
         /// <para>The <c>did</c> member specifies the DID to store.  This value is required.</para>
@@ -612,6 +628,38 @@ namespace Hyperledger.Indy.DidApi
                 did,
                 fullVerkey,
                 AbbreviateVerkeyCompletedCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+        ///     - If the DID has no method, a method will be appended (prepend did:peer to a legacy did)
+        ///     - If the DID has a method, a method will be updated (migrate did:peer to did:peer-new)
+        ///
+        /// Update DID related entities stored in the wallet.
+        /// </summary>
+        /// <param name="wallet">Wallet handle</param>
+        /// <param name="did">Target DID stored in the wallet.</param>
+        /// <param name="method">Method to apply to the DID.</param>
+        /// <returns>Fully qualified form of did</returns>
+        public static Task<string> QualifyDidAsync(Wallet wallet, string did, string method)
+        {
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+            ParamGuard.NotNull(wallet, "wallet");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_qualify_did(
+                commandHandle,
+                wallet.Handle,
+                did,
+                method,
+                QualifyDidCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

@@ -1,20 +1,20 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::ffi::{CString, NulError};
+use std::ffi::CString;
 use std::ptr::null;
 use std::ops::Not;
 
 use serde_json;
 
 use hex;
-use api::{ErrorCode, WalletHandle, CommandHandle};
-use api::payments::*;
-use errors::prelude::*;
-use utils::ctypes;
+use indy_api_types::{ErrorCode, WalletHandle, CommandHandle};
+use crate::api::payments::*;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
-use domain::ledger::auth_rule::{Constraint, RoleConstraint, CombinationConstraint};
-use domain::crypto::did::DidValue;
+use crate::domain::ledger::auth_rule::{Constraint, RoleConstraint, CombinationConstraint};
+use crate::domain::crypto::did::DidValue;
 
 pub struct PaymentsService {
     methods: RefCell<HashMap<String, PaymentsMethod>>
@@ -610,18 +610,12 @@ pub struct Output {
     extra: Option<String>,
 }
 
-impl From<NulError> for IndyError {
-    fn from(err: NulError) -> IndyError {
-        err.to_indy(IndyErrorKind::InvalidState, "Null symbols in payments strings") // TODO: Review kind
-    }
-}
-
 mod cbs {
     use std::ffi::CStr;
     use std::sync::Mutex;
 
-    use commands::{Command, CommandExecutor};
-    use commands::payments::PaymentsCommand;
+    use crate::commands::{Command, CommandExecutor};
+    use crate::commands::payments::PaymentsCommand;
 
     use super::*;
 

@@ -1,7 +1,8 @@
 package org.hyperledger.indy.sdk;
 
 import java.io.File;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.PointerByReference;
@@ -10,6 +11,7 @@ import static com.sun.jna.Native.detach;
 public abstract class LibIndy {
 
 	public static final String LIBRARY_NAME = "indy";
+	static final DefaultTypeMapper MAPPER = new DefaultTypeMapper();
 
 	/*
 	 * Native library interface
@@ -51,6 +53,7 @@ public abstract class LibIndy {
 		public int indy_build_attrib_request(int command_handle, String submitter_did, String target_did, String hash, String raw, String enc, Callback cb);
 		public int indy_build_get_attrib_request(int command_handle, String submitter_did, String target_did, String raw, String hash, String enc, Callback cb);
 		public int indy_build_get_nym_request(int command_handle, String submitter_did, String target_did, Callback cb);
+		public int indy_parse_get_nym_response(int command_handle, String response, Callback cb);
 		public int indy_build_schema_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_schema_request(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_schema_response(int command_handle, String get_schema_response, Callback cb);
@@ -75,7 +78,8 @@ public abstract class LibIndy {
 		public int indy_build_auth_rule_request(int command_handle, String submitter_did, String txn_type, String action, String field, String old_value, String new_value, String constraint, Callback cb);
 		public int indy_build_auth_rules_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_auth_rule_request(int command_handle, String submitter_did, String txn_type, String action, String field, String old_value, String new_value, Callback cb);
-		public int indy_build_txn_author_agreement_request(int command_handle, String submitter_did, String text, String version, Callback cb);
+		public int indy_build_txn_author_agreement_request(int command_handle, String submitter_did, String text, String version, long ratification_ts, long retirement_ts, Callback cb);
+		public int indy_build_disable_all_txn_author_agreements_request(int command_handle, String submitter_did, Callback cb);
 		public int indy_build_get_txn_author_agreement_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_acceptance_mechanisms_request(int command_handle, String submitter_did, String aml, String version, String aml_context, Callback cb);
 		public int indy_build_get_acceptance_mechanisms_request(int command_handle, String submitter_did, int timestamp, String version, Callback cb);
@@ -105,7 +109,7 @@ public abstract class LibIndy {
 		public int indy_set_key_metadata(int command_handle, int wallet_handle, String verkey, String metadata, Callback cb);
 		public int indy_get_key_metadata(int command_handle, int wallet_handle, String verkey, Callback cb);
 		public int indy_crypto_sign(int command_handle, int wallet_handle, String my_vk, byte[] message_raw, int message_len, Callback cb);
-		public int indy_crypto_verify(int command_handle, String their_vk, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
+		public int indy_crypto_verify(int command_handle, String their_vk, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, BoolCallback cb);
 		public int indy_crypto_auth_crypt(int command_handle, int wallet_handle, String my_vk, String their_vk, byte[] message_raw, int message_len, Callback cb);
 		public int indy_crypto_auth_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 		public int indy_crypto_anon_crypt(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
@@ -201,6 +205,9 @@ public abstract class LibIndy {
 		int indy_set_runtime_config(String config);
 		int indy_get_current_error(PointerByReference error);
 
+		interface BoolCallback extends Callback {
+			void callback(int xcommand_handle, int err, IndyBool valid);
+		}
 	}
 
 	/*
@@ -210,6 +217,7 @@ public abstract class LibIndy {
 	public static API api = null;
 
 	static {
+		MAPPER.addTypeConverter(IndyBool.class, IndyBool.MAPPER);
 
 		try {
 
@@ -229,8 +237,7 @@ public abstract class LibIndy {
 	public static void init(String searchPath) {
 
 		NativeLibrary.addSearchPath(LIBRARY_NAME, searchPath);
-		api = Native.loadLibrary(LIBRARY_NAME, API.class);
-		initLogger();
+		init();
 	}
 
 	/**
@@ -240,8 +247,10 @@ public abstract class LibIndy {
 	 * @param file The absolute path to the C-Callable library file.
 	 */
 	public static void init(File file) {
+		Map<String, Object> options = new HashMap<String, Object>();
+		options.put(Library.OPTION_TYPE_MAPPER, MAPPER);
 
-		api = Native.loadLibrary(file.getAbsolutePath(), API.class);
+		api = Native.loadLibrary(file.getAbsolutePath(), API.class, options);
 		initLogger();
 	}
 
@@ -249,8 +258,10 @@ public abstract class LibIndy {
 	 * Initializes the API with the default library.
 	 */
 	public static void init() {
+		Map<String, Object> options = new HashMap<String, Object>();
+		options.put(Library.OPTION_TYPE_MAPPER, MAPPER);
 
-		api = Native.loadLibrary(LIBRARY_NAME, API.class);
+		api = Native.loadLibrary(LIBRARY_NAME, API.class, options);
 		initLogger();
 	}
 

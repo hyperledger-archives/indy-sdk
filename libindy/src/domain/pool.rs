@@ -1,4 +1,4 @@
-use utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 pub const POOL_CON_ACTIVE_TO: i64 = 5;
 pub const POOL_ACK_TIMEOUT: i64 = 20;

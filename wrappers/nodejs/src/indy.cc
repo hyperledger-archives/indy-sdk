@@ -1739,6 +1739,22 @@ NAN_METHOD(buildGetNymRequest) {
   delete arg1;
 }
 
+void parseGetNymResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(parseGetNymResponse) {
+  INDY_ASSERT_NARGS(parseGetNymResponse, 2)
+  INDY_ASSERT_STRING(parseGetNymResponse, 0, response)
+  INDY_ASSERT_FUNCTION(parseGetNymResponse, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_parse_get_nym_response(icb->handle, arg0, parseGetNymResponse_cb));
+  delete arg0;
+}
+
 void buildSchemaRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -2237,19 +2253,39 @@ void buildTxnAuthorAgreementRequest_cb(indy_handle_t handle, indy_error_t xerr, 
   }
 }
 NAN_METHOD(buildTxnAuthorAgreementRequest) {
-  INDY_ASSERT_NARGS(buildTxnAuthorAgreementRequest, 4)
+  INDY_ASSERT_NARGS(buildTxnAuthorAgreementRequest, 6)
   INDY_ASSERT_STRING(buildTxnAuthorAgreementRequest, 0, submitterDid)
   INDY_ASSERT_STRING(buildTxnAuthorAgreementRequest, 1, text)
   INDY_ASSERT_STRING(buildTxnAuthorAgreementRequest, 2, version)
-  INDY_ASSERT_FUNCTION(buildTxnAuthorAgreementRequest, 3)
+  INDY_ASSERT_NUMBER(buildTxnAuthorAgreementRequest, 3, ratificationTimestamp)
+  INDY_ASSERT_NUMBER(buildTxnAuthorAgreementRequest, 4, retirementTimestamp)
+  INDY_ASSERT_FUNCTION(buildTxnAuthorAgreementRequest, 5)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
-  IndyCallback* icb = argToIndyCb(info[3]);
-  indyCalled(icb, indy_build_txn_author_agreement_request(icb->handle, arg0, arg1, arg2, buildTxnAuthorAgreementRequest_cb));
+  indy_i64_t arg3 = argToInt32(info[3]);
+  indy_i64_t arg4 = argToInt32(info[4]);
+  IndyCallback* icb = argToIndyCb(info[5]);
+  indyCalled(icb, indy_build_txn_author_agreement_request(icb->handle, arg0, arg1, arg2, arg3, arg4, buildTxnAuthorAgreementRequest_cb));
   delete arg0;
   delete arg1;
   delete arg2;
+}
+
+void buildDisableAllTxnAuthorAgreementsRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildDisableAllTxnAuthorAgreementsRequest) {
+  INDY_ASSERT_NARGS(buildDisableAllTxnAuthorAgreementsRequest, 2)
+  INDY_ASSERT_STRING(buildDisableAllTxnAuthorAgreementsRequest, 0, submitterDid)
+  INDY_ASSERT_FUNCTION(buildDisableAllTxnAuthorAgreementsRequest, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_build_disable_all_txn_author_agreements_request(icb->handle, arg0, buildDisableAllTxnAuthorAgreementsRequest_cb));
+  delete arg0;
 }
 
 void buildGetTxnAuthorAgreementRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
@@ -3648,6 +3684,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildAttribRequest", buildAttribRequest);
   Nan::Export(target, "buildGetAttribRequest", buildGetAttribRequest);
   Nan::Export(target, "buildGetNymRequest", buildGetNymRequest);
+  Nan::Export(target, "parseGetNymResponse", parseGetNymResponse);
   Nan::Export(target, "buildSchemaRequest", buildSchemaRequest);
   Nan::Export(target, "buildGetSchemaRequest", buildGetSchemaRequest);
   Nan::Export(target, "parseGetSchemaResponse", parseGetSchemaResponse);
@@ -3672,6 +3709,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildAuthRulesRequest", buildAuthRulesRequest);
   Nan::Export(target, "buildGetAuthRuleRequest", buildGetAuthRuleRequest);
   Nan::Export(target, "buildTxnAuthorAgreementRequest", buildTxnAuthorAgreementRequest);
+  Nan::Export(target, "buildDisableAllTxnAuthorAgreementsRequest", buildDisableAllTxnAuthorAgreementsRequest);
   Nan::Export(target, "buildGetTxnAuthorAgreementRequest", buildGetTxnAuthorAgreementRequest);
   Nan::Export(target, "buildAcceptanceMechanismsRequest", buildAcceptanceMechanismsRequest);
   Nan::Export(target, "buildGetAcceptanceMechanismsRequest", buildGetAcceptanceMechanismsRequest);

@@ -7,8 +7,8 @@ use super::super::crypto::did::DidValue;
 use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
-use utils::validation::Validatable;
-use utils::qualifier;
+use indy_api_types::validation::Validatable;
+use crate::utils::qualifier;
 
 pub const CL_ACCUM: &str = "CL_ACCUM";
 pub const REV_REG_DEG_MARKER: &str = "4";
@@ -83,6 +83,22 @@ pub struct RevocationRegistryDefinitionV1 {
 pub enum RevocationRegistryDefinition {
     #[serde(rename = "1.0")]
     RevocationRegistryDefinitionV1(RevocationRegistryDefinitionV1)
+}
+
+impl RevocationRegistryDefinition {
+    pub fn to_unqualified(self) -> RevocationRegistryDefinition {
+        match self {
+            RevocationRegistryDefinition::RevocationRegistryDefinitionV1(rev_ref_def) => {
+                RevocationRegistryDefinition::RevocationRegistryDefinitionV1(RevocationRegistryDefinitionV1 {
+                    id: rev_ref_def.id.to_unqualified(),
+                    revoc_def_type: rev_ref_def.revoc_def_type,
+                    tag: rev_ref_def.tag,
+                    cred_def_id: rev_ref_def.cred_def_id.to_unqualified(),
+                    value: rev_ref_def.value,
+                })
+            }
+        }
+    }
 }
 
 impl From<RevocationRegistryDefinition> for RevocationRegistryDefinitionV1 {

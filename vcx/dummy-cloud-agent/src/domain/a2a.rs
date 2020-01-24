@@ -1,18 +1,18 @@
 use failure::*;
 use futures::*;
-use indy::crypto;
 use rmp_serde;
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::{self, Value};
-use utils::futures::*;
 
-use domain::a2connection::*;
-use domain::invite::{InviteDetail, SenderDetail, ForwardAgentDetail};
-use domain::key_deligation_proof::KeyDlgProof;
-use domain::status::{MessageStatusCode, ConnectionStatus};
-use domain::message_type::*;
-use domain::protocol_type::{ProtocolType, ProtocolTypes};
-use domain::payload::Thread;
+use crate::domain::a2connection::*;
+use crate::domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail};
+use crate::domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::message_type::*;
+use crate::domain::payload::Thread;
+use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
+use crate::domain::status::{ConnectionStatus, MessageStatusCode};
+use crate::indy::crypto;
+use crate::utils::futures::*;
 
 #[derive(Debug)]
 pub enum A2AMessageV1 {
@@ -63,6 +63,7 @@ pub enum A2AMessageV1 {
 pub enum A2AMessageV2 {
     /// base
     Forward(ForwardV2),
+    ForwardV3(ForwardV3),
 
     /// onboarding
     Connect(Connect),
@@ -125,6 +126,13 @@ pub struct ForwardV2 {
     #[serde(rename = "@fwd")]
     pub fwd: String,
     #[serde(rename = "@msg")]
+    pub msg: Value,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct ForwardV3 {
+    pub to: String,
+    #[serde(rename = "msg")]
     pub msg: Value,
 }
 
@@ -584,6 +592,7 @@ pub struct SendRemoteMessageResponse {
 
 pub enum A2AMessageKinds {
     Forward,
+    ForwardV3,
     Connect,
     Connected,
     SignUp,
@@ -627,6 +636,7 @@ impl A2AMessageKinds {
     pub fn family(&self) -> MessageFamilies {
         match self {
             A2AMessageKinds::Forward => MessageFamilies::Routing,
+            A2AMessageKinds::ForwardV3 => MessageFamilies::Routing,
             A2AMessageKinds::Connect => MessageFamilies::Onboarding,
             A2AMessageKinds::Connected => MessageFamilies::Onboarding,
             A2AMessageKinds::CreateAgent => MessageFamilies::Onboarding,
@@ -670,6 +680,7 @@ impl A2AMessageKinds {
     pub fn name(&self) -> String {
         match self {
             A2AMessageKinds::Forward => "FWD".to_string(),
+            A2AMessageKinds::ForwardV3 => "forward".to_string(),
             A2AMessageKinds::Connect => "CONNECT".to_string(),
             A2AMessageKinds::Connected => "CONNECTED".to_string(),
             A2AMessageKinds::CreateAgent => "CREATE_AGENT".to_string(),
@@ -891,6 +902,11 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
             "FWD" => {
                 ForwardV2::deserialize(value)
                     .map(|msg| A2AMessageV2::Forward(msg))
+                    .map_err(de::Error::custom)
+            }
+            "forward" => {
+                ForwardV3::deserialize(value)
+                    .map(|msg| A2AMessageV2::ForwardV3(msg))
                     .map_err(de::Error::custom)
             }
             "CONNECT" => {
@@ -1146,6 +1162,7 @@ impl Serialize for A2AMessageV2 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let value = match self {
             A2AMessageV2::Forward(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::Forward),
+            A2AMessageV2::ForwardV3(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ForwardV3),
             A2AMessageV2::Connect(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::Connect),
             A2AMessageV2::Connected(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::Connected),
             A2AMessageV2::SignUp(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::SignUp),
@@ -1301,7 +1318,7 @@ impl A2AMessage {
             ProtocolTypes::V1 => A2AMessage::unbundle_authcrypted(wallet_handle, recipient_vk, message),
             ProtocolTypes::V2 =>
                 A2AMessage::unpack(wallet_handle, message)
-                    .map(|(sender_vk, message)| (sender_vk.unwrap(), message))
+                    .map(|(sender_vk, message)| (sender_vk.unwrap_or_default(), message))
                     .into_box()
         }
     }

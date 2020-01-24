@@ -1,24 +1,28 @@
-use actix::prelude::*;
-use actors::forward_agent::ForwardAgent;
-use actors::ForwardA2AMsg;
-use actors::agent::Agent;
-use dirs;
-use base64;
-use domain::a2a::*;
-use domain::a2connection::*;
-use domain::config::*;
-use domain::key_deligation_proof::*;
-use domain::invite::*;
-use domain::status::*;
-use env_logger;
-use failure::{err_msg, Error, Fail};
-use futures::*;
-use indy::{self, did, wallet, crypto};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+
+use actix::prelude::*;
+use base64;
+use dirs;
+use env_logger;
+use failure::{err_msg, Error, Fail};
+use futures::*;
 use tokio_core::reactor::Core;
-use utils::futures::*;
+
+use crate::actors::admin::Admin;
+use crate::actors::agent::Agent;
+use crate::actors::forward_agent::ForwardAgent;
+use crate::actors::ForwardA2AMsg;
+use crate::domain::a2a::*;
+use crate::domain::a2connection::*;
+use crate::domain::admin_message::AdminQuery;
+use crate::domain::config::*;
+use crate::domain::invite::*;
+use crate::domain::key_deligation_proof::*;
+use crate::domain::status::*;
+use crate::indy::{crypto, did, wallet};
+use crate::utils::futures::*;
 
 pub const EDGE_AGENT_WALLET_ID: &'static str = "edge_agent_wallet_id";
 pub const EDGE_AGENT_WALLET_CONFIG: &'static str = "{\"id\": \"edge_agent_wallet_id\"}";
@@ -101,19 +105,24 @@ pub fn cleanup_storage() {
 
 pub fn run_test<F, B>(f: F)
     where
-        F: FnOnce(Addr<ForwardAgent>) -> B + 'static,
+        F: FnOnce(Addr<ForwardAgent>, Addr<Admin>) -> B + 'static,
         B: IntoFuture<Item=(), Error=Error> + 'static {
-    indy::logger::set_default_logger(None).ok();
+    crate::indy::logger::set_default_logger(None).ok();
     env_logger::try_init().ok();
     cleanup_storage();
 
     System::run(|| {
         Arbiter::spawn_fn(move || {
+            let admin = Admin::create();
+            let admin_for_test = admin.clone();
             future::ok(())
                 .and_then(move |_| {
-                    ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config())
+                    let admin = None;
+                    ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config(), admin)
                 })
-                .and_then(f)
+                .and_then(move |fw_agent| {
+                    f(fw_agent, admin_for_test)
+                })
                 .and_then(|wallet_handle|
                     unsafe {
                         wallet::close_wallet(FORWARD_AGENT_WALLET_HANDLE)
@@ -132,12 +141,28 @@ pub fn run_agent_test<F, B>(f: F)
     where
         F: FnOnce((i32, String, String, String, String, Addr<ForwardAgent>)) -> B + 'static,
         B: IntoFuture<Item=i32, Error=Error> + 'static {
-    run_test(|forward_agent| {
+    run_test(|forward_agent, admin| {
         future::ok(())
             .and_then(|()| {
                 setup_agent(forward_agent)
             })
             .and_then(f)
+            .map(|wallet_handle| wallet::close_wallet(wallet_handle).wait().unwrap())
+    })
+}
+
+pub fn run_admin_test<F, B>(f: F)
+    where
+        F: FnOnce((i32, String, String, String, String, Addr<ForwardAgent>, Addr<Admin>)) -> B + 'static,
+        B: IntoFuture<Item=i32, Error=Error> + 'static {
+    run_test(|forward_agent, admin| {
+        future::ok(())
+            .and_then(|()| {
+                setup_agent(forward_agent)
+            })
+            .and_then(move |(agent_wallet_handle, agent_did, agent_verkey, with_pairwise_did, with_pairwise_did_verkey, forward_agent)| {
+                f((agent_wallet_handle, agent_did, agent_verkey, with_pairwise_did, with_pairwise_did_verkey, forward_agent, admin))
+            })
             .map(|wallet_handle| wallet::close_wallet(wallet_handle).wait().unwrap())
     })
 }
@@ -203,6 +228,8 @@ pub fn wallet_storage_config() -> WalletStorageConfig {
         xtype: None,
         config: None,
         credentials: None,
+        plugin_library_path: None,
+        plugin_init_function: None,
     }
 }
 

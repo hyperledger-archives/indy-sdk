@@ -3,18 +3,18 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use domain::wallet::Tags;
-use domain::anoncreds::schema::SchemaId;
-use domain::anoncreds::credential_definition::CredentialDefinitionId;
-use errors::prelude::*;
-use services::wallet::{WalletService, WalletRecord};
-use api::{WalletHandle, PoolHandle, CommandHandle};
-use commands::{Command, CommandExecutor};
-use commands::ledger::LedgerCommand;
-use domain::cache::{GetCacheOptions, PurgeOptions};
-use domain::crypto::did::DidValue;
+use indy_api_types::domain::wallet::Tags;
+use crate::domain::anoncreds::schema::SchemaId;
+use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
+use indy_api_types::errors::prelude::*;
+use indy_wallet::{WalletService, WalletRecord};
+use indy_api_types::{WalletHandle, PoolHandle, CommandHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::ledger::LedgerCommand;
+use crate::domain::cache::{GetCacheOptions, PurgeOptions};
+use crate::domain::crypto::did::DidValue;
 
-use api::next_command_handle;
+use indy_utils::next_command_handle;
 
 const CRED_DEF_CACHE: &str = "cred_def_cache";
 const SCHEMA_CACHE: &str = "schema_cache";

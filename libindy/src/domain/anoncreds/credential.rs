@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use named_type::NamedType;
 use ursa::cl::{
     CredentialSignature,
     RevocationRegistry,
@@ -5,15 +8,11 @@ use ursa::cl::{
     Witness
 };
 
-use super::schema::SchemaId;
+use indy_api_types::validation::Validatable;
+
 use super::credential_definition::CredentialDefinitionId;
 use super::revocation_registry_definition::RevocationRegistryId;
-
-use std::collections::HashMap;
-use named_type::NamedType;
-
-use utils::validation::Validatable;
-
+use super::schema::SchemaId;
 
 #[derive(Debug, Deserialize, Serialize, NamedType)]
 pub struct Credential {
@@ -48,7 +47,8 @@ pub struct CredentialInfo {
 
 pub type ShortCredentialValues = HashMap<String, String>;
 
-pub type CredentialValues = HashMap<String, AttributeValues>;
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
+pub struct CredentialValues(pub HashMap<String, AttributeValues>);
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct AttributeValues {
@@ -58,7 +58,7 @@ pub struct AttributeValues {
 
 impl Validatable for CredentialValues {
     fn validate(&self) -> Result<(), String> {
-        if self.is_empty() {
+        if self.0.is_empty() {
             return Err(String::from("CredentialValues validation failed: empty list has been passed"));
         }
 
@@ -76,7 +76,7 @@ impl Validatable for Credential {
             return Err(String::from("Credential validation failed: `witness` and `rev_reg` must be passed for revocable Credential"));
         }
 
-        if self.values.is_empty() {
+        if self.values.0.is_empty() {
             return Err(String::from("Credential validation failed: `values` is empty"));
         }
 

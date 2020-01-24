@@ -6,6 +6,7 @@ use self::rust_base58::FromBase58;
 use utils::qualifier::Qualifier;
 use url::Url;
 use error::prelude::*;
+use settings::Actors;
 
 pub fn validate_did(did: &str) -> VcxResult<String> {
     if Qualifier::is_fully_qualified(did) {
@@ -50,6 +51,11 @@ pub fn validate_url(url: &str) -> VcxResult<String> {
     Url::parse(url)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidUrl, err))?;
     Ok(url.to_string())
+}
+
+pub fn validate_actors(actors: &str) -> VcxResult<Vec<Actors>> {
+    ::serde_json::from_str(&actors)
+        .map_err(|err| VcxError::from(VcxErrorKind::InvalidOption))
 }
 
 pub fn validate_phone_number(p_num: &str) -> VcxResult<String> {

@@ -1,0 +1,12 @@
+@startuml
+title
+ Connection API as Invitee
+
+ The diagram shows Connection object state transitions in case acting as an Invitee
+end title
+
+[*] --> VcxStateRequestReceived: vcx_connection_create_with_invite(Invitation)
+
+VcxStateRequestReceived --> VcxStateAccepted: vcx_connection_connect
+
+@enduml

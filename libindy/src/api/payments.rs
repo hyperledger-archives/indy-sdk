@@ -1,13 +1,13 @@
 use libc::c_char;
-use api::{ErrorCode, CommandHandle, WalletHandle};
-use commands::{Command, CommandExecutor};
-use commands::payments::PaymentsCommand;
-use services::payments::PaymentsMethodCBs;
-use errors::prelude::*;
-use utils::ctypes;
-use services::payments::{RequesterInfo, Fees};
-use domain::crypto::did::DidValue;
-use utils::validation::Validatable;
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::payments::PaymentsCommand;
+use crate::services::payments::PaymentsMethodCBs;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
+use crate::services::payments::{RequesterInfo, Fees};
+use crate::domain::crypto::did::DidValue;
+use indy_api_types::validation::Validatable;
 
 /// Create the payment address for this payment method.
 ///
@@ -897,7 +897,9 @@ pub extern fn indy_parse_payment_response(command_handle: CommandHandle,
 /// text and version - (optional) raw data about TAA from ledger.
 ///     These parameters should be passed together.
 ///     These parameters are required if taa_digest parameter is omitted.
-/// taa_digest - (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// taa_digest - (optional) digest on text and version.
+///     Digest is sha256 hash calculated on concatenated strings: version || text.
+///     This parameter is required if text and version parameters are omitted.
 /// mechanism - mechanism how user has accepted the TAA
 /// time - UTC timestamp when user has accepted the TAA
 /// cb: Callback that takes command result as parameter.

@@ -1,6 +1,6 @@
 use ursa::cl::RevocationRegistryDelta as RegistryDelta;
 
-use utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

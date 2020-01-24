@@ -9,10 +9,10 @@ use ursa::cl::{
 };
 use ursa::cl::{CredentialKeyCorrectnessProof, CredentialPrivateKey};
 
-use commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
-use commands::anoncreds::AnoncredsCommand;
-use domain::anoncreds::credential::{CredentialValues, Credential};
-use domain::anoncreds::credential_definition::{
+use crate::commands::{Command, CommandExecutor, BoxedCallbackStringStringSend};
+use crate::commands::anoncreds::AnoncredsCommand;
+use crate::domain::anoncreds::credential::{CredentialValues, Credential};
+use crate::domain::anoncreds::credential_definition::{
     CredentialDefinition,
     CredentialDefinitionConfig,
     CredentialDefinitionCorrectnessProof,
@@ -23,13 +23,13 @@ use domain::anoncreds::credential_definition::{
     TemporaryCredentialDefinition,
     CredentialDefinitionId
 };
-use domain::anoncreds::credential_offer::CredentialOffer;
-use domain::anoncreds::credential_request::CredentialRequest;
-use domain::anoncreds::revocation_registry::{
+use crate::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::domain::anoncreds::credential_request::CredentialRequest;
+use crate::domain::anoncreds::revocation_registry::{
     RevocationRegistry,
     RevocationRegistryV1,
 };
-use domain::anoncreds::revocation_registry_definition::{
+use crate::domain::anoncreds::revocation_registry_definition::{
     IssuanceType,
     RegistryType,
     RevocationRegistryConfig,
@@ -40,23 +40,24 @@ use domain::anoncreds::revocation_registry_definition::{
     RevocationRegistryInfo,
     RevocationRegistryId
 };
-use domain::anoncreds::revocation_registry_delta::{
+use crate::domain::anoncreds::revocation_registry_delta::{
     RevocationRegistryDelta,
     RevocationRegistryDeltaV1,
 };
-use domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1, SchemaId};
-use domain::crypto::did::DidValue;
-use domain::wallet::Tags;
-use errors::prelude::*;
-use services::anoncreds::AnoncredsService;
-use services::anoncreds::helpers::parse_cred_rev_id;
-use services::blob_storage::BlobStorageService;
-use services::crypto::CryptoService;
-use services::pool::PoolService;
-use services::wallet::{RecordOptions, WalletService};
+use crate::domain::anoncreds::schema::{AttributeNames, Schema, SchemaV1, SchemaId};
+use crate::domain::crypto::did::DidValue;
+use indy_api_types::domain::wallet::Tags;
+use indy_api_types::errors::prelude::*;
+use crate::services::anoncreds::AnoncredsService;
+use crate::services::anoncreds::helpers::parse_cred_rev_id;
+use crate::services::blob_storage::BlobStorageService;
+use crate::services::crypto::CryptoService;
+use crate::services::pool::PoolService;
+use indy_wallet::{RecordOptions, WalletService};
 
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
-use api::{WalletHandle, CommandHandle, next_command_handle};
+use indy_api_types::{WalletHandle, CommandHandle};
+use indy_utils::next_command_handle;
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -309,7 +310,7 @@ impl IssuerCommandExecutor {
                                                                 CredentialPrivateKey,
                                                                 CredentialKeyCorrectnessProof)>) + Send>) {
         let attr_names = attr_names.clone();
-        ::commands::THREADPOOL.lock().unwrap().execute(move || cb(::services::anoncreds::issuer::Issuer::new_credential_definition(&attr_names, support_revocation)));
+        crate::commands::THREADPOOL.lock().unwrap().execute(move || cb(crate::services::anoncreds::issuer::Issuer::new_credential_definition(&attr_names, support_revocation)));
     }
 
     fn _create_and_store_credential_definition_continue(&self,
@@ -370,7 +371,7 @@ impl IssuerCommandExecutor {
                                                         cred_def_id: &CredentialDefinitionId,
                                                         tag: &str,
                                                         signature_type: SignatureType,
-                                                        res: (::domain::anoncreds::credential_definition::CredentialDefinitionData,
+                                                        res: (crate::domain::anoncreds::credential_definition::CredentialDefinitionData,
                                                               ursa::cl::CredentialPrivateKey,
                                                               ursa::cl::CredentialKeyCorrectnessProof)) -> IndyResult<(String, String)> {
         let (credential_definition_value, cred_priv_key, cred_key_correctness_proof) = res;
@@ -435,7 +436,7 @@ impl IssuerCommandExecutor {
             Err(err) => return cb(Err(err))
         };
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = indy_utils::sequence::get_next_id();
         self.pending_str_callbacks.borrow_mut().insert(cb_id, cb);
 
         let support_revocation = cred_def_config.map(|config| config.support_revocation).unwrap_or_default();

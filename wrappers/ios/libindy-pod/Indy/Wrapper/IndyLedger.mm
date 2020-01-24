@@ -179,6 +179,25 @@
     }
 }
 
++ (void)parseGetNymResponse:(NSString *)response
+                 completion:(void (^)(NSError *error, NSString *nymDataJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_parse_get_nym_response(handle,
+            [response UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 // MARK: - Attribute request
 
 + (void)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
@@ -809,7 +828,9 @@
 + (void)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
                                                   text:(NSString *)text
                                                version:(NSString *)version
-                                            completion:(void (^)(NSError *error, NSString *responseMetadata))completion {
+                                 ratificationTimestamp:(NSNumber *)ratificationTimestamp
+                                   retirementTimestamp:(NSNumber *)retirementTimestamp
+                                            completion:(void (^)(NSError *error, NSString *requestJson))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -818,6 +839,8 @@
             [submitterDid UTF8String],
             [text UTF8String],
             [version UTF8String],
+            ratificationTimestamp ? [ratificationTimestamp longLongValue] : -1,
+            retirementTimestamp ? [retirementTimestamp longLongValue] : -1,
             IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
@@ -839,6 +862,25 @@
     ret = indy_build_get_txn_author_agreement_request(handle,
             [submitterDid UTF8String],
             [data UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       completion:(void (^)(NSError *error, NSString *requestJson))completion; {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_disable_all_txn_author_agreements_request(handle,
+            [submitterDid UTF8String],
             IndyWrapperCommonStringCallback);
 
     if (ret != Success) {

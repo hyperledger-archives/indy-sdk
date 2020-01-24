@@ -1,6 +1,7 @@
 use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
+use messages::MessageStatusCode;
 use messages::payload::Payloads;
 use utils::httpclient;
 use error::prelude::*;
@@ -133,7 +134,7 @@ impl GetMessagesBuilder {
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesResponse(res)) => Ok(res.msgs),
             A2AMessage::Version2(A2AMessageV2::GetMessagesResponse(res)) => Ok(res.msgs),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesResponse"))
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of GetMessagesResponse"))
         }
     }
 
@@ -267,34 +268,81 @@ pub struct Message {
     pub ref_msg_id: Option<String>,
     #[serde(skip_deserializing)]
     pub delivery_details: Vec<DeliveryDetails>,
-    #[serde(skip_deserializing)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub decrypted_payload: Option<String>,
 }
 
 impl Message {
+    pub fn payload<'a>(&'a self) -> VcxResult<Vec<u8>> {
+        match self.payload {
+            Some(MessagePayload::V1(ref payload)) => Ok(to_u8(payload)),
+            Some(MessagePayload::V2(ref payload)) => serde_json::to_vec(payload).map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, err)),
+            _ => Err(VcxError::from(VcxErrorKind::InvalidState)),
+        }
+    }
+
     pub fn decrypt(&self, vk: &str) -> Message {
         // TODO: must be Result
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
-            let payload = match payload {
+            let decrypted_payload = match payload {
                 MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
-                    .map(|payload| Payloads::PayloadV1(payload)),
+                    .map(Payloads::PayloadV1),
                 MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
-                    .map(|payload| Payloads::PayloadV2(payload))
+                    .map(Payloads::PayloadV2)
             };
 
-            new_message.decrypted_payload = match payload {
-                Ok(payload) => ::serde_json::to_string(&payload).ok(),
-                _ => ::serde_json::to_string(&json!(null)).ok()
+            if let Ok(decrypted_payload) = decrypted_payload {
+                new_message.decrypted_payload = ::serde_json::to_string(&decrypted_payload).ok();
+            } else if let Ok(decrypted_payload) = self._decrypt_v3_message(vk) {
+                new_message.decrypted_payload = ::serde_json::to_string(&json!(decrypted_payload)).ok()
+            } else {
+                new_message.decrypted_payload = ::serde_json::to_string(&json!(null)).ok();
             }
         }
         new_message.payload = None;
         new_message
     }
+
+    fn _decrypt_v3_message(&self, vk: &str) -> VcxResult<::messages::payload::PayloadV1> {
+        use v3::messages::a2a::A2AMessage;
+        use v3::utils::encryption_envelope::EncryptionEnvelope;
+        use ::issuer_credential::{CredentialOffer, CredentialMessage};
+        use ::messages::payload::{PayloadTypes, PayloadV1, PayloadKinds};
+        use std::convert::TryInto;
+
+        let a2a_message = EncryptionEnvelope::open(vk, self.payload()?)?;
+
+        let (kind, msg) = match a2a_message {
+            A2AMessage::PresentationRequest(presentation_request) => {
+                let proof_req: ProofRequestMessage = presentation_request.try_into()?;
+
+                (PayloadKinds::ProofRequest, json!(&proof_req).to_string())
+            }
+            A2AMessage::CredentialOffer(offer) => {
+                let cred_offer: CredentialOffer = offer.try_into()?;
+
+                (PayloadKinds::CredOffer, json!(&cred_offer).to_string())
+            }
+            A2AMessage::Credential(credential) => {
+                let credential: CredentialMessage = credential.try_into()?;
+
+                (PayloadKinds::Cred, json!(&credential).to_string())
+            }
+            msg => {
+                let msg = json!(&msg).to_string();
+                (PayloadKinds::Other(String::from("aries")), msg)
+            }
+        };
+
+        Ok(PayloadV1 {
+            type_: PayloadTypes::build_v1(kind, "json"),
+            msg,
+        })
+    }
 }
 
-pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>) -> VcxResult<Vec<Message>> {
+pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>) -> VcxResult<Vec<Message>> {
     trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
            pw_did, pw_vk, agent_vk, msg_uid);
 
@@ -304,6 +352,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .agent_did(&agent_did)?
         .agent_vk(&agent_vk)?
         .uid(msg_uid)?
+        .status_codes(status_codes)?
         .send_secure()
         .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
 
@@ -315,7 +364,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None)?;
     trace!("checking for ref_msg: {:?}", message);
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
@@ -323,17 +372,17 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]))?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None)?;
 
     trace!("checking for pending message: {:?}", message);
 
     // this will work for both credReq and proof types
     match message.get(0).as_ref().and_then(|message| message.payload.as_ref()) {
-        Some(payload) if message[0].status_code == MessageStatusCode::Pending => {
+        Some(payload) if message[0].status_code == MessageStatusCode::Received => {
             // TODO: check returned verkey
             Ok((message[0].uid.clone(), payload.to_owned()))
         }
-        _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message")),
+        _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message"))
     }
 }
 
@@ -466,10 +515,12 @@ mod tests {
                                                                              1).unwrap();
         ::issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
-        let hello_uid = ::messages::send_message::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
+        let hello_uid = ::connection::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::tests::set_consumer();
         let all_messages = download_messages(None, None, None).unwrap();
+        println!("all_messages {:?}", all_messages);
+
         let pending = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
         assert_eq!(pending.len(), 1);
         assert!(pending[0].msgs[0].decrypted_payload.is_some());

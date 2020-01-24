@@ -20,6 +20,8 @@ use error::prelude::*;
 ///
 /// cb: Callback that provides wallet balance
 ///
+/// # Example info -> "{"balance":6,"balance_str":"6","addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"source":"pay:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"}]}]}"
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
@@ -61,6 +63,8 @@ pub extern fn vcx_wallet_get_token_info(command_handle: u32,
 /// #params
 ///
 /// cb: Callback that provides payment address info
+///
+/// # Example payment_address -> "pay:null:9UFgyjuJxi1i1HD"
 ///
 /// #Returns
 /// Error code as u32

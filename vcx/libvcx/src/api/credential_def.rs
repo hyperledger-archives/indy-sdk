@@ -8,7 +8,7 @@ use settings;
 use utils::threadpool::spawn;
 use error::prelude::*;
 
-/// Create a new CredentialDef object that can create credential definitions on the ledger
+/// Create a new CredentialDef object and publish correspondent record on the ledger
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -101,6 +101,8 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
 
 /// Create a new CredentialDef object that will be published by Endorser later.
 ///
+/// Note that CredentialDef can't be used for credential issuing until it will be published on the ledger.
+///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
@@ -185,8 +187,8 @@ pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: u32,
                 trace!(target: "vcx", "vcx_credentialdef_prepare_for_endorser(command_handle: {}, rc: {}, handle: {}, cred_def_req: {}, cred_def_req: {:?}, cred_def_req: {:?}) source_id: {}",
                        command_handle, error::SUCCESS.message, handle, cred_def_req, rev_reg_def_req, rev_reg_entry_req, credential_def::get_source_id(handle).unwrap_or_default());
                 let cred_def_req = CStringUtils::string_to_cstring(cred_def_req);
-                let rev_reg_def_req = rev_reg_def_req.map(|def| CStringUtils::string_to_cstring(def));
-                let rev_reg_entry_req = rev_reg_entry_req.map(|entry| CStringUtils::string_to_cstring(entry));
+                let rev_reg_def_req = rev_reg_def_req.map(CStringUtils::string_to_cstring);
+                let rev_reg_entry_req = rev_reg_entry_req.map(CStringUtils::string_to_cstring);
 
                 cb(command_handle, error::SUCCESS.code_num, handle, cred_def_req.as_ptr(),
                    rev_reg_def_req.as_ref().map(|def| def.as_ptr()).unwrap_or(ptr::null()),
@@ -340,7 +342,7 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Retrieve the txn associated with paying for the credential_def
+/// Get the payment transaction information generated when paying the ledger fee
 ///
 /// #param
 /// handle: credential_def handle that was provided during creation.  Used to access credential_def object.
@@ -350,12 +352,10 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32,
 /// example: {
 ///         "amount":25,
 ///         "inputs":[
-///             "pay:null:1_3FvPC7dzFbQKzfG",
-///             "pay:null:1_lWVGKc07Pyc40m6"
+///             "pay:null:1_3FvPC7dzFbQKzfG"
 ///         ],
 ///         "outputs":[
-///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
-///             {"recipient":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
+///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null}
 ///         ]
 ///     }
 #[no_mangle]
@@ -428,7 +428,7 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
     }
 }
 
-/// Checks if credential definition is published on the Ledger and updates the the state
+/// Checks if credential definition is published on the Ledger and updates the state if it is.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -436,6 +436,9 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
 /// credentialdef_handle: Credentialdef handle that was provided during creation. Used to access credentialdef object
 ///
 /// cb: Callback that provides most current state of the credential definition and error status of request
+///     States:
+///         0 = Built
+///         1 = Published
 ///
 /// #Returns
 /// Error code as a u32
@@ -483,6 +486,9 @@ pub extern fn vcx_credentialdef_update_state(command_handle: u32,
 /// credentialdef_handle: Credentialdef handle that was provided during creation. Used to access credentialdef object
 ///
 /// cb: Callback that provides most current state of the credential definition and error status of request
+///     States:
+///         0 = Built
+///         1 = Published
 ///
 /// #Returns
 /// Error code as a u32

@@ -3,9 +3,7 @@ use std::collections::HashMap;
 
 use named_type::NamedType;
 
-use utils::validation::Validatable;
-
-use super::revocation_registry_definition::RevocationRegistryId;
+use indy_api_types::validation::Validatable;
 
 #[derive(Clone, Debug, Serialize, Deserialize, NamedType)]
 pub struct RevocationState {
@@ -23,4 +21,4 @@ impl Validatable for RevocationState {
     }
 }
 
-pub type RevocationStates = HashMap<RevocationRegistryId, HashMap<u64, RevocationState>>;
+pub type RevocationStates = HashMap<String, HashMap<u64, RevocationState>>;

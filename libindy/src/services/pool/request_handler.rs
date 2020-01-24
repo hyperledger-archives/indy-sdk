@@ -11,27 +11,27 @@ use serde_json;
 use serde_json::Value as SJsonValue;
 use self::super::THRESHOLD;
 
-use commands::Command;
-use commands::CommandExecutor;
-use commands::ledger::LedgerCommand;
-use errors::prelude::*;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::catchup::{build_catchup_req, CatchupProgress, check_cons_proofs, check_nodes_responses_on_status};
-use services::pool::events::NetworkerEvent;
-use services::pool::events::PoolEvent;
-use services::pool::events::RequestEvent;
-use services::pool::{get_last_signed_time, Nodes};
-use services::pool::merkle_tree_factory;
-use services::pool::networker::Networker;
-use services::pool::state_proof;
-use services::pool::types::CatchupRep;
-use services::pool::types::HashableValue;
+use crate::commands::Command;
+use crate::commands::CommandExecutor;
+use crate::commands::ledger::LedgerCommand;
+use indy_api_types::errors::prelude::*;
+use crate::services::ledger::merkletree::merkletree::MerkleTree;
+use crate::services::pool::catchup::{build_catchup_req, CatchupProgress, check_cons_proofs, check_nodes_responses_on_status};
+use crate::services::pool::events::NetworkerEvent;
+use crate::services::pool::events::PoolEvent;
+use crate::services::pool::events::RequestEvent;
+use crate::services::pool::{get_last_signed_time, Nodes};
+use crate::services::pool::merkle_tree_factory;
+use crate::services::pool::networker::Networker;
+use crate::services::pool::state_proof;
+use crate::services::pool::types::CatchupRep;
+use crate::services::pool::types::HashableValue;
 
 use super::ursa::bls::Generator;
 
 use std::hash::{Hash, Hasher};
 use log_derive::logfn;
-use api::CommandHandle;
+use indy_api_types::CommandHandle;
 use rust_base58::FromBase58;
 
 struct RequestSM<T: Networker> {
@@ -64,6 +64,10 @@ enum RequestState<T: Networker> {
     Finish(FinishState),
 }
 
+/*
+ The Generator is used for multi-signature verification.
+ It must be the same as on the Ledger side otherwise signatures verification will fail.
+*/
 pub const DEFAULT_GENERATOR: &str = "3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX";
 
 impl<T: Networker> RequestSM<T> {
@@ -812,7 +816,7 @@ fn _check_freshness(msg_result: &SJsonValue, requested_timestamps: (Option<u64>,
 #[logfn(Trace)]
 fn _extract_left_last_write_time(msg_result: &SJsonValue) -> Option<u64> {
     match msg_result["type"].as_str() {
-        Some(::domain::ledger::constants::GET_REVOC_REG_DELTA) => {
+        Some(crate::domain::ledger::constants::GET_REVOC_REG_DELTA) => {
             msg_result["data"]["stateProofFrom"]["multi_signature"]["value"]["timestamp"].as_u64()
         }
         _ => {
@@ -834,12 +838,12 @@ fn _get_cur_time() -> u64 {
 
 #[cfg(test)]
 pub mod tests {
-    use services::ledger::merkletree::tree::Tree;
-    use services::pool::networker::MockNetworker;
-    use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
-    use utils::test;
-    use utils::test::test_pool_create_poolfile;
-    use domain::pool::NUMBER_READ_NODES;
+    use crate::services::ledger::merkletree::tree::Tree;
+    use crate::services::pool::networker::MockNetworker;
+    use crate::services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
+    use crate::utils::test;
+    use crate::utils::test::test_pool_create_poolfile;
+    use crate::domain::pool::NUMBER_READ_NODES;
 
     use super::*;
     use std::io::Write;
@@ -926,7 +930,7 @@ pub mod tests {
         default_nodes.insert(NODE.to_string(), None);
 
         let node_names = vec![NODE, NODE_2, "n3", "n4"];
-        let mut nodes: Nodes = HashMap::new();
+        let mut nodes: Nodes = HashMap::with_capacity(nodes_cnt);
 
         for i in 0..nodes_cnt {
             nodes.insert(node_names[i].to_string(), None);
@@ -1214,7 +1218,7 @@ pub mod tests {
 
     mod single {
         use super::*;
-        use services::pool::set_freshness_threshold;
+        use crate::services::pool::set_freshness_threshold;
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached() {
@@ -1267,8 +1271,8 @@ pub mod tests {
         }
 
         fn add_state_proof_parser() {
-            use services::pool::{PoolService, REGISTERED_SP_PARSERS};
-            use api::ErrorCode;
+            use crate::services::pool::{PoolService, REGISTERED_SP_PARSERS};
+            use indy_api_types::ErrorCode;
             use libc::c_char;
             use std::ffi::CString;
 

@@ -1,7 +1,8 @@
 [package]
 name = "indy-cli"
-version = "1.11.1"
+version = "1.14.1"
 authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
+edition = "2018"
 
 [features]
 nullpay_plugin = []
@@ -28,4 +29,4 @@ serde_json = "1.0.40"
 serde_derive = "1.0.97"
 term = "0.4.6"
 rpassword = "1.0.0"
-indy = { version = "1.11.1", path = "../wrappers/rust/" }
+indy = { version = "1.14.1", path = "../wrappers/rust/" }

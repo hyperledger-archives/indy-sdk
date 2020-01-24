@@ -3,10 +3,9 @@ pub mod crypto;
 pub mod ledger;
 pub mod pairwise;
 pub mod pool;
-pub mod wallet;
 pub mod cache;
 
-use utils::validation::Validatable;
+use indy_api_types::validation::Validatable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndyConfig {

@@ -17,8 +17,8 @@ use std::sync::Mutex;
 use serde_json;
 use serde::de::DeserializeOwned;
 
-use api::ledger::{CustomFree, CustomTransactionParser};
-use domain::{
+use crate::api::ledger::{CustomFree, CustomTransactionParser};
+use crate::domain::{
     pool::{PoolConfig, PoolOpenConfig},
     ledger::response::{
         Message,
@@ -26,11 +26,12 @@ use domain::{
         ResponseMetadata
     }
 };
-use errors::*;
-use services::pool::pool::{Pool, ZMQPool};
-use utils::environment;
-use services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
-use api::{CommandHandle, next_command_handle, PoolHandle, next_pool_handle};
+use indy_api_types::errors::*;
+use crate::services::pool::pool::{Pool, ZMQPool};
+use crate::utils::environment;
+use crate::services::pool::events::{COMMAND_EXIT, COMMAND_CONNECT, COMMAND_REFRESH};
+use indy_api_types::{CommandHandle, PoolHandle};
+use indy_utils::{next_command_handle, next_pool_handle};
 use ursa::bls::VerKey;
 
 mod catchup;
@@ -339,9 +340,9 @@ pub fn pool_create_pair_of_sockets(addr: &str) -> (zmq::Socket, zmq::Socket) {
 mod tests {
     use std::thread;
 
-    use domain::ledger::request::ProtocolVersion;
-    use services::pool::types::*;
-    use utils::test;
+    use crate::domain::ledger::request::ProtocolVersion;
+    use crate::services::pool::types::*;
+    use crate::utils::test;
 
     use super::*;
 
@@ -356,7 +357,7 @@ mod tests {
 
         use libc::c_char;
 
-        use api::{ErrorCode, INVALID_POOL_HANDLE};
+        use indy_api_types::{ErrorCode, INVALID_POOL_HANDLE};
 
         use super::*;
 
@@ -568,7 +569,7 @@ mod tests {
 
     #[test]
     fn pool_drop_works_for_after_close() {
-        use utils::test;
+        use crate::utils::test;
         use std::time;
 
         test::cleanup_storage("pool_drop_works_for_after_close");
@@ -607,12 +608,12 @@ mod tests {
         extern crate sodiumoxide;
 
         use rust_base58::{ToBase58, FromBase58};
-        use utils::crypto::ed25519_sign;
+        use crate::utils::crypto::ed25519_sign;
 
         use super::*;
 
         use ursa::bls::{Generator, SignKey, VerKey};
-        use services::pool::request_handler::DEFAULT_GENERATOR;
+        use crate::services::pool::request_handler::DEFAULT_GENERATOR;
 
         pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 

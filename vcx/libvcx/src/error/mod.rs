@@ -42,6 +42,8 @@ pub enum VcxErrorKind {
     InvalidLibindyParam,
     #[fail(display = "Library already initialized")]
     AlreadyInitialized,
+    #[fail(display = "Action is not supported")]
+    ActionNotSupported,
 
     // Connection
     #[fail(display = "Could not create connection")]
@@ -211,7 +213,7 @@ pub struct VcxError {
 }
 
 impl Fail for VcxError {
-    fn cause(&self) -> Option<&Fail> {
+    fn cause(&self) -> Option<&dyn Fail> {
         self.inner.cause()
     }
 
@@ -364,6 +366,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::MissingExportedWalletPath => error::MISSING_EXPORTED_WALLET_PATH.code_num,
             VcxErrorKind::MissingBackupKey => error::MISSING_BACKUP_KEY.code_num,
             VcxErrorKind::UnknownLiibndyError => error::UNKNOWN_LIBINDY_ERROR.code_num,
+            VcxErrorKind::ActionNotSupported => error::ACTION_NOT_SUPPORTED.code_num,
             VcxErrorKind::Common(num) => num,
             VcxErrorKind::LiibndyError(num) => num,
         }

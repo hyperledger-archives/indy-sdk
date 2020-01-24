@@ -45,8 +45,10 @@ test('ledger', async function (t) {
   t.false(resMetadata.hasOwnProperty('lastSeqNo'))
 
   req = await indy.buildGetNymRequest(trusteeDid, myDid)
-  t.is(req.identifier, trusteeDid)
-  t.is(req.operation.dest, myDid)
+  res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
+  var data = await indy.parseGetNymResponse(res)
+  t.is(myDid, data['did'])
+  t.is(myVerkey, data['verkey'])
 
   // Schema
   req = await indy.buildSchemaRequest(myDid, schema)
@@ -55,7 +57,7 @@ test('ledger', async function (t) {
 
   req = await indy.buildGetSchemaRequest(myDid, schemaId)
   res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
-  var data = await indy.parseGetSchemaResponse(res)
+  data = await indy.parseGetSchemaResponse(res)
   t.is(data[0], schemaId)
   t.is(data[1].name, schema.name)
   req = await indy.buildGetTxnRequest(myDid, null, data[1].seqNo)
@@ -187,11 +189,14 @@ test('ledger', async function (t) {
   t.is(res.op, 'REPLY')
 
   // author agreement
-  req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0')
-  t.deepEqual(req['operation'], { 'type': '4', 'text': 'indy agreement', 'version': '1.0.0' })
+  req = await indy.buildTxnAuthorAgreementRequest(trusteeDid, 'indy agreement', '1.0.0', 12345, 54321)
+  t.deepEqual(req['operation'], { 'type': '4', 'text': 'indy agreement', 'version': '1.0.0', 'ratification_ts': 12345, 'retirement_ts': 54321 })
 
   req = await indy.buildGetTxnAuthorAgreementRequest(null, { 'version': '1.0.0' })
   t.deepEqual(req['operation'], { 'type': '6', 'version': '1.0.0' })
+
+  req = await indy.buildDisableAllTxnAuthorAgreementsRequest(trusteeDid)
+  t.deepEqual(req['operation'], { 'type': '8' })
 
   // acceptance mechanism
   var aml = { 'acceptance mechanism label 1': 'some acceptance mechanism description 1' }

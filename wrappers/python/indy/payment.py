@@ -474,7 +474,9 @@ async def prepare_payment_extra_with_acceptance_data(extra_json: Optional[str],
     :param text and version: (Optional) raw data about TAA from ledger.
                These parameters should be passed together.
                These parameters are required if taa_digest parameter is omitted.
-    :param taa_digest: (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    :param taa_digest: (Optional) digest on text and version.
+                       Digest is sha256 hash calculated on concatenated strings: version || text.
+                       This parameter is required if text and version parameters are omitted.
     :param mechanism: mechanism how user has accepted the TAA
     :param time: UTC timestamp when user has accepted the TAA
 

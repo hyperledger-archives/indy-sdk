@@ -8,26 +8,26 @@ use std::thread::JoinHandle;
 
 use failure::Context;
 
-use commands::Command;
-use commands::CommandExecutor;
-use commands::ledger::LedgerCommand;
-use commands::pool::PoolCommand;
-use domain::ledger::request::ProtocolVersion;
-use domain::pool::PoolOpenConfig;
-use errors::prelude::*;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::commander::Commander;
-use services::pool::events::*;
-use services::pool::{merkle_tree_factory, Nodes};
-use services::pool::networker::{Networker, ZMQNetworker};
-use services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
+use crate::commands::Command;
+use crate::commands::CommandExecutor;
+use crate::commands::ledger::LedgerCommand;
+use crate::commands::pool::PoolCommand;
+use crate::domain::ledger::request::ProtocolVersion;
+use crate::domain::pool::PoolOpenConfig;
+use indy_api_types::errors::prelude::*;
+use crate::services::ledger::merkletree::merkletree::MerkleTree;
+use crate::services::pool::commander::Commander;
+use crate::services::pool::events::*;
+use crate::services::pool::{merkle_tree_factory, Nodes};
+use crate::services::pool::networker::{Networker, ZMQNetworker};
+use crate::services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
 use rust_base58::{FromBase58, ToBase58};
-use services::pool::types::{LedgerStatus, RemoteNode};
-use utils::crypto::ed25519_sign;
+use crate::services::pool::types::{LedgerStatus, RemoteNode};
+use crate::utils::crypto::ed25519_sign;
 
 use super::ursa::bls::VerKey;
 use super::zmq;
-use api::{PoolHandle, CommandHandle};
+use indy_api_types::{PoolHandle, CommandHandle};
 
 struct PoolSM<T: Networker, R: RequestHandler<T>> {
     pool_name: String,
@@ -698,7 +698,7 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(Nodes, Vec<RemoteN
         (HashMap::new(), vec![]), |(mut map, mut vec), res| {
             match res {
                 Err(e) => {
-                    error!("Error during retrieving nodes: {:?}", e);
+                    debug!("Error during retrieving nodes: {:?}", e);
                 }
                 Ok(((alias, verkey), remote)) => {
                     map.insert(alias.clone(), verkey);
@@ -763,19 +763,19 @@ impl Drop for ZMQPool {
 
 #[cfg(test)]
 mod tests {
-    use services::pool::networker::MockNetworker;
-    use services::pool::request_handler::tests::MockRequestHandler;
-    use services::pool::types::{Message, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, ResponseMetadata};
-    use utils::test;
-    use utils::test::test_pool_create_poolfile;
+    use crate::services::pool::networker::MockNetworker;
+    use crate::services::pool::request_handler::tests::MockRequestHandler;
+    use crate::services::pool::types::{Message, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, ResponseMetadata};
+    use crate::utils::test;
+    use crate::utils::test::test_pool_create_poolfile;
 
-    use api::next_command_handle;
+    use indy_utils::next_command_handle;
 
     use super::*;
 
     mod pool {
         use super::*;
-        use services::pool::next_pool_handle;
+        use indy_utils::next_pool_handle;
 
         #[test]
         pub fn pool_new_works() {
@@ -792,7 +792,7 @@ mod tests {
         #[test]
         pub fn pool_get_id_works() {
             let name = "pool_get_id_works";
-            let id = next_pool_handle();;
+            let id = next_pool_handle();
             let p: Pool<MockNetworker, MockRequestHandler> = Pool::new(name, id, PoolOpenConfig::default());
             assert_eq!(id, p.get_id());
         }
@@ -804,8 +804,8 @@ mod tests {
         use serde_json;
 
         use super::*;
-        use services::pool::next_pool_handle;
-        use domain::pool::NUMBER_READ_NODES;
+        use indy_utils::next_pool_handle;
+        use crate::domain::pool::NUMBER_READ_NODES;
 
         #[test]
         pub fn pool_wrapper_new_initialization_works() {

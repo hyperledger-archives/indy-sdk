@@ -3,8 +3,8 @@ use super::schema::SchemaId;
 use super::super::ledger::request::ProtocolVersion;
 use super::super::crypto::did::DidValue;
 
-use utils::validation::Validatable;
-use utils::qualifier;
+use indy_api_types::validation::Validatable;
+use crate::utils::qualifier;
 
 use ursa::cl::{
     CredentialPrimaryPublicKey,
@@ -75,6 +75,22 @@ pub struct TemporaryCredentialDefinition {
     pub cred_def: CredentialDefinition,
     pub cred_def_priv_key: CredentialDefinitionPrivateKey,
     pub cred_def_correctness_proof: CredentialDefinitionCorrectnessProof
+}
+
+impl CredentialDefinition {
+    pub fn to_unqualified(self) -> CredentialDefinition {
+        match self {
+            CredentialDefinition::CredentialDefinitionV1(cred_def) => {
+                CredentialDefinition::CredentialDefinitionV1(CredentialDefinitionV1 {
+                    id: cred_def.id.to_unqualified(),
+                    schema_id: cred_def.schema_id.to_unqualified(),
+                    signature_type: cred_def.signature_type,
+                    tag: cred_def.tag,
+                    value: cred_def.value,
+                })
+            }
+        }
+    }
 }
 
 impl From<CredentialDefinition> for CredentialDefinitionV1 {
@@ -192,7 +208,7 @@ impl CredentialDefinitionId {
             return Some((DidValue(did), signature_type, SchemaId(schema_id), tag));
         }
 
-        return None;
+        None
     }
 
     pub fn issuer_did(&self) -> Option<DidValue> {

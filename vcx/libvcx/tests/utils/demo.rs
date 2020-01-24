@@ -91,12 +91,12 @@ pub fn send_credential(credential_handle: u32, connection_handle: u32) -> u32 {
 }
 #[allow(dead_code)]
 pub fn deserialize_vcx_object(serialized_connection: &str,f:extern fn(u32, *const c_char, Option<extern fn(u32, u32, u32)>) ->u32 ) -> u32{
-    fn closure_to_deserialize_connection(closure: Box<FnMut(u32, u32) + Send>) ->
+    fn closure_to_deserialize_connection(closure: Box<dyn FnMut(u32, u32) + Send>) ->
     (u32,  Option<extern fn( command_handle: u32,
                              err: u32 ,
                              connection_handle: u32)>) {
         lazy_static! { static ref CALLBACK_DESERIALIE_CONNECTION: Mutex<HashMap<u32,
-                                        Box<FnMut(u32, u32) + Send>>> = Default::default(); }
+                                        Box<dyn FnMut(u32, u32) + Send>>> = Default::default(); }
 
         extern "C" fn callback(command_handle: u32, err: u32, connection_handle: u32) {
             let mut callbacks = CALLBACK_DESERIALIE_CONNECTION.lock().unwrap();
@@ -125,10 +125,10 @@ pub fn deserialize_vcx_object(serialized_connection: &str,f:extern fn(u32, *cons
 
 #[allow(dead_code)]
 pub fn serialize_vcx_object(connection_handle: u32, f:extern fn(u32, u32, Option<extern fn(u32, u32, *const c_char)> ) ->u32) -> u32{
-    fn closure_to_serialize_connection(closure: Box<FnMut(u32) + Send>) ->
+    fn closure_to_serialize_connection(closure: Box<dyn FnMut(u32) + Send>) ->
     (u32, Option<extern fn( command_handle: u32, err: u32 , credential_string: *const c_char)>) {
         lazy_static! { static ref CALLBACKS_SERIALIZE_CONNECTION: Mutex<HashMap<u32,
-                                        Box<FnMut(u32) + Send>>> = Default::default(); }
+                                        Box<dyn FnMut(u32) + Send>>> = Default::default(); }
 
         extern "C" fn callback(command_handle: u32, err: u32, credential_string: *const c_char) {
             let mut callbacks = CALLBACKS_SERIALIZE_CONNECTION.lock().unwrap();
@@ -162,10 +162,10 @@ pub fn serialize_vcx_object(connection_handle: u32, f:extern fn(u32, u32, Option
 
 #[allow(dead_code)]
 pub fn invite_details_vcx_object(connection_handle: u32, f:extern fn(u32, u32, bool, Option<extern fn(u32, u32, *const c_char)>) -> u32) -> u32 {
-    fn closure_to_vcx_connection(closure: Box<FnMut(u32) + Send>) ->
+    fn closure_to_vcx_connection(closure: Box<dyn FnMut(u32) + Send>) ->
     (u32, Option<extern fn( command_handle: u32, err: u32 , details: *const c_char)>) {
         lazy_static! { static ref CALLBACKS_SERIALIZE_CONNECTION: Mutex<HashMap<u32,
-                                        Box<FnMut(u32) + Send>>> = Default::default(); }
+                                        Box<dyn FnMut(u32) + Send>>> = Default::default(); }
 
         extern "C" fn callback(command_handle: u32, err: u32, details: *const c_char) {
             let mut callbacks = CALLBACKS_SERIALIZE_CONNECTION.lock().unwrap();
@@ -213,14 +213,14 @@ pub fn wait_for_updated_state(handle: u32, target_state:u32, f: extern fn(u32, u
 }
 
 #[allow(dead_code)]
-pub fn closure_to_create_connection_cb(closure: Box<FnMut(u32, u32) + Send>) ->
+pub fn closure_to_create_connection_cb(closure: Box<dyn FnMut(u32, u32) + Send>) ->
 (u32,
  Option<extern fn(
      command_handle: u32,
      err: u32,
      connection_handle: u32)>) {
     lazy_static! {
-            static ref CALLBACKS_CREATE_CONNECTION: Mutex<HashMap<u32, Box<FnMut(u32, u32) + Send>>> = Default::default();
+            static ref CALLBACKS_CREATE_CONNECTION: Mutex<HashMap<u32, Box<dyn FnMut(u32, u32) + Send>>> = Default::default();
         }
 
     extern "C" fn callback(command_handle: u32, err: u32, connection_handle: u32) {
@@ -237,13 +237,13 @@ pub fn closure_to_create_connection_cb(closure: Box<FnMut(u32, u32) + Send>) ->
 }
 
 #[allow(dead_code)]
-pub fn closure_to_connect_cb(closure: Box<FnMut(u32) + Send>) -> (u32,
+pub fn closure_to_connect_cb(closure: Box<dyn FnMut(u32) + Send>) -> (u32,
                                                                   Option<extern fn(
                                                                       command_handle: u32,
                                                                       err: u32,
                                                                       details: *const c_char)>) {
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<u32, Box<FnMut(u32) + Send>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<u32, Box<dyn FnMut(u32) + Send>>> = Default::default();
     }
     // this is the only difference between the two closure converters
     #[allow(unused_variables)]
@@ -261,13 +261,13 @@ pub fn closure_to_connect_cb(closure: Box<FnMut(u32) + Send>) -> (u32,
 }
 
 #[allow(dead_code)]
-pub fn closure_to_update_state(closure: Box<FnMut(u32) + Send>) ->
+pub fn closure_to_update_state(closure: Box<dyn FnMut(u32) + Send>) ->
 (u32,
  Option<extern fn(
      command_handle: u32,
      err: u32,
      connection_handle: u32)>) {
-    lazy_static! { static ref CALLBACKS_GET_STATE: Mutex<HashMap<u32, Box<FnMut(u32) + Send>>> = Default::default(); }
+    lazy_static! { static ref CALLBACKS_GET_STATE: Mutex<HashMap<u32, Box<dyn FnMut(u32) + Send>>> = Default::default(); }
 
     #[allow(unused_variables)]
     extern "C" fn callback(command_handle: u32, err: u32, state: u32) {
@@ -284,9 +284,9 @@ pub fn closure_to_update_state(closure: Box<FnMut(u32) + Send>) ->
 }
 
 #[allow(dead_code)]
-pub fn closure_to_create_credential(closure: Box<FnMut(u32, u32) + Send>) ->
+pub fn closure_to_create_credential(closure: Box<dyn FnMut(u32, u32) + Send>) ->
 (u32, Option<extern fn( command_handle: u32, err: u32, credential_handle: u32)>) {
-    lazy_static! { static ref CALLBACKS_CREATE_CREDENTIAL: Mutex<HashMap<u32, Box<FnMut(u32, u32) + Send>>> = Default::default(); }
+    lazy_static! { static ref CALLBACKS_CREATE_CREDENTIAL: Mutex<HashMap<u32, Box<dyn FnMut(u32, u32) + Send>>> = Default::default(); }
 
     extern "C" fn callback(command_handle: u32, err: u32, credential_handle: u32) {
         let mut callbacks = CALLBACKS_CREATE_CREDENTIAL.lock().unwrap();
@@ -302,9 +302,9 @@ pub fn closure_to_create_credential(closure: Box<FnMut(u32, u32) + Send>) ->
 }
 
 #[allow(dead_code)]
-pub fn closure_to_create_credentialdef(closure: Box<FnMut(u32, u32) + Send>) ->
+pub fn closure_to_create_credentialdef(closure: Box<dyn FnMut(u32, u32) + Send>) ->
 (u32, Option<extern fn( command_handle: u32, err: u32, credentialdef_handle: u32)>) {
-    lazy_static! { static ref CALLBACKS_CREATE_CREDENTIALDEF: Mutex<HashMap<u32, Box<FnMut(u32, u32) + Send>>> = Default::default(); }
+    lazy_static! { static ref CALLBACKS_CREATE_CREDENTIALDEF: Mutex<HashMap<u32, Box<dyn FnMut(u32, u32) + Send>>> = Default::default(); }
 
     extern "C" fn callback(command_handle: u32, err: u32, credentialdef_handle: u32) {
         let mut callbacks = CALLBACKS_CREATE_CREDENTIALDEF.lock().unwrap();
@@ -320,8 +320,8 @@ pub fn closure_to_create_credentialdef(closure: Box<FnMut(u32, u32) + Send>) ->
 }
 
 #[allow(dead_code)]
-pub fn closure_to_send_credential_object(closure: Box<FnMut(u32) + Send>) -> (u32, Option<extern fn(command_handle: u32, err: u32 )>) {
-    lazy_static! { static ref CALLBACKS_SEND_CREDENTIAL: Mutex<HashMap<u32, Box<FnMut(u32) + Send>>> = Default::default(); }
+pub fn closure_to_send_credential_object(closure: Box<dyn FnMut(u32) + Send>) -> (u32, Option<extern fn(command_handle: u32, err: u32 )>) {
+    lazy_static! { static ref CALLBACKS_SEND_CREDENTIAL: Mutex<HashMap<u32, Box<dyn FnMut(u32) + Send>>> = Default::default(); }
 
     extern "C" fn callback(command_handle: u32, err: u32) {
         let mut callbacks = CALLBACKS_SEND_CREDENTIAL.lock().unwrap();
@@ -368,10 +368,10 @@ pub fn create_proof_request(source_id: &str, requested_attrs: &str) -> (u32, u32
 
 #[allow(dead_code)]
 pub fn get_proof(proof_handle: u32, connection_handle: u32) -> u32 {
-    fn closure_to_get_proof(closure: Box<FnMut(u32) + Send>) ->
+    fn closure_to_get_proof(closure: Box<dyn FnMut(u32) + Send>) ->
     (u32, Option<extern fn( command_handle: u32, err: u32, proof_state: u32, proof_string: *const c_char)>) {
         lazy_static! { static ref CALLBACK_GET_PROOF: Mutex<HashMap<u32,
-                                        Box<FnMut(u32) + Send>>> = Default::default(); }
+                                        Box<dyn FnMut(u32) + Send>>> = Default::default(); }
 
         extern "C" fn callback(command_handle: u32, err: u32, proof_state: u32, proof_str: *const c_char) {
             let mut callbacks = CALLBACK_GET_PROOF.lock().unwrap();

@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
-use domain::crypto::key::{Key, KeyInfo, KeyMetadata};
-use domain::crypto::pack::*;
-use errors::prelude::*;
-use services::crypto::CryptoService;
-use services::wallet::{RecordOptions, WalletService};
+use crate::domain::crypto::key::{Key, KeyInfo, KeyMetadata};
+use crate::domain::crypto::pack::*;
+use indy_api_types::errors::prelude::*;
+use crate::services::crypto::CryptoService;
+use indy_wallet::{RecordOptions, WalletService};
 
 use std::rc::Rc;
 use std::str;
-use utils::crypto::base64;
-use utils::crypto::chacha20poly1305_ietf;
-use domain::crypto::combo_box::ComboBox;
-use api::WalletHandle;
+use crate::utils::crypto::base64;
+use crate::utils::crypto::chacha20poly1305_ietf;
+use crate::domain::crypto::combo_box::ComboBox;
+use indy_api_types::WalletHandle;
 
 pub const PROTECTED_HEADER_ENC: &str = "xchacha20poly1305_ietf";
 pub const PROTECTED_HEADER_TYP: &str = "JWM/1.0";

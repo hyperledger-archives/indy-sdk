@@ -9,7 +9,7 @@ extern "C" {
 //extern crate libloading as lib;
 extern crate libc;
 
-use std::sync::{Arc, Mutex, Once, ONCE_INIT};
+use std::sync::{Arc, Mutex, Once};
 use std::time::Duration;
 use std::{mem, thread};
 use self::libc::c_char;
@@ -26,7 +26,7 @@ struct SingletonReader {
 fn singleton() -> SingletonReader {
     // Initialize it to a null value
     static mut SINGLETON: *const SingletonReader = 0 as *const SingletonReader;
-    static ONCE: Once = ONCE_INIT;
+    static ONCE: Once = Once::new();
 
     unsafe {
         ONCE.call_once(|| {

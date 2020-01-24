@@ -25,10 +25,10 @@ mod command_executor;
 mod commands;
 mod libindy;
 
-use command_executor::CommandExecutor;
+use crate::command_executor::CommandExecutor;
 
-use commands::{common, did, ledger, pool, wallet, payment_address};
-use utils::history;
+use crate::commands::{common, did, ledger, pool, wallet, payment_address};
+use crate::utils::history;
 
 use linefeed::{Reader, ReadResult, Terminal, Signal};
 use linefeed::complete::{Completer, Completion};
@@ -143,6 +143,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(pool::disconnect_command::new())
         .add_command(pool::delete_command::new())
         .add_command(pool::show_taa_command::new())
+        .add_command(pool::set_protocol_version_command::new())
         .finalize_group()
         .add_group(wallet::group::new())
         .add_command(wallet::create_command::new())
@@ -184,9 +185,12 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::load_transaction_command::new())
         .add_command(ledger::taa_command::new())
         .add_command(ledger::aml_command::new())
+        .add_command(ledger::get_acceptance_mechanisms_command::new())
         .add_command(ledger::endorse_transaction_command::new())
+        .add_command(ledger::taa_disable_all_command::new())
         .finalize_group()
         .add_group(payment_address::group::new())
+        .add_command(payment_address::new_command::new())
         .add_command(payment_address::create_command::new())
         .add_command(payment_address::list_command::new())
         .add_command(payment_address::sign_command::new())

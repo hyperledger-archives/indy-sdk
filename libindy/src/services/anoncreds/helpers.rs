@@ -1,15 +1,19 @@
-use errors::prelude::*;
+use indy_api_types::errors::prelude::*;
 
-use domain::anoncreds::credential::AttributeValues;
-use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, NonRevocedInterval};
+use crate::domain::anoncreds::credential::AttributeValues;
+use crate::domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo, NonRevocedInterval};
 use ursa::cl::{issuer, verifier, CredentialSchema, NonCredentialSchema, MasterSecret, CredentialValues, SubProofRequest};
 
-use domain::crypto::did::DidValue;
-use domain::anoncreds::schema::SchemaId;
-use domain::anoncreds::credential_definition::CredentialDefinitionId;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
-use domain::anoncreds::credential_offer::CredentialOffer;
-use domain::anoncreds::proof_request::ProofRequest;
+use crate::domain::crypto::did::DidValue;
+use crate::domain::anoncreds::schema::SchemaId;
+use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
+use crate::domain::anoncreds::schema::Schema;
+use crate::domain::anoncreds::credential_definition::CredentialDefinition;
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use crate::domain::anoncreds::credential_offer::CredentialOffer;
+use crate::domain::anoncreds::credential_request::CredentialRequest;
+use crate::domain::anoncreds::proof_request::ProofRequest;
 
 use std::collections::{HashSet, HashMap};
 
@@ -68,7 +72,18 @@ pub fn build_sub_proof_request(attrs_for_credential: &[AttributeInfo],
     let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
 
     for attr in attrs_for_credential {
-        sub_proof_request_builder.add_revealed_attr(&attr_common_view(&attr.name))?
+        let names = if let Some(name) = &attr.name {
+            vec![name.clone()]
+        } else if let Some(names) = &attr.names {
+            names.to_owned()
+        } else {
+            error!(r#"Attr for credential restriction should contain "name" or "names" param. Current attr: {:?}"#, attr);
+            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, r#"Attr for credential restriction should contain "name" or "names" param."#));
+        };
+
+        for name in names {
+            sub_proof_request_builder.add_revealed_attr(&attr_common_view(&name))?
+        }
     }
 
     for predicate in predicates_for_credential {
@@ -105,42 +120,42 @@ pub fn get_non_revoc_interval(global_interval: &Option<NonRevocedInterval>, loca
     interval
 }
 
+macro_rules! _id_to_unqualified {
+    ($entity:expr, $type_:ident) => ({
+        if $entity.starts_with($type_::PREFIX) {
+            return Ok($type_($entity.to_string()).to_unqualified().0);
+        }
+    })
+}
+
+macro_rules! _object_to_unqualified {
+    ($entity:expr, $type_:ident) => ({
+        if let Ok(object) = ::serde_json::from_str::<$type_>(&$entity) {
+            return Ok(json!(object.to_unqualified()).to_string())
+        }
+    })
+}
+
 pub fn to_unqualified(entity: &str) -> IndyResult<String> {
     info!("to_unqualified >>> entity: {:?}", entity);
 
-    if entity.starts_with(DidValue::PREFIX) {
-        return Ok(DidValue(entity.to_string()).to_unqualified().0);
-    }
+    _id_to_unqualified!(entity, DidValue);
+    _id_to_unqualified!(entity, SchemaId);
+    _id_to_unqualified!(entity, CredentialDefinitionId);
+    _id_to_unqualified!(entity, RevocationRegistryId);
 
-    if entity.starts_with(SchemaId::PREFIX) {
-        return Ok(SchemaId(entity.to_string()).to_unqualified().0);
-    }
-
-    if entity.starts_with(CredentialDefinitionId::PREFIX) {
-        return Ok(CredentialDefinitionId(entity.to_string()).to_unqualified().0);
-    }
-
-    if entity.starts_with(RevocationRegistryId::PREFIX) {
-        return Ok(RevocationRegistryId(entity.to_string()).to_unqualified().0);
-    }
-
-    if let Ok(cred_offer) = ::serde_json::from_str::<CredentialOffer>(&entity) {
-        let cred_offer = cred_offer.to_unqualified();
-        return serde_json::to_string(&cred_offer)
-            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize Credential Offer: {:?}", err)));
-    }
-
-    if let Ok(proof_request) = ::serde_json::from_str::<ProofRequest>(&entity) {
-        let proof_request = proof_request.to_unqualified();
-        return serde_json::to_string(&proof_request)
-            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize Proof Request: {:?}", err)));
-    }
+    _object_to_unqualified!(entity, Schema);
+    _object_to_unqualified!(entity, CredentialDefinition);
+    _object_to_unqualified!(entity, RevocationRegistryDefinition);
+    _object_to_unqualified!(entity, CredentialOffer);
+    _object_to_unqualified!(entity, CredentialRequest);
+    _object_to_unqualified!(entity, ProofRequest);
 
     Ok(entity.to_string())
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
 
     fn _interval() -> NonRevocedInterval { NonRevocedInterval { from: None, to: Some(123) } }
@@ -165,7 +180,7 @@ mod tests{
 
     mod to_unqualified {
         use super::*;
-        
+
         const DID_QUALIFIED: &str = "did:sov:NcYxiDXkpYi6ov5FcYDi1e";
         const DID_UNQUALIFIED: &str = "NcYxiDXkpYi6ov5FcYDi1e";
         const SCHEMA_ID_QUALIFIED: &str = "schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
@@ -176,7 +191,7 @@ mod tests{
         const REV_REG_ID_UNQUALIFIED: &str = "NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:tag:CL_ACCUM:TAG_1";
         const SCHEMA_ID_WITH_SPACES_QUALIFIED: &str = "schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:Passport Schema:1.0";
         const SCHEMA_ID_WITH_SPACES_UNQUALIFIED: &str = "NcYxiDXkpYi6ov5FcYDi1e:2:Passport Schema:1.0";
-        
+
         #[test]
         fn test_to_unqualified() {
             // DID

@@ -8,9 +8,9 @@ extern crate indyrs as api;
 extern crate sha2;
 
 use self::indy::ErrorCode;
-use utils::payments;
-use utils::constants::*;
-use utils::Setup;
+use crate::utils::payments;
+use crate::utils::constants::*;
+use crate::utils::Setup;
 
 static EMPTY_OBJECT: &str = "{}";
 static EMPTY_ARRAY: &str = "[]";
@@ -747,7 +747,7 @@ mod high_cases {
 #[cfg(not(feature="only_high_cases"))]
 mod medium_cases {
     use super::*;
-    use api::INVALID_WALLET_HANDLE;
+    use crate::api::INVALID_WALLET_HANDLE;
     static WRONG_PAYMENT_METHOD_NAME: &str = "null_payment_handler";
     static INPUTS_UNKNOWN_METHOD: &str = r#"["pay:unknown_payment_method:1"]"#;
     static OUTPUTS_UNKNOWN_METHOD: &str = r#"[{"recipient": "pay:unknown_payment_method:1", "amount":1}]"#;

@@ -3,16 +3,16 @@ extern crate hex;
 use std::collections::HashMap;
 use std::str;
 
-use domain::crypto::combo_box::ComboBox;
-use domain::crypto::did::{Did, DidValue, MyDidInfo, TheirDid, TheirDidInfo};
-use domain::crypto::key::{Key, KeyInfo};
-use errors::prelude::*;
-use utils::crypto::base64;
-use utils::crypto::ed25519_box;
-use utils::crypto::chacha20poly1305_ietf;
-use utils::crypto::chacha20poly1305_ietf::gen_nonce_and_encrypt_detached;
-use utils::crypto::ed25519_sign;
-use utils::crypto::verkey_builder::{build_full_verkey, split_verkey, verkey_get_cryptoname};
+use crate::domain::crypto::combo_box::ComboBox;
+use crate::domain::crypto::did::{Did, DidValue, MyDidInfo, TheirDid, TheirDidInfo};
+use crate::domain::crypto::key::{Key, KeyInfo};
+use indy_api_types::errors::prelude::*;
+use crate::utils::crypto::base64;
+use crate::utils::crypto::ed25519_box;
+use crate::utils::crypto::chacha20poly1305_ietf;
+use crate::utils::crypto::chacha20poly1305_ietf::gen_nonce_and_encrypt_detached;
+use crate::utils::crypto::ed25519_sign;
+use crate::utils::crypto::verkey_builder::{build_full_verkey, split_verkey, verkey_get_cryptoname};
 
 use self::ed25519::ED25519CryptoType;
 use self::hex::FromHex;
@@ -445,8 +445,8 @@ impl CryptoService {
 
 #[cfg(test)]
 mod tests {
-    use domain::crypto::did::MyDidInfo;
-    use utils::crypto::chacha20poly1305_ietf::gen_key;
+    use crate::domain::crypto::did::MyDidInfo;
+    use crate::utils::crypto::chacha20poly1305_ietf::gen_key;
 
     use super::*;
 

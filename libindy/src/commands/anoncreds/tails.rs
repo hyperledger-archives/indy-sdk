@@ -1,6 +1,6 @@
-use errors::prelude::*;
-use services::blob_storage::BlobStorageService;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use indy_api_types::errors::prelude::*;
+use crate::services::blob_storage::BlobStorageService;
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
 use ursa::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
 use ursa::errors::prelude::{UrsaCryptoError, UrsaCryptoErrorKind};

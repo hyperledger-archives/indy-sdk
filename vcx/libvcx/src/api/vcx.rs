@@ -15,7 +15,8 @@ use error::prelude::*;
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// config_path: path to a config file to populate config attributes
+/// config: config as json.
+/// The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
 ///
 /// cb: Callback that provides error status of initialization
 ///
@@ -52,6 +53,7 @@ pub extern fn vcx_init_with_config(command_handle: u32,
 /// Initializes VCX with config file
 ///
 /// An example file is at libvcx/sample_config/config.json
+/// The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -132,7 +134,8 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
                 Ok(_) => (),
                 Err(e) => {
                     error!("Init Pool Error {}.", e);
-                    return Ok(cb(command_handle, e.into()));
+                    cb(command_handle, e.into());
+                    return Ok(());
                 }
             }
         }
@@ -157,10 +160,9 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
 /// Initialize vcx with the minimal configuration (wallet, pool must already be set with
 /// vcx_wallet_set_handle() and vcx_pool_set_handle()) and without any agency configuration
 ///
-/// #Example:
-///
-/// vcx_init_minimal('{"institution_name":"faber","institution_did":"44x8p4HubxzUK1dwxcc5FU",\
-//      "institution_verkey":"444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"}')
+/// # Example:
+/// vcx_init_minimal -> '{"institution_name":"faber","institution_did":"44x8p4HubxzUK1dwxcc5FU",\
+//      "institution_verkey":"444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"}'
 ///
 /// #Params
 ///
@@ -268,6 +270,13 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
     error::SUCCESS.code_num
 }
 
+/// Get the message corresponding to an error code
+///
+/// #Params
+/// error_code: code of error
+///
+/// #Returns
+/// Error message
 #[no_mangle]
 pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
     info!("vcx_error_c_message >>>");
@@ -275,6 +284,14 @@ pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
     error::error_c_message(&error_code).as_ptr()
 }
 
+/// Update setting to set new local institution information
+///
+/// #Params
+/// name: institution name
+/// logo_url: url containing institution logo
+///
+/// #Returns
+/// Error code as u32
 #[no_mangle]
 pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const c_char) -> u32 {
     info!("vcx_update_institution_info >>>");
@@ -289,6 +306,18 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
     error::SUCCESS.code_num
 }
 
+#[no_mangle]
+pub extern fn vcx_update_webhook_url(notification_webhook_url: *const c_char) -> u32 {
+    info!("vcx_update_webhook >>>");
+
+    check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidConfiguration);
+    trace!("vcx_update_webhook(webhook_url: {})", notification_webhook_url);
+
+    settings::set_config_value(::settings::CONFIG_WEBHOOK_URL, &notification_webhook_url);
+
+    error::SUCCESS.code_num
+}
+
 /// Retrieve author agreement and acceptance mechanisms set on the Ledger
 ///
 /// #params
@@ -296,6 +325,8 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 /// command_handle: command handle to map callback to user context.
 ///
 /// cb: Callback that provides array of matching messages retrieved
+///
+/// # Example author_agreement -> "{"text":"Default agreement", "version":"1.0.0", "aml": {"label1": "description"}}"
 ///
 /// #Returns
 /// Error code as a u32
@@ -333,7 +364,7 @@ pub extern fn vcx_get_ledger_author_agreement(command_handle: u32,
 
 /// Set some accepted agreement as active.
 ///
-/// As result of succesfull call of this funciton appropriate metadata will be appended to each write request by `indy_append_txn_author_agreement_meta_to_request` libindy call.
+/// As result of successful call of this function appropriate metadata will be appended to each write request.
 ///
 /// #Params
 /// text and version - (optional) raw data about TAA from ledger.
@@ -907,6 +938,19 @@ mod tests {
 
         assert_eq!(new_name, &settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME).unwrap());
         assert_eq!(new_url, &settings::get_config_value(::settings::CONFIG_INSTITUTION_LOGO_URL).unwrap());
+        ::settings::set_defaults();
+    }
+
+
+    #[test]
+    fn test_vcx_update_institution_webhook() {
+        init!("true");
+        let webhook_url = "http://www.evernym.com";
+        assert_ne!(webhook_url, &settings::get_config_value(::settings::CONFIG_WEBHOOK_URL).unwrap());
+
+        assert_eq!(error::SUCCESS.code_num, vcx_update_webhook_url(CString::new(webhook_url.to_string()).unwrap().into_raw()));
+
+        assert_eq!(webhook_url, &settings::get_config_value(::settings::CONFIG_WEBHOOK_URL).unwrap());
         ::settings::set_defaults();
     }
 

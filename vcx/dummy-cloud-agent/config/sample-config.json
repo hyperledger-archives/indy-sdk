@@ -16,6 +16,12 @@
     ],
     "workers": 2
   },
+  "server_admin": {
+    "enabled": false,
+    "addresses": [
+      "127.0.0.1:8090"
+    ]
+  },
   "wallet_storage": {
     "config": null,
     "credentials": null,

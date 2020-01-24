@@ -2,15 +2,15 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use api::wallet::*;
-use commands::{Command, CommandExecutor};
-use domain::wallet::{Config, Credentials, ExportConfig, KeyConfig, Metadata};
-use errors::prelude::*;
-use services::crypto::CryptoService;
-use services::wallet::{KeyDerivationData, WalletService};
-use utils::crypto::{chacha20poly1305_ietf, randombytes};
-use utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
-use api::{WalletHandle, CallbackHandle};
+use indy_api_types::wallet::*;
+use crate::commands::{Command, CommandExecutor};
+use indy_api_types::domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
+use indy_api_types::errors::prelude::*;
+use crate::services::crypto::CryptoService;
+use indy_wallet::{KeyDerivationData, WalletService, Metadata};
+use crate::utils::crypto::{chacha20poly1305_ietf, randombytes};
+use crate::utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
+use indy_api_types::{WalletHandle, CallbackHandle};
 use rust_base58::ToBase58;
 
 type DeriveKeyResult<T> = IndyResult<T>;
@@ -234,7 +234,7 @@ impl WalletCommandExecutor {
 
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
 
-        let cb_id : CallbackHandle = ::utils::sequence::get_next_id();
+        let cb_id : CallbackHandle = indy_utils::sequence::get_next_id();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         let config = config.clone();
@@ -350,7 +350,7 @@ impl WalletCommandExecutor {
 
         let (metadata, key_derivation_data) = try_cb!(self.wallet_service.delete_wallet_prepare(&config, &credentials), cb);
 
-        let cb_id: CallbackHandle = ::utils::sequence::get_next_id();
+        let cb_id: CallbackHandle = indy_utils::sequence::get_next_id();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         let config = config.clone();
@@ -395,7 +395,7 @@ impl WalletCommandExecutor {
 
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(&export_config.key, &export_config.key_derivation_method);
 
-        let cb_id = ::utils::sequence::get_next_id();
+        let cb_id = indy_utils::sequence::get_next_id();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         let export_config = export_config.clone();
@@ -439,7 +439,7 @@ impl WalletCommandExecutor {
 
         let (wallet_handle, key_data, import_key_data) = try_cb!(self.wallet_service.import_wallet_prepare(&config, &credentials, &import_config), cb);
 
-        let cb_id : CallbackHandle = ::utils::sequence::get_next_id();
+        let cb_id : CallbackHandle = indy_utils::sequence::get_next_id();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
 
         let config = config.clone();
@@ -503,6 +503,6 @@ impl WalletCommandExecutor {
     }
 
     fn _derive_key(&self, key_data: KeyDerivationData, cb: Box<dyn Fn(DeriveKeyResult<MasterKey>) + Send>){
-        ::commands::THREADPOOL.lock().unwrap().execute(move || cb(key_data.calc_master_key()));
+        crate::commands::THREADPOOL.lock().unwrap().execute(move || cb(key_data.calc_master_key()));
     }
 }

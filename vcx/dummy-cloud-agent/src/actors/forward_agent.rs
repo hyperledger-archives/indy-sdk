@@ -1,17 +1,21 @@
+use std::convert::Into;
+
 use actix::prelude::*;
-use actors::{AddA2ARoute, Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, RouteA2AMsg};
-use actors::forward_agent_connection::ForwardAgentConnection;
-use actors::requester::Requester;
-use actors::router::Router;
-use domain::a2a::*;
-use domain::config::{ForwardAgentConfig, WalletStorageConfig};
-use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet};
+use futures::future::{Either, ok};
 use serde_json;
-use std::convert::Into;
-use utils::futures::*;
+
+use crate::actors::{AddA2ARoute, AdminRegisterForwardAgent, Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, HandleAdminMessage, RouteA2AMsg};
+use crate::actors::admin::Admin;
+use crate::actors::forward_agent_connection::ForwardAgentConnection;
+use crate::actors::router::Router;
+use crate::domain::a2a::*;
+use crate::domain::admin_message::{ResAdminQuery, ResQueryForwardAgent};
+use crate::domain::config::{ForwardAgentConfig, WalletStorageConfig};
+use crate::domain::invite::ForwardAgentDetail;
+use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet};
+use crate::utils::futures::*;
 
 pub struct ForwardAgent {
     wallet_handle: i32,
@@ -20,15 +24,15 @@ pub struct ForwardAgent {
     router: Addr<Router>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
+    admin: Option<Addr<Admin>>,
 }
 
 impl ForwardAgent {
     pub fn create_or_restore(config: ForwardAgentConfig,
-                             wallet_storage_config: WalletStorageConfig) -> ResponseFuture<Addr<ForwardAgent>, Error> {
-        trace!("ForwardAgent::create_or_restore >> {:?} {:?}", config, wallet_storage_config);
-        let request = Requester::new().start();
-        let router = Router::new(request).start();
-
+                             wallet_storage_config: WalletStorageConfig,
+                             admin: Option<Addr<Admin>>) -> ResponseFuture<Addr<ForwardAgent>, Error> {
+        debug!("ForwardAgent::create_or_restore >> {:?} {:?}", config, wallet_storage_config);
+        let admin1 = admin.clone();
         future::ok(())
             .and_then(move |_| {
                 // Ensure Forward Agent wallet created
@@ -61,8 +65,8 @@ impl ForwardAgent {
             })
             .and_then(move |(wallet_handle, config, wallet_storage_config)| {
                 #[cfg(test)]
-                unsafe {
-                    ::utils::tests::FORWARD_AGENT_WALLET_HANDLE = wallet_handle;
+                    unsafe {
+                        crate::utils::tests::FORWARD_AGENT_WALLET_HANDLE = wallet_handle;
                 }
 
                 // Ensure Forward Agent DID created
@@ -89,6 +93,11 @@ impl ForwardAgent {
                     .map_err(|err| err.context("Can't get Forward Agent did key").into())
             })
             .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config)| {
+                Router::new(admin1)
+                    .map(move |router| (wallet_handle, did, verkey, endpoint, wallet_storage_config, router, admin))
+                    .map_err(|err| err.context("Can't create Router.").into())
+            })
+            .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config, router, admin)| {
                 // Resolve information about existing connections from the wallet
                 // and start Forward Agent Connection actor for each exists connection
 
@@ -101,28 +110,41 @@ impl ForwardAgent {
                 Self::_restore_connections(wallet_handle,
                                            forward_agent_detail.clone(),
                                            wallet_storage_config.clone(),
-                                           router.clone())
+                                           router.clone(),
+                                           admin.clone(),
+                )
                     .map(move |_| (wallet_handle, did, verkey,
-                                   router, wallet_storage_config, forward_agent_detail))
+                                   router, wallet_storage_config, forward_agent_detail, admin))
             })
             .and_then(|(wallet_handle, did, verkey, router,
-                           wallet_storage_config, forward_agent_detail)| {
+                           wallet_storage_config, forward_agent_detail, admin)| {
                 let forward_agent = ForwardAgent {
                     wallet_handle,
                     did: did.clone(),
-                    verkey,
+                    verkey: verkey.clone(),
                     router: router.clone(),
                     wallet_storage_config,
                     forward_agent_detail,
+                    admin: admin.clone(),
                 };
 
                 let forward_agent = forward_agent.start();
 
                 router
-                    .send(AddA2ARoute(did, forward_agent.clone().recipient()))
+                    .send(AddA2ARoute(did, verkey, forward_agent.clone().recipient()))
                     .from_err()
-                    .map(move |_| forward_agent)
+                    .map(move |_| (forward_agent, admin))
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent").into())
+            })
+            .and_then(move |(forward_agent, admin)| {
+                if let Some(admin) = admin {
+                    Either::A(admin.send(AdminRegisterForwardAgent(forward_agent.clone().recipient()))
+                        .from_err()
+                        .map(move |_| forward_agent)
+                        .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into()))
+                } else {
+                    Either::B(ok(forward_agent))
+                }
             })
             .into_box()
     }
@@ -130,8 +152,9 @@ impl ForwardAgent {
     fn _restore_connections(wallet_handle: i32,
                             forward_agent_detail: ForwardAgentDetail,
                             wallet_storage_config: WalletStorageConfig,
-                            router: Addr<Router>) -> ResponseFuture<(), Error> {
-        trace!("ForwardAgent::_restore_connections >> {:?}", wallet_handle);
+                            router: Addr<Router>,
+                            admin: Option<Addr<Admin>>) -> ResponseFuture<(), Error> {
+        debug!("ForwardAgent::_restore_connections >> {:?}", wallet_handle);
 
         future::ok(())
             .and_then(move |_| {
@@ -156,11 +179,13 @@ impl ForwardAgent {
                 let futures: Vec<_> = pairwise_list
                     .iter()
                     .map(move |pairwise| {
+                        debug!("Restorin forward agent connection {:?}", pairwise);
                         ForwardAgentConnection::restore(wallet_handle,
                                                         pairwise.their_did.clone(),
                                                         forward_agent_detail.clone(),
                                                         wallet_storage_config.clone(),
-                                                        router.clone())
+                                                        router.clone(),
+                                                        admin.clone())
                     })
                     .collect();
 
@@ -174,6 +199,16 @@ impl ForwardAgent {
     fn _get_endpoint(&self) -> (String, String) {
         trace!("ForwardAgent::_get_endpoint >>");
         (self.did.clone(), self.verkey.clone())
+    }
+
+    fn _get_forward_agent_details(&self) -> (String, Vec<String>, i32) {
+        trace!("ForwardAgent::_get_forward_agent_details >>");
+        let endpoint = self.forward_agent_detail.endpoint.clone();
+        let wallet_handle = self.wallet_handle.clone();
+        let pairwise_list_string = pairwise::list_pairwise(wallet_handle).wait().expect("Couldn't resolve pairwise list");
+        let pairwise_list = serde_json::from_str::<Vec<String>>(&pairwise_list_string)
+            .expect("Couldn't pair list of pairwises");
+        (endpoint, pairwise_list, wallet_handle)
     }
 
     fn _forward_a2a_msg(&mut self,
@@ -205,6 +240,10 @@ impl ForwardAgent {
                     Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
                         let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
                         send_to_router(msg.fwd, msg_)
+                    }
+                    Some(A2AMessage::Version2(A2AMessageV2::ForwardV3(msg))) => {
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        send_to_router(msg.to, msg_)
                     }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
@@ -297,7 +336,8 @@ impl ForwardAgent {
                                                their_verkey.clone(),
                                                slf.router.clone(),
                                                slf.forward_agent_detail.clone(),
-                                               slf.wallet_storage_config.clone())
+                                               slf.wallet_storage_config.clone(),
+                                               slf.admin.clone())
                     .map_err(|err| err.context("Can't create Forward Agent Connection.").into())
                     .into_actor(slf)
             })
@@ -328,6 +368,16 @@ impl Handler<GetEndpoint> for ForwardAgent {
     }
 }
 
+impl Handler<HandleAdminMessage> for ForwardAgent {
+    type Result = Result<ResAdminQuery, Error>;
+
+    fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
+        trace!("Forward Agent Handler<HandleAdminMessage>::handle >>", );
+        let (endpoint, pairwise_list, wallet_handle) = self._get_forward_agent_details();
+        Ok(ResAdminQuery::ForwardAgent(ResQueryForwardAgent { endpoint, pairwise_list, wallet_handle }))
+    }
+}
+
 impl Handler<HandleA2AMsg> for ForwardAgent {
     type Result = ResponseActFuture<Self, Vec<u8>, Error>;
 
@@ -339,19 +389,20 @@ impl Handler<HandleA2AMsg> for ForwardAgent {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::tests::*;
+
     use super::*;
-    use utils::tests::*;
 
     #[test]
     fn forward_agent_create_or_restore_works() {
-        run_test(|_| {
+        run_test(|_, _| {
             Ok(())
         });
     }
 
     #[test]
     fn forward_agent_get_endpoint_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             forward_agent
                 .send(GetEndpoint {})
                 .from_err()
@@ -367,7 +418,7 @@ mod tests {
 
     #[test]
     fn forward_agent_connect_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .map(|_| {
                     let e_wallet_handle = edge_wallet_setup().wait().unwrap();
@@ -388,7 +439,7 @@ mod tests {
                     assert!(!pairwise_verkey.is_empty());
                     e_wallet_handle
                 })
-                .map(|e_wallet_handle| ::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
+                .map(|e_wallet_handle| crate::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
         });
     }
 }

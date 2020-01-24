@@ -107,7 +107,12 @@ class ErrorCode(IntEnum):
     InvalidRevEntry = 1092,
     InvalidRevocationTimestamp = 1093,
     UnknownSchemaRejection = 1094,
-    InvalidRevRegDefCreation = 1095
+    InvalidRevRegDefCreation = 1095,
+    # EC 1096 - 1099 are reserved for proprietary forks of libVCX
+    InvalidAttachmentEncoding = 1100,
+    UnknownAttachmentEncoding = 1101,
+    UnknownMimeType = 1102,
+    ActionNotSupported = 1103
 
 
 class VcxError(Exception):

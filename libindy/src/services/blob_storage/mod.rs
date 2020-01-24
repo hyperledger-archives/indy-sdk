@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use errors::prelude::*;
-use utils::sequence;
+use indy_api_types::errors::prelude::*;
+use indy_utils::sequence;
 
 use sha2::Sha256;
 use sha2::digest::{FixedOutput, Input};

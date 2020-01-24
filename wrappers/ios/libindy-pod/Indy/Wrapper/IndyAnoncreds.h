@@ -256,6 +256,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
       "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
       "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
      }
+     If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
  @param revRegId: (Optional) id of stored revocation registry definition
  @param blobStorageReaderHandle: (Optional) Pre-configured blob storage reader instance handle that will allow to read revocation tails
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
@@ -533,7 +534,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     {
         "name": string,
         "version": string,
-        "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+        "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -554,7 +555,10 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  attr_referent: Proof-request local identifier of requested attribute
  attr_info: Describes requested attribute
      {
-         "name": string, // attribute name, (case insensitive and ignore spaces)
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
          "restrictions": Optional<filter_json>, // see below
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
@@ -625,7 +629,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     {
          "name": string,
          "version": string,
-         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
          "requested_attributes": { // set of requested attributes
               "<attr_referent>": <attr_info>, // see below
               ...,
@@ -652,8 +656,11 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     
  attr_info: Describes requested attribute
      {
-         "name": string, // attribute name, (case insensitive and ignore spaces)
-         "restrictions": Optional<wql query>, // see below
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
                         // for date in this interval this attribute
@@ -761,7 +768,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      {
          "name": string,
          "version": string,
-         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
          "requested_attributes": { // set of requested attributes
               "<attr_referent>": <attr_info>, // see below
               ...,
@@ -823,14 +830,17 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
   where
   attr_referent: Proof-request local identifier of requested attribute
   attr_info: Describes requested attribute
-      {
-          "name": string, // attribute name, (case insensitive and ignore spaces)
-          "restrictions": Optional<wql query>, // see below
-          "non_revoked": Optional<<non_revoc_interval>>, // see below,
-                         // If specified prover must proof non-revocation
-                         // for date in this interval this attribute
-                         // (overrides proof level interval)
-      }
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
   predicate_referent: Proof-request local identifier of requested attribute predicate
   predicate_info: Describes requested attribute predicate
       {
@@ -876,6 +886,17 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                  "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                  "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
              },
+             "revealed_attr_groups": {
+                 "requested_attr5_id": {
+                     "sub_proof_index": number,
+                     "values": {
+                         "attribute_name": {
+                             "raw": string,
+                             "encoded": string
+                         }
+                     },
+                 }
+             },
              "unrevealed_attrs": {
                  "requested_attr3_id": {sub_proof_index: number}
              },
@@ -915,7 +936,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      {
          "name": string,
          "version": string,
-         "nonce": string, - a big number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
          "requested_attributes": { // set of requested attributes
               "<attr_referent>": <attr_info>, // see below
               ...,
@@ -939,6 +960,17 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
              "revealed_attrs": {
                  "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
                  "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
+             },
+             "revealed_attr_groups": {
+                 "requested_attr5_id": {
+                     "sub_proof_index": number,
+                     "values": {
+                         "attribute_name": {
+                             "raw": string,
+                             "encoded": string
+                         }
+                     }, // NOTE: check that `encoded` value match to `raw` value on application level
+                 }
              },
              "unrevealed_attrs": {
                  "requested_attr3_id": {sub_proof_index: number}
@@ -977,24 +1009,27 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      }
  @param revocRegsJSON: all revocation registries json participating in the proof
      {
-         "rev_reg_def1_id": {
+         "rev_reg_def1_id  or credential_1_id": {
              "timestamp1": <rev_reg1>,
              "timestamp2": <rev_reg2>,
          },
-         "rev_reg_def2_id": {
+         "rev_reg_def2_id"  or credential_3_id: {
              "timestamp3": <rev_reg3>
          },
-         "rev_reg_def3_id": {
+         "rev_reg_def3_id  or credential_3_id": {
              "timestamp4": <rev_reg4>
          },
-     }
+     } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
      
  where
  attr_referent: Proof-request local identifier of requested attribute
  attr_info: Describes requested attribute
      {
-         "name": string, // attribute name, (case insensitive and ignore spaces)
-         "restrictions": Optional<wql query>, // see below
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
                         // for date in this interval this attribute
@@ -1106,12 +1141,16 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 
  @param  entity: utarget entity to disqualify.
     Can be one of:
-       Did
-       SchemaId
-       CredentialDefinitionId
-       RevocationRegistryId
-       CredentialOffer
-       ProofRequest
+        Did
+        SchemaId
+        CredentialDefinitionId
+        RevocationRegistryId
+        Schema
+        CredentialDefinition
+        RevocationRegistryDefinition
+        CredentialOffer
+        CredentialRequest
+        ProofRequest
 
  Returns entity either in unqualified form or original if casting isn't possible
  */

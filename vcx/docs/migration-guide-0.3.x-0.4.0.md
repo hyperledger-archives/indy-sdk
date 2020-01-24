@@ -39,13 +39,13 @@ This removes the dependency on an agency/cloud-agent and allows the user of the 
 #### Credential API
 
 `vcx_credential_get_request_msg` - Get the credential request message that can be sent to the specified connection.
-`vcx_credential_update_state_with_message` - Checks for any state change from the given message and updates the the state attribute.
+`vcx_credential_update_state_with_message` - Checks for any state change from the given message and updates the  state attribute.
 
 
 #### Disclosed Proof API
 
 `vcx_disclosed_proof_get_proof_msg` - Get the proof message for sending.
-`vcx_disclosed_proof_update_state_with_message` -  Checks for any state change from the given message and updates the the state attribute.
+`vcx_disclosed_proof_update_state_with_message` -  Checks for any state change from the given message and updates the  state attribute.
 
 
 #### Issuer Credential API
@@ -104,3 +104,9 @@ Extended Libvcx initialization config to accept pool configuration.
 
 }
 ```
+
+## Libvcx 0.4.1 to 0.4.2 migration Guide
+
+Extended VCX provisioning config to accept optional `did_method` filed. 
+This field should be used to create fully qualified DIDs.
+The format of identifiers that are used on CredentialIssuance and ProofPresentation will be determined based on the type of remote DID.

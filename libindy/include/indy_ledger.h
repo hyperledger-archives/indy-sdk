@@ -308,6 +308,35 @@ extern "C" {
                                                                         const char*   request_json)
                                                   );
 
+    /// Parse a GET_NYM response to get NYM data.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// get_nym_response: response on GET_NYM request.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// NYM data
+    /// {
+    ///     did: DID as base58-encoded string for 16 or 32 bit DID value.
+    ///     verkey: verification key as base58-encoded string.
+    ///     role: Role associated number
+    ///                             null (common USER)
+    ///                             0 - TRUSTEE
+    ///                             2 - STEWARD
+    ///                             101 - TRUST_ANCHOR
+    ///                             101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+    ///                             201 - NETWORK_MONITOR
+    /// }
+
+    extern indy_error_t indy_parse_get_nym_response(indy_handle_t command_handle,
+                                                    const char *  get_nym_response,
+
+                                                    void           (*cb)(indy_handle_t command_handle_,
+                                                                         indy_error_t  err,
+                                                                         const char*   nym_json)
+                                                   );
+
     /// Builds a SCHEMA request. Request to add Credential's schema.
     ///
     /// #Params
@@ -1096,8 +1125,28 @@ extern "C" {
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
     ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
-    /// text: a content of the TTA.
+    /// text: (Optional) a content of the TTA.
+    ///             Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+    ///             for Indy Node version <= 1.12.0:
+    ///                 Use empty string to reset TAA on the ledger
+    ///             for Indy Node version > 1.12.0
+    ///                 Should be omitted in case of updating an existing TAA (setting `retirement_ts`)
     /// version: a version of the TTA (unique UTF-8 string).
+    /// ratification_ts: (Optional) the date (timestamp) of TAA ratification by network government. (-1 to omit)
+    ///              for Indy Node version <= 1.12.0:
+    ///                 Must be omitted
+    ///              for Indy Node version > 1.12.0:
+    ///                 Must be specified in case of adding a new TAA
+    ///                 Can be omitted in case of updating an existing TAA
+    /// retirement_ts: (Optional) the date (timestamp) of TAA retirement. (-1 to omit)
+    ///              for Indy Node version <= 1.12.0:
+    ///                 Must be omitted
+    ///              for Indy Node version > 1.12.0:
+    ///                 Must be omitted in case of adding a new (latest) TAA.
+    ///                 Should be used for updating (deactivating) non-latest TAA on the ledger.
+    ///
+    /// Note: Use `indy_build_disable_all_txn_author_agreements_request` to disable all TAA's on the ledger.
+    ///
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -1109,11 +1158,36 @@ extern "C" {
                                                                 const char *  submitter_did,
                                                                 const char *  text,
                                                                 const char *  version,
+                                                                indy_i64_t  ratification_ts,
+                                                                indy_i64_t  retirement_ts,
 
                                                                 void           (*cb)(indy_handle_t command_handle_,
                                                                                      indy_error_t  err,
                                                                                      const char*   request_json)
                                                                );
+
+    /// Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+    ///
+    /// EXPERIMENTAL
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_disable_all_txn_author_agreements_request(indy_handle_t command_handle,
+                                                                             const char *  submitter_did,
+
+                                                                             void           (*cb)(indy_handle_t command_handle_,
+                                                                                                  indy_error_t  err,
+                                                                                                  const char*   request_json)
+                                                                            );
 
     /// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
     ///
@@ -1226,7 +1300,9 @@ extern "C" {
     /// text and version - (optional) raw data about TAA from ledger.
     ///     These parameters should be passed together.
     ///     These parameters are required if taa_digest parameter is omitted.
-    /// taa_digest - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    /// taa_digest - (optional) digest on text and version.
+    ///     Digest is sha256 hash calculated on concatenated strings: version || text.
+    ///     This parameter is required if text and version parameters are omitted.
     /// mechanism - mechanism how user has accepted the TAA
     /// time - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
     ///
