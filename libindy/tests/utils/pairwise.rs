@@ -4,7 +4,7 @@ use indy::IndyError;
 use indy::pairwise;
 use self::futures::Future;
 
-use indy_api_types::WalletHandle;
+use indy::WalletHandle;
 
 pub fn pairwise_exists(wallet_handle: WalletHandle, their_did: &str) -> Result<bool, IndyError> {
     pairwise::is_pairwise_exists(wallet_handle, their_did).wait()

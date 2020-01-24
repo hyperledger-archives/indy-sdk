@@ -14,7 +14,7 @@ use std::sync::{Once};
 use std::mem;
 use std::ffi::CString;
 
-use indy_api_types::{WalletHandle, PoolHandle};
+use indy::{WalletHandle, PoolHandle};
 
 pub static mut SCHEMA_ID: &'static str = "";
 pub static mut SCHEMA_ID_V2: &'static str = "";

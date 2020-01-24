@@ -17,7 +17,7 @@ use self::indy::ErrorCode;
 
 pub const FORBIDDEN_TYPE: &'static str = "Indy::Test";
 
-use indy_api_types::WalletHandle;
+use indy::WalletHandle;
 use crate::utils::test::cleanup_wallet;
 use crate::utils::Setup;
 
@@ -347,7 +347,7 @@ mod high_cases {
 
     mod search {
         use super::*;
-        use indy_api_types::{WalletHandle, SearchHandle};
+        use indy::{WalletHandle, SearchHandle};
 
         fn setup(name: &str, wallet_config: &str) -> WalletHandle {
             init_non_secret_test_wallet(name, wallet_config);
@@ -1145,7 +1145,7 @@ mod medium_cases {
 
     mod search {
         use super::*;
-        use indy_api_types::{WalletHandle, SearchHandle};
+        use indy::{WalletHandle, SearchHandle};
 
         fn setup(name: &str, wallet_config: &str) -> WalletHandle {
             init_non_secret_test_wallet(name, wallet_config);

@@ -2,7 +2,7 @@ extern crate indy_sys;
 
 use self::indy_sys::{Error as ErrorCode};
 
-use indy_api_types::{WalletHandle, CommandHandle};
+use indy::{WalletHandle, CommandHandle};
 
 use super::libc::c_char;
 use std::ffi::CStr;

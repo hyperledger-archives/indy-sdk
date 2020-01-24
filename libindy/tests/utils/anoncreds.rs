@@ -21,7 +21,7 @@ use crate::utils::domain::anoncreds::credential::{AttributeValues, CredentialInf
 use crate::utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
 use crate::utils::domain::crypto::did::DidValue;
 
-use indy_api_types::WalletHandle;
+use indy::WalletHandle;
 
 pub static mut CREDENTIAL_DEF_JSON: &'static str = "";
 pub static mut CREDENTIAL_OFFER_JSON: &'static str = "";

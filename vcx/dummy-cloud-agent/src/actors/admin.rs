@@ -169,6 +169,7 @@ mod tests {
                 .from_err()
                 .map(move |res| {
                     if let Ok(ResAdminQuery::Admin(details)) = res {
+                        println!("details {:?}", details);
                         assert_eq!(details.forward_agent_connections.len(), 1);
                         assert!(legacy_or_qualified_did_regex.is_match(&details.forward_agent_connections[0]));
                         assert_eq!(details.agents.len(), 1);

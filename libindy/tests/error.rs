@@ -6,7 +6,7 @@ use std::ffi::CStr;
 use std::str::Utf8Error;
 
 use self::libc::c_char;
-use indy_api_types::CommandHandle;
+use indy::CommandHandle;
 
 #[test]
 fn get_current_error_works_for_no_error() {

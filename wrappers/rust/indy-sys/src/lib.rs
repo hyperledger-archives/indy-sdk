@@ -13,7 +13,10 @@ pub mod wallet;
 pub mod logger;
 pub mod cache;
 
-extern crate indy_api_types;
+extern crate serde;
+
+#[macro_use]
+extern crate serde_derive;
 
 use self::libc::{c_void, c_char};
 
@@ -21,9 +24,16 @@ pub type CVoid = c_void;
 pub type BString = *const u8;
 pub type CString = *const c_char;
 
-pub use indy_api_types::{WalletHandle, INVALID_WALLET_HANDLE};
-pub use indy_api_types::{PoolHandle, INVALID_POOL_HANDLE};
-pub use indy_api_types::{CommandHandle, INVALID_COMMAND_HANDLE};
+#[repr(transparent)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
+pub struct WalletHandle(pub i32);
+pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
+
+pub type PoolHandle = i32;
+pub const INVALID_POOL_HANDLE : PoolHandle = 0;
+
+pub type CommandHandle = i32;
+pub const INVALID_COMMAND_HANDLE : CommandHandle = 0;
 
 //pub type Handle = i32;
 pub type IndyHandle = i32;

@@ -4,7 +4,7 @@ use indy::IndyError;
 use self::futures::Future;
 
 use indy::cache;
-use indy_api_types::{WalletHandle, PoolHandle};
+use indy::{WalletHandle, PoolHandle};
 
 
 pub fn get_schema_cache(pool_handle: PoolHandle, wallet_handle: WalletHandle, submitter_did: &str, id: &str, options_json: &str) -> Result<String, IndyError> {

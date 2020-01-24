@@ -31,7 +31,7 @@ use std::thread;
 
 use serde_json::Value;
 use core::borrow::Borrow;
-use indy_api_types::{PoolHandle, WalletHandle};
+use indy::{PoolHandle, WalletHandle};
 
 
 struct Pool {

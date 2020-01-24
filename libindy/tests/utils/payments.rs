@@ -11,7 +11,7 @@ use std::ffi::CString;
 use super::libc::c_char;
 use std::sync::{Once, Mutex};
 
-use indy_api_types::{WalletHandle, CommandHandle};
+use indy::{WalletHandle, CommandHandle};
 use crate::utils::callback;
 
 #[macro_export]

@@ -4,7 +4,7 @@ use indy::IndyError;
 use indy::crypto;
 use self::futures::Future;
 
-use indy_api_types::WalletHandle;
+use indy::WalletHandle;
 
 pub fn create_key(wallet_handle: WalletHandle, seed: Option<&str>) -> Result<String, IndyError> {
     let key_json = json!({"seed": seed}).to_string();

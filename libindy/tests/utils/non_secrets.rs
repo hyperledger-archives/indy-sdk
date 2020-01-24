@@ -12,7 +12,7 @@ use crate::utils::types::WalletRecord;
 use std::sync::Once;
 use std::collections::HashMap;
 
-use indy_api_types::WalletHandle;
+use indy::WalletHandle;
 
 pub const SEARCH_COMMON_WALLET_CONFIG: &'static str = r#"{"id":"search_common"}"#;
 pub const TYPE: &'static str = "TestType";

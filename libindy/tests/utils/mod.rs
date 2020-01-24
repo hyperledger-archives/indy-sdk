@@ -3,7 +3,7 @@
 extern crate libc;
 extern crate indyrs as indy;
 
-use indy_api_types::{WalletHandle, PoolHandle, INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
+use indy::{WalletHandle, PoolHandle, INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
 
 pub mod callback;
 
