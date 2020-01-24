@@ -995,14 +995,13 @@ def rpmPublishing(testEnv, directory, packageName, version, inStashName) {
     if (releaseChannel == "rc") {
         // prerelease format
         //TODO verify that `version` contains the next stable version
-        release = "0.$release" + "%{dist}"
+        release = "0.$env.BUILD_NUMBER"
     } else {
         // dev build format
-        version = "0"
-        release = "$releaseChannel.$env.BUILD_NUMBER." + 
-            Date().format('yyyymmdd') + 
-            "git" + env.GIT_COMMIT.subString(0, 8) + 
-            "%{dist}"
+        version = "$version~$releaseChannel"
+        release = "$env.BUILD_NUMBER." +
+            Date().format('yyyymmdd') +
+            "git" + env.GIT_COMMIT.subString(0, 8)
     }
 
     testEnv.inside {
@@ -1595,7 +1594,7 @@ def publishIndyCliCentosFilesRCtoStable(testEnv, version) {
 def publishCentosFilesRCtoStable(testEnv, packageName, version) {
     // Old release process
     copyRcFilesToStable("rpm", packageName, version)
-    
+
     // New release process
     testEnv.inside {
         // FIXME: Because our Jenkins setup doesn't have a way to grab the
