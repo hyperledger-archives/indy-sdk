@@ -1,22 +1,24 @@
+use std::collections::HashMap;
+use std::convert::Into;
+
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg, RouteA2AMsg, RouteA2ConnMsg, AdminRegisterAgent, HandleAdminMessage};
-use actors::agent_connection::{AgentConnection, AgentConnectionConfig};
-use actors::router::Router;
-use domain::a2a::*;
-use domain::a2connection::*;
-use domain::config::WalletStorageConfig;
-use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, pairwise, wallet, pairwise::Pairwise, ErrorCode, IndyError};
-use std::convert::Into;
-use std::collections::HashMap;
-use utils::futures::*;
-use utils::rand;
-use serde_json;
-use actors::admin::Admin;
-use domain::admin_message::{ResAdminQuery, ResQueryAgent};
 use futures::future::Either;
+use serde_json;
+
+use crate::actors::{AddA2ARoute, AdminRegisterAgent, HandleA2AMsg, HandleAdminMessage, RouteA2AMsg, RouteA2ConnMsg};
+use crate::actors::admin::Admin;
+use crate::actors::agent_connection::{AgentConnection, AgentConnectionConfig};
+use crate::actors::router::Router;
+use crate::domain::a2a::*;
+use crate::domain::a2connection::*;
+use crate::domain::admin_message::{ResAdminQuery, ResQueryAgent};
+use crate::domain::config::WalletStorageConfig;
+use crate::domain::invite::ForwardAgentDetail;
+use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet};
+use crate::utils::futures::*;
+use crate::utils::rand;
 
 #[allow(unused)] //FIXME:
 pub struct Agent {
@@ -740,11 +742,12 @@ impl Handler<HandleAdminMessage> for Agent {
 
 #[cfg(test)]
 mod tests {
-    use actors::ForwardA2AMsg;
+    use crate::actors::ForwardA2AMsg;
+    use crate::domain::status::MessageStatusCode;
+    use crate::utils::tests::*;
+    use crate::utils::to_i8;
+
     use super::*;
-    use utils::to_i8;
-    use utils::tests::*;
-    use domain::status::MessageStatusCode;
 
     #[test]
     fn agent_create_key_works() {

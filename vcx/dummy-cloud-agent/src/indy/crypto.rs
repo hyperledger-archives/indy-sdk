@@ -1,6 +1,7 @@
-use indyrs::{crypto, IndyError};
 use futures::*;
-use utils::futures::*;
+use indyrs::{crypto, IndyError};
+
+use crate::utils::futures::*;
 
 pub fn auth_crypt(wallet_handle: i32,
                   sender_vk: &str,

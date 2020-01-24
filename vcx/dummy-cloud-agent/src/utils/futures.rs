@@ -1,5 +1,7 @@
-use actix::fut::ActorFuture;
 use futures::Future;
+
+use actix::prelude::*;
+use actix::fut::ActorFuture;
 
 /// This is the equivalent `try!` adapted to deal with futures.
 #[macro_export]

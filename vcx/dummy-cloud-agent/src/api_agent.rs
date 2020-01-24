@@ -1,8 +1,9 @@
 use actix::prelude::*;
 use actix_web::*;
-use actors::{ForwardA2AMsg, GetEndpoint};
 use bytes::Bytes;
-use app::AppData;
+
+use crate::actors::{ForwardA2AMsg, GetEndpoint};
+use crate::app::AppData;
 
 const MAX_PAYLOAD_SIZE: usize = 105_906_176;
 

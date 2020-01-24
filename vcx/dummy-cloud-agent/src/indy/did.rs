@@ -1,6 +1,7 @@
 use futures::*;
-use utils::futures::*;
+
 use indyrs::{did, IndyError};
+use crate::utils::futures::*;
 
 pub fn create_and_store_my_did(wallet_handle: i32, did_info: &str) -> Box<dyn Future<Item=(String, String), Error=IndyError>> {
     did::create_and_store_my_did(wallet_handle, did_info)

@@ -2,10 +2,10 @@ use actix::prelude::*;
 use actix_web::*;
 use actix_web::web::Data;
 
-use actors::HandleAdminMessage;
-use actors::admin::Admin;
-use domain::admin_message::{AdminQuery, GetDetailAgentConnParams, GetDetailAgentParams};
-use domain::config::ServerAdminConfig;
+use crate::actors::admin::Admin;
+use crate::actors::HandleAdminMessage;
+use crate::domain::admin_message::{AdminQuery, GetDetailAgentConnParams, GetDetailAgentParams};
+use crate::domain::config::ServerAdminConfig;
 
 pub struct AdminAppData {
     pub admin_agent: Addr<Admin>,

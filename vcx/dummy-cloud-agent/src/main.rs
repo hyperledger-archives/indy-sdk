@@ -1,52 +1,41 @@
 // `error_chain!` can recurse deeply
 #![recursion_limit = "1024"]
 
-extern crate actix;
-extern crate actix_web;
-extern crate bytes;
 #[cfg(test)]
 extern crate dirs;
-extern crate failure;
-extern crate futures;
+#[macro_use]
+extern crate lazy_static;
 #[macro_use]
 extern crate log;
 extern crate pretty_env_logger as env_logger;
-extern crate rmp_serde;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 #[cfg(test)]
 extern crate tokio_core;
-extern crate base64;
-extern crate rand;
-extern crate hyper;
-extern crate indyrs;
-extern crate regex;
-#[macro_use]
-extern crate lazy_static;
-extern crate libc;
-extern crate libloading;
 
-use actix::prelude::*;
-use actors::forward_agent::ForwardAgent;
-use domain::config::{Config, WalletStorageConfig};
-use domain::protocol_type::ProtocolType;
-use failure::*;
 use std::env;
 use std::fs::File;
+
+use actix::prelude::*;
+use failure::*;
+
 use actors::admin::Admin;
-use app::start_app_server;
-use app_admin::start_app_admin_server;
-use indy::wallet_plugin::{load_storage_library, serialize_storage_plugin_configuration, finish_loading_postgres};
+use actors::forward_agent::ForwardAgent;
+use indy::wallet_plugin::{finish_loading_postgres, load_storage_library, serialize_storage_plugin_configuration};
+
+use crate::app::start_app_server;
+use crate::app_admin::start_app_admin_server;
+use crate::domain::config::{Config, WalletStorageConfig};
+use crate::domain::protocol_type::ProtocolType;
 
 #[macro_use]
 pub(crate) mod utils;
-
 pub(crate) mod actors;
 pub(crate) mod app;
 pub(crate) mod app_admin;
+pub(crate) mod api_agent;
 pub(crate) mod domain;
 pub(crate) mod indy;
 

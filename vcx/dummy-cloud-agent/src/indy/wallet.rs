@@ -1,6 +1,7 @@
 use futures::*;
-use utils::futures::*;
-use indyrs::{wallet, IndyError};
+use indyrs::{IndyError, wallet};
+
+use crate::utils::futures::*;
 
 pub fn create_wallet(config: &str, credentials: &str) -> Box<dyn Future<Item=(), Error=IndyError>> {
     wallet::create_wallet(config, credentials)
