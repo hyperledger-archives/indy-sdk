@@ -19,6 +19,8 @@ use crate::domain::invite::ForwardAgentDetail;
 use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
 use crate::utils::futures::*;
 use crate::utils::rand;
+use crate::utils::wallet::build_wallet_credentials;
+use crate::domain::key_derivation::{KeyDerivationDirective, KeyDerivationMethod};
 
 #[allow(unused)] //FIXME:
 pub struct Agent {
@@ -39,23 +41,24 @@ impl Agent {
                   router: Addr<Router>,
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig,
-                  admin: Option<Addr<Admin>>) -> BoxedFuture<(String, String, String, String), Error> {
+                  admin: Option<Addr<Admin>>) -> BoxedFuture<(String, String, String, KeyDerivationDirective), Error> {
         debug!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
                owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
         let wallet_id = format!("dummy_{}_{}", owner_did, rand::rand_string(10));
-        let wallet_key = rand::rand_string(10);
-
         let wallet_config = json!({
                     "id": wallet_id.clone(),
                     "storage_type": wallet_storage_config.xtype,
                     "storage_config": wallet_storage_config.config,
                  }).to_string();
 
-        let wallet_credentials = json!({
-                    "key": wallet_key.clone(),
-                    "storage_credentials": wallet_storage_config.credentials,
-                }).to_string();
+        let kdf_directives = KeyDerivationDirective::new(KeyDerivationMethod::Raw)
+            .wait().expect("Couldn't construct wallet credentials.");
+        // todo: remove the .expect(), no need to panic here
+        let wallet_credentials = build_wallet_credentials(
+            &kdf_directives,
+            wallet_storage_config.credentials
+        ).to_string();
 
         let owner_did = owner_did.to_string();
         let owner_verkey = owner_verkey.to_string();
@@ -93,24 +96,24 @@ impl Agent {
                 router
                     .send(AddA2ARoute(did.clone(), verkey.clone(), agent.clone().recipient()))
                     .from_err()
-                    .map(move |_| (wallet_id, wallet_key, did, verkey, admin, agent))
+                    .map(move |_| (wallet_id, did, verkey, admin, agent))
                     .map_err(|err: Error| err.context("Can't add route for Agent").into())
             })
-            .and_then(move |(wallet_id, wallet_key, did, verkey, admin, agent)| {
+            .and_then(move |(wallet_id, did, verkey, admin, agent)| {
                 match admin {
                     Some(admin) =>
                         Either::A(admin.send(AdminRegisterAgent(did.clone(), agent.clone().recipient()))
                             .from_err()
-                            .map(move |_| (wallet_id, wallet_key, did, verkey))
+                            .map(move |_| (wallet_id, did, verkey, kdf_directives))
                             .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into())),
-                    None => Either::B(future::ok((wallet_id, wallet_key, did, verkey)))
+                    None => Either::B(future::ok((wallet_id, did, verkey, kdf_directives)))
                 }
             })
             .into_box()
     }
 
     pub fn restore(wallet_id: &str,
-                   wallet_key: &str,
+                   kdf_directives: &KeyDerivationDirective,
                    did: &str,
                    owner_did: &str,
                    owner_verkey: &str,
@@ -127,10 +130,11 @@ impl Agent {
                     "storage_config": wallet_storage_config.config,
                  }).to_string();
 
-        let wallet_credentials = json!({
-                    "key": wallet_key.clone(),
-                    "storage_credentials": wallet_storage_config.credentials,
-                }).to_string();
+        let wallet_credentials = build_wallet_credentials(
+            &kdf_directives,
+            wallet_storage_config.credentials
+        ).to_string();
+
 
         let did = did.to_string();
         let owner_did = owner_did.to_string();

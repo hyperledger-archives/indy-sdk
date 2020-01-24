@@ -1,6 +1,7 @@
 #[macro_use]
 pub mod futures;
 pub mod rand;
+pub mod wallet;
 
 #[allow(unused)] // FIXME:
 #[cfg(test)]

@@ -29,6 +29,7 @@ use crate::app::start_app_server;
 use crate::app_admin::start_app_admin_server;
 use crate::domain::config::{Config, WalletStorageConfig};
 use crate::domain::protocol_type::ProtocolType;
+use crate::domain::key_derivation::KeyDerivationMethod;
 
 #[macro_use]
 pub(crate) mod utils;
@@ -124,6 +125,8 @@ fn _start(config_path: &str) {
     }
 
     let sys = actix::System::new("indy-dummy-agent");
+
+    let new_agents_kdf = wallet_storage_config.new_agent_key_derivation_method.clone().unwrap_or(KeyDerivationMethod::Raw);
 
     Arbiter::spawn_fn(move || {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);

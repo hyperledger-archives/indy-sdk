@@ -23,6 +23,7 @@
     ]
   },
   "wallet_storage": {
+    "new_agent_key_derivation_method": "ARGON2I_INT",
     "config": null,
     "credentials": null,
     "type": null

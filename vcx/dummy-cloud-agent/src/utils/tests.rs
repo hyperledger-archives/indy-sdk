@@ -23,6 +23,7 @@ use crate::domain::key_deligation_proof::*;
 use crate::domain::status::*;
 use crate::indy::{crypto, did, wallet, WalletHandle};
 use crate::utils::futures::*;
+use crate::domain::key_derivation::KeyDerivationMethod;
 
 pub const EDGE_AGENT_WALLET_ID: &'static str = "edge_agent_wallet_id";
 pub const EDGE_AGENT_WALLET_CONFIG: &'static str = "{\"id\": \"edge_agent_wallet_id\"}";
@@ -118,7 +119,7 @@ pub fn run_test<F, B>(f: F)
             future::ok(())
                 .and_then(move |_| {
                     let admin = Some(admin);
-                    ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config(), admin)
+                    ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config(), admin, KeyDerivationMethod::Argon2iMod)
                 })
                 .and_then(move |fw_agent| {
                     f(fw_agent, admin_for_test)
@@ -230,6 +231,7 @@ pub fn wallet_storage_config() -> WalletStorageConfig {
         credentials: None,
         plugin_library_path: None,
         plugin_init_function: None,
+        new_agent_key_derivation_method: None
     }
 }
 

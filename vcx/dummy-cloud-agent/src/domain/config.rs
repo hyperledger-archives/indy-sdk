@@ -1,6 +1,7 @@
 use serde_json::Value;
 
 use crate::domain::protocol_type::ProtocolTypes;
+use crate::domain::key_derivation::KeyDerivationMethod;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
@@ -49,6 +50,15 @@ pub struct ServerAdminConfig {
     pub addresses: Vec<String>,
 }
 
+
+//#[derive(Clone, Debug, Deserialize)]
+//pub struct AgentWallet {
+//    // enable or disable http api for fetching information about agency status
+//    pub enabled: bool,
+//    // List of ip:port to bind
+//    pub addresses: Vec<String>,
+//}
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct WalletStorageConfig {
     // Wallet storage type for agents wallets
@@ -64,6 +74,8 @@ pub struct WalletStorageConfig {
     pub config: Option<Value>,
     // Wallet storage credentials for agents wallets
     pub credentials: Option<Value>,
+    // Key Derivation method used for newly created agents
+    pub new_agent_key_derivation_method: Option<KeyDerivationMethod>
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

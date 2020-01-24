@@ -16,6 +16,7 @@ use crate::domain::config::{ForwardAgentConfig, WalletStorageConfig};
 use crate::domain::invite::ForwardAgentDetail;
 use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
 use crate::utils::futures::*;
+use crate::domain::key_derivation::KeyDerivationMethod;
 
 pub struct ForwardAgent {
     wallet_handle: WalletHandle,
@@ -24,7 +25,7 @@ pub struct ForwardAgent {
     router: Addr<Router>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
-    admin: Option<Addr<Admin>>,
+    admin: Option<Addr<Admin>>
 }
 
 impl ForwardAgent {
@@ -111,7 +112,7 @@ impl ForwardAgent {
                                            forward_agent_detail.clone(),
                                            wallet_storage_config.clone(),
                                            router.clone(),
-                                           admin.clone(),
+                                           admin.clone()
                 )
                     .map(move |_| (wallet_handle, did, verkey,
                                    router, wallet_storage_config, forward_agent_detail, admin))
