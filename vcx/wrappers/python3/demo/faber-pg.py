@@ -32,13 +32,15 @@ from demo_utils import *
 # 'wallet_key': encryption key for encoding wallet
 # 'payment_method': method that will be used for payments
 provisionConfig = {
-  'agency_url':'http://localhost:8080',
-  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
-  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
-  'wallet_name':'faber_wallet_' + str(random.randint(100, 999)),
-  'wallet_key':'123',
-  'payment_method': 'null',
-  'enterprise_seed':'000000000000000000000000Trustee1'
+    'agency_url': 'http://localhost:8080',
+    'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
+    'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+    'wallet_name': 'faber_wallet_' + str(random.randint(100, 999)),
+    'wallet_key': '123',
+    'payment_method':  'null',
+    'enterprise_seed': '000000000000000000000000Trustee1',
+    'protocol_type': '2.0',
+    'communication_method': 'aries'
 }
 
 

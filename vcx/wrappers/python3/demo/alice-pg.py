@@ -30,7 +30,9 @@ provisionConfig = {
     'wallet_name': 'alice_wallet_' + str(random.randint(100, 999)),
     'wallet_key': '123',
     'payment_method': 'null',
-    'enterprise_seed': '000000000000000000000000Trustee1'
+    'enterprise_seed': '000000000000000000000000Trustee1',
+    'protocol_type': '2.0',
+    'communication_method': 'aries'
 }
 
 if len(sys.argv) > 1 and sys.argv[1] == '--postgres':
