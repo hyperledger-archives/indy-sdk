@@ -10,8 +10,77 @@ use utils::threadpool::spawn;
 use error::prelude::*;
 use indy_sys::CommandHandle;
 
+/*
+    The API represents an Issuer side in credential issuance process.
+    Assumes that pairwise connection between Issuer and Holder is already established.
+
+    # State
+
+    The set of object states, messages and transitions depends on the communication method is used.
+    There are two communication methods: `proprietary` and `aries`. The default communication method is `proprietary`.
+    The communication method can be specified as a config option on one of *_init functions.
+
+    proprietary:
+        VcxStateType::VcxStateInitialized - once `vcx_issuer_create_credential` (create IssuerCredential object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_issuer_send_credential_offer` (send `CRED_OFFER` message) is called.
+
+        VcxStateType::VcxStateRequestReceived - once `CRED_REQ` messages is received.
+                                                use `vcx_issuer_credential_update_state` or `vcx_issuer_credential_update_state_with_message` functions for state updates.
+        VcxStateType::VcxStateAccepted - once `vcx_issuer_send_credential` (send `CRED` message) is called.
+
+    aries:
+        VcxStateType::VcxStateInitialized - once `vcx_issuer_create_credential` (create IssuerCredential object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_issuer_send_credential_offer` (send `CredentialOffer` message) is called.
+
+        VcxStateType::VcxStateRequestReceived - once `CredentialRequest` messages is received.
+        VcxStateType::None - once `ProblemReport` messages is received.
+                                                use `vcx_issuer_credential_update_state` or `vcx_issuer_credential_update_state_with_message` functions for state updates.
+
+        VcxStateType::VcxStateAccepted - once `vcx_issuer_send_credential` (send `Credential` message) is called.
+
+    # Transitions
+
+    proprietary:
+        VcxStateType::None - `vcx_issuer_create_credential` - VcxStateType::VcxStateInitialized
+
+        VcxStateType::VcxStateInitialized - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `CRED_REQ` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential` - VcxStateType::VcxStateAccepted
+
+    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+        VcxStateType::None - `vcx_issuer_create_credential` - VcxStateType::VcxStateInitialized
+
+        VcxStateType::VcxStateInitialized - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `CredentialRequest` - VcxStateType::VcxStateRequestReceived
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+
+        VcxStateType::VcxStateRequestReceived - vcx_issuer_send_credential` - VcxStateType::VcxStateAccepted
+
+        VcxStateType::VcxStateAccepted - received `Ack` - VcxStateType::VcxStateAccepted
+
+    # Messages
+
+    proprietary:
+        CredentialOffer (`CRED_OFFER`)
+        CredentialRequest (`CRED_REQ`)
+        Credential (`CRED`)
+
+    aries:
+        CredentialProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#propose-credential
+        CredentialOffer - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#offer-credential
+        CredentialRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#request-credential
+        Credential - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#issue-credential
+        ProblemReport - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0035-report-problem#the-problem-report-message-type
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+*/
+
 /// Create a Issuer Credential object that provides a credential for an enterprise's user
-/// Assumes a credential definition has been written to the ledger.
+/// Assumes a credential definition has been already written to the ledger.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -163,7 +232,7 @@ pub extern fn vcx_issuer_send_credential_offer(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Send a credential offer to user showing what will be included in the actual credential
+/// Gets the offer message that can be sent to the specified connection
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -218,7 +287,8 @@ pub extern fn vcx_issuer_get_credential_offer_msg(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change in the credential and updates the the state attribute
+/// Query the agency for the received messages.
+/// Checks for any messages changing state in the object and updates the state attribute.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -226,6 +296,11 @@ pub extern fn vcx_issuer_get_credential_offer_msg(command_handle: CommandHandle,
 /// credential_handle: Credential handle that was provided during creation. Used to identify credential object
 ///
 /// cb: Callback that provides most current state of the credential and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Offer Sent
+///         3 - Request Received
+///         4 - Issued
 ///
 /// #Returns
 /// Error code as a u32
@@ -265,16 +340,21 @@ pub extern fn vcx_issuer_credential_update_state(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Checks and updates the state based on the given message
+/// Update the state of the credential based on the given message.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// credential_handle: Credential handle that was provided during creation. Used to identify credential object
 ///
-/// message: message containing potential credential request from connection
+/// message: message to process for state changes
 ///
 /// cb: Callback that provides most current state of the credential and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Offer Sent
+///         3 - Request Received
+///         4 - Issued
 ///
 /// #Returns
 /// Error code as a u32
@@ -324,6 +404,11 @@ pub extern fn vcx_issuer_credential_update_state_with_message(command_handle: Co
 /// proof_handle: Issuer Credential handle that was provided during creation.
 ///
 /// cb: Callback that provides most current state of the issuer credential and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Offer Sent
+///         3 - Request Received
+///         4 - Issued
 ///
 /// #Returns
 /// Error code as a u32
@@ -375,7 +460,7 @@ pub extern fn vcx_issuer_accept_credential(credential_handle: u32) -> u32 {
     error::SUCCESS.code_num
 }
 
-/// Send Credential that was requested by user
+/// Sends the credential to the end user (holder).
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -430,7 +515,7 @@ pub extern fn vcx_issuer_send_credential(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Send Credential that was requested by user
+/// Gets the credential message that can be sent to the user
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -439,7 +524,7 @@ pub extern fn vcx_issuer_send_credential(command_handle: CommandHandle,
 ///
 /// connection_handle: Connection handle that identifies pairwise connection
 ///
-/// cb: Callback that provides error status of sending the credential
+/// cb:  Callback that provides any error status of the credential
 ///
 /// #Returns
 /// Error code as a u32
@@ -606,7 +691,9 @@ pub extern fn vcx_issuer_credential_release(credential_handle: u32) -> u32 {
     }
 }
 
-/// Retrieve the txn associated with paying for the issuer_credential
+/// Retrieve the payment transaction associated with this credential. This can be used to get the txn that
+/// was used to pay the issuer from the holder.
+/// This could be considered a receipt of payment from the payer to the issuer.
 ///
 /// #param
 /// handle: issuer_credential handle that was provided during creation.  Used to access issuer_credential object.
@@ -674,7 +761,7 @@ pub extern fn vcx_issuer_credential_get_payment_txn(command_handle: CommandHandl
 ///
 /// credential_handle: Credential handle that was provided during creation. Used to identify credential object
 ///
-/// cb: Callback that provides error status of sending the credential
+/// cb: Callback that provides error status of revoking the credential
 ///
 /// #Returns
 /// Error code as a u32

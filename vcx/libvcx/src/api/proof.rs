@@ -8,6 +8,66 @@ use utils::threadpool::spawn;
 use error::prelude::*;
 use indy_sys::CommandHandle;
 
+/*
+    The API represents an Verifier side in credential presentation process.
+    Assumes that pairwise connection between Verifier and Prover is already established.
+
+    # State
+
+    The set of object states, messages and transitions depends on the communication method is used.
+    There are two communication methods: `proprietary` and `aries`. The default communication method is `proprietary`.
+    The communication method can be specified as a config option on one of *_init functions.
+
+    proprietary:
+        VcxStateType::VcxStateInitialized - once `vcx_proof_create` (create Proof object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `PROOF_REQ` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `PROOF` messages is received.
+                                         use `vcx_proof_update_state` or `vcx_proof_update_state_with_message` functions for state updates.
+
+    aries:
+        VcxStateType::VcxStateInitialized - once `vcx_proof_create` (create Proof object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `PresentationRequest` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `Presentation` messages is received.
+        VcxStateType::None - once `ProblemReport` messages is received.
+        VcxStateType::None - once `PresentationProposal` messages is received.
+        VcxStateType::None - on `Presentation` validation failed.
+                                                use `vcx_proof_update_state` or `vcx_proof_update_state_with_message` functions for state updates.
+
+    # Transitions
+
+    proprietary:
+        VcxStateType::None - `vcx_proof_create` - VcxStateType::VcxStateInitialized
+
+        VcxStateType::VcxStateInitialized - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `PROOF` - VcxStateType::VcxStateAccepted
+
+    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+        VcxStateType::None - `vcx_proof_create` - VcxStateType::VcxStateInitialized
+
+        VcxStateType::VcxStateInitialized - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `Presentation` - VcxStateType::VcxStateAccepted
+        VcxStateType::VcxStateOfferSent - received `PresentationProposal` - VcxStateType::None
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+
+    # Messages
+
+    proprietary:
+        ProofRequest (`PROOF_REQ`)
+        Proof (`PROOF`)
+
+    aries:
+        PresentationRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#request-presentation
+        Presentation - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#presentation
+        PresentationProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+*/
+
 /// Create a new Proof object that requests a proof for an enterprise
 ///
 /// #Params
@@ -109,7 +169,8 @@ pub extern fn vcx_proof_create(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change and updates the proof state attribute
+/// Query the agency for the received messages.
+/// Checks for any messages changing state in the object and updates the state attribute.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -117,6 +178,11 @@ pub extern fn vcx_proof_create(command_handle: CommandHandle,
 /// proof_handle: Proof handle that was provided during creation. Used to access proof object
 ///
 /// cb: Callback that provides most current state of the proof and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Request Sent
+///         3 - Proof Received
+///         4 - Accepted
 ///
 /// #Returns
 /// Error code as a u32
@@ -156,16 +222,21 @@ pub extern fn vcx_proof_update_state(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change from the given message and updates the proof state attribute
+/// Update the state of the proof based on the given message.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// proof_handle: Proof handle that was provided during creation. Used to access proof object
 ///
-/// message: String containing updated status
+/// message: message to process for state changes
 ///
 /// cb: Callback that provides most current state of the proof and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Request Sent
+///         3 - Proof Received
+///         4 - Accepted
 ///
 /// #Returns
 /// Error code as a u32
@@ -207,7 +278,7 @@ pub extern fn vcx_proof_update_state_with_message(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Get the current state of the proof object from the given message
+/// Get the current state of the proof object
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -215,6 +286,11 @@ pub extern fn vcx_proof_update_state_with_message(command_handle: CommandHandle,
 /// proof_handle: Proof handle that was provided during creation. Used to access proof object
 ///
 /// cb: Callback that provides most current state of the proof and error status of request
+///     States:
+///         1 - Initialized
+///         2 - Request Sent
+///         3 - Proof Received
+///         4 - Accepted
 ///
 /// #Returns
 /// Error code as a u32
@@ -427,7 +503,7 @@ pub extern fn vcx_proof_send_request(command_handle: CommandHandle,
 }
 
 
-/// Get the proof request message.
+/// Get the proof request message that can be sent to the specified connection
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -437,6 +513,8 @@ pub extern fn vcx_proof_send_request(command_handle: CommandHandle,
 /// connection_handle: Connection handle that identifies pairwise connection
 ///
 /// cb: provides any error status of the proof_request
+///
+/// # Example proof_request -> "{'@topic': {'tid': 0, 'mid': 0}, '@type': {'version': '1.0', 'name': 'PROOF_REQUEST'}, 'proof_request_data': {'name': 'proof_req', 'nonce': '118065925949165739229152', 'version': '0.1', 'requested_predicates': {}, 'non_revoked': None, 'requested_attributes': {'attribute_0': {'name': 'name', 'restrictions': {'$or': [{'issuer_did': 'did'}]}}}, 'ver': '1.0'}, 'thread_id': '40bdb5b2'}"
 ///
 /// #Returns
 /// Error code as a u32
@@ -479,7 +557,7 @@ pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
 
 
 
-/// Get Proof
+/// Get Proof message
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

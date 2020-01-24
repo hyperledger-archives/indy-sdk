@@ -9,7 +9,7 @@ use utils::threadpool::spawn;
 use error::prelude::*;
 use indy_sys::CommandHandle;
 
-/// Create a new Schema object that can create or look up schemas on the ledger
+/// Create a new Schema object and publish correspondent record on the ledger
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -78,6 +78,8 @@ pub extern fn vcx_schema_create(command_handle: CommandHandle,
 }
 
 /// Create a new Schema object that will be published by Endorser later.
+///
+/// Note that Schema can't be used for credential issuing until it will be published on the ledger.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -319,6 +321,9 @@ pub extern fn vcx_schema_get_schema_id(command_handle: CommandHandle,
 /// and it will also contain a json string representing all of the data of a
 /// schema already on the ledger.
 ///
+/// # Example
+/// schema -> {"data":["height","name","sex","age"],"name":"test-licence","payment_txn":null,"schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","source_id":"Test Source ID","state":1,"version":"4.4.4"}
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
@@ -417,7 +422,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: CommandHandle,
     error::SUCCESS.code_num
 }
 
-/// Checks if schema is published on the Ledger and updates the the state
+/// Checks if schema is published on the Ledger and updates the  state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -425,6 +430,9 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: CommandHandle,
 /// schema_handle: Schema handle that was provided during creation. Used to access schema object
 ///
 /// cb: Callback that provides most current state of the schema and error status of request
+///     States:
+///         0 = Built
+///         1 = Published
 ///
 /// #Returns
 /// Error code as a u32
@@ -472,6 +480,9 @@ pub extern fn vcx_schema_update_state(command_handle: CommandHandle,
 /// schema_handle: Schema handle that was provided during creation. Used to access schema object
 ///
 /// cb: Callback that provides most current state of the schema and error status of request
+///     States:
+///         0 = Built
+///         1 = Published
 ///
 /// #Returns
 /// Error code as a u32

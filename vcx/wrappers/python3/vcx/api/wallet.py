@@ -361,7 +361,8 @@ class Wallet:
         Example:
         payment_handle = 0 // payment handle is always 0, for now.
         info = await Wallet.get_token_info(payment_handle)
-        :return:
+        :return: info
+           "{"balance":6,"balance_str":"6","addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"source":"pay:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"}]}]}"
         """
         logger = logging.getLogger(__name__)
 

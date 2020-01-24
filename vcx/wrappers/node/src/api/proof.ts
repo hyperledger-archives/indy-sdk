@@ -6,15 +6,84 @@ import { ISerializedData, StateType } from './common'
 import { Connection } from './connection'
 import { VCXBaseWithState } from './vcx-base-with-state'
 
+/**
+ *    The object of the VCX API representing a Verifier side in the credential presentation process.
+ *    Assumes that pairwise connection between Verifier and Prover is already established.
+ *
+ *    # State
+ *
+ *    The set of object states and transitions depends on communication method is used.
+ *    The communication method can be specified as config option on one of *_init function. The default communication method us `proprietary`.
+ *
+ *    proprietary:
+ *        VcxStateType::VcxStateInitialized - once `vcx_proof_create` (create Proof object) is called.
+ *
+ *        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `PROOF_REQ` message) is called.
+ *
+ *        VcxStateType::VcxStateAccepted - once `PROOF` messages is received.
+ *                                         use `vcx_proof_update_state` or `vcx_proof_update_state_with_message` functions for state updates.
+ *
+ *    aries:
+ *        VcxStateType::VcxStateInitialized - once `vcx_proof_create` (create Proof object) is called.
+ *
+ *        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `PresentationRequest` message) is called.
+ *
+ *        VcxStateType::VcxStateAccepted - once `Presentation` messages is received.
+ *        VcxStateType::None - once `ProblemReport` messages is received.
+ *        VcxStateType::None - once `PresentationProposal` messages is received.
+ *        VcxStateType::None - on `Presentation` validation failed.
+ *                                                use `vcx_proof_update_state` or `vcx_proof_update_state_with_message` functions for state updates.
+ *
+ *    # Transitions
+ *
+ *    proprietary:
+ *        VcxStateType::None - `vcx_proof_create` - VcxStateType::VcxStateInitialized
+ *
+ *        VcxStateType::VcxStateInitialized - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+ *
+ *        VcxStateType::VcxStateOfferSent - received `PROOF` - VcxStateType::VcxStateAccepted
+ *
+ *    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+ *        VcxStateType::None - `vcx_proof_create` - VcxStateType::VcxStateInitialized
+ *
+ *        VcxStateType::VcxStateInitialized - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+ *
+ *        VcxStateType::VcxStateOfferSent - received `Presentation` - VcxStateType::VcxStateAccepted
+ *        VcxStateType::VcxStateOfferSent - received `PresentationProposal` - VcxStateType::None
+ *        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+ *
+ *    # Messages
+ *
+ *    proprietary:
+ *        ProofRequest (`PROOF_REQ`)
+ *        Proof (`PROOF`)
+ *
+ *    aries:
+ *        PresentationRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#request-presentation
+ *        Presentation - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#presentation
+ *        PresentationProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+ *        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+ */
+
+/**
+ * @description Interface that represents the parameters for `Proof.create` function.
+ * @interface
+ */
 export interface IProofCreateData {
+  // Enterprise's personal identification for the user.
   sourceId: string,
+  //  Describes requested attribute
   attrs: IProofAttr[],
+  // Name of the proof request
   name: string,
+  // Revocation interval
   revocationInterval: IRevocationInterval
 }
 
 export interface IProofConstructorData {
+  //  Describes requested attribute
   attrs: IProofAttr[],
+  // Name of the proof request
   name: string,
 }
 
@@ -35,7 +104,9 @@ export interface IProofData {
 }
 
 export interface IProofResponses {
+  // Proof json
   proof?: string,
+  // Proof status
   proofState: ProofState,
 }
 
@@ -58,7 +129,9 @@ export enum PredicateTypes {
  * @interface
  */
 export interface IProofAttr {
+  // Requested attribute restrictions
   restrictions?: IFilter[],
+  // Requested attribute name
   name: string,
 }
 

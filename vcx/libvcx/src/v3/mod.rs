@@ -573,12 +573,12 @@ pub mod test {
         // Decline Presentation
         faber.request_presentation();
         alice.decline_presentation_request();
-        faber.update_proof_state(4, 2);
+        faber.update_proof_state(0, 2);
 
         // Propose Presentation
         faber.request_presentation();
         alice.propose_presentation();
-        faber.update_proof_state(4, 2);
+        faber.update_proof_state(0, 2);
     }
 
     #[cfg(feature = "aries")]
