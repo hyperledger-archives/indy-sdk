@@ -441,11 +441,11 @@ mod tests {
             let pool_id = next_pool_handle();
             let (send_cmd_sock, recv_cmd_sock) = pool_create_pair_of_sockets("pool_service_refresh_works");
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id, PoolOpenConfig::default()), send_cmd_sock));
-            let cmd_id = ps.refresh(pool_id).unwrap();
+            block_on(ps.refresh(pool_id)).unwrap();
             let recv = recv_cmd_sock.recv_multipart(zmq::DONTWAIT).unwrap();
             assert_eq!(recv.len(), 3);
             assert_eq!(COMMAND_REFRESH, String::from_utf8(recv[0].clone()).unwrap());
-            assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
+            assert_eq!(pool_id, LittleEndian::read_i32(recv[1].as_slice()));
         }
 
         #[test]
@@ -496,7 +496,7 @@ mod tests {
             let ps = PoolService::new();
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
             let test_data = "str_instead_of_tx_json";
-            ps.send_tx(pool_id, test_data).unwrap();
+            block_on(ps.send_tx(pool_id, test_data)).unwrap();
             assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
         }
 
@@ -512,7 +512,7 @@ mod tests {
             let pool = Pool::new(name, pool_id, PoolOpenConfig::default());
             let ps = PoolService::new();
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
-            let res = ps.send_tx(pool_id, "test_data");
+            let res = block_on(ps.send_tx(pool_id, "test_data"));
             assert_eq!(IndyErrorKind::IOError, res.unwrap_err().kind());
         }
 
@@ -520,7 +520,7 @@ mod tests {
         fn pool_send_tx_works_for_invalid_handle() {
             test::cleanup_storage("pool_send_tx_works_for_invalid_handle");
             let ps = PoolService::new();
-            let res = ps.send_tx(INVALID_POOL_HANDLE, "txn");
+            let res = block_on(ps.send_tx(INVALID_POOL_HANDLE, "txn"));
             assert_eq!(IndyErrorKind::InvalidPoolHandle, res.unwrap_err().kind());
         }
 
@@ -534,7 +534,7 @@ mod tests {
             let ps = PoolService::new();
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
             let test_data = "str_instead_of_tx_json";
-            ps.send_action(pool_id, test_data, None, None).unwrap();
+            block_on(ps.send_action(pool_id, test_data, None, None)).unwrap();
             assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
         }
 
@@ -550,7 +550,7 @@ mod tests {
         fn pool_refresh_works_for_invalid_handle() {
             test::cleanup_storage("pool_refresh_works_for_invalid_handle");
             let ps = PoolService::new();
-            let res = ps.refresh(INVALID_POOL_HANDLE);
+            let res = block_on(ps.refresh(INVALID_POOL_HANDLE));
             assert_eq!(IndyErrorKind::InvalidPoolHandle, res.unwrap_err().kind());
         }
 
