@@ -387,8 +387,6 @@ mod medium_cases {
 
         extern crate futures;
 
-        use self::futures::Future;
-
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_twice() {
