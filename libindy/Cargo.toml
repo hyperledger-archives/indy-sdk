@@ -55,7 +55,7 @@ regex = "1.2.1"
 indy-api-types = { path = "./indy-api-types"}
 indy-utils = { path = "./indy-utils"}
 indy-wallet = { path = "./indy-wallet"}
-futures-preview = {version = "=0.3.0-alpha.17", features=["async-await", "nightly"]}
+futures = "0.3.1"
 
 [dependencies.uuid]
 version = "0.7.4"
