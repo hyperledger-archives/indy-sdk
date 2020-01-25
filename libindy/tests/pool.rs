@@ -9,6 +9,7 @@ extern crate indyrs as api;
 use self::indy::ErrorCode;
 
 use crate::utils::{environment, pool};
+#[cfg(not(feature="only_high_cases"))]
 use crate::utils::constants::*;
 use crate::utils::Setup;
 
