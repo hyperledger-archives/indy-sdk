@@ -12,6 +12,8 @@ use crate::utils::types::{Response, ResponseType};
 use crate::utils::{environment, test};
 use crate::api::PoolHandle;
 use crate::indy::future::Future;
+use indy::{pool, ErrorCode, IndyError};
+use byteorder::{LittleEndian, WriteBytesExt};
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {

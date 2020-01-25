@@ -1265,7 +1265,7 @@ pub mod tests {
         }
 
         fn add_state_proof_parser() {
-            use crate::services::pool::{PoolService, REGISTERED_SP_PARSERS};
+            use crate::services::pool::REGISTERED_SP_PARSERS;
             use indy_api_types::ErrorCode;
             use libc::c_char;
             use std::ffi::CString;
