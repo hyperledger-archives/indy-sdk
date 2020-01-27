@@ -1,6 +1,11 @@
-libvcx (0.6.1) unstable; urgency=medium
+libvcx (0.6.2) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 0.6.2
+* Implemented Basic Message RFC (IS-1189)
+* Updated library to support "names" parameter in Proof Request Revealed Attributes (IS-1381)
+* others minor bugfixes
 
 ## 0.6.1
 * Bugfixes
