@@ -358,8 +358,10 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
 
         echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
+            def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
+
             for (component in ["libindy/indy-api-types", "libindy/indy-utils", "libindy/indy-wallet", "libindy"]) {
-                testLibindyComponent(component)
+                testLibindyComponent(component, features_args)
             }
         }
 
@@ -378,9 +380,7 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     }
 }
 
-def testLibindyComponent(directory) {
-    def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
-
+def testLibindyComponent(directory, features_args) {
     sh """
         cd ${directory}
         RUST_BACKTRACE=1 cargo test --release --no-run ${features_args}
