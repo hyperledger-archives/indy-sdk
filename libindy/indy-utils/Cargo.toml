@@ -19,7 +19,7 @@ dirs = "2.0.2"
 failure = "0.1.5"
 indy-api-types = { path = "../indy-api-types"}
 lazy_static = "1.3"
-libc = "0.2.60"
+libc = "0.2.66"
 log = "0.4.8"
 openssl = { version = "0.10" }
 serde = "1.0.99"
