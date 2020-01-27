@@ -2,6 +2,7 @@ use v3::messages::connection::invite::Invitation;
 
 use error::prelude::*;
 use url::Url;
+use messages::validation::validate_verkey;
 
 pub const CONTEXT: &str = "https://w3id.org/did/v1";
 pub const KEY_TYPE: &str = "Ed25519VerificationKey2018";
@@ -14,10 +15,12 @@ pub struct DidDoc {
     #[serde(rename = "@context")]
     pub context: String,
     #[serde(default)]
-    pub id: String, // FIXME id is mandatory according to the specification. Commented to be compatible with Streetcred
+    pub id: String,
+    // FIXME id is mandatory according to the specification. Commented to be compatible with Streetcred
     #[serde(default)]
     #[serde(rename = "publicKey")]
-    pub public_key: Vec<Ed25519PublicKey>, // TODO: A DID document MAY include a publicKey property??? (https://w3c.github.io/did-core/#public-keys)
+    pub public_key: Vec<Ed25519PublicKey>,
+    // TODO: A DID document MAY include a publicKey property??? (https://w3c.github.io/did-core/#public-keys)
     #[serde(default)]
     pub authentication: Vec<Authentication>,
     pub service: Vec<Service>,
@@ -27,7 +30,8 @@ pub struct DidDoc {
 pub struct Ed25519PublicKey {
     pub id: String,
     #[serde(rename = "type")]
-    pub type_: String, // all list of types: https://w3c-ccg.github.io/ld-cryptosuite-registry/
+    pub type_: String,
+    // all list of types: https://w3c-ccg.github.io/ld-cryptosuite-registry/
     pub controller: String,
     #[serde(rename = "publicKeyBase58")]
     pub public_key_base_58: String,
@@ -105,7 +109,7 @@ impl DidDoc {
                 self.authentication.push(
                     Authentication {
                         type_: String::from(KEY_AUTHENTICATION_TYPE),
-                        public_key: key_reference.clone()
+                        public_key: key_reference.clone(),
                     });
 
 
@@ -143,28 +147,42 @@ impl DidDoc {
 
     pub fn validate(&self) -> VcxResult<()> {
         if self.context != CONTEXT {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)))
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)));
         }
 
         if self.id.is_empty() { // FIXME id is mandatory according to the specification. Commented to be compatible with Streetcred
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"))
+            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"));
         }
-        
+
         for service in self.service.iter() {
             Url::parse(&service.service_endpoint)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported endpoint: {:?}", service.service_endpoint)))?;
 
             service.recipient_keys
                 .iter()
-                .map(|key| {
-                    self.validate_public_key(key)
-                        .and_then(|public_key|
-                            self.validate_authentication(&public_key.id)
-                        )
-                })
+                .map(|key| self.validate_recipient_key(key))
+                .collect::<VcxResult<()>>()?;
+
+            service.routing_keys
+                .iter()
+                .map(|key| self.validate_routing_key(key))
                 .collect::<VcxResult<()>>()?;
         }
 
+        Ok(())
+    }
+
+    fn validate_recipient_key(&self, key: &str) -> VcxResult<()> {
+        let public_key = self.validate_public_key(key)?;
+        self.validate_authentication(&public_key.id)
+    }
+
+    fn validate_routing_key(&self, key: &str) -> VcxResult<()> {
+        if DidDoc::_key_parts(key).len() == 2 {
+            self.validate_public_key(key)?;
+        } else {
+            validate_verkey(key)?;
+        }
         Ok(())
     }
 
@@ -178,12 +196,14 @@ impl DidDoc {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported PublicKey type: {:?}", key.type_)));
         }
 
+        validate_verkey(&key.public_key_base_58)?;
+
         Ok(key)
     }
 
     fn validate_authentication(&self, target_key: &str) -> VcxResult<()> {
-        if self.authentication.is_empty(){
-            return Ok(())
+        if self.authentication.is_empty() {
+            return Ok(());
         }
 
         let key = self.authentication.iter().find(|key_|
@@ -248,8 +268,12 @@ impl DidDoc {
         format!("{}#{}", did, id)
     }
 
+    fn _key_parts(key: &str) -> Vec<&str> {
+        key.split("#").collect()
+    }
+
     fn _parse_key_reference(key_reference: &str) -> String {
-        let pars: Vec<&str> = key_reference.split("#").collect();
+        let pars: Vec<&str> = DidDoc::_key_parts(key_reference);
         pars.get(1).or(pars.get(0)).map(|s| s.to_string()).unwrap_or_default()
     }
 }

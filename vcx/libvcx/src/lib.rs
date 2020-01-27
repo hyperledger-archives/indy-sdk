@@ -42,6 +42,7 @@ extern crate base64;
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
+extern crate indy_sys;
 
 #[macro_use]
 pub mod utils;
