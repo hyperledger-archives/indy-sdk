@@ -167,6 +167,23 @@ test('anoncreds', async function (t) {
 
   await indy.issuerMergeRevocationRegistryDeltas(revDelta, revocedDelta)
 
+  // Verify the proof with changed requested predicate value
+  proofReq = {
+    'nonce': nonce,
+    'name': 'proof_req_1',
+    'version': '0.1',
+    'requested_attributes': {
+      'attr1_referent': { 'name': 'name' }
+    },
+    'requested_predicates': {
+      'predicate1_referent': { 'name': 'age', 'p_type': '>=', 'p_value': 50 } // requested value is greater than actual (28)
+    },
+    'non_revoked': { 'from': 80, 'to': 100 }
+  }
+  var err = await t.throwsAsync(
+    indy.verifierVerifyProof(proofReq, proof, schemas, credentialDefs, revocRefDefs, revocRegs))
+  t.is(err.indyName, 'AnoncredsProofRejected')
+
   // Rotate credential definition
   var tempCredDef = await indy.issuerRotateCredentialDefStart(wh, credDefId, null)
   t.not(cred, tempCredDef)

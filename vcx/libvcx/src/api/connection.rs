@@ -7,24 +7,147 @@ use connection::{get_source_id, create_connection, create_connection_with_invite
 
 use error::prelude::*;
 use messages::get_message::Message;
+use indy_sys::CommandHandle;
 
-/// Delete a Connection object and release its handle
+/*
+    Tha API represents a pairwise connection with another identity owner.
+    Once the connection, is established communication can happen securely and privately.
+    Credentials and Presentations are exchanged using this object.
+
+    # States
+
+    The set of object states, messages and transitions depends on the communication method is used.
+    There are two communication methods: `proprietary` and `aries`. The default communication method is `proprietary`.
+    The communication method can be specified as a config option on one of *_init functions.
+
+    proprietary:
+        Inviter:
+            VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+
+            VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (send Connection invite) is called.
+
+            VcxStateType::VcxStateAccepted - once `connReqAnswer` messages is received.
+                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+            VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+
+        Invitee:
+            VcxStateType::VcxStateRequestReceived - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+
+            VcxStateType::VcxStateAccepted - once `vcx_connection_connect` (accept Connection invite) is called.
+
+            VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+
+    aries:
+        Inviter:
+            VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+
+            VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (prepared Connection invite) is called.
+
+            VcxStateType::VcxStateRequestReceived - once `ConnectionRequest` messages is received.
+                                                    accept `ConnectionRequest` and send `ConnectionResponse` message.
+                                                    use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+
+            VcxStateType::VcxStateAccepted - once `Ack` messages is received.
+                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+
+            VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+                                            OR
+                                        `ConnectionProblemReport` messages is received on state updates.
+
+        Invitee:
+            VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+
+            VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
+
+            VcxStateType::VcxStateAccepted - once `ConnectionResponse` messages is received.
+                                             send `Ack` message if requested.
+                                             use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+
+            VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+                                            OR
+                                        `ConnectionProblemReport` messages is received on state updates.
+
+    # Transitions
+
+    proprietary:
+        Inviter:
+            VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+            VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+            VcxStateType::VcxStateOfferSent - received `connReqAnswer` - VcxStateType::VcxStateAccepted
+            any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+
+        Invitee:
+            VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateRequestReceived
+            VcxStateType::VcxStateRequestReceived - `vcx_connection_connect` - VcxStateType::VcxStateAccepted
+            any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+
+    aries - RFC: https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+        Inviter:
+            VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+
+            VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+
+            VcxStateType::VcxStateOfferSent - received `ConnectionRequest` - VcxStateType::VcxStateRequestReceived
+            VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+
+            VcxStateType::VcxStateRequestReceived - received `Ack` - VcxStateType::VcxStateAccepted
+            VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+
+            VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+
+            any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+
+
+        Invitee:
+            VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateOfferSent
+
+            VcxStateType::VcxStateOfferSent - `vcx_connection_connect` - VcxStateType::VcxStateRequestReceived
+            VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+
+            VcxStateType::VcxStateRequestReceived - received `ConnectionResponse` - VcxStateType::VcxStateAccepted
+            VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+
+            VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+
+            any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+
+    # Messages
+
+    proprietary:
+        ConnectionRequest (`connReq`)
+        ConnectionRequestAnswer (`connReqAnswer`)
+
+    aries:
+        Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+        ConnectionRequest - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#1-connection-request
+        ConnectionResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#2-connection-response
+        ConnectionProblemReport - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#error-message-example
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+        Ping - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+        PingResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+        Query - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#query-message-type
+        Disclose - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#disclose-message-type
+*/
+
+/// Delete a Connection object from the agency and release its handle.
 ///
-/// #Params
+/// NOTE: This eliminates the connection and any ability to use it for any communication.
+///
+/// # Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// connection_handle: handle of the connection to delete.
 ///
 /// cb: Callback that provides feedback of the api call.
 ///
-/// #Returns
+/// # Returns
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_assignments)]
-pub extern fn vcx_connection_delete_connection(command_handle: u32,
+pub extern fn vcx_connection_delete_connection(command_handle: CommandHandle,
                                                connection_handle: u32,
                                                cb: Option<extern fn(
-                                                   xcommand_handle: u32,
+                                                   xcommand_handle: CommandHandle,
                                                    err: u32)>) -> u32 {
     info!("vcx_delete_connection >>>");
 
@@ -52,22 +175,22 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// -> Create a Connection object that provides a pairwise connection for an institution's user
+/// Create a Connection object that provides a pairwise connection for an institution's user
 ///
-/// #Params
+/// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: institution's personal identification for the user
+/// source_id: institution's personal identification for the connection
 ///
 /// cb: Callback that provides connection handle and error status of request
 ///
-/// #Returns
+/// # Returns
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_assignments)]
-pub extern fn vcx_connection_create(command_handle: u32,
+pub extern fn vcx_connection_create(command_handle: CommandHandle,
                                     source_id: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, connection_handle: u32)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, connection_handle: u32)>) -> u32 {
     info!("vcx_connection_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -97,22 +220,35 @@ pub extern fn vcx_connection_create(command_handle: u32,
 
 /// Create a Connection object from the given invite_details that provides a pairwise connection.
 ///
-/// #Params
+/// # Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: institution's personal identification for the user
+/// source_id: institution's personal identification for the connection
 ///
-/// invite_details: Provided via the other end of the connection calling "vcx_connection_connect" or "vcx_connection_invite_details"
+/// invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
 ///
 /// cb: Callback that provides connection handle and error status of request
 ///
-/// #Returns
+/// # Examples
+/// invite_details -> depends on communication method:
+///     proprietary:
+///         {"targetName": "", "statusMsg": "message created", "connReqId": "mugIkrWeMr", "statusCode": "MS-101", "threadId": null, "senderAgencyDetail": {"endpoint": "http://localhost:8080", "verKey": "key", "DID": "did"}, "senderDetail": {"agentKeyDlgProof": {"agentDID": "8f6gqnT13GGMNPWDa2TRQ7", "agentDelegatedKey": "5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1", "signature": "TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/7Cyteep7U3m9Gw6ilu8SOOW59YR1rft+D8ZDg=="}, "publicDID": "7YLxxEfHRiZkCMVNii1RCy", "name": "Faber", "logoUrl": "http://robohash.org/234", "verKey": "CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx", "DID": "Ney2FxHT4rdEyy6EDCCtxZ"}}
+///     aries: https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+///      {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation",
+///         "label": "Alice",
+///         "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+///         "serviceEndpoint": "https://example.com/endpoint",
+///         "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
+///      }
+///
+/// # Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_create_with_invite(command_handle: u32,
+pub extern fn vcx_connection_create_with_invite(command_handle: CommandHandle,
                                                 source_id: *const c_char,
                                                 invite_details: *const c_char,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, connection_handle: u32)>) -> u32 {
     info!("vcx_connection_create_with_invite >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -141,24 +277,27 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
 
 /// Establishes connection between institution and its user
 ///
-/// #Params
+/// # Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// connection_handle: Connection handle that identifies connection object
 ///
 /// connection_options: Provides details indicating if the connection will be established by text or QR Code
 ///
-/// # Examples connection_options -> "{"connection_type":"SMS","phone":"123","use_public_did":true}" OR: "{"connection_type":"QR","phone":"","use_public_did":false}"
+/// # Examples connection_options ->
+/// "{"connection_type":"SMS","phone":"123","use_public_did":true}"
+///     OR:
+/// "{"connection_type":"QR","phone":"","use_public_did":false}"
 ///
 /// cb: Callback that provides error status of request
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_connect(command_handle: u32,
+pub extern fn vcx_connection_connect(command_handle: CommandHandle,
                                      connection_handle: u32,
                                      connection_options: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, invite_details: *const c_char)>) -> u32 {
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, invite_details: *const c_char)>) -> u32 {
     info!("vcx_connection_connect >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -211,7 +350,7 @@ pub extern fn vcx_connection_connect(command_handle: u32,
 
 /// Takes the Connection object and returns a json string of all its attributes
 ///
-/// #Params
+/// # Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// connection_handle: Connection handle that identifies pairwise connection
@@ -221,9 +360,9 @@ pub extern fn vcx_connection_connect(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_serialize(command_handle: u32,
+pub extern fn vcx_connection_serialize(command_handle: CommandHandle,
                                        connection_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, serialized_data: *const c_char)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, serialized_data: *const c_char)>) -> u32 {
     info!("vcx_connection_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -263,16 +402,16 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// connection_data: json string representing a connection object
+/// connection_data: json string representing a connection object. Is an output of `vcx_connection_serialize` function.
 ///
 /// cb: Callback that provides credential handle and provides error status
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_deserialize(command_handle: u32,
+pub extern fn vcx_connection_deserialize(command_handle: CommandHandle,
                                          connection_data: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, connection_handle: u32)>) -> u32 {
+                                         cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, connection_handle: u32)>) -> u32 {
     info!("vcx_connection_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -303,8 +442,8 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-
-/// Checks for any state change in the connection and updates the the state attribute
+/// Query the agency for the received messages.
+/// Checks for any messages changing state in the connection and updates the state attribute.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -312,13 +451,18 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
 /// connection_handle: was provided during creation. Used to identify connection object
 ///
 /// cb: Callback that provides most current state of the credential and error status of request
+///     Connection states:
+///         1 - Initialized
+///         2 - Request Sent
+///         3 - Offer Received
+///         4 - Accepted
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_update_state(command_handle: u32,
+pub extern fn vcx_connection_update_state(command_handle: CommandHandle,
                                           connection_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_connection_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -354,24 +498,24 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks the message any state change and updates the the state attribute
+/// Update the state of the connection based on the given message.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// connection_handle: was provided during creation. Used to identify connection object
 ///
-/// message: message to process
+/// message: message to process.
 ///
-/// cb: Callback that provides most current state of the credential and error status of request
+/// cb: Callback that provides most current state of the connection and error status of request
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_update_state_with_message(command_handle: u32,
+pub extern fn vcx_connection_update_state_with_message(command_handle: CommandHandle,
                                                        connection_handle: u32,
                                                        message: *const c_char,
-                                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_connection_update_state_with_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -413,20 +557,25 @@ pub extern fn vcx_connection_update_state_with_message(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Get the current state of the connection object
+/// Returns the current internal state of the connection. Does NOT query agency for state updates.
+///     Possible states:
+///         1 - Initialized
+///         2 - Offer Sent
+///         3 - Request Received
+///         4 - Accepted
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// proof_handle: Connection handle that was provided during creation. Used to access connection object
+/// connection_handle: Connection handle that was provided during creation. Used to access connection object
 ///
 /// cb: Callback that provides most current state of the connection and error status of request
 ///
 /// #Returns
 #[no_mangle]
-pub extern fn vcx_connection_get_state(command_handle: u32,
+pub extern fn vcx_connection_get_state(command_handle: CommandHandle,
                                        connection_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_connection_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -451,24 +600,40 @@ pub extern fn vcx_connection_get_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Gets the current connection details
+/// Get the invite details that were sent or can be sent to the remote side.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// connection_handle: was provided during creation. Used to identify connection object
 ///
-/// abbreviated: abbreviated connection details for QR codes or not
+/// abbreviated: abbreviated connection details for QR codes or not (applicable for `proprietary` communication method only)
 ///
 /// cb: Callback that provides the json string of details
+///
+/// # Example
+/// details -> depends on communication method:
+///     proprietary:
+///       {"targetName": "", "statusMsg": "message created", "connReqId": "mugIkrWeMr", "statusCode": "MS-101", "threadId": null, "senderAgencyDetail": {"endpoint": "http://localhost:8080", "verKey": "key", "DID": "did"}, "senderDetail": {"agentKeyDlgProof": {"agentDID": "8f6gqnT13GGMNPWDa2TRQ7", "agentDelegatedKey": "5B3pGBYjDeZYSNk9CXvgoeAAACe2BeujaAkipEC7Yyd1", "signature": "TgGSvZ6+/SynT3VxAZDOMWNbHpdsSl8zlOfPlcfm87CjPTmC/7Cyteep7U3m9Gw6ilu8SOOW59YR1rft+D8ZDg=="}, "publicDID": "7YLxxEfHRiZkCMVNii1RCy", "name": "Faber", "logoUrl": "http://robohash.org/234", "verKey": "CoYZMV6GrWqoG9ybfH3npwH3FnWPcHmpWYUF8n172FUx", "DID": "Ney2FxHT4rdEyy6EDCCtxZ"}}
+///     aries:
+///      {
+///         "label": "Alice",
+///         "serviceEndpoint": "https://example.com/endpoint",
+///         "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+///         "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
+///         "protocols": [
+///             {"pid": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0", "roles": "Invitee"},
+///             ...
+///         ] - optional array. The set of protocol supported by remote side. Is filled after DiscoveryFeatures process was completed.
+/////    }
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_invite_details(command_handle: u32,
+pub extern fn vcx_connection_invite_details(command_handle: CommandHandle,
                                             connection_handle: u32,
                                             abbreviated: bool,
-                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, details: *const c_char)>) -> u32 {
+                                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, details: *const c_char)>) -> u32 {
     info!("vcx_connection_invite_details >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -509,27 +674,54 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// connection_handle: connection to receive the message
+/// connection_handle: connection to use to send the message.
+///                    Was provided during creation. Used to identify connection object.
+///                    Note that connection must be in Accepted state.
 ///
 /// msg: actual message to send
 ///
-/// send_msg_options:
+/// send_msg_options: (applicable for `proprietary` communication method only)
 ///     {
-///         msg_type: String, // type of message to send
+///         msg_type: String, // type of message to send. can be any string.
 ///         msg_title: String, // message title (user notification)
 ///         ref_msg_id: Option<String>, // If responding to a message, id of the message
 ///     }
 ///
-/// cb: Callback that provides array of matching messages retrieved
+/// # Example:
+/// msg ->
+///     "HI"
+///   OR
+///     {"key": "value"}
+///   OR
+///     {
+///         "@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/trust_ping/1.0/ping",
+///         "@id": "518be002-de8e-456e-b3d5-8fe472477a86",
+///         "comment": "Hi. Are you listening?",
+///         "response_requested": true
+///     }
+///
+/// send_msg_options ->
+///     {
+///         "msg_type":"Greeting",
+///         "msg_title": "Hi There"
+///     }
+///   OR
+///     {
+///         "msg_type":"Greeting",
+///         "msg_title": "Hi There",
+///         "ref_msg_id" "as2d343sag"
+///     }
+///
+/// cb: Callback that provides id of retrieved response message
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_send_message(command_handle: u32,
+pub extern fn vcx_connection_send_message(command_handle: CommandHandle,
                                           connection_handle: u32,
                                           msg: *const c_char,
                                           send_msg_options: *const c_char,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, msg_id: *const c_char)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg_id: *const c_char)>) -> u32 {
     info!("vcx_message_send >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -571,7 +763,9 @@ pub extern fn vcx_connection_send_message(command_handle: u32,
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// connection_handle: connection to send message
+/// connection_handle: connection to use to send ping message.
+///                    Was provided during creation. Used to identify connection object.
+///                    Note that connection must be in Accepted state.
 ///
 /// comment: (Optional) human-friendly description of the ping.
 ///
@@ -613,28 +807,33 @@ pub extern fn vcx_connection_send_ping(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Generate a signature for the specified data
+/// Generate a signature for the specified data using connection pairwise keys
 ///
 /// #params
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// connection_handle: connection to receive the message
+/// connection_handle: connection to use to sign the message.
+///                    Was provided during creation. Used to identify connection object.
 ///
 /// data_raw: raw data buffer for signature
 ///
-/// data:len: length of data buffer
+/// data_len: length of data buffer
 ///
 /// cb: Callback that provides the generated signature
+///
+/// # Example
+/// data_raw -> [1, 2, 3, 4, 5, 6]
+/// data_len -> 6
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_sign_data(command_handle: u32,
+pub extern fn vcx_connection_sign_data(command_handle: CommandHandle,
                                        connection_handle: u32,
                                        data_raw: *const u8,
                                        data_len: u32,
-                                       cb: Option<extern fn(command_handle_: u32,
+                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                             err: u32,
                                                             signature_raw: *const u8,
                                                             signature_len: u32)>) -> u32 {
@@ -680,13 +879,14 @@ pub extern fn vcx_connection_sign_data(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Verify the signature is valid for the specified data
+/// Verify the signature is valid for the specified data using connection pairwise keys
 ///
 /// #params
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// connection_handle: connection to receive the message
+/// connection_handle: connection to use to verify signature.
+///                    Was provided during creation. Used to identify connection object.
 ///
 /// data_raw: raw data buffer for signature
 ///
@@ -698,16 +898,22 @@ pub extern fn vcx_connection_sign_data(command_handle: u32,
 ///
 /// cb: Callback that specifies whether the signature was valid or not
 ///
+/// # Example
+/// data_raw -> [1, 2, 3, 4, 5, 6]
+/// data_len -> 6
+/// signature_raw -> [2, 3, 4, 5, 6, 7]
+/// signature_len -> 6
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_connection_verify_signature(command_handle: u32,
+pub extern fn vcx_connection_verify_signature(command_handle: CommandHandle,
                                               connection_handle: u32,
                                               data_raw: *const u8,
                                               data_len: u32,
                                               signature_raw: *const u8,
                                               signature_len: u32,
-                                              cb: Option<extern fn(command_handle_: u32,
+                                              cb: Option<extern fn(command_handle_: CommandHandle,
                                                                    err: u32,
                                                                    valid: bool)>) -> u32 {
     trace!("vcx_connection_verify_signature: >>> connection_handle: {}, data_raw: {:?}, data_len: {}, signature_raw: {:?}, signature_len: {}",
@@ -787,13 +993,20 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// connection_handle: connection to send message
+/// connection_handle: connection to use to send message.
+///                    Was provided during creation. Used to identify connection object.
+///                    Note that connection must be in Accepted state.
 ///
 /// query: (Optional) query string to match against supported message types.
 ///
 /// comment: (Optional) human-friendly description of the query.
 ///
 /// cb: Callback that provides success or failure of request
+///
+/// # Example
+/// query -> `did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/`
+///
+/// comment -> `share please`
 ///
 /// #Returns
 /// Error code as a u32
@@ -999,7 +1212,7 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
-    extern "C" fn test_sign_cb(command_handle: u32, error: u32, signature: *const u8, signature_length: u32) {
+    extern "C" fn test_sign_cb(command_handle: CommandHandle, error: u32, signature: *const u8, signature_length: u32) {
         assert_eq!(error, error::SUCCESS.code_num);
     }
 
@@ -1017,7 +1230,7 @@ mod tests {
         thread::sleep(Duration::from_secs(2));
     }
 
-    extern "C" fn test_verify_cb(command_handle: u32, error: u32, valid: bool) {
+    extern "C" fn test_verify_cb(command_handle: CommandHandle, error: u32, valid: bool) {
         assert_eq!(valid, true);
     }
 

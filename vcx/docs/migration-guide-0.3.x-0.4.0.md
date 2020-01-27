@@ -39,13 +39,13 @@ This removes the dependency on an agency/cloud-agent and allows the user of the 
 #### Credential API
 
 `vcx_credential_get_request_msg` - Get the credential request message that can be sent to the specified connection.
-`vcx_credential_update_state_with_message` - Checks for any state change from the given message and updates the the state attribute.
+`vcx_credential_update_state_with_message` - Checks for any state change from the given message and updates the  state attribute.
 
 
 #### Disclosed Proof API
 
 `vcx_disclosed_proof_get_proof_msg` - Get the proof message for sending.
-`vcx_disclosed_proof_update_state_with_message` -  Checks for any state change from the given message and updates the the state attribute.
+`vcx_disclosed_proof_update_state_with_message` -  Checks for any state change from the given message and updates the  state attribute.
 
 
 #### Issuer Credential API

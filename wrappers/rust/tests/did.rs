@@ -4,6 +4,8 @@ extern crate rmp_serde;
 extern crate byteorder;
 extern crate indyrs as indy;
 extern crate futures;
+extern crate indy_sys;
+
 #[macro_use]
 mod utils;
 
@@ -15,11 +17,12 @@ use utils::constants::{
     SEED_1,
     VERKEY_1,
     METADATA,
-    VERKEY_ABV_1,
-    INVALID_HANDLE
+    VERKEY_ABV_1
 };
 use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
+
+use indy::{INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
 
 #[allow(unused_imports)]
 use futures::Future;
@@ -107,7 +110,7 @@ mod create_new_did {
 
     #[test]
     fn create_did_with_invalid_wallet_handle() {
-        let result = did::create_and_store_my_did(INVALID_HANDLE, "{}").wait();
+        let result = did::create_and_store_my_did(INVALID_WALLET_HANDLE, "{}").wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 
@@ -139,7 +142,7 @@ mod replace_keys_start {
 
     #[test]
     fn replace_keys_start_invalid_wallet() {
-        let result = did::replace_keys_start(INVALID_HANDLE, DID_1, "{}").wait();
+        let result = did::replace_keys_start(INVALID_WALLET_HANDLE, DID_1, "{}").wait();
 
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
@@ -240,7 +243,7 @@ mod replace_keys_apply {
 
     #[test]
     fn replace_keys_apply_invalid_wallet() {
-        let result = did::replace_keys_apply(INVALID_HANDLE, DID_1).wait();
+        let result = did::replace_keys_apply(INVALID_WALLET_HANDLE, DID_1).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
@@ -306,7 +309,7 @@ mod test_store_their_did {
     #[test]
     fn store_their_did_invalid_handle() {
         let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
-        let result = did::store_their_did(INVALID_HANDLE, &config).wait();
+        let result = did::store_their_did(INVALID_WALLET_HANDLE, &config).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 
@@ -366,28 +369,7 @@ mod test_store_their_did {
 
         did::store_their_did(wallet.handle, &config).wait().unwrap();
 
-        let result = did::store_their_did(wallet.handle, &config).wait();
-
-        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err().error_code);
-    }
-
-    #[test]
-    /*
-    This test resulted from the ticket https://jira.hyperledger.org/browse/IS-802
-    Previously, an error was being thrown because rollback wasn't happening.
-    This test ensures the error is no longer occuring.
-    */
-    fn store_their_did_multiple_error_fixed() {
-        let wallet = Wallet::new();
-        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
-
         did::store_their_did(wallet.handle, &config).wait().unwrap();
-
-        let result = did::store_their_did(wallet.handle, &config).wait();
-        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err().error_code);
-
-        let result = did::store_their_did(wallet.handle, &config).wait();
-        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err().error_code);
     }
 }
 
@@ -427,7 +409,7 @@ mod test_get_verkey_local {
 
     #[test]
     fn get_verkey_local_invalid_wallet() {
-        let result = did::key_for_local_did(INVALID_HANDLE, DID_1).wait();
+        let result = did::key_for_local_did(INVALID_WALLET_HANDLE, DID_1).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
@@ -521,7 +503,7 @@ mod test_get_verkey_ledger {
 
     #[test]
     fn get_verkey_invalid_wallet() {
-        let result = did::key_for_did(-1, INVALID_HANDLE, DID_1).wait();
+        let result = did::key_for_did(INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE, DID_1).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
@@ -529,6 +511,7 @@ mod test_get_verkey_ledger {
 #[cfg(test)]
 mod test_set_metadata {
     use super::*;
+    use indy::INVALID_WALLET_HANDLE;
 
     #[inline]
     fn setup() -> (Wallet, String) {
@@ -611,7 +594,7 @@ mod test_set_metadata {
 
     #[test]
     fn set_metadata_invalid_wallet() {
-        let result = did::set_did_metadata(INVALID_HANDLE, DID_1, METADATA).wait();
+        let result = did::set_did_metadata(INVALID_WALLET_HANDLE, DID_1, METADATA).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
@@ -680,7 +663,7 @@ mod test_get_metadata {
 
     #[test]
     fn get_metadata_invalid_wallet() {
-        let result = did::get_did_metadata(INVALID_HANDLE, DID_1).wait();
+        let result = did::get_did_metadata(INVALID_WALLET_HANDLE, DID_1).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }
@@ -830,6 +813,7 @@ mod test_abbreviate_verkey {
 #[cfg(test)]
 mod test_list_with_metadata {
     use super::*;
+    use indy::INVALID_WALLET_HANDLE;
 
     fn setup_multiple(wallet: &Wallet) -> Vec<serde_json::Value> {
         let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
@@ -937,7 +921,7 @@ mod test_list_with_metadata {
 
     #[test]
     fn list_with_metadata_invalid_wallet() {
-        let result = did::list_my_dids_with_metadata(INVALID_HANDLE).wait();
+        let result = did::list_my_dids_with_metadata(INVALID_WALLET_HANDLE).wait();
         assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err().error_code);
     }
 }

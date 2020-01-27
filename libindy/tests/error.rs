@@ -6,6 +6,7 @@ use std::ffi::CStr;
 use std::str::Utf8Error;
 
 use self::libc::c_char;
+use indy::CommandHandle;
 
 #[test]
 fn get_current_error_works_for_no_error() {
@@ -27,7 +28,7 @@ fn get_current_error_works_for_sync_error_occurred() {
 
 #[test]
 fn get_current_error_works_for_async_error_occurred() {
-    extern fn cb(_command_handle_: i32,
+    extern fn cb(_command_handle_: CommandHandle,
                  _err: u32,
                  _verkey: *const c_char) {
         let mut error_json_p: *const c_char = ptr::null();
@@ -49,8 +50,8 @@ extern {
     pub fn indy_get_current_error(error_json: *mut *const c_char);
 
     #[no_mangle]
-    pub fn indy_abbreviate_verkey(command_handle: i32, did: *const c_char, full_verkey: *const c_char,
-                                  cb: Option<extern fn(command_handle_: i32,
+    pub fn indy_abbreviate_verkey(command_handle: CommandHandle, did: *const c_char, full_verkey: *const c_char,
+                                  cb: Option<extern fn(command_handle_: CommandHandle,
                                                        err: u32,
                                                        verkey: *const c_char)>) -> i32;
 }

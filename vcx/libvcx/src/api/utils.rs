@@ -10,6 +10,7 @@ use utils::threadpool::spawn;
 use utils::libindy::payments;
 use std::thread;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateAgentInfo {
@@ -67,9 +68,9 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
 /// #Returns
 /// Configuration (wallet also populated), on error returns NULL
 #[no_mangle]
-pub extern fn vcx_agent_provision_async(command_handle: u32,
+pub extern fn vcx_agent_provision_async(command_handle: CommandHandle,
                                         config: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, _config: *const c_char)>) -> u32 {
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, _config: *const c_char)>) -> u32 {
     info!("vcx_agent_provision_async >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -105,12 +106,14 @@ pub extern fn vcx_agent_provision_async(command_handle: u32,
 ///
 /// cb: Callback that provides configuration or error status
 ///
+/// # Example json -> "{"id":"123","value":"value"}"
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_agent_update_info(command_handle: u32,
+pub extern fn vcx_agent_update_info(command_handle: CommandHandle,
                                     json: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_agent_update_info >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -146,18 +149,20 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Get ledger fees from the sovrin network
+/// Get ledger fees from the network
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// cb: Callback that provides the fee structure for the sovrin network
 ///
+/// # Example fees -> "{ "txnType1": amount1, "txnType2": amount2, ..., "txnTypeN": amountN }"
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_ledger_get_fees(command_handle: u32,
-                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, fees: *const c_char)>) -> u32 {
+pub extern fn vcx_ledger_get_fees(command_handle: CommandHandle,
+                                  cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, fees: *const c_char)>) -> u32 {
     info!("vcx_ledger_get_fees >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -207,26 +212,43 @@ pub extern fn vcx_set_next_agency_response(message_index: u32) {
     httpclient::set_next_u8_response(message);
 }
 
-/// Retrieve messages from the specified connection
+/// Retrieve messages from the agent
 ///
 /// #params
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// message_status: optional - query for messages with the specified status
+/// message_status: optional, comma separated -  - query for messages with the specified status.
+///                            Statuses:
+///                                 MS-101 - Created
+///                                 MS-102 - Sent
+///                                 MS-103 - Received
+///                                 MS-104 - Accepted
+///                                 MS-105 - Rejected
+///                                 MS-106 - Reviewed
 ///
 /// uids: optional, comma separated - query for messages with the specified uids
 ///
+/// pw_dids: optional, comma separated - DID's pointing to specific connection
+///
 /// cb: Callback that provides array of matching messages retrieved
+///
+/// # Example message_status -> MS-103, MS-106
+///
+/// # Example uids -> s82g63, a2h587
+///
+/// # Example pw_dids -> did1, did2
+///
+/// # Example messages -> "[{"pairwiseDID":"did","msgs":[{"statusCode":"MS-106","payload":null,"senderDID":"","uid":"6BDkgc3z0E","type":"aries","refMsgId":null,"deliveryDetails":[],"decryptedPayload":"{"@msg":".....","@type":{"fmt":"json","name":"aries","ver":"1.0"}}"}]}]"
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_messages_download(command_handle: u32,
+pub extern fn vcx_messages_download(command_handle: CommandHandle,
                                     message_status: *const c_char,
                                     uids: *const c_char,
                                     pw_dids: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, messages: *const c_char)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, messages: *const c_char)>) -> u32 {
     info!("vcx_messages_download >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -301,7 +323,14 @@ pub extern fn vcx_messages_download(command_handle: u32,
 ///
 /// command_handle: command handle to map callback to user context.
 ///
-/// message_status: updated status
+/// message_status: target message status
+///                 Statuses:
+///                     MS-101 - Created
+///                     MS-102 - Sent
+///                     MS-103 - Received
+///                     MS-104 - Accepted
+///                     MS-105 - Rejected
+///                     MS-106 - Reviewed
 ///
 /// msg_json: messages to update: [{"pairwiseDID":"QSrw8hebcvQxiwBETmAaRs","uids":["mgrmngq"]},...]
 ///
@@ -310,10 +339,10 @@ pub extern fn vcx_messages_download(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_messages_update_status(command_handle: u32,
+pub extern fn vcx_messages_update_status(command_handle: CommandHandle,
                                          message_status: *const c_char,
                                          msg_json: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                         cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_messages_update_status >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -380,10 +409,10 @@ pub extern fn vcx_pool_set_handle(handle: i32) -> i32 {
 /// # Return
 /// "price": u64 - tokens amount required for action performing
 #[no_mangle]
-pub extern fn vcx_get_request_price(command_handle: u32,
+pub extern fn vcx_get_request_price(command_handle: CommandHandle,
                                     action_json: *const c_char,
                                     requester_info_json: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, price: u64)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, price: u64)>) -> u32 {
     info!("vcx_get_request_price >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -424,9 +453,9 @@ pub extern fn vcx_get_request_price(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_endorse_transaction(command_handle: u32,
+pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
                                       transaction: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                      cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_endorse_transaction >>>");
 
     check_useful_c_str!(transaction, VcxErrorKind::InvalidOption);

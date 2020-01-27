@@ -69,6 +69,8 @@ vcx_error_t vcx_update_agent_info(vcx_command_handle_t handle, const char *info,
 const char *vcx_error_c_message(int);
 const char *vcx_version();
 
+vcx_error_t vcx_get_current_error(const char ** error_json_p);
+
 /**
  * Schema object
  *
@@ -148,6 +150,35 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
 
 /** Deletes a connection, send an API call to agency to stop sending messages from this connection */
 vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t err));
+
+/** Send a message to the specified connection
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: connection to receive the message
+///
+/// msg: actual message to send
+///
+/// send_message_options: config options json string that contains following options
+///     {
+///         msg_type: String, // type of message to send
+///         msg_title: String, // message title (user notification)
+///         ref_msg_id: Option<String>, // If responding to a message, id of the message
+///     }
+///
+///
+/// cb: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+ */
+vcx_error_t vcx_connection_send_message(vcx_command_handle_t command_handle,
+                                        vcx_connection_handle_t connection_handle,
+                                        const char *msg,
+                                        const char *send_message_options,
+                                        void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *msg_id));
 
 /** Generate a signature for the specified data */
 vcx_error_t vcx_connection_sign_data(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, uint8_t const* data_raw, unsigned int data_len, void (*cb)(vcx_command_handle_t, vcx_error_t err, uint8_t const* signature_raw, unsigned int signature_len));

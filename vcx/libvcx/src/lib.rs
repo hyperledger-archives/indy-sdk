@@ -36,6 +36,7 @@ extern crate uuid;
 extern crate failure;
 
 extern crate rmp_serde;
+extern crate indy_sys;
 
 extern crate base64;
 
@@ -43,6 +44,8 @@ extern crate strum;
 #[macro_use]
 extern crate strum_macros;
 extern crate indy_sys;
+
+extern crate chrono;
 
 #[macro_use]
 pub mod utils;
