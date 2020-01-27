@@ -407,10 +407,11 @@ impl Node {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indy_utils::crypto::base64;
 
     #[test]
     fn node_deserialize_works_for_emtpy() {
-        assert_eq!(UntrustedRlp::new(&base64::decode("wYA=").unwrap()).as_list::<Node>().unwrap(),
+        assert_eq!(UntrustedRlp::new(&base64::decode(&"wYA=").unwrap()).as_list::<Node>().unwrap(),
                    vec![Node::Blank]);
     }
 
