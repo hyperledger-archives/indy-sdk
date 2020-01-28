@@ -7,8 +7,9 @@ use credential_def;
 use settings;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
-/// Create a new CredentialDef object that can create credential definitions on the ledger
+/// Create a new CredentialDef object and publish correspondent record on the ledger
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -36,7 +37,7 @@ use error::prelude::*;
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_create(command_handle: u32,
+pub extern fn vcx_credentialdef_create(command_handle: CommandHandle,
                                        source_id: *const c_char,
                                        credentialdef_name: *const c_char,
                                        schema_id: *const c_char,
@@ -44,7 +45,7 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
                                        tag: *const c_char,
                                        revocation_details: *const c_char,
                                        payment_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_handle: u32)>) -> u32 {
     info!("vcx_credentialdef_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -101,6 +102,8 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
 
 /// Create a new CredentialDef object that will be published by Endorser later.
 ///
+/// Note that CredentialDef can't be used for credential issuing until it will be published on the ledger.
+///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
@@ -130,7 +133,7 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: u32,
+pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: CommandHandle,
                                                      source_id: *const c_char,
                                                      credentialdef_name: *const c_char,
                                                      schema_id: *const c_char,
@@ -138,7 +141,7 @@ pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: u32,
                                                      tag: *const c_char,
                                                      revocation_details: *const c_char,
                                                      endorser: *const c_char,
-                                                     cb: Option<extern fn(xcommand_handle: u32, err: u32,
+                                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32,
                                                                           credentialdef_handle: u32,
                                                                           credentialdef_transaction: *const c_char,
                                                                           rev_reg_def_transaction: *const c_char,
@@ -217,9 +220,9 @@ pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_serialize(command_handle: u32,
+pub extern fn vcx_credentialdef_serialize(command_handle: CommandHandle,
                                           credentialdef_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_state: *const c_char)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_state: *const c_char)>) -> u32 {
     info!("vcx_credentialdef_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -265,9 +268,9 @@ pub extern fn vcx_credentialdef_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
+pub extern fn vcx_credentialdef_deserialize(command_handle: CommandHandle,
                                             credentialdef_data: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
+                                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_handle: u32)>) -> u32 {
     info!("vcx_credentialdef_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -306,9 +309,9 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32,
+pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: CommandHandle,
                                                 cred_def_handle: u32,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, cred_def_id: *const c_char)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, cred_def_id: *const c_char)>) -> u32 {
     info!("vcx_credentialdef_get_cred_def_id >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -340,7 +343,7 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Retrieve the txn associated with paying for the credential_def
+/// Get the payment transaction information generated when paying the ledger fee
 ///
 /// #param
 /// handle: credential_def handle that was provided during creation.  Used to access credential_def object.
@@ -350,18 +353,16 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32,
 /// example: {
 ///         "amount":25,
 ///         "inputs":[
-///             "pay:null:1_3FvPC7dzFbQKzfG",
-///             "pay:null:1_lWVGKc07Pyc40m6"
+///             "pay:null:1_3FvPC7dzFbQKzfG"
 ///         ],
 ///         "outputs":[
-///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
-///             {"recipient":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
+///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null}
 ///         ]
 ///     }
 #[no_mangle]
-pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
+pub extern fn vcx_credentialdef_get_payment_txn(command_handle: CommandHandle,
                                                 handle: u32,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, txn: *const c_char)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, txn: *const c_char)>) -> u32 {
     info!("vcx_credentialdef_get_payment_txn >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -428,7 +429,7 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
     }
 }
 
-/// Checks if credential definition is published on the Ledger and updates the the state
+/// Checks if credential definition is published on the Ledger and updates the state if it is.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -436,13 +437,16 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
 /// credentialdef_handle: Credentialdef handle that was provided during creation. Used to access credentialdef object
 ///
 /// cb: Callback that provides most current state of the credential definition and error status of request
+///     States:
+///         0 = Built
+///         1 = Published
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_update_state(command_handle: u32,
+pub extern fn vcx_credentialdef_update_state(command_handle: CommandHandle,
                                              credentialdef_handle: u32,
-                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credentialdef_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -483,13 +487,16 @@ pub extern fn vcx_credentialdef_update_state(command_handle: u32,
 /// credentialdef_handle: Credentialdef handle that was provided during creation. Used to access credentialdef object
 ///
 /// cb: Callback that provides most current state of the credential definition and error status of request
+///     States:
+///         0 = Built
+///         1 = Published
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_get_state(command_handle: u32,
+pub extern fn vcx_credentialdef_get_state(command_handle: CommandHandle,
                                           credentialdef_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credentialdef_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);

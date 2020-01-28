@@ -104,7 +104,7 @@ These functions check the message any state change and update the state attribut
     <tr>
       <th colspan="2">
           <a href="https://github.com/hyperledger/indy-sdk/blob/v1.3.1/vcx/libvcx/src/api/connection.rs#L357">
-              Checks the message any connection state change and updates the the state attribute.
+              Checks the message any connection state change and updates the  state attribute.
           </a>
       </th>
     <tr>

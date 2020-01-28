@@ -1,18 +1,21 @@
+use std::convert::Into;
+
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg, AdminRegisterForwardAgentConnection, HandleAdminMessage};
-use actors::agent::Agent;
-use actors::router::Router;
-use domain::a2a::*;
-use domain::config::WalletStorageConfig;
-use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, pairwise, pairwise::PairwiseInfo};
+use futures::future::Either;
 use serde_json;
-use std::convert::Into;
-use utils::futures::*;
-use actors::admin::Admin;
-use domain::admin_message::{ResAdminQuery};
+
+use crate::actors::{AddA2ARoute, AdminRegisterForwardAgentConnection, HandleA2AMsg, HandleAdminMessage};
+use crate::actors::admin::Admin;
+use crate::actors::agent::Agent;
+use crate::actors::router::Router;
+use crate::domain::a2a::*;
+use crate::domain::admin_message::ResAdminQuery;
+use crate::domain::config::WalletStorageConfig;
+use crate::domain::invite::ForwardAgentDetail;
+use crate::indy::{did, pairwise, pairwise::PairwiseInfo, WalletHandle};
+use crate::utils::futures::*;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ForwardAgentConnectionState {
@@ -22,25 +25,25 @@ pub struct ForwardAgentConnectionState {
 }
 
 pub struct ForwardAgentConnection {
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     their_did: String,
     their_verkey: String,
     my_verkey: String,
     state: ForwardAgentConnectionState,
     router: Addr<Router>,
-    admin: Addr<Admin>,
+    admin: Option<Addr<Admin>>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
 }
 
 impl ForwardAgentConnection {
-    pub fn create(wallet_handle: i32,
+    pub fn create(wallet_handle: WalletHandle,
                   their_did: String,
                   their_verkey: String,
                   router: Addr<Router>,
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig,
-                  admin: Addr<Admin>) -> BoxedFuture<(String, String), Error> {
+                  admin: Option<Addr<Admin>>) -> BoxedFuture<(String, String), Error> {
         debug!("ForwardAgentConnection::create >> {:?}, {:?}, {:?}, {:?}, {:?}",
                wallet_handle, their_did, their_verkey, forward_agent_detail, wallet_storage_config);
 
@@ -99,20 +102,24 @@ impl ForwardAgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
             })
             .and_then(move |(my_did, my_verkey, forward_agent_connection, admin)| {
-                admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(move |_| (my_did, my_verkey))
-                    .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into())
+                if let Some(admin) = admin {
+                    Either::A(admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
+                        .from_err()
+                        .map(move |_| (my_did, my_verkey))
+                        .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into()))
+                } else {
+                    Either::B(future::ok( (my_did, my_verkey)))
+                }
             })
             .into_box()
     }
 
-    pub fn restore(wallet_handle: i32,
+    pub fn restore(wallet_handle: WalletHandle,
                    their_did: String,
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
                    router: Addr<Router>,
-                   admin: Addr<Admin>) -> BoxedFuture<(), Error> {
+                   admin: Option<Addr<Admin>>) -> BoxedFuture<(), Error> {
         debug!("ForwardAgentConnection::restore >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, their_did, forward_agent_detail, wallet_storage_config);
 
@@ -155,7 +162,7 @@ impl ForwardAgentConnection {
                                    router.clone(),
                                    forward_agent_detail.clone(),
                                    wallet_storage_config.clone(),
-                                    admin.clone())
+                                   admin.clone())
                         .into_box()
                 } else {
                     ok!(())
@@ -187,10 +194,15 @@ impl ForwardAgentConnection {
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
             })
             .and_then(move |(forward_agent_connection, my_did, admin )| {
-                admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(|_| ())
-                    .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into())
+                match admin {
+                    Some(admin) => {
+                        Either::A(admin.send(AdminRegisterForwardAgentConnection(my_did.clone(), forward_agent_connection.clone().recipient()))
+                            .from_err()
+                            .map(|_| ())
+                            .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into()))
+                    },
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }
@@ -403,13 +415,14 @@ impl Handler<HandleAdminMessage> for ForwardAgentConnection {
 
 #[cfg(test)]
 mod tests {
-    use actors::ForwardA2AMsg;
+    use crate::actors::ForwardA2AMsg;
+    use crate::utils::tests::*;
+
     use super::*;
-    use utils::tests::*;
 
     #[test]
     fn forward_agent_connection_signup_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .and_then(|()| {
                     let e_wallet_handle = edge_wallet_setup().wait().unwrap();
@@ -437,13 +450,14 @@ mod tests {
                     assert_eq!(sender_verkey, pairwise_verkey);
                     e_wallet_handle
                 })
-                .map(|e_wallet_handle| ::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
+                .map(|e_wallet_handle|
+                    crate::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
         });
     }
 
     #[test]
     fn forward_agent_connection_create_agent_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .and_then(|()| {
                     let e_wallet_handle = edge_wallet_setup().wait().unwrap();
@@ -485,7 +499,7 @@ mod tests {
                             e_wallet_handle
                         })
                 })
-                .map(|e_wallet_handle| ::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
+                .map(|e_wallet_handle| crate::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
         });
     }
 }

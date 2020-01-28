@@ -1,11 +1,13 @@
 use serde_json::Value;
-use domain::protocol_type::ProtocolTypes;
+
+use crate::domain::protocol_type::ProtocolTypes;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     pub app: AppConfig,
     pub forward_agent: ForwardAgentConfig,
     pub server: ServerConfig,
+    pub server_admin: Option<ServerAdminConfig>,
     pub wallet_storage: WalletStorageConfig,
     pub protocol_type: Option<ProtocolTypes>,
     pub indy_runtime: Option<IndyRuntimeConfig>
@@ -28,9 +30,7 @@ pub struct ForwardAgentConfig {
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
     // Http application prefix
-    pub prefix: String,
-    // enable or disable http api for fetching information about agency status
-    pub enable_admin_api: Option<bool>
+    pub prefix: String
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -39,6 +39,14 @@ pub struct ServerConfig {
     pub addresses: Vec<String>,
     // Amount of http workers (instances of app). By default amount of logical CPU cores.
     pub workers: Option<usize>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ServerAdminConfig {
+    // enable or disable http api for fetching information about agency status
+    pub enabled: bool,
+    // List of ip:port to bind
+    pub addresses: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]

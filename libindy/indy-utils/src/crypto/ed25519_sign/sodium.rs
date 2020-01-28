@@ -78,7 +78,7 @@ pub fn vk_to_curve25519(pk: &PublicKey) -> Result<ed25519_box::PublicKey, IndyEr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::crypto::ed25519_box;
+    use crate::crypto::ed25519_box;
 
     #[test]
     fn signin_verify_works() {
