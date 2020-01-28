@@ -751,7 +751,8 @@ fn crypto_demo_works() {
     let (verify_receiver, verify_command_handle, verify_callback) = callback::_closure_to_cb_ec_bool();
     let (close_wallet_receiver, close_wallet_command_handle, close_wallet_callback) = callback::_closure_to_cb_ec();
 
-    let wallet_config = json!({"id": "wallet_1"}).to_string();
+    let wallet_name = "wallet_crypto_demo_works";
+    let wallet_config = json!({"id": wallet_name}).to_string();
 
     // 1. Create Wallet
     let err =
@@ -843,5 +844,5 @@ fn crypto_demo_works() {
     let res = close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
-    utils::test::cleanup_storage("wallet_1");
+    utils::test::cleanup_storage(wallet_name);
 }
