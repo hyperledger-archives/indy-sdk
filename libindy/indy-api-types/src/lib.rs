@@ -30,8 +30,16 @@ pub type CommandHandle = i32;
 pub const INVALID_COMMAND_HANDLE : CommandHandle = 0;
 
 pub type StorageHandle = i32;
+
+#[repr(transparent)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
+pub struct SearchHandle(pub i32);
+pub const INVALID_SEARCH_HANDLE : SearchHandle = SearchHandle(0);
+
+/*
 pub type SearchHandle = i32;
 pub const INVALID_SEARCH_HANDLE : SearchHandle = 0;
+*/
 
 pub mod domain;
 

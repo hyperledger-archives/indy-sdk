@@ -585,7 +585,7 @@ impl WalletStorage for PluggedStorage {
         let options: SearchOptions = serde_json::from_str(options.unwrap_or("{}"))
             .to_indy(IndyErrorKind::InvalidStructure, "Search options is malformed json")?;
 
-        let mut search_handle: i32 = -1;
+        let mut search_handle: SearchHandle = INVALID_SEARCH_HANDLE;
 
         let err = (self.search_records_handler)(self.handle,
                                                 type_.as_ptr(),
