@@ -6,7 +6,7 @@ use std::ptr;
 use libc::c_char;
 use serde_json;
 
-use indy_api_types::ErrorCode;
+use indy_api_types::{ErrorCode, SearchHandle, INVALID_SEARCH_HANDLE};
 use indy_api_types::wallet::*;
 use indy_api_types::errors::prelude::*;
 use crate::language;
@@ -57,7 +57,7 @@ impl Drop for ResourceGuard {
 #[derive(PartialEq, Debug)]
 struct PluggedStorageIterator {
     storage_handle: i32,
-    search_handle: i32,
+    search_handle: SearchHandle,
     options: SearchOptions,
     fetch_search_next_record_handler: WalletFetchSearchNextRecord,
     get_search_total_count_handler: WalletGetSearchTotalCount,
@@ -70,7 +70,7 @@ struct PluggedStorageIterator {
 }
 
 impl PluggedStorageIterator {
-    fn new(storage: &PluggedStorage, search_handle: i32, options: SearchOptions) -> Self {
+    fn new(storage: &PluggedStorage, search_handle: SearchHandle, options: SearchOptions) -> Self {
         Self {
             storage_handle: storage.handle,
             search_handle,
@@ -554,7 +554,7 @@ impl WalletStorage for PluggedStorage {
     }
 
     fn get_all(&self) -> IndyResult<Box<dyn StorageIterator>> {
-        let mut search_handle: i32 = -1;
+        let mut search_handle: SearchHandle = INVALID_SEARCH_HANDLE;
 
         let err = (self.search_all_records_handler)(self.handle, &mut search_handle);
 
