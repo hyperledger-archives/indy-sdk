@@ -1,6 +1,6 @@
 extern crate sodiumoxide;
 
-use indy_api_types::errors::prelude::*;
+use crate::indy_api_types::errors::prelude::*;
 use libc::size_t;
 
 use zeroize::Zeroize;

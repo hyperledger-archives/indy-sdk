@@ -11,8 +11,6 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
-extern crate serde_json;
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
@@ -782,6 +780,14 @@ impl Default for SearchOptions {
 }
 
 #[cfg(test)]
+#[macro_use]
+extern crate lazy_static;
+
+#[cfg(test)]
+#[macro_use]
+extern crate serde_json;
+
+#[cfg(test)]
 mod tests {
     use std::collections::HashMap;
     use std::fs;
@@ -790,9 +796,10 @@ mod tests {
     use indy_api_types::INVALID_WALLET_HANDLE;
 
     use indy_api_types::domain::wallet::KeyDerivationMethod;
-    use crate::utils::environment;
+    use indy_utils::environment;
     use indy_utils::inmem_wallet::InmemWallet;
-    use crate::utils::test;
+    use indy_utils::test;
+    use indy_utils::next_wallet_handle;
 
     use super::*;
 
