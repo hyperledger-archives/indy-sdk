@@ -150,7 +150,7 @@ impl DidDoc {
         
         for service in self.service.iter() {
             Url::parse(&service.service_endpoint)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported endpoint: {:?}", service.service_endpoint)))?;
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Invalid endpoint \"{:?}\", err: {:?}", service.service_endpoint, err)))?;
 
             service.recipient_keys
                 .iter()

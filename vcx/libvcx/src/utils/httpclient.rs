@@ -44,8 +44,8 @@ pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
     if !response.status().is_success() {
         let mut content = String::new();
         match response.read_to_string(&mut content) {
-            Ok(x) => info!("Request failed: {}", content),
-            Err(x) => info!("could not read response"),
+            Ok(_) => info!("Request failed: {}", content),
+            Err(_) => info!("could not read response"),
         };
         return Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("POST failed with: {}", content)));
     }

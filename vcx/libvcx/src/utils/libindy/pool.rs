@@ -27,7 +27,7 @@ pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> VcxResult<()> {
 
     match pool::create_pool_ledger_config(pool_name, Some(&pool_config))
         .wait() {
-        Ok(x) => Ok(()),
+        Ok(_) => Ok(()),
         Err(x) => if x.error_code != ErrorCode::PoolLedgerConfigAlreadyExistsError {
             Err(VcxError::from_msg(VcxErrorKind::UnknownLiibndyError, x))
         } else {

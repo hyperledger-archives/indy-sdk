@@ -26,7 +26,7 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
 
     match wallet::create_wallet(&config, &credentials)
         .wait() {
-        Ok(x) => Ok(()),
+        Ok(_) => Ok(()),
         Err(x) => if x.error_code != ErrorCode::WalletAlreadyExistsError {
             warn!("could not create wallet {}: {:?}", wallet_name, x.message);
             Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("could not create wallet {}: {:?}", wallet_name, x.message)))
@@ -154,9 +154,6 @@ pub fn import(config: &str) -> VcxResult<()> {
 
     settings::process_config_string(config, true)?;
 
-    let key = settings::get_config_value(settings::CONFIG_WALLET_KEY)
-        .or(Err(VcxError::from(VcxErrorKind::MissingWalletKey)))?;
-
     let name = settings::get_config_value(settings::CONFIG_WALLET_NAME)
         .or(Err(VcxError::from(VcxErrorKind::MissingWalletName)))?;
 
@@ -273,7 +270,6 @@ pub mod tests {
         let xtype = "type1";
         let id = "id1";
         let value = "value1";
-        let options = "{}";
 
         ::api::vcx::vcx_shutdown(true);
 
@@ -399,7 +395,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_add_new_record_with_no_tag";
 
         add_record(record_type, id, record, None).unwrap();
     }
@@ -411,7 +406,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_add_duplicate_record_fails";
 
         add_record(record_type, id, record, None).unwrap();
         let rc = add_record(record_type, id, record, None);
@@ -426,7 +420,6 @@ pub mod tests {
         let record_type = "Type";
         let record_type2 = "Type2";
         let id = "123";
-        let wallet_n = "test_add_duplicate_record_fails";
 
         add_record(record_type, id, record, None).unwrap();
         add_record(record_type2, id, record, None).unwrap();
@@ -443,7 +436,6 @@ pub mod tests {
             "retrieveValue": false,
             "retrieveTags": false
         }).to_string();
-        let wallet_n = "test_retrieve_missing_record_fails";
 
         let rc = get_record(record_type, id, &options);
         assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::WalletRecordNotFound);
@@ -457,7 +449,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_retrieve_record_success";
         let options = json!({
             "retrieveType": true,
             "retrieveValue": true,
@@ -488,7 +479,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_delete_record_success";
         let options = json!({
             "retrieveType": true,
             "retrieveValue": true,
@@ -508,7 +498,6 @@ pub mod tests {
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_update_record_value_fails_with_no_initial_record";
 
         let rc = update_record_value(record_type, id, record);
         assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::WalletRecordNotFound);
@@ -522,7 +511,6 @@ pub mod tests {
         let changed_record = "Record2";
         let record_type = "Type";
         let id = "123";
-        let wallet_n = "test_update_record_value_success";
         let options = json!({
             "retrieveType": true,
             "retrieveValue": true,

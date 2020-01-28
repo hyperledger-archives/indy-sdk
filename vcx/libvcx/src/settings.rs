@@ -157,11 +157,6 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
     Ok(error::SUCCESS.code_num)
 }
 
-fn validate_wallet_key(key: &str) -> VcxResult<u32> {
-    if key == UNINITIALIZED_WALLET_KEY { return Err(VcxError::from(VcxErrorKind::MissingWalletKey)); }
-    Ok(error::SUCCESS.code_num)
-}
-
 fn validate_optional_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind, closure: F) -> VcxResult<u32>
     where F: Fn(&str) -> Result<S, E> {
     if val.is_none() { return Ok(error::SUCCESS.code_num); }
@@ -189,7 +184,7 @@ pub fn test_indy_mode_enabled() -> bool {
 pub fn get_threadpool_size() -> usize {
     let size = match get_config_value(CONFIG_THREADPOOL_SIZE) {
         Ok(x) => x.parse::<usize>().unwrap_or(DEFAULT_THREADPOOL_SIZE),
-        Err(x) => DEFAULT_THREADPOOL_SIZE,
+        Err(_) => DEFAULT_THREADPOOL_SIZE,
     };
 
     if size > MAX_THREADPOOL_SIZE {
@@ -281,7 +276,7 @@ pub fn set_config_value(key: &str, value: &str) {
         .insert(key.to_string(), value.to_string());
 }
 
-pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>) -> String {
+pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used
     let mut config = json!({
         "id": wallet_name,
         "storage_type": wallet_type
@@ -293,7 +288,7 @@ pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, storage_c
     config.to_string()
 }
 
-pub fn get_wallet_credentials(storage_creds: Option<&str>) -> String {
+pub fn get_wallet_credentials(_storage_creds: Option<&str>) -> String { // TODO: storage_creds must be used?
     let key = get_config_value(CONFIG_WALLET_KEY).unwrap_or(UNINITIALIZED_WALLET_KEY.to_string());
     let mut credentials = json!({"key": key});
 
@@ -328,7 +323,7 @@ pub fn get_actors() -> Vec<Actors> {
     get_config_value(ACTORS)
         .and_then(|actors|
             ::serde_json::from_str(&actors)
-                .map_err(|err| VcxError::from(VcxErrorKind::InvalidOption))
+                .map_err(|_| VcxError::from(VcxErrorKind::InvalidOption))
         ).unwrap_or_else(|_| Actors::iter().collect())
 }
 
@@ -414,7 +409,7 @@ pub fn remove_file_if_exists(filename: &str) {
     trace!("remove_file_if_exists >>> filename: {}", filename);
     if Path::new(filename).exists() {
         match fs::remove_file(filename) {
-            Ok(t) => (),
+            Ok(_) => (),
             Err(e) => println!("Unable to remove file: {:?}", e)
         }
     }
@@ -547,8 +542,6 @@ pub mod tests {
     #[test]
     fn test_validate_config_failures() {
         let invalid = "invalid";
-        let valid_did = DEFAULT_DID;
-        let valid_ver = DEFAULT_VERKEY;
 
         let mut config: HashMap<String, String> = HashMap::new();
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::MissingWalletKey);

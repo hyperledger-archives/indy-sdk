@@ -63,7 +63,7 @@ pub mod tests {
     use futures::Future;
     use indy_sys::WalletHandle;
 
-    pub fn create_key(wallet_handle: WalletHandle, seed: Option<&str>) -> String {
+    pub fn create_key(_wallet_handle: WalletHandle, seed: Option<&str>) -> String {
         let key_config = json!({"seed": seed}).to_string();
         indy::crypto::create_key(::utils::libindy::wallet::get_wallet_handle(), Some(&key_config)).wait().unwrap()
     }

@@ -13,7 +13,6 @@ use settings;
 use error::prelude::*;
 
 static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "101":2, "10001":0, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":2, "114":2, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
-static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WalletInfo {
@@ -58,7 +57,7 @@ impl fmt::Display for WalletInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match ::serde_json::to_string(&self) {
             Ok(s) => write!(f, "{}", s),
-            Err(e) => write!(f, "null"),
+            Err(_) => write!(f, "null"),
         }
     }
 }
@@ -267,7 +266,7 @@ pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, Optio
         let (refund, inputs, refund_address) = inputs(txn_price)?;
         let output = outputs(refund, &refund_address, None, None)?;
 
-        let (fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
+        let (_fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
 
         let payment = PaymentTxn::from_parts(inputs, output, txn_price, false);
         Ok((Some(payment), txn_response))
@@ -346,7 +345,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
         None => None
     };
 
-    let (request, payment_method) =
+    let (request, _payment_method) =
         payments::build_payment_req(get_wallet_handle(), Some(&my_did), &inputs_json, &outputs_json, extra.as_ref().map(String::as_str))
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
@@ -495,11 +494,11 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         let tokens_per_address: u64 = tokens_per_address.unwrap_or(50_000_000_000);
         let mut addresses = Vec::new();
 
-        for n in 0..number_of_addresses {
+        for _n in 0..number_of_addresses {
             addresses.push(create_address(seed.clone()).unwrap())
         }
 
-        let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)|
+        let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(_i, payment_address)|
             json!( { "recipient": payment_address, "amount": tokens_per_address } )
         ).collect();
         let outputs = serde_json::to_string(&mint).unwrap();
@@ -511,7 +510,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
 
         match ::utils::libindy::ledger::libindy_submit_request(&sign4) {
-            Ok(x) => (),
+            Ok(_) => (),
             Err(x) => println!("failure minting tokens: {}", x),
         };
     }
@@ -557,12 +556,14 @@ pub fn add_new_did(role: Option<&str>) -> (String, String) {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 
     pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>, use_zero_fees: bool) {
         let fees = if use_zero_fees { ZERO_FEES } else { DEFAULT_FEES };
         mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, Some(fees.to_string()), None).unwrap();
     }
 
+    #[allow(dead_code)]
     fn get_my_balance() -> u64 {
         let info: WalletInfo = get_wallet_token_info().unwrap();
         info.balance
@@ -593,7 +594,7 @@ pub mod tests {
     fn test_get_addresses() {
         init!("true");
         create_address(None).unwrap();
-        let addresses = list_addresses().unwrap();
+        let _addresses = list_addresses().unwrap();
     }
 
     #[test]
@@ -752,7 +753,7 @@ pub mod tests {
 
         // Schema
         let create_schema_req = ::utils::constants::SCHEMA_CREATE_JSON.to_string();
-        let (payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
+        let (_payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
         assert_eq!(response, SUBMIT_SCHEMA_RESPONSE.to_string());
     }
 
@@ -764,7 +765,7 @@ pub mod tests {
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
         let start_wallet = get_wallet_token_info().unwrap();
 
-        let (payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
+        let (payment, _response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
 
         let end_wallet = get_wallet_token_info().unwrap();
 
@@ -875,7 +876,7 @@ pub mod tests {
         let end_wallet = get_wallet_token_info().unwrap();
         assert_eq!(start_wallet.balance - 2, end_wallet.balance);
 
-        let rc = _submit_fees_request(&req, &inputs, &output);
+        let _rc = _submit_fees_request(&req, &inputs, &output);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -892,9 +893,9 @@ pub mod tests {
         assert_eq!(remainder, remaining_balance);
 
         let output = outputs(remainder, &refund_address, None, None).unwrap();
-        let expected_output: Vec<Output> = ::serde_json::from_str(&format!(r#"[{{"amount":{},"recipient":"{}"}}]"#, remaining_balance, refund_address)).unwrap();
+        let _expected_output: Vec<Output> = ::serde_json::from_str(&format!(r#"[{{"amount":{},"recipient":"{}"}}]"#, remaining_balance, refund_address)).unwrap();
 
-        let rc = _submit_fees_request(&req, &inputs, &output).unwrap();
+        let _rc = _submit_fees_request(&req, &inputs, &output).unwrap();
         let end_wallet = get_wallet_token_info().unwrap();
 
         assert_eq!(end_wallet.balance, remaining_balance);

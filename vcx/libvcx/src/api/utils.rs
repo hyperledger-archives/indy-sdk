@@ -131,7 +131,7 @@ pub extern fn vcx_agent_update_info(command_handle: CommandHandle,
 
     spawn(move || {
         match messages::agent_utils::update_agent_info(&agent_info.id, &agent_info.value) {
-            Ok(x) => {
+            Ok(_) => {
                 trace!("vcx_agent_update_info_cb(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
                 cb(command_handle, error::SUCCESS.code_num);
@@ -465,7 +465,7 @@ pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
 
     spawn(move || {
         match ::utils::libindy::ledger::endorse_transaction(&transaction) {
-            Ok(x) => {
+            Ok(_) => {
                 trace!("vcx_endorse_transaction(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
 
@@ -563,7 +563,7 @@ mod tests {
         let c_json = CString::new(json_string).unwrap().into_raw();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
-        let result = vcx_agent_update_info(cb.command_handle, c_json, Some(cb.get_callback()));
+        let _result = vcx_agent_update_info(cb.command_handle, c_json, Some(cb.get_callback()));
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 

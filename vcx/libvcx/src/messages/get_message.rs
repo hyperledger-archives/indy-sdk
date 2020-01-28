@@ -288,13 +288,13 @@ impl Message {
             let decrypted_payload = match payload {
                 MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
                     .map(Payloads::PayloadV1),
-                MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
+                MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&payload)
                     .map(Payloads::PayloadV2)
             };
 
             if let Ok(decrypted_payload) = decrypted_payload {
                 new_message.decrypted_payload = ::serde_json::to_string(&decrypted_payload).ok();
-            } else if let Ok(decrypted_payload) = self._decrypt_v3_message(vk) {
+            } else if let Ok(decrypted_payload) = self._decrypt_v3_message() {
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(decrypted_payload)).ok()
             } else {
                 new_message.decrypted_payload = ::serde_json::to_string(&json!(null)).ok();
@@ -304,14 +304,14 @@ impl Message {
         new_message
     }
 
-    fn _decrypt_v3_message(&self, vk: &str) -> VcxResult<::messages::payload::PayloadV1> {
+    fn _decrypt_v3_message(&self) -> VcxResult<::messages::payload::PayloadV1> {
         use v3::messages::a2a::A2AMessage;
         use v3::utils::encryption_envelope::EncryptionEnvelope;
         use ::issuer_credential::{CredentialOffer, CredentialMessage};
         use ::messages::payload::{PayloadTypes, PayloadV1, PayloadKinds};
         use std::convert::TryInto;
 
-        let a2a_message = EncryptionEnvelope::open(vk, self.payload()?)?;
+        let a2a_message = EncryptionEnvelope::open(self.payload()?)?;
 
         let (kind, msg) = match a2a_message {
             A2AMessage::PresentationRequest(presentation_request) => {
@@ -438,7 +438,6 @@ mod tests {
     fn test_parse_get_connection_messages_response() {
         init!("true");
 
-        let json: serde_json::Value = rmp_serde::from_slice(GET_ALL_MESSAGES_RESPONSE).unwrap();
         let result = GetMessagesBuilder::parse_download_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 1)
     }
@@ -450,12 +449,6 @@ mod tests {
             to: "3Xk9vxK9jeiqVaCPrEQ8bg".to_string(),
             status_code: "MDS-101".to_string(),
             last_updated_date_time: "2017-12-14T03:35:20.444Z[UTC]".to_string(),
-        };
-
-        let delivery_details2 = DeliveryDetails {
-            to: "3Xk9vxK9jeiqVaCPrEQ8bg".to_string(),
-            status_code: "MDS-101".to_string(),
-            last_updated_date_time: "2017-12-14T03:35:20.500Z[UTC]".to_string(),
         };
 
         let msg1 = Message {
@@ -491,7 +484,7 @@ mod tests {
         let bundle = Bundled::create(data).encode().unwrap();
         let message = crypto::prep_msg(&my_vk, &verkey, &bundle[..]).unwrap();
 
-        let result = GetMessagesBuilder::create().parse_response(message).unwrap();
+        let _result = GetMessagesBuilder::create().parse_response(message).unwrap();
     }
 
     #[cfg(feature = "agency")]
@@ -503,7 +496,7 @@ mod tests {
 
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (faber, alice) = ::connection::tests::create_connected_connections();
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
 
         let (_, cred_def_handle) = ::credential_def::tests::create_cred_def_real(false);
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;

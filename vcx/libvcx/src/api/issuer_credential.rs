@@ -820,7 +820,6 @@ mod tests {
     static DEFAULT_CREDENTIAL_NAME: &str = "Credential Name Default";
     static DEFAULT_DID: &str = "8XFh8yBzrpJQmNyZzgoTqB";
     static DEFAULT_ATTR: &str = "{\"attr\":\"value\"}";
-    static DEFAULT_SCHEMA_SEQ_NO: u32 = 32;
 
     fn issuer_credential_state_accepted() -> String {
         json!({
@@ -1000,7 +999,6 @@ mod tests {
     fn test_vcx_issuer_send_a_credential() {
         init!("true");
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
-        let test_name = "test_vcx_issuer_send_a_credential";
         let handle = issuer_credential::from_string(&issuer_credential_state_accepted()).unwrap();
 
         // create connection
@@ -1021,7 +1019,6 @@ mod tests {
     fn test_vcx_issuer_get_credential_msg() {
         init!("true");
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
-        let test_name = "test_vcx_issuer_get_credential_msg";
         let handle = issuer_credential::from_string(&issuer_credential_state_accepted()).unwrap();
 
         // create connection
