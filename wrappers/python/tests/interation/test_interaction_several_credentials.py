@@ -1,4 +1,5 @@
 import json
+
 import pytest
 import time
 
@@ -8,6 +9,12 @@ from pprint import pformat
 from indy import ledger, anoncreds, wallet, blob_storage
 
 from tests.ledger.test_submit_request import ensure_previous_request_applied
+
+import logging
+
+
+# logging.getLogger("tests").setLevel(logging.ERROR)
+# logging.getLogger("indy").setLevel(logging.ERROR)
 
 
 def ppjson(dumpit, elide_to: int = None) -> str:
@@ -29,6 +36,7 @@ class Ink(IntEnum):
     MAGENTA = 35
     CYAN = 36
     WHITE = 37
+
 
     def __call__(self, message: str) -> str:
         return '\033[{}m{}\033[0m'.format(self.value, message)
@@ -230,7 +238,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
             revoc_reg_def_json
         )
 
-    #  VERIFYING Prover Credentials (Alex, Olga) when issuer has not revoked any
+    # VERIFYING Prover Credentials (Alex, Olga) when issuer has not revoked any
     time.sleep(2)
     to = int(time.time())
 
@@ -263,6 +271,17 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
                 "non_revoked": {"to": to}
             }
         )
+    }
+
+    rev_states = {
+        'Alex': {
+            'timestamp': 0,
+            'value': ''
+        },
+        'Olga': {
+            'timestamp': 0,
+            'value': ''
+        }
     }
 
     cred_info = {}
@@ -318,13 +337,17 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
         )
 
         # Prover Creates Revocation State
-        rev_state_json = await anoncreds.create_revocation_state(
+        rev_state_from_timestamp_to_now_json = await anoncreds.create_revocation_state(
             blob_storage_reader_cfg_handle,
             revoc_reg_def_json,
             revoc_reg_delta_json,
             timestamp,
             cred_info[proof_name]['cred_rev_id']
         )
+        rev_states[proof_name] = {
+            'timestamp': timestamp,
+            'value': rev_state_from_timestamp_to_now_json,
+        }
 
         # Prover Gets Schema from Ledger
         get_schema_request = await ledger.build_get_schema_request(prover_did, str(cred_info[proof_name]["schema_id"]))
@@ -357,7 +380,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
 
         schemas_json = json.dumps({schema_id: json.loads(schema_json)})
         credential_defs_json = json.dumps({cred_def_id: json.loads(cred_def_json)})
-        revoc_states_json = json.dumps({rev_reg_id: {timestamp: json.loads(rev_state_json)}})
+        revoc_states_json = json.dumps({rev_reg_id: {timestamp: json.loads(rev_state_from_timestamp_to_now_json)}})
 
         proof_json = await anoncreds.prover_create_proof(
             prover_wallet_handle,
@@ -434,6 +457,10 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
         print(Ink.GREEN('.. Proof for {} before any revocations verifies as {}'.format(proof_name, verified)))
         assert verified
 
+    proof_req_expected_result = {
+        'Alex': False,
+        'Olga': True
+    }
     # Issuer revokes creds for all but Olga, one by one, creating and verifying proofs for Alex and Olga each time
     print(Ink.CYAN('\n\nIssuer revoking creds one by one'))
     for i in range(3):
@@ -467,7 +494,6 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
             time.sleep(2)
             fro = to
             to = int(time.time())
-
             print(
                 '.. .. after sleeping 2 seconds, doing {} for interval [{}, {}]'.format(
                     proof_name,
@@ -475,13 +501,19 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
                     to
                 )
             )
+            #  There two possible ways:
+
+            #  1) Prover creates updates previously created revocation state
             # Prover Gets RevocationRegistryDelta from Ledger
+            #  from: when last prover revocation state were created
+            #  to: to
             get_revoc_reg_delta_request = await ledger.build_get_revoc_reg_delta_request(
                 prover_did,
                 rev_reg_def_id,
-                fro,
+                rev_states[proof_name]['timestamp'],
                 to
             )
+
             get_revoc_reg_delta_response = await ensure_previous_request_applied(
                 pool_handle,
                 get_revoc_reg_delta_request,
@@ -491,14 +523,51 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
                 get_revoc_reg_delta_response
             )
 
-            # Prover Creates Revocation State
-            rev_state_json = await anoncreds.create_revocation_state(
+            # Prover Updates previously created Revocation State
+            rev_state_from_timestamp_to_now_json = await anoncreds.update_revocation_state(
                 blob_storage_reader_cfg_handle,
+                rev_states[proof_name]['value'],
                 revoc_reg_def_json,
                 revoc_reg_delta_json,
                 timestamp,
                 cred_rev_id[0 if proof_name == 'Alex' else 3]  # Alex, then Olga
             )
+
+            # Prover creates revocation state from scratch
+            # from: 0 or time of credential issuance
+            # to: to
+            # Prover Gets RevocationRegistryDelta from Ledger
+            get_revoc_reg_delta_request_2 = await ledger.build_get_revoc_reg_delta_request(
+                prover_did,
+                rev_reg_def_id,
+                0,
+                to
+            )
+
+            get_revoc_reg_delta_response_2 = await ensure_previous_request_applied(
+                pool_handle,
+                get_revoc_reg_delta_request_2,
+                lambda response: response['result']['seqNo'] is not None
+            )
+            (rev_reg_id, revoc_reg_delta_json_2, timestamp_2) = await ledger.parse_get_revoc_reg_delta_response(
+                get_revoc_reg_delta_response_2
+            )
+
+            # Prover creates Revocation State
+            rev_state_from_0_to_now_json = await anoncreds.create_revocation_state(
+                blob_storage_reader_cfg_handle,
+                revoc_reg_def_json,
+                revoc_reg_delta_json_2,
+                timestamp_2,
+                cred_rev_id[0 if proof_name == 'Alex' else 3]  # Alex, then Olga
+            )
+
+            rev_states[proof_name] = {
+                'timestamp': timestamp,
+                'value': rev_state_from_timestamp_to_now_json # rev_state_from_0_to_now_json must also work
+            }
+
+            revoc_states_json = json.dumps({rev_reg_id: {timestamp: json.loads(rev_states[proof_name]['value'])}})
 
             # Prover Creates Proof for Proof Request
             requested_credentials_json = json.dumps(
@@ -519,7 +588,6 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
                     }
                 }
             )
-            revoc_states_json = json.dumps({rev_reg_id: {timestamp: json.loads(rev_state_json)}})
 
             proof_json = await anoncreds.prover_create_proof(
                 prover_wallet_handle,
@@ -530,6 +598,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
                 credential_defs_json,
                 revoc_states_json
             )
+
             proof = json.loads(proof_json)
             identifier = proof['identifiers'][0]
 
@@ -567,6 +636,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
                 revoc_ref_defs_json,
                 revoc_regs_json
             )
+            assert proof_req_expected_result[proof_name] == verified
             print(
                 Ink.GREEN(
                     '.. .. Proof for {} after {} revocation verifies as: {}'.format(
@@ -577,6 +647,6 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand_4_creds(
                 )
             )
 
-    #  Close and Delete Prover Wallet
+    # Close and Delete Prover Wallet
     await wallet.close_wallet(prover_wallet_handle)
     await wallet.delete_wallet(prover_wallet_config, credentials)
