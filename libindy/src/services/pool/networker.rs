@@ -9,6 +9,7 @@ use indy_api_types::errors::prelude::*;
 use crate::services::pool::events::*;
 use crate::services::pool::types::*;
 use indy_utils::sequence;
+use indy_utils::crypto::base64;
 
 use super::time::Duration;
 
@@ -391,7 +392,7 @@ pub mod networker_tests {
 
     use crate::domain::pool::{MAX_REQ_PER_POOL_CON, POOL_ACK_TIMEOUT, POOL_CON_ACTIVE_TO, POOL_REPLY_TIMEOUT};
     use crate::services::pool::tests::nodes_emulator;
-    use crate::utils::crypto::ed25519_sign;
+    use indy_utils::crypto::ed25519_sign;
 
     use super::*;
     use rust_base58::base58::FromBase58;

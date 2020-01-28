@@ -605,10 +605,8 @@ mod tests {
     }
 
     pub mod nodes_emulator {
-        extern crate sodiumoxide;
-
         use rust_base58::{ToBase58, FromBase58};
-        use crate::utils::crypto::ed25519_sign;
+        use indy_utils::crypto::ed25519_sign;
 
         use super::*;
 
@@ -686,8 +684,7 @@ mod tests {
         }
 
         pub fn start(gt: &mut NodeTransactionV1) -> zmq::Socket {
-            let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let (vk, sk) = (ed25519_sign::PublicKey::from_slice(&vk[..]).unwrap(), ed25519_sign::SecretKey::from_slice(&sk[..]).unwrap());
+            let (vk, sk) = ed25519_sign::create_key_pair_for_signature(None).unwrap();
             let pkc = ed25519_sign::vk_to_curve25519(&vk).expect("Invalid pkc");
             let skc = ed25519_sign::sk_to_curve25519(&sk).expect("Invalid skc");
             let ctx = zmq::Context::new();
