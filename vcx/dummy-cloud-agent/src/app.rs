@@ -3,10 +3,10 @@ use actix_web::*;
 use actix_web::web::Data;
 use bytes::Bytes;
 
-use actors::{ForwardA2AMsg, GetEndpoint};
-use actors::admin::Admin;
-use actors::forward_agent::ForwardAgent;
-use domain::config::{AppConfig, ServerConfig};
+use crate::actors::{ForwardA2AMsg, GetEndpoint};
+use crate::actors::admin::Admin;
+use crate::actors::forward_agent::ForwardAgent;
+use crate::domain::config::{AppConfig, ServerConfig};
 
 pub struct AppData {
     pub forward_agent: Addr<ForwardAgent>,
@@ -42,7 +42,7 @@ pub fn start_app_server(server_config: ServerConfig, app_config: AppConfig, forw
 }
 
 
-fn _get_endpoint_details(state: Data<AppData>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn _get_endpoint_details(state: Data<AppData>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     let f = state.forward_agent
         .send(GetEndpoint {})
         .from_err()
@@ -53,7 +53,7 @@ fn _get_endpoint_details(state: Data<AppData>) -> Box<Future<Item=HttpResponse, 
     Box::new(f)
 }
 
-fn _forward_message(state: Data<AppData>, stream: web::Payload) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn _forward_message(state: Data<AppData>, stream: web::Payload) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     let f = stream.map_err(Error::from)
         .fold(web::BytesMut::new(), move |mut body, chunk| {
             body.extend_from_slice(&chunk);

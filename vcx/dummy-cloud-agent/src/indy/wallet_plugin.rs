@@ -1,8 +1,10 @@
-use indyrs::{ErrorCode};
 use std::ffi::CString;
+
+use indyrs::ErrorCode;
 use libc::c_char;
 use serde_json::Value;
-use utils::dyn_lib::load_lib;
+
+use crate::utils::dyn_lib::load_lib;
 
 pub fn load_storage_library(library: &str, initializer: &str) -> Result<libloading::Library, String> {
     debug!("Loading storage plugin '{:}' as dynamic library.", library);
@@ -90,8 +92,9 @@ pub fn serialize_storage_plugin_configuration(storage_type: &str,
 
 #[cfg(test)]
 mod tests {
+    use crate::domain::config::WalletStorageConfig;
+
     use super::*;
-    use domain::config::WalletStorageConfig;
 
     #[test]
     fn should_load_custom_storage_settings_from_config() {

@@ -37,8 +37,8 @@ fn anoncreds_demo_works() {
 
     let (issuer_create_wallet_receiver, issuer_create_wallet_command_handle, issuer_create_wallet_callback) = callback::_closure_to_cb_ec();
     let (prover_create_wallet_receiver, prover_create_wallet_command_handle, prover_create_wallet_callback) = callback::_closure_to_cb_ec();
-    let (issuer_open_wallet_receiver, issuer_open_wallet_command_handle, issuer_open_wallet_callback) = callback::_closure_to_cb_ec_i32();
-    let (prover_open_wallet_receiver, prover_open_wallet_command_handle, prover_open_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (issuer_open_wallet_receiver, issuer_open_wallet_command_handle, issuer_open_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
+    let (prover_open_wallet_receiver, prover_open_wallet_command_handle, prover_open_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
     let (issuer_create_schema_receiver, issuer_create_schema_command_handle, issuer_create_schema_callback) = callback::_closure_to_cb_ec_string_string();
     let (issuer_create_credential_definition_receiver, issuer_create_credential_definition_command_handle, issuer_create_credential_definition_callback) = callback::_closure_to_cb_ec_string_string();
     let (issuer_create_credential_offer_receiver, issuer_create_credential_offer_command_handle, issuer_create_credential_offer_callback) = callback::_closure_to_cb_ec_string();
@@ -489,8 +489,8 @@ fn ledger_demo_works() {
     let (get_nym_receiver, get_nym_command_handle, get_nym_callback) = callback::_closure_to_cb_ec_string();
     let (create_my_wallet_receiver, create_my_wallet_command_handle, create_my_wallet_callback) = callback::_closure_to_cb_ec();
     let (create_their_wallet_receiver, create_their_wallet_command_handle, create_their_wallet_callback) = callback::_closure_to_cb_ec();
-    let (open_my_wallet_receiver, open_my_wallet_command_handle, open_my_wallet_callback) = callback::_closure_to_cb_ec_i32();
-    let (open_their_wallet_receiver, open_their_wallet_command_handle, open_their_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (open_my_wallet_receiver, open_my_wallet_command_handle, open_my_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
+    let (open_their_wallet_receiver, open_their_wallet_command_handle, open_their_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
     let (create_and_store_my_did_receiver, create_and_store_my_did_command_handle, create_and_store_my_did_callback) = callback::_closure_to_cb_ec_string_string();
     let (create_and_store_their_did_receiver, create_and_store_their_did_command_handle, create_and_store_their_did_callback) = callback::_closure_to_cb_ec_string_string();
     let (store_their_did_receiver, store_their_did_command_handle, store_their_did_callback) = callback::_closure_to_cb_ec();
@@ -745,7 +745,7 @@ fn crypto_demo_works() {
     Setup::empty();
 
     let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = callback::_closure_to_cb_ec();
-    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
     let (create_and_store_did_receiver, create_and_store_did_command_handle, create_and_store_did_callback) = callback::_closure_to_cb_ec_string_string();
     let (sign_receiver, sign_command_handle, sign_callback) = callback::_closure_to_cb_ec_vec_u8();
     let (verify_receiver, verify_command_handle, verify_callback) = callback::_closure_to_cb_ec_bool();

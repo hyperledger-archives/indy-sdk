@@ -16,6 +16,7 @@ use settings;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
 lazy_static! {
     static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
@@ -27,12 +28,8 @@ pub fn set_libindy_rc(rc: u32) { NEXT_LIBINDY_RC.lock().unwrap().push(rc as i32)
 
 static COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
-pub fn next_i32_command_handle() -> i32 {
-    (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
-}
-
-pub fn next_u32_command_handle() -> u32 {
-    (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32
+pub fn next_command_handle() -> CommandHandle {
+    (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as CommandHandle
 }
 
 pub fn init_pool() -> VcxResult<()> {
@@ -64,8 +61,9 @@ pub fn init_pool() -> VcxResult<()> {
 pub mod tests {
     use super::*;
     use futures::Future;
+    use indy_sys::WalletHandle;
 
-    pub fn create_key(wallet_handle: i32, seed: Option<&str>) -> String {
+    pub fn create_key(wallet_handle: WalletHandle, seed: Option<&str>) -> String {
         let key_config = json!({"seed": seed}).to_string();
         indy::crypto::create_key(::utils::libindy::wallet::get_wallet_handle(), Some(&key_config)).wait().unwrap()
     }
@@ -81,7 +79,7 @@ pub mod tests {
         pub struct Setup {
             pub name: String,
             pub wallet_config: String,
-            pub wallet_handle: i32,
+            pub wallet_handle: indy::WalletHandle,
             pub key: String,
         }
 
@@ -102,7 +100,7 @@ pub mod tests {
 
         impl Drop for Setup {
             fn drop(&mut self) {
-                if self.wallet_handle != 0 {
+                if self.wallet_handle.0 != 0 {
                     indy::wallet::close_wallet(self.wallet_handle).wait().unwrap();
                     indy::wallet::delete_wallet(&self.wallet_config, WALLET_CREDENTIALS).wait().unwrap();
                 }
