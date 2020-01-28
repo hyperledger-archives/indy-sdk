@@ -8,8 +8,8 @@ use indy_wallet::{RecordOptions, WalletService};
 
 use std::rc::Rc;
 use std::str;
-use crate::utils::crypto::base64;
-use crate::utils::crypto::chacha20poly1305_ietf;
+use indy_utils::crypto::base64;
+use indy_utils::crypto::chacha20poly1305_ietf;
 use crate::domain::crypto::combo_box::ComboBox;
 use indy_api_types::WalletHandle;
 
