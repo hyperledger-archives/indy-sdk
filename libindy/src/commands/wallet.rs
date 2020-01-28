@@ -8,8 +8,8 @@ use indy_api_types::domain::wallet::{Config, Credentials, ExportConfig, KeyConfi
 use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
 use indy_wallet::{KeyDerivationData, WalletService, Metadata};
-use crate::utils::crypto::{chacha20poly1305_ietf, randombytes};
-use crate::utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
+use indy_utils::crypto::{chacha20poly1305_ietf, randombytes};
+use indy_utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
 use indy_api_types::{WalletHandle, CallbackHandle};
 use rust_base58::ToBase58;
 
