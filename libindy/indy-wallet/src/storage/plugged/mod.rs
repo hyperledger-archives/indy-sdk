@@ -92,7 +92,7 @@ impl StorageIterator for PluggedStorageIterator {
         let mut record_handle = -1;
 
         let err = (self.fetch_search_next_record_handler)(self.storage_handle,
-                                                          self.search_handle,
+                                                          self.search_handle.0,
                                                           &mut record_handle);
 
         if err == ErrorCode::WalletItemNotFound {
@@ -191,7 +191,7 @@ impl StorageIterator for PluggedStorageIterator {
 
         if self.options.retrieve_total_count {
             let err = (self.get_search_total_count_handler)(self.storage_handle,
-                                                            self.search_handle,
+                                                            self.search_handle.0,
                                                             &mut total_count);
 
             if err != ErrorCode::Success {
@@ -207,7 +207,7 @@ impl StorageIterator for PluggedStorageIterator {
 
 impl Drop for PluggedStorageIterator {
     fn drop(&mut self) {
-        (self.free_search_handler)(self.storage_handle, self.search_handle);
+        (self.free_search_handler)(self.storage_handle, self.search_handle.0);
     }
 }
 
@@ -556,7 +556,7 @@ impl WalletStorage for PluggedStorage {
     fn get_all(&self) -> IndyResult<Box<dyn StorageIterator>> {
         let mut search_handle: SearchHandle = INVALID_SEARCH_HANDLE;
 
-        let err = (self.search_all_records_handler)(self.handle, &mut search_handle);
+        let err = (self.search_all_records_handler)(self.handle, &mut search_handle.0);
 
         if err != ErrorCode::Success {
             return Err(err.into());
@@ -591,7 +591,7 @@ impl WalletStorage for PluggedStorage {
                                                 type_.as_ptr(),
                                                 query.as_ptr(),
                                                 options_cstr.as_ptr(),
-                                                &mut search_handle);
+                                                &mut search_handle.0);
 
         if err != ErrorCode::Success {
             return Err(err.into());
