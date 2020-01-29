@@ -185,7 +185,7 @@ mod tests {
 // Should be come not needed as the transition is complete
 //**************************************
 
-fn init_callback<T>(closure: T, map: &Mutex<HashMap<CommandHandle, T>>) -> (CommandHandle) {
+fn init_callback<T>(closure: T, map: &Mutex<HashMap<CommandHandle, T>>) -> CommandHandle {
     let command_handle = next_command_handle();
     {
         let mut callbacks = map.lock().unwrap();
