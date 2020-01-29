@@ -123,7 +123,7 @@ impl CommandExecutor {
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
                 let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
-                let cache_command_executor = CacheCommandExecutor::new(wallet_service.clone());
+                let cache_command_executor = CacheCommandExecutor::new(crypto_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone());
 
                 async fn _exec_cmd(cmd: Option<Command>,
                                    anoncreds_command_executor: &AnoncredsCommandExecutor,
@@ -181,7 +181,7 @@ impl CommandExecutor {
                         }
                         Some(Command::Cache(cmd)) => {
                             debug!("CacheCommand command received");
-                            cache_command_executor.execute(cmd);
+                            cache_command_executor.execute(cmd).await;
                         }
                         Some(Command::Exit) => {
                             debug!("Exit command received");
