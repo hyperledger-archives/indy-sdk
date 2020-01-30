@@ -57,7 +57,7 @@ pub struct FinishedState {
 }
 
 impl From<(InitialState, PresentationRequest, u32)> for PresentationRequestSentState {
-    fn from((state, presentation_request, connection_handle): (InitialState, PresentationRequest, u32)) -> Self {
+    fn from((_state, presentation_request, connection_handle): (InitialState, PresentationRequest, u32)) -> Self {
         trace!("transit state from InitialState to PresentationRequestSentState");
         PresentationRequestSentState { connection_handle, presentation_request }
     }
@@ -111,10 +111,10 @@ impl VerifierSM {
 
         for (uid, message) in messages {
             match self.state {
-                VerifierState::Initiated(ref state) => {
+                VerifierState::Initiated(_) => {
                     // do not process message
                 }
-                VerifierState::PresentationRequestSent(ref state) => {
+                VerifierState::PresentationRequestSent(_) => {
                     match message {
                         A2AMessage::Presentation(presentation) => {
                             if presentation.from_thread(&self.thread_id()) {
@@ -134,7 +134,7 @@ impl VerifierSM {
                         _ => {}
                     }
                 }
-                VerifierState::Finished(ref state) => {
+                VerifierState::Finished(_) => {
                     // do not process message
                 }
             };
@@ -196,7 +196,7 @@ impl VerifierSM {
                     VerifierMessages::PresentationRejectReceived(problem_report) => {
                         VerifierState::Finished((state, problem_report).into())
                     }
-                    VerifierMessages::PresentationProposalReceived(presentation_proposal) => { // TODO: handle Presentation Proposal
+                    VerifierMessages::PresentationProposalReceived(_) => { // TODO: handle Presentation Proposal
                         let problem_report =
                             ProblemReport::create()
                                 .set_comment(String::from("PresentationProposal is not supported"))
@@ -259,8 +259,8 @@ impl VerifierSM {
     pub fn presentation_request_data(&self) -> VcxResult<&PresentationRequestData> {
         match self.state {
             VerifierState::Initiated(ref state) => Ok(&state.presentation_request_data),
-            VerifierState::PresentationRequestSent(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
-            VerifierState::Finished(ref state) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            VerifierState::PresentationRequestSent(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
+            VerifierState::Finished(_) => Err(VcxError::from(VcxErrorKind::InvalidProofHandle)),
         }
     }
 
@@ -276,8 +276,8 @@ impl VerifierSM {
 
     pub fn presentation(&self) -> VcxResult<Presentation> {
         match self.state {
-            VerifierState::Initiated(ref state) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
-            VerifierState::PresentationRequestSent(ref state) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
+            VerifierState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
+            VerifierState::PresentationRequestSent(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not received yet")),
             VerifierState::Finished(ref state) => {
                 state.presentation.clone()
                     .ok_or(VcxError::from(VcxErrorKind::InvalidProofHandle))

@@ -1,5 +1,4 @@
 extern crate vcx;
-extern crate tempfile;
 extern crate libc;
 extern crate serde_json;
 

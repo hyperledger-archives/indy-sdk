@@ -535,8 +535,8 @@ mod tests {
         init!("false");
         let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
         let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let (_my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);

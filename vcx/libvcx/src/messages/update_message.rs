@@ -105,8 +105,8 @@ impl UpdateMessageStatusByConnectionsBuilder {
         let mut response = parse_response_from_agency(response)?;
 
         match response.remove(0) {
-            A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
-            A2AMessage::Version2(A2AMessageV2::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
+            A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(_)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateMessageStatusByConnectionsResponse(_)) => Ok(()),
             _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateMessageStatusByConnectionsResponse"))
         }
     }
@@ -154,7 +154,7 @@ mod tests {
         use std::time::Duration;
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (faber, alice) = ::connection::tests::create_connected_connections();
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
 
         let (_, cred_def_handle) = ::credential_def::tests::create_cred_def_real(false);
 
