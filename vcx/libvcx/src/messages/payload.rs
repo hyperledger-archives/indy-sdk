@@ -87,7 +87,7 @@ impl Payloads {
                 Ok((payload.msg, None))
             }
             MessagePayload::V2(payload) => {
-                let payload = Payloads::decrypt_payload_v2(my_vk, payload)?;
+                let payload = Payloads::decrypt_payload_v2(payload)?;
                 Ok((payload.msg, Some(payload.thread)))
             }
         }
@@ -102,7 +102,7 @@ impl Payloads {
         Ok(my_payload)
     }
 
-    pub fn decrypt_payload_v2(my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
+    pub fn decrypt_payload_v2(payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
         let payload = ::serde_json::to_vec(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 

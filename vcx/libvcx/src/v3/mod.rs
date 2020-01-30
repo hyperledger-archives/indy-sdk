@@ -233,7 +233,6 @@ pub mod test {
         }
 
         pub fn create_presentation_request(&self) -> u32 {
-            let did = String::from("V4SGRU86Z58d6TV7PBUe6f");
             let requested_attrs = json!([
                 {"name": "name"},
                 {"name": "date"},

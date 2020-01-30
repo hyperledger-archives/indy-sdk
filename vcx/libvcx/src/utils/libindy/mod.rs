@@ -48,7 +48,7 @@ pub fn init_pool() -> VcxResult<()> {
             warn!("Pool Config Creation Error: {}", e);
             Err(e)
         }
-        Ok(_) => {
+        Ok(()) => {
             debug!("Pool Config Created Successfully");
             let pool_config: Option<String> = settings::get_config_value(settings::CONFIG_POOL_CONFIG).ok();
             pool::open_pool_ledger(&pool_name, pool_config.as_ref().map(String::as_str))?;
@@ -63,7 +63,7 @@ pub mod tests {
     use futures::Future;
     use indy_sys::WalletHandle;
 
-    pub fn create_key(wallet_handle: WalletHandle, seed: Option<&str>) -> String {
+    pub fn create_key(_wallet_handle: WalletHandle, seed: Option<&str>) -> String {
         let key_config = json!({"seed": seed}).to_string();
         indy::crypto::create_key(::utils::libindy::wallet::get_wallet_handle(), Some(&key_config)).wait().unwrap()
     }

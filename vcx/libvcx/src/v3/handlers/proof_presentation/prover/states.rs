@@ -143,7 +143,7 @@ impl From<(PresentationPreparationFailedState, u32)> for FinishedState {
 }
 
 impl From<(PresentationSentState, PresentationAck)> for FinishedState {
-    fn from((state, ack): (PresentationSentState, PresentationAck)) -> Self {
+    fn from((state, _ack): (PresentationSentState, PresentationAck)) -> Self {
         trace!("transit state from PresentationSentState to FinishedState");
         FinishedState {
             connection_handle: state.connection_handle,
@@ -180,7 +180,7 @@ impl ProverSM {
 
         for (uid, message) in messages {
             match self.state {
-                ProverState::Initiated(ref state) => {
+                ProverState::Initiated(_) => {
                     match message {
                         A2AMessage::PresentationRequest(_) => {
                             // ignore it here??
@@ -194,7 +194,7 @@ impl ProverSM {
                 ProverState::PresentationPreparationFailed(_) => {
                     // do not process messages
                 }
-                ProverState::PresentationSent(ref state) => {
+                ProverState::PresentationSent(_) => {
                     match message {
                         A2AMessage::Ack(ack) | A2AMessage::PresentationAck(ack) => {
                             if ack.from_thread(&self.thread_id) {
@@ -209,7 +209,7 @@ impl ProverSM {
                         _ => {}
                     }
                 }
-                ProverState::Finished(ref state) => {
+                ProverState::Finished(_) => {
                     // do not process messages
                 }
             };
@@ -412,9 +412,9 @@ impl ProverSM {
 
     pub fn presentation(&self) -> VcxResult<&Presentation> {
         match self.state {
-            ProverState::Initiated(ref state) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
+            ProverState::Initiated(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
             ProverState::PresentationPrepared(ref state) => Ok(&state.presentation),
-            ProverState::PresentationPreparationFailed(ref state) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
+            ProverState::PresentationPreparationFailed(_) => Err(VcxError::from_msg(VcxErrorKind::NotReady, "Presentation is not created yet")),
             ProverState::PresentationSent(ref state) => Ok(&state.presentation),
             ProverState::Finished(ref state) => Ok(&state.presentation),
         }

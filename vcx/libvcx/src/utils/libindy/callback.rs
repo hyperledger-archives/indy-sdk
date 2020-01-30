@@ -167,7 +167,7 @@ mod tests {
         let mutex_map: Mutex<HashMap<i32, Box<dyn FnMut(i32) + Send>>> = Default::default();
         assert!(get_cb(2123, &mutex_map).is_none());
 
-        let closure: Box<dyn FnMut(i32) + Send> = Box::new(move |err | {
+        let closure: Box<dyn FnMut(i32) + Send> = Box::new(move |_ | {
 
         });
 
