@@ -318,7 +318,7 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: CommandHandle,
 pub extern fn vcx_credential_send_request(command_handle: CommandHandle,
                                           credential_handle: u32,
                                           connection_handle: u32,
-                                          payment_handle: u32,
+                                          _payment_handle: u32,
                                           cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_credential_send_request >>>");
 
@@ -373,7 +373,7 @@ pub extern fn vcx_credential_send_request(command_handle: CommandHandle,
 pub extern fn vcx_credential_get_request_msg(command_handle: CommandHandle,
                                              credential_handle: u32,
                                              connection_handle: u32,
-                                             payment_handle: u32,
+                                             _payment_handle: u32,
                                              cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg: *const c_char)>) -> u32 {
     info!("vcx_credential_get_request_msg >>>");
 
@@ -500,7 +500,7 @@ pub extern fn vcx_credential_update_state(command_handle: CommandHandle,
             }
         }
 
-        let state = match credential::get_state(credential_handle) {
+        match credential::get_state(credential_handle) {
             Ok(s) => {
                 trace!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, s, source_id);
@@ -560,7 +560,7 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: CommandHa
             }
         }
 
-        let state = match credential::get_state(credential_handle) {
+        match credential::get_state(credential_handle) {
             Ok(s) => {
                 trace!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, s, source_id);
@@ -736,7 +736,7 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
 
     let source_id = credential::get_source_id(handle).unwrap_or_default();
     match credential::release(handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_credential_release(handle: {}, rc: {}), source_id: {:?}",
                    handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -952,7 +952,6 @@ mod tests {
         init!("true");
         let handle = credential::from_string(FULL_CREDENTIAL_SERIALIZED).unwrap();
         let bad_handle = 1123;
-        let command_handle = 1111;
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();

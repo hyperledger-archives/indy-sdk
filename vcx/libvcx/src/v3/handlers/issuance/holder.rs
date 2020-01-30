@@ -72,10 +72,10 @@ impl HolderSM {
 
         for (uid, message) in messages {
             match self.state {
-                HolderState::OfferReceived(ref state) => {
+                HolderState::OfferReceived(_) => {
                     // do not process messages
                 }
-                HolderState::RequestSent(ref state) => {
+                HolderState::RequestSent(_) => {
                     match message {
                         A2AMessage::Credential(credential) => {
                             if credential.from_thread(&self.thread_id) {
@@ -90,7 +90,7 @@ impl HolderSM {
                         _ => {}
                     }
                 }
-                HolderState::Finished(ref state) => {
+                HolderState::Finished(_) => {
                     // do not process messages
                 }
             };
@@ -251,7 +251,7 @@ fn _make_credential_request(conn_handle: u32, offer: &CredentialOffer) -> VcxRes
     let my_did = connection::get_pw_did(conn_handle)?;
     let cred_offer = offer.offers_attach.content()?;
     let cred_def_id = _parse_cred_def_from_cred_offer(&cred_offer)?;
-    let (req, req_meta, cred_def_id, cred_def_json) =
+    let (req, req_meta, _cred_def_id, cred_def_json) =
         credential::Credential::create_credential_request(&cred_def_id, &my_did, &cred_offer)?;
     Ok((CredentialRequest::create().set_requests_attach(req)?, req_meta, cred_def_json))
 }

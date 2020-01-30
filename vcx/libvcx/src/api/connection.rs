@@ -328,7 +328,7 @@ pub extern fn vcx_connection_connect(command_handle: CommandHandle,
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
                     }
-                    Err(e) => {
+                    Err(_) => {
                         warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
                               command_handle, connection_handle, error::SUCCESS.message, "null", source_id); // TODO: why Success?????
                         cb(command_handle, error::SUCCESS.code_num, ptr::null_mut());
@@ -971,7 +971,7 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     match release(connection_handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_connection_release(connection_handle: {}, rc: {}), source_id: {:?}",
                    connection_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -1181,7 +1181,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         connect(handle, None).unwrap();
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
-        let rc = vcx_connection_update_state(cb.command_handle, handle, Some(cb.get_callback()));
+        let _rc = vcx_connection_update_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_connection_get_state(cb.command_handle, handle, Some(cb.get_callback()));
@@ -1212,7 +1212,7 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
-    extern "C" fn test_sign_cb(command_handle: CommandHandle, error: u32, signature: *const u8, signature_length: u32) {
+    extern "C" fn test_sign_cb(_command_handle: CommandHandle, error: u32, _signature: *const u8, _signature_length: u32) {
         assert_eq!(error, error::SUCCESS.code_num);
     }
 
@@ -1230,7 +1230,7 @@ mod tests {
         thread::sleep(Duration::from_secs(2));
     }
 
-    extern "C" fn test_verify_cb(command_handle: CommandHandle, error: u32, valid: bool) {
+    extern "C" fn test_verify_cb(_command_handle: CommandHandle, _error: u32, valid: bool) {
         assert_eq!(valid, true);
     }
 

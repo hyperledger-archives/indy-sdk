@@ -85,7 +85,7 @@ pub extern fn vcx_init(command_handle: CommandHandle,
             settings::set_defaults();
         } else {
             match settings::process_config_file(&config_path) {
-                Err(e) => {
+                Err(_) => {
                     return VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot initialize with given config path.").into();
                 }
                 Ok(_) => {
@@ -132,7 +132,7 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
     spawn(move || {
         if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
             match ::utils::libindy::init_pool() {
-                Ok(_) => (),
+                Ok(()) => (),
                 Err(e) => {
                     error!("Init Pool Error {}.", e);
                     cb(command_handle, e.into());
@@ -229,12 +229,12 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
     trace!("vcx_shutdown(delete: {})", delete);
 
     match wallet::close_wallet() {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(_) => {}
     };
 
     match pool::close() {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(_) => {}
     };
 
@@ -256,12 +256,12 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
         let wallet_type = settings::get_config_value(settings::CONFIG_WALLET_TYPE).ok();
 
         match wallet::delete_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str), None, None) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         };
 
         match pool::delete(&pool_name) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         };
     }
@@ -394,7 +394,7 @@ pub extern fn vcx_set_active_txn_author_agreement_meta(text: *const c_char,
            text, version, hash, acc_mech_type, time_of_acceptance);
 
     match ::utils::author_agreement::set_txn_author_agreement(text, version, hash, acc_mech_type, time_of_acceptance) {
-        Ok(x) => error::SUCCESS.code_num,
+        Ok(()) => error::SUCCESS.code_num,
         Err(err) => err.into()
     }
 }
@@ -472,7 +472,8 @@ mod tests {
     use api::connection::vcx_connection_create;
     use indy::{WalletHandle};
 
-    fn create_config_util(logging: Option<&str>) -> String {
+    #[cfg(any(feature = "agency", feature = "pool_tests"))]
+    fn create_config_util(_logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
                "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
                "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
@@ -640,7 +641,7 @@ mod tests {
                                         CString::new(content).unwrap().into_raw(),
                                         Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let err = cb.receive(Some(Duration::from_secs(10)));
+        let _err = cb.receive(Some(Duration::from_secs(10)));
         // Assert default wallet name
         assert_eq!(settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap(), settings::DEFAULT_WALLET_NAME);
     }
@@ -859,7 +860,7 @@ mod tests {
                    error::INVALID_OPTION.code_num);
 
         match get_pool_handle() {
-            Ok(h) => { pool::close().unwrap(); }
+            Ok(_h) => { pool::close().unwrap(); }
             Err(_) => {}
         };
     }
@@ -998,9 +999,9 @@ mod tests {
 
     #[test]
     fn get_current_error_works_for_async_error() {
-        extern fn cb(storage_handle: i32,
-                     err: u32,
-                     config: *const c_char) {
+        extern fn cb(_storage_handle: i32,
+                     _err: u32,
+                     _config: *const c_char) {
             let mut error_json_p: *const c_char = ptr::null();
             vcx_get_current_error(&mut error_json_p);
             assert!(CStringUtils::c_str_to_string(error_json_p).unwrap().is_some());
@@ -1052,6 +1053,7 @@ mod tests {
         assert_eq!(::utils::constants::DEFAULT_AUTHOR_AGREEMENT, agreement.unwrap());
     }
 
+    #[cfg(feature = "pool_tests")]
     fn get_settings() -> String {
         json!({
             settings::CONFIG_AGENCY_DID:           settings::get_config_value(settings::CONFIG_AGENCY_DID).unwrap(),
