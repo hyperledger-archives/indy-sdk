@@ -29,6 +29,7 @@ pub const INVALID_COMMAND_HANDLE : CommandHandle = 0;
 
 pub type StorageHandle = i32;
 pub type SearchHandle = i32;
+pub const INVALID_SEARCH_HANDLE : SearchHandle = 0;
 
 pub mod domain;
 

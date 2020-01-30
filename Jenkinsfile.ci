@@ -480,11 +480,22 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
 
         libindyBuildFinished[env_name] = true
 
-        echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
-            for (component in ["libindy/indy-api-types", "libindy/indy-utils", "libindy/indy-wallet", "libindy"]) {
+            echo "${env_name} Libindy Test: Test Libindy submodules"
+
+            for (component in ["libindy/indy-api-types", "libindy/indy-utils", "libindy/indy-wallet"]) {
                 testLibindyComponent(component)
             }
+
+            echo "${env_name} Libindy Test: Test"
+
+            def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
+
+            sh """
+                cd libindy
+                RUST_BACKTRACE=1 cargo test --no-run ${features_args}
+                RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test ${features_args}
+            """
         }
 
         echo "${env_name} Libnullpay Test: Test"
@@ -503,12 +514,10 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
 }
 
 def testLibindyComponent(directory) {
-    def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
-
     sh """
         cd ${directory}
-        RUST_BACKTRACE=1 cargo test --no-run ${features_args}
-        RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test ${features_args}
+        RUST_BACKTRACE=1 cargo test --no-run
+        RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
     """
 }
 
