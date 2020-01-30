@@ -84,7 +84,9 @@ pub struct ProofRequestData {
     pub name: String,
     #[serde(rename = "version")]
     pub data_version: String,
+    #[serde(default)]
     pub requested_attributes: HashMap<String, AttrInfo>,
+    #[serde(default)]
     pub requested_predicates: HashMap<String, PredicateInfo>,
     pub non_revoked: Option<NonRevokedInterval>,
     pub ver: Option<ProofRequestVersion>,

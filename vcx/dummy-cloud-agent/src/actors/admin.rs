@@ -1,11 +1,13 @@
-use actix::prelude::*;
-use actors::{HandleAdminMessage, AdminRegisterForwardAgent, AdminRegisterRouter, AdminRegisterForwardAgentConnection, AdminRegisterAgent, AdminRegisterAgentConnection};
-use failure::{Error, err_msg};
 use std::collections::HashMap;
-use domain::admin_message::{AdminQuery, ResAdminQuery, ResQueryAdmin};
-use utils::futures::FutureExt;
+
+use actix::prelude::*;
+use failure::{err_msg, Error};
 use futures::Future;
 use futures::future::ok;
+
+use crate::actors::{AdminRegisterAgent, AdminRegisterAgentConnection, AdminRegisterForwardAgent, AdminRegisterForwardAgentConnection, AdminRegisterRouter, HandleAdminMessage};
+use crate::domain::admin_message::{AdminQuery, ResAdminQuery, ResQueryAdmin};
+use crate::utils::futures::FutureExt;
 
 pub struct Admin {
     forward_agent: Option<Recipient<HandleAdminMessage>>,
@@ -27,7 +29,7 @@ impl Admin {
     }
 
     pub fn handle_admin_message(&self, admin_msg: &AdminQuery)
-                                -> Box<Future<Item=ResAdminQuery, Error=Error>> {
+                                -> Box<dyn Future<Item=ResAdminQuery, Error=Error>> {
         match admin_msg {
             AdminQuery::GetDetailForwardAgents => {
                 if let Some(addr) = self.forward_agent.as_ref() {
@@ -95,7 +97,7 @@ impl Actor for Admin {
 }
 
 impl Handler<HandleAdminMessage> for Admin {
-    type Result = Box<Future<Item=ResAdminQuery, Error=Error>>;
+    type Result = Box<dyn Future<Item=ResAdminQuery, Error=Error>>;
 
     fn handle(&mut self, msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
         trace!("Admin Handler<HandleAdminMessage>::handle");
@@ -154,10 +156,12 @@ impl Handler<AdminRegisterRouter> for Admin {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use utils::tests::*;
     use regex::Regex;
-    use domain::admin_message::{GetDetailAgentParams, GetDetailAgentConnParams};
+
+    use crate::domain::admin_message::{GetDetailAgentConnParams, GetDetailAgentParams};
+    use crate::utils::tests::*;
+
+    use super::*;
 
     #[test]
     fn get_actor_overview_returns_info() {

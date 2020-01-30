@@ -1,14 +1,13 @@
+use actix::prelude::*;
 use failure::{err_msg, Error};
+use futures::*;
+use hyper::{Body, header, Method, Request};
 use hyper::Client;
 use hyper::client::connect::HttpConnector;
 use hyper::rt::Future;
-use hyper::{Body, Method, Request, header};
 
-use actix::prelude::*;
-use actors::RemoteMsg;
-
-use futures::*;
-use utils::futures::*;
+use crate::actors::RemoteMsg;
+use crate::utils::futures::*;
 
 lazy_static! {
     pub static ref REQWEST_CLIENT : reqwest::r#async::Client = reqwest::r#async::Client::new();

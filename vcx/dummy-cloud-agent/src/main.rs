@@ -1,50 +1,41 @@
 // `error_chain!` can recurse deeply
 #![recursion_limit = "1024"]
 
-extern crate actix;
-extern crate actix_web;
-extern crate bytes;
 #[cfg(test)]
 extern crate dirs;
-extern crate failure;
-extern crate futures;
+#[macro_use]
+extern crate lazy_static;
 #[macro_use]
 extern crate log;
 extern crate pretty_env_logger as env_logger;
-extern crate rmp_serde;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 #[cfg(test)]
 extern crate tokio_core;
-extern crate base64;
-extern crate rand;
-extern crate hyper;
-extern crate indyrs;
-extern crate regex;
-#[macro_use]
-extern crate lazy_static;
-extern crate libc;
-extern crate libloading;
 
-use actix::prelude::*;
-use actors::forward_agent::ForwardAgent;
-use domain::config::{Config, WalletStorageConfig};
-use domain::protocol_type::ProtocolType;
-use failure::*;
 use std::env;
 use std::fs::File;
+
+use actix::prelude::*;
+use failure::*;
+
 use actors::admin::Admin;
-use app::start_app_server;
-use indy::wallet_plugin::{load_storage_library, serialize_storage_plugin_configuration, finish_loading_postgres};
+use actors::forward_agent::ForwardAgent;
+use indy::wallet_plugin::{finish_loading_postgres, load_storage_library, serialize_storage_plugin_configuration};
+
+use crate::app::start_app_server;
+use crate::app_admin::start_app_admin_server;
+use crate::domain::config::{Config, WalletStorageConfig};
+use crate::domain::protocol_type::ProtocolType;
 
 #[macro_use]
 pub(crate) mod utils;
-
 pub(crate) mod actors;
 pub(crate) mod app;
+pub(crate) mod app_admin;
+pub(crate) mod api_agent;
 pub(crate) mod domain;
 pub(crate) mod indy;
 
@@ -107,7 +98,8 @@ fn _start(config_path: &str) {
         server: server_config,
         wallet_storage: wallet_storage_config,
         protocol_type: protocol_type_config,
-        indy_runtime
+        indy_runtime,
+        server_admin: server_admin_config
     } = File::open(config_path)
         .context("Can't open config file")
         .and_then(|reader| serde_json::from_reader(reader)
@@ -138,7 +130,14 @@ fn _start(config_path: &str) {
 
         ProtocolType::set(protocol_type_config);
 
-        let admin = Admin::create();
+        let admin = match &server_admin_config {
+            Some(server_admin_config) if server_admin_config.enabled => {
+                let admin = Admin::create();
+                start_app_admin_server(server_admin_config, admin.clone());
+                Some(admin)
+            },
+            _ => None
+        };
         ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config, admin.clone())
             .map(move |forward_agent| {
                 start_app_server(server_config, app_config, forward_agent, admin)
