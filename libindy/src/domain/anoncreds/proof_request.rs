@@ -20,7 +20,9 @@ pub struct ProofRequestPayload {
     pub nonce: Nonce,
     pub name: String,
     pub version: String,
+    #[serde(default)]
     pub requested_attributes: HashMap<String, AttributeInfo>,
+    #[serde(default)]
     pub requested_predicates: HashMap<String, PredicateInfo>,
     pub non_revoked: Option<NonRevocedInterval>
 }

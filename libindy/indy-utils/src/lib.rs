@@ -12,6 +12,10 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
+extern crate zeroize;
+
+extern crate dirs;
+
 #[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! secret {
@@ -39,7 +43,7 @@ pub(crate) use indy_api_types::ErrorCode;
 
 use indy_api_types::{CommandHandle, PoolHandle, WalletHandle};
 
-pub fn next_wallet_handle() -> WalletHandle { sequence::get_next_id() }
+pub fn next_wallet_handle() -> WalletHandle { WalletHandle(sequence::get_next_id()) }
 
 pub fn next_pool_handle() -> PoolHandle {
     sequence::get_next_id()

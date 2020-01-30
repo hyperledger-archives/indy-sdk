@@ -245,13 +245,13 @@ mod tests {
 
     use serde_json;
 
-    use indy_api_types::domain::wallet::{Metadata, MetadataArgon};
-    use indy_wallet::encryption;
-    use indy_wallet::storage::default::SQLiteStorageType;
-    use indy_wallet::storage::WalletStorageType;
-    use indy_wallet::wallet::{Keys, Wallet};
-    use crate::utils::crypto::pwhash_argon2i13;
-    use crate::utils::test;
+    use crate::{Metadata, MetadataArgon};
+    use crate::encryption;
+    use crate::storage::default::SQLiteStorageType;
+    use crate::storage::WalletStorageType;
+    use crate::wallet::{Keys, Wallet};
+    use indy_utils::crypto::pwhash_argon2i13;
+    use indy_utils::test;
 
     use super::*;
 

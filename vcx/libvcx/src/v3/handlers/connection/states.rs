@@ -94,14 +94,14 @@ pub struct CompleteState {
 }
 
 impl From<(NullState, Invitation)> for InvitedState {
-    fn from((state, invitation): (NullState, Invitation)) -> InvitedState {
+    fn from((_state, invitation): (NullState, Invitation)) -> InvitedState {
         trace!("DidExchangeStateSM: transit state from NullState to InvitedState");
         InvitedState { invitation }
     }
 }
 
 impl From<(InvitedState, ProblemReport)> for NullState {
-    fn from((state, error): (InvitedState, ProblemReport)) -> NullState {
+    fn from((_state, _error): (InvitedState, ProblemReport)) -> NullState {
         trace!("DidExchangeStateSM: transit state from InvitedState to NullState");
         NullState {}
     }
@@ -115,42 +115,42 @@ impl From<(InvitedState, Request)> for RequestedState {
 }
 
 impl From<(InvitedState, Request, SignedResponse, AgentInfo)> for RespondedState {
-    fn from((state, request, response, prev_agent_info): (InvitedState, Request, SignedResponse, AgentInfo)) -> RespondedState {
+    fn from((_state, request, response, prev_agent_info): (InvitedState, Request, SignedResponse, AgentInfo)) -> RespondedState {
         trace!("DidExchangeStateSM: transit state from InvitedState to RequestedState");
         RespondedState { response, did_doc: request.connection.did_doc, prev_agent_info }
     }
 }
 
 impl From<(RequestedState, ProblemReport)> for NullState {
-    fn from((state, error): (RequestedState, ProblemReport)) -> NullState {
+    fn from((_state, _error): (RequestedState, ProblemReport)) -> NullState {
         trace!("DidExchangeStateSM: transit state from RequestedState to NullState");
         NullState {}
     }
 }
 
 impl From<(RequestedState, Response)> for CompleteState {
-    fn from((state, response): (RequestedState, Response)) -> CompleteState {
+    fn from((_state, response): (RequestedState, Response)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
         CompleteState { did_doc: response.connection.did_doc, pending_messages: HashMap::new(), protocols: None }
     }
 }
 
 impl From<(RespondedState, ProblemReport)> for NullState {
-    fn from((state, error): (RespondedState, ProblemReport)) -> NullState {
+    fn from((_state, _error): (RespondedState, ProblemReport)) -> NullState {
         trace!("DidExchangeStateSM: transit state from RespondedState to NullState");
         NullState {}
     }
 }
 
 impl From<(RespondedState, Ack)> for CompleteState {
-    fn from((state, ack): (RespondedState, Ack)) -> CompleteState {
+    fn from((state, _ack): (RespondedState, Ack)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
         CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new(), protocols: None }
     }
 }
 
 impl From<(RespondedState, Ping)> for CompleteState {
-    fn from((state, ping): (RespondedState, Ping)) -> CompleteState {
+    fn from((state, _ping): (RespondedState, Ping)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
         CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new(), protocols: None }
     }
@@ -231,7 +231,7 @@ impl CompleteState {
                 self.handle_ping(&ping, agent_info)?;
                 DidExchangeState::Completed(self)
             }
-            DidExchangeMessages::PingResponseReceived(ping_response) => {
+            DidExchangeMessages::PingResponseReceived(_) => {
                 DidExchangeState::Completed(self)
             }
             DidExchangeMessages::DiscoverFeatures((query_, comment)) => {
@@ -345,7 +345,7 @@ impl DidExchangeSM {
 
         for (uid, message) in messages {
             match self.state {
-                ActorDidExchangeState::Inviter(DidExchangeState::Invited(ref state)) => {
+                ActorDidExchangeState::Inviter(DidExchangeState::Invited(_)) => {
                     match message {
                         request @ A2AMessage::ConnectionRequest(_) => {
                             debug!("Inviter received ConnectionRequest message");
@@ -360,7 +360,7 @@ impl DidExchangeSM {
                         }
                     }
                 }
-                ActorDidExchangeState::Invitee(DidExchangeState::Requested(ref state)) => {
+                ActorDidExchangeState::Invitee(DidExchangeState::Requested(_)) => {
                     match message {
                         response @ A2AMessage::ConnectionResponse(_) => {
                             debug!("Invitee received ConnectionResponse message");
@@ -375,7 +375,7 @@ impl DidExchangeSM {
                         }
                     }
                 }
-                ActorDidExchangeState::Inviter(DidExchangeState::Responded(ref state)) => {
+                ActorDidExchangeState::Inviter(DidExchangeState::Responded(_)) => {
                     match message {
                         ack @ A2AMessage::Ack(_) => {
                             debug!("Ack message received");
@@ -394,8 +394,8 @@ impl DidExchangeSM {
                         }
                     }
                 }
-                ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref state)) |
-                ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref state)) => {
+                ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)) |
+                ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)) => {
                     match message {
                         ping @ A2AMessage::Ping(_) => {
                             debug!("Ping message received");
@@ -1105,6 +1105,7 @@ pub mod test {
 
         use v3::messages::connection::did_doc::tests::_service_endpoint;
         use ::utils::libindy::tests::create_key;
+        use indy_sys::WalletHandle;
 
         pub fn invitee_sm() -> DidExchangeSM {
             DidExchangeSM::new(Actor::Invitee, &source_id())
@@ -1122,7 +1123,7 @@ pub mod test {
                 self
             }
 
-            pub fn to_invitee_completed_state(mut self, wallet_handle: i32) -> DidExchangeSM {
+            pub fn to_invitee_completed_state(mut self, wallet_handle: WalletHandle) -> DidExchangeSM {
                 let key = create_key(wallet_handle, Some(::utils::libindy::tests::test_setup::TRUSTEE_SEED));
                 let invitation = Invitation::default().set_recipient_keys(vec![key.clone()]);
 
@@ -1234,8 +1235,6 @@ pub mod test {
                 let key = create_key(_setup.wallet_handle, Some(::utils::libindy::tests::test_setup::TRUSTEE_SEED));
 
                 let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
-
-                let invitation = Invitation::default().set_recipient_keys(vec![key.clone()]);
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(_response(&key))).unwrap();
 

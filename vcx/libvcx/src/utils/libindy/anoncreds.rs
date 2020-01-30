@@ -150,7 +150,7 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> VcxResul
 
     // this may be too redundant since Prover::search_credentials will validate the proof reqeuest already.
     let proof_request_json: Map<String, Value> = serde_json::from_str(proof_req)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProofRequest, format!("Cannot deserialize ProofRequest")))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidProofRequest, format!("Cannot deserialize ProofRequest: {:?}", err)))?;
 
     // since the search_credentials_for_proof request validates that the proof_req is properly structured, this get()
     // fn should never fail, unless libindy changes their formats.
@@ -356,7 +356,7 @@ pub fn create_schema(name: &str, version: &str, data: &str) -> VcxResult<(String
     Ok((id, create_schema))
 }
 
-pub fn build_schema_request(id: &str, schema: &str) -> VcxResult<String> {
+pub fn build_schema_request(schema: &str) -> VcxResult<String> {
     if settings::test_indy_mode_enabled() {
         return Ok(SCHEMA_TXN.to_string());
     }
@@ -370,14 +370,14 @@ pub fn build_schema_request(id: &str, schema: &str) -> VcxResult<String> {
     Ok(request)
 }
 
-pub fn publish_schema(id: &str, schema: &str) -> VcxResult<Option<PaymentTxn>> {
+pub fn publish_schema(schema: &str) -> VcxResult<Option<PaymentTxn>> {
     if settings::test_indy_mode_enabled() {
         let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
         let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
         return Ok(Some(PaymentTxn::from_parts(inputs, outputs, 1, false)));
     }
 
-    let request = build_schema_request(id, schema)?;
+    let request = build_schema_request(schema)?;
 
     let (payment, response) = pay_for_txn(&request, CREATE_SCHEMA_ACTION)?;
 
@@ -548,7 +548,7 @@ fn _check_schema_response(response: &str) -> VcxResult<()> {
     match parse_response(response)? {
         Response::Reply(_) => Ok(()),
         Response::Reject(reject) => Err(VcxError::from_msg(VcxErrorKind::DuplicationSchema, format!("{:?}", reject))),
-        Response::ReqNACK(reqnack) => Err(VcxError::from_msg(VcxErrorKind::UnknownSchemaRejection, "Unknown Rejection of Schema Creation, refer to libindy documentation"))
+        Response::ReqNACK(reqnack) => Err(VcxError::from_msg(VcxErrorKind::UnknownSchemaRejection, format!("{:?}", reqnack)))
     }
 }
 
@@ -592,7 +592,7 @@ pub mod tests {
     }
 
     pub fn write_schema(request: &str) {
-        let (payment_info, response) = ::utils::libindy::payments::pay_for_txn(&request, CREATE_SCHEMA_ACTION).unwrap();
+        ::utils::libindy::payments::pay_for_txn(&request, CREATE_SCHEMA_ACTION).unwrap();
     }
 
     pub fn create_and_write_test_schema(attr_list: &str) -> (String, String) {
@@ -652,7 +652,7 @@ pub mod tests {
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
         let encoded_attributes = ::issuer_credential::encode_attributes(&credential_data).unwrap();
         let (rev_def_json, tails_file) = if revocation {
-            let (id, json) = get_rev_reg_def_json(&rev_reg_id.clone().unwrap()).unwrap();
+            let (_id, json) = get_rev_reg_def_json(&rev_reg_id.clone().unwrap()).unwrap();
             (Some(json), Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string().to_string()))
         } else { (None, None) };
 
@@ -664,7 +664,7 @@ pub mod tests {
 
     pub fn create_proof() -> (String, String, String, String) {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id, _, _)
+        let (schema_id, schema_json, cred_def_id, cred_def_json, _offer, _req, _req_meta, cred_id, _, _)
         = create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
 
         let proof_req = json!({
@@ -721,8 +721,6 @@ pub mod tests {
     }
 
     pub fn create_self_attested_proof() -> (String, String) {
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-
         let proof_req = json!({
            "nonce":"123432421212",
            "name":"proof_req_1",
@@ -764,7 +762,7 @@ pub mod tests {
 
     pub fn create_proof_with_predicate(include_predicate_cred: bool) -> (String, String, String, String) {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id, _, _)
+        let (schema_id, schema_json, cred_def_id, cred_def_json, _offer, _req, _req_meta, cred_id, _, _)
         = create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
 
         let proof_req = json!({
@@ -914,8 +912,6 @@ pub mod tests {
         }).to_string();
         let result = libindy_prover_get_credentials_for_proof_req(&proof_req);
         let result_malformed_json = libindy_prover_get_credentials_for_proof_req("{}");
-        let wallet_handle = get_wallet_handle();
-        let proof_req_str: String = serde_json::to_string(&proof_req).unwrap();
         assert!(result.is_ok());
         assert_eq!(result_malformed_json.unwrap_err().kind(), VcxErrorKind::InvalidAttributesStructure);
     }
@@ -927,7 +923,7 @@ pub mod tests {
         let rc = libindy_issuer_revoke_credential(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap(), "", "");
         assert!(rc.is_err());
 
-        let (_, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id)
+        let (_, _, _, _, _, _, _, _, rev_reg_id, cred_rev_id)
         = create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
         let rc = ::utils::libindy::anoncreds::libindy_issuer_revoke_credential(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap(), &rev_reg_id.unwrap(), &cred_rev_id.unwrap());
 
@@ -946,16 +942,10 @@ pub mod tests {
     fn test_create_cred_def_real() {
         init!("ledger");
 
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let (_, schema_json) = get_schema_json(&schema_id).unwrap();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-        let revocation_details = json!({
-            "support_revocation": true,
-            "tails_file": get_temp_dir_path(Some("tails.txt")).to_str().unwrap(),
-            "max_creds": 2
-        }).to_string();
         let (_, cred_def_json) = generate_cred_def(&did, &schema_json, "tag_1", None, Some(true)).unwrap();
         publish_cred_def(&did, &cred_def_json).unwrap();
     }
@@ -963,10 +953,8 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_rev_reg_def_fails_for_cred_def_created_without_revocation() {
-        let wallet_name = "test_create_revocable_fails_with_no_tails_file";
         init!("ledger");
 
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         // Cred def is created with support_revocation=false,
         // revoc_reg_def will fail in libindy because cred_Def doesn't have revocation keys
         let (_, _, cred_def_id, _, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
@@ -981,7 +969,6 @@ pub mod tests {
     fn test_create_rev_reg_def() {
         init!("ledger");
 
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let (_, schema_json) = get_schema_json(&schema_id).unwrap();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -1002,7 +989,7 @@ pub mod tests {
             ::utils::libindy::anoncreds::tests::create_and_store_credential_def(attrs, true);
 
         let rev_reg_id = rev_reg_id.unwrap();
-        let (id, json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
+        let (id, _json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
         assert_eq!(id, rev_reg_id);
     }
 
@@ -1015,7 +1002,7 @@ pub mod tests {
             ::utils::libindy::anoncreds::tests::create_and_store_credential_def(attrs, true);
         let rev_reg_id = rev_reg_id.unwrap();
 
-        let (id, delta, timestamp) = get_rev_reg_delta_json(&rev_reg_id, None, None).unwrap();
+        let (id, _delta, _timestamp) = get_rev_reg_delta_json(&rev_reg_id, None, None).unwrap();
         assert_eq!(id, rev_reg_id);
     }
 
@@ -1028,21 +1015,19 @@ pub mod tests {
             ::utils::libindy::anoncreds::tests::create_and_store_credential_def(attrs, true);
         let rev_reg_id = rev_reg_id.unwrap();
 
-        let (id, rev_reg, timestamp) = get_rev_reg(&rev_reg_id, time::get_time().sec as u64).unwrap();
+        let (id, _rev_reg, _timestamp) = get_rev_reg(&rev_reg_id, time::get_time().sec as u64).unwrap();
         assert_eq!(id, rev_reg_id);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn from_pool_ledger_with_id() {
-        use settings;
         init!("ledger");
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, schema_json) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+        let (schema_id, _schema_json) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
 
         let rc = get_schema_json(&schema_id);
 
-        let (id, retrieved_schema) = rc.unwrap();
+        let (_id, retrieved_schema) = rc.unwrap();
         assert!(retrieved_schema.contains(&schema_id));
     }
 
@@ -1058,7 +1043,7 @@ pub mod tests {
     #[test]
     fn test_revoke_credential() {
         init!("ledger");
-        let (_, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id)
+        let (_, _, _, _, _, _, _, _, rev_reg_id, cred_rev_id)
         = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
 
         let rev_reg_id = rev_reg_id.unwrap();
@@ -1068,7 +1053,7 @@ pub mod tests {
         assert_eq!(first_rev_reg_delta, test_same_delta);
         assert_eq!(first_timestamp, test_same_timestamp);
 
-        let (payment, revoked_rev_reg_delta) = revoke_credential(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap(), &rev_reg_id, cred_rev_id.unwrap().as_str()).unwrap();
+        let (payment, _revoked_rev_reg_delta) = revoke_credential(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap(), &rev_reg_id, cred_rev_id.unwrap().as_str()).unwrap();
 
         // Delta should change after revocation
         let (_, second_rev_reg_delta, _) = get_rev_reg_delta_json(&rev_reg_id, Some(first_timestamp + 1), None).unwrap();

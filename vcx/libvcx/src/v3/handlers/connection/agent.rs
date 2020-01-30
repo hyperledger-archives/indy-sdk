@@ -119,7 +119,7 @@ impl AgentInfo {
     pub fn decode_message(&self, message: &Message) -> VcxResult<A2AMessage> {
         trace!("Agent::decode_message >>>");
 
-        EncryptionEnvelope::open(&self.pw_vk, message.payload()?)
+        EncryptionEnvelope::open(message.payload()?)
     }
 
     pub fn send_message(&self, message: &A2AMessage, did_dod: &DidDoc) -> VcxResult<()> {

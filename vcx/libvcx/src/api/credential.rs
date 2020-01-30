@@ -7,8 +7,72 @@ use credential;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
-/// Retrieves Payment Info from a Credential
+/*
+    The API represents a Holder side in credential issuance process.
+    Assumes that pairwise connection between Issuer and Holder is already established.
+
+    # State
+
+    The set of object states, messages and transitions depends on the communication method is used.
+    There are two communication methods: `proprietary` and `aries`. The default communication method is `proprietary`.
+    The communication method can be specified as a config option on one of *_init functions.
+
+    proprietary:
+        VcxStateType::VcxStateRequestReceived - once `vcx_credential_create_with_offer` (create Credential object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `CRED_REQ` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `CRED` messages is received.
+                                         use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+
+    aries:
+        VcxStateType::VcxStateRequestReceived - once `vcx_credential_create_with_offer` (create Credential object) is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `CredentialRequest` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `Credential` messages is received.
+        VcxStateType::None - once `ProblemReport` messages is received.
+                                                use `vcx_credential_update_state` or `vcx_credential_update_state_with_message` functions for state updates.
+
+    # Transitions
+
+    proprietary:
+        VcxStateType::None - `vcx_credential_create_with_offer` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `CRED` - VcxStateType::VcxStateAccepted
+
+    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+        VcxStateType::None - `vcx_credential_create_with_offer` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+
+        VcxStateType::VcxStateOfferSent - received `Credential` - VcxStateType::VcxStateAccepted
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+
+    # Messages
+
+    proprietary:
+        CredentialOffer (`CRED_OFFER`)
+        CredentialRequest (`CRED_REQ`)
+        Credential (`CRED`)
+
+    aries:
+        CredentialProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#propose-credential
+        CredentialOffer - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#offer-credential
+        CredentialRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#request-credential
+        Credential - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#issue-credential
+        ProblemReport - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0035-report-problem#the-problem-report-message-type
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+*/
+
+/// Retrieve Payment Transaction Information for this Credential. Typically this will include
+/// how much payment is requried by the issuer, which needs to be provided by the prover, before the issuer will
+/// issue the credential to the prover. Ideally a prover would want to know how much payment is being asked before
+/// submitting the credential request (which triggers the payment to be made).
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -17,13 +81,21 @@ use error::prelude::*;
 ///
 /// cb: Callback that provides Payment Info of a Credential
 ///
+/// # Example:
+/// payment_info ->
+///     {
+///         "payment_required":"one-time",
+///         "payment_addr":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j",
+///         "price":1
+///     }
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_credential_get_payment_info(command_handle: u32,
+pub extern fn vcx_credential_get_payment_info(command_handle: CommandHandle,
                                               credential_handle: u32,
-                                              cb: Option<extern fn(xcommand_handle: u32, err: u32, *const c_char)>) -> u32 {
+                                              cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, *const c_char)>) -> u32 {
     info!("vcx_credential_get_payment_info >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -66,7 +138,12 @@ pub extern fn vcx_credential_get_payment_info(command_handle: u32,
 ///
 /// offer: credential offer received via "vcx_credential_get_offers"
 ///
-/// # Example offer -> "[{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]
+/// # Example
+/// offer -> depends on communication method:
+///     proprietary:
+///         [{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]
+///     aries:
+///         {"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential", "@id":"<uuid-of-offer-message>", "comment":"somecomment", "credential_preview":<json-ldobject>, "offers~attach":[{"@id":"libindy-cred-offer-0", "mime-type":"application/json", "data":{"base64":"<bytesforbase64>"}}]}
 ///
 /// cb: Callback that provides credential handle or error status
 ///
@@ -74,10 +151,10 @@ pub extern fn vcx_credential_get_payment_info(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_credential_create_with_offer(command_handle: u32,
+pub extern fn vcx_credential_create_with_offer(command_handle: CommandHandle,
                                                source_id: *const c_char,
                                                offer: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)>) -> u32 {
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credential_handle: u32)>) -> u32 {
     info!("vcx_credential_create_with_offer >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -117,13 +194,20 @@ pub extern fn vcx_credential_create_with_offer(command_handle: u32,
 ///
 /// cb: Callback that provides error status of api call, or returns the credential in json format of "{uuid:credential}".
 ///
+/// # Example
+/// credential -> depends on communication method:
+///     proprietary:
+///         {"credential_id":"cred_id", "credential": {"libindy_cred":"{....}","rev_reg_def_json":"","cred_def_id":"cred_def_id","msg_type":"CLAIM","claim_offer_id":"1234","version":"0.1","from_did":"did"}}
+///     aries:
+///         https://github.com/hyperledger/aries-rfcs/tree/master/features/0036-issue-credential#issue-credential
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_get_credential(command_handle: u32,
+pub extern fn vcx_get_credential(command_handle: CommandHandle,
                                  credential_handle: u32,
-                                 cb: Option<extern fn(xcommand_handle: u32, err: u32, credential: *const c_char)>) -> u32 {
+                                 cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credential: *const c_char)>) -> u32 {
     info!("vcx_get_credential >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -156,7 +240,7 @@ pub extern fn vcx_get_credential(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Create a Credential object that requests and receives a credential for an institution
+/// Create a Credential object based off of a known message id for a given connection.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -173,11 +257,11 @@ pub extern fn vcx_get_credential(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
+pub extern fn vcx_credential_create_with_msgid(command_handle: CommandHandle,
                                                source_id: *const c_char,
                                                connection_handle: u32,
                                                msg_id: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32, offer: *const c_char)>) -> u32 {
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credential_handle: u32, offer: *const c_char)>) -> u32 {
     info!("vcx_credential_create_with_msgid >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -217,7 +301,7 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Send a credential request to the connection, called after having received a credential offer
+/// Approves the credential offer and submits a credential request. The result will be a credential stored in the prover's wallet.
 ///
 /// #params
 /// command_handle: command handle to map callback to user context
@@ -231,11 +315,11 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_send_request(command_handle: u32,
+pub extern fn vcx_credential_send_request(command_handle: CommandHandle,
                                           credential_handle: u32,
                                           connection_handle: u32,
-                                          payment_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                          _payment_handle: u32,
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_credential_send_request >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -272,7 +356,7 @@ pub extern fn vcx_credential_send_request(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Get the credential request message that can be sent to the specified connection
+/// Approves the credential offer and gets the credential request message that can be sent to the specified connection
 ///
 /// #params
 /// command_handle: command handle to map callback to user context
@@ -286,11 +370,11 @@ pub extern fn vcx_credential_send_request(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_get_request_msg(command_handle: u32,
+pub extern fn vcx_credential_get_request_msg(command_handle: CommandHandle,
                                              credential_handle: u32,
                                              connection_handle: u32,
-                                             payment_handle: u32,
-                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+                                             _payment_handle: u32,
+                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg: *const c_char)>) -> u32 {
     info!("vcx_credential_get_request_msg >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -337,12 +421,14 @@ pub extern fn vcx_credential_get_request_msg(command_handle: u32,
 ///
 /// cb: Callback that provides any credential offers and error status of query
 ///
+/// # Example offers -> "[[{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]]"
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_get_offers(command_handle: u32,
+pub extern fn vcx_credential_get_offers(command_handle: CommandHandle,
                                         connection_handle: u32,
-                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_offers: *const c_char)>) -> u32 {
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credential_offers: *const c_char)>) -> u32 {
     info!("vcx_credential_get_offers >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -375,8 +461,9 @@ pub extern fn vcx_credential_get_offers(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change in the credential and updates the the state attribute.  If it detects a credential it
-/// will store the credential in the wallet and update the state.
+/// Query the agency for the received messages.
+/// Checks for any messages changing state in the credential object and updates the state attribute.
+/// If it detects a credential it will store the credential in the wallet.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -388,9 +475,9 @@ pub extern fn vcx_credential_get_offers(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_update_state(command_handle: u32,
+pub extern fn vcx_credential_update_state(command_handle: CommandHandle,
                                           credential_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credential_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -413,7 +500,7 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
             }
         }
 
-        let state = match credential::get_state(credential_handle) {
+        match credential::get_state(credential_handle) {
             Ok(s) => {
                 trace!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, s, source_id);
@@ -432,25 +519,24 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change from the given message and updates the the state attribute.  If it detects a credential it
-/// will store the credential in the wallet and update the state.
+/// Update the state of the credential based on the given message.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// credential_handle: Credential handle that was provided during creation. Used to identify credential object
 ///
-/// message: string containing updated status
+/// message: message to process for state changes
 ///
 /// cb: Callback that provides most current state of the credential and error status of request
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_update_state_with_message(command_handle: u32,
+pub extern fn vcx_credential_update_state_with_message(command_handle: CommandHandle,
                                                        credential_handle: u32,
                                                        message: *const c_char,
-                                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credential_update_state_with_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -474,7 +560,7 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: u32,
             }
         }
 
-        let state = match credential::get_state(credential_handle) {
+        match credential::get_state(credential_handle) {
             Ok(s) => {
                 trace!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, s, source_id);
@@ -501,12 +587,16 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: u32,
 /// proof_handle: Credential handle that was provided during creation.
 ///
 /// cb: Callback that provides most current state of the credential and error status of request
+///     Credential statuses:
+///         2 - Request Sent
+///         3 - Request Received
+///         4 - Accepted
 ///
 /// #Returns
 #[no_mangle]
-pub extern fn vcx_credential_get_state(command_handle: u32,
+pub extern fn vcx_credential_get_state(command_handle: CommandHandle,
                                        handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credential_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -552,9 +642,9 @@ pub extern fn vcx_credential_get_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_serialize(command_handle: u32,
+pub extern fn vcx_credential_serialize(command_handle: CommandHandle,
                                        handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, data: *const c_char)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, data: *const c_char)>) -> u32 {
     info!("vcx_credential_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -601,9 +691,9 @@ pub extern fn vcx_credential_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_deserialize(command_handle: u32,
+pub extern fn vcx_credential_deserialize(command_handle: CommandHandle,
                                          credential_data: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, handle: u32)>) -> u32 {
+                                         cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, handle: u32)>) -> u32 {
     info!("vcx_credential_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -646,7 +736,7 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
 
     let source_id = credential::get_source_id(handle).unwrap_or_default();
     match credential::release(handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_credential_release(handle: {}, rc: {}), source_id: {:?}",
                    handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -660,7 +750,9 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
     }
 }
 
-/// Retrieve the txn associated with paying for the credential
+/// Retrieve the payment transaction associated with this credential. This can be used to get the txn that
+/// was used to pay the issuer from the prover.  This could be considered a receipt of payment from the payer to
+/// the issuer.
 ///
 /// #param
 /// handle: credential handle that was provided during creation.  Used to access credential object.
@@ -670,18 +762,16 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
 /// example: {
 ///         "amount":25,
 ///         "inputs":[
-///             "pay:null:1_3FvPC7dzFbQKzfG",
-///             "pay:null:1_lWVGKc07Pyc40m6"
+///             "pay:null:1_3FvPC7dzFbQKzfG"
 ///         ],
 ///         "outputs":[
-///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
-///             {"recipient":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
+///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null}
 ///         ]
 ///     }
 #[no_mangle]
-pub extern fn vcx_credential_get_payment_txn(command_handle: u32,
+pub extern fn vcx_credential_get_payment_txn(command_handle: CommandHandle,
                                              handle: u32,
-                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, txn: *const c_char)>) -> u32 {
+                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, txn: *const c_char)>) -> u32 {
     info!("vcx_credential_get_payment_txn >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -862,7 +952,6 @@ mod tests {
         init!("true");
         let handle = credential::from_string(FULL_CREDENTIAL_SERIALIZED).unwrap();
         let bad_handle = 1123;
-        let command_handle = 1111;
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();

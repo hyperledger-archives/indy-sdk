@@ -1,6 +1,4 @@
 extern crate libc;
-extern crate time;
-extern crate ursa;
 extern crate serde_json;
 
 use super::ErrorCode;

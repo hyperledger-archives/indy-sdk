@@ -55,7 +55,7 @@ where
     unsafe { handle = TP_HANDLE; }
     match THREADPOOL.lock().unwrap().get(&handle) {
         Some(x) => {
-            let n = x.spawn(future);
+            let _n= x.spawn(future);
         },
         None => panic!("no threadpool!"),
     }

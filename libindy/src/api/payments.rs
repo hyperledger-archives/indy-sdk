@@ -326,10 +326,10 @@ pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: CommandHandle,
 ///
 /// # Return
 /// a signature byte array
-pub type SignWithAddressCB = extern fn (command_handle: i32, wallet_handle: i32,
+pub type SignWithAddressCB = extern fn (command_handle: CommandHandle, wallet_handle: WalletHandle,
                                         address: *const c_char,
                                         message_raw: *const u8, message_len: u32,
-                                        cb: Option<extern fn(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32) -> ErrorCode>) -> ErrorCode;
+                                        cb: Option<extern fn(command_handle: CommandHandle, err: ErrorCode, raw: *const u8, len: u32) -> ErrorCode>) -> ErrorCode;
 
 /// Verify a signature with a public payment address.
 ///
@@ -344,10 +344,10 @@ pub type SignWithAddressCB = extern fn (command_handle: i32, wallet_handle: i32,
 ///
 /// # Returns
 /// valid: true - if signature is valid, false - otherwise
-pub type VerifyWithAddressCB = extern fn (command_handle: i32, address: *const c_char,
+pub type VerifyWithAddressCB = extern fn (command_handle: CommandHandle, address: *const c_char,
                                           message_raw: *const u8, message_len: u32,
                                           signature_raw: *const u8, signature_len: u32,
-                                          cb: Option<extern fn(command_handle: i32, err: ErrorCode, result: u8) -> ErrorCode>) -> ErrorCode;
+                                          cb: Option<extern fn(command_handle: CommandHandle, err: ErrorCode, result: u8) -> ErrorCode>) -> ErrorCode;
 
 /// Register custom payment implementation.
 ///

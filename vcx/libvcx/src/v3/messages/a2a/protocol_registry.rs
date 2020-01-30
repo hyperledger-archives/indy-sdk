@@ -23,6 +23,7 @@ impl ProtocolRegistry {
                 family @ MessageFamilies::CredentialIssuance |
                 family @ MessageFamilies::PresentProof |
                 family @ MessageFamilies::TrustPing |
+                family @ MessageFamilies::Basicmessage |
                 family @ MessageFamilies::DiscoveryFeatures => registry.add_protocol(&actors, family),
                 MessageFamilies::Signature => {}
                 MessageFamilies::Unknown(_) => {}
@@ -38,7 +39,7 @@ impl ProtocolRegistry {
                 self.protocols.push(ProtocolDescriptor { pid: family.id(), roles: None })
             }
             Some((actor_1, actor_2)) => {
-                match (actors.contains(&actor_1), actors.contains(&actor_1)) {
+                match (actors.contains(&actor_1), actors.contains(&actor_2)) {
                     (true, true) => {
                         self.protocols.push({ ProtocolDescriptor { pid: family.id(), roles: None } })
                     }
@@ -46,7 +47,7 @@ impl ProtocolRegistry {
                         self.protocols.push({ ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_1]) } })
                     }
                     (false, true) => {
-                        self.protocols.push({ ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_1]) } })
+                        self.protocols.push({ ProtocolDescriptor { pid: family.id(), roles: Some(vec![actor_2]) } })
                     }
                     (false, false) => {}
                 }
@@ -150,11 +151,13 @@ pub mod tests {
         let expected_protocols = vec![
             ProtocolDescriptor { pid: MessageFamilies::Connections.id(), roles: None },
         ];
+        assert_eq!(expected_protocols, protocols);
 
         let protocols = registry.get_protocols_for_query(Some("did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0"));
         let expected_protocols = vec![
             ProtocolDescriptor { pid: MessageFamilies::Connections.id(), roles: None },
         ];
+        assert_eq!(expected_protocols, protocols);
     }
 
     #[test]
@@ -168,5 +171,8 @@ pub mod tests {
         let expected_protocols = vec![
             ProtocolDescriptor { pid: MessageFamilies::Connections.id(), roles: Some(vec![Actors::Invitee]) },
         ];
+        assert_eq!(expected_protocols, protocols);
+
+        ::settings::clear_config();
     }
 }

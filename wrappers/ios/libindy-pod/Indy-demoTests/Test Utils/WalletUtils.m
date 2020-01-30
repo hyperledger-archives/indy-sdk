@@ -129,7 +129,7 @@ NSString *credentials = @"{\"key\":\"6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgb
                                                 [completionExpectation fulfill];
                                             }];
 
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils shortTimeout]];
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
     return err;
 }

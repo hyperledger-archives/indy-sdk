@@ -1,7 +1,7 @@
-use indy::WalletHandle;
 use indy::did;
 use indy::IndyError;
 use indy::future::Future;
+use indy::WalletHandle;
 
 pub struct Did {}
 

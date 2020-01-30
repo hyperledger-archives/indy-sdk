@@ -8,7 +8,8 @@ use std::slice;
 use std::ops::Deref;
 use std::hash::Hash;
 
-use utils::libindy::next_i32_command_handle;
+use utils::libindy::next_command_handle;
+use indy_sys::CommandHandle;
 
 pub const POISON_MSG: &str = "FAILED TO LOCK CALLBACK MAP!";
 
@@ -166,7 +167,7 @@ mod tests {
         let mutex_map: Mutex<HashMap<i32, Box<dyn FnMut(i32) + Send>>> = Default::default();
         assert!(get_cb(2123, &mutex_map).is_none());
 
-        let closure: Box<dyn FnMut(i32) + Send> = Box::new(move |err | {
+        let closure: Box<dyn FnMut(i32) + Send> = Box::new(move |_ | {
 
         });
 
@@ -184,8 +185,8 @@ mod tests {
 // Should be come not needed as the transition is complete
 //**************************************
 
-fn init_callback<T>(closure: T, map: &Mutex<HashMap<i32, T>>) -> (i32) {
-    let command_handle = next_i32_command_handle();
+fn init_callback<T>(closure: T, map: &Mutex<HashMap<CommandHandle, T>>) -> CommandHandle {
+    let command_handle = next_command_handle();
     {
         let mut callbacks = map.lock().unwrap();
         callbacks.insert(command_handle, closure);
