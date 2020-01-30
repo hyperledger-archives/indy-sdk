@@ -1606,7 +1606,7 @@ def publishCentosFilesRCtoStable(testEnv, packageName, version) {
         sh "wget -O temp_centos.rpm $env.SOVRIN_REPO_HOST/repository/rpm-dev/$packageName/rc/$packageName-$version-0.$env.BUILD_NUMBER.x86_64.rpm"
         sh "rpmrebuild --package --directory rpms/ --change-spec-whole="sed -E -e 's/^Release:.*/Release: 1/'" temp_centos.rpm
         withCredentials([string(credentialsId: 'SovrinRepoPassword', variable: 'REPO_PASSWORD)]) {
-            sh "CURLOPT_FAILONERROR=TRUE curl -u '$SOVRIN_REPO_USER:$REPO_PASSWORD' --upload-file rpms/*.rpm https://$SOVRIN_REPO_HOST/repository/rpm-stable/$packageName/stable/$packageName-$version-1.x86_64.rpm"
+            sh "curl --fail -u '$SOVRIN_REPO_USER:$REPO_PASSWORD' --upload-file rpms/*.rpm https://$SOVRIN_REPO_HOST/repository/rpm-stable/$packageName/stable/$packageName-$version-1.x86_64.rpm"
         }
     }
 }

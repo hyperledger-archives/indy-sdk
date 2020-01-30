@@ -42,4 +42,4 @@ EOF
 
 // New repository
 rpm_name=$(basename ${result_dir}/*.rpm)
-CURLOPT_FAILONERROR=TRUE curl -u "$SOVRIN_REPO_USER:$repo_pass" --upload-file ${result_dir}/${rpm_name} https://$SOVRIN_REPO_HOST/repository/$package/$type/$rpm_name
+curl --fail -u "$SOVRIN_REPO_USER:$repo_pass" --upload-file ${result_dir}/${rpm_name} https://$SOVRIN_REPO_HOST/repository/$package/$type/$rpm_name
