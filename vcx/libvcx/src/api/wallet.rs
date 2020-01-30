@@ -262,7 +262,7 @@ pub extern fn vcx_wallet_add_record(command_handle: CommandHandle,
 
     spawn(move || {
         match wallet::add_record(&type_, &id, &value, Some(&tags_json)) {
-            Ok(x) => {
+            Ok(()) => {
                 trace!("vcx_wallet_add_record(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
 
@@ -317,7 +317,7 @@ pub extern fn vcx_wallet_update_record_value(command_handle: CommandHandle,
 
     spawn(move || {
         match wallet::update_record_value(&type_, &id, &value) {
-            Ok(x) => {
+            Ok(()) => {
                 trace!("vcx_wallet_update_record_value(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
 
@@ -550,7 +550,7 @@ pub extern fn vcx_wallet_delete_record(command_handle: CommandHandle,
 
     spawn(move || {
         match wallet::delete_record(&type_, &id) {
-            Ok(x) => {
+            Ok(()) => {
                 trace!("vcx_wallet_delete_record(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
 
@@ -608,7 +608,7 @@ pub extern fn vcx_wallet_send_tokens(command_handle: CommandHandle,
 
     spawn(move || {
         match pay_a_payee(tokens, &recipient) {
-            Ok((payment, msg)) => {
+            Ok((_payment, msg)) => {
                 trace!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, receipt: {})",
                        command_handle, error::SUCCESS.message, msg);
                 let msg = CStringUtils::string_to_cstring(msg);
@@ -658,9 +658,9 @@ pub extern fn vcx_wallet_send_tokens(command_handle: CommandHandle,
 /// Error code as a u32
 #[no_mangle]
 pub  extern fn vcx_wallet_open_search(command_handle: CommandHandle,
-                                      type_: *const c_char,
-                                      query_json: *const c_char,
-                                      options_json: *const c_char,
+                                      _type_: *const c_char,
+                                      _query_json: *const c_char,
+                                      _options_json: *const c_char,
                                       cb: Option<extern fn(command_handle_: CommandHandle, err: u32,
                                                            search_handle: SearchHandle)>) -> u32 {
     info!("vcx_wallet_open_search >>>");
@@ -699,7 +699,7 @@ pub  extern fn vcx_wallet_open_search(command_handle: CommandHandle,
 #[no_mangle]
 pub  extern fn vcx_wallet_search_next_records(command_handle: CommandHandle,
                                               wallet_search_handle: i32,
-                                              count: usize,
+                                              _count: usize,
                                               cb: Option<extern fn(command_handle_: CommandHandle, err: u32,
                                                                    records_json: *const c_char)>) -> u32 {
     info!("vcx_wallet_search_next_records >>>");
@@ -784,7 +784,7 @@ pub extern fn vcx_wallet_export(command_handle: CommandHandle,
         let path = Path::new(&path);
         trace!("vcx_wallet_export(command_handle: {}, path: {:?}, backup_key: ****)", command_handle, path);
         match export(get_wallet_handle(), &path, &backup_key) {
-            Ok(_) => {
+            Ok(()) => {
                 let return_code = error::SUCCESS.code_num;
                 trace!("vcx_wallet_export(command_handle: {}, rc: {})", command_handle, return_code);
                 cb(command_handle, return_code);
@@ -832,7 +832,7 @@ pub extern fn vcx_wallet_import(command_handle: CommandHandle,
     thread::spawn(move || {
         trace!("vcx_wallet_import(command_handle: {}, config: ****)", command_handle);
         match import(&config) {
-            Ok(_) => {
+            Ok(()) => {
                 trace!("vcx_wallet_import(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);
                 cb(command_handle, error::SUCCESS.code_num);
             }
@@ -967,7 +967,6 @@ pub mod tests {
         let sig = "signature";
         let sig_len = sig.len();
         let sig_raw = CString::new(sig).unwrap();
-        let res = true;
         assert_eq!(vcx_wallet_verify_with_address(cb.command_handle,
                                                   CString::new("address").unwrap().into_raw(),
                                                   msg_raw.as_ptr() as *const u8,
@@ -1100,7 +1099,6 @@ pub mod tests {
         init!("false");
         let xtype = CStringUtils::string_to_cstring("record_type".to_string());
         let id = CStringUtils::string_to_cstring("123".to_string());
-        let value = CStringUtils::string_to_cstring("Record Value".to_string());
         let options = json!({
             "retrieveType": true,
             "retrieveValue": true,
@@ -1160,12 +1158,6 @@ pub mod tests {
         let id = CStringUtils::string_to_cstring("123".to_string());
         let value = CStringUtils::string_to_cstring("Record Value".to_string());
         let tags = CStringUtils::string_to_cstring("{}".to_string());
-        let options = json!({
-            "retrieveType": true,
-            "retrieveValue": true,
-            "retrieveTags": false
-        }).to_string();
-        let options = CStringUtils::string_to_cstring(options);
 
         // Add record
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -1244,12 +1236,12 @@ pub mod tests {
 
     #[test]
     fn test_wallet_import_export() {
-        use utils::devsetup::tests::setup_wallet_env;
         use std::env;
         use std::fs;
         use std::path::Path;
         use std::time::Duration;
         use settings;
+        use utils::devsetup::tests::setup_wallet_env;
 
         settings::set_defaults();
         teardown!("false");
@@ -1262,7 +1254,7 @@ pub mod tests {
         if Path::new(&dir).exists() {
             fs::remove_file(Path::new(&dir)).unwrap();
         }
-        let handle = setup_wallet_env(&wallet_name).unwrap();
+        let _handle = setup_wallet_env(&wallet_name).unwrap();
         let dir_c_str = CString::new(dir.to_str().unwrap()).unwrap();
         let backup_key_c_str = CString::new(backup_key).unwrap();
 
@@ -1288,8 +1280,6 @@ pub mod tests {
                                      import_config_c.as_ptr(),
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(50))).unwrap();
-
-        let handle = setup_wallet_env(&wallet_name).unwrap();
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
         fs::remove_file(Path::new(&dir)).unwrap();
