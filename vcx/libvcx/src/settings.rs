@@ -409,7 +409,7 @@ pub fn remove_file_if_exists(filename: &str) {
     trace!("remove_file_if_exists >>> filename: {}", filename);
     if Path::new(filename).exists() {
         match fs::remove_file(filename) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(e) => println!("Unable to remove file: {:?}", e)
         }
     }

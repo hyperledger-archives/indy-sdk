@@ -254,7 +254,7 @@ pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
 
     let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
     match schema::release(schema_handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
                    schema_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num

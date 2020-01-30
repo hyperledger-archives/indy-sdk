@@ -132,7 +132,7 @@ fn _finish_init(command_handle: CommandHandle, cb: extern fn(xcommand_handle: Co
     spawn(move || {
         if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
             match ::utils::libindy::init_pool() {
-                Ok(_) => (),
+                Ok(()) => (),
                 Err(e) => {
                     error!("Init Pool Error {}.", e);
                     cb(command_handle, e.into());
@@ -229,12 +229,12 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
     trace!("vcx_shutdown(delete: {})", delete);
 
     match wallet::close_wallet() {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(_) => {}
     };
 
     match pool::close() {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(_) => {}
     };
 
@@ -256,12 +256,12 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
         let wallet_type = settings::get_config_value(settings::CONFIG_WALLET_TYPE).ok();
 
         match wallet::delete_wallet(&wallet_name, wallet_type.as_ref().map(String::as_str), None, None) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         };
 
         match pool::delete(&pool_name) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         };
     }
@@ -394,7 +394,7 @@ pub extern fn vcx_set_active_txn_author_agreement_meta(text: *const c_char,
            text, version, hash, acc_mech_type, time_of_acceptance);
 
     match ::utils::author_agreement::set_txn_author_agreement(text, version, hash, acc_mech_type, time_of_acceptance) {
-        Ok(_) => error::SUCCESS.code_num,
+        Ok(()) => error::SUCCESS.code_num,
         Err(err) => err.into()
     }
 }
@@ -472,7 +472,7 @@ mod tests {
     use api::connection::vcx_connection_create;
     use indy::{WalletHandle};
 
-    #[allow(dead_code)]
+    #[cfg(any(feature = "agency", feature = "pool_tests"))]
     fn create_config_util(_logging: Option<&str>) -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
                "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",

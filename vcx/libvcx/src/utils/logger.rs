@@ -142,7 +142,7 @@ impl LibvcxDefaultLogger {
         // the user did not set the RUST_LOG env var.
         let pattern = Some(env::var("RUST_LOG").unwrap_or("trace".to_string()));
         match LibvcxDefaultLogger::init(pattern) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         }
     }
@@ -179,7 +179,7 @@ impl LibvcxDefaultLogger {
                 .filter(None, LevelFilter::Off)
                 .parse(pattern.as_ref().map(String::as_str).unwrap_or("warn"))
                 .try_init() {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(e) => {
                     error!("Error in logging init: {:?}", e);
                     return Err(VcxError::from_msg(VcxErrorKind::LoggingError, format!("Cannot init logger: {:?}", e)))

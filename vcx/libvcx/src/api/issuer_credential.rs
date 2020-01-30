@@ -678,7 +678,7 @@ pub extern fn vcx_issuer_credential_release(credential_handle: u32) -> u32 {
     info!("vcx_issuer_credential_release >>>");
     let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
     match issuer_credential::release(credential_handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("(vcx_issuer_credential_release credential_handle: {}, rc: {}), source_id: {}",
                    credential_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -781,7 +781,7 @@ pub extern fn vcx_issuer_revoke_credential(command_handle: CommandHandle,
 
     spawn(move || {
         let err = match issuer_credential::revoke_credential(credential_handle) {
-            Ok(_) => {
+            Ok(()) => {
                 info!("vcx_issuer_revoke_credential_cb(command_handle: {}, credential_handle: {}, rc: {}) source_id: {}",
                       command_handle, credential_handle, error::SUCCESS.message, source_id);
                 error::SUCCESS.code_num

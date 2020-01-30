@@ -26,7 +26,7 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
 
     match wallet::create_wallet(&config, &credentials)
         .wait() {
-        Ok(_) => Ok(()),
+        Ok(()) => Ok(()),
         Err(x) => if x.error_code != ErrorCode::WalletAlreadyExistsError {
             warn!("could not create wallet {}: {:?}", wallet_name, x.message);
             Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("could not create wallet {}: {:?}", wallet_name, x.message)))
@@ -209,12 +209,12 @@ pub mod tests {
 
     pub fn delete_test_wallet(name: &str) {
         match close_wallet() {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         };
 
         match delete_wallet(name, None, None, None) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         };
     }

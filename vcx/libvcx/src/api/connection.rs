@@ -971,7 +971,7 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
 
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     match release(connection_handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_connection_release(connection_handle: {}, rc: {}), source_id: {:?}",
                    connection_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num

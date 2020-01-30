@@ -819,7 +819,7 @@ pub extern fn vcx_disclosed_proof_release(handle: u32) -> u32 {
 
     let source_id = disclosed_proof::get_source_id(handle).unwrap_or_default();
     match disclosed_proof::release(handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
                    handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num

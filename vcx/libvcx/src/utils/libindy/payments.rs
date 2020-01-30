@@ -893,7 +893,6 @@ pub mod tests {
         assert_eq!(remainder, remaining_balance);
 
         let output = outputs(remainder, &refund_address, None, None).unwrap();
-        let _expected_output: Vec<Output> = ::serde_json::from_str(&format!(r#"[{{"amount":{},"recipient":"{}"}}]"#, remaining_balance, refund_address)).unwrap();
 
         let _rc = _submit_fees_request(&req, &inputs, &output).unwrap();
         let end_wallet = get_wallet_token_info().unwrap();

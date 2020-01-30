@@ -27,7 +27,7 @@ pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> VcxResult<()> {
 
     match pool::create_pool_ledger_config(pool_name, Some(&pool_config))
         .wait() {
-        Ok(_) => Ok(()),
+        Ok(()) => Ok(()),
         Err(x) => if x.error_code != ErrorCode::PoolLedgerConfigAlreadyExistsError {
             Err(VcxError::from_msg(VcxErrorKind::UnknownLiibndyError, x))
         } else {
@@ -88,7 +88,7 @@ pub mod tests {
 
     pub fn delete_test_pool() {
         match delete(POOL) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         };
     }

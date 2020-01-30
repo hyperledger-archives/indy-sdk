@@ -262,7 +262,7 @@ pub extern fn vcx_wallet_add_record(command_handle: CommandHandle,
 
     spawn(move || {
         match wallet::add_record(&type_, &id, &value, Some(&tags_json)) {
-            Ok(_) => {
+            Ok(()) => {
                 trace!("vcx_wallet_add_record(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
 
@@ -317,7 +317,7 @@ pub extern fn vcx_wallet_update_record_value(command_handle: CommandHandle,
 
     spawn(move || {
         match wallet::update_record_value(&type_, &id, &value) {
-            Ok(_) => {
+            Ok(()) => {
                 trace!("vcx_wallet_update_record_value(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
 
@@ -550,7 +550,7 @@ pub extern fn vcx_wallet_delete_record(command_handle: CommandHandle,
 
     spawn(move || {
         match wallet::delete_record(&type_, &id) {
-            Ok(_) => {
+            Ok(()) => {
                 trace!("vcx_wallet_delete_record(command_handle: {}, rc: {})",
                        command_handle, error::SUCCESS.message);
 
@@ -784,7 +784,7 @@ pub extern fn vcx_wallet_export(command_handle: CommandHandle,
         let path = Path::new(&path);
         trace!("vcx_wallet_export(command_handle: {}, path: {:?}, backup_key: ****)", command_handle, path);
         match export(get_wallet_handle(), &path, &backup_key) {
-            Ok(_) => {
+            Ok(()) => {
                 let return_code = error::SUCCESS.code_num;
                 trace!("vcx_wallet_export(command_handle: {}, rc: {})", command_handle, return_code);
                 cb(command_handle, return_code);
@@ -832,7 +832,7 @@ pub extern fn vcx_wallet_import(command_handle: CommandHandle,
     thread::spawn(move || {
         trace!("vcx_wallet_import(command_handle: {}, config: ****)", command_handle);
         match import(&config) {
-            Ok(_) => {
+            Ok(()) => {
                 trace!("vcx_wallet_import(command_handle: {}, rc: {})", command_handle, error::SUCCESS.message);
                 cb(command_handle, error::SUCCESS.code_num);
             }

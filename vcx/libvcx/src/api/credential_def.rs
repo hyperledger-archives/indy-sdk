@@ -415,7 +415,7 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
 
     let source_id = credential_def::get_source_id(credentialdef_handle).unwrap_or_default();
     match credential_def::release(credentialdef_handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {}",
                    credentialdef_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
