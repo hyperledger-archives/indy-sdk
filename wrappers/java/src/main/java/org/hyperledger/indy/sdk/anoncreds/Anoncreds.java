@@ -1444,11 +1444,18 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/**
-	 * Create revocation state for credential in the particular time moment.
+	 * Create revocation state for a credential that corresponds to a particular time.
+	 *
+	 * Note that revocation delta must cover the whole registry existence time.
+	 * You can use `from`: `0` and `to`: `needed_time` as parameters for building request to get correct revocation delta.
+	 *
+	 * The resulting revocation state and provided timestamp can be saved and reused later with applying a new
+	 * revocation delta with `updateRevocationState` function.
+	 * This new delta should be received with parameters: `from`: `timestamp` and `to`: `needed_time`.
 	 *
 	 * @param blobStorageReaderHandle Configuration of blob storage reader handle that will allow to read revocation tails
 	 * @param revRegDef               Revocation registry definition json
-	 * @param revRegDelta             Revocation registry definition delta json
+	 * @param revRegDelta             Revocation registry delta which covers the whole registry existence time
 	 * @param timestamp               Time represented as a total number of seconds from Unix Epoch
 	 * @param credRevId               user credential revocation id in revocation registry
 	 * @return A future that resolves to a revocation state json:
@@ -1488,13 +1495,18 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/**
-	 * Create new revocation state for a credential based on already state
-	 * at the particular time moment (to reduce calculation time).
+	 * Create a new revocation state for a credential based on a revocation state created before.
+	 * Note that provided revocation delta must cover the registry gap from based state creation until the specified time
+	 * (this new delta should be received with parameters: `from`: `state_timestamp` and `to`: `needed_time`).
+	 *
+	 * This function reduces the calculation time.
+	 *
+	 * The resulting revocation state and provided timestamp can be saved and reused later by applying a new revocation delta again.
 	 *
 	 * @param blobStorageReaderHandle Configuration of blob storage reader handle that will allow to read revocation tails
 	 * @param revState                Rrevocation registry state json
 	 * @param revRegDef               Revocation registry definition json
-	 * @param revRegDelta             Revocation registry definition delta json
+	 * @param revRegDelta             Revocation registry definition delta which covers the gap form original `rev_state_json` creation till the requested timestamp
 	 * @param timestamp               Time represented as a total number of seconds from Unix Epoch
 	 * @param credRevId               user credential revocation id in revocation registry
 	 * @return A future that resolves to a revocation state json:

@@ -407,6 +407,7 @@ impl Node {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indy_utils::crypto::base64;
 
     #[test]
     fn node_deserialize_works_for_emtpy() {

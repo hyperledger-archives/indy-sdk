@@ -986,11 +986,18 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 #### createRevocationState \( blobStorageReaderHandle, revRegDef, revRegDelta, timestamp, credRevId \) -&gt; revState
 
-Create revocation state for a credential in the particular time moment.
+Create revocation state for a credential that corresponds to a particular time.
+
+Note that revocation delta must cover the whole registry existence time.
+You can use `from`: `0` and `to`: `needed_time` as parameters for building request to get correct revocation delta.
+
+The resulting revocation state and provided timestamp can be saved and reused later with applying a new
+revocation delta with `updateRevocationState` function.
+This new delta should be received with parameters: `from`: `timestamp` and `to`: `needed_time`.
 
 * `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * `revRegDef`: Json - revocation registry definition json
-* `revRegDelta`: Json - revocation registry definition delta json
+* `revRegDelta`: Json - revocation registry delta which covers the whole registry existence time
 * `timestamp`: Timestamp (Number) - time represented as a total number of seconds from Unix Epoch
 * `credRevId`: String - user credential revocation id in revocation registry
 * __->__ `revState`: Json - revocation state json:
@@ -1006,13 +1013,18 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
 #### updateRevocationState \( blobStorageReaderHandle, revState, revRegDef, revRegDelta, timestamp, credRevId \) -&gt; updatedRevState
 
-Create new revocation state for a credential based on existed state
-at the particular time moment \(to reduce calculation time\).
+ Create a new revocation state for a credential based on a revocation state created before.
+ Note that provided revocation delta must cover the registry gap from based state creation until the specified time
+ (this new delta should be received with parameters: `from`: `state_timestamp` and `to`: `needed_time`).
+
+ This function reduces the calculation time.
+
+ The resulting revocation state and provided timestamp can be saved and reused later by applying a new revocation delta again.
 
 * `blobStorageReaderHandle`: Handle (Number) - configuration of blob storage reader handle that will allow to read revocation tails
 * `revState`: Json - revocation registry state json
 * `revRegDef`: Json - revocation registry definition json
-* `revRegDelta`: Json - revocation registry definition delta json
+* `revRegDelta`: Json - revocation registry definition delta which covers the gap form original `rev_state_json` creation till the requested timestamp
 * `timestamp`: Timestamp (Number) - time represented as a total number of seconds from Unix Epoch
 * `credRevId`: String - user credential revocation id in revocation registry
 * __->__ `updatedRevState`: Json - revocation state json:

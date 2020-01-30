@@ -19,8 +19,8 @@ pub fn decrypt(pk: &ed25519_box::PublicKey, sk: &ed25519_box::SecretKey, doc: &[
 mod tests {
     use self::sodiumoxide::crypto::box_;
     use super::*;
-    use crate::utils::crypto::ed25519_box::{PublicKey, SecretKey};
-    use crate::utils::crypto::randombytes::randombytes;
+    use crate::crypto::ed25519_box::{PublicKey, SecretKey};
+    use crate::crypto::randombytes::randombytes;
 
     #[test]
     fn encrypt_decrypt_works() {
