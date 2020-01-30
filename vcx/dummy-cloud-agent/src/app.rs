@@ -1,62 +1,33 @@
 use actix::prelude::*;
 use actix_web::*;
-use actors::{ForwardA2AMsg, GetEndpoint, HandleAdminMessage};
-use actors::forward_agent::ForwardAgent;
-use actors::admin::Admin;
+use actix_web::web::Data;
 use bytes::Bytes;
-use domain::config::{AppConfig, ServerConfig};
-use domain::admin_message::{AdminQuery, GetDetailAgentParams, GetDetailAgentConnParams};
-use actix_web::web::{Data};
+
+use crate::actors::{ForwardA2AMsg, GetEndpoint};
+use crate::actors::admin::Admin;
+use crate::actors::forward_agent::ForwardAgent;
+use crate::domain::config::{AppConfig, ServerConfig};
 
 pub struct AppData {
     pub forward_agent: Addr<ForwardAgent>,
-    pub admin_agent: Addr<Admin>,
-    pub sometext: String,
+    pub admin_agent: Option<Addr<Admin>>,
 }
 
-#[derive(Deserialize)]
-struct AgentParams {
-    did: String,
-}
-
-pub fn start_app_server(server_config: ServerConfig, app_config: AppConfig, forward_agent: Addr<ForwardAgent>, admin_agent: Addr<Admin>) {
-    info!("Forward Agent started");
-    info!("Starting Server with config: {:?}", server_config);
+pub fn start_app_server(server_config: ServerConfig, app_config: AppConfig, forward_agent: Addr<ForwardAgent>, admin_agent: Option<Addr<Admin>>) {
+    info!("Creating HttpServer with config: {:?}", server_config);
     let mut server = HttpServer::new(move || {
         info!("Starting App with config: {:?}", app_config);
-        let app = App::new()
-            .data(AppData { admin_agent: admin_agent.clone(), forward_agent: forward_agent.clone(), sometext: "Footext".to_string() })
+        App::new()
+            .data(AppData { admin_agent: admin_agent.clone(), forward_agent: forward_agent.clone() })
             .wrap(middleware::Logger::default())
             .service(
-                web::resource("/agency")
+                web::resource(&app_config.prefix)
                     .route(web::get().to(_get_endpoint_details))
             )
             .service(
-                web::resource("/agency/msg")
+                web::resource(&format!("{}/msg", app_config.prefix))
                     .route(web::post().to(_forward_message))
-            );
-        match app_config.enable_admin_api {
-            Some(enable_admin_api) if enable_admin_api => {
-                app
-                    .service(
-                        web::resource("/admin")
-                            .route(web::get().to(_get_actor_overview))
-                    )
-                    .service(
-                        web::resource("/admin/forward-agent")
-                            .route(web::get().to(_get_forward_agent_details))
-                    )
-                    .service(
-                        web::resource("/admin/agent/{did}")
-                            .route(web::get().to(_get_agent_details))
-                    )
-                    .service(
-                        web::resource("/admin/agent-connection/{did}")
-                            .route(web::get().to(_get_agent_connection_details))
-                    )
-            }
-            _ => app
-        }
+            )
     });
     if let Some(workers) = server_config.workers {
         server = server.workers(workers);
@@ -71,7 +42,7 @@ pub fn start_app_server(server_config: ServerConfig, app_config: AppConfig, forw
 }
 
 
-fn _get_endpoint_details(state: Data<AppData>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn _get_endpoint_details(state: Data<AppData>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     let f = state.forward_agent
         .send(GetEndpoint {})
         .from_err()
@@ -82,38 +53,7 @@ fn _get_endpoint_details(state: Data<AppData>) -> Box<Future<Item=HttpResponse, 
     Box::new(f)
 }
 
-fn _send_admin_message(state: Data<AppData>, admin_msg: HandleAdminMessage) -> Box<Future<Item=HttpResponse, Error=Error>> {
-    let f = state.admin_agent
-        .send(admin_msg)
-        .from_err()
-        .map(|res| match res {
-            Ok(agent_details) => HttpResponse::Ok().json(&agent_details),
-            Err(err) => HttpResponse::InternalServerError().body(format!("{:?}", err)).into(), // FIXME: Better error
-        });
-    Box::new(f)
-}
-//
-fn _get_agent_connection_details(state: Data<AppData>, info: web::Path<AgentParams>) -> Box<Future<Item=HttpResponse, Error=Error>> {
-    let msg = HandleAdminMessage(AdminQuery::GetDetailAgentConnection(GetDetailAgentConnParams { agent_pairwise_did: info.did.clone() }));
-    _send_admin_message(state, msg)
-}
-
-fn _get_agent_details(state: Data<AppData>, info: web::Path<AgentParams>) -> Box<Future<Item=HttpResponse, Error=Error>> {
-    let msg = HandleAdminMessage(AdminQuery::GetDetailAgent(GetDetailAgentParams { agent_did: info.did.clone() }));
-    _send_admin_message(state, msg)
-}
-
-fn _get_actor_overview(state: Data<AppData>) -> Box<Future<Item=HttpResponse, Error=Error>> {
-    let msg = HandleAdminMessage(AdminQuery::GetActorOverview);
-    _send_admin_message(state, msg)
-}
-
-fn _get_forward_agent_details(state: Data<AppData>) -> Box<Future<Item=HttpResponse, Error=Error>> {
-    let msg = HandleAdminMessage(AdminQuery::GetDetailForwardAgents);
-    _send_admin_message(state, msg)
-}
-
-fn _forward_message(state: Data<AppData>, stream: web::Payload) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn _forward_message(state: Data<AppData>, stream: web::Payload) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     let f = stream.map_err(Error::from)
         .fold(web::BytesMut::new(), move |mut body, chunk| {
             body.extend_from_slice(&chunk);

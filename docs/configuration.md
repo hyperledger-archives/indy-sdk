@@ -12,16 +12,20 @@ This document contains information on how Indy-SDK components can be configured.
     * [Payment](#payment)
     * [Logging](#logging)
     * [Error Handling](#error-handling)
-    * [Runtime](#runtime)
-    * [Transaction Endorser](#eransaction-endorser)
+    * [Runtime Configuration](#runtime-configuration)
+    * [Transaction Endorser](#transaction-endorser)
     * [Transaction Author Agreement](#transaction-author-agreement)
-    * [Fully-Qualified Identifiers](#fully-qualified-Identifiers)
+    * [Fully-Qualified Identifiers](#fully-qualified-identifiers)
 
-* [Indy-CLI](#indy-cLI)
+* [Indy-CLI](#indy-cli)
     * [Options](#options)
     * [Config](#config)
     * [Execution mode](#execution-mode)
     * [Transaction Author Agreement](#transaction-author-agreement)
+
+* [Vcx](#vcx)
+    * [Configuration options](#configuration-options)
+    * [Logging](#logging)
 
 ## Libindy
 

@@ -7,8 +7,9 @@ use schema;
 use settings;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
-/// Create a new Schema object that can create or look up schemas on the ledger
+/// Create a new Schema object and publish correspondent record on the ledger
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -30,13 +31,13 @@ use error::prelude::*;
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_create(command_handle: u32,
+pub extern fn vcx_schema_create(command_handle: CommandHandle,
                                 source_id: *const c_char,
                                 schema_name: *const c_char,
                                 version: *const c_char,
                                 schema_data: *const c_char,
                                 payment_handle: u32,
-                                cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
+                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_handle: u32)>) -> u32 {
     info!("vcx_schema_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -78,6 +79,8 @@ pub extern fn vcx_schema_create(command_handle: u32,
 
 /// Create a new Schema object that will be published by Endorser later.
 ///
+/// Note that Schema can't be used for credential issuing until it will be published on the ledger.
+///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
@@ -98,13 +101,13 @@ pub extern fn vcx_schema_create(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_prepare_for_endorser(command_handle: u32,
+pub extern fn vcx_schema_prepare_for_endorser(command_handle: CommandHandle,
                                               source_id: *const c_char,
                                               schema_name: *const c_char,
                                               version: *const c_char,
                                               schema_data: *const c_char,
                                               endorser: *const c_char,
-                                              cb: Option<extern fn(xcommand_handle: u32, err: u32,
+                                              cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32,
                                                                    schema_handle: u32,
                                                                    schema_transaction: *const c_char)>) -> u32 {
     info!("vcx_schema_prepare_for_endorser >>>");
@@ -161,9 +164,9 @@ pub extern fn vcx_schema_prepare_for_endorser(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_serialize(command_handle: u32,
+pub extern fn vcx_schema_serialize(command_handle: CommandHandle,
                                    schema_handle: u32,
-                                   cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_state: *const c_char)>) -> u32 {
+                                   cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, schema_state: *const c_char)>) -> u32 {
     info!("vcx_schema_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -209,9 +212,9 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_deserialize(command_handle: u32,
+pub extern fn vcx_schema_deserialize(command_handle: CommandHandle,
                                      schema_data: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_handle: u32)>) -> u32 {
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, schema_handle: u32)>) -> u32 {
     info!("vcx_schema_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -274,9 +277,9 @@ pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_get_schema_id(command_handle: u32,
+pub extern fn vcx_schema_get_schema_id(command_handle: CommandHandle,
                                        schema_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_id: *const c_char)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, schema_id: *const c_char)>) -> u32 {
     info!("vcx_schema_get_schema_id >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -318,13 +321,16 @@ pub extern fn vcx_schema_get_schema_id(command_handle: u32,
 /// and it will also contain a json string representing all of the data of a
 /// schema already on the ledger.
 ///
+/// # Example
+/// schema -> {"data":["height","name","sex","age"],"name":"test-licence","payment_txn":null,"schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","source_id":"Test Source ID","state":1,"version":"4.4.4"}
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_get_attributes(command_handle: u32,
+pub extern fn vcx_schema_get_attributes(command_handle: CommandHandle,
                                         source_id: *const c_char,
                                         schema_id: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, s_handle: u32, schema_attrs: *const c_char)>) -> u32 {
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, s_handle: u32, schema_attrs: *const c_char)>) -> u32 {
     info!("vcx_schema_get_attributes >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -375,9 +381,9 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
 ///         ]
 ///     }
 #[no_mangle]
-pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
+pub extern fn vcx_schema_get_payment_txn(command_handle: CommandHandle,
                                          handle: u32,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, txn: *const c_char)>) -> u32 {
+                                         cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, txn: *const c_char)>) -> u32 {
     info!("vcx_schema_get_payment_txn >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -416,7 +422,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks if schema is published on the Ledger and updates the the state
+/// Checks if schema is published on the Ledger and updates the  state
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -424,13 +430,16 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
 /// schema_handle: Schema handle that was provided during creation. Used to access schema object
 ///
 /// cb: Callback that provides most current state of the schema and error status of request
+///     States:
+///         0 = Built
+///         1 = Published
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_update_state(command_handle: u32,
+pub extern fn vcx_schema_update_state(command_handle: CommandHandle,
                                       schema_handle: u32,
-                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                      cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_schema_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -471,13 +480,16 @@ pub extern fn vcx_schema_update_state(command_handle: u32,
 /// schema_handle: Schema handle that was provided during creation. Used to access schema object
 ///
 /// cb: Callback that provides most current state of the schema and error status of request
+///     States:
+///         0 = Built
+///         1 = Published
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_get_state(command_handle: u32,
+pub extern fn vcx_schema_get_state(command_handle: CommandHandle,
                                    schema_handle: u32,
-                                   cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                   cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_schema_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);

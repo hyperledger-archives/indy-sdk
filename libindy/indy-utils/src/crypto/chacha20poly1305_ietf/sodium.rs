@@ -239,7 +239,7 @@ mod tests {
     extern crate rmp_serde;
 
     use super::*;
-    use crate::utils::crypto::randombytes::randombytes;
+    use crate::crypto::randombytes::randombytes;
 
     #[test]
     fn derivation_argon2i_mod_produces_expected_result() {

@@ -68,6 +68,7 @@ async def vcx_ledger_get_fees() -> str:
     Example:
     fees = await vcx_ledger_get_fees()
     :return: JSON representing fees
+        { "txnType1": amount1, "txnType2": amount2, ..., "txnTypeN": amountN }
     """
     logger = logging.getLogger(__name__)
 
@@ -84,11 +85,19 @@ async def vcx_ledger_get_fees() -> str:
 
 async def vcx_messages_download(status: str = None, uids: str = None, pw_dids: str = None) -> str:
     """
-    Retrieve messages from the specified connection
-    :param status:
-    :param uids:
-    :param pw_dids:
-    :return:
+    Retrieve messages from the agent
+    :param status: optional, comma separated - query for messages with the specified status.
+                                     Possible statuses:
+                                     MS-101 - Created
+                                     MS-102 - Sent
+                                     MS-103 - Received
+                                     MS-104 - Accepted
+                                     MS-105 - Rejected
+                                     MS-106 - Reviewed
+    :param uids: optional, comma separated - query for messages with the specified uids
+    :param pw_dids: optional, comma separated - DID's pointing to specific connection
+    :return: message
+        [{"pairwiseDID":"did","msgs":[{"statusCode":"MS-106","payload":null,"senderDID":"","uid":"6BDkgc3z0E","type":"aries","refMsgId":null,"deliveryDetails":[],"decryptedPayload":"{"@msg":".....","@type":{"fmt":"json","name":"aries","ver":"1.0"}}"}]}]
     """
     logger = logging.getLogger(__name__)
 
@@ -124,7 +133,14 @@ async def vcx_messages_download(status: str = None, uids: str = None, pw_dids: s
 async def vcx_messages_update_status(msg_json: str):
     """
     Update the status of messages from the specified connection
-    :param msg_json:
+    :param msg_json: messages to update:
+        [
+            {
+                "pairwiseDID":"string",
+                "uids":["string"]
+            },
+            ...
+        ]
     :return:
     """
     logger = logging.getLogger(__name__)
@@ -157,8 +173,8 @@ def vcx_pool_set_handle(handle: int) -> None:
 
 async def vcx_get_ledger_author_agreement():
     """
-    Retrieve author agreement set on the Ledger
-    :return:
+    Retrieve author agreement and acceptance mechanisms set on the Ledger
+    :return: {"text":"Default agreement", "version":"1.0.0", "aml": {"label1": "description"}}
     """
     logger = logging.getLogger(__name__)
 
@@ -177,6 +193,19 @@ def vcx_set_active_txn_author_agreement_meta(text: Optional[str],
                                              hash: Optional[str],
                                              acc_mech_type: str,
                                              time_of_acceptance: int) -> None:
+    """
+    Set some accepted agreement as active.
+    As result of successful call of this function appropriate metadata will be appended to each write request.
+    
+    :param text and version - (optional) raw data about TAA from ledger.
+               These parameters should be passed together.
+               These parameters are required if hash parameter is ommited.
+    :param hash - (optional) hash on text and version. This parameter is required if text and version parameters are ommited.
+    :param acc_mech_type - mechanism how user has accepted the TAA
+    :param time_of_acceptance - UTC timestamp when user has accepted the TAA
+
+    :return: no value
+    """
     logger = logging.getLogger(__name__)
 
     name = 'vcx_set_active_txn_author_agreement_meta'

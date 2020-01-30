@@ -6,15 +6,16 @@ use utils::libindy::error_codes::map_rust_indy_sdk_error;
 
 use std::path::Path;
 use error::prelude::*;
+use indy::{WalletHandle, INVALID_WALLET_HANDLE};
 
-pub static mut WALLET_HANDLE: i32 = 0;
+pub static mut WALLET_HANDLE: WalletHandle = INVALID_WALLET_HANDLE;
 
-pub fn set_wallet_handle(handle: i32) -> i32 {
+pub fn set_wallet_handle(handle: WalletHandle) -> WalletHandle {
     unsafe { WALLET_HANDLE = handle; }
     unsafe { WALLET_HANDLE }
 }
 
-pub fn get_wallet_handle() -> i32 { unsafe { WALLET_HANDLE } }
+pub fn get_wallet_handle() -> WalletHandle { unsafe { WALLET_HANDLE } }
 
 pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<()> {
     trace!("creating wallet: {}", wallet_name);
@@ -36,10 +37,10 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
     }
 }
 
-pub fn open_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<i32> {
+pub fn open_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<WalletHandle> {
     trace!("open_wallet >>> wallet_name: {}", wallet_name);
     if settings::test_indy_mode_enabled() {
-        return Ok(set_wallet_handle(1));
+        return Ok(set_wallet_handle(WalletHandle(1)));
     }
 
     let config = settings::get_wallet_config(wallet_name, wallet_type, storage_config);
@@ -54,9 +55,9 @@ pub fn open_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config:
     Ok(handle)
 }
 
-pub fn init_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<i32> {
+pub fn init_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<WalletHandle> {
     if settings::test_indy_mode_enabled() {
-        return Ok(set_wallet_handle(1));
+        return Ok(set_wallet_handle(WalletHandle(1)));
     }
 
     create_wallet(wallet_name, wallet_type, storage_config, storage_creds)?;
@@ -67,14 +68,14 @@ pub fn close_wallet() -> VcxResult<()> {
     trace!("close_wallet >>>");
 
     if settings::test_indy_mode_enabled() {
-        set_wallet_handle(0);
+        set_wallet_handle(INVALID_WALLET_HANDLE);
         return Ok(());
     }
     let result = wallet::close_wallet(get_wallet_handle())
         .wait()
         .map_err(map_rust_indy_sdk_error);
 
-    set_wallet_handle(0);
+    set_wallet_handle(INVALID_WALLET_HANDLE);
     result
 }
 
@@ -82,7 +83,7 @@ pub fn delete_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
     trace!("delete_wallet >>> wallet_name: {}", wallet_name);
 
     if settings::test_indy_mode_enabled() {
-        set_wallet_handle(0);
+        set_wallet_handle(INVALID_WALLET_HANDLE);
         return Ok(());
     }
 
@@ -139,8 +140,8 @@ pub fn update_record_value(xtype: &str, id: &str, value: &str) -> VcxResult<()> 
         .map_err(map_rust_indy_sdk_error)
 }
 
-pub fn export(wallet_handle: i32, path: &Path, backup_key: &str) -> VcxResult<()> {
-    trace!("export >>> wallet_handle: {}, path: {:?}, backup_key: ****", wallet_handle, path);
+pub fn export(wallet_handle: WalletHandle, path: &Path, backup_key: &str) -> VcxResult<()> {
+    trace!("export >>> wallet_handle: {:?}, path: {:?}, backup_key: ****", wallet_handle, path);
 
     let export_config = json!({ "key": backup_key, "path": &path}).to_string();
     wallet::export_wallet(wallet_handle, &export_config)
@@ -224,7 +225,7 @@ pub mod tests {
     #[test]
     fn test_wallet() {
         init!("false");
-        assert!(get_wallet_handle() > 0);
+        assert_ne!(get_wallet_handle(), INVALID_WALLET_HANDLE);
         assert_eq!(VcxErrorKind::WalletCreate, init_wallet(&String::from(""), None, None, None).unwrap_err().kind());
     }
 

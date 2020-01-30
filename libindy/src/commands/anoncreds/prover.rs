@@ -30,7 +30,7 @@ use indy_utils::sequence;
 use crate::utils::wql::Query;
 
 use super::tails::SDKTailsAccessor;
-use indy_api_types::WalletHandle;
+use indy_api_types::{WalletHandle, SearchHandle};
 use crate::commands::BoxedCallbackStringStringSend;
 
 pub enum ProverCommand {
@@ -152,8 +152,8 @@ pub struct ProverCommandExecutor {
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
     blob_storage_service: Rc<BlobStorageService>,
-    searches: RefCell<HashMap<i32, Box<WalletSearch>>>,
-    searches_for_proof_requests: RefCell<HashMap<i32, Box<HashMap<String, SearchForProofRequest>>>>,
+    searches: RefCell<HashMap<SearchHandle, Box<WalletSearch>>>,
+    searches_for_proof_requests: RefCell<HashMap<SearchHandle, Box<HashMap<String, SearchForProofRequest>>>>,
 }
 
 impl ProverCommandExecutor {
@@ -480,7 +480,7 @@ impl ProverCommandExecutor {
     }
 
     fn fetch_credentials(&self,
-                         search_handle: i32,
+                         search_handle: SearchHandle,
                          count: usize, ) -> IndyResult<String> {
         trace!("fetch_credentials >>> search_handle: {:?}, count: {:?}", search_handle, count);
 

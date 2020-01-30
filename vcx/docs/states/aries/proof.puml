@@ -1,0 +1,18 @@
+@startuml
+title
+ Proof API as Verifier
+
+ The diagram shows Proof object state transitions in case acting as a Verifier.
+end title
+
+[*] --> VcxStateInitialized: vcx_proof_create
+
+VcxStateInitialized --> VcxStateOfferSent: vcx_credential_send_request
+
+note left of VcxStateOfferSent : use vcx_proof_update_state \n or vcx_proof_update_state_with_message \n for connection status updates
+
+VcxStateOfferSent --> VcxStateAccepted: received `Presentation` message
+VcxStateOfferSent --> VcxStateNone: received `PresentationProposal` message
+VcxStateOfferSent --> VcxStateNone: received `ProblemReport` message
+
+@enduml

@@ -1,5 +1,5 @@
-use domain::status::MessageStatusCode;
-use domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::status::MessageStatusCode;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct InviteDetail {

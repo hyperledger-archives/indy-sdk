@@ -39,8 +39,8 @@ pub fn gen_nonce() -> Nonce {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::crypto::ed25519_sign;
-    use crate::utils::crypto::randombytes::randombytes;
+    use crate::crypto::ed25519_sign;
+    use crate::crypto::randombytes::randombytes;
 
     #[test]
     fn encrypt_decrypt_works() {
