@@ -25,7 +25,7 @@ pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
     trace!("vcx_set_default_logger(pattern: {:?})", pattern);
 
     match LibvcxDefaultLogger::init(pattern) {
-        Ok(_) => {
+        Ok(()) => {
             debug!("Logger Successfully Initialized");
             SUCCESS.code_num
         }
@@ -61,7 +61,7 @@ pub extern fn vcx_set_logger(context: *const CVoid,
 
     let res = LibvcxLogger::init(context, enabled, log, flush);
     match res {
-        Ok(_) => {
+        Ok(()) => {
             debug!("Logger Successfully Initialized");
             SUCCESS.code_num
         }

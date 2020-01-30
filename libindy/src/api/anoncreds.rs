@@ -2250,13 +2250,20 @@ pub extern fn indy_verifier_verify_proof(command_handle: CommandHandle,
     res
 }
 
-/// Create revocation state for a credential in the particular time moment.
+/// Create revocation state for a credential that corresponds to a particular time.
+///
+/// Note that revocation delta must cover the whole registry existence time.
+/// You can use `from`: `0` and `to`: `needed_time` as parameters for building request to get correct revocation delta.
+///
+/// The resulting revocation state and provided timestamp can be saved and reused later with applying a new
+/// revocation delta with `indy_update_revocation_state` function.
+/// This new delta should be received with parameters: `from`: `timestamp` and `to`: `needed_time`.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
 /// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails (returned by `indy_open_blob_storage_reader`)
 /// rev_reg_def_json: revocation registry definition json related to `rev_reg_id` in a credential
-/// rev_reg_delta_json: revocation registry definition delta json
+/// rev_reg_delta_json: revocation registry delta which covers the whole registry existence time
 /// timestamp: time represented as a total number of seconds from Unix Epoch.
 /// cred_rev_id: user credential revocation id in revocation registry (match to `cred_rev_id` in a credential)
 /// cb: Callback that takes command result as parameter
@@ -2312,15 +2319,20 @@ pub extern fn indy_create_revocation_state(command_handle: CommandHandle,
     res
 }
 
-/// Create new revocation state for a credential based on existed state
-/// at the particular time moment (to reduce calculation time).
+/// Create a new revocation state for a credential based on a revocation state created before.
+/// Note that provided revocation delta must cover the registry gap from based state creation until the specified time
+/// (this new delta should be received with parameters: `from`: `state_timestamp` and `to`: `needed_time`).
+///
+/// This function reduces the calculation time.
+///
+/// The resulting revocation state and provided timestamp can be saved and reused later by applying a new revocation delta again.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
 /// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails (returned by `indy_open_blob_storage_reader`)
 /// rev_state_json: revocation registry state json
 /// rev_reg_def_json: revocation registry definition json related to `rev_reg_id` in a credential
-/// rev_reg_delta_json: revocation registry definition delta json
+/// rev_reg_delta_json: revocation registry definition delta which covers the gap form original `rev_state_json` creation till the requested timestamp
 /// timestamp: time represented as a total number of seconds from Unix Epoch
 /// cred_rev_id: user credential revocation id in revocation registry (match to `cred_rev_id` in a credential)
 /// cb: Callback that takes command result as parameter

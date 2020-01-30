@@ -1,5 +1,4 @@
 extern crate owning_ref;
-extern crate sodiumoxide;
 
 use std;
 use std::fs;
@@ -744,7 +743,7 @@ impl WalletStorageType for SQLiteStorageType {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::test;
+    use indy_utils::test;
 
     use super::*;
     use super::super::Tag;

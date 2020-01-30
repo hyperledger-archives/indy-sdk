@@ -209,8 +209,8 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: CommandHandle,
            command_handle, proof_handle, connection_handle, source_id);
 
     spawn(move || {
-        let err = match disclosed_proof::send_proof(proof_handle, connection_handle) {
-            Ok(x) => {
+       match disclosed_proof::send_proof(proof_handle, connection_handle) {
+            Ok(_) => {
                 trace!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}) source_id: {}",
                        command_handle, error::SUCCESS.message, source_id);
                 cb(command_handle, error::SUCCESS.code_num);
@@ -819,7 +819,7 @@ pub extern fn vcx_disclosed_proof_release(handle: u32) -> u32 {
 
     let source_id = disclosed_proof::get_source_id(handle).unwrap_or_default();
     match disclosed_proof::release(handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
                    handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -888,7 +888,6 @@ mod tests {
     #[test]
     fn test_vcx_disclosed_proof_release() {
         init!("true");
-        let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         let unknown_handle = handle + 1;
         let err = vcx_disclosed_proof_release(unknown_handle);
@@ -980,7 +979,7 @@ mod tests {
                                                             handle,
                                                             Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let credentials = cb.receive(None).unwrap().unwrap();
+        let _credentials = cb.receive(None).unwrap().unwrap();
     }
 
     #[test]

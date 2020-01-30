@@ -12,6 +12,10 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
+extern crate zeroize;
+
+extern crate dirs;
+
 #[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! secret {

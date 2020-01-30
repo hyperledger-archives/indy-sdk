@@ -23,17 +23,17 @@ pub enum IssuerState {
 impl IssuerState {
     pub fn get_connection_handle(&self) -> u32 {
         match self {
-            IssuerState::Initial(state) => 0,
+            IssuerState::Initial(_) => 0,
             IssuerState::OfferSent(state) => state.connection_handle,
             IssuerState::RequestReceived(state) => state.connection_handle,
             IssuerState::CredentialSent(state) => state.connection_handle,
-            IssuerState::Finished(state) => 0
+            IssuerState::Finished(_) => 0
         }
     }
 
     pub fn thread_id(&self) -> String {
         match self {
-            IssuerState::Initial(state) => String::new(),
+            IssuerState::Initial(_) => String::new(),
             IssuerState::OfferSent(state) => state.thread_id.clone(),
             IssuerState::RequestReceived(state) => state.thread_id.clone(),
             IssuerState::CredentialSent(state) => state.thread_id.clone(),
@@ -110,7 +110,7 @@ impl From<(InitialState, String, u32, MessageId)> for OfferSentState {
 }
 
 impl From<InitialState> for FinishedState {
-    fn from(state: InitialState) -> Self {
+    fn from(_state: InitialState) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {
             cred_id: None,
@@ -136,7 +136,7 @@ impl From<(OfferSentState, CredentialRequest)> for RequestReceivedState {
 }
 
 impl From<(RequestReceivedState, MessageId)> for CredentialSentState {
-    fn from((state, sent_id): (RequestReceivedState, MessageId)) -> Self {
+    fn from((state, _sent_id): (RequestReceivedState, MessageId)) -> Self {
         trace!("SM is now in CredentialSent state");
         CredentialSentState {
             connection_handle: state.connection_handle,
@@ -210,9 +210,9 @@ pub enum HolderState {
 impl HolderState {
     pub fn get_connection_handle(&self) -> u32 {
         match self {
-            HolderState::OfferReceived(state) => 0,
+            HolderState::OfferReceived(_) => 0,
             HolderState::RequestSent(state) => state.connection_handle,
-            HolderState::Finished(state) => 0
+            HolderState::Finished(_) => 0
         }
     }
 }
@@ -246,7 +246,7 @@ pub struct FinishedHolderState {
 }
 
 impl From<(OfferReceivedState, String, String, u32)> for RequestSentState {
-    fn from((state, req_meta, cred_def_json, connection_handle): (OfferReceivedState, String, String, u32)) -> Self {
+    fn from((_state, req_meta, cred_def_json, connection_handle): (OfferReceivedState, String, String, u32)) -> Self {
         trace!("SM is now in RequestSent state");
         RequestSentState {
             req_meta,

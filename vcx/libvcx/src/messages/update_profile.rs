@@ -123,8 +123,8 @@ impl UpdateProfileDataBuilder {
         let mut response = parse_response_from_agency(&response)?;
 
         match response.remove(0) {
-            A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(res)) => Ok(()),
-            A2AMessage::Version2(A2AMessageV2::UpdateConfigsResponse(res)) => Ok(()),
+            A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(_)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateConfigsResponse(_)) => Ok(()),
             _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConfigsResponse"))
         }
     }
@@ -142,7 +142,7 @@ mod tests {
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let name = "name";
         let url = "https://random.com";
-        let msg = update_data()
+        let _msg = update_data()
             .to(to_did).unwrap()
             .name(&name).unwrap()
             .logo_url(&url).unwrap()
@@ -153,8 +153,8 @@ mod tests {
     fn test_update_data_set_values_and_post() {
         init!("false");
         let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let (_my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
