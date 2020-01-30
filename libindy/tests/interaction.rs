@@ -6,6 +6,7 @@ inject_indy_dependencies!();
 extern crate indyrs as indy;
 extern crate indyrs as api;
 extern crate core;
+extern crate indy_sys;
 
 use crate::utils::{wallet, anoncreds, blob_storage, pool, ledger, did};
 use crate::utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID};
@@ -30,15 +31,16 @@ use std::thread;
 
 use serde_json::Value;
 use core::borrow::Borrow;
+use indy::{PoolHandle, WalletHandle};
 
 
 struct Pool {
-    pool_handle: i32
+    pool_handle: PoolHandle
 }
 
 
 struct Issuer {
-    issuer_wallet_handle: i32,
+    issuer_wallet_handle: WalletHandle,
     issuer_wallet_config: String,
     issuer_did: String,
 
@@ -53,7 +55,7 @@ struct Issuer {
 
 struct Prover {
 
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     wallet_config: String,
     did: String,
     verkey: String,
@@ -81,13 +83,13 @@ impl Pool {
     }
 
 
-    pub fn submit_nym(&self, issuer_did: &str, issuer_wallet_handle: i32, prover_did: &str, prover_verkey: Option<&str>)
+    pub fn submit_nym(&self, issuer_did: &str, issuer_wallet_handle: WalletHandle, prover_did: &str, prover_verkey: Option<&str>)
     {
         let nym_request = ledger::build_nym_request(issuer_did, prover_did, prover_verkey, None, None).unwrap();
         ledger::sign_and_submit_request(self.pool_handle, issuer_wallet_handle, &issuer_did, &nym_request).unwrap();
     }
 
-    pub fn submit_schema(&self, issuer_did: &str, issuer_wallet_handle: i32, schema_json: &str) -> String {
+    pub fn submit_schema(&self, issuer_did: &str, issuer_wallet_handle: WalletHandle, schema_json: &str) -> String {
         let schema_request = ledger::build_schema_request(issuer_did, schema_json).unwrap();
         ledger::sign_and_submit_request(self.pool_handle, issuer_wallet_handle, issuer_did, &schema_request).unwrap()
     }
@@ -99,7 +101,7 @@ impl Pool {
 
     }
 
-    pub fn submit_cred_def(&self, issuer_did: &str, issuer_wallet_handle: i32, cred_def_json: &str) -> String {
+    pub fn submit_cred_def(&self, issuer_did: &str, issuer_wallet_handle: WalletHandle, cred_def_json: &str) -> String {
         let cred_def_request = ledger::build_cred_def_txn(issuer_did, cred_def_json).unwrap();
         ledger::sign_and_submit_request(self.pool_handle, issuer_wallet_handle, issuer_did, &cred_def_request).unwrap()
 
@@ -111,7 +113,7 @@ impl Pool {
         ledger::parse_get_cred_def_response(&get_cred_def_response).unwrap()
     }
 
-    pub fn submit_revoc_reg_def(&self, issuer_did: &str, issuer_wallet_handle: i32, rev_reg_def_json: &str) -> String {
+    pub fn submit_revoc_reg_def(&self, issuer_did: &str, issuer_wallet_handle: WalletHandle, rev_reg_def_json: &str) -> String {
         let rev_reg_def_request = ledger::build_revoc_reg_def_request(issuer_did, rev_reg_def_json).unwrap();
         ledger::sign_and_submit_request(self.pool_handle, issuer_wallet_handle, issuer_did, &rev_reg_def_request).unwrap()
     }
@@ -122,7 +124,7 @@ impl Pool {
         ledger::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap()
     }
 
-    pub fn submit_revoc_reg_entry(&self, issuer_did: &str, issuer_wallet_handle: i32, rev_reg_id: &str, rev_reg_entry_json: &str) -> String {
+    pub fn submit_revoc_reg_entry(&self, issuer_did: &str, issuer_wallet_handle: WalletHandle, rev_reg_id: &str, rev_reg_entry_json: &str) -> String {
         let rev_reg_entry_request =
             ledger::build_revoc_reg_entry_request(issuer_did, rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_json).unwrap();
         ledger::sign_and_submit_request(self.pool_handle, issuer_wallet_handle, issuer_did, &rev_reg_entry_request).unwrap()

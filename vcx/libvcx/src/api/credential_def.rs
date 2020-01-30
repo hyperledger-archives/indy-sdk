@@ -7,6 +7,7 @@ use credential_def;
 use settings;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
 /// Create a new CredentialDef object and publish correspondent record on the ledger
 ///
@@ -36,15 +37,15 @@ use error::prelude::*;
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_create(command_handle: u32,
+pub extern fn vcx_credentialdef_create(command_handle: CommandHandle,
                                        source_id: *const c_char,
                                        credentialdef_name: *const c_char,
                                        schema_id: *const c_char,
                                        issuer_did: *const c_char,
                                        tag: *const c_char,
                                        revocation_details: *const c_char,
-                                       payment_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
+                                       _payment_handle: u32,
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_handle: u32)>) -> u32 {
     info!("vcx_credentialdef_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -132,7 +133,7 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: u32,
+pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: CommandHandle,
                                                      source_id: *const c_char,
                                                      credentialdef_name: *const c_char,
                                                      schema_id: *const c_char,
@@ -140,7 +141,7 @@ pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: u32,
                                                      tag: *const c_char,
                                                      revocation_details: *const c_char,
                                                      endorser: *const c_char,
-                                                     cb: Option<extern fn(xcommand_handle: u32, err: u32,
+                                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32,
                                                                           credentialdef_handle: u32,
                                                                           credentialdef_transaction: *const c_char,
                                                                           rev_reg_def_transaction: *const c_char,
@@ -219,9 +220,9 @@ pub extern fn vcx_credentialdef_prepare_for_endorser(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_serialize(command_handle: u32,
+pub extern fn vcx_credentialdef_serialize(command_handle: CommandHandle,
                                           credentialdef_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_state: *const c_char)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_state: *const c_char)>) -> u32 {
     info!("vcx_credentialdef_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -267,9 +268,9 @@ pub extern fn vcx_credentialdef_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
+pub extern fn vcx_credentialdef_deserialize(command_handle: CommandHandle,
                                             credentialdef_data: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
+                                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_handle: u32)>) -> u32 {
     info!("vcx_credentialdef_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -308,9 +309,9 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32,
+pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: CommandHandle,
                                                 cred_def_handle: u32,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, cred_def_id: *const c_char)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, cred_def_id: *const c_char)>) -> u32 {
     info!("vcx_credentialdef_get_cred_def_id >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -359,9 +360,9 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32,
 ///         ]
 ///     }
 #[no_mangle]
-pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
+pub extern fn vcx_credentialdef_get_payment_txn(command_handle: CommandHandle,
                                                 handle: u32,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, txn: *const c_char)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, txn: *const c_char)>) -> u32 {
     info!("vcx_credentialdef_get_payment_txn >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -414,7 +415,7 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
 
     let source_id = credential_def::get_source_id(credentialdef_handle).unwrap_or_default();
     match credential_def::release(credentialdef_handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {}",
                    credentialdef_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -443,9 +444,9 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_update_state(command_handle: u32,
+pub extern fn vcx_credentialdef_update_state(command_handle: CommandHandle,
                                              credentialdef_handle: u32,
-                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credentialdef_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -493,9 +494,9 @@ pub extern fn vcx_credentialdef_update_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_get_state(command_handle: u32,
+pub extern fn vcx_credentialdef_get_state(command_handle: CommandHandle,
                                           credentialdef_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credentialdef_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -674,7 +675,7 @@ mod tests {
                                                                       "tag".to_string(),
                                                                       "{}".to_string()).unwrap();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let rc = vcx_credentialdef_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
+        let _rc = vcx_credentialdef_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
@@ -692,7 +693,7 @@ mod tests {
                                             CString::new("{}").unwrap().into_raw(),
                                                           CString::new("V4SGRU86Z58d6TV7PBUe6f").unwrap().into_raw(),
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        let (handle, cred_def_transaction, rev_reg_def_transaction, rev_reg_delta_transaction) = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let (_handle, cred_def_transaction, rev_reg_def_transaction, rev_reg_delta_transaction) = cb.receive(Some(Duration::from_secs(2))).unwrap();
         let cred_def_transaction = cred_def_transaction.unwrap();
         let cred_def_transaction: serde_json::Value = serde_json::from_str(&cred_def_transaction).unwrap();
         let expected_cred_def_transaction: serde_json::Value = serde_json::from_str(::utils::constants::REQUEST_WITH_ENDORSER).unwrap();
@@ -715,7 +716,7 @@ mod tests {
                                             CString::new(credential_def::tests::revocation_details(true).to_string()).unwrap().into_raw(),
                                                           CString::new("V4SGRU86Z58d6TV7PBUe6f").unwrap().into_raw(),
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        let (handle, cred_def_transaction, rev_reg_def_transaction, rev_reg_delta_transaction) = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let (_handle, cred_def_transaction, rev_reg_def_transaction, rev_reg_delta_transaction) = cb.receive(Some(Duration::from_secs(2))).unwrap();
         let cred_def_transaction = cred_def_transaction.unwrap();
         let cred_def_transaction: serde_json::Value = serde_json::from_str(&cred_def_transaction).unwrap();
         let expected_cred_def_transaction: serde_json::Value = serde_json::from_str(::utils::constants::REQUEST_WITH_ENDORSER).unwrap();
@@ -727,7 +728,6 @@ mod tests {
     #[test]
     fn test_vcx_cred_def_get_state() {
         init!("true");
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (handle, _, _, _) = credential_def::prepare_credentialdef_for_endorser("testid".to_string(),
                                                                                    "Test Credential Def".to_string(),
                                                                                    "6vkhW3L28AophhA68SSzRS".to_string(),
@@ -737,17 +737,17 @@ mod tests {
                                                                                    "V4SGRU86Z58d6TV7PBUe6f".to_string()).unwrap();
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
-            let rc = vcx_credentialdef_get_state(cb.command_handle, handle, Some(cb.get_callback()));
+            let _rc = vcx_credentialdef_get_state(cb.command_handle, handle, Some(cb.get_callback()));
             assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Built as u32)
         }
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
-            let rc = vcx_credentialdef_update_state(cb.command_handle, handle, Some(cb.get_callback()));
+            let _rc = vcx_credentialdef_update_state(cb.command_handle, handle, Some(cb.get_callback()));
             assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Published as u32);
         }
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
-            let rc = vcx_credentialdef_get_state(cb.command_handle, handle, Some(cb.get_callback()));
+            let _rc = vcx_credentialdef_get_state(cb.command_handle, handle, Some(cb.get_callback()));
             assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Published as u32)
         }
     }

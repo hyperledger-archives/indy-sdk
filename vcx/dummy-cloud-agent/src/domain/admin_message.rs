@@ -1,3 +1,5 @@
+use indyrs::WalletHandle;
+
 // --------
 // Requests
 // --------
@@ -47,7 +49,7 @@ pub struct ResQueryAdmin {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ResQueryForwardAgent {
-    pub wallet_handle: i32,
+    pub wallet_handle: WalletHandle,
     #[serde(rename = "forwardAgentEndpoint")]
     pub endpoint: String,
     pub pairwise_list:Vec<String>

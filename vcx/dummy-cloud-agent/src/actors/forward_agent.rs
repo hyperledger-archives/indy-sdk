@@ -14,11 +14,11 @@ use crate::domain::a2a::*;
 use crate::domain::admin_message::{ResAdminQuery, ResQueryForwardAgent};
 use crate::domain::config::{ForwardAgentConfig, WalletStorageConfig};
 use crate::domain::invite::ForwardAgentDetail;
-use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet};
+use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
 use crate::utils::futures::*;
 
 pub struct ForwardAgent {
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     did: String,
     verkey: String,
     router: Addr<Router>,
@@ -149,7 +149,7 @@ impl ForwardAgent {
             .into_box()
     }
 
-    fn _restore_connections(wallet_handle: i32,
+    fn _restore_connections(wallet_handle: WalletHandle,
                             forward_agent_detail: ForwardAgentDetail,
                             wallet_storage_config: WalletStorageConfig,
                             router: Addr<Router>,
@@ -201,7 +201,7 @@ impl ForwardAgent {
         (self.did.clone(), self.verkey.clone())
     }
 
-    fn _get_forward_agent_details(&self) -> (String, Vec<String>, i32) {
+    fn _get_forward_agent_details(&self) -> (String, Vec<String>, WalletHandle) {
         trace!("ForwardAgent::_get_forward_agent_details >>");
         let endpoint = self.forward_agent_detail.endpoint.clone();
         let wallet_handle = self.wallet_handle.clone();

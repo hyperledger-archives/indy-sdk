@@ -98,7 +98,7 @@ pub mod tests {
 
     #[test]
     fn test_get_credential_cache_returns_default_when_not_exists_in_wallet() {
-        let init = Init::new();
+        let _init = Init::new();
 
         let result = get_rev_reg_cache("test-id");
         assert_eq!(result, RevRegCache::default());
@@ -106,7 +106,7 @@ pub mod tests {
 
     #[test]
     fn test_get_credential_cache_returns_default_when_invalid_data_in_the_wallet() {
-        let init = Init::new();
+        let _init = Init::new();
 
         let rev_reg_id = "test-id";
 
@@ -118,7 +118,7 @@ pub mod tests {
 
     #[test]
     fn test_credential_cache_set_than_get_works() {
-        let init = Init::new();
+        let _init = Init::new();
 
         let rev_reg_id = "test-id";
 
@@ -138,7 +138,7 @@ pub mod tests {
 
     #[test]
     fn test_credential_cache_set_than_double_get_works() {
-        let init = Init::new();
+        let _init = Init::new();
 
         let rev_reg_id = "test-id";
 
@@ -160,7 +160,7 @@ pub mod tests {
 
     #[test]
     fn test_credential_cache_overwrite_works() {
-        let init = Init::new();
+        let _init = Init::new();
 
         let rev_reg_id = "test-id";
 

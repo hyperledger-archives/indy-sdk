@@ -6,6 +6,7 @@ use connection;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
 /*
     The API represents an Verifier side in credential presentation process.
@@ -128,13 +129,13 @@ use error::prelude::*;
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_create(command_handle: u32,
+pub extern fn vcx_proof_create(command_handle: CommandHandle,
                                source_id: *const c_char,
                                requested_attrs: *const c_char,
                                requested_predicates: *const c_char,
                                revocation_interval: *const c_char,
                                name: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_handle: u32)>) -> u32 {
+                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_handle: u32)>) -> u32 {
     info!("vcx_proof_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -186,9 +187,9 @@ pub extern fn vcx_proof_create(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_update_state(command_handle: u32,
+pub extern fn vcx_proof_update_state(command_handle: CommandHandle,
                                      proof_handle: u32,
-                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_proof_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -240,10 +241,10 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_update_state_with_message(command_handle: u32,
+pub extern fn vcx_proof_update_state_with_message(command_handle: CommandHandle,
                                                   proof_handle: u32,
                                                   message: *const c_char,
-                                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                                  cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_proof_update_state_with_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -294,9 +295,9 @@ pub extern fn vcx_proof_update_state_with_message(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_get_state(command_handle: u32,
+pub extern fn vcx_proof_get_state(command_handle: CommandHandle,
                                   proof_handle: u32,
-                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                  cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_proof_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -341,9 +342,9 @@ pub extern fn vcx_proof_get_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_serialize(command_handle: u32,
+pub extern fn vcx_proof_serialize(command_handle: CommandHandle,
                                   proof_handle: u32,
-                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_state: *const c_char)>) -> u32 {
+                                  cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_state: *const c_char)>) -> u32 {
     info!("vcx_proof_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -388,9 +389,9 @@ pub extern fn vcx_proof_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_deserialize(command_handle: u32,
+pub extern fn vcx_proof_deserialize(command_handle: CommandHandle,
                                     proof_data: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_handle: u32)>) -> u32 {
+                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_handle: u32)>) -> u32 {
     info!("vcx_proof_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -433,7 +434,7 @@ pub extern fn vcx_proof_release(proof_handle: u32) -> u32 {
 
     let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
     match proof::release(proof_handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {}",
                        proof_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -460,10 +461,10 @@ pub extern fn vcx_proof_release(proof_handle: u32) -> u32 {
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_send_request(command_handle: u32,
+pub extern fn vcx_proof_send_request(command_handle: CommandHandle,
                                      proof_handle: u32,
                                      connection_handle: u32,
-                                     cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_proof_send_request >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -518,9 +519,9 @@ pub extern fn vcx_proof_send_request(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_proof_get_request_msg(command_handle: u32,
+pub extern fn vcx_proof_get_request_msg(command_handle: CommandHandle,
                                         proof_handle: u32,
-                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg: *const c_char)>) -> u32 {
     info!("vcx_proof_get_request_msg >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -570,10 +571,10 @@ pub extern fn vcx_proof_get_request_msg(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_get_proof(command_handle: u32,
+pub extern fn vcx_get_proof(command_handle: CommandHandle,
                             proof_handle: u32,
                             connection_handle: u32,
-                            cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_state:u32, response_data: *const c_char)>) -> u32 {
+                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_state:u32, response_data: *const c_char)>) -> u32 {
     info!("vcx_get_proof >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -716,7 +717,6 @@ mod tests {
     fn test_vcx_proof_deserialize_succeeds() {
         init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let original = r#"{"nonce":"123456","version":"1.0","handle":1,"msg_uid":"","ref_msg_id":"","name":"Name Data","prover_vk":"","agent_did":"","agent_vk":"","remote_did":"","remote_vk":"","prover_did":"8XFh8yBzrpJQmNyZzgoTqB","requested_attrs":"{\"attrs\":[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"ISSUER_DID2\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]}","requested_predicates":"{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}","source_id":"source id","state":2,"proof_state":0,"proof":null,"proof_request":null,"revocation_interval":{}}"#;
         assert_eq!(vcx_proof_deserialize(cb.command_handle,
                                          CString::new(PROOF_OFFER_SENT).unwrap().into_raw(),
                                          Some(cb.get_callback())),
@@ -768,7 +768,7 @@ mod tests {
                                                        CString::new(PROOF_RESPONSE_STR).unwrap().into_raw(),
                                                        Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _state = cb.receive(Some(Duration::from_secs(10))).unwrap();
 
         assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateAccepted as u32);
     }

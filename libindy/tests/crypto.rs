@@ -246,7 +246,7 @@ mod high_cases {
         pub struct UnpackMessage {
             pub message: String,
             pub sender_verkey: String,
-            pub recipient_verkey: String
+            pub recipient_verkey: String,
         }
 
         #[test]
@@ -292,7 +292,7 @@ mod high_cases {
         #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
         pub struct UnpackMessage {
             pub message: String,
-            pub recipient_verkey: String
+            pub recipient_verkey: String,
         }
 
         #[test]
@@ -680,5 +680,32 @@ mod load {
         Sum pending:   \t{:?}\n\
         Total duration:\t{:?}",
               time_diff_max, agent_cnt * operations_cnt, time_sum_diff, total_duration);
+    }
+}
+
+#[test] // aries-396
+fn crypto_unpack_data_with_and_without_padding_works() {
+    let setup_trustee = Setup::trustee();
+
+    let actual_message = "Hello World";
+
+    // With padding
+    {
+        let jwe = json!({ "protected": "eyJlbmMiOiJ4Y2hhY2hhMjBwb2x5MTMwNV9pZXRmIiwidHlwIjoiSldNLzEuMCIsImFsZyI6IkF1dGhjcnlwdCIsInJlY2lwaWVudHMiOlt7ImVuY3J5cHRlZF9rZXkiOiIxamlhNk4zOUhYQVZvQzUzT2xpVE14T0ZobjVKVE1jLXlwOGVXcjVERndJM1psN01HNW5IcFF2ejNMUVJjMUpvIiwiaGVhZGVyIjp7ImtpZCI6IkdKMVN6b1d6YXZRWWZOTDlYa2FKZHJRZWpmenRONFhxZHNpVjRjdDNMWEtMIiwiaXYiOiJGTS1MUktQV1hEQjRGdVVvc1RDQWxYcHR5M2ZCWVZpTCIsInNlbmRlciI6IjQ4Q2l5UXZTWWNmcEdCbzQtSTlkeGpmOW8yamZsQ1ZYVzY0TnFETEVDSFVPVXNnY2ZDLTFWaHQyMzNHZmNqTWYyVWxiNDZzd2pDVjJoUGFCUlNOMDB5YTNCVzBETC11V3FQMXd3NEVET0dBdk1HQUNzeThHY0w5NEhRcz0ifX1dfQ==", "iv": "Q6Nv06ZdUXQ53woe", "ciphertext": "rFsCeJO8mHLwVU4=", "tag": "wt4oAZ74LCW40xRqfdc6Bg==" });
+        let jwe = serde_json::to_vec(&jwe).unwrap();
+
+        let res = crypto::unpack_message(setup_trustee.wallet_handle, &jwe).unwrap();
+        let res = serde_json::from_slice::<::serde_json::Value>(res.as_slice()).unwrap();
+        assert_eq!(actual_message, res["message"].as_str().unwrap());
+    }
+
+    // Without padding
+    {
+        let jwe = json!({ "protected": "eyJlbmMiOiJ4Y2hhY2hhMjBwb2x5MTMwNV9pZXRmIiwidHlwIjoiSldNLzEuMCIsImFsZyI6IkF1dGhjcnlwdCIsInJlY2lwaWVudHMiOlt7ImVuY3J5cHRlZF9rZXkiOiJMZENfMzZzRHBFeXI5dGlKOHZLVENhMUFkcExXYWtoUzMxbWtsdk9oQlF3QnFKSVpvV0FrWlZzazRVYUg2VDJXIiwiaGVhZGVyIjp7ImtpZCI6IkdKMVN6b1d6YXZRWWZOTDlYa2FKZHJRZWpmenRONFhxZHNpVjRjdDNMWEtMIiwiaXYiOiJjZjY0LUlHRUh4R09MWXRtRlVSU3F3NWQ2U05fN0xxTCIsInNlbmRlciI6Il9ITDlWUDIxZmtiX2R3QmdTLS1OaVRJY2FjZVVTTGR3UDFtSFRURmJEWEk0MkFLblZDd0tHcXY0bmxHTk5qSHVVampPRUV1cGZYR3drWjZBTGJiNGFtTzJsbHpNQzZLYm9BTVNob19UckpaTVdXbGN2dnljc3VrMlRxYyJ9fV19", "iv": "fzGusjZNVbCo17dT", "ciphertext": "4xrn1rPkpDx4eEg", "tag": "ff3cppEUYi-6yC_ZvWhjoQ" });
+        let jwe = serde_json::to_vec(&jwe).unwrap();
+
+        let res = crypto::unpack_message(setup_trustee.wallet_handle, &jwe).unwrap();
+        let res = serde_json::from_slice::<::serde_json::Value>(res.as_slice()).unwrap();
+        assert_eq!(actual_message, res["message"].as_str().unwrap());
     }
 }

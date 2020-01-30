@@ -1,5 +1,3 @@
-extern crate lazy_static;
-
 #[macro_use]
 extern crate log;
 
@@ -11,12 +9,15 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
+#[cfg(feature = "casting_errors")]
 extern crate zmq;
 
 pub type IndyHandle = i32;
 
-pub type WalletHandle = i32;
-pub const INVALID_WALLET_HANDLE : WalletHandle = 0;
+#[repr(transparent)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
+pub struct WalletHandle(pub i32);
+pub const INVALID_WALLET_HANDLE : WalletHandle = WalletHandle(0);
 
 pub type CallbackHandle = i32;
 
@@ -28,6 +29,7 @@ pub const INVALID_COMMAND_HANDLE : CommandHandle = 0;
 
 pub type StorageHandle = i32;
 pub type SearchHandle = i32;
+pub const INVALID_SEARCH_HANDLE : SearchHandle = 0;
 
 pub mod domain;
 

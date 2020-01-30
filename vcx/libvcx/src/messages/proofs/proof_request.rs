@@ -199,7 +199,7 @@ impl ProofRequestMessage {
                     }
                     names.join(",")
                 }
-                (Some(name), Some(names)) => {
+                (Some(_), Some(_)) => {
                     return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest,
                                                   format!("Proof Request validation failed: there is empty requested attribute: {:?}", attrs)));
                 }
@@ -340,7 +340,7 @@ impl ProofRequestData {
 
     pub fn set_requested_attributes(mut self, requested_attrs: String) -> VcxResult<ProofRequestData> {
         let requested_attributes: Vec<AttrInfo> = ::serde_json::from_str(&requested_attrs)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}", requested_attrs)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}, err: {:?}", requested_attrs, err)))?;
 
         self.requested_attributes = requested_attributes
             .into_iter()
@@ -352,7 +352,7 @@ impl ProofRequestData {
 
     pub fn set_requested_predicates(mut self, requested_predicates: String) -> VcxResult<ProofRequestData> {
         let requested_predicates: Vec<PredicateInfo> = ::serde_json::from_str(&requested_predicates)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}", requested_predicates)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}, err: {:?}", requested_predicates, err)))?;
 
         self.requested_predicates = requested_predicates
             .into_iter()
@@ -364,7 +364,7 @@ impl ProofRequestData {
 
     pub fn set_not_revoked_interval(mut self, non_revoc_interval: String) -> VcxResult<ProofRequestData> {
         let non_revoc_interval: NonRevokedInterval = ::serde_json::from_str(&non_revoc_interval)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Revocation Interval: {:?}", non_revoc_interval)))?;
+            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Revocation Interval: {:?}", non_revoc_interval)))?;
 
         self.non_revoked = match (non_revoc_interval.from, non_revoc_interval.to) {
             (None, None) => None,
@@ -447,7 +447,6 @@ mod tests {
         let data_name = "Test";
         let nonce = "123432421212";
         let data_version = "3.75";
-        let attrs = "";
         let version = "1.3";
         let tid = 89;
         let mid = 98;
@@ -528,6 +527,6 @@ mod tests {
 
     #[test]
     fn test_indy_proof_req_parses_correctly() {
-        let proof_req: ProofRequestData = serde_json::from_str(::utils::constants::INDY_PROOF_REQ_JSON).unwrap();
+        let _proof_req: ProofRequestData = serde_json::from_str(::utils::constants::INDY_PROOF_REQ_JSON).unwrap();
     }
 }

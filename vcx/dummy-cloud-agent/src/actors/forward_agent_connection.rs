@@ -14,7 +14,7 @@ use crate::domain::a2a::*;
 use crate::domain::admin_message::ResAdminQuery;
 use crate::domain::config::WalletStorageConfig;
 use crate::domain::invite::ForwardAgentDetail;
-use crate::indy::{did, pairwise, pairwise::PairwiseInfo};
+use crate::indy::{did, pairwise, pairwise::PairwiseInfo, WalletHandle};
 use crate::utils::futures::*;
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -25,7 +25,7 @@ pub struct ForwardAgentConnectionState {
 }
 
 pub struct ForwardAgentConnection {
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     their_did: String,
     their_verkey: String,
     my_verkey: String,
@@ -37,7 +37,7 @@ pub struct ForwardAgentConnection {
 }
 
 impl ForwardAgentConnection {
-    pub fn create(wallet_handle: i32,
+    pub fn create(wallet_handle: WalletHandle,
                   their_did: String,
                   their_verkey: String,
                   router: Addr<Router>,
@@ -114,7 +114,7 @@ impl ForwardAgentConnection {
             .into_box()
     }
 
-    pub fn restore(wallet_handle: i32,
+    pub fn restore(wallet_handle: WalletHandle,
                    their_did: String,
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
