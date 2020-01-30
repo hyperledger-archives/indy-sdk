@@ -16,11 +16,9 @@ pub struct DidDoc {
     pub context: String,
     #[serde(default)]
     pub id: String,
-    // FIXME id is mandatory according to the specification. Commented to be compatible with Streetcred
     #[serde(default)]
     #[serde(rename = "publicKey")]
-    pub public_key: Vec<Ed25519PublicKey>,
-    // TODO: A DID document MAY include a publicKey property??? (https://w3c.github.io/did-core/#public-keys)
+    pub public_key: Vec<Ed25519PublicKey>, // TODO: A DID document MAY include a publicKey property??? (https://w3c.github.io/did-core/#public-keys)
     #[serde(default)]
     pub authentication: Vec<Authentication>,
     pub service: Vec<Service>,
@@ -30,8 +28,7 @@ pub struct DidDoc {
 pub struct Ed25519PublicKey {
     pub id: String,
     #[serde(rename = "type")]
-    pub type_: String,
-    // all list of types: https://w3c-ccg.github.io/ld-cryptosuite-registry/
+    pub type_: String, // all list of types: https://w3c-ccg.github.io/ld-cryptosuite-registry/
     pub controller: String,
     #[serde(rename = "publicKeyBase58")]
     pub public_key_base_58: String,
@@ -150,7 +147,7 @@ impl DidDoc {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)));
         }
 
-        if self.id.is_empty() { // FIXME id is mandatory according to the specification. Commented to be compatible with Streetcred
+        if self.id.is_empty() {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"));
         }
 
