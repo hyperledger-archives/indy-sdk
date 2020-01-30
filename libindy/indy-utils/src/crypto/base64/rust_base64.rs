@@ -13,7 +13,7 @@ pub fn decode(doc: &str) -> Result<Vec<u8>, IndyError> {
 }
 
 pub fn encode_urlsafe(doc: &[u8]) -> String {
-    base64::encode_config(doc, base64::URL_SAFE_NO_PAD)
+    base64::encode_config(doc, base64::URL_SAFE) //TODO switch to URL_SAFE_NO_PAD
 }
 
 pub fn decode_urlsafe(doc: &str) -> Result<Vec<u8>, IndyError> {
