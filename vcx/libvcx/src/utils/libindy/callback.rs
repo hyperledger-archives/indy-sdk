@@ -167,7 +167,7 @@ mod tests {
         let mutex_map: Mutex<HashMap<i32, Box<dyn FnMut(i32) + Send>>> = Default::default();
         assert!(get_cb(2123, &mutex_map).is_none());
 
-        let closure: Box<dyn FnMut(i32) + Send> = Box::new(move |err | {
+        let closure: Box<dyn FnMut(i32) + Send> = Box::new(move |_ | {
 
         });
 
@@ -185,7 +185,7 @@ mod tests {
 // Should be come not needed as the transition is complete
 //**************************************
 
-fn init_callback<T>(closure: T, map: &Mutex<HashMap<CommandHandle, T>>) -> (CommandHandle) {
+fn init_callback<T>(closure: T, map: &Mutex<HashMap<CommandHandle, T>>) -> CommandHandle {
     let command_handle = next_command_handle();
     {
         let mut callbacks = map.lock().unwrap();

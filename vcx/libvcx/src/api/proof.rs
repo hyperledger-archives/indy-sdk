@@ -434,7 +434,7 @@ pub extern fn vcx_proof_release(proof_handle: u32) -> u32 {
 
     let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
     match proof::release(proof_handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {}",
                        proof_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -717,7 +717,6 @@ mod tests {
     fn test_vcx_proof_deserialize_succeeds() {
         init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let original = r#"{"nonce":"123456","version":"1.0","handle":1,"msg_uid":"","ref_msg_id":"","name":"Name Data","prover_vk":"","agent_did":"","agent_vk":"","remote_did":"","remote_vk":"","prover_did":"8XFh8yBzrpJQmNyZzgoTqB","requested_attrs":"{\"attrs\":[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"ISSUER_DID2\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]}","requested_predicates":"{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}","source_id":"source id","state":2,"proof_state":0,"proof":null,"proof_request":null,"revocation_interval":{}}"#;
         assert_eq!(vcx_proof_deserialize(cb.command_handle,
                                          CString::new(PROOF_OFFER_SENT).unwrap().into_raw(),
                                          Some(cb.get_callback())),
@@ -769,7 +768,7 @@ mod tests {
                                                        CString::new(PROOF_RESPONSE_STR).unwrap().into_raw(),
                                                        Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _state = cb.receive(Some(Duration::from_secs(10))).unwrap();
 
         assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateAccepted as u32);
     }

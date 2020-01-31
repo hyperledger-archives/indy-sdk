@@ -212,8 +212,8 @@ pub mod tests {
 
     pub fn setup_ledger_env(use_zero_fees: bool) {
         match pool::get_pool_handle() {
-            Ok(x) => pool::close().unwrap(),
-            Err(x) => (),
+            Ok(_) => pool::close().unwrap(),
+            Err(_) => (),
         };
 
         pool::tests::delete_test_pool();
@@ -388,7 +388,7 @@ pub mod tests {
 
         init!("agency");
 
-        let (faber, alice) = ::connection::tests::create_connected_connections();
+        let (_faber, _alice) = ::connection::tests::create_connected_connections();
         set_institution();
         wallet::tests::delete_test_wallet(&format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME));
         pool::close().unwrap();

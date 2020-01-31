@@ -1023,7 +1023,6 @@ impl WalletStorage for PostgresStorage {
             }
             Some(tags)
         } else { None };
-
         Ok(StorageRecord::new(id.to_vec(), value, type_.map(|val| val.to_vec()), tags))
     }
 

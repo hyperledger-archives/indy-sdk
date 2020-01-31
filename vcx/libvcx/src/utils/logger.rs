@@ -1,7 +1,5 @@
 extern crate env_logger;
 extern crate log;
-extern crate log4rs;
-extern crate log_panics;
 extern crate libc;
 extern crate indy_sys;
 
@@ -11,7 +9,6 @@ extern crate android_logger;
 use std::io::Write;
 use self::env_logger::Builder as EnvLoggerBuilder;
 use self::log::{Level, LevelFilter, Metadata, Record};
-use std::sync::Once;
 use self::libc::{c_char};
 use std::env;
 use std::ptr;
@@ -28,7 +25,6 @@ use error::prelude::*;
 use utils::libindy;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
-static LOGGER_INIT: Once = Once::new();
 static mut CONTEXT: *const CVoid = ptr::null();
 static mut ENABLED_CB: Option<EnabledCB> = None;
 static mut LOG_CB: Option<LogCB> = None;
@@ -146,7 +142,7 @@ impl LibvcxDefaultLogger {
         // the user did not set the RUST_LOG env var.
         let pattern = Some(env::var("RUST_LOG").unwrap_or("trace".to_string()));
         match LibvcxDefaultLogger::init(pattern) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(_) => (),
         }
     }
@@ -183,7 +179,7 @@ impl LibvcxDefaultLogger {
                 .filter(None, LevelFilter::Off)
                 .parse(pattern.as_ref().map(String::as_str).unwrap_or("warn"))
                 .try_init() {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(e) => {
                     error!("Error in logging init: {:?}", e);
                     return Err(VcxError::from_msg(VcxErrorKind::LoggingError, format!("Cannot init logger: {:?}", e)))
@@ -257,21 +253,19 @@ mod tests {
         ptr::null()
     }
 
-    static mut CHANGED: Option<String> = None;
     static mut COUNT: u32 = 0;
 
-    extern fn custom_enabled(context: *const CVoid, level: u32, target: *const c_char) -> bool { true }
+    extern fn custom_enabled(_context: *const CVoid, _level: u32, _target: *const c_char) -> bool { true }
 
-    extern fn custom_flush(context: *const CVoid) {}
+    extern fn custom_flush(_context: *const CVoid) {}
 
-    extern fn custom_log(context: *const CVoid,
-                         level: u32,
-                         target: *const c_char,
-                         message: *const c_char,
-                         module_path: *const c_char,
-                         file: *const c_char,
-                         line: u32) {
-        let message = CStringUtils::c_str_to_string(message).unwrap();
+    extern fn custom_log(_context: *const CVoid,
+                         _level: u32,
+                         _target: *const c_char,
+                         _message: *const c_char,
+                         _module_path: *const c_char,
+                         _file: *const c_char,
+                         _line: u32) {
         unsafe { COUNT = COUNT + 1 }
     }
 
@@ -280,7 +274,7 @@ mod tests {
     fn test_logging_get_logger() {
         LibvcxDefaultLogger::init(Some("debug".to_string())).unwrap();
         unsafe {
-            let (context, enabled_cb, log_cb, flush_cb) = LOGGER_STATE.get();
+            let (context, enabled_cb, _log_cb, _flush_cb) = LOGGER_STATE.get();
             assert_eq!(context, ptr::null());
             let target = CStringUtils::string_to_cstring("target".to_string());
             let level = 1;
