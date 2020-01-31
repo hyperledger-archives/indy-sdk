@@ -1,5 +1,3 @@
-extern crate log;
-extern crate env_logger;
 extern crate owning_ref;
 extern crate sodiumoxide;
 extern crate r2d2;
@@ -483,12 +481,6 @@ struct MultiWalletMultiTableStrategy {}
 impl WalletStrategy for DatabasePerWalletStrategy {
     // initialize storage based on wallet storage strategy
     fn init_storage(&self, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
-        match env_logger::try_init() {
-            Ok(_) => {}
-            Err(_) => {
-                debug!("failed to init logging, probably already initialized");
-            }
-        }
         // no-op
         debug!("Initializing storage strategy DatabasePerWalletStrategy.");
         Ok(())
@@ -654,12 +646,6 @@ fn get_multi_database_name(config: &PostgresConfig) -> &str {
 impl WalletStrategy for MultiWalletSingleTableStrategy {
     // initialize storage based on wallet storage strategy
     fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
-        match env_logger::try_init() {
-            Ok(_) => {}
-            Err(_) => {
-                debug!("failed to init logging, probably already initialized");
-            }
-        }
         debug!("Entering init_storage");
         // create database and tables for storage
         // if admin user and password aren't provided then bail
@@ -696,7 +682,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         conn.finish()?;
     
         debug!("connecting to wallet storage");
-        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(error) => {
                 debug!("error connecting to wallet storage, Error: {}", error);
@@ -724,7 +710,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         // insert metadata
         let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
 
-        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(error) => {
                 return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
@@ -802,7 +788,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
         debug!("wallet_db_name: {:?}", wallet_db_name);
         let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
 
-        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(error) => {
                 return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
