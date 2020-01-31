@@ -233,7 +233,7 @@ fn insert_c_message(map: &mut HashMap<u32, CString>, error: &Error) {
 }
 
 // Helper function for static defining of error messages. Does limited checking that it can.
-fn insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
+fn _insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
     if map.contains_key(&error.code_num) {
         panic!("Error Code number was repeated which is not allowed! (likely a copy/paste error)")
     }

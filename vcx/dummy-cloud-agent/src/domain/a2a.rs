@@ -11,7 +11,7 @@ use crate::domain::message_type::*;
 use crate::domain::payload::Thread;
 use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
 use crate::domain::status::{ConnectionStatus, MessageStatusCode};
-use crate::indy::crypto;
+use crate::indy::{crypto, WalletHandle};
 use crate::utils::futures::*;
 
 #[derive(Debug)]
@@ -1228,7 +1228,7 @@ impl A2AMessage {
             .map_err(|err| err.context("Can't bundle messages").into())
     }
 
-    pub fn prepare_authcrypted(wallet_handle: i32,
+    pub fn prepare_authcrypted(wallet_handle: WalletHandle,
                                sender_vk: &str,
                                recipient_vk: &str,
                                msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
@@ -1239,14 +1239,14 @@ impl A2AMessage {
     }
 
 
-    pub fn prepare_anoncrypted(wallet_handle: i32, recipient_vk: &str, message: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+    pub fn prepare_anoncrypted(wallet_handle: WalletHandle, recipient_vk: &str, message: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         match ProtocolType::get() {
             ProtocolTypes::V1 => A2AMessage::bundle_anoncrypted(recipient_vk, message),
             ProtocolTypes::V2 => A2AMessage::pack(wallet_handle, None, recipient_vk, message)
         }
     }
 
-    pub fn bundle_authcrypted(wallet_handle: i32,
+    pub fn bundle_authcrypted(wallet_handle: WalletHandle,
                               sender_vk: &str,
                               recipient_vk: &str,
                               msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
@@ -1266,7 +1266,7 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn pack(wallet_handle: i32, sender_vk: Option<&str>, recipient_vk: &str, msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+    pub fn pack(wallet_handle: WalletHandle, sender_vk: Option<&str>, recipient_vk: &str, msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         if msgs.len() != 1 {
             return err!(err_msg("Invalid messages count."));
         }
@@ -1279,7 +1279,7 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn pack_v2(wallet_handle: i32, sender_vk: Option<&str>, recipient_vk: &str, msg: &A2AMessageV2) -> BoxedFuture<Vec<u8>, Error> {
+    pub fn pack_v2(wallet_handle: WalletHandle, sender_vk: Option<&str>, recipient_vk: &str, msg: &A2AMessageV2) -> BoxedFuture<Vec<u8>, Error> {
         let message = ftry!(serde_json::to_string(msg));
         let receiver_keys = ftry!(serde_json::to_string(&vec![&recipient_vk]));
 
@@ -1299,7 +1299,7 @@ impl A2AMessage {
             .map_err(|err| err.context("Can't unbundle messages").into())
     }
 
-    pub fn parse_anoncrypted(wallet_handle: i32,
+    pub fn parse_anoncrypted(wallet_handle: WalletHandle,
                              recipient_vk: &str,
                              bundle: &[u8]) -> BoxedFuture<Vec<A2AMessage>, Error> {
         match ProtocolType::get() {
@@ -1311,7 +1311,7 @@ impl A2AMessage {
         }
     }
 
-    pub fn parse_authcrypted(wallet_handle: i32,
+    pub fn parse_authcrypted(wallet_handle: WalletHandle,
                              recipient_vk: &str,
                              message: &[u8]) -> BoxedFuture<(String, Vec<A2AMessage>), Error> {
         match ProtocolType::get() {
@@ -1323,7 +1323,7 @@ impl A2AMessage {
         }
     }
 
-    pub fn unbundle_anoncrypted(wallet_handle: i32,
+    pub fn unbundle_anoncrypted(wallet_handle: WalletHandle,
                                 recipient_vk: &str,
                                 message: &[u8]) -> BoxedFuture<Vec<A2AMessage>, Error> {
         crypto::anon_decrypt(wallet_handle, recipient_vk, message)
@@ -1334,7 +1334,7 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn unbundle_authcrypted(wallet_handle: i32,
+    pub fn unbundle_authcrypted(wallet_handle: WalletHandle,
                                 recipient_vk: &str,
                                 bundle: &[u8]) -> BoxedFuture<(String, Vec<A2AMessage>), Error> {
         crypto::auth_decrypt(wallet_handle, recipient_vk, bundle)
@@ -1345,7 +1345,7 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn unpack(wallet_handle: i32, message: &[u8]) -> BoxedFuture<(Option<String>, Vec<A2AMessage>), Error> {
+    pub fn unpack(wallet_handle: WalletHandle, message: &[u8]) -> BoxedFuture<(Option<String>, Vec<A2AMessage>), Error> {
         crypto::unpack_message(wallet_handle, message)
             .from_err()
             .and_then(|message| {

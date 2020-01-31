@@ -439,7 +439,6 @@ pub mod tests {
         let wallet_name = "test_create_revocable_fails_with_no_tails_file";
         init!("ledger");
 
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
@@ -458,7 +457,6 @@ pub mod tests {
         let wallet_name = "test_create_revocable_cred_def";
         init!("ledger");
 
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
@@ -484,7 +482,6 @@ pub mod tests {
     fn test_create_credential_def_real() {
         init!("ledger");
 
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
@@ -504,7 +501,7 @@ pub mod tests {
     fn test_create_credential_def_no_fees_real() {
         init!("ledger");
 
-        let rc = create_cred_def_real(false);
+        let _rc = create_cred_def_real(false);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -514,7 +511,7 @@ pub mod tests {
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-        let handle = create_and_publish_credentialdef("1".to_string(),
+        let _handle = create_and_publish_credentialdef("1".to_string(),
                                                       "name".to_string(),
                                                       my_did.clone(),
                                                       schema_id.clone(),
@@ -588,7 +585,7 @@ pub mod tests {
         use utils::libindy::payments::add_new_did;
 
         init!("ledger_zero_fees");
-        let (schema_handle, schema_id, did, revocation_details) = prepare_create_cred_def_data(false);
+        let (_, schema_id, did, revocation_details) = prepare_create_cred_def_data(false);
 
         let (endorser_did, _) = add_new_did(Some("ENDORSER"));
 
@@ -613,7 +610,7 @@ pub mod tests {
         use utils::libindy::payments::add_new_did;
 
         init!("ledger");
-        let (schema_handle, schema_id, did, revocation_details) = prepare_create_cred_def_data(true);
+        let (_, schema_id, did, revocation_details) = prepare_create_cred_def_data(true);
 
         let (endorser_did, _) = add_new_did(Some("ENDORSER"));
 

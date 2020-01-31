@@ -1,5 +1,5 @@
 
-use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, SearchHandle};
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, SearchHandle, INVALID_SEARCH_HANDLE};
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::non_secrets::NonSecretsCommand;
 use indy_api_types::domain::wallet::Tags;
@@ -418,7 +418,7 @@ pub  extern fn indy_open_wallet_search(command_handle: CommandHandle,
                 query_json,
                 options_json,
                 Box::new(move |result| {
-                    let (err, handle) = prepare_result_1!(result, 0);
+                    let (err, handle) = prepare_result_1!(result, INVALID_SEARCH_HANDLE);
                     trace!("indy_open_wallet_search: handle: {:?}", handle);
                     cb(command_handle, err, handle)
                 })

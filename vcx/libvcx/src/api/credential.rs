@@ -7,6 +7,7 @@ use credential;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
 /*
     The API represents a Holder side in credential issuance process.
@@ -92,9 +93,9 @@ use error::prelude::*;
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_credential_get_payment_info(command_handle: u32,
+pub extern fn vcx_credential_get_payment_info(command_handle: CommandHandle,
                                               credential_handle: u32,
-                                              cb: Option<extern fn(xcommand_handle: u32, err: u32, *const c_char)>) -> u32 {
+                                              cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, *const c_char)>) -> u32 {
     info!("vcx_credential_get_payment_info >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -150,10 +151,10 @@ pub extern fn vcx_credential_get_payment_info(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_credential_create_with_offer(command_handle: u32,
+pub extern fn vcx_credential_create_with_offer(command_handle: CommandHandle,
                                                source_id: *const c_char,
                                                offer: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)>) -> u32 {
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credential_handle: u32)>) -> u32 {
     info!("vcx_credential_create_with_offer >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -204,9 +205,9 @@ pub extern fn vcx_credential_create_with_offer(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_get_credential(command_handle: u32,
+pub extern fn vcx_get_credential(command_handle: CommandHandle,
                                  credential_handle: u32,
-                                 cb: Option<extern fn(xcommand_handle: u32, err: u32, credential: *const c_char)>) -> u32 {
+                                 cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credential: *const c_char)>) -> u32 {
     info!("vcx_get_credential >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -256,11 +257,11 @@ pub extern fn vcx_get_credential(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
+pub extern fn vcx_credential_create_with_msgid(command_handle: CommandHandle,
                                                source_id: *const c_char,
                                                connection_handle: u32,
                                                msg_id: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32, offer: *const c_char)>) -> u32 {
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credential_handle: u32, offer: *const c_char)>) -> u32 {
     info!("vcx_credential_create_with_msgid >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -314,11 +315,11 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_send_request(command_handle: u32,
+pub extern fn vcx_credential_send_request(command_handle: CommandHandle,
                                           credential_handle: u32,
                                           connection_handle: u32,
-                                          payment_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                          _payment_handle: u32,
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_credential_send_request >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -369,11 +370,11 @@ pub extern fn vcx_credential_send_request(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_get_request_msg(command_handle: u32,
+pub extern fn vcx_credential_get_request_msg(command_handle: CommandHandle,
                                              credential_handle: u32,
                                              connection_handle: u32,
-                                             payment_handle: u32,
-                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+                                             _payment_handle: u32,
+                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg: *const c_char)>) -> u32 {
     info!("vcx_credential_get_request_msg >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -425,9 +426,9 @@ pub extern fn vcx_credential_get_request_msg(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_get_offers(command_handle: u32,
+pub extern fn vcx_credential_get_offers(command_handle: CommandHandle,
                                         connection_handle: u32,
-                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_offers: *const c_char)>) -> u32 {
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credential_offers: *const c_char)>) -> u32 {
     info!("vcx_credential_get_offers >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -474,9 +475,9 @@ pub extern fn vcx_credential_get_offers(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_update_state(command_handle: u32,
+pub extern fn vcx_credential_update_state(command_handle: CommandHandle,
                                           credential_handle: u32,
-                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                          cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credential_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -499,7 +500,7 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
             }
         }
 
-        let state = match credential::get_state(credential_handle) {
+        match credential::get_state(credential_handle) {
             Ok(s) => {
                 trace!("vcx_credential_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, s, source_id);
@@ -532,10 +533,10 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_update_state_with_message(command_handle: u32,
+pub extern fn vcx_credential_update_state_with_message(command_handle: CommandHandle,
                                                        credential_handle: u32,
                                                        message: *const c_char,
-                                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credential_update_state_with_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -559,7 +560,7 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: u32,
             }
         }
 
-        let state = match credential::get_state(credential_handle) {
+        match credential::get_state(credential_handle) {
             Ok(s) => {
                 trace!("vcx_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
                        command_handle, error::SUCCESS.message, s, source_id);
@@ -593,9 +594,9 @@ pub extern fn vcx_credential_update_state_with_message(command_handle: u32,
 ///
 /// #Returns
 #[no_mangle]
-pub extern fn vcx_credential_get_state(command_handle: u32,
+pub extern fn vcx_credential_get_state(command_handle: CommandHandle,
                                        handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_credential_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -641,9 +642,9 @@ pub extern fn vcx_credential_get_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_serialize(command_handle: u32,
+pub extern fn vcx_credential_serialize(command_handle: CommandHandle,
                                        handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, data: *const c_char)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, data: *const c_char)>) -> u32 {
     info!("vcx_credential_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -690,9 +691,9 @@ pub extern fn vcx_credential_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credential_deserialize(command_handle: u32,
+pub extern fn vcx_credential_deserialize(command_handle: CommandHandle,
                                          credential_data: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, handle: u32)>) -> u32 {
+                                         cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, handle: u32)>) -> u32 {
     info!("vcx_credential_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -735,7 +736,7 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
 
     let source_id = credential::get_source_id(handle).unwrap_or_default();
     match credential::release(handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_credential_release(handle: {}, rc: {}), source_id: {:?}",
                    handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -768,9 +769,9 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
 ///         ]
 ///     }
 #[no_mangle]
-pub extern fn vcx_credential_get_payment_txn(command_handle: u32,
+pub extern fn vcx_credential_get_payment_txn(command_handle: CommandHandle,
                                              handle: u32,
-                                             cb: Option<extern fn(xcommand_handle: u32, err: u32, txn: *const c_char)>) -> u32 {
+                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, txn: *const c_char)>) -> u32 {
     info!("vcx_credential_get_payment_txn >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -951,7 +952,6 @@ mod tests {
         init!("true");
         let handle = credential::from_string(FULL_CREDENTIAL_SERIALIZED).unwrap();
         let bad_handle = 1123;
-        let command_handle = 1111;
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();

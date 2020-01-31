@@ -395,14 +395,16 @@ mod test_build_get_attrib_request {
 
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
-        let (submitter_did, _) = did::create_and_store_my_did(submitter_wallet.handle, "{}").wait().unwrap();
-        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
-        match ledger::build_get_attrib_request(Some(&submitter_did), &did, Some("{}"), None, None).wait() {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_attrib_request failed with error {:?}", ec);
+        let f1 = did::create_and_store_my_did(submitter_wallet.handle, "{}");
+        let f2 = did::create_and_store_my_did(wallet.handle, "{}");
+        f1.join(f2).map(|((submitter_did, _), (did, _))| {
+            match ledger::build_get_attrib_request(Some(&submitter_did), &did, Some("{}"), None, None).wait() {
+                Ok(_) => {},
+                Err(ec) => {
+                    assert!(false, "build_attrib_request failed with error {:?}", ec);
+                }
             }
-        }
+        }).wait().unwrap();
     }
 }
 

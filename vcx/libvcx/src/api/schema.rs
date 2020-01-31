@@ -7,6 +7,7 @@ use schema;
 use settings;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
 /// Create a new Schema object and publish correspondent record on the ledger
 ///
@@ -30,13 +31,13 @@ use error::prelude::*;
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_create(command_handle: u32,
+pub extern fn vcx_schema_create(command_handle: CommandHandle,
                                 source_id: *const c_char,
                                 schema_name: *const c_char,
                                 version: *const c_char,
                                 schema_data: *const c_char,
-                                payment_handle: u32,
-                                cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
+                                _payment_handle: u32,
+                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, credentialdef_handle: u32)>) -> u32 {
     info!("vcx_schema_create >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -100,13 +101,13 @@ pub extern fn vcx_schema_create(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_prepare_for_endorser(command_handle: u32,
+pub extern fn vcx_schema_prepare_for_endorser(command_handle: CommandHandle,
                                               source_id: *const c_char,
                                               schema_name: *const c_char,
                                               version: *const c_char,
                                               schema_data: *const c_char,
                                               endorser: *const c_char,
-                                              cb: Option<extern fn(xcommand_handle: u32, err: u32,
+                                              cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32,
                                                                    schema_handle: u32,
                                                                    schema_transaction: *const c_char)>) -> u32 {
     info!("vcx_schema_prepare_for_endorser >>>");
@@ -163,9 +164,9 @@ pub extern fn vcx_schema_prepare_for_endorser(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_serialize(command_handle: u32,
+pub extern fn vcx_schema_serialize(command_handle: CommandHandle,
                                    schema_handle: u32,
-                                   cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_state: *const c_char)>) -> u32 {
+                                   cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, schema_state: *const c_char)>) -> u32 {
     info!("vcx_schema_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -211,9 +212,9 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_deserialize(command_handle: u32,
+pub extern fn vcx_schema_deserialize(command_handle: CommandHandle,
                                      schema_data: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_handle: u32)>) -> u32 {
+                                     cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, schema_handle: u32)>) -> u32 {
     info!("vcx_schema_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -253,7 +254,7 @@ pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
 
     let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
     match schema::release(schema_handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
                    schema_handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -276,9 +277,9 @@ pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_get_schema_id(command_handle: u32,
+pub extern fn vcx_schema_get_schema_id(command_handle: CommandHandle,
                                        schema_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_id: *const c_char)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, schema_id: *const c_char)>) -> u32 {
     info!("vcx_schema_get_schema_id >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -326,10 +327,10 @@ pub extern fn vcx_schema_get_schema_id(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_get_attributes(command_handle: u32,
+pub extern fn vcx_schema_get_attributes(command_handle: CommandHandle,
                                         source_id: *const c_char,
                                         schema_id: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, s_handle: u32, schema_attrs: *const c_char)>) -> u32 {
+                                        cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, s_handle: u32, schema_attrs: *const c_char)>) -> u32 {
     info!("vcx_schema_get_attributes >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -380,9 +381,9 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
 ///         ]
 ///     }
 #[no_mangle]
-pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
+pub extern fn vcx_schema_get_payment_txn(command_handle: CommandHandle,
                                          handle: u32,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, txn: *const c_char)>) -> u32 {
+                                         cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, txn: *const c_char)>) -> u32 {
     info!("vcx_schema_get_payment_txn >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -436,9 +437,9 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_update_state(command_handle: u32,
+pub extern fn vcx_schema_update_state(command_handle: CommandHandle,
                                       schema_handle: u32,
-                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                      cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_schema_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -486,9 +487,9 @@ pub extern fn vcx_schema_update_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_get_state(command_handle: u32,
+pub extern fn vcx_schema_get_state(command_handle: CommandHandle,
                                    schema_handle: u32,
-                                   cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                   cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_schema_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -571,7 +572,7 @@ mod tests {
                                      0,
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
 
-        let handle = cb.receive(Some(Duration::from_secs(5))).unwrap();
+        let _handle = cb.receive(Some(Duration::from_secs(5))).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -586,7 +587,7 @@ mod tests {
                                              CString::new(schema_id).unwrap().into_raw(),
                                              Some(cb.get_callback())), error::SUCCESS.code_num);
 
-        let (err, attrs) = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let (_err, attrs) = cb.receive(Some(Duration::from_secs(2))).unwrap();
         let mut result_vec = vec!(attrs.clone().unwrap());
         let mut expected_vec = vec!(DEFAULT_SCHEMA_ATTRS);
         assert_eq!(result_vec.sort(), expected_vec.sort());
@@ -647,7 +648,7 @@ mod tests {
                                              CString::new("Test Source ID").unwrap().into_raw(),
                                              CString::new(SCHEMA_ID).unwrap().into_raw(),
                                              Some(cb.get_callback())), error::SUCCESS.code_num);
-        let (handle, schema_data_as_string) = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let (_handle, schema_data_as_string) = cb.receive(Some(Duration::from_secs(2))).unwrap();
         let schema_data_as_string = schema_data_as_string.unwrap();
         let schema_as_json: serde_json::Value = serde_json::from_str(&schema_data_as_string).unwrap();
         assert_eq!(schema_as_json["data"].to_string(), data);
@@ -659,7 +660,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let handle = schema::create_and_publish_schema("testid", did, "name".to_string(), "1.0".to_string(), "[\"name\":\"male\"]".to_string()).unwrap();
-        let rc = vcx_schema_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
+        let _rc = vcx_schema_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
         let txn = cb.receive(Some(Duration::from_secs(2))).unwrap();
         assert!(txn.is_some());
     }
@@ -714,7 +715,7 @@ mod tests {
                                                    CString::new("[att1, att2]").unwrap().into_raw(),
                                                    CString::new("V4SGRU86Z58d6TV7PBUe6f").unwrap().into_raw(),
                                                    Some(cb.get_callback())), error::SUCCESS.code_num);
-        let (handle, schema_transaction) = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let (_handle, schema_transaction) = cb.receive(Some(Duration::from_secs(2))).unwrap();
         let schema_transaction = schema_transaction.unwrap();
         let schema_transaction: serde_json::Value = serde_json::from_str(&schema_transaction).unwrap();
         let expected_schema_transaction: serde_json::Value = serde_json::from_str(::utils::constants::REQUEST_WITH_ENDORSER).unwrap();
@@ -728,17 +729,17 @@ mod tests {
         let (handle, _) = schema::prepare_schema_for_endorser("testid", did, "name".to_string(), "1.0".to_string(), "[\"name\":\"male\"]".to_string(), "V4SGRU86Z58d6TV7PBUe6f".to_string()).unwrap();
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
-            let rc = vcx_schema_get_state(cb.command_handle, handle, Some(cb.get_callback()));
+            let _rc = vcx_schema_get_state(cb.command_handle, handle, Some(cb.get_callback()));
             assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Built as u32)
         }
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
-            let rc = vcx_schema_update_state(cb.command_handle, handle, Some(cb.get_callback()));
+            let _rc = vcx_schema_update_state(cb.command_handle, handle, Some(cb.get_callback()));
             assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Published as u32);
         }
         {
             let cb = return_types_u32::Return_U32_U32::new().unwrap();
-            let rc = vcx_schema_get_state(cb.command_handle, handle, Some(cb.get_callback()));
+            let _rc = vcx_schema_get_state(cb.command_handle, handle, Some(cb.get_callback()));
             assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), ::api::PublicEntityStateType::Published as u32)
         }
     }

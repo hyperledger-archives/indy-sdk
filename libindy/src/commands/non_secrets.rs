@@ -5,8 +5,8 @@ use std::rc::Rc;
 use indy_api_types::domain::wallet::Tags;
 use indy_api_types::errors::prelude::*;
 use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use indy_utils::sequence;
-use indy_api_types::WalletHandle;
+use indy_utils::next_search_handle;
+use indy_api_types::{WalletHandle, SearchHandle};
 
 
 pub enum NonSecretsCommand {
@@ -49,18 +49,18 @@ pub enum NonSecretsCommand {
                String, // type
                String, // query json
                String, // options json
-               Box<dyn Fn(IndyResult<i32>) + Send>),
+               Box<dyn Fn(IndyResult<SearchHandle>) + Send>),
     FetchSearchNextRecords(WalletHandle,
-                           i32, // wallet search handle
+                           SearchHandle, // wallet search handle
                            usize, // count
                            Box<dyn Fn(IndyResult<String>) + Send>),
-    CloseSearch(i32, // wallet search handle
+    CloseSearch(SearchHandle, // wallet search handle
                 Box<dyn Fn(IndyResult<()>) + Send>),
 }
 
 pub struct NonSecretsCommandExecutor {
     wallet_service: Rc<WalletService>,
-    searches: RefCell<HashMap<i32, Box<WalletSearch>>>,
+    searches: RefCell<HashMap<SearchHandle, Box<WalletSearch>>>,
 }
 
 impl NonSecretsCommandExecutor {
@@ -241,7 +241,7 @@ impl NonSecretsCommandExecutor {
                    wallet_handle: WalletHandle,
                    type_: &str,
                    query_json: &str,
-                   options_json: &str) -> IndyResult<i32> {
+                   options_json: &str) -> IndyResult<SearchHandle> {
         trace!("open_search >>> wallet_handle: {:?}, type_: {:?}, query_json: {:?}, options_json: {:?}", wallet_handle, type_, query_json, options_json);
 
         self._check_type(type_)?;
@@ -251,7 +251,7 @@ impl NonSecretsCommandExecutor {
 
         let search = self.wallet_service.search_records(wallet_handle, type_, query_json, &options_json)?;
 
-        let search_handle = sequence::get_next_id();
+        let search_handle = next_search_handle();
 
         self.searches.borrow_mut().insert(search_handle, Box::new(search));
 
@@ -262,13 +262,13 @@ impl NonSecretsCommandExecutor {
 
     fn fetch_search_next_records(&self,
                                  wallet_handle: WalletHandle,
-                                 wallet_search_handle: i32,
+                                 wallet_search_handle: SearchHandle,
                                  count: usize) -> IndyResult<String> {
         trace!("fetch_search_next_records >>> wallet_handle: {:?}, wallet_search_handle: {:?}, count: {:?}", wallet_handle, wallet_search_handle, count);
 
         let mut searches = self.searches.borrow_mut();
         let search = searches.get_mut(&wallet_search_handle)
-            .ok_or_else(||err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown WalletSearch handle: {}", wallet_search_handle)))?;
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown WalletSearch handle: {:?}", wallet_search_handle)))?;
 
         let mut records: Vec<WalletRecord> = Vec::new();
         for _ in 0..count {
@@ -291,12 +291,12 @@ impl NonSecretsCommandExecutor {
     }
 
     fn close_search(&self,
-                    wallet_search_handle: i32) -> IndyResult<()> {
+                    wallet_search_handle: SearchHandle) -> IndyResult<()> {
         trace!("close_search >>> wallet_search_handle: {:?}", wallet_search_handle);
 
         match self.searches.borrow_mut().remove(&wallet_search_handle) {
             Some(_) => Ok(()),
-            None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Wallet Search Handle is invalid: {}", wallet_search_handle)))
+            None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Wallet Search Handle is invalid: {:?}", wallet_search_handle)))
         }?;
 
         trace!("close_search <<< res: ()");

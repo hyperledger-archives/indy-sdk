@@ -209,9 +209,9 @@ pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Ind
 
 #[cfg(test)]
 mod tests {
-    use indy_wallet::wallet::EncryptedValue;
-    use indy_wallet::wallet::Keys;
-    use crate::utils::crypto::hmacsha256;
+    use crate::wallet::EncryptedValue;
+    use crate::wallet::Keys;
+    use indy_utils::crypto::hmacsha256;
 
     use super::*;
 
