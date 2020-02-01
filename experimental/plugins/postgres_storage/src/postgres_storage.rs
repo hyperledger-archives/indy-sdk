@@ -2279,14 +2279,14 @@ mod tests {
         "walle1"
     }
 
-    fn _storage() -> Box<WalletStorage> {
+    fn _storage() -> Box<dyn WalletStorage> {
         let storage_type = PostgresStorageType::new();
         storage_type.create_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
         let res = storage_type.open_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
         res
     }
 
-    fn _storage_db_pool() -> Box<WalletStorage> {
+    fn _storage_db_pool() -> Box<dyn WalletStorage> {
         let storage_type = PostgresStorageType::new();
         storage_type.create_storage(_wallet_id(), Some(&_wallet_config_db_pool()[..]), Some(&_wallet_credentials()[..]), &_metadata()).unwrap();
         let res = storage_type.open_storage(_wallet_id(), Some(&_wallet_config_db_pool()[..]), Some(&_wallet_credentials()[..])).unwrap();

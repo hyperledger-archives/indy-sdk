@@ -1731,7 +1731,7 @@ mod tests {
 
     fn _cleanup() {
         let ten_millis = std::time::Duration::from_millis(1);
-        let now = time::now();
+        let _now = time::now();
         thread::sleep(ten_millis);
 
         let id = _wallet_id();
