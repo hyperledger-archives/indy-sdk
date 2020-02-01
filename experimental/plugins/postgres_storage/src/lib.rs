@@ -1100,7 +1100,7 @@ mod tests {
         assert_eq!(err, ErrorCode::Success);
 
         // update metadata to some new metadata
-        let metadata2 = _metadata2();
+        let metadata2 = _metadata2_cstring();
         let err = PostgresWallet::set_storage_metadata(handle, metadata2.as_ptr());
         assert_eq!(err, ErrorCode::Success);
 
@@ -1811,7 +1811,7 @@ mod tests {
         CString::new(foo).unwrap()
     }
 
-    fn _metadata2() -> Vec<i8> {
+    fn _metadata2() -> Vec<u8> {
         return vec![
             2, 3, 4, 5, 6, 7, 8, 9,
             2, 3, 4, 5, 6, 7, 8, 9,
@@ -1822,6 +1822,11 @@ mod tests {
             2, 3, 4, 5, 6, 7, 8, 9,
             2, 3, 4, 5, 6, 7, 8, 9
         ];
+    }
+
+    fn _metadata2_cstring() -> CString {
+        let foo = _metadata2();
+        CString::new(foo).unwrap()
     }
 
     fn _type(i: u8) -> CString {
