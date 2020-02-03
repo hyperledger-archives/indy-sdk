@@ -496,7 +496,7 @@ struct MultiWalletSingleTableStrategySharedPool {
 
 
 impl WalletStrategy for MultiWalletSingleTableStrategySharedPool {
-    // initialize storage based on wallet storage strategy
+
     fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
         // create database and tables for storage
         // if admin user and password aren't provided then bail
@@ -537,7 +537,7 @@ impl WalletStrategy for MultiWalletSingleTableStrategySharedPool {
         conn.finish()?;
         Ok(())
     }
-    // initialize a single wallet based on wallet storage strategy
+
     fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError> {
         // insert metadata
         let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
@@ -563,11 +563,12 @@ impl WalletStrategy for MultiWalletSingleTableStrategySharedPool {
         conn.finish()?;
         ret
     }
-    // open a wallet based on wallet storage strategy
+
     fn open_wallet(&self, id: &str, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
         let connection = match self.pool.get() {
             Ok(connection) => connection,
             Err(error) => {
+                error!("Error retrieving connection from connection pool. {:?}", error);
                 return Err(WalletStorageError::NotFound)
             }
         };
@@ -578,12 +579,18 @@ impl WalletStrategy for MultiWalletSingleTableStrategySharedPool {
                 &[&id]);
             match rows.as_mut().unwrap().iter().next() {
                 Some(row) => Ok(row.get(0)),
-                None => Err(WalletStorageError::ItemNotFound)
+                None => {
+                    error!("No metadata was found for wallet id '{}' which indicates this wallet does not exist.", id);
+                    Err(WalletStorageError::ItemNotFound)
+                }
             }
         };
         match res {
             Ok(_entity) => (),
-            Err(_) => return Err(WalletStorageError::NotFound)
+            Err(error) => {
+                error!("Error retrieving metadata for wallet id '{}' which indicates this wallet does not exist. Error details: {:?}", id, error);
+                return Err(WalletStorageError::NotFound)
+            }
         };
 
         Ok(Box::new(PostgresStorage {
@@ -592,7 +599,6 @@ impl WalletStrategy for MultiWalletSingleTableStrategySharedPool {
         }))
     }
 
-    // delete a single wallet based on wallet storage strategy
     fn delete_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
         let url = PostgresStorageType::_postgres_url(&_WALLETS_DB, &config, &credentials);
 
@@ -621,12 +627,12 @@ impl WalletStrategy for MultiWalletSingleTableStrategySharedPool {
         conn.finish()?;
         return ret;
     }
-    // determine phyisical table name based on wallet strategy
+
     fn table_name(&self, _id: &str, base_name: &str) -> String {
         // TODO
         base_name.to_owned()
     }
-    // determine additional query parameters based on wallet strategy
+
     fn query_qualifier(&self) -> Option<String> {
         // TODO
         Some("AND wallet_id = $$".to_owned())
