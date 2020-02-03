@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.14.2 - 2020-01-31
+* LibVCX Aries support:
+    * Implemented Basic Message RFC (IS-1189)
+* Indy-CLI changes:
+    * Added new command `pool set-protocol-version` to set a protocol version that will be used for ledger requests (IS-1391).
+    * Added new command `payment-address new` that does exactly the same work as the existing `payment-address create` command.
+     The new command was added to match the naming of `did new` command. The `payment-address create` command will be removed in future releases (IS-1415).
+* Bugfixes
+    * Updated behavior of `indy_store_their_did` function to allow updating of existing `theirDID` record`. It can be used to rotate a pairwise key (IS-1166).
+    * Enhanced validation of `schema_json`: added check that `id` is consistent with `name` and `version` values (IS-1430).
+    * Updated Vcx library to support "names" parameter in Proof Request Revealed Attributes (IS-1381)
+    * Added support of the additional format of `rev_states_json` which is used for proof creation. Both `rev_reg_def_id` and `credential_id` can be used as map keys. 
+    `credential_id` must be used in case of proving that two credentials matching the same `rev_reg_def_id` are not revoked at the same timestamp (IS-1447).
+    * others minor bugfixes
+
 ## 1.14.1 - 2019-12-30
 * Bugfixes
 
