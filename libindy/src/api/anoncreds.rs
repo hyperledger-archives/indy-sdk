@@ -1,4 +1,4 @@
-use indy_api_types::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
+use indy_api_types::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle, INVALID_SEARCH_HANDLE};
 use indy_api_types::errors::prelude::*;
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::anoncreds::AnoncredsCommand;
@@ -1391,7 +1391,7 @@ pub extern fn indy_prover_search_credentials(command_handle: CommandHandle,
                     wallet_handle,
                     query_json,
                     Box::new(move |result| {
-                        let (err, handle, total_count) = prepare_result_2!(result, 0, 0);
+                        let (err, handle, total_count) = prepare_result_2!(result, INVALID_SEARCH_HANDLE, 0);
                         cb(command_handle, err, handle, total_count)
                     })
                 ))));
@@ -1730,7 +1730,7 @@ pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: Comma
                     proof_request_json,
                     extra_query_json,
                     Box::new(move |result| {
-                        let (err, search_handle) = prepare_result_1!(result, 0);
+                        let (err, search_handle) = prepare_result_1!(result, INVALID_SEARCH_HANDLE);
                         trace!("indy_prover_search_credentials_for_proof_req: search_handle: {:?}", search_handle);
                         cb(command_handle, err, search_handle)
                     }),

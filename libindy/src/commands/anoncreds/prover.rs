@@ -26,7 +26,7 @@ use crate::services::anoncreds::helpers::{parse_cred_rev_id, get_non_revoc_inter
 use crate::services::blob_storage::BlobStorageService;
 use crate::services::crypto::CryptoService;
 use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use indy_utils::sequence;
+use indy_utils::{next_search_handle};
 use crate::utils::wql::Query;
 
 use super::tails::SDKTailsAccessor;
@@ -78,13 +78,13 @@ pub enum ProverCommand {
     SearchCredentials(
         WalletHandle,
         Option<String>, // query json
-        Box<dyn Fn(IndyResult<(i32, usize)>) + Send>),
+        Box<dyn Fn(IndyResult<(SearchHandle, usize)>) + Send>),
     FetchCredentials(
-        i32, // search handle
+        SearchHandle,
         usize, // count
         Box<dyn Fn(IndyResult<String>) + Send>),
     CloseCredentialsSearch(
-        i32, // search handle
+        SearchHandle,
         Box<dyn Fn(IndyResult<()>) + Send>),
     GetCredentialsForProofReq(
         WalletHandle,
@@ -94,14 +94,14 @@ pub enum ProverCommand {
         WalletHandle,
         ProofRequest, // proof request
         Option<ProofRequestExtraQuery>, // extra query
-        Box<dyn Fn(IndyResult<i32>) + Send>),
+        Box<dyn Fn(IndyResult<SearchHandle>) + Send>),
     FetchCredentialForProofReq(
-        i32, // search handle
+        SearchHandle,
         String, // item referent
         usize, // count
         Box<dyn Fn(IndyResult<String>) + Send>),
     CloseCredentialsSearchForProofReq(
-        i32, // search handle
+        SearchHandle,
         Box<dyn Fn(IndyResult<()>) + Send>),
     CreateProof(
         WalletHandle,
@@ -460,7 +460,7 @@ impl ProverCommandExecutor {
 
     fn search_credentials(&self,
                           wallet_handle: WalletHandle,
-                          query_json: Option<&str>) -> IndyResult<(i32, usize)> {
+                          query_json: Option<&str>) -> IndyResult<(SearchHandle, usize)> {
         debug!("search_credentials >>> wallet_handle: {:?}, query_json: {:?}", wallet_handle, query_json);
 
         let credentials_search =
@@ -468,7 +468,7 @@ impl ProverCommandExecutor {
 
         let total_count = credentials_search.get_total_count()?.unwrap_or(0);
 
-        let handle = sequence::get_next_id();
+        let handle : SearchHandle = next_search_handle();
 
         self.searches.borrow_mut().insert(handle, Box::new(credentials_search));
 
@@ -486,7 +486,7 @@ impl ProverCommandExecutor {
 
         let mut searches = self.searches.borrow_mut();
         let search = searches.get_mut(&search_handle)
-            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {:?}", search_handle)))?;
 
         let mut credentials_info: Vec<CredentialInfo> = Vec::new();
 
@@ -508,12 +508,12 @@ impl ProverCommandExecutor {
         Ok(credentials_info_json)
     }
 
-    fn close_credentials_search(&self, search_handle: i32) -> IndyResult<()> {
+    fn close_credentials_search(&self, search_handle: SearchHandle) -> IndyResult<()> {
         trace!("close_credentials_search >>> search_handle: {:?}", search_handle);
 
         match self.searches.borrow_mut().remove(&search_handle) {
             Some(_) => Ok(()),
-            None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))
+            None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {:?}", search_handle)))
         }?;
 
         trace!("close_credentials_search <<< res: ()");
@@ -572,7 +572,7 @@ impl ProverCommandExecutor {
     fn search_credentials_for_proof_req(&self,
                                         wallet_handle: WalletHandle,
                                         proof_request: &ProofRequest,
-                                        extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<i32> {
+                                        extra_query: Option<&ProofRequestExtraQuery>) -> IndyResult<SearchHandle> {
         debug!("search_credentials_for_proof_req >>> wallet_handle: {:?}, proof_request: {:?}, extra_query: {:?}", wallet_handle, proof_request, extra_query);
 
         let proof_req = proof_request.value();
@@ -616,7 +616,7 @@ impl ProverCommandExecutor {
                                                             credentials_search, interval, Some(requested_predicate.clone())));
         }
 
-        let search_handle = sequence::get_next_id();
+        let search_handle = next_search_handle();
         self.searches_for_proof_requests.borrow_mut().insert(search_handle, Box::new(credentials_for_proof_request_search));
 
         debug!("search_credentials_for_proof_req <<< credentials_for_proof_request_json: {:?}", search_handle);
@@ -624,14 +624,14 @@ impl ProverCommandExecutor {
         Ok(search_handle)
     }
 
-    fn fetch_credential_for_proof_request(&self, search_handle: i32, item_referent: &str, count: usize) -> IndyResult<String> {
+    fn fetch_credential_for_proof_request(&self, search_handle: SearchHandle, item_referent: &str, count: usize) -> IndyResult<String> {
         trace!("fetch_credential_for_proof_request >>> search_handle: {:?}, item_referent: {:?}, count: {:?}", search_handle, item_referent, count);
 
         let mut searches = self.searches_for_proof_requests.borrow_mut();
         let search: &mut SearchForProofRequest = searches.get_mut(&search_handle)
-            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))?
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {:?}", search_handle)))?
             .get_mut(item_referent)
-            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown item referent {} for CredentialsSearch handle: {}", item_referent, search_handle)))?;
+            .ok_or_else(|| err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown item referent {} for CredentialsSearch handle: {:?}", item_referent, search_handle)))?;
 
         let requested_credentials: Vec<RequestedCredential> =
             self._get_requested_credentials(&mut search.search, search.predicate_info.as_ref(), &search.interval, Some(count))?;
@@ -644,12 +644,12 @@ impl ProverCommandExecutor {
         Ok(requested_credentials_json)
     }
 
-    fn close_credentials_search_for_proof_req(&self, search_handle: i32) -> IndyResult<()> {
+    fn close_credentials_search_for_proof_req(&self, search_handle: SearchHandle) -> IndyResult<()> {
         trace!("close_credentials_search_for_proof_req >>> search_handle: {:?}", search_handle);
 
         match self.searches_for_proof_requests.borrow_mut().remove(&search_handle) {
             Some(_) => Ok(()),
-            None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {}", search_handle)))
+            None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown CredentialsSearch handle: {:?}", search_handle)))
         }?;
 
         trace!("close_credentials_search_for_proof_req <<< res: ()");
