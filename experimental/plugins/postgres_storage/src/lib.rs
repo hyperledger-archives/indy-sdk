@@ -223,7 +223,6 @@ impl PostgresWallet {
                 return ErrorCode::WalletNotFoundError;
             }
         };
-
         // get a handle (to use to identify wallet for subsequent calls)
         let xhandle = SequenceUtils::get_next_id();
 
@@ -1765,6 +1764,9 @@ mod tests {
                 if scheme == "MultiWalletSingleTable" {
                     return _wallet_config_multi();
                 }
+                if scheme == "MultiWalletSingleTableSharedPool" {
+                    return _wallet_config_multi_with_shared_pool();
+                }
             },
             Err(_) => ()
         };
@@ -1779,6 +1781,15 @@ mod tests {
         let config = Some(json!({
             "url": "localhost:5432".to_owned(),
             "wallet_scheme": "MultiWalletSingleTable".to_owned()
+        }).to_string());
+        config.map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap()
+    }
+
+    fn _wallet_config_multi_with_shared_pool() -> Option<CString> {
+        let config = Some(json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSingleTableSharedPool".to_owned()
         }).to_string());
         config.map(CString::new)
             .map_or(Ok(None), |r| r.map(Some)).unwrap()

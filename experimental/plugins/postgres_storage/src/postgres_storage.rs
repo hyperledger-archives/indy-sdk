@@ -565,6 +565,27 @@ impl WalletStrategy for MultiWalletSingleTableStrategySharedPool {
     }
     // open a wallet based on wallet storage strategy
     fn open_wallet(&self, id: &str, _config: &PostgresConfig, _credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
+        let connection = match self.pool.get() {
+            Ok(connection) => connection,
+            Err(error) => {
+                return Err(WalletStorageError::NotFound)
+            }
+        };
+        // select metadata for this wallet to ensure it exists
+        let res: Result<Vec<u8>, WalletStorageError> = {
+            let mut rows = connection.query(
+                "SELECT value FROM metadata WHERE wallet_id = $1",
+                &[&id]);
+            match rows.as_mut().unwrap().iter().next() {
+                Some(row) => Ok(row.get(0)),
+                None => Err(WalletStorageError::ItemNotFound)
+            }
+        };
+        match res {
+            Ok(_entity) => (),
+            Err(_) => return Err(WalletStorageError::NotFound)
+        };
+
         Ok(Box::new(PostgresStorage {
             pool: self.pool.clone(),
             wallet_id: id.to_string(),
@@ -687,7 +708,6 @@ impl WalletStrategy for DatabasePerWalletStrategy {
         };
 
         // TODO close _conn
-
         let manager = match PostgresConnectionManager::new(&url[..], config.r2d2_tls()) {
             Ok(manager) => manager,
             Err(_) => return Err(WalletStorageError::NotFound)
@@ -700,7 +720,6 @@ impl WalletStrategy for DatabasePerWalletStrategy {
             Ok(pool) => pool,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
-
         Ok(Box::new(PostgresStorage {
             pool: pool,
             wallet_id: id.to_string(),
@@ -1715,7 +1734,7 @@ fn create_connection_pool(config: &PostgresConfig, credentials: &PostgresCredent
 /// Resets current storage strategy. If init_strategy was previously called and shall
 /// it be called again to reinitialize with different strategy or parameters, this needs
 /// to be called first.
-/// This is only used internally for unit testing.
+#[test]
 pub fn reset_wallet_strategy() {
     let mut write_strategy = SELECTED_STRATEGY.write().unwrap();
     *write_strategy = None;
@@ -1973,7 +1992,8 @@ impl WalletStorageType for PostgresStorageType {
             .map_or(Ok(None), |v| v.map(Some))
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize credentials: {:?}", err)))?;
 
-        let config = match config {
+        let config = match config
+        {
             Some(config) => config,
             None => return Err(WalletStorageError::ConfigError)
         };
@@ -2499,6 +2519,9 @@ mod tests {
                 if scheme == "MultiWalletSingleTable" {
                     return _wallet_config_multi();
                 }
+                if scheme == "MultiWalletSingleTableSharedPool" {
+                    return _wallet_config_multi_with_shared_pool();
+                }
             }
             Err(_) => ()
         };
@@ -2512,6 +2535,14 @@ mod tests {
         let config = json!({
             "url": "localhost:5432".to_owned(),
             "wallet_scheme": "MultiWalletSingleTable".to_owned()
+        }).to_string();
+        config
+    }
+
+    fn _wallet_config_multi_with_shared_pool() -> String {
+        let config = json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSingleTableSharedPool".to_owned()
         }).to_string();
         config
     }
