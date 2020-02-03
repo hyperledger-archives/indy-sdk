@@ -22,7 +22,9 @@ version you can check migration guides history:
 * [Notes](#notes)
 * [Libindy 1.13 to 1.14 migration](#libindy-113-to-114-migration)
     * [Ledger API](#ledger-api)
-    
+* [Libindy 1.13.0 to 1.13.1 migration](#libindy-1130-to-1131-migration-guide)
+* [Libindy 1.13.1 to 1.13.2 migration](#libindy-1131-to-1132-migration-guide)
+
 ## Libindy 1.13 to 1.14 migration
 
 #### Ledger API
@@ -46,3 +48,74 @@ There are two changes related to Libindy Ledger API:
 Request to disable all Transaction Author Agreement on the ledger.
 
 More details regarding updated transaction author agreement workflow you can find in this [file](../how-tos/transaction-author-agreement.md).
+
+## Libindy 1.14.0 to 1.14.1 migration Guide
+
+The Libindy 1.14.1 release contains fixes that don't affect API functions. 
+
+## Libindy 1.14.1 to 1.14.2 migration Guide
+
+The Libindy 1.14.1 release contains fixes that don't affect API functions. 
+
+##### Changes
+* Updated behavior of `indy_store_their_did` function to allow updating of existing `theirDID` record. 
+It can be used to rotate a pairwise key (IS-1166).
+
+    This example works now but threw `WalletItemAlreadyExists` error in previous versions:
+    ```
+    let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
+    did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
+    
+    let identity_json = json!({"did": DID, "verkey": VERKEY_TRUSTEE}).to_string();
+    did::store_their_did(setup.wallet_handle, &identity_json).unwrap();
+    
+    let verkey = did::key_for_local_did(setup.wallet_handle, DID).unwrap();
+    assert_eq!(VERKEY_TRUSTEE, verkey);
+    ```
+
+
+* Enhanced validation of `schema_json`: added check that `id` is consistent with `name` and `version` values (IS-1430).
+    ``` 
+    valid:
+    {
+        "id":"schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
+        "name":"gvt",
+        "version":"1.0",
+        "attrNames":["aaa","bbb","ccc"],
+        "ver":"1.0"
+    }
+    invalid:     
+    {
+        "id":"schema:sov:did:sov:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
+        "name":"other_name",
+        "version":"1111.0",
+        "attrNames":["aaa","bbb","ccc"],
+        "ver":"1.0"
+    }
+    ```
+
+
+* Added support of the additional format of `rev_states_json` which is used for proof creation. 
+Both `rev_reg_def_id` and `credential_id` can be used as map keys. 
+    ```
+    1)
+    {
+      rev_reg_id: {
+        timestamp: rev_reg_state,
+        ..
+      },
+      ...
+    }
+    2)
+    { 
+      credential_id: {
+        timestamp: rev_reg_state,
+        ...
+      },
+     ...
+    }
+    ```
+
+`credential_id` must be used in case of proving that two credentials matching the same `rev_reg_id` are not revoked at the same timestamp (IS-1447).
+
+* others minor bugfixes
