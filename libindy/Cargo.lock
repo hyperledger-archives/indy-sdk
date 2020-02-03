@@ -713,11 +713,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "indy"
-version = "1.14.1"
+version = "1.14.2"
 dependencies = [
  "failure 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
- "indy-sys 1.14.1",
+ "indy-sys 1.14.2",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -748,7 +748,7 @@ dependencies = [
 
 [[package]]
 name = "indy-sys"
-version = "1.14.1"
+version = "1.14.2"
 dependencies = [
  "libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -832,7 +832,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libindy"
-version = "1.14.1"
+version = "1.14.2"
 dependencies = [
  "android_logger 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "backtrace 0.3.11 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -846,9 +846,9 @@ dependencies = [
  "failure 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "indy 1.14.1",
+ "indy 1.14.2",
  "indy-api-types 0.1.0",
- "indy-sys 1.14.1",
+ "indy-sys 1.14.2",
  "indy-utils 0.1.0",
  "indy-wallet 0.1.0",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
