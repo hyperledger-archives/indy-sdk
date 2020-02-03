@@ -150,6 +150,11 @@ public abstract class LibVcx {
         public int vcx_connection_invite_details(int command_handle, int connection_handle, int abbreviated, Callback cb);
 
         /**
+         * Get the information about the connection state.
+         */
+        public int vcx_connection_info(int command_handle, int connection_handle, Callback cb);
+
+        /**
          * Creates a connection from the invite details.
          */
         public int vcx_connection_create_with_invite(int command_handle, String source_id, String invite_details, Callback cb);
