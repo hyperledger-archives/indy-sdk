@@ -702,11 +702,7 @@ pub extern fn vcx_connection_get_state(command_handle: CommandHandle,
 ///         "serviceEndpoint": "https://example.com/endpoint",
 ///         "recipientKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
 ///         "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"],
-///         "protocols": [
-///             {"pid": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0", "roles": "Invitee"},
-///             ...
-///         ] - optional array. The set of protocol supported by remote side. Is filled after DiscoveryFeatures process was completed.
-/////    }
+///    }
 ///
 /// #Returns
 /// Error code as a u32
