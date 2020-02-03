@@ -7,6 +7,8 @@ to simplify their transition to LibVCX 0.5 from LibVCX 0.6.x.
 
 * [API]()
     * [Vcx API](#vcx-api)
+* [Libvcx 0.6.0 to 0.6.1 migration](#libvcx-060-to-061-migration-guide)
+* [Libvcx 0.6.1 to 0.6.2 migration](#libvcx-061-to-062-migration-guide)
 
 #### Vcx API
 
@@ -52,3 +54,43 @@ This setting is used within Discover Features protocol to specify the set of pro
 The following actors are implemented by default: `[inviter, invitee, issuer, holder, prover, verifier, sender, receiver]`.
 
 You need to edit this list in case application supports the less number of actors.
+
+## Libvcx 0.6.0 to 0.6.1 migration Guide
+
+The Libvcx 0.6.1 release contains fixes that don't affect API functions and behaviour. 
+
+## Libvcx 0.6.1 to 0.6.2 migration Guide
+
+ We extended the support for Aries protocols:
+ * Basic Message (https://github.com/hyperledger/aries-rfcs/tree/master/features/0095-basic-message)
+    * Updated `vcx_connection_send_message` function to send any kind of messages:
+        * if the message is matched to a known aries message - send as is.
+        * if the message isn't known - wrap and send as `basic` message.
+ * Accept incoming messages with `basicmessage` type. Use `download_message` to download messages from an agency.
+
+
+Updated library to support "names" parameter in Proof Request Revealed Attributes (IS-1381).
+Here is the current format of `revealed_attrs` parameter accepting by `vcx_proof_create` function:
+```
+requested_attrs: Describes requested attribute
+ {
+     "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+     "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                          // NOTE: should either be "name" or "names", not both and not none of them.
+                                          // Use "names" to specify several attributes that have to match a single credential.
+     "restrictions":  (filter_json) {
+        "schema_id": string, (Optional)
+        "schema_issuer_did": string, (Optional)
+        "schema_name": string, (Optional)
+        "schema_version": string, (Optional)
+        "issuer_did": string, (Optional)
+        "cred_def_id": string, (Optional)
+    },
+     "non_revoked": {
+         "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+         "to": Optional<(u64)>
+             //Requested time represented as a total number of seconds from Unix Epoch, Optional
+     }
+ }
+```
+Note: Use `names` to request from Prover several attributes that must correspond to a single credential.
