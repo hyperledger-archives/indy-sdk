@@ -1053,6 +1053,7 @@ mod tests {
     use std::{slice, ptr};
     use wql::storage::ENCRYPTED_KEY_LEN;
     use rand::{thread_rng, Rng};
+    use postgres_storage::reset_wallet_strategy;
 
     #[test]
     fn postgres_wallet_crud_works() {
@@ -1730,6 +1731,7 @@ mod tests {
     }
 
     fn _cleanup() {
+        reset_wallet_strategy();
         let ten_millis = std::time::Duration::from_millis(1);
         let now = time::now();
         thread::sleep(ten_millis);

@@ -1712,6 +1712,15 @@ fn create_connection_pool(config: &PostgresConfig, credentials: &PostgresCredent
     }
 }
 
+/// Resets current storage strategy. If init_strategy was previously called and shall
+/// it be called again to reinitialize with different strategy or parameters, this needs
+/// to be called first.
+/// This is only used internally for unit testing.
+pub fn reset_wallet_strategy() {
+    let mut write_strategy = SELECTED_STRATEGY.write().unwrap();
+    *write_strategy = None;
+}
+
 fn set_wallet_strategy(strategy: Box<dyn WalletStrategy + Send + Sync>) {
     let mut write_strategy = SELECTED_STRATEGY.write().unwrap();
     *write_strategy = Some(strategy);
@@ -1724,7 +1733,6 @@ fn get_wallet_strategy_qualifier() -> Result<Option<String>, WalletStorageError>
                 |strategy| Ok(strategy.query_qualifier()),
         )
 }
-
 
 impl WalletStorageType for PostgresStorageType {
     ///
@@ -2458,11 +2466,8 @@ mod tests {
     }
 
     fn _cleanup() {
+        reset_wallet_strategy();
         let storage_type = PostgresStorageType::new();
-        {
-            let mut write_strategy = SELECTED_STRATEGY.write().unwrap();
-            *write_strategy = None;
-        }
         let _res = storage_type.init_storage(Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
         let _ret = storage_type.delete_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
         let res = test::cleanup_storage();
