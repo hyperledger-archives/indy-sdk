@@ -643,6 +643,25 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
 
+pub fn create_test_connection(did: String, verkey: String, label: String, endpoint: String) -> VcxResult<u32> {
+    if settings::ARIES_COMMUNICATION_METHOD.to_string() != settings::get_communication_method().unwrap_or_default() {
+        return Err(VcxError::from_msg(VcxErrorKind::ActionNotSupported, "Cannot create test connection for not `aries` communication method"));
+    }
+
+    let connection = ConnectionV3::create_test_connection(did, verkey, label, endpoint)?;
+    CONNECTION_MAP.add(Connections::V3(connection))
+        .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))
+}
+
+pub fn get_connection_info(handle: u32) -> VcxResult<String> {
+    CONNECTION_MAP.get(handle, |cxn| {
+        match cxn {
+            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
+            Connections::V3(ref connection) => connection.get_connection_info()
+        }
+    })
+}
+
 pub fn create_connection(source_id: &str) -> VcxResult<u32> {
     trace!("create_connection >>> source_id: {}", source_id);
 
