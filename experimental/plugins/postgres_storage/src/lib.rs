@@ -223,7 +223,6 @@ impl PostgresWallet {
                 return ErrorCode::WalletNotFoundError;
             }
         };
-
         // get a handle (to use to identify wallet for subsequent calls)
         let xhandle = SequenceUtils::get_next_id();
 
@@ -1053,6 +1052,7 @@ mod tests {
     use std::{slice, ptr};
     use wql::storage::ENCRYPTED_KEY_LEN;
     use rand::{thread_rng, Rng};
+    use postgres_storage::reset_wallet_strategy;
 
     #[test]
     fn postgres_wallet_crud_works() {
@@ -1730,6 +1730,7 @@ mod tests {
     }
 
     fn _cleanup() {
+        reset_wallet_strategy();
         let ten_millis = std::time::Duration::from_millis(1);
         let _now = time::now();
         thread::sleep(ten_millis);
@@ -1763,6 +1764,9 @@ mod tests {
                 if scheme == "MultiWalletSingleTable" {
                     return _wallet_config_multi();
                 }
+                if scheme == "MultiWalletSingleTableSharedPool" {
+                    return _wallet_config_multi_with_shared_pool();
+                }
             },
             Err(_) => ()
         };
@@ -1776,7 +1780,17 @@ mod tests {
     fn _wallet_config_multi() -> Option<CString> {
         let config = Some(json!({
             "url": "localhost:5432".to_owned(),
-            "wallet_scheme": "MultiWalletSingleTable".to_owned()
+            "wallet_scheme": "MultiWalletSingleTable".to_owned(),
+            "database_name": "multi_wallet_db".to_owned()
+        }).to_string());
+        config.map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap()
+    }
+
+    fn _wallet_config_multi_with_shared_pool() -> Option<CString> {
+        let config = Some(json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSingleTableSharedPool".to_owned()
         }).to_string());
         config.map(CString::new)
             .map_or(Ok(None), |r| r.map(Some)).unwrap()
