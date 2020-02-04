@@ -380,6 +380,7 @@ pub struct PostgresConfig {
     connection_timeout: Option<u64>,
     // default 5
     wallet_scheme: Option<WalletScheme>,   // default DatabasePerWallet
+    database_name: Option<String>,   // default _WALLET_DB
 }
 
 impl PostgresConfig {
@@ -654,11 +655,15 @@ impl WalletStrategy for DatabasePerWalletStrategy {
             return Ok(());
         }
 
+        debug!("Entering create_wallet");
+        debug!("setting up the admin_postgres_url");
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
         let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
 
+        debug!("connecting to postgres, url_base: {:?}", url_base);
         let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
+        debug!("creating wallets DB");
         let create_db_sql = str::replace(_CREATE_WALLET_DATABASE, "$1", id);
         let mut schema_result = match conn.execute(&create_db_sql, &[]) {
             Ok(_) => Ok(()),
@@ -668,6 +673,7 @@ impl WalletStrategy for DatabasePerWalletStrategy {
         };
         conn.finish()?;
 
+        debug!("connecting to wallet as user");
         let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(error) => {
@@ -675,6 +681,7 @@ impl WalletStrategy for DatabasePerWalletStrategy {
             }
         };
 
+        debug!("setting up multi schema");
         for sql in &_CREATE_SCHEMA {
             match schema_result {
                 Ok(_) => schema_result = match conn.execute(sql, &[]) {
@@ -686,6 +693,7 @@ impl WalletStrategy for DatabasePerWalletStrategy {
                 _ => ()
             }
         };
+        debug!("inserting the keys");
         let ret = match schema_result {
             Ok(_) => {
                 match conn.execute("INSERT INTO metadata(value) VALUES($1)
@@ -776,9 +784,28 @@ impl WalletStrategy for DatabasePerWalletStrategy {
     }
 }
 
+
+// determine additional query parameters based on wallet strategy
+fn get_multi_database_name(config: &PostgresConfig) -> &str {
+    // look to see if there is a specified db to use.  If not, use the default name
+    let name: &str = match config.database_name {
+        Some(ref database_name) => {
+            if database_name.is_empty() {
+                _WALLETS_DB
+            } else {
+                database_name
+            }
+        },
+        None => _WALLETS_DB,
+    };
+
+    return name;
+}
+
 impl WalletStrategy for MultiWalletSingleTableStrategy {
     // initialize storage based on wallet storage strategy
     fn init_storage(&self, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
+        debug!("Entering init_storage");
         // create database and tables for storage
         // if admin user and password aren't provided then bail
         debug!("Initializing storage strategy MultiWalletSingleTableStrategy.");
@@ -786,32 +813,46 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
             return Ok(());
         }
 
+        debug!("setting up the admin_postgres_url");
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str = get_multi_database_name(config);
+        debug!("wallet_db_name: {:?}", wallet_db_name);
         let url_base = PostgresStorageType::_admin_postgres_url(&config, &credentials);
-        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+        debug!("postgres_url: {:?}", url);
+        debug!("connecting to postgres, url_base: {:?}", url_base);
+        let conn = postgres::Connection::connect(&url_base[..], config.tls())?;
 
-        let conn = postgres::Connection::connect(&url_base[..], postgres::TlsMode::None)?;
-
-        if let Err(error) = conn.execute(&_CREATE_WALLETS_DATABASE, &[]) {
+        debug!("creating wallets DB");
+        let create_db_sql: String = str::replace(_CREATE_WALLET_DATABASE, "$1", wallet_db_name);
+        debug!("create_db_sql: {:?}", create_db_sql);
+        if let Err(error) = conn.execute(&create_db_sql, &[]) {
             if error.code() != Some(&postgres::error::DUPLICATE_DATABASE) {
+                debug!("error creating database, Error: {}", error);
                 conn.finish()?;
                 return Err(WalletStorageError::IOError(format!("Error occurred while creating the database: {}", error)));
             } else {
                 // if database already exists, assume tables are created already and return
+                debug!("database already exists");
                 conn.finish()?;
                 return Ok(());
             }
         }
         conn.finish()?;
-
-        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+    
+        debug!("connecting to wallet storage");
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(error) => {
+                debug!("error connecting to wallet storage, Error: {}", error);
                 return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
             }
         };
 
+        debug!("setting up multi schema");
         for sql in &_CREATE_SCHEMA_MULTI {
             if let Err(error) = conn.execute(sql, &[]) {
+                debug!("error creating wallet schema, Error: {}", error);
                 conn.finish()?;
                 return Err(WalletStorageError::IOError(format!("Error occurred while creating wallet schema: {}", error)));
             }
@@ -821,10 +862,14 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
     }
     // initialize a single wallet based on wallet storage strategy
     fn create_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials, metadata: &[u8]) -> Result<(), WalletStorageError> {
-        // insert metadata
-        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str = get_multi_database_name(config);
+        debug!("wallet_db_name: {:?}", wallet_db_name);
 
-        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+        // insert metadata
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
+
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(error) => {
                 return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
@@ -847,7 +892,11 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
     }
     // open a wallet based on wallet storage strategy
     fn open_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<Box<PostgresStorage>, WalletStorageError> {
-        let url = PostgresStorageType::_postgres_url(_WALLETS_DB, &config, &credentials);
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str = get_multi_database_name(config);
+        debug!("wallet_db_name: {:?}", wallet_db_name);
+
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
 
         // don't need a connection, but connect just to verify we can
         let conn = match postgres::Connection::connect(&url[..], config.tls()) {
@@ -893,9 +942,12 @@ impl WalletStrategy for MultiWalletSingleTableStrategy {
     }
     // delete a single wallet based on wallet storage strategy
     fn delete_wallet(&self, id: &str, config: &PostgresConfig, credentials: &PostgresCredentials) -> Result<(), WalletStorageError> {
-        let url = PostgresStorageType::_postgres_url(&_WALLETS_DB, &config, &credentials);
+        // look to see if there is a specified db to use.  If not, use the default name
+        let wallet_db_name: &str = get_multi_database_name(config);
+        debug!("wallet_db_name: {:?}", wallet_db_name);
+        let url = PostgresStorageType::_postgres_url(wallet_db_name, &config, &credentials);
 
-        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+        let conn = match postgres::Connection::connect(&url[..], config.tls()) {
             Ok(conn) => conn,
             Err(error) => {
                 return Err(WalletStorageError::IOError(format!("Error occurred while connecting to wallet schema: {}", error)));
@@ -978,6 +1030,7 @@ impl PostgresStorageType {
 
     fn _admin_postgres_url(config: &PostgresConfig, credentials: &PostgresCredentials) -> String {
         let mut url_base = "postgresql://".to_owned();
+
         match credentials.admin_account {
             Some(ref account) => url_base.push_str(&account[..]),
             None => ()
