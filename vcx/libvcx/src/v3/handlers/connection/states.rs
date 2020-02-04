@@ -24,7 +24,7 @@ use error::prelude::*;
 pub struct DidExchangeSM {
     source_id: String,
     agent_info: AgentInfo,
-    state: ActorDidExchangeState
+    state: ActorDidExchangeState,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -83,14 +83,14 @@ pub struct RequestedState {
 pub struct RespondedState {
     response: SignedResponse,
     did_doc: DidDoc,
-    prev_agent_info: AgentInfo
+    prev_agent_info: AgentInfo,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteState {
     did_doc: DidDoc,
     pending_messages: HashMap<MessageId, String>,
-    protocols: Option<Vec<ProtocolDescriptor>>
+    protocols: Option<Vec<ProtocolDescriptor>>,
 }
 
 impl From<(NullState, Invitation)> for InvitedState {
@@ -204,11 +204,17 @@ impl RequestedState {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot handle Response: thread id does not match: {:?}", response.thread)));
         }
 
-        if response.please_ack.is_some() {
-            // TODO: else send Ping ???
-            let ack = Ack::create().set_thread_id(&response.thread.thid.clone().unwrap_or_default());
-            agent_info.send_message(&ack.to_a2a_message(), &response.connection.did_doc)?;
-        }
+        let message = if response.please_ack.is_some() {
+            Ack::create()
+                .set_thread_id(&response.thread.thid.clone().unwrap_or_default())
+                .to_a2a_message()
+        } else {
+            Ping::create()
+                .set_thread_id(response.thread.thid.clone().unwrap_or_default())
+                .to_a2a_message()
+        };
+
+        agent_info.send_message(&message, &response.connection.did_doc)?;
 
         Ok(response)
     }
@@ -308,7 +314,7 @@ impl DidExchangeSM {
                 DidExchangeSM {
                     source_id: source_id.to_string(),
                     state: ActorDidExchangeState::Invitee(DidExchangeState::Null(NullState {})),
-                    agent_info: AgentInfo::default()
+                    agent_info: AgentInfo::default(),
                 }
             }
         }
@@ -667,7 +673,7 @@ impl DidExchangeSM {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Actor {
     Inviter,
-    Invitee
+    Invitee,
 }
 
 #[cfg(test)]
