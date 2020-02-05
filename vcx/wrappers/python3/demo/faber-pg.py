@@ -4,21 +4,11 @@ import json
 import random
 from ctypes import cdll
 from time import sleep
-import platform
-
-import logging
-
-from indy import wallet
-from indy.error import ErrorCode, IndyError
 
 from vcx.api.connection import Connection
-from vcx.api.credential_def import CredentialDef
-from vcx.api.issuer_credential import IssuerCredential
-from vcx.api.proof import Proof
-from vcx.api.schema import Schema
 from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
-from vcx.state import State, ProofState
+from vcx.state import State
 
 from demo_utils import *
 
