@@ -204,7 +204,7 @@ impl CommandExecutor {
                         }
                         Some(Command::Payments(cmd)) => {
                             debug!("PaymentsCommand command received");
-                            payments_command_executor.execute(cmd);
+                            payments_command_executor.execute(cmd).await;
                         }
                         Some(Command::Cache(cmd)) => {
                             debug!("CacheCommand command received");
