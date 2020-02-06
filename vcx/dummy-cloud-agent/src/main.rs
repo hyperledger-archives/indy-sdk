@@ -14,6 +14,11 @@ extern crate serde_derive;
 extern crate serde_json;
 #[cfg(test)]
 extern crate tokio_core;
+#[macro_use]
+extern crate envconfig_derive;
+extern crate envconfig;
+#[macro_use]
+extern crate failure;
 
 use std::env;
 use std::fs::File;
@@ -30,6 +35,7 @@ use crate::app_admin::start_app_admin_server;
 use crate::domain::config::{Config, WalletStorageConfig};
 use crate::domain::protocol_type::ProtocolType;
 use crate::domain::key_derivation::KeyDerivationMethod;
+use crate::utils::config_env::{AppEnvConfig, get_app_env_config};
 
 #[macro_use]
 pub(crate) mod utils;
@@ -91,7 +97,10 @@ fn _init_wallet(wallet_storage_config: &WalletStorageConfig) -> Result<(), Strin
     }
 }
 
+
 fn _start(config_path: &str) {
+    let env_app_config = get_app_env_config();
+    info!("Starting with env app config {:?}", env_app_config);
     info!("Starting Indy Dummy Agent with config: {}", config_path);
     let Config {
         app: app_config,
@@ -125,8 +134,6 @@ fn _start(config_path: &str) {
     }
 
     let sys = actix::System::new("indy-dummy-agent");
-
-    let new_agents_kdf = wallet_storage_config.new_agent_key_derivation_method.clone().unwrap_or(KeyDerivationMethod::Raw);
 
     Arbiter::spawn_fn(move || {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);

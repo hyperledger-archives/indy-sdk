@@ -20,7 +20,8 @@ use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, walle
 use crate::utils::futures::*;
 use crate::utils::rand;
 use crate::utils::wallet::build_wallet_credentials;
-use crate::domain::key_derivation::{KeyDerivationDirective, KeyDerivationMethod};
+use crate::domain::key_derivation::{KeyDerivationDirective};
+use crate::utils::config_env::*;
 
 #[allow(unused)] //FIXME:
 pub struct Agent {
@@ -52,7 +53,7 @@ impl Agent {
                     "storage_config": wallet_storage_config.config,
                  }).to_string();
 
-        let kdf_directives = KeyDerivationDirective::new(KeyDerivationMethod::Raw)
+        let kdf_directives = KeyDerivationDirective::new(get_app_env_config().new_agent_kdf.clone())
             .wait().expect("Couldn't construct wallet credentials.");
         // todo: remove the .expect(), no need to panic here
         let wallet_credentials = build_wallet_credentials(

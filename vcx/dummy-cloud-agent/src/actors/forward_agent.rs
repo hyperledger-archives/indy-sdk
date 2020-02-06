@@ -16,7 +16,6 @@ use crate::domain::config::{ForwardAgentConfig, WalletStorageConfig};
 use crate::domain::invite::ForwardAgentDetail;
 use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
 use crate::utils::futures::*;
-use crate::domain::key_derivation::KeyDerivationMethod;
 
 pub struct ForwardAgent {
     wallet_handle: WalletHandle,

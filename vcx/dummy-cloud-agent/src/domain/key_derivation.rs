@@ -1,7 +1,8 @@
 use indyrs::IndyError;
 use futures::{Future, future};
-use futures::future::ok;
 use crate::utils::rand;
+use std::str::FromStr;
+use failure::Error;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum KeyDerivationMethod {
@@ -11,6 +12,19 @@ pub enum KeyDerivationMethod {
     Argon2iInt,
     #[serde(rename = "RAW")]
     Raw
+}
+
+impl FromStr for KeyDerivationMethod {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "RAW" => Ok(KeyDerivationMethod::Raw),
+            "ARGON2I_MOD" => Ok(KeyDerivationMethod::Argon2iMod),
+            "ARGON2I_INT" => Ok(KeyDerivationMethod::Argon2iInt),
+            _ => Err(format_err!("Can not convert string to KeyDerivationMethod"))
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -25,8 +39,8 @@ impl KeyDerivationDirective {
             KeyDerivationMethod::Argon2iMod | KeyDerivationMethod::Argon2iInt => Box::new(future::ok(()).map(|_| rand::rand_string(10))),
             KeyDerivationMethod::Raw => indyrs::wallet::generate_wallet_key(None)
         };
-        Box::new(key_future.map(|key| {
-            KeyDerivationDirective { key, key_derivation_method }
+        Box::new(key_future.map(move |key| {
+            KeyDerivationDirective { key, key_derivation_method: key_derivation_method.clone() }
         }))
     }
 }
@@ -41,6 +55,32 @@ mod tests {
     use crate::utils::tests::*;
 
     use super::*;
+
+    #[test]
+    fn should_parse_string_as_raw_key_derivation_method() {
+        let kdf: KeyDerivationMethod = KeyDerivationMethod::from_str("RAW").unwrap();
+        assert_eq!(kdf, KeyDerivationMethod::Raw)
+    }
+
+    #[test]
+    fn should_parse_string_as_argonint_key_derivation_method() {
+        let kdf: KeyDerivationMethod = KeyDerivationMethod::from_str("ARGON2I_INT").unwrap();
+        assert_eq!(kdf, KeyDerivationMethod::Argon2iInt)
+    }
+
+    #[test]
+    fn should_parse_string_as_argonmod_key_derivation_method() {
+        let kdf: KeyDerivationMethod = KeyDerivationMethod::from_str("ARGON2I_MOD").unwrap();
+        assert_eq!(kdf, KeyDerivationMethod::Argon2iMod)
+    }
+
+    #[test]
+    #[should_panic(
+    expected = r#"Can not convert string to KeyDerivationMethod"#
+    )]
+    fn should_throw_error_if_trying_parse_unknown_kdf_method() {
+        KeyDerivationMethod::from_str("FOOBAR").unwrap();
+    }
 
     #[test]
     fn should_build_argon2iint_directive() {

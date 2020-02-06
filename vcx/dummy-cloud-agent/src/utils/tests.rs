@@ -119,7 +119,7 @@ pub fn run_test<F, B>(f: F)
             future::ok(())
                 .and_then(move |_| {
                     let admin = Some(admin);
-                    ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config(), admin, KeyDerivationMethod::Argon2iMod)
+                    ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config(), admin)
                 })
                 .and_then(move |fw_agent| {
                     f(fw_agent, admin_for_test)

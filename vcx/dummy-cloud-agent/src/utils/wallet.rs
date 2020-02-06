@@ -1,10 +1,6 @@
-use futures::{Future, future};
-use futures::future::ok;
-use indyrs::IndyError;
 use serde_json::{Map, Value};
 
 use crate::domain::key_derivation::{KeyDerivationDirective, KeyDerivationMethod};
-use crate::utils::rand;
 
 fn seriaize_kdf_as_string(kdf: KeyDerivationMethod) -> String {
     match kdf {

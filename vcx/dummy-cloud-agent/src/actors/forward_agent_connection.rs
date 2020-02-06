@@ -5,7 +5,6 @@ use failure::{err_msg, Error, Fail};
 use futures::*;
 use futures::future::Either;
 use serde_json;
-use serde_json::Value;
 
 use crate::actors::{AddA2ARoute, AdminRegisterForwardAgentConnection, HandleA2AMsg, HandleAdminMessage};
 use crate::actors::admin::Admin;
@@ -18,7 +17,6 @@ use crate::domain::invite::ForwardAgentDetail;
 use crate::domain::key_derivation::{KeyDerivationDirective, KeyDerivationMethod};
 use crate::indy::{did, pairwise, pairwise::PairwiseInfo, WalletHandle};
 use crate::utils::futures::*;
-use crate::utils::rand;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AgentWalletInfo {
