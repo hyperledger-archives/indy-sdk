@@ -356,6 +356,8 @@ impl CryptoCommandExecutor {
     ) -> IndyResult<Vec<u8>> {
         let sender_key = match sender_vk {
             Some(sender_key_) => {
+                validate_key(&sender_key_)?;
+
                 //get my_key from my wallet
                 Some(self.wallet_service.get_indy_object::<Key>(
                     wallet_handle,

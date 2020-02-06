@@ -57,6 +57,7 @@ pub mod ed25519_box;
 pub mod verkey_builder;
 
 use indy_api_types::errors::prelude::*;
+use crate::crypto::verkey_builder::clear_verkey;
 
 pub fn create_key(key_info: &KeyInfo) -> IndyResult<Key> {
     trace!("create_key >>> key_info: {:?}", secret!(key_info));
@@ -76,6 +77,7 @@ pub fn create_key(key_info: &KeyInfo) -> IndyResult<Key> {
 pub fn sign(my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
     trace!("sign >>> my_key: {:?}, doc: {:?}", my_key, doc);
 
+
     let my_sk = ed25519_sign::SecretKey::from_slice(&my_key.signkey.as_str().from_base58()?.as_slice())?;
     let signature = ed25519_sign::sign(&my_sk, doc)?[..].to_vec();
 
@@ -86,6 +88,8 @@ pub fn sign(my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
 
 pub fn verify(their_vk: &str, msg: &[u8], signature: &[u8]) -> IndyResult<bool> {
     trace!("verify >>> their_vk: {:?}, msg: {:?}, signature: {:?}", their_vk, msg, signature);
+
+    let their_vk = clear_verkey(their_vk)?;
 
     let their_vk = ed25519_sign::PublicKey::from_slice(&their_vk.from_base58()?)?;
     let signature = ed25519_sign::Signature::from_slice(&signature)?;
@@ -116,6 +120,8 @@ pub fn create_combo_box(my_key: &Key, their_vk: &str, doc: &[u8]) -> IndyResult<
 pub fn crypto_box(my_key: &Key, their_vk: &str, doc: &[u8]) -> IndyResult<(Vec<u8>, Vec<u8>)> {
     trace!("crypto_box >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
 
+    let their_vk = clear_verkey(their_vk)?;
+
     let my_sk = ed25519_sign::SecretKey::from_slice(my_key.signkey.as_str().from_base58()?.as_slice())?;
     let their_vk = ed25519_sign::PublicKey::from_slice(their_vk.from_base58()?.as_slice())?;
     let nonce = ed25519_box::gen_nonce();
@@ -131,6 +137,8 @@ pub fn crypto_box(my_key: &Key, their_vk: &str, doc: &[u8]) -> IndyResult<(Vec<u
 pub fn crypto_box_open(my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -> IndyResult<Vec<u8>> {
     trace!("crypto_box_open >>> my_key: {:?}, their_vk: {:?}, doc: {:?}, nonce: {:?}", my_key, their_vk, doc, nonce);
 
+    let their_vk = clear_verkey(their_vk)?;
+
     let my_sk = ed25519_sign::SecretKey::from_slice(&my_key.signkey.from_base58()?.as_slice())?;
     let their_vk = ed25519_sign::PublicKey::from_slice(their_vk.from_base58()?.as_slice())?;
     let nonce = ed25519_box::Nonce::from_slice(&nonce)?;
@@ -145,6 +153,8 @@ pub fn crypto_box_open(my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -
 pub fn crypto_box_seal(their_vk: &str, doc: &[u8]) -> IndyResult<Vec<u8>> {
     trace!("crypto_box_seal >>> their_vk: {:?}, doc: {:?}", their_vk, doc);
 
+    let their_vk = clear_verkey(their_vk)?;
+
     let their_vk = ed25519_sign::PublicKey::from_slice(their_vk.from_base58()?.as_slice())?;
 
     let encrypted_doc = sealedbox::encrypt(&their_vk.to_curve25519()?, doc)?;
@@ -157,7 +167,9 @@ pub fn crypto_box_seal(their_vk: &str, doc: &[u8]) -> IndyResult<Vec<u8>> {
 pub fn crypto_box_seal_open(my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
     trace!("crypto_box_seal_open >>> my_key: {:?}, doc: {:?}", my_key, doc);
 
-    let my_vk = ed25519_sign::PublicKey::from_slice(my_key.verkey.from_base58()?.as_slice())?;
+    let my_vk = clear_verkey(&my_key.verkey)?;
+
+    let my_vk = ed25519_sign::PublicKey::from_slice(my_vk.from_base58()?.as_slice())?;
     let my_sk = ed25519_sign::SecretKey::from_slice(my_key.signkey.as_str().from_base58()?.as_slice())?;
 
     let decrypted_doc = sealedbox::decrypt(&my_vk.to_curve25519()?, &my_sk.to_curve25519()?, doc)?;
@@ -210,6 +222,8 @@ pub fn convert_seed(seed: Option<&str>) -> IndyResult<Option<ed25519_sign::Seed>
 
 pub fn validate_key(vk: &str) -> IndyResult<()> {
     trace!("validate_key >>> vk: {:?}", vk);
+
+    let vk = clear_verkey(vk)?;
 
     if vk.starts_with('~') {
         let _ = vk[1..].from_base58()?; // TODO: proper validate abbreviated verkey
