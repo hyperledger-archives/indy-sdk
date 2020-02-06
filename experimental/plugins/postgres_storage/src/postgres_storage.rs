@@ -1790,13 +1790,6 @@ fn create_connection_pool(config: &PostgresConfig, credentials: &PostgresCredent
     }
 }
 
-/// Resets current storage strategy to default one.
-#[test]
-pub fn reset_to_default_strategy() {
-    let mut write_strategy = SELECTED_STRATEGY.write().unwrap();
-    *write_strategy = Box::new(DatabasePerWalletStrategy{});
-}
-
 fn set_wallet_strategy(strategy: Box<dyn WalletStrategy + Send + Sync>) {
     let mut write_strategy = SELECTED_STRATEGY.write().unwrap();
     *write_strategy = strategy;
@@ -2514,7 +2507,6 @@ mod tests {
     }
 
     fn _cleanup() {
-        reset_to_default_strategy();
         let storage_type = PostgresStorageType::new();
         let _res = storage_type.init_storage(Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..])).unwrap();
         let _ret = storage_type.delete_storage(_wallet_id(), Some(&_wallet_config()[..]), Some(&_wallet_credentials()[..]));
