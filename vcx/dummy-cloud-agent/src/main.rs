@@ -34,8 +34,7 @@ use crate::app::start_app_server;
 use crate::app_admin::start_app_admin_server;
 use crate::domain::config::{Config, WalletStorageConfig};
 use crate::domain::protocol_type::ProtocolType;
-use crate::domain::key_derivation::KeyDerivationMethod;
-use crate::utils::config_env::{AppEnvConfig, get_app_env_config};
+use crate::utils::config_env::{get_app_env_config};
 
 #[macro_use]
 pub(crate) mod utils;
@@ -99,6 +98,9 @@ fn _init_wallet(wallet_storage_config: &WalletStorageConfig) -> Result<(), Strin
 
 
 fn _start(config_path: &str) {
+    // TODO: Find a way for APP_ENV_CONFIG returned from get_app_env_config is eagerly evaluated
+    // right now it's important to call get_app_env_config so that if some passed configuration
+    // is invalid, we can fail fast
     let env_app_config = get_app_env_config();
     info!("Starting with env app config {:?}", env_app_config);
     info!("Starting Indy Dummy Agent with config: {}", config_path);

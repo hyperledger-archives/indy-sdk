@@ -1,12 +1,12 @@
 use serde_json::{Map, Value};
 
-use crate::domain::key_derivation::{KeyDerivationDirective, KeyDerivationMethod};
+use crate::domain::key_derivation::{KeyDerivationDirective, KeyDerivationFunction};
 
-fn seriaize_kdf_as_string(kdf: KeyDerivationMethod) -> String {
+fn serialize_kdf_as_string(kdf: KeyDerivationFunction) -> String {
     match kdf {
-        KeyDerivationMethod::Argon2iMod => "ARGON2I_MOD".into(),
-        KeyDerivationMethod::Argon2iInt => "ARGON2I_INT".into(),
-        KeyDerivationMethod::Raw => "RAW".into()
+        KeyDerivationFunction::Argon2iMod => "ARGON2I_MOD".into(),
+        KeyDerivationFunction::Argon2iInt => "ARGON2I_INT".into(),
+        KeyDerivationFunction::Raw => "RAW".into()
     }
 }
 
@@ -16,7 +16,7 @@ pub fn build_wallet_credentials(kdf_directive: &KeyDerivationDirective, storage_
         Some(storage_credentials) => {
             let mut map = Map::new();
             map.insert(String::from("key"), Value::String(kdf_directive.key.clone()));
-            map.insert(String::from("key_derivation_method"), Value::String(seriaize_kdf_as_string(kdf_directive.key_derivation_method.clone())));
+            map.insert(String::from("key_derivation_method"), Value::String(serialize_kdf_as_string(kdf_directive.kdf.clone())));
             map.insert(String::from("storage_credentials"), storage_credentials);
             Value::Object(map)
         }
@@ -28,10 +28,11 @@ mod tests {
     use serde::Serialize;
 
     use crate::actors::ForwardA2AMsg;
-    use crate::domain::key_derivation::KeyDerivationMethod;
+    use crate::domain::key_derivation::KeyDerivationFunction;
     use crate::utils::tests::*;
 
     use super::*;
+    use futures::Future;
 
     #[test]
     fn should_build_wallet_credentials() {
@@ -41,7 +42,7 @@ mod tests {
           "admin_account": "postgres",
           "admin_password": "mysecretpassword"
         }));
-        let kdf_directive = KeyDerivationDirective::new(KeyDerivationMethod::Raw).wait().unwrap();
+        let kdf_directive = KeyDerivationDirective::new(KeyDerivationFunction::Raw).wait().unwrap();
         let o = build_wallet_credentials(&kdf_directive, storage_credentials);
         let result_key = o["key"].as_str().unwrap();
         let result_kdf = o["key_derivation_method"].as_str().unwrap();

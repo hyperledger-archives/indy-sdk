@@ -188,7 +188,6 @@ impl ForwardAgent {
                                                         admin.clone())
                     })
                     .collect();
-
                 future::join_all(futures)
                     .map(|_| ())
                     .map_err(|err| err.context("Can't restore Forward Agent connections").into())
