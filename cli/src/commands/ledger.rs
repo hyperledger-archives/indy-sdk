@@ -5,7 +5,7 @@ use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandP
 use crate::commands::*;
 use crate::commands::payment_address::handle_payment_error;
 
-use indy::{ErrorCode, IndyError};
+use indy::{ErrorCode, IndyError, WalletHandle, PoolHandle, INVALID_WALLET_HANDLE};
 use crate::libindy::ledger::Ledger;
 use crate::libindy::payment::Payment;
 
@@ -901,7 +901,7 @@ pub mod pool_restart_command {
     }
 }
 
-fn sign_and_submit_action(wallet_handle: i32, pool_handle: i32, submitter_did: &str, request: &str, nodes: Option<Vec<&str>>, timeout: Option<i32>) -> Result<String, IndyError> {
+fn sign_and_submit_action(wallet_handle: WalletHandle, pool_handle: PoolHandle, submitter_did: &str, request: &str, nodes: Option<Vec<&str>>, timeout: Option<i32>) -> Result<String, IndyError> {
     let nodes = match nodes {
         Some(n) =>
             Some(serde_json::to_string(&n)
@@ -1105,7 +1105,7 @@ pub mod get_payment_sources_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(INVALID_WALLET_HANDLE);
         let submitter_did = get_active_did(&ctx);
 
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
@@ -1229,7 +1229,7 @@ pub mod get_fees_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(INVALID_WALLET_HANDLE);
         let submitter_did = get_active_did(&ctx);
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
@@ -1287,7 +1287,7 @@ pub mod mint_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(INVALID_WALLET_HANDLE);
         let submitter_did = get_active_did(&ctx);
 
         let outputs = get_str_tuple_array_param("outputs", params).map_err(error_err!())?;
@@ -1326,7 +1326,7 @@ pub mod set_fees_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(INVALID_WALLET_HANDLE);
         let submitter_did = get_active_did(&ctx);
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
@@ -1360,7 +1360,7 @@ pub mod verify_payment_receipt_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(-1);
+        let wallet_handle = get_opened_wallet_handle(&ctx).unwrap_or(INVALID_WALLET_HANDLE);
         let submitter_did = get_active_did(&ctx);
 
         let receipt = get_str_param("receipt", params).map_err(error_err!())?;
@@ -2279,7 +2279,7 @@ fn timestamp_to_datetime(_time: i64) -> String {
     NaiveDateTime::from_timestamp(_time, 0).to_string()
 }
 
-pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Option<(String, String, String)>, ()> {
+pub fn get_active_transaction_author_agreement(_pool_handle: PoolHandle) -> Result<Option<(String, String, Option<String>)>, ()> {
     let response = Ledger::build_get_txn_author_agreement_request(None, None)
         .and_then(|request| Ledger::submit_request(_pool_handle, &request))
         .map_err(|err| handle_indy_error(err, None, None, None))?;
@@ -2293,7 +2293,7 @@ pub fn get_active_transaction_author_agreement(_pool_handle: i32) -> Result<Opti
 
     match (text, version, digest) {
         (Some(text), _,  _) if text.is_empty() => Ok(None),
-        (Some(text), Some(version), Some(digest)) => Ok(Some((text.to_string(), version.to_string(), digest.to_string()))),
+        (Some(text), Some(version), digest) => Ok(Some((text.to_string(), version.to_string(), digest.as_ref().map(|digest_| digest_.to_string())))),
         _ => Ok(None)
     }
 }
@@ -2335,7 +2335,7 @@ fn get_payment_sources(ctx: &CommandContext, payment_address: &str) -> Result<Ve
 pub fn set_request_fees(ctx: &CommandContext,
                         params: &HashMap<&'static str, String>,
                         request: &mut String,
-                        wallet_handle: i32,
+                        wallet_handle: WalletHandle,
                         submitter_did: Option<&str>) -> Result<Option<String>, ()> {
     let source_payment_address = get_opt_str_param("source_payment_address", params).map_err(error_err!())?;
     let fee = get_opt_number_param::<u64>("fee", params).map_err(error_err!())?;
@@ -2800,6 +2800,36 @@ pub mod tests {
             let transaction: serde_json::Value = serde_json::from_str(&transaction).unwrap();
             assert!(transaction["signature"].is_null());
             tear_down_with_wallet_and_pool(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_for_disconnected_pool_and_specific_protocol_version() {
+            let ctx = setup_with_wallet();
+            use_trustee(&ctx);
+            let (did, _) = create_new_did(&ctx);
+            // Set Custom Pool protocol version
+            {
+                let cmd = pool::set_protocol_version_command::new();
+                let mut params = CommandParams::new();
+                params.insert("protocol-version", "1".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            // Build NYM request
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", did.clone());
+                params.insert("send", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            // Reset Custom Pool protocol version
+            {
+                let cmd = pool::set_protocol_version_command::new();
+                let mut params = CommandParams::new();
+                params.insert("protocol-version", DEFAULT_POOL_PROTOCOL_VERSION.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
         }
     }
 

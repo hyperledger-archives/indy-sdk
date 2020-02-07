@@ -6,8 +6,70 @@ use disclosed_proof;
 use std::ptr;
 use utils::threadpool::spawn;
 use error::prelude::*;
+use indy_sys::CommandHandle;
 
-/// Create a proof for fulfilling a corresponding proof request
+/*
+    The API represents an Prover side in credential presentation process.
+    Assumes that pairwise connection between Verifier and Prover is already established.
+
+    # State
+
+    The set of object states, messages and transitions depends on the communication method is used.
+    There are two communication methods: `proprietary` and `aries`. The default communication method is `proprietary`.
+    The communication method can be specified as a config option on one of *_init functions.
+
+    proprietary:
+        VcxStateType::VcxStateRequestReceived - once `vcx_disclosed_proof_create_with_request` (create DisclosedProof object) is called.
+
+        VcxStateType::VcxStateRequestReceived - once `vcx_disclosed_proof_generate_proof` is called.
+
+        VcxStateType::VcxStateAccepted - once `vcx_disclosed_proof_send_proof` (send `PROOF` message) is called.
+
+    aries:
+        VcxStateType::VcxStateRequestReceived - once `vcx_disclosed_proof_create_with_request` (create DisclosedProof object) is called.
+
+        VcxStateType::VcxStateRequestReceived - once `vcx_disclosed_proof_generate_proof` is called.
+
+        VcxStateType::VcxStateOfferSent - once `vcx_disclosed_proof_send_proof` (send `Presentation` message) is called.
+        VcxStateType::None - once `vcx_disclosed_proof_decline_presentation_request` (send `PresentationReject` or `PresentationProposal` message) is called.
+
+        VcxStateType::VcxStateAccepted - once `Ack` messages is received.
+        VcxStateType::None - once `ProblemReport` messages is received.
+
+    # Transitions
+
+    proprietary:
+        VcxStateType::None - `vcx_disclosed_proof_create_with_request` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_generate_proof` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_send_proof` - VcxStateType::VcxStateAccepted
+
+    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+        VcxStateType::None - `vcx_disclosed_proof_create_with_request` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_generate_proof` - VcxStateType::VcxStateRequestReceived
+
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_send_proof` - VcxStateType::VcxStateAccepted
+        VcxStateType::VcxStateRequestReceived - `vcx_disclosed_proof_decline_presentation_request` - VcxStateType::None
+
+        VcxStateType::VcxStateOfferSent - received `Ack` - VcxStateType::VcxStateAccepted
+        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+
+    # Messages
+
+    proprietary:
+        ProofRequest (`PROOF_REQ`)
+        Proof (`PROOF`)
+
+    aries:
+        PresentationRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#request-presentation
+        Presentation - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#presentation
+        PresentationProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+*/
+
+/// Create a Proof object for fulfilling a corresponding proof request
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -18,14 +80,16 @@ use error::prelude::*;
 ///
 /// cb: Callback that provides proof handle or error status
 ///
+/// # Example proof_req -> "{"@topic":{"mid":9,"tid":1},"@type":{"name":"PROOF_REQUEST","version":"1.0"},"msg_ref_id":"ymy5nth","proof_request_data":{"name":"AccountCertificate","nonce":"838186471541979035208225","requested_attributes":{"business_2":{"name":"business"},"email_1":{"name":"email"},"name_0":{"name":"name"}},"requested_predicates":{},"version":"0.1"}}"
+///
 /// #Returns
 /// Error code as u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
+pub extern fn vcx_disclosed_proof_create_with_request(command_handle: CommandHandle,
                                                       source_id: *const c_char,
                                                       proof_req: *const c_char,
-                                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, handle: u32)>) -> u32 {
+                                                      cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, handle: u32)>) -> u32 {
     info!("vcx_disclosed_proof_create_with_request >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -56,7 +120,7 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
 }
 
 
-/// Create a proof for fulfilling a corresponding proof request
+/// Create a proof based off of a known message id for a given connection.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -65,7 +129,7 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
 ///
 /// connection: connection to query for proof request
 ///
-/// msg_id: msg_id that contains the proof request
+/// msg_id:  id of the message that contains the proof request
 ///
 /// cb: Callback that provides proof handle and proof request or error status
 ///
@@ -73,11 +137,11 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: u32,
+pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: CommandHandle,
                                                     source_id: *const c_char,
                                                     connection_handle: u32,
                                                     msg_id: *const c_char,
-                                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_handle: u32, proof_req: *const c_char)>) -> u32 {
+                                                    cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, proof_handle: u32, proof_req: *const c_char)>) -> u32 {
     info!("vcx_disclosed_proof_create_with_msgid >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -128,10 +192,10 @@ pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: u32,
 /// #Returns
 /// Error code as u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
+pub extern fn vcx_disclosed_proof_send_proof(command_handle: CommandHandle,
                                              proof_handle: u32,
                                              connection_handle: u32,
-                                             cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                             cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_disclosed_proof_send_proof >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -145,8 +209,8 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
            command_handle, proof_handle, connection_handle, source_id);
 
     spawn(move || {
-        let err = match disclosed_proof::send_proof(proof_handle, connection_handle) {
-            Ok(x) => {
+       match disclosed_proof::send_proof(proof_handle, connection_handle) {
+            Ok(_) => {
                 trace!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}) source_id: {}",
                        command_handle, error::SUCCESS.message, source_id);
                 cb(command_handle, error::SUCCESS.code_num);
@@ -176,9 +240,9 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
 /// #Returns
 /// Error code as u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_get_proof_msg(command_handle: u32,
+pub extern fn vcx_disclosed_proof_get_proof_msg(command_handle: CommandHandle,
                                                 proof_handle: u32,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg: *const c_char)>) -> u32 {
     info!("vcx_disclosed_proof_get_proof_msg >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -213,7 +277,7 @@ pub extern fn vcx_disclosed_proof_get_proof_msg(command_handle: u32,
 }
 
 
-/// Queries agency for proof requests from the given connection.
+/// Queries agency for all pending proof requests from the given connection.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -221,13 +285,14 @@ pub extern fn vcx_disclosed_proof_get_proof_msg(command_handle: u32,
 /// connection_handle: Connection to query for proof requests.
 ///
 /// cb: Callback that provides any proof requests and error status of query
+/// # Example requests -> "[{'@topic': {'tid': 0, 'mid': 0}, '@type': {'version': '1.0', 'name': 'PROOF_REQUEST'}, 'proof_request_data': {'name': 'proof_req', 'nonce': '118065925949165739229152', 'version': '0.1', 'requested_predicates': {}, 'non_revoked': None, 'requested_attributes': {'attribute_0': {'name': 'name', 'restrictions': {'$or': [{'issuer_did': 'did'}]}}}, 'ver': '1.0'}, 'thread_id': '40bdb5b2'}]"
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_get_requests(command_handle: u32,
+pub extern fn vcx_disclosed_proof_get_requests(command_handle: CommandHandle,
                                                connection_handle: u32,
-                                               cb: Option<extern fn(xcommand_handle: u32, err: u32, requests: *const c_char)>) -> u32 {
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, requests: *const c_char)>) -> u32 {
     info!("vcx_disclosed_proof_get_requests >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -268,13 +333,16 @@ pub extern fn vcx_disclosed_proof_get_requests(command_handle: u32,
 /// proof_handle: Proof handle that was provided during creation. Used to access disclosed proof object
 ///
 /// cb: Callback that provides most current state of the disclosed proof and error status of request
+///     States:
+///         3 - Request Received
+///         4 - Accepted
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_get_state(command_handle: u32,
+pub extern fn vcx_disclosed_proof_get_state(command_handle: CommandHandle,
                                             proof_handle: u32,
-                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_disclosed_proof_get_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -307,7 +375,7 @@ pub extern fn vcx_disclosed_proof_get_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change in the disclosed proof and updates the the state attribute
+/// Checks for any state change in the disclosed proof and updates the state attribute
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -319,9 +387,9 @@ pub extern fn vcx_disclosed_proof_get_state(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
+pub extern fn vcx_disclosed_proof_update_state(command_handle: CommandHandle,
                                                proof_handle: u32,
-                                               cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_disclosed_proof_update_state >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -354,24 +422,24 @@ pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Checks for any state change from the given message and updates the the state attribute
+/// Checks for any state change from the given message and updates the state attribute
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
 /// proof_handle: Credential handle that was provided during creation. Used to identify disclosed proof object
 ///
-/// message: message to parse for state changes
+/// message: message to process for state changes
 ///
 /// cb: Callback that provides most current state of the disclosed proof and error status of request
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_update_state_with_message(command_handle: u32,
+pub extern fn vcx_disclosed_proof_update_state_with_message(command_handle: CommandHandle,
                                                             proof_handle: u32,
                                                             message: *const c_char,
-                                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+                                                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, state: u32)>) -> u32 {
     info!("vcx_disclosed_proof_update_state_with_message >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -417,9 +485,9 @@ pub extern fn vcx_disclosed_proof_update_state_with_message(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_serialize(command_handle: u32,
+pub extern fn vcx_disclosed_proof_serialize(command_handle: CommandHandle,
                                             proof_handle: u32,
-                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, data: *const c_char)>) -> u32 {
+                                            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, data: *const c_char)>) -> u32 {
     info!("vcx_disclosed_proof_serialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -466,9 +534,9 @@ pub extern fn vcx_disclosed_proof_serialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_deserialize(command_handle: u32,
+pub extern fn vcx_disclosed_proof_deserialize(command_handle: CommandHandle,
                                               proof_data: *const c_char,
-                                              cb: Option<extern fn(xcommand_handle: u32, err: u32, handle: u32)>) -> u32 {
+                                              cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, handle: u32)>) -> u32 {
     info!("vcx_disclosed_proof_deserialize >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -498,7 +566,7 @@ pub extern fn vcx_disclosed_proof_deserialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Takes the disclosed proof object and returns a json string of all credentials matching associated proof request from wallet
+/// Get credentials from wallet matching to the proof request associated with proof object
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -507,12 +575,15 @@ pub extern fn vcx_disclosed_proof_deserialize(command_handle: u32,
 ///
 /// cb: Callback that provides json string of the credentials in wallet associated with proof request
 ///
+/// # Example
+/// credentials -> "{'attrs': {'attribute_0': [{'cred_info': {'schema_id': 'id', 'cred_def_id': 'id', 'attrs': {'attr_name': 'attr_value', ...}, 'referent': '914c7e11'}}]}}"
+///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
+pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: CommandHandle,
                                                        proof_handle: u32,
-                                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, data: *const c_char)>) -> u32 {
+                                                       cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, data: *const c_char)>) -> u32 {
     info!("vcx_disclosed_proof_retrieve_credentials >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -546,7 +617,7 @@ pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Takes the disclosed proof object and generates a proof from the selected credentials and self attested attributes
+/// Accept proof request associated with proof object and generates a proof from the selected credentials and self attested attributes
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -580,18 +651,19 @@ pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
 ///     // selected_credentials can be empty "{}" if the proof only contains self_attested_attrs
 ///
 /// self_attested_attrs: a json string with attributes self attested by user
-/// # Examples self_attested_attrs -> "{"self_attested_attr_0":"attested_val"}" | "{}"
-///
+/// # Examples
+/// self_attested_attrs -> "{"self_attested_attr_0":"attested_val"}" | "{}"
+/// selected_credentials -> "{'attrs': {'attribute_0': {'credential': {'cred_info': {'cred_def_id': 'od', 'schema_id': 'id', 'referent': '0c212108-9433-4199-a21f-336a44164f38', 'attrs': {'attr_name': 'attr_value', ...}}}}}}"
 /// cb: Callback that returns error status
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_generate_proof(command_handle: u32,
+pub extern fn vcx_disclosed_proof_generate_proof(command_handle: CommandHandle,
                                                  proof_handle: u32,
                                                  selected_credentials: *const c_char,
                                                  self_attested_attrs: *const c_char,
-                                                 cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                                 cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_disclosed_proof_generate_proof >>>");
 
     check_useful_c_str!(selected_credentials, VcxErrorKind::InvalidOption);
@@ -747,7 +819,7 @@ pub extern fn vcx_disclosed_proof_release(handle: u32) -> u32 {
 
     let source_id = disclosed_proof::get_source_id(handle).unwrap_or_default();
     match disclosed_proof::release(handle) {
-        Ok(_) => {
+        Ok(()) => {
             trace!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
                    handle, error::SUCCESS.message, source_id);
             error::SUCCESS.code_num
@@ -816,7 +888,6 @@ mod tests {
     #[test]
     fn test_vcx_disclosed_proof_release() {
         init!("true");
-        let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         let unknown_handle = handle + 1;
         let err = vcx_disclosed_proof_release(unknown_handle);
@@ -908,7 +979,7 @@ mod tests {
                                                             handle,
                                                             Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let credentials = cb.receive(None).unwrap().unwrap();
+        let _credentials = cb.receive(None).unwrap().unwrap();
     }
 
     #[test]

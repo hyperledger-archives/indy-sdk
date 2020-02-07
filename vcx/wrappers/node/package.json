@@ -25,7 +25,7 @@
         "url": "git+https://github.com/evernym/vcx.git",
         "type": "git"
     },
-    "version": "0.6.0",
+    "version": "0.6.2",
     "dependencies": {
         "@types/ffi-napi": "^2.4.1",
         "@types/node": "^8.0.47",

@@ -555,7 +555,10 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  attr_referent: Proof-request local identifier of requested attribute
  attr_info: Describes requested attribute
      {
-         "name": string, // attribute name, (case insensitive and ignore spaces)
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
          "restrictions": Optional<filter_json>, // see below
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
@@ -653,8 +656,11 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     
  attr_info: Describes requested attribute
      {
-         "name": string, // attribute name, (case insensitive and ignore spaces)
-         "restrictions": Optional<wql query>, // see below
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
                         // for date in this interval this attribute
@@ -824,14 +830,17 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
   where
   attr_referent: Proof-request local identifier of requested attribute
   attr_info: Describes requested attribute
-      {
-          "name": string, // attribute name, (case insensitive and ignore spaces)
-          "restrictions": Optional<wql query>, // see below
-          "non_revoked": Optional<<non_revoc_interval>>, // see below,
-                         // If specified prover must proof non-revocation
-                         // for date in this interval this attribute
-                         // (overrides proof level interval)
-      }
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
   predicate_referent: Proof-request local identifier of requested attribute predicate
   predicate_info: Describes requested attribute predicate
       {
@@ -876,6 +885,17 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
              "revealed_attrs": {
                  "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
                  "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+             },
+             "revealed_attr_groups": {
+                 "requested_attr5_id": {
+                     "sub_proof_index": number,
+                     "values": {
+                         "attribute_name": {
+                             "raw": string,
+                             "encoded": string
+                         }
+                     },
+                 }
              },
              "unrevealed_attrs": {
                  "requested_attr3_id": {sub_proof_index: number}
@@ -941,6 +961,17 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                  "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
                  "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
              },
+             "revealed_attr_groups": {
+                 "requested_attr5_id": {
+                     "sub_proof_index": number,
+                     "values": {
+                         "attribute_name": {
+                             "raw": string,
+                             "encoded": string
+                         }
+                     }, // NOTE: check that `encoded` value match to `raw` value on application level
+                 }
+             },
              "unrevealed_attrs": {
                  "requested_attr3_id": {sub_proof_index: number}
              },
@@ -978,24 +1009,27 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      }
  @param revocRegsJSON: all revocation registries json participating in the proof
      {
-         "rev_reg_def1_id": {
+         "rev_reg_def1_id  or credential_1_id": {
              "timestamp1": <rev_reg1>,
              "timestamp2": <rev_reg2>,
          },
-         "rev_reg_def2_id": {
+         "rev_reg_def2_id"  or credential_3_id: {
              "timestamp3": <rev_reg3>
          },
-         "rev_reg_def3_id": {
+         "rev_reg_def3_id  or credential_3_id": {
              "timestamp4": <rev_reg4>
          },
-     }
+     } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
      
  where
  attr_referent: Proof-request local identifier of requested attribute
  attr_info: Describes requested attribute
      {
-         "name": string, // attribute name, (case insensitive and ignore spaces)
-         "restrictions": Optional<wql query>, // see below
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
                         // for date in this interval this attribute
@@ -1040,12 +1074,19 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                         completion:(void (^)(NSError *error, BOOL valid))completion;
 
 /**
- Create revocation state for a credential in the particular time moment.
+ Create revocation state for a credential that corresponds to a particular time.
+
+ Note that revocation delta must cover the whole registry existence time.
+ You can use `from`: `0` and `to`: `needed_time` as parameters for building request to get correct revocation delta.
+
+ The resulting revocation state and provided timestamp can be saved and reused later with applying a new
+ revocation delta with `updateRevocationState` function.
+ This new delta should be received with parameters: `from`: `timestamp` and `to`: `needed_time`.
 
  @param  credRevID: user credential revocation id in revocation registry
  @param  timestamp: time represented as a total number of seconds from Unix Epoch
  @param  revRegDefJSON: revocation registry definition json
- @param  revRegDeltaJSON: revocation registry definition delta json
+ @param  revRegDeltaJSON: revocation registry definition delta which covers the whole registry existence time
  @param  blobStorageReaderHandle: configuration of blob storage reader handle that will allow to read revocation tails
  @param completion Callback that takes command result as parameter. 
  Returns result revocation state json:
@@ -1064,13 +1105,19 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                                completion:(void (^)(NSError *error, NSString *revStateJSON))completion;
 
 /**
- Create new revocation state for a credential based on existed state at the particular time moment (to reduce calculation time).
+ Create a new revocation state for a credential based on a revocation state created before.
+ Note that provided revocation delta must cover the registry gap from based state creation until the specified time
+ (this new delta should be received with parameters: `from`: `state_timestamp` and `to`: `needed_time`).
+
+ This function reduces the calculation time.
+
+ The resulting revocation state and provided timestamp can be saved and reused later by applying a new revocation delta again.
 
  @param  revStateJSON: revocation registry state json
  @param  credRevID: user credential revocation id in revocation registry
  @param  timestamp: time represented as a total number of seconds from Unix Epoch
  @param  revRegDefJSON: revocation registry definition json
- @param  revRegDeltaJSON: revocation registry definition delta json
+ @param  revRegDeltaJSON: revocation registry definition delta which covers the gap form original `rev_state_json` creation till the requested timestamp
  @param  blobStorageReaderHandle: configuration of blob storage reader handle that will allow to read revocation tails
  @param completion Callback that takes command result as parameter.
  Returns result revocation state json:

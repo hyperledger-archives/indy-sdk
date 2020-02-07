@@ -22,7 +22,7 @@ use crate::domain::anoncreds::proof::{Identifier, Proof, RequestedProof, Reveale
 use crate::domain::anoncreds::proof_request::{PredicateInfo, PredicateTypes, ProofRequest, ProofRequestPayload, ProofRequestsVersion, RequestedAttributeInfo, RequestedPredicateInfo, ProofRequestExtraQuery};
 use crate::domain::anoncreds::requested_credential::ProvingCredentialKey;
 use crate::domain::anoncreds::requested_credential::RequestedCredentials;
-use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryId};
+use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use crate::domain::anoncreds::revocation_state::RevocationState;
 use crate::domain::anoncreds::schema::{SchemaV1, SchemaId};
 use indy_api_types::errors::prelude::*;
@@ -108,7 +108,7 @@ impl Prover {
                         master_secret: &MasterSecret,
                         schemas: &HashMap<SchemaId, SchemaV1>,
                         cred_defs: &HashMap<CredentialDefinitionId, CredentialDefinition>,
-                        rev_states: &HashMap<RevocationRegistryId, HashMap<u64, RevocationState>>) -> IndyResult<Proof> {
+                        rev_states: &HashMap<String, HashMap<u64, RevocationState>>) -> IndyResult<Proof> {
         trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret: {:?}, schemas: {:?}, cred_defs: {:?}, rev_states: {:?}",
                credentials, proof_req, requested_credentials, secret!(&master_secret), schemas, cred_defs, rev_states);
 
@@ -140,7 +140,8 @@ impl Prover {
                     .clone()
                     .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, "Revocation Registry Id not found"))?;
 
-                let rev_states_for_timestamp = rev_states.get(&rev_reg_id)
+                let rev_states_for_timestamp = rev_states.get(&rev_reg_id.0)
+                    .or(rev_states.get(cred_key.cred_id.as_str()))
                     .ok_or_else(|| err_msg(IndyErrorKind::InvalidStructure, format!("RevocationState not found by id: {:?}", rev_reg_id)))?;
 
                 Some(rev_states_for_timestamp.get(&timestamp)
@@ -384,7 +385,7 @@ impl Prover {
                     }
                     requested_proof.revealed_attr_groups.insert(attr_info.attr_referent.clone(), RevealedAttributeGroupInfo {
                         sub_proof_index,
-                        values: value_map
+                        values: value_map,
                     });
                 }
             } else {
@@ -443,7 +444,9 @@ impl Prover {
                                              extra_query: &Option<&ProofRequestExtraQuery>) -> IndyResult<Query> {
         info!("name: {:?}, names: {:?}", name, names);
 
-        let mut queries: Vec<Query> = if let Some(names) = names.as_ref().or(name.as_ref().map(|s| vec![s.clone()]).as_ref()) {
+        let mut queries: Vec<Query> = Vec::new();
+        
+        let mut attr_queries: Vec<Query> = if let Some(names) = names.as_ref().or(name.as_ref().map(|s| vec![s.clone()]).as_ref()) {
             names.iter().map(|name| {
                 Query::Eq(format!("attr::{}::marker", &attr_common_view(name)), ATTRIBUTE_EXISTENCE_MARKER.to_string())
             }).collect()
@@ -465,6 +468,10 @@ impl Prover {
         if let Some(extra_query_) = extra_query.as_ref().and_then(|query| query.get(referent)) {
             queries.push(extra_query_.clone())
         }
+
+        // put attr_queries last as this results in a better performing query with large datasets
+        // ref IS-1470
+        queries.append(&mut attr_queries);
 
         Ok(Query::And(queries))
     }
@@ -546,6 +553,7 @@ mod tests {
 
     mod build_credential_tags {
         use super::*;
+        use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryId;
 
         fn _credential() -> Credential {
             // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
@@ -1022,11 +1030,11 @@ mod tests {
                                                              &None).unwrap();
 
             let expected_query = Query::And(vec![
-                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
                 Query::And(vec![
                     Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
                     Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
-                ])
+                ]),
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
             ]);
 
             assert_eq!(expected_query, query);
@@ -1048,8 +1056,8 @@ mod tests {
                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
-                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
                 Query::Eq("name".to_string(), "Alex".to_string()),
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
             ]);
 
             assert_eq!(expected_query, query);
@@ -1076,12 +1084,12 @@ mod tests {
                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
-                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
                 Query::And(vec![
                     Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
                     Query::Eq("cred_def_id".to_string(), CRED_DEF_ID.to_string()),
                 ]),
                 Query::Eq("name".to_string(), "Alex".to_string()),
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
             ]);
 
             assert_eq!(expected_query, query);
@@ -1134,7 +1142,6 @@ mod tests {
                                                              &Some(&extra_query)).unwrap();
 
             let expected_query = Query::And(vec![
-                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
                 Query::Or(vec![
                     Query::Eq("schema_id".to_string(), SCHEMA_ID.to_string()),
                     Query::Eq("schema_id".to_string(), "schema_id_2".to_string()),
@@ -1142,7 +1149,8 @@ mod tests {
                 Query::Or(vec![
                     Query::Eq("name".to_string(), "Alex".to_string()),
                     Query::Eq("name".to_string(), "Alexander".to_string()),
-                ])
+                ]),
+                Query::Eq("attr::name::marker".to_string(), ATTRIBUTE_EXISTENCE_MARKER.to_string()),
             ]);
 
             assert_eq!(expected_query, query);

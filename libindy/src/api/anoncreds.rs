@@ -1,4 +1,4 @@
-use indy_api_types::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle};
+use indy_api_types::{ErrorCode, IndyHandle, CommandHandle, WalletHandle, SearchHandle, INVALID_SEARCH_HANDLE};
 use indy_api_types::errors::prelude::*;
 use crate::commands::{Command, CommandExecutor};
 use crate::commands::anoncreds::AnoncredsCommand;
@@ -1391,7 +1391,7 @@ pub extern fn indy_prover_search_credentials(command_handle: CommandHandle,
                     wallet_handle,
                     query_json,
                     Box::new(move |result| {
-                        let (err, handle, total_count) = prepare_result_2!(result, 0, 0);
+                        let (err, handle, total_count) = prepare_result_2!(result, INVALID_SEARCH_HANDLE, 0);
                         cb(command_handle, err, handle, total_count)
                     })
                 ))));
@@ -1526,8 +1526,10 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: CommandHandl
 /// attr_referent: Proof-request local identifier of requested attribute
 /// attr_info: Describes requested attribute
 ///     {
-///         "name": string, // attribute name, (case insensitive and ignore spaces)
-///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
+///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+///                                              // NOTE: should either be "name" or "names", not both and not none of them.
+///                                              // Use "names" to specify several attributes that have to match a single credential.
 ///         "restrictions": Optional<filter_json>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1652,8 +1654,10 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 /// where
 /// attr_info: Describes requested attribute
 ///     {
-///         "name": string, // attribute name, (case insensitive and ignore spaces)
-///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
+///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+///                                              // NOTE: should either be "name" or "names", not both and not none of them.
+///                                              // Use "names" to specify several attributes that have to match a single credential.
 ///         "restrictions": Optional<wql query>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1726,7 +1730,7 @@ pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: Comma
                     proof_request_json,
                     extra_query_json,
                     Box::new(move |result| {
-                        let (err, search_handle) = prepare_result_1!(result, 0);
+                        let (err, search_handle) = prepare_result_1!(result, INVALID_SEARCH_HANDLE);
                         trace!("indy_prover_search_credentials_for_proof_req: search_handle: {:?}", search_handle);
                         cb(command_handle, err, search_handle)
                     }),
@@ -1906,25 +1910,28 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///     }
 /// rev_states_json: all revocation states participating in the proof request
 ///     {
-///         "rev_reg_def1_id": {
+///         "rev_reg_def1_id or credential_1_id": {
 ///             "timestamp1": <rev_state1>,
 ///             "timestamp2": <rev_state2>,
 ///         },
-///         "rev_reg_def2_id": {
+///         "rev_reg_def2_id or credential_1_id"": {
 ///             "timestamp3": <rev_state3>
 ///         },
-///         "rev_reg_def3_id": {
+///         "rev_reg_def3_id or credential_1_id"": {
 ///             "timestamp4": <rev_state4>
 ///         },
 ///     }
+/// Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
 /// cb: Callback that takes command result as parameter.
 ///
 /// where
 /// attr_referent: Proof-request local identifier of requested attribute
 /// attr_info: Describes requested attribute
 ///     {
-///         "name": string, // attribute name, (case insensitive and ignore spaces)
-///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
+///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+///                                              // NOTE: should either be "name" or "names", not both and not none of them.
+///                                              // Use "names" to specify several attributes that have to match a single credential.
 ///         "restrictions": Optional<wql query>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1973,12 +1980,13 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///             "revealed_attr_groups": {
 ///                 "requested_attr5_id": {
 ///                     "sub_proof_index": number,
-///                     "values": [
-///                         {
+///                     "values": {
+///                         "attribute_name": {
 ///                             "raw": string,
 ///                             "encoded": string
 ///                         }
-///                     ], // NOTE: check that `encoded` value match to `raw` value on application level
+///                     },
+///                 }
 ///             },
 ///             "unrevealed_attrs": {
 ///                 "requested_attr3_id": {sub_proof_index: number}
@@ -2089,12 +2097,13 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 ///             "revealed_attr_groups": {
 ///                 "requested_attr5_id": {
 ///                     "sub_proof_index": number,
-///                     "values": [
-///                         {
+///                     "values": {
+///                         "attribute_name": {
 ///                             "raw": string,
 ///                             "encoded": string
 ///                         }
-///                     ], // NOTE: check that `encoded` value match to `raw` value on application level
+///                     }, // NOTE: check that `encoded` value match to `raw` value on application level
+///                 }
 ///             },
 ///             "unrevealed_attrs": {
 ///                 "requested_attr3_id": {sub_proof_index: number}
@@ -2148,8 +2157,10 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 /// attr_referent: Proof-request local identifier of requested attribute
 /// attr_info: Describes requested attribute
 ///     {
-///         "name": string, // attribute name, (case insensitive and ignore spaces)
-///         "names": [string, string], // attribute names, (case insensitive and ignore spaces) -- should either be "name" or "names", not both and not none of them.
+///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+///                                              // NOTE: should either be "name" or "names", not both and not none of them.
+///                                              // Use "names" to specify several attributes that have to match a single credential.
 ///         "restrictions": Optional<wql query>, // see below
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -2239,13 +2250,20 @@ pub extern fn indy_verifier_verify_proof(command_handle: CommandHandle,
     res
 }
 
-/// Create revocation state for a credential in the particular time moment.
+/// Create revocation state for a credential that corresponds to a particular time.
+///
+/// Note that revocation delta must cover the whole registry existence time.
+/// You can use `from`: `0` and `to`: `needed_time` as parameters for building request to get correct revocation delta.
+///
+/// The resulting revocation state and provided timestamp can be saved and reused later with applying a new
+/// revocation delta with `indy_update_revocation_state` function.
+/// This new delta should be received with parameters: `from`: `timestamp` and `to`: `needed_time`.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
 /// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails (returned by `indy_open_blob_storage_reader`)
 /// rev_reg_def_json: revocation registry definition json related to `rev_reg_id` in a credential
-/// rev_reg_delta_json: revocation registry definition delta json
+/// rev_reg_delta_json: revocation registry delta which covers the whole registry existence time
 /// timestamp: time represented as a total number of seconds from Unix Epoch.
 /// cred_rev_id: user credential revocation id in revocation registry (match to `cred_rev_id` in a credential)
 /// cb: Callback that takes command result as parameter
@@ -2301,15 +2319,20 @@ pub extern fn indy_create_revocation_state(command_handle: CommandHandle,
     res
 }
 
-/// Create new revocation state for a credential based on existed state
-/// at the particular time moment (to reduce calculation time).
+/// Create a new revocation state for a credential based on a revocation state created before.
+/// Note that provided revocation delta must cover the registry gap from based state creation until the specified time
+/// (this new delta should be received with parameters: `from`: `state_timestamp` and `to`: `needed_time`).
+///
+/// This function reduces the calculation time.
+///
+/// The resulting revocation state and provided timestamp can be saved and reused later by applying a new revocation delta again.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
 /// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails (returned by `indy_open_blob_storage_reader`)
 /// rev_state_json: revocation registry state json
 /// rev_reg_def_json: revocation registry definition json related to `rev_reg_id` in a credential
-/// rev_reg_delta_json: revocation registry definition delta json
+/// rev_reg_delta_json: revocation registry definition delta which covers the gap form original `rev_state_json` creation till the requested timestamp
 /// timestamp: time represented as a total number of seconds from Unix Epoch
 /// cred_rev_id: user credential revocation id in revocation registry (match to `cred_rev_id` in a credential)
 /// cb: Callback that takes command result as parameter

@@ -7,11 +7,11 @@ use crate::domain::crypto::combo_box::ComboBox;
 use crate::domain::crypto::did::{Did, DidValue, MyDidInfo, TheirDid, TheirDidInfo};
 use crate::domain::crypto::key::{Key, KeyInfo};
 use indy_api_types::errors::prelude::*;
-use crate::utils::crypto::base64;
-use crate::utils::crypto::ed25519_box;
-use crate::utils::crypto::chacha20poly1305_ietf;
-use crate::utils::crypto::chacha20poly1305_ietf::gen_nonce_and_encrypt_detached;
-use crate::utils::crypto::ed25519_sign;
+use indy_utils::crypto::base64;
+use indy_utils::crypto::ed25519_box;
+use indy_utils::crypto::chacha20poly1305_ietf;
+use indy_utils::crypto::chacha20poly1305_ietf::gen_nonce_and_encrypt_detached;
+use indy_utils::crypto::ed25519_sign;
 use crate::utils::crypto::verkey_builder::{build_full_verkey, split_verkey, verkey_get_cryptoname};
 
 use self::ed25519::ED25519CryptoType;
@@ -446,7 +446,7 @@ impl CryptoService {
 #[cfg(test)]
 mod tests {
     use crate::domain::crypto::did::MyDidInfo;
-    use crate::utils::crypto::chacha20poly1305_ietf::gen_key;
+    use indy_utils::crypto::chacha20poly1305_ietf::gen_key;
 
     use super::*;
 

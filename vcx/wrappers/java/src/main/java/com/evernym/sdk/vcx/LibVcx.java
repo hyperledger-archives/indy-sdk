@@ -23,6 +23,7 @@ public abstract class LibVcx {
         public int vcx_init_minimal(String config);
 
         public String vcx_error_c_message(int error_code);
+        public String vcx_version();
         public int vcx_shutdown(boolean delete);
         public int vcx_reset();
 

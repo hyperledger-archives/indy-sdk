@@ -23,7 +23,7 @@ use crate::services::pool::networker::{Networker, ZMQNetworker};
 use crate::services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
 use rust_base58::{FromBase58, ToBase58};
 use crate::services::pool::types::{LedgerStatus, RemoteNode};
-use crate::utils::crypto::ed25519_sign;
+use indy_utils::crypto::ed25519_sign;
 
 use super::ursa::bls::VerKey;
 use super::zmq;
@@ -698,7 +698,7 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(Nodes, Vec<RemoteN
         (HashMap::new(), vec![]), |(mut map, mut vec), res| {
             match res {
                 Err(e) => {
-                    error!("Error during retrieving nodes: {:?}", e);
+                    debug!("Error during retrieving nodes: {:?}", e);
                 }
                 Ok(((alias, verkey), remote)) => {
                     map.insert(alias.clone(), verkey);

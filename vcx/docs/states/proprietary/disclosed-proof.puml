@@ -1,0 +1,14 @@
+@startuml
+title
+ DisclosedProof API as Prover
+
+ The diagram shows DisclosedProof object state transitions in case acting as a Prover.
+end title
+
+[*] --> VcxStateRequestReceived: vcx_disclosed_proof_create_with_request(ProofRequest)
+
+VcxStateRequestReceived --> VcxStateRequestReceived: vcx_disclosed_proof_generate_proof
+
+VcxStateRequestReceived --> VcxStateAccepted: vcx_disclosed_proof_send_proof
+
+@enduml

@@ -13,7 +13,6 @@ use settings;
 use error::prelude::*;
 
 static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "101":2, "10001":0, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":2, "114":2, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
-static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WalletInfo {
@@ -58,7 +57,7 @@ impl fmt::Display for WalletInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match ::serde_json::to_string(&self) {
             Ok(s) => write!(f, "{}", s),
-            Err(e) => write!(f, "null"),
+            Err(_) => write!(f, "null"),
         }
     }
 }
@@ -98,7 +97,7 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
         None => "{}".to_string(),
     };
 
-    payments::create_payment_address(get_wallet_handle() as i32, settings::get_payment_method().as_str(), &config)
+    payments::create_payment_address(get_wallet_handle(), settings::get_payment_method().as_str(), &config)
         .wait()
         .map_err(map_rust_indy_sdk_error)
 }
@@ -108,7 +107,7 @@ pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
 
     if settings::test_indy_mode_enabled() {return Ok(Vec::from(message).to_owned()); }
 
-    payments::sign_with_address(get_wallet_handle() as i32, address, message).wait().map_err(map_rust_indy_sdk_error)
+    payments::sign_with_address(get_wallet_handle(), address, message).wait().map_err(map_rust_indy_sdk_error)
 }
 
 pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> VcxResult<bool> {
@@ -145,7 +144,7 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, None)
+    let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle(), Some(&did), address, None)
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
@@ -160,7 +159,7 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
     let mut next_seqno = next;
 
     while next_seqno.is_some() {
-        let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle() as i32, Some(&did), address, next_seqno)
+        let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle(), Some(&did), address, next_seqno)
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
 
@@ -190,7 +189,7 @@ pub fn list_addresses() -> VcxResult<Vec<String>> {
         return Ok(::serde_json::from_value(addresses).unwrap());
     }
 
-    let addresses = payments::list_payment_addresses(get_wallet_handle() as i32)
+    let addresses = payments::list_payment_addresses(get_wallet_handle())
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
@@ -267,7 +266,7 @@ pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, Optio
         let (refund, inputs, refund_address) = inputs(txn_price)?;
         let output = outputs(refund, &refund_address, None, None)?;
 
-        let (fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
+        let (_fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
 
         let payment = PaymentTxn::from_parts(inputs, output, txn_price, false);
         Ok((Some(payment), txn_response))
@@ -346,7 +345,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
         None => None
     };
 
-    let (request, payment_method) =
+    let (request, _payment_method) =
         payments::build_payment_req(get_wallet_handle(), Some(&my_did), &inputs_json, &outputs_json, extra.as_ref().map(String::as_str))
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
@@ -495,15 +494,15 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         let tokens_per_address: u64 = tokens_per_address.unwrap_or(50_000_000_000);
         let mut addresses = Vec::new();
 
-        for n in 0..number_of_addresses {
+        for _n in 0..number_of_addresses {
             addresses.push(create_address(seed.clone()).unwrap())
         }
 
-        let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)|
+        let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(_i, payment_address)|
             json!( { "recipient": payment_address, "amount": tokens_per_address } )
         ).collect();
         let outputs = serde_json::to_string(&mint).unwrap();
-        let (req, _) = payments::build_mint_req(get_wallet_handle() as i32, Some(&did_1), &outputs, None).wait().unwrap();
+        let (req, _) = payments::build_mint_req(get_wallet_handle(), Some(&did_1), &outputs, None).wait().unwrap();
 
         let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &req).unwrap();
         let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
@@ -511,13 +510,13 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
 
         match ::utils::libindy::ledger::libindy_submit_request(&sign4) {
-            Ok(x) => (),
+            Ok(_) => (),
             Err(x) => println!("failure minting tokens: {}", x),
         };
     }
 
     if let Some(fees_) = fees {
-        let txn = payments::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), settings::get_payment_method().as_str(), fees_)
+        let txn = payments::build_set_txn_fees_req(get_wallet_handle(), Some(&did_1), settings::get_payment_method().as_str(), fees_)
             .wait()
             .map_err(map_rust_indy_sdk_error)?;
 
@@ -557,12 +556,14 @@ pub fn add_new_did(role: Option<&str>) -> (String, String) {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 
     pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>, use_zero_fees: bool) {
         let fees = if use_zero_fees { ZERO_FEES } else { DEFAULT_FEES };
         mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, Some(fees.to_string()), None).unwrap();
     }
 
+    #[allow(dead_code)]
     fn get_my_balance() -> u64 {
         let info: WalletInfo = get_wallet_token_info().unwrap();
         info.balance
@@ -593,7 +594,7 @@ pub mod tests {
     fn test_get_addresses() {
         init!("true");
         create_address(None).unwrap();
-        let addresses = list_addresses().unwrap();
+        let _addresses = list_addresses().unwrap();
     }
 
     #[test]
@@ -752,7 +753,7 @@ pub mod tests {
 
         // Schema
         let create_schema_req = ::utils::constants::SCHEMA_CREATE_JSON.to_string();
-        let (payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
+        let (_payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
         assert_eq!(response, SUBMIT_SCHEMA_RESPONSE.to_string());
     }
 
@@ -764,7 +765,7 @@ pub mod tests {
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
         let start_wallet = get_wallet_token_info().unwrap();
 
-        let (payment, response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
+        let (payment, _response) = pay_for_txn(&create_schema_req, ::utils::constants::CREATE_SCHEMA_ACTION).unwrap();
 
         let end_wallet = get_wallet_token_info().unwrap();
 
@@ -875,7 +876,7 @@ pub mod tests {
         let end_wallet = get_wallet_token_info().unwrap();
         assert_eq!(start_wallet.balance - 2, end_wallet.balance);
 
-        let rc = _submit_fees_request(&req, &inputs, &output);
+        let _rc = _submit_fees_request(&req, &inputs, &output);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -892,9 +893,8 @@ pub mod tests {
         assert_eq!(remainder, remaining_balance);
 
         let output = outputs(remainder, &refund_address, None, None).unwrap();
-        let expected_output: Vec<Output> = ::serde_json::from_str(&format!(r#"[{{"amount":{},"recipient":"{}"}}]"#, remaining_balance, refund_address)).unwrap();
 
-        let rc = _submit_fees_request(&req, &inputs, &output).unwrap();
+        let _rc = _submit_fees_request(&req, &inputs, &output).unwrap();
         let end_wallet = get_wallet_token_info().unwrap();
 
         assert_eq!(end_wallet.balance, remaining_balance);

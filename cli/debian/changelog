@@ -1,6 +1,14 @@
-indy-cli (1.14.0) unstable; urgency=medium
+indy-cli (1.14.2) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.14.2
+* Added new command `pool set-protocol-version` to set a protocol version that will be used for ledger requests (IS-1391).
+* Added new command `payment-address new` that does exactly the same work as the existing `payment-address create` command.
+ The new command was added to match the naming of `did new` command. The `payment-address create` command will be removed in future releases (IS-1415).
+
+## 1.14.1
+* Bugfixes
 
 ## 1.14.0
 * Added new commands:

@@ -137,6 +137,7 @@ async def store_their_did(wallet_handle: int,
     """
     Saves their DID for a pairwise connection in a secured Wallet,
     so that it can be used to verify transaction.
+    Updates DID associated verkey in case DID already exists in the Wallet.
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param identity_json: Identity information as json. Example:

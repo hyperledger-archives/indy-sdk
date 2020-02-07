@@ -1142,17 +1142,17 @@ fn _prover_close_credentials_search_for_proof_req(command_handle: CommandHandle,
 ///     }
 /// * `rev_states_json`: all revocation states json participating in the proof request
 ///     {
-///         "rev_reg_def1_id": {
+///         "rev_reg_def1_id or credential_1_id": {
 ///             "timestamp1": <rev_state1>,
 ///             "timestamp2": <rev_state2>,
 ///         },
-///         "rev_reg_def2_id": {
+///         "rev_reg_def2_id or credential_2_id": {
 ///             "timestamp3": <rev_state3>
 ///         },
-///         "rev_reg_def3_id": {
+///         "rev_reg_def3_id or credential_3_id": {
 ///             "timestamp4": <rev_state4>
 ///         },
-///     }
+///     } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
 ///
 /// where
 /// where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
@@ -1346,12 +1346,19 @@ fn _verifier_verify_proof(command_handle: CommandHandle, proof_request_json: &st
 }
 
 
-/// Create revocation state for a credential in the particular time moment.
+/// Create revocation state for a credential that corresponds to a particular time.
+///
+/// Note that revocation delta must cover the whole registry existence time.
+/// You can use `from`: `0` and `to`: `needed_time` as parameters for building request to get correct revocation delta.
+///
+/// The resulting revocation state and provided timestamp can be saved and reused later with applying a new
+/// revocation delta with `update_revocation_state` function.
+/// This new delta should be received with parameters: `from`: `timestamp` and `to`: `needed_time`.
 ///
 /// # Arguments
 /// * `blob_storage_reader_handle`: configuration of blob storage reader handle that will allow to read revocation tails
 /// * `rev_reg_def_json`: revocation registry definition json
-/// * `rev_reg_delta_json`: revocation registry definition delta json
+/// * `rev_reg_delta_json`: revocation registry delta which covers the whole registry existence time
 /// * `timestamp`: time represented as a total number of seconds from Unix Epoch
 /// * `cred_rev_id`: user credential revocation id in revocation registry
 ///
@@ -1381,14 +1388,19 @@ fn _create_revocation_state(command_handle: CommandHandle, blob_storage_reader_h
     })
 }
 
-/// Create new revocation state for a credential based on existed state
-/// at the particular time moment (to reduce calculation time).
+/// Create a new revocation state for a credential based on a revocation state created before.
+/// Note that provided revocation delta must cover the registry gap from based state creation until the specified time
+/// (this new delta should be received with parameters: `from`: `state_timestamp` and `to`: `needed_time`).
+///
+/// This function reduces the calculation time.
+///
+/// The resulting revocation state and provided timestamp can be saved and reused later by applying a new revocation delta again.
 ///
 /// # Arguments
 /// * `blob_storage_reader_handle`: configuration of blob storage reader handle that will allow to read revocation tails
 /// * `rev_state_json`: revocation registry state json
 /// * `rev_reg_def_json`: revocation registry definition json
-/// * `rev_reg_delta_json`: revocation registry definition delta json
+/// * `rev_reg_delta_json`: revocation registry definition delta which covers the gap form original `rev_state_json` creation till the requested timestamp.
 /// * `timestamp`: time represented as a total number of seconds from Unix Epoch
 /// * `cred_rev_id`: user credential revocation id in revocation registry
 ///

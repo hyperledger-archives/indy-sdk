@@ -30,16 +30,19 @@ struct ProofTopic {
 #[serde(untagged)]
 pub enum Restrictions {
     V1(Vec<Filter>),
-    V2(::serde_json::Value)
+    V2(::serde_json::Value),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct AttrInfo {
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub names: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restrictions: Option<Restrictions>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub non_revoked: Option<NonRevokedInterval>
+    pub non_revoked: Option<NonRevokedInterval>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -49,7 +52,7 @@ pub struct Filter {
     pub schema_name: Option<String>,
     pub schema_version: Option<String>,
     pub issuer_did: Option<String>,
-    pub cred_def_id: Option<String>
+    pub cred_def_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -61,7 +64,7 @@ pub struct PredicateInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restrictions: Option<Restrictions>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub non_revoked: Option<NonRevokedInterval>
+    pub non_revoked: Option<NonRevokedInterval>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -72,7 +75,7 @@ pub struct ProofPredicates {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct NonRevokedInterval {
     pub from: Option<u64>,
-    pub to: Option<u64>
+    pub to: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -81,10 +84,12 @@ pub struct ProofRequestData {
     pub name: String,
     #[serde(rename = "version")]
     pub data_version: String,
+    #[serde(default)]
     pub requested_attributes: HashMap<String, AttrInfo>,
+    #[serde(default)]
     pub requested_predicates: HashMap<String, PredicateInfo>,
     pub non_revoked: Option<NonRevokedInterval>,
-    pub ver: Option<ProofRequestVersion>
+    pub ver: Option<ProofRequestVersion>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -129,7 +134,7 @@ impl ProofRequestMessage {
                 requested_attributes: HashMap::new(),
                 requested_predicates: HashMap::new(),
                 non_revoked: None,
-                ver: None
+                ver: None,
             },
             msg_ref_id: None,
             from_timestamp: None,
@@ -186,12 +191,30 @@ impl ProofRequestMessage {
 
         let mut index = 1;
         for mut attr in proof_attrs.into_iter() {
+            let attr_name = match (attr.name.as_ref(), attr.names.as_ref()) {
+                (Some(name), None) => { name.clone() }
+                (None, Some(names)) => {
+                    if names.is_empty(){
+                        return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest, "Proof Request validation failed: there is empty request attribute names"))
+                    }
+                    names.join(",")
+                }
+                (Some(_), Some(_)) => {
+                    return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest,
+                                                  format!("Proof Request validation failed: there is empty requested attribute: {:?}", attrs)));
+                }
+                (None, None) => {
+                    return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest,
+                                                  format!("Proof request validation failed: there is a requested attribute with both name and names: {:?}", attrs)));
+                }
+            };
+
             attr.restrictions = self.process_restrictions(attr.restrictions);
 
-            if check_req_attrs.contains_key(&attr.name) {
-                check_req_attrs.insert(format!("{}_{}", attr.name, index), attr);
+            if check_req_attrs.contains_key(&attr_name) {
+                check_req_attrs.insert(format!("{}_{}", attr_name, index), attr);
             } else {
-                check_req_attrs.insert(attr.name.clone(), attr);
+                check_req_attrs.insert(attr_name, attr);
             }
             index = index + 1;
         }
@@ -317,7 +340,7 @@ impl ProofRequestData {
 
     pub fn set_requested_attributes(mut self, requested_attrs: String) -> VcxResult<ProofRequestData> {
         let requested_attributes: Vec<AttrInfo> = ::serde_json::from_str(&requested_attrs)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}", requested_attrs)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}, err: {:?}", requested_attrs, err)))?;
 
         self.requested_attributes = requested_attributes
             .into_iter()
@@ -329,7 +352,7 @@ impl ProofRequestData {
 
     pub fn set_requested_predicates(mut self, requested_predicates: String) -> VcxResult<ProofRequestData> {
         let requested_predicates: Vec<PredicateInfo> = ::serde_json::from_str(&requested_predicates)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}", requested_predicates)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}, err: {:?}", requested_predicates, err)))?;
 
         self.requested_predicates = requested_predicates
             .into_iter()
@@ -341,7 +364,7 @@ impl ProofRequestData {
 
     pub fn set_not_revoked_interval(mut self, non_revoc_interval: String) -> VcxResult<ProofRequestData> {
         let non_revoc_interval: NonRevokedInterval = ::serde_json::from_str(&non_revoc_interval)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Revocation Interval: {:?}", non_revoc_interval)))?;
+            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Revocation Interval: {:?}", non_revoc_interval)))?;
 
         self.non_revoked = match (non_revoc_interval.from, non_revoc_interval.to) {
             (None, None) => None,
@@ -424,7 +447,6 @@ mod tests {
         let data_name = "Test";
         let nonce = "123432421212";
         let data_version = "3.75";
-        let attrs = "";
         let version = "1.3";
         let tid = 89;
         let mid = 98;
@@ -478,7 +500,33 @@ mod tests {
     }
 
     #[test]
+    fn test_requested_attrs_constructed_correctly_for_names() {
+        let attr_info = json!({ "names":["name", "age", "email"], "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11" } ] });
+        let attr_info_2 = json!({ "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11" } ] });
+
+        let requested_attrs = json!([ attr_info, attr_info_2 ]).to_string();
+
+        let request = proof_request().requested_attrs(&requested_attrs).unwrap().clone();
+
+        let mut expected_req_attrs: HashMap<String, AttrInfo> = HashMap::new();
+        expected_req_attrs.insert("name,age,email".to_string(), serde_json::from_value(attr_info).unwrap());
+        expected_req_attrs.insert("name".to_string(), serde_json::from_value(attr_info_2).unwrap());
+
+        assert_eq!(request.proof_request_data.requested_attributes, expected_req_attrs);
+    }
+
+    #[test]
+    fn test_requested_attrs_constructed_correctly_for_name_and_names_passed_together() {
+        let attr_info = json!({ "name":"name", "names":["name", "age", "email"], "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11" } ] });
+
+        let requested_attrs = json!([ attr_info ]).to_string();
+
+        let err = proof_request().requested_attrs(&requested_attrs).unwrap_err();
+        assert_eq!(VcxErrorKind::InvalidProofRequest, err.kind());
+    }
+
+    #[test]
     fn test_indy_proof_req_parses_correctly() {
-        let proof_req: ProofRequestData = serde_json::from_str(::utils::constants::INDY_PROOF_REQ_JSON).unwrap();
+        let _proof_req: ProofRequestData = serde_json::from_str(::utils::constants::INDY_PROOF_REQ_JSON).unwrap();
     }
 }

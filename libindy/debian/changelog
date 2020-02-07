@@ -1,6 +1,17 @@
-libindy (1.14.0) unstable; urgency=medium
+libindy (1.14.2) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.14.2
+* Bugfixes
+    * Updated behavior of `indy_store_their_did` function to allow updating of existing `theirDID record`. It can be used to rotate a pairwise key (IS-1166).
+    * Enhanced validation of `schema_json`: added check that `id` is consistent with `name` and `version` values (IS-1430).
+    * Added support of the additional format of `rev_states_json` which is used for proof creation. Both `rev_reg_def_id` and `credential_id` can be used as map keys.
+    `credential_id` must be used in case of proving that two credentials matching the same `rev_reg_def_id` are not revoked at the same timestamp (IS-1447).
+    * others minor bugfixes
+
+## 1.14.1
+* Bugfixes
 
 ## 1.14.0
 * Transaction author agreement changes (IS-1427):

@@ -12,8 +12,6 @@ use self::chrono::prelude::*;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-const PROTOCOL_VERSION: usize = 2;
-
 pub mod group {
     use super::*;
 
@@ -94,7 +92,7 @@ pub mod connect_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
-        let protocol_version = get_opt_number_param::<usize>("protocol-version", params).map_err(error_err!())?.unwrap_or(PROTOCOL_VERSION);
+        let protocol_version = get_opt_number_param::<usize>("protocol-version", params).map_err(error_err!())?.unwrap_or(get_pool_protocol_version(ctx));
         let timeout = get_opt_number_param::<i64>("timeout", params).map_err(error_err!())?;
         let extended_timeout = get_opt_number_param::<i64>("extended-timeout", params).map_err(error_err!())?;
         let pre_ordered_nodes = get_opt_str_array_param("pre-ordered-nodes", params).map_err(error_err!())?;
@@ -128,20 +126,7 @@ pub mod connect_command {
                     Ok(())
                 }
             })
-            .and_then(|_| {
-                match Pool::set_protocol_version(protocol_version) {
-                    Ok(_) => Ok(()),
-                    Err(IndyError { error_code: ErrorCode::PoolIncompatibleProtocolVersion, .. }) =>
-                        {
-                            println_err!("Unsupported Protocol Version has been specified \"{}\".", protocol_version);
-                            Err(())
-                        },
-                    Err(err) => {
-                        handle_indy_error(err, None, Some(&name), None);
-                        Err(())
-                    },
-                }
-            })
+            .and_then(|_| set_protocol_version(protocol_version))
             .and_then(|_| {
                 match Pool::open_pool_ledger(name, Some(&config)) {
                     Ok(handle) => {
@@ -293,6 +278,50 @@ pub mod refresh_command {
     }
 }
 
+pub mod set_protocol_version_command {
+    use super::*;
+
+    command!(CommandMetadata::build("set-protocol-version", "Set protocol version that will be used for ledger requests. One of: 1, 2. \
+                 Unless command is called the default protocol version 2 is used.")
+                .add_main_param("protocol-version", "Protocol version to use")
+                .add_example("pool set-protocol-version 2")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let protocol_version = get_number_param::<usize>("protocol-version", params).map_err(error_err!())?;
+
+        let res = match set_protocol_version(protocol_version) {
+            Ok(_) => {
+                set_pool_protocol_version(ctx, protocol_version);
+                println_succ!("Protocol Version has been set: \"{}\".", protocol_version);
+                Ok(())
+            }
+            err => err
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+fn set_protocol_version(protocol_version: usize) -> Result<(), ()> {
+    match Pool::set_protocol_version(protocol_version) {
+        Ok(_) => Ok(()),
+        Err(IndyError { error_code: ErrorCode::PoolIncompatibleProtocolVersion, .. }) =>
+            {
+                println_err!("Unsupported Protocol Version has been specified \"{}\".", protocol_version);
+                Err(())
+            }
+        Err(err) => {
+            handle_indy_error(err, None, None, None);
+            Err(())
+        }
+    }
+}
+
 pub mod disconnect_command {
     use super::*;
 
@@ -315,15 +344,15 @@ pub mod disconnect_command {
 
 fn close_pool(ctx: &CommandContext, handle: i32, name: &str) -> Result<(), ()> {
     match Pool::close(handle) {
-            Ok(()) => {
-                set_connected_pool(ctx, None);
-                set_transaction_author_info(ctx, None);
-                Ok(())
-            }
-            Err(err) => {
-                handle_indy_error(err, None, Some(&name), None);
-                Err(())
-            }
+        Ok(()) => {
+            set_connected_pool(ctx, None);
+            set_transaction_author_info(ctx, None);
+            Ok(())
+        }
+        Err(err) => {
+            handle_indy_error(err, None, Some(&name), None);
+            Err(())
+        }
     }
 }
 
@@ -424,7 +453,9 @@ pub fn set_transaction_author_agreement(ctx: &CommandContext, pool_handle: i32, 
 
         println!("Transaction Author Agreement");
         println!("Version: {:?}", version);
-        println!("Digest: {:?}", digest);
+        if let Some(digest_) = digest {
+            println!("Digest: {:?}", digest_);
+        }
         println!("Content: \n {:?}", text);
 
         accept_transaction_author_agreement(ctx, &text, &version);
@@ -778,6 +809,30 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             disconnect_and_delete_pool(&ctx);
+            tear_down();
+        }
+    }
+
+    mod set_protocol_version {
+        use super::*;
+
+        #[test]
+        pub fn set_protocol_version_works() {
+            let ctx = setup();
+            create_pool(&ctx);
+            {
+                let cmd = set_protocol_version_command::new();
+                let mut params = CommandParams::new();
+                params.insert("protocol-version", DEFAULT_POOL_PROTOCOL_VERSION.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                let cmd = set_protocol_version_command::new();
+                let mut params = CommandParams::new();
+                params.insert("protocol-version", "invalid".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+
             tear_down();
         }
     }

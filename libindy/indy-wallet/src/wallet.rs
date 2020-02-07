@@ -222,13 +222,13 @@ mod tests {
     use std::rc::Rc;
     use std::collections::HashMap;
 
-    use indy_api_types::domain::wallet::{Metadata, MetadataArgon};
-    use indy_wallet::encryption;
-    use indy_wallet::wallet::Wallet;
-    use indy_wallet::storage::WalletStorageType;
-    use indy_wallet::storage::default::SQLiteStorageType;
-    use indy_wallet::language::*;
-    use crate::utils::test;
+    use crate::{Metadata, MetadataArgon};
+    use crate::encryption;
+    use crate::wallet::Wallet;
+    use crate::storage::WalletStorageType;
+    use crate::storage::default::SQLiteStorageType;
+    use crate::language::*;
+    use indy_utils::test;
 
     macro_rules! jsonstr {
         ($($x:tt)+) => {
