@@ -57,10 +57,17 @@ pub mod ed25519_box;
 pub mod verkey_builder;
 
 use indy_api_types::errors::prelude::*;
-use crate::crypto::verkey_builder::clear_verkey;
+use verkey_builder::{DEFAULT_CRYPTO_TYPE, clear_verkey};
 
 pub fn create_key(key_info: &KeyInfo) -> IndyResult<Key> {
     trace!("create_key >>> key_info: {:?}", secret!(key_info));
+
+    match key_info.crypto_type.as_ref().map(String::as_str) {
+        Some(DEFAULT_CRYPTO_TYPE) | None => {}
+        crypto_type => {
+            return Err(IndyError::from_msg(IndyErrorKind::UnknownCrypto, format!("Unknown crypto type: {:?}", crypto_type)));
+        }
+    }
 
     let seed = convert_seed(key_info.seed.as_ref().map(String::as_ref))?;
     let (vk, sk) = ed25519_sign::create_key_pair_for_signature(seed.as_ref())?;
@@ -76,7 +83,6 @@ pub fn create_key(key_info: &KeyInfo) -> IndyResult<Key> {
 
 pub fn sign(my_key: &Key, doc: &[u8]) -> IndyResult<Vec<u8>> {
     trace!("sign >>> my_key: {:?}, doc: {:?}", my_key, doc);
-
 
     let my_sk = ed25519_sign::SecretKey::from_slice(&my_key.signkey.as_str().from_base58()?.as_slice())?;
     let signature = ed25519_sign::sign(&my_sk, doc)?[..].to_vec();
