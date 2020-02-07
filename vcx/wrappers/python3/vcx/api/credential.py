@@ -1,4 +1,3 @@
-from typing import Optional
 from ctypes import *
 from vcx.common import do_call, create_cb
 from vcx.api.connection import Connection
