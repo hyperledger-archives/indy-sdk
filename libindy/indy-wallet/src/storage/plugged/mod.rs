@@ -6,7 +6,7 @@ use std::ptr;
 use libc::c_char;
 use serde_json;
 
-use indy_api_types::ErrorCode;
+use indy_api_types::{ErrorCode, SearchHandle, INVALID_SEARCH_HANDLE};
 use indy_api_types::wallet::*;
 use indy_api_types::errors::prelude::*;
 use crate::language;
@@ -57,7 +57,7 @@ impl Drop for ResourceGuard {
 #[derive(PartialEq, Debug)]
 struct PluggedStorageIterator {
     storage_handle: i32,
-    search_handle: i32,
+    search_handle: SearchHandle,
     options: SearchOptions,
     fetch_search_next_record_handler: WalletFetchSearchNextRecord,
     get_search_total_count_handler: WalletGetSearchTotalCount,
@@ -70,7 +70,7 @@ struct PluggedStorageIterator {
 }
 
 impl PluggedStorageIterator {
-    fn new(storage: &PluggedStorage, search_handle: i32, options: SearchOptions) -> Self {
+    fn new(storage: &PluggedStorage, search_handle: SearchHandle, options: SearchOptions) -> Self {
         Self {
             storage_handle: storage.handle,
             search_handle,
@@ -92,7 +92,7 @@ impl StorageIterator for PluggedStorageIterator {
         let mut record_handle = -1;
 
         let err = (self.fetch_search_next_record_handler)(self.storage_handle,
-                                                          self.search_handle,
+                                                          self.search_handle.0,
                                                           &mut record_handle);
 
         if err == ErrorCode::WalletItemNotFound {
@@ -191,7 +191,7 @@ impl StorageIterator for PluggedStorageIterator {
 
         if self.options.retrieve_total_count {
             let err = (self.get_search_total_count_handler)(self.storage_handle,
-                                                            self.search_handle,
+                                                            self.search_handle.0,
                                                             &mut total_count);
 
             if err != ErrorCode::Success {
@@ -207,7 +207,7 @@ impl StorageIterator for PluggedStorageIterator {
 
 impl Drop for PluggedStorageIterator {
     fn drop(&mut self) {
-        (self.free_search_handler)(self.storage_handle, self.search_handle);
+        (self.free_search_handler)(self.storage_handle, self.search_handle.0);
     }
 }
 
@@ -554,9 +554,9 @@ impl WalletStorage for PluggedStorage {
     }
 
     fn get_all(&self) -> IndyResult<Box<dyn StorageIterator>> {
-        let mut search_handle: i32 = -1;
+        let mut search_handle: SearchHandle = INVALID_SEARCH_HANDLE;
 
-        let err = (self.search_all_records_handler)(self.handle, &mut search_handle);
+        let err = (self.search_all_records_handler)(self.handle, &mut search_handle.0);
 
         if err != ErrorCode::Success {
             return Err(err.into());
@@ -585,13 +585,13 @@ impl WalletStorage for PluggedStorage {
         let options: SearchOptions = serde_json::from_str(options.unwrap_or("{}"))
             .to_indy(IndyErrorKind::InvalidStructure, "Search options is malformed json")?;
 
-        let mut search_handle: i32 = -1;
+        let mut search_handle: SearchHandle = INVALID_SEARCH_HANDLE;
 
         let err = (self.search_records_handler)(self.handle,
                                                 type_.as_ptr(),
                                                 query.as_ptr(),
                                                 options_cstr.as_ptr(),
-                                                &mut search_handle);
+                                                &mut search_handle.0);
 
         if err != ErrorCode::Success {
             return Err(err.into());

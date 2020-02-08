@@ -93,18 +93,10 @@ impl DeleteConnectionBuilder {
         let mut response = parse_response_from_agency(response)?;
 
         match response.remove(0) {
-            A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(res)) => Ok(()),
-            A2AMessage::Version2(A2AMessageV2::UpdateConnectionResponse(res)) => Ok(()),
+            A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(_)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateConnectionResponse(_)) => Ok(()),
             _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConnectionResponse"))
         }
-    }
-
-    fn print_info(&self) {
-        println!("\n****\n**** message pack: Delete Connection");
-        println!("self.status_code {:?}", &self.status_code);
-        println!("self.to_vk: {}", &self.to_vk);
-        println!("self.agent_did: {}", &self.agent_did);
-        println!("self.agent_vk: {}", &self.agent_vk);
     }
 }
 

@@ -66,10 +66,10 @@ impl IssuerSM {
 
         for (uid, message) in messages {
             match self.state {
-                IssuerState::Initial(ref state) => {
+                IssuerState::Initial(_) => {
                     // do not process messages
                 }
-                IssuerState::OfferSent(ref state) => {
+                IssuerState::OfferSent(_) => {
                     match message {
                         A2AMessage::CredentialRequest(credential) => {
                             if credential.from_thread(&self.state.thread_id()) {
@@ -91,10 +91,10 @@ impl IssuerSM {
                         _ => {}
                     }
                 }
-                IssuerState::RequestReceived(ref state) => {
+                IssuerState::RequestReceived(_) => {
                     // do not process messages
                 }
-                IssuerState::CredentialSent(ref state) => {
+                IssuerState::CredentialSent(_) => {
                     match message {
                         A2AMessage::Ack(ack) | A2AMessage::CredentialAck(ack) => {
                             if ack.from_thread(&self.state.thread_id()) {
@@ -109,7 +109,7 @@ impl IssuerSM {
                         _ => {}
                     }
                 }
-                IssuerState::Finished(ref state) => {
+                IssuerState::Finished(_) => {
                     // do not process messages
                 }
             };
@@ -156,7 +156,7 @@ impl IssuerSM {
                 CredentialIssuanceMessage::CredentialRequest(request) => {
                     IssuerState::RequestReceived((state_data, request).into())
                 }
-                CredentialIssuanceMessage::CredentialProposal(proposal) => {
+                CredentialIssuanceMessage::CredentialProposal(_) => {
                     let problem_report = ProblemReport::create()
                         .set_comment(String::from("CredentialProposal is not supported"))
                         .set_thread_id(&state_data.thread_id);
@@ -266,11 +266,11 @@ fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, 
 
     let cred_data = encode_attributes(cred_data)?;
 
-    let (credential, cred_id, revoc_reg_delta) = anoncreds::libindy_issuer_create_credential(offer,
-                                                                                             &request,
-                                                                                             &cred_data,
-                                                                                             rev_reg_id.clone(),
-                                                                                             tails_file.clone())?;
+    let (credential, _, _) = anoncreds::libindy_issuer_create_credential(offer,
+                                                                         &request,
+                                                                         &cred_data,
+                                                                         rev_reg_id.clone(),
+                                                                         tails_file.clone())?;
     Credential::create()
         .set_credential(credential)
 }

@@ -480,8 +480,15 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
 
         libindyBuildFinished[env_name] = true
 
-        echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libindy Test: Test Libindy submodules"
+
+            for (component in ["libindy/indy-api-types", "libindy/indy-utils", "libindy/indy-wallet"]) {
+                testLibindyComponent(component)
+            }
+
+            echo "${env_name} Libindy Test: Test"
+
             def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
 
             sh """
@@ -504,6 +511,14 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     finally {
         closePool(env_name, network_name, poolInst)
     }
+}
+
+def testLibindyComponent(directory) {
+    sh """
+        cd ${directory}
+        RUST_BACKTRACE=1 cargo test --no-run
+        RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
+    """
 }
 
 def linuxVcxBuild(file, env_name, network_name) {

@@ -93,7 +93,7 @@ pub mod tests {
                 }
             }
 
-            let res = ::messages::get_message::download_messages(None, None, Some(vec![uid.clone()])).unwrap();
+            let _res = ::messages::get_message::download_messages(None, None, Some(vec![uid.clone()])).unwrap();
 
             // Get Message by id works
             {

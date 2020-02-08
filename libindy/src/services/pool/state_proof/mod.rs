@@ -6,7 +6,7 @@ use std::ffi::{CStr, CString};
 use indy_utils::crypto::hash::{Hash};
 use rust_base58::ToBase58;
 
-use base64;
+use indy_utils::crypto::base64;
 use rlp::UntrustedRlp;
 use serde_json;
 use serde_json::Value as SJsonValue;
@@ -406,7 +406,7 @@ fn _parse_reply_for_sp(json_msg: &SJsonValue, data: Option<&str>, parsed_data: &
         let proof = if let Some(path) = parsed_data["auditPath"].as_array() {
             let path_str = json!(path).to_string();
             trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", path);
-            base64::encode(&path_str)
+            base64::encode(path_str.as_bytes())
         } else {
             return Err("No proof".to_string());
         };
@@ -894,7 +894,7 @@ mod tests {
                 "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
+        let kvs = vec![(base64::encode("3".as_bytes()), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
         let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
@@ -909,7 +909,7 @@ mod tests {
                 "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
+        let kvs = vec![(base64::encode("3".as_bytes()), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
         let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
@@ -924,7 +924,7 @@ mod tests {
                 "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
+        let kvs = vec![(base64::encode("3".as_bytes()), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
         let root_hash = "G9QooEDKSmEtLGNyTwafQiPfGHMqw3A3Fjcj2eLRG4G1".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
@@ -939,7 +939,7 @@ mod tests {
                 "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![(base64::encode("3"), Some(r#"{"3":"3"}"#.to_string()))];
+        let kvs = vec![(base64::encode("3".as_bytes()), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
         let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 9));
@@ -954,7 +954,7 @@ mod tests {
                 "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![(base64::encode("3"), Some(r#"{"4":"4"}"#.to_string()))];
+        let kvs = vec![(base64::encode("3".as_bytes()), Some(r#"{"4":"4"}"#.to_string()))];
         let node_bytes = &nodes;
         let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
@@ -969,7 +969,7 @@ mod tests {
                 "25KLEkkyCEPSBj4qMFE3AcH87mFocyJEuPJ5xzPGwDgz"
             ]
         ).to_string();
-        let kvs = vec![(base64::encode("4"), Some(r#"{"3":"3"}"#.to_string()))];
+        let kvs = vec![(base64::encode("4".as_bytes()), Some(r#"{"3":"3"}"#.to_string()))];
         let node_bytes = &nodes;
         let root_hash = "CrA5sqYe3ruf2uY7d8re7ePmyHqptHqANtMZcfZd4BvK".from_base58().unwrap();
         assert!(!_verify_merkle_tree(node_bytes.as_bytes(), root_hash.as_slice(), kvs.as_slice(), 5));
@@ -1479,7 +1479,7 @@ mod tests {
             }
         });
 
-        let nodes_str = base64::encode(&json!(["1", "2"]).to_string());
+        let nodes_str = base64::encode(json!(["1", "2"]).to_string().as_bytes());
 
         let mut parsed_sps = super::parse_generic_reply_for_proof_checking(json_msg,
                                                                            "",
@@ -1493,7 +1493,7 @@ mod tests {
         assert_eq!(parsed_sp.proof_nodes, nodes_str);
         assert_eq!(parsed_sp.kvs_to_verify,
                    KeyValuesInSP::Simple(KeyValueSimpleData {
-                       kvs: vec![(base64::encode("2"), Some(json!({"txn":{"test1": "test2", "seqNo": 2}}).to_string()))],
+                       kvs: vec![(base64::encode("2".as_bytes()), Some(json!({"txn":{"test1": "test2", "seqNo": 2}}).to_string()))],
                        verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
                    }));
     }
@@ -1512,7 +1512,7 @@ mod tests {
             }
         });
 
-        let nodes_str = base64::encode(&json!(["1", "2"]).to_string());
+        let nodes_str = base64::encode(json!(["1", "2"]).to_string().as_bytes());
 
         let mut parsed_sps = super::parse_generic_reply_for_proof_checking(json_msg,
                                                                            "",
@@ -1526,7 +1526,7 @@ mod tests {
         assert_eq!(parsed_sp.proof_nodes, nodes_str);
         assert_eq!(parsed_sp.kvs_to_verify,
                    KeyValuesInSP::Simple(KeyValueSimpleData {
-                       kvs: vec![(base64::encode("2"), Some(json!({"txn":{"test1": "test2", "seqNo": 2}}).to_string()))],
+                       kvs: vec![(base64::encode("2".as_bytes()), Some(json!({"txn":{"test1": "test2", "seqNo": 2}}).to_string()))],
                        verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
                    }));
     }
@@ -1566,7 +1566,7 @@ mod tests {
             }
         });
 
-        let nodes_str = base64::encode(&json!(["1", "2"]).to_string());
+        let nodes_str = base64::encode(json!(["1", "2"]).to_string().as_bytes());
 
         let mut parsed_sps = super::parse_generic_reply_for_proof_checking(json_msg,
                                                                            "",
@@ -1580,7 +1580,7 @@ mod tests {
         assert_eq!(parsed_sp.proof_nodes, nodes_str);
         assert_eq!(parsed_sp.kvs_to_verify,
                    KeyValuesInSP::Simple(KeyValueSimpleData {
-                       kvs: vec![(base64::encode("2"), None)],
+                       kvs: vec![(base64::encode("2".as_bytes()), None)],
                        verification_type: KeyValueSimpleDataVerificationType::MerkleTree(2),
                    }));
     }

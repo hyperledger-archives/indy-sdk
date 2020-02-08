@@ -35,7 +35,7 @@ def main():
     dest = 'docs'
     src = 'vcx/api'
     src = os.path.join(os.getcwd(), src)
-    ft = DocTree(src, dest)
+    DocTree(src, dest)
 
 if __name__ == '__main__':
     main()

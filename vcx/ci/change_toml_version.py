@@ -1,9 +1,6 @@
 #!/bin/python3
 # Modifies the Cargo.toml file's version number
 import sys
-import subprocess
-from subprocess import PIPE, Popen
-
 
 # opens Cargo.toml, reads the current major and minor 
 # version, then adds the build number and commit
@@ -95,15 +92,13 @@ if __name__ == "__main__":
         filename = sys.argv[1]
         print("filename: %s" % filename)
         build = sys.argv[2]
-        hash_num = sys.argv[3]
-        main(filename, build, hash_num)
+        main(filename, build)
     elif len(sys.argv) == 2 and sys.argv[1] == '-t':
         test()
     else:
         print("USAGE: python3 change_version.py PATH BUILD_NUM HASH_NUM")
         print("PATH = path to Cargo.toml file")
         print("BUILD_NUM = build number for version")
-        print("HASH_NUM = commit hash for version")
 
 
 # not used

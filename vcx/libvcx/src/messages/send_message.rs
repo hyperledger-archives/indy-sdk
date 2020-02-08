@@ -255,7 +255,7 @@ mod tests {
         };
 
         /* just check that it doesn't panic */
-        let packed = message.prepare_request().unwrap();
+        let _packed = message.prepare_request().unwrap();
     }
 
     #[test]
@@ -287,7 +287,6 @@ mod tests {
         let uid = response.get_msg_uid().unwrap();
         assert_eq!(test_val, uid);
 
-        let test_val = "devin";
         let response = SendResponse {
             uid: None,
             uids: vec![],
@@ -302,8 +301,7 @@ mod tests {
     #[test]
     fn test_send_generic_message() {
         init!("agency");
-        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (faber, alice) = ::connection::tests::create_connected_connections();
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
 
         match send_generic_message(alice, "this is the message", &json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()) {
             Ok(x) => println!("message id: {}", x),
@@ -320,7 +318,6 @@ mod tests {
     #[test]
     fn test_send_message_and_download_response() {
         init!("agency");
-        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
         let msg_id = send_generic_message(alice, "this is the message", &json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()).unwrap();
