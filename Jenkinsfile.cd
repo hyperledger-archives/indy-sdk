@@ -434,6 +434,7 @@ def linuxVcxBuild(file, env_name, network_name) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd vcx/dummy-cloud-agent
+                sed -i 's/\\("protocol_type": "\\)1.0/\\12.0/' config/sample-config.json
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 
