@@ -76,6 +76,8 @@ enum_number!(VcxStateType
     VcxStateUnfulfilled = 5,
     VcxStateExpired = 6,
     VcxStateRevoked = 7,
+    VcxStateRedirected = 8,
+    VcxStateRejected = 9,
 });
 
 impl VcxStateType {

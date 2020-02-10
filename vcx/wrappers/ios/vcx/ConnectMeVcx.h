@@ -189,6 +189,16 @@ withSelectedCredentials:(NSString *)selectedCredentials
 withConnectionHandle:(vcx_connection_handle_t)connection_handle
     withCompletion:(void (^)(NSError *error))completion;
 
+- (void) proofReject: (vcx_proof_handle_t)proof_handle withConnectionHandle:(vcx_connection_handle_t)connection_handle
+      withCompletion: (void (^)(NSError *error))completion;
+
+- (void) getProofMsg:(vcx_proof_handle_t) proofHandle
+      withCompletion:(void (^)(NSError *error, NSString *proofMsg))completion;
+
+- (void) getRejectMsg:(vcx_proof_handle_t) proofHandle
+       withCompletion:(void (^)(NSError *error, NSString *rejectMsg))completion;
+
+
 - (void) proofCreateWithRequest:(NSString *) source_id
                withProofRequest:(NSString *) proofRequest
                  withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle))completion;

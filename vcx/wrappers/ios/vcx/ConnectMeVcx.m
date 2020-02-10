@@ -902,6 +902,57 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void) proofReject: (vcx_proof_handle_t)proof_handle withConnectionHandle:(vcx_connection_handle_t)connection_handle
+      withCompletion: (void (^)(NSError *error))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor: completion];
+    
+    ret = vcx_disclosed_proof_reject_proof(handle, proof_handle, connection_handle, VcxWrapperCommonCallback);
+    
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
+- (void) getProofMsg:(vcx_proof_handle_t) proofHandle
+         withCompletion:(void (^)(NSError *error, NSString *proofMsg))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_disclosed_proof_get_proof_msg(handle, proofHandle, VcxWrapperCommonStringCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
+- (void) getRejectMsg:(vcx_proof_handle_t) proofHandle
+         withCompletion:(void (^)(NSError *error, NSString *rejectMsg))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_disclosed_proof_get_reject_msg(handle, proofHandle, VcxWrapperCommonStringCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
 - (void) proofCreateWithRequest:(NSString *) source_id
                withProofRequest:(NSString *) proofRequest
                  withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle))completion {
