@@ -572,4 +572,70 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
       throw new VCXInternalError(err)
     }
   }
+
+  /**
+   * Retrieves pw_did from Connection object
+   *
+   */
+  public async getPwDid (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_get_pw_did(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!details) {
+                reject(`Connection ${this.sourceId} connect returned empty string`)
+                return
+              }
+              resolve(details)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Retrieves their_pw_did from Connection object
+   *
+   */
+  public async getTheirDid (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_get_their_pw_did(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!details) {
+                reject(`Connection ${this.sourceId} connect returned empty string`)
+                return
+              }
+              resolve(details)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
 }

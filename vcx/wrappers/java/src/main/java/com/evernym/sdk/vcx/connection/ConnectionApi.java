@@ -337,4 +337,48 @@ public class ConnectionApi extends VcxJava.API {
 
 		return future;
 	}
+
+    private static Callback vcxConnectionGetPwDidCB = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, String pwDid) {
+
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+            if (! checkCallback(future, err)) return;
+
+            future.complete(pwDid);
+        }
+    };
+
+    public static CompletableFuture<String> connectionGetPwDid(int connectionHandle) throws VcxException {
+
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+        int result = LibVcx.api.vcx_connection_get_pw_did(commandHandle, connectionHandle, vcxConnectionGetPwDidCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxConnectionGetTheirPwDidCB = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, String theirPwDid) {
+
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+            if (! checkCallback(future, err)) return;
+
+            future.complete(theirPwDid);
+        }
+    };
+
+    public static CompletableFuture<String> connectionGetTheirPwDid(int connectionHandle) throws VcxException {
+
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+        int result = LibVcx.api.vcx_connection_get_pw_did(commandHandle, connectionHandle, vcxConnectionGetTheirPwDidCB);
+        checkResult(result);
+
+        return future;
+    }
 }
