@@ -1,19 +1,17 @@
 use failure::*;
 use futures::*;
-use indy::crypto;
 use rmp_serde;
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::{self, Value};
-use utils::futures::*;
+use crate::utils::futures::*;
 
-use domain::a2connection::*;
-use domain::invite::{InviteDetail, SenderDetail, RedirectDetail, ForwardAgentDetail};
-use domain::key_deligation_proof::KeyDlgProof;
-use domain::status::{MessageStatusCode, ConnectionStatus};
-use domain::message_type::*;
-use domain::protocol_type::{ProtocolType, ProtocolTypes};
-use domain::payload::Thread;
-use crate::domain::status::{ConnectionStatus, MessageStatusCode};
+use crate::domain::a2connection::*;
+use crate::domain::invite::{InviteDetail, SenderDetail, RedirectDetail, ForwardAgentDetail};
+use crate::domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::status::{MessageStatusCode, ConnectionStatus};
+use crate::domain::message_type::*;
+use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
+use crate::domain::payload::Thread;
 use crate::indy::{crypto, WalletHandle};
 
 #[derive(Debug)]

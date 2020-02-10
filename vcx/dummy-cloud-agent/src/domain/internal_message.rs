@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use domain::invite::RedirectDetail;
+use crate::domain::invite::RedirectDetail;
 
 use crate::domain::a2a::RemoteMessageType;
 use crate::domain::payload::Thread;
