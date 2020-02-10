@@ -41,10 +41,6 @@ pub enum LedgerCommand {
         PoolHandle, // pool handle
         String, // request json
         Box<dyn Fn(IndyResult<String>) + Send>),
-//    SubmitAck(
-//        CommandHandle,
-//        IndyResult<String>, // result json or error
-//    ),
     SubmitAction(
         PoolHandle, // pool handle
         String, // request json
@@ -271,7 +267,6 @@ impl LedgerCommandExecutor {
             crypto_service,
             wallet_service,
             ledger_service,
-//            send_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -285,16 +280,6 @@ impl LedgerCommandExecutor {
                 debug!(target: "ledger_command_executor", "SubmitRequest command received");
                 self.submit_request(handle, &request_json, cb).await;
             }
-//            LedgerCommand::SubmitAck(handle, result) => {
-//                debug!(target: "ledger_command_executor", "SubmitAck command received");
-//                match self.send_callbacks.borrow_mut().remove(&handle) {
-//                    Some(cb) => cb(result.map_err(IndyError::from)),
-//                    None => {
-//                        error!("Can't process LedgerCommand::SubmitAck for handle {:?} with result {:?} - appropriate callback not found!",
-//                               handle, result);
-//                    }
-//                }
-//            }
             LedgerCommand::SubmitAction(handle, request_json, nodes, timeout, cb) => {
                 debug!(target: "ledger_command_executor", "SubmitRequest command received");
                 self.submit_action(handle, &request_json, nodes.as_ref().map(String::as_str), timeout, cb).await;
