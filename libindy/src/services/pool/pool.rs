@@ -280,10 +280,6 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                         match _get_request_handler_with_ledger_status_sent(state.networker.clone(), &pool_name, timeout, extended_timeout, number_read_nodes) {
                             Ok(request_handler) => PoolState::GettingCatchupTarget((request_handler, cmd_id, state).into()),
                             Err(err) => {
-//                                CommandExecutor::instance().send(
-//                                    Command::Pool(
-//                                        PoolCommand::OpenAck(cmd_id, id, Err(err)))
-//                                ).unwrap();
                                 PoolService::open_ack(id, Err(err));
                                 PoolState::Terminated(state.into())
                             }
