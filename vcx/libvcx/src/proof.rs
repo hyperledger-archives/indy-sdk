@@ -362,7 +362,7 @@ impl Proof {
         debug!("proof: {}", payload);
 
         self.proof = match parse_proof_payload(&payload) {
-            Err(err) => return Ok(self.get_state()),
+            Err(_) => return Ok(self.get_state()),
             Ok(x) => {
                 self.state = x.state.unwrap_or(VcxStateType::VcxStateAccepted);
                 Some(x)
@@ -371,7 +371,7 @@ impl Proof {
 
         if self.state == VcxStateType::VcxStateAccepted {
             match self.proof_validation() {
-                Ok(x) => {
+                Ok(_) => {
                     if self.proof_state != ProofStateType::ProofInvalid {
                         debug!("Proof format was validated for proof {}", self.source_id);
                         self.proof_state = ProofStateType::ProofValidated;
@@ -827,7 +827,7 @@ mod tests {
     fn test_update_state_with_reject_message() {
         init!("true");
 
-        let connection_handle = build_test_connection();
+        let _connection_handle = build_test_connection();
 
         let mut proof = Box::new(Proof {
             source_id: "12".to_string(),

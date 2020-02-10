@@ -242,10 +242,10 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: CommandHandle,
 /// #Returns
 /// Error code as u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_reject_proof(command_handle: u32,
+pub extern fn vcx_disclosed_proof_reject_proof(command_handle: CommandHandle,
                                                proof_handle: u32,
                                                connection_handle: u32,
-                                               cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+                                               cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
     info!("vcx_disclosed_proof_reject_proof >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -263,8 +263,8 @@ pub extern fn vcx_disclosed_proof_reject_proof(command_handle: u32,
            command_handle, proof_handle, connection_handle, source_id);
 
     spawn(move || {
-        let err = match disclosed_proof::reject_proof(proof_handle, connection_handle) {
-            Ok(x) => {
+        match disclosed_proof::reject_proof(proof_handle, connection_handle) {
+            Ok(_) => {
                 trace!("vcx_disclosed_proof_reject_proof_cb(command_handle: {}, rc: {}) source_id: {}",
                        command_handle, error::SUCCESS.message, source_id);
                 cb(command_handle, error::SUCCESS.code_num);
@@ -342,9 +342,9 @@ pub extern fn vcx_disclosed_proof_get_proof_msg(command_handle: CommandHandle,
 /// #Returns
 /// Error code as u32
 #[no_mangle]
-pub extern fn vcx_disclosed_proof_get_reject_msg(command_handle: u32,
+pub extern fn vcx_disclosed_proof_get_reject_msg(command_handle: CommandHandle,
                                                  proof_handle: u32,
-                                                 cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
+                                                 cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg: *const c_char)>) -> u32 {
     info!("vcx_disclosed_proof_get_reject_msg >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -1066,7 +1066,7 @@ mod tests {
         let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(disclosed_proof::get_state(handle).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
 
-        let connection_handle = connection::tests::build_test_connection();
+        let _connection_handle = connection::tests::build_test_connection();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_reject_msg(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);

@@ -17,7 +17,7 @@ use messages::get_message::Message;
 use error::prelude::*;
 use settings;
 use utils::{httpclient, error};
-use utils::constants::{DEFAULT_SERIALIZE_VERSION, CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF, DEFAULT_REJECTED_PROOF};
+use utils::constants::{CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF, DEFAULT_REJECTED_PROOF};
 use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, RevState};
 use utils::libindy::anoncreds;
 use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
@@ -522,6 +522,14 @@ impl DisclosedProof {
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
 
     fn get_source_id(&self) -> &String { &self.source_id }
+
+    #[cfg(test)] // TODO: REMOVE IT
+    fn from_str(data: &str) -> VcxResult<DisclosedProof> {
+        use messages::ObjectWithVersion;
+        ObjectWithVersion::deserialize(data)
+            .map(|obj: ObjectWithVersion<DisclosedProof>| obj.data)
+            .map_err(|err| err.extend("Cannot deserialize DisclosedProof"))
+    }
 }
 
 //********************************************
@@ -637,13 +645,27 @@ pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
 
 pub fn generate_reject_proof_msg(handle: u32) -> VcxResult<String> {
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.generate_reject_proof_msg()
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.generate_reject_proof_msg()
+            }
+            DisclosedProofs::V3(_) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
     })
 }
 
 pub fn reject_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     HANDLE_MAP.get_mut(handle, |obj| {
-        obj.reject_proof(connection_handle)
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.reject_proof(connection_handle)
+            }
+            DisclosedProofs::V3(_) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
     })
 }
 
