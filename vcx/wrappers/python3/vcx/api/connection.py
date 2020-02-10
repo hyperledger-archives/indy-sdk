@@ -182,7 +182,7 @@ class Connection(VcxStateful):
                     "serviceEndpoint": "https://example.com/endpoint",
                     "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
                  }
-        
+
         Example:
         connection2 = await Connection.create_with_details('MyBank', invite_details)
         :return: connection object
@@ -501,3 +501,24 @@ class Connection(VcxStateful):
                       c_query,
                       c_comment,
                       Connection.send_discovery_features.cb)
+
+    async def get_my_pw_did(self) -> str:
+        if not hasattr(Connection.get_my_pw_did, "cb"):
+            self.logger.debug("get_my_pw_did: Creating callback")
+            Connection.get_my_pw_did.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+
+        my_pw_did = await do_call('vcx_connection_get_pw_did', c_connection_handle, Connection.get_my_pw_did.cb)
+        return my_pw_did.decode()
+
+    async def get_their_pw_did(self) -> str:
+        if not hasattr(Connection.get_their_pw_did, "cb"):
+            self.logger.debug("get_their_pw_did: Creating callback")
+            Connection.get_their_pw_did.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+
+        their_pw_did =\
+            await do_call('vcx_connection_get_their_pw_did', c_connection_handle, Connection.get_their_pw_did.cb)
+        return their_pw_did.decode()

@@ -3,8 +3,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::threadpool::spawn;
 use std::ptr;
-use connection::{get_source_id, create_connection, create_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection, update_state_with_message, send_generic_message, send_ping, send_discovery_features};
-
+use connection::*;
 use error::prelude::*;
 use messages::get_message::Message;
 use indy_sys::CommandHandle;
@@ -1038,6 +1037,104 @@ pub extern fn vcx_connection_send_discovery_features(command_handle: u32,
 
                 cb(command_handle, e.into());
             }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Retrieves pw_did from Connection object
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: Callback that provides your pw_did for this connection
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_get_pw_did(command_handle: u32,
+                                       connection_handle: u32,
+                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, serialized_data: *const c_char)>) -> u32 {
+    info!("vcx_connection_get_pw_did >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    trace!("vcx_connection_get_pw_did(command_handle: {}, connection_handle: {}), source_id: {:?}",
+           command_handle, connection_handle, source_id);
+
+    if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+    }
+
+    spawn(move|| {
+        match get_pw_did(connection_handle) {
+            Ok(json) => {
+                trace!("vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), source_id: {:?}",
+                       command_handle, connection_handle, error::SUCCESS.message, json, source_id);
+                let msg = CStringUtils::string_to_cstring(json);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(x) => {
+                warn!("vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), source_id: {:?}",
+                      command_handle, connection_handle, x, "null", source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
+            },
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Retrieves their_pw_did from Connection object
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: Callback that provides your pw_did for this connection
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_connection_get_their_pw_did(command_handle: u32,
+                                              connection_handle: u32,
+                                              cb: Option<extern fn(xcommand_handle: u32, err: u32, serialized_data: *const c_char)>) -> u32 {
+    info!("vcx_connection_get_pw_did >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    trace!("vcx_connection_get_their_pw_did(command_handle: {}, connection_handle: {}), source_id: {:?}",
+           command_handle, connection_handle, source_id);
+
+    if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
+        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
+    }
+
+    spawn(move|| {
+        match get_their_pw_did(connection_handle) {
+            Ok(json) => {
+                trace!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}",
+                       command_handle, connection_handle, error::SUCCESS.message, json, source_id);
+                let msg = CStringUtils::string_to_cstring(json);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(x) => {
+                warn!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}",
+                      command_handle, connection_handle, x, "null", source_id);
+                cb(command_handle, x.into(), ptr::null_mut());
+            },
         };
 
         Ok(())
