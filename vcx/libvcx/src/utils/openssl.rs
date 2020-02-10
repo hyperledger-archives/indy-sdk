@@ -6,7 +6,7 @@ use error::prelude::*;
 
 pub fn encode(s: &str ) -> VcxResult<String> {
     match s.parse::<u32>() {
-        Ok(_) => Ok(s.to_string()),
+        Ok(val) => Ok(val.to_string()),
         Err(_) => {
             let hash = sha256(s.as_bytes());
             let bignum = match BigNum::from_slice(&hash) {
@@ -56,6 +56,10 @@ mod test{
 
         let number_as_string = "123";
         assert_eq!(number_as_string, encode(number_as_string).unwrap());
+
+        let number_with_leading_zero_as_string = "0123";
+        let expected_encoded_number_with_leading_zero_as_string = number_as_string;
+        assert_eq!(expected_encoded_number_with_leading_zero_as_string, encode(number_with_leading_zero_as_string).unwrap());
     }
 
 
