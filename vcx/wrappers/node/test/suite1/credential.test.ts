@@ -147,7 +147,8 @@ describe('Credential:', () => {
     it('success: get request message', async () => {
       const data = await dataCredentialCreateWithOffer()
       const credential = await credentialCreateWithOffer(data)
-      const msg = await credential.getRequestMessage({ connection: data.connection, payment: 0 })
+      const pwDid = await data.connection.getPwDid()
+      const msg = await credential.getRequestMessage({ myPwDid: pwDid, payment: 0 })
       assert(msg.length > 0)
     })
 

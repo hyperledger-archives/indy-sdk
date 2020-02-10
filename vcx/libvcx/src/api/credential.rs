@@ -363,7 +363,9 @@ pub extern fn vcx_credential_send_request(command_handle: CommandHandle,
 ///
 /// credential_handle: credential handle that was provided during creation. Used to identify credential object
 ///
-/// connection_handle: Connection handle that identifies pairwise connection
+/// my_pw_did: Use Connection api (vcx_connection_get_pw_did) with specified connection_handle to retrieve your pw_did
+///
+/// their_pw_did: Use Connection api (vcx_connection_get_their_pw_did) with specified connection_handle to retrieve theri pw_did
 ///
 /// cb: Callback that provides error status of credential request
 ///
@@ -372,27 +374,26 @@ pub extern fn vcx_credential_send_request(command_handle: CommandHandle,
 #[no_mangle]
 pub extern fn vcx_credential_get_request_msg(command_handle: CommandHandle,
                                              credential_handle: u32,
-                                             connection_handle: u32,
+                                             my_pw_did: *const c_char,
+                                             their_pw_did: *const c_char,
                                              _payment_handle: u32,
                                              cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, msg: *const c_char)>) -> u32 {
     info!("vcx_credential_get_request_msg >>>");
 
+    check_useful_c_str!(my_pw_did, VcxErrorKind::InvalidOption);
+    check_useful_opt_c_str!(their_pw_did, VcxErrorKind::InvalidOption);
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
 
     if !credential::is_valid_handle(credential_handle) {
         return VcxError::from(VcxErrorKind::InvalidCredentialHandle).into()
     }
 
-    if !connection::is_valid_handle(connection_handle) {
-        return VcxError::from(VcxErrorKind::InvalidConnectionHandle).into()
-    }
-
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
-    trace!("vcx_credential_get_request_msg(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: {:?}",
-           command_handle, credential_handle, connection_handle, source_id);
+    trace!("vcx_credential_get_request_msg(command_handle: {}, credential_handle: {}, my_pw_did: {}, their_pw_did: {:?}), source_id: {:?}",
+           command_handle, credential_handle, my_pw_did, their_pw_did, source_id);
 
     spawn(move || {
-        match credential::generate_credential_request_msg(credential_handle, connection_handle) {
+        match credential::generate_credential_request_msg(credential_handle, &my_pw_did, &their_pw_did.unwrap_or_default()) {
             Ok(msg) => {
                 let msg = CStringUtils::string_to_cstring(msg);
                 trace!("vcx_credential_get_request_msg_cb(command_handle: {}, rc: {}) source_id: {}",
@@ -935,13 +936,15 @@ mod tests {
         init!("true");
         let cxn = ::connection::tests::build_test_connection();
         ::connection::connect(cxn, None).unwrap();
+        let my_pw_did = CString::new(::connection::get_pw_did(cxn).unwrap()).unwrap().into_raw();
+        let their_pw_did = CString::new(::connection::get_their_pw_did(cxn).unwrap()).unwrap().into_raw();
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credential_update_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        assert_eq!(vcx_credential_get_request_msg(cb.command_handle, handle, cxn, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert_eq!(vcx_credential_get_request_msg(cb.command_handle, handle, my_pw_did, their_pw_did, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
         let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
         assert!(msg.len() > 0);
     }
