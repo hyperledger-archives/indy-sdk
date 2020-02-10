@@ -20,10 +20,6 @@ pub enum PoolCommand {
         String, // name
         Option<PoolOpenConfig>, // config
         Box<dyn Fn(IndyResult<PoolHandle>) + Send>),
-//    OpenAck(
-//        CommandHandle, // cmd id
-//        PoolHandle, // pool handle
-//        IndyResult<()>),
     List(Box<dyn Fn(IndyResult<String>) + Send>),
     Close(
         PoolHandle, // pool handle
@@ -33,8 +29,6 @@ pub enum PoolCommand {
     Refresh(
         PoolHandle, // pool handle
         Box<dyn Fn(IndyResult<()>) + Send>),
-//    RefreshAck(CommandHandle,
-//               IndyResult<()>),
     SetProtocolVersion(
         usize, // protocol version
         Box<dyn Fn(IndyResult<()>) + Send>),
@@ -43,8 +37,6 @@ pub enum PoolCommand {
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
     close_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
-//    refresh_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
-//    open_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<PoolHandle>)>>>,
 }
 
 impl PoolCommandExecutor {
@@ -52,8 +44,6 @@ impl PoolCommandExecutor {
         PoolCommandExecutor {
             pool_service,
             close_callbacks: RefCell::new(HashMap::new()),
-//            refresh_callbacks: RefCell::new(HashMap::new()),
-//            open_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -71,22 +61,6 @@ impl PoolCommandExecutor {
                 debug!(target: "pool_command_executor", "Open command received");
                 self.open(name, config, cb).await;
             }
-//            PoolCommand::OpenAck(handle, pool_id, result) => {
-//                info!("OpenAck handle {:?}, pool_id {:?}, result {:?}", handle, pool_id, result);
-//                match self.open_callbacks.try_borrow_mut() {
-//                    Ok(mut cbs) => {
-//                        match cbs.remove(&handle) {
-//                            Some(cb) => {
-//                                cb(result.and_then(|_| self.pool_service.add_open_pool(pool_id)))
-//                            }
-//                            None => {
-//                                error!("Can't process PoolCommand::OpenAck for handle {:?} with result {:?} - appropriate callback not found!", handle, result);
-//                            }
-//                        }
-//                    }
-//                    Err(err) => { error!("{:?}", err); }
-//                }
-//            }
             PoolCommand::List(cb) => {
                 debug!(target: "pool_command_executor", "List command received");
                 cb(self.list());
@@ -113,21 +87,6 @@ impl PoolCommandExecutor {
                 debug!(target: "pool_command_executor", "Refresh command received");
                 self.refresh(handle, cb).await;
             }
-//            PoolCommand::RefreshAck(handle, result) => {
-//                debug!(target: "pool_command_executor", "RefreshAck command received");
-//                match self.refresh_callbacks.try_borrow_mut() {
-//                    Ok(mut cbs) => {
-//                        match cbs.remove(&handle) {
-//                            Some(cb) => cb(result),
-//                            None => {
-//                                error!("Can't process PoolCommand::RefreshAck for handle {:?} with result {:?} - appropriate callback not found!",
-//                                       handle, result);
-//                            }
-//                        }
-//                    }
-//                    Err(err) => { error!("{:?}", err); }
-//                }
-//            }
             PoolCommand::SetProtocolVersion(protocol_version, cb) => {
                 debug!(target: "pool_command_executor", "SetProtocolVersion command received");
                 cb(self.set_protocol_version(protocol_version));
