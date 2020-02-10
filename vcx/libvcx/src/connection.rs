@@ -332,7 +332,16 @@ impl Connection {
         if self.state == VcxStateType::VcxStateOfferSent || self.state == VcxStateType::VcxStateInitialized {
             for message in response {
                 if message.status_code == MessageStatusCode::Accepted && message.msg_type == RemoteMessageType::ConnReqAnswer {
-                    self.process_acceptance_message(&message)?;
+                    let rc = self.process_acceptance_message(&message);
+                    if rc.is_err() {
+                        self.force_v2_parse_acceptance_details(&message)?;
+                    }
+                }
+                else if message.status_code == MessageStatusCode::Redirected && message.msg_type == RemoteMessageType::ConnReqRedirect {
+                    let rc = self.process_redirect_message(&message);
+                    if rc.is_err() {
+                        self.force_v2_parse_redirection_details(&message)?;
+                    }
                 }
             }
         };
@@ -737,7 +746,6 @@ impl Connection {
         }
     }
 
-    #[allow(dead_code)]
     pub fn force_v2_parse_acceptance_details(&mut self, message: &Message) -> VcxResult<SenderDetail> {
         debug!("forcing connection {} parsing acceptance details for message {:?}", self.source_id, message);
         let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
@@ -801,9 +809,8 @@ pub fn update_state_with_message(handle: u32, message: Message) -> VcxResult<u32
 }
 
 impl Connection {
-    #[allow(dead_code)]
-    pub fn force_v2_parse_redirection_details(handle: u32, message: &Message) -> VcxResult<RedirectDetail> {
-        debug!("forcing connection {} parsing redirection details for message {:?}", get_source_id(handle).unwrap_or_default(), message);
+    pub fn force_v2_parse_redirection_details(&mut self, message: &Message) -> VcxResult<RedirectDetail> {
+        debug!("forcing connection {} parsing redirection details for message {:?}", self.source_id, message);
         let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
 
         let payload = message.payload
@@ -820,8 +827,8 @@ impl Connection {
                 let response: RedirectionDetails = serde_json::from_value(payload.msg)
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize RedirectionDetails: {}", err)))?;
 
-                set_redirect_details(handle, &response.redirect_detail).ok();
-                set_state(handle, VcxStateType::VcxStateRedirected).ok();
+                self.set_redirect_detail(response.redirect_detail.clone());
+                self.set_state(VcxStateType::VcxStateRedirected);
 
                 Ok(response.redirect_detail)
             }
@@ -834,6 +841,7 @@ impl Connection {
             }
         }
     }
+
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
