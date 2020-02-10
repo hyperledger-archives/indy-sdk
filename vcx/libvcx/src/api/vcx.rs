@@ -464,13 +464,14 @@ mod tests {
         libindy::{
         wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path},
         pool::get_pool_handle
-        },
-        get_temp_dir_path
+        }
     };
     use api::VcxStateType;
     use api::return_types_u32;
     use api::connection::vcx_connection_create;
     use indy::{WalletHandle};
+    #[cfg(any(feature = "agency", feature = "pool_tests"))]
+    use utils::get_temp_dir_path;
 
     #[cfg(any(feature = "agency", feature = "pool_tests"))]
     fn create_config_util(_logging: Option<&str>) -> String {

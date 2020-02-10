@@ -17,7 +17,7 @@ use messages::get_message::Message;
 use error::prelude::*;
 use settings;
 use utils::{httpclient, error};
-use utils::constants::{CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF};
+use utils::constants::{CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF, DEFAULT_REJECTED_PROOF};
 use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, RevState};
 use utils::libindy::anoncreds;
 use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
@@ -456,9 +456,80 @@ impl DisclosedProof {
         Ok(error::SUCCESS.code_num)
     }
 
+    fn generate_reject_proof_msg(&self) -> VcxResult<String> {
+        let msg = match settings::test_indy_mode_enabled() {
+            false => {
+                let proof_reject = ProofMessage::new_reject();
+                serde_json::to_string(&proof_reject)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof reject: {}", err)))?
+            }
+            true => DEFAULT_REJECTED_PROOF.to_string(),
+        };
+
+        Ok(msg)
+    }
+
+    fn reject_proof(&mut self, connection_handle: u32) -> VcxResult<u32> {
+        trace!("DisclosedProof::reject_proof >>> connection_handle: {}", connection_handle);
+
+        debug!("rejecting proof {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
+        // There feels like there's a much more rusty way to do the below.
+        self.my_did = Some(connection::get_pw_did(connection_handle)?);
+        self.my_vk = Some(connection::get_pw_verkey(connection_handle)?);
+        self.agent_did = Some(connection::get_agent_did(connection_handle)?);
+        self.agent_vk = Some(connection::get_agent_verkey(connection_handle)?);
+        self.their_did = Some(connection::get_their_pw_did(connection_handle)?);
+        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle)?);
+
+        debug!("verifier_did: {:?} -- verifier_vk: {:?} -- agent_did: {:?} -- agent_vk: {:?} -- remote_vk: {:?}",
+               self.my_did,
+               self.agent_did,
+               self.agent_vk,
+               self.their_vk,
+               self.my_vk);
+
+        self.their_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_their_vk = self.their_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_agent_vk = self.agent_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_my_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_my_vk = self.my_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+
+        let proof_req = self.proof_request.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+        let ref_msg_uid = proof_req.msg_ref_id.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+
+        let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
+        self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
+
+        let proof_reject = self.generate_reject_proof_msg()?;
+
+        messages::send_message()
+            .to(local_my_did)?
+            .to_vk(local_my_vk)?
+            .msg_type(&RemoteMessageType::Proof)?
+            .agent_did(local_agent_did)?
+            .agent_vk(local_agent_vk)?
+            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof_reject, PayloadKinds::Proof, self.thread.clone())
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Cannot encrypt payload: {}", err)))?
+            .ref_msg_id(Some(ref_msg_uid.to_string()))?
+            .send_secure()
+            .map_err(|err| err.extend("Could not send proof reject"))?;
+
+        self.state = VcxStateType::VcxStateRejected;
+        return Ok(error::SUCCESS.code_num);
+    }
+
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
 
     fn get_source_id(&self) -> &String { &self.source_id }
+
+    #[cfg(test)] // TODO: REMOVE IT
+    fn from_str(data: &str) -> VcxResult<DisclosedProof> {
+        use messages::ObjectWithVersion;
+        ObjectWithVersion::deserialize(data)
+            .map(|obj: ObjectWithVersion<DisclosedProof>| obj.data)
+            .map_err(|err| err.extend("Cannot deserialize DisclosedProof"))
+    }
 }
 
 //********************************************
@@ -567,6 +638,32 @@ pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
             DisclosedProofs::V3(ref mut obj) => {
                 obj.send_presentation(connection_handle)?;
                 Ok(error::SUCCESS.code_num)
+            }
+        }
+    })
+}
+
+pub fn generate_reject_proof_msg(handle: u32) -> VcxResult<String> {
+    HANDLE_MAP.get_mut(handle, |obj| {
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.generate_reject_proof_msg()
+            }
+            DisclosedProofs::V3(_) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
+    })
+}
+
+pub fn reject_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    HANDLE_MAP.get_mut(handle, |obj| {
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.reject_proof(connection_handle)
+            }
+            DisclosedProofs::V3(_) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
             }
         }
     })
@@ -789,6 +886,22 @@ mod tests {
     }
 
     #[test]
+    fn test_proof_reject_cycle() {
+        init!("true");
+
+        let connection_h = connection::tests::build_test_connection();
+
+        let requests = get_proof_request_messages(connection_h, None).unwrap();
+        let requests: Value = serde_json::from_str(&requests).unwrap();
+        let requests = serde_json::to_string(&requests[0]).unwrap();
+
+        let handle = create_proof("TEST_CREDENTIAL", &requests).unwrap();
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(handle).unwrap());
+        reject_proof(handle, connection_h).unwrap();
+        assert_eq!(VcxStateType::VcxStateRejected as u32, get_state(handle).unwrap());
+    }
+
+    #[test]
     fn get_state_test() {
         init!("true");
         let proof: DisclosedProof = Default::default();
@@ -810,6 +923,14 @@ mod tests {
     #[test]
     fn test_deserialize_fails() {
         assert_eq!(from_string("{}").unwrap_err().kind(), VcxErrorKind::InvalidJson);
+    }
+
+    #[test]
+    fn test_deserialize_succeeds_with_self_attest_allowed() {
+        let handle = create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let serialized = to_string(handle).unwrap();
+        let p = DisclosedProof::from_str(&serialized).unwrap();
+        assert_eq!(p.proof_request.unwrap().proof_request_data.requested_attributes.get("attr1_referent").unwrap().self_attest_allowed, Some(true))
     }
 
     #[test]
@@ -1407,6 +1528,15 @@ mod tests {
 
         let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
         assert!(generated_proof.is_ok());
+    }
+
+    #[test]
+    fn test_generate_reject_proof() {
+        init!("true");
+
+        let proof: DisclosedProof = Default::default();
+        let generated_reject = proof.generate_reject_proof_msg();
+        assert!(generated_reject.is_ok());
     }
 
     #[test]

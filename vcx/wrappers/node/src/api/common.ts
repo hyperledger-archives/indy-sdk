@@ -111,7 +111,9 @@ export enum StateType {
     Accepted = 4,
     Unfulfilled = 5,
     Expired = 6,
-    Revoked = 7
+    Revoked = 7,
+    Redirected = 8,
+    Rejected = 9,
 }
 
 export interface IInitVCXOptions {

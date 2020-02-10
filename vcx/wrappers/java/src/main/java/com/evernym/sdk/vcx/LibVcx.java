@@ -309,9 +309,19 @@ public abstract class LibVcx {
         public int vcx_disclosed_proof_send_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
 
         /**
+         * Asynchronously send a proof reject to the connection.
+         */
+        public int vcx_disclosed_proof_reject_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
+
+        /**
          * Get the proof message for sending.
          */
         public int vcx_disclosed_proof_get_proof_msg(int command_handle, int proof_handle, Callback cb);
+
+        /**
+         * Get the proof reject message for sending.
+         */
+        public int vcx_disclosed_proof_get_reject_msg(int command_handle, int proof_handle, Callback cb);
 
         /**
          * Populates status with the current State of this disclosed_proof request.
