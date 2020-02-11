@@ -50,7 +50,7 @@ impl CreateKeyBuilder {
         CreateKeyBuilder {
             for_did: String::new(),
             for_verkey: String::new(),
-            version: settings::get_connecting_protocol_version()
+            version: settings::get_protocol_type()
         }
     }
 
@@ -66,10 +66,10 @@ impl CreateKeyBuilder {
         Ok(self)
     }
 
-    pub fn version(&mut self, version: Option<ProtocolTypes>) -> VcxResult<&mut Self> {
+    pub fn version(&mut self, version: &Option<ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
-            Some(version) => version,
-            None => settings::get_connecting_protocol_version(),
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
         };
         Ok(self)
     }

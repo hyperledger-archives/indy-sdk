@@ -626,7 +626,7 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         match value.as_str() {
             Some("connReq") => Ok(RemoteMessageType::ConnReq),
             Some("connReqAnswer") | Some("CONN_REQ_ACCEPTED") => Ok(RemoteMessageType::ConnReqAnswer),
-            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") => Ok(RemoteMessageType::ConnReqRedirect),
+            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") | Some("connReqRedirected")  => Ok(RemoteMessageType::ConnReqRedirect),
             Some("credOffer") => Ok(RemoteMessageType::CredOffer),
             Some("credReq") => Ok(RemoteMessageType::CredReq),
             Some("cred") => Ok(RemoteMessageType::Cred),

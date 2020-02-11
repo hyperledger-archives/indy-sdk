@@ -128,6 +128,7 @@ impl Connection {
             .to_vk(&self.pw_verkey)?
             .agent_did(&self.agent_did)?
             .agent_vk(&self.agent_vk)?
+            .version(&self.version)?
             .send_secure()
             .map_err(|err| err.extend("Cannot delete connection"))?;
 
@@ -305,7 +306,7 @@ impl Connection {
         let (for_did, for_verkey) = messages::create_keys()
             .for_did(&self.pw_did)?
             .for_verkey(&self.pw_verkey)?
-            .version(self.version.clone())?
+            .version(&self.version.clone())?
             .send_secure()
             .map_err(|err| err.extend("Cannot create pairwise keys"))?;
 
@@ -332,6 +333,7 @@ impl Connection {
                 .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL)?)?
                 .webhook_url(&webhook_url)?
                 .use_public_did(&self.public_did)?
+                .version(&self.version)?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot update agent profile"))?;
         }
@@ -342,7 +344,9 @@ impl Connection {
     pub fn update_state(&mut self, _message: Option<String>) -> VcxResult<u32> {
         debug!("updating state for connection {}", self.source_id);
 
-        if self.state == VcxStateType::VcxStateInitialized || self.state == VcxStateType::VcxStateAccepted || self.state == VcxStateType::VcxStateRedirected {
+        if self.state == VcxStateType::VcxStateInitialized ||
+            self.state == VcxStateType::VcxStateAccepted ||
+            self.state == VcxStateType::VcxStateRedirected {
             return Ok(error::SUCCESS.code_num);
         }
 
@@ -428,7 +432,7 @@ pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str, protoco
     let (agent_did, agent_verkey) = messages::create_keys()
         .for_did(pw_did)?
         .for_verkey(pw_verkey)?
-        .version(Some(protocol_type))?
+        .version(&Some(protocol_type))?
         .send_secure()
         .map_err(|err| err.extend("Cannot create pairwise keys"))?;
 
