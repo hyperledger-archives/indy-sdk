@@ -58,6 +58,7 @@ pub struct DeleteConnectionBuilder {
     status_code: ConnectionStatus,
     agent_did: String,
     agent_vk: String,
+    version: settings::ProtocolTypes,
 }
 
 impl DeleteConnectionBuilder {
@@ -70,7 +71,16 @@ impl DeleteConnectionBuilder {
             status_code: ConnectionStatus::Deleted,
             agent_did: String::new(),
             agent_vk: String::new(),
+            version: settings::get_protocol_type()
         }
+    }
+
+    pub fn version(&mut self, version: &Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
+        };
+        Ok(self)
     }
 
     pub fn send_secure(&mut self) -> VcxResult<()> {
@@ -90,7 +100,7 @@ impl DeleteConnectionBuilder {
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
         trace!("parse_create_keys_response >>>");
 
-        let mut response = parse_response_from_agency(response, &settings::get_protocol_type())?;
+        let mut response = parse_response_from_agency(response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(_)) => Ok(()),
@@ -126,13 +136,13 @@ impl GeneralMessage for DeleteConnectionBuilder {
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::UpdateConnection(
                         UpdateConnection {
                             msg_type: MessageTypes::build(A2AMessageKinds::UpdateConnectionStatus),
-                            status_code: self.status_code.clone()
+                            status_code: self.status_code.clone(),
                         }
                     )
                 ),
@@ -147,7 +157,7 @@ impl GeneralMessage for DeleteConnectionBuilder {
                 )
         };
 
-        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &settings::get_protocol_type())
+        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
 

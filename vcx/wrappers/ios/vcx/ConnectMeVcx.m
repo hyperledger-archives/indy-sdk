@@ -1124,6 +1124,25 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void)downloadAgentMessages:(NSString *)messageStatus
+                        uid_s:(NSString *)uid_s              
+                        completion:(void (^)(NSError *error, NSString* messages))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * message_status = [messageStatus cStringUsingEncoding:NSUTF8StringEncoding];
+    const char * uids = [uid_s cStringUsingEncoding:NSUTF8StringEncoding];
+    ret = vcx_download_agent_messages(handle, message_status, uids, VcxWrapperCommonStringCallback);
+
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
 - (void)updateMessages:(NSString *)messageStatus
                  pwdidsJson:(NSString *)pwdidsJson
               completion:(void (^)(NSError *error))completion{

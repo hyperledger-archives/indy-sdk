@@ -6,7 +6,6 @@ use messages::payload::Payloads;
 use utils::httpclient;
 use error::prelude::*;
 use settings::ProtocolTypes;
-use utils::constants::DEFAULT_GET_MSG_VERSION;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -73,7 +72,7 @@ pub struct GetMessagesBuilder {
     uids: Option<Vec<String>>,
     status_codes: Option<Vec<MessageStatusCode>>,
     pairwise_dids: Option<Vec<String>>,
-    version: ProtocolTypes
+    version: ProtocolTypes,
 }
 
 impl GetMessagesBuilder {
@@ -89,7 +88,7 @@ impl GetMessagesBuilder {
             exclude_payload: None,
             status_codes: None,
             pairwise_dids: None,
-            version: DEFAULT_GET_MSG_VERSION.clone()
+            version: settings::get_protocol_type(),
         }
     }
 
@@ -119,11 +118,10 @@ impl GetMessagesBuilder {
     pub fn version(&mut self, version: &Option<ProtocolTypes>) -> VcxResult<&mut Self> {
         self.version = match version {
             Some(version) => version.clone(),
-            None => DEFAULT_GET_MSG_VERSION.clone()
+            None => settings::get_protocol_type()
         };
         Ok(self)
     }
-
 
     pub fn send_secure(&mut self) -> VcxResult<Vec<Message>> {
         trace!("GetMessages::send >>>");
@@ -162,7 +160,7 @@ impl GetMessagesBuilder {
             return Ok(Vec::new());
         }
 
-        let response = GetMessagesBuilder::parse_download_messages_response(response, &self.version)?;
+        let response = self.parse_download_messages_response(response)?;
 
         Ok(response)
     }
@@ -194,9 +192,9 @@ impl GetMessagesBuilder {
         prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
-    fn parse_download_messages_response(response: Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<MessageByConnection>> {
-        trace!("parse_download_messages_response >>> version {:?}", version);
-        let mut response = parse_response_from_agency(&response, version)?;
+    fn parse_download_messages_response(&self, response: Vec<u8>) -> VcxResult<Vec<MessageByConnection>> {
+        trace!("parse_download_messages_response >>>");
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
@@ -227,7 +225,7 @@ impl GeneralMessage for GetMessagesBuilder {
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
@@ -378,7 +376,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &Some(settings::get_protocol_type()))?; // TODO: FIXME
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &None)?; // TODO: FIXME version should be param
     trace!("checking for ref_msg: {:?}", message);
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
@@ -386,7 +384,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &Some(settings::get_protocol_type()))?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &None)?;  // TODO: FIXME version should be param
 
     trace!("checking for pending message: {:?}", message);
 
@@ -400,6 +398,21 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     }
 }
 
+fn _parse_status_code(status_codes: Option<Vec<String>>) -> VcxResult<Option<Vec<MessageStatusCode>>> {
+    match status_codes {
+        Some(codes) => {
+            let codes = codes
+                .iter()
+                .map(|code|
+                    ::serde_json::from_str::<MessageStatusCode>(&format!("\"{}\"", code))
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse message status code: {}", err)))
+                ).collect::<VcxResult<Vec<MessageStatusCode>>>()?;
+            Ok(Some(codes))
+        }
+        None => Ok(None)
+    }
+}
+
 pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> VcxResult<Vec<MessageByConnection>> {
     trace!("download_messages >>> pairwise_dids: {:?}, status_codes: {:?}, uids: {:?}",
            pairwise_dids, status_codes, uids);
@@ -408,27 +421,37 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
         ::utils::httpclient::set_next_u8_response(::utils::constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
     }
 
-    let status_codes =
-        match status_codes {
-            Some(codes) => {
-                let codes = codes
-                    .iter()
-                    .map(|code|
-                        ::serde_json::from_str::<MessageStatusCode>(&format!("\"{}\"", code))
-                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse message status code: {}", err)))
-                    ).collect::<VcxResult<Vec<MessageStatusCode>>>()?;
-                Some(codes)
-            }
-            None => None
-        };
+    let status_codes = _parse_status_code(status_codes)?;
 
     let response =
         get_messages()
             .uid(uids)?
             .status_codes(status_codes)?
             .pairwise_dids(pairwise_dids)?
-            .version(&Some(settings::get_protocol_type()))?
             .download_messages()?;
+
+    trace!("message returned: {:?}", response);
+    Ok(response)
+}
+
+pub fn download_agent_messages(status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> VcxResult<Vec<Message>> {
+    trace!("download_messages >>> status_codes: {:?}, uids: {:?}", status_codes, uids);
+
+    if settings::test_agency_mode_enabled() {
+        ::utils::httpclient::set_next_u8_response(::utils::constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
+    }
+
+    let status_codes = _parse_status_code(status_codes)?;
+
+    let response =
+        get_messages()
+            .to(&::settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_DID)?)?
+            .to_vk(&::settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?)?
+            .agent_did(&::settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?)?
+            .agent_vk(&::settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY)?)?
+            .uid(uids)?
+            .status_codes(status_codes)?
+            .send_secure()?;
 
     trace!("message returned: {:?}", response);
     Ok(response)
@@ -439,6 +462,8 @@ mod tests {
     use super::*;
     use utils::constants::{GET_MESSAGES_RESPONSE, GET_ALL_MESSAGES_RESPONSE};
     use messages::message_type::MessageTypeV1;
+    use std::thread;
+    use std::time::Duration;
 
 
     #[test]
@@ -453,7 +478,7 @@ mod tests {
     fn test_parse_get_connection_messages_response() {
         init!("true");
 
-        let result = GetMessagesBuilder::parse_download_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec(), &ProtocolTypes::V1).unwrap();
+        let result = GetMessagesBuilder::create().version(&Some(ProtocolTypes::V1)).unwrap().parse_download_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 1)
     }
 
@@ -505,10 +530,31 @@ mod tests {
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
-    fn test_download_messages() {
-        use std::thread;
-        use std::time::Duration;
+    #[ignore] // Dummy cloud agent has not implemented this functionality yet
+    fn test_download_agent_messages() {
+        init!("agency");
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
 
+        // AS CONSUMER GET MESSAGES
+        ::utils::devsetup::tests::set_consumer();
+        let all_messages = download_agent_messages(None, None).unwrap();
+        assert_eq!(all_messages.len(), 0);
+
+        let hello_uid = ::connection::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
+        thread::sleep(Duration::from_millis(2000));
+        let all_messages = download_agent_messages(None, None).unwrap();
+        assert_eq!(all_messages.len(), 1);
+
+        let invalid_status_code = "abc".to_string();
+        let bad_req = download_agent_messages(Some(vec![invalid_status_code]),  None);
+        assert!(bad_req.is_err());
+        teardown!("agency");
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_download_messages() {
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (_faber, alice) = ::connection::tests::create_connected_connections();
