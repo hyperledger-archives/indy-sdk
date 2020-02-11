@@ -1,13 +1,25 @@
 const { initRustAPI, initVcxWithConfig, provisionAgent } = require('./../dist/src')
 const ffi = require('ffi')
+const os = require('os')
+const path = require('path')
+
+const extension = {"darwin": ".dylib", "linux": ".so", "win32": ".dll"}
+const libPath = {"darwin": "/usr/local/lib/", "linux": '/usr/lib/', "win32": 'c:\\windows\\system32\\'}
+
+function getLibraryPath(libraryName) {
+  const platform = os.platform()
+  const postfix = extension[platform.toLowerCase()] || extension['linux']
+  const libDir = libPath[platform.toLowerCase()] || libPath['linux']
+  return `${libraryName}${postfix}`
+}
 
 async function loadPostgresPlugin (provisionConfig) {
-  const myffi = ffi.Library('/usr/local/lib/libindystrgpostgres.dylib', { postgresstorage_init: ['void', []] })
+  const myffi = ffi.Library(getLibraryPath('libindystrgpostgres'), { postgresstorage_init: ['void', []] })
   await myffi.postgresstorage_init()
 }
 
 async function initLibNullPay () {
-  const myffi = ffi.Library('/usr/local/lib/libnullpay.dylib', { nullpay_init: ['void', []] })
+  const myffi = ffi.Library(getLibraryPath('libnullpay'), { nullpay_init: ['void', []] })
   await myffi.nullpay_init()
 }
 
