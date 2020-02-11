@@ -105,6 +105,16 @@ public abstract class LibVcx {
         public int vcx_connection_connect(int command_handle, int connection_handle, String connection_type, Callback cb);
 
         /**
+         * Asynchronously request a connection to be redirected to old one.
+         */
+        public int vcx_connection_redirect(int command_handle, int connection_handle, int redirect_connection_handle, Callback cb);
+
+        /**
+         * Get the redirect details for the connection.
+         */
+        public int vcx_connection_get_redirect_details(int command_handle, int connection_handle, Callback cb);
+
+        /**
          * Returns the contents of the connection handle or null if the connection does not exist.
          */
         public int vcx_connection_serialize(int command_handle, int connection_handle, Callback cb);

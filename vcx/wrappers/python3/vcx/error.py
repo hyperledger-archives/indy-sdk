@@ -112,7 +112,8 @@ class ErrorCode(IntEnum):
     InvalidAttachmentEncoding = 1100,
     UnknownAttachmentEncoding = 1101,
     UnknownMimeType = 1102,
-    ActionNotSupported = 1103
+    ActionNotSupported = 1103,
+    InvalidRedirectDetails = 1104
 
 
 class VcxError(Exception):

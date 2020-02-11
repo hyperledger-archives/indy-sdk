@@ -90,7 +90,7 @@ impl DeleteConnectionBuilder {
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
         trace!("parse_create_keys_response >>>");
 
-        let mut response = parse_response_from_agency(response)?;
+        let mut response = parse_response_from_agency(response, &settings::get_protocol_type())?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConnectionResponse(_)) => Ok(()),
@@ -147,7 +147,7 @@ impl GeneralMessage for DeleteConnectionBuilder {
                 )
         };
 
-        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk)
+        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &settings::get_protocol_type())
     }
 }
 

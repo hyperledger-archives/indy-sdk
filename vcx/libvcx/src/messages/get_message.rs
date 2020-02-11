@@ -5,6 +5,8 @@ use messages::MessageStatusCode;
 use messages::payload::Payloads;
 use utils::httpclient;
 use error::prelude::*;
+use settings::ProtocolTypes;
+use utils::constants::DEFAULT_GET_MSG_VERSION;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -71,6 +73,7 @@ pub struct GetMessagesBuilder {
     uids: Option<Vec<String>>,
     status_codes: Option<Vec<MessageStatusCode>>,
     pairwise_dids: Option<Vec<String>>,
+    version: ProtocolTypes
 }
 
 impl GetMessagesBuilder {
@@ -86,6 +89,7 @@ impl GetMessagesBuilder {
             exclude_payload: None,
             status_codes: None,
             pairwise_dids: None,
+            version: DEFAULT_GET_MSG_VERSION.clone()
         }
     }
 
@@ -112,6 +116,15 @@ impl GetMessagesBuilder {
         Ok(self)
     }
 
+    pub fn version(&mut self, version: &Option<ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version.clone(),
+            None => DEFAULT_GET_MSG_VERSION.clone()
+        };
+        Ok(self)
+    }
+
+
     pub fn send_secure(&mut self) -> VcxResult<Vec<Message>> {
         trace!("GetMessages::send >>>");
 
@@ -129,7 +142,7 @@ impl GetMessagesBuilder {
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<Vec<Message>> {
         trace!("parse_get_messages_response >>>");
 
-        let mut response = parse_response_from_agency(&response)?;
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesResponse(res)) => Ok(res.msgs),
@@ -149,13 +162,13 @@ impl GetMessagesBuilder {
             return Ok(Vec::new());
         }
 
-        let response = GetMessagesBuilder::parse_download_messages_response(response)?;
+        let response = GetMessagesBuilder::parse_download_messages_response(response, &self.version)?;
 
         Ok(response)
     }
 
     fn prepare_download_request(&self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
@@ -178,12 +191,12 @@ impl GetMessagesBuilder {
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        prepare_message_for_agency(&message, &agency_did)
+        prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
-    fn parse_download_messages_response(response: Vec<u8>) -> VcxResult<Vec<MessageByConnection>> {
-        trace!("parse_get_connection_messages_response >>>");
-        let mut response = parse_response_from_agency(&response)?;
+    fn parse_download_messages_response(response: Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<MessageByConnection>> {
+        trace!("parse_download_messages_response >>> version {:?}", version);
+        let mut response = parse_response_from_agency(&response, version)?;
 
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
@@ -235,7 +248,7 @@ impl GeneralMessage for GetMessagesBuilder {
                 )
         };
 
-        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk)
+        prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
 
@@ -288,7 +301,7 @@ impl Message {
             let decrypted_payload = match payload {
                 MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
                     .map(Payloads::PayloadV1),
-                MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&payload)
+                MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
                     .map(Payloads::PayloadV2)
             };
 
@@ -342,7 +355,7 @@ impl Message {
     }
 }
 
-pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>) -> VcxResult<Vec<Message>> {
+pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>, status_codes: Option<Vec<MessageStatusCode>>, version: &Option<ProtocolTypes>) -> VcxResult<Vec<Message>> {
     trace!("get_connection_messages >>> pw_did: {}, pw_vk: {}, agent_vk: {}, msg_uid: {:?}",
            pw_did, pw_vk, agent_vk, msg_uid);
 
@@ -353,6 +366,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
         .agent_vk(&agent_vk)?
         .uid(msg_uid)?
         .status_codes(status_codes)?
+        .version(version)?
         .send_secure()
         .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, "Cannot get messages"))?;
 
@@ -364,7 +378,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     trace!("get_ref_msg >>> msg_id: {}, pw_did: {}, pw_vk: {}, agent_did: {}, agent_vk: {}",
            msg_id, pw_did, pw_vk, agent_did, agent_vk);
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None)?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]), None, &Some(settings::get_protocol_type()))?; // TODO: FIXME
     trace!("checking for ref_msg: {:?}", message);
 
     let msg_id = match message.get(0).as_ref().and_then(|message| message.ref_msg_id.as_ref()) {
@@ -372,7 +386,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         _ => return Err(VcxError::from_msg(VcxErrorKind::NotReady, "Cannot find referent message")),
     };
 
-    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None)?;
+    let message: Vec<Message> = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]), None, &Some(settings::get_protocol_type()))?;
 
     trace!("checking for pending message: {:?}", message);
 
@@ -413,6 +427,7 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
             .uid(uids)?
             .status_codes(status_codes)?
             .pairwise_dids(pairwise_dids)?
+            .version(&Some(settings::get_protocol_type()))?
             .download_messages()?;
 
     trace!("message returned: {:?}", response);
@@ -438,7 +453,7 @@ mod tests {
     fn test_parse_get_connection_messages_response() {
         init!("true");
 
-        let result = GetMessagesBuilder::parse_download_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
+        let result = GetMessagesBuilder::parse_download_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec(), &ProtocolTypes::V1).unwrap();
         assert_eq!(result.len(), 1)
     }
 

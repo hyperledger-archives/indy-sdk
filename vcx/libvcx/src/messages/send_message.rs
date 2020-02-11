@@ -100,7 +100,7 @@ impl SendMessageBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<SendResponse> {
-        let mut response = parse_response_from_agency(&response)?;
+        let mut response = parse_response_from_agency(&response, &settings::get_protocol_type())?;
 
         let index = match settings::get_protocol_type() {
             // TODO: THINK better
@@ -170,7 +170,7 @@ impl GeneralMessage for SendMessageBuilder {
                 }
             };
 
-        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk)
+        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &settings::get_protocol_type())
     }
 }
 

@@ -3,6 +3,7 @@ use messages::*;
 use messages::message_type::MessageTypes;
 use utils::httpclient;
 use error::prelude::*;
+use settings::ProtocolTypes;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -39,6 +40,7 @@ pub struct CreateKeyResponse {
 pub struct CreateKeyBuilder {
     for_did: String,
     for_verkey: String,
+    version: ProtocolTypes
 }
 
 impl CreateKeyBuilder {
@@ -48,6 +50,7 @@ impl CreateKeyBuilder {
         CreateKeyBuilder {
             for_did: String::new(),
             for_verkey: String::new(),
+            version: settings::get_connecting_protocol_version()
         }
     }
 
@@ -60,6 +63,14 @@ impl CreateKeyBuilder {
     pub fn for_verkey(&mut self, verkey: &str) -> VcxResult<&mut Self> {
         validation::validate_verkey(verkey)?;
         self.for_verkey = verkey.to_string();
+        Ok(self)
+    }
+
+    pub fn version(&mut self, version: Option<ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version,
+            None => settings::get_connecting_protocol_version(),
+        };
         Ok(self)
     }
 
@@ -78,7 +89,7 @@ impl CreateKeyBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
@@ -91,13 +102,13 @@ impl CreateKeyBuilder {
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        prepare_message_for_agency(&message, &agency_did)
+        prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<(String, String)> {
         trace!("parse_response >>>");
 
-        let mut response = parse_response_from_agency(response)?;
+        let mut response = parse_response_from_agency(response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::CreateKeyResponse(res)) => Ok((res.for_did, res.for_verkey)),

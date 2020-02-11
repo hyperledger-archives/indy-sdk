@@ -946,6 +946,87 @@ vcx_error_t vcx_disclosed_proof_get_reject_msg(vcx_command_handle_t command_hand
                                                vcx_disclosed_proof_handle_t proof_handle,
                                                void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+// Redirects to an existing connection, if a connection already exists.
+//
+// #params
+// command_handle: command handle to map callback to API user context.
+//
+// connection_handle: Connection handle that identifies pairwise connection.
+//
+// redirect_connection_handle: Redirect connection handle, used to identify an existing connection.
+//
+// cb: Callback that provides error status of a redirection.
+//
+// #Returns
+// Error code as u32
+vcx_error_t vcx_connection_redirect(vcx_command_handle_t command_handle,
+                                    vcx_connection_handle_t connection_handle,
+                                    vcx_connection_handle_t redirect_connection_handle,
+                                    void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+// Gets the details of an existing connection.
+//
+// #params
+// command_handle: command handle to map callback to API user context.
+//
+// connection_handle: Connection handle that identifies pairwise connection.
+//
+// cb: Callback that provides error status of a redirection.
+//
+// #Returns
+// Error code as u32
+vcx_error_t vcx_connection_get_redirect_details(vcx_command_handle_t command_handle,
+                                                vcx_connection_handle_t connection_handle,
+                                                void (*cb)(vcx_command_handle_t, vcx_error_t, const char *));
+
+// Send a reject proof to the connection, called after having received a proof request
+//
+// #params
+// command_handle: command handle to map callback to API user context.
+//
+// proof_handle: proof handle that was provided duration creation.  Used to identify proof object.
+//
+// connection_handle: Connection handle that identifies pairwise connection
+//
+// cb: Callback that provides error status of proof send request
+//
+// #Returns
+// Error code as u32
+vcx_error_t vcx_disclosed_proof_reject_proof(vcx_command_handle_t command_handle,
+                                        vcx_disclosed_proof_handle_t proof_handle,
+                                        vcx_connection_handle_t connection_handle,
+                                        void (*cb)(vcx_command_handle_t, vcx_error_t));
+
+// Get the proof message for sending.
+//
+// #params
+// command_handle: command handle to map callback to API user context.
+//
+// proof_handle: proof handle that was provided duration creation.  Used to identify proof object.
+//
+// cb: Callback that provides error status of proof send request
+//
+// #Returns
+// Error code as u32
+vcx_error_t vcx_disclosed_proof_get_proof_msg(vcx_command_handle_t command_handle,
+                                              vcx_disclosed_proof_handle_t proof_handle,
+                                              void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
+// Get the reject proof message for sending.
+//
+// #params
+// command_handle: command handle to map callback to API user context.
+//
+// proof_handle: proof handle that was provided duration creation.  Used to identify proof object.
+//
+// cb: Callback that provides error status of proof send request
+//
+// #Returns
+// Error code as u32
+vcx_error_t vcx_disclosed_proof_get_reject_msg(vcx_command_handle_t command_handle,
+                                               vcx_disclosed_proof_handle_t proof_handle,
+                                               void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Takes the disclosed proof object and returns a json string of all its attributes
 //
 // #Params
