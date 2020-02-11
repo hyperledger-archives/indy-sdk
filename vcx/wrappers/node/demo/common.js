@@ -1,16 +1,15 @@
 const { initRustAPI, initVcxWithConfig, provisionAgent } = require('./../dist/src')
 const ffi = require('ffi')
 const os = require('os')
-const path = require('path')
 
-const extension = {"darwin": ".dylib", "linux": ".so", "win32": ".dll"}
-const libPath = {"darwin": "/usr/local/lib/", "linux": '/usr/lib/', "win32": 'c:\\windows\\system32\\'}
+const extension = { darwin: '.dylib', linux: '.so', win32: '.dll' }
+const libPath = { darwin: '/usr/local/lib/', linux: '/usr/lib/', win32: 'c:\\windows\\system32\\' }
 
-function getLibraryPath(libraryName) {
+function getLibraryPath (libraryName) {
   const platform = os.platform()
-  const postfix = extension[platform.toLowerCase()] || extension['linux']
-  const libDir = libPath[platform.toLowerCase()] || libPath['linux']
-  return `${libraryName}${postfix}`
+  const postfix = extension[platform.toLowerCase()] || extension.linux
+  const libDir = libPath[platform.toLowerCase()] || libPath.linux
+  return `${libDir}${libraryName}${postfix}`
 }
 
 async function loadPostgresPlugin (provisionConfig) {
