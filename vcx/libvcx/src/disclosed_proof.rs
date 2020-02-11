@@ -726,6 +726,7 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
     let my_vk = connection::get_pw_verkey(connection_handle)?;
     let agent_did = connection::get_agent_did(connection_handle)?;
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
+    let version = connection::get_version(connection_handle)?;
 
     if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
@@ -734,7 +735,8 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
                                                                  &agent_did,
                                                                  &agent_vk,
                                                                  Some(vec![msg_id.to_string()]),
-                                                                 None)?;
+                                                                 None,
+    &version)?;
 
     if message[0].msg_type == RemoteMessageType::ProofReq {
         let request = _parse_proof_req_message(&message[0], &my_vk)?;
@@ -768,6 +770,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
     let my_vk = connection::get_pw_verkey(connection_handle)?;
     let agent_did = connection::get_agent_did(connection_handle)?;
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
+    let version = connection::get_version(connection_handle)?;
 
     if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
@@ -776,7 +779,8 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
                                                                  &agent_did,
                                                                  &agent_vk,
                                                                  None,
-                                                                 None)?;
+                                                                 None,
+    &version)?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 

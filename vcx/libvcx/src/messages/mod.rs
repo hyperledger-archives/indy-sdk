@@ -800,8 +800,8 @@ impl A2AMessageKinds {
     }
 }
 
-pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u8>> {
-    match settings::get_protocol_type() {
+pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
+    match version {
         settings::ProtocolTypes::V1 => bundle_for_agency_v1(message, &agency_did),
         settings::ProtocolTypes::V2 => pack_for_agency_v2(message, agency_did)
     }

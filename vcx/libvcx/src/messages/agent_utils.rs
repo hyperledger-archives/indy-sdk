@@ -400,7 +400,7 @@ fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
 }
 
 fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<A2AMessage>> {
-    let data = prepare_message_for_agency(message, &did)?;
+    let data = prepare_message_for_agency(message, &did, &settings::get_protocol_type())?;
 
     let response = httpclient::post_u8(&data)
         .map_err(|err| err.map(VcxErrorKind::InvalidHttpResponse, error::INVALID_HTTP_RESPONSE.message))?;

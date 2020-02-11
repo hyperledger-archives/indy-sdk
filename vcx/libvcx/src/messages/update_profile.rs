@@ -116,7 +116,7 @@ impl UpdateProfileDataBuilder {
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        prepare_message_for_agency(&message, &agency_did)
+        prepare_message_for_agency(&message, &agency_did, &settings::get_protocol_type())
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<()> {

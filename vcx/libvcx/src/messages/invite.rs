@@ -2,11 +2,11 @@ use error::prelude::*;
 use messages::*;
 use messages::message_type::{MessageTypes, MessageTypeV1, MessageTypeV2};
 use messages::thread::Thread;
+use settings;
 use utils::constants::DEFAULT_ACK_CONNECTION_VERSION;
 use utils::httpclient;
 use utils::constants::*;
 use utils::uuid::uuid;
-use settings::ProtocolTypes;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SendInviteMessageDetails {
@@ -40,7 +40,7 @@ pub struct ConnectionRequest {
     target_name: Option<String>,
     #[serde(rename = "phoneNo")]
     phone_no: Option<String>,
-    #[serde(rename = "usePublicDID")]
+    #[serde(rename = "includePublicDID")]
     include_public_did: bool,
     #[serde(rename = "~thread")]
     pub thread: Thread,
@@ -56,7 +56,7 @@ pub struct ConnectionRequestResponse {
     invite_detail: InviteDetail,
     #[serde(rename = "urlToInviteDetail")]
     url_to_invite_detail: String,
-    sent: bool,
+    sent: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -181,7 +181,8 @@ pub struct InviteDetail {
     pub target_name: String,
     pub status_msg: String,
     pub thread_id: Option<String>,
-    pub version: Option<settings::ProtocolTypes>
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -391,7 +392,7 @@ pub struct AcceptInviteBuilder {
     agent_vk: String,
     reply_to_msg_id: Option<String>,
     thread: Thread,
-    version: ProtocolTypes
+    version: settings::ProtocolTypes
 }
 
 impl AcceptInviteBuilder {

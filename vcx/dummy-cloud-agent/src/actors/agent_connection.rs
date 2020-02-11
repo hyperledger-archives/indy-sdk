@@ -333,6 +333,12 @@ impl AgentConnection {
                                                                     uid,
                                                                     sender_verkey)
                     }
+                    (RemoteMessageType::ConnReqRedirect, Some(A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestRedirect(detail))))) => {
+                        slf.handle_create_connection_request_redirect(detail,
+                                                                      reply_to_msg_id.clone(),
+                                                                      uid,
+                                                                      sender_verkey)
+                    }
                     (mtype @ _, Some(A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::General(detail))))) => {
                         slf.handle_create_general_message(mtype,
                                                           detail,

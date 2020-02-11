@@ -532,6 +532,7 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResu
     let my_vk = connection::get_pw_verkey(connection_handle)?;
     let agent_did = connection::get_agent_did(connection_handle)?;
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
+    let version = connection::get_version(connection_handle)?;
 
     if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
 
@@ -540,7 +541,8 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResu
                                                        &agent_did,
                                                        &agent_vk,
                                                        Some(vec![msg_id.to_string()]),
-                                                       None)
+                                                       None,
+                                                       &version)
         .map_err(|err| err.extend("Cannot get messages"))?;
 
     if message[0].msg_type != RemoteMessageType::CredOffer {
@@ -580,6 +582,7 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
     let my_vk = connection::get_pw_verkey(connection_handle)?;
     let agent_did = connection::get_agent_did(connection_handle)?;
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
+    let version = connection::get_version(connection_handle)?;
 
     if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
 
@@ -588,7 +591,8 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
                                                        &agent_did,
                                                        &agent_vk,
                                                        None,
-                                                       None)
+                                                       None,
+    &version)
         .map_err(|err| err.extend("Cannot get messages"))?;
 
     let mut messages = Vec::new();

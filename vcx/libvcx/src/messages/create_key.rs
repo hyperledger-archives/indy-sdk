@@ -89,7 +89,7 @@ impl CreateKeyBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
@@ -102,7 +102,7 @@ impl CreateKeyBuilder {
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        prepare_message_for_agency(&message, &agency_did)
+        prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<(String, String)> {

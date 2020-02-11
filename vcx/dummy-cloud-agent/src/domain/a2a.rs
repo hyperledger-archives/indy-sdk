@@ -391,7 +391,7 @@ pub struct ConnectionRequestMessageDetail {
     pub target_name: Option<String>,
     #[serde(rename = "phoneNo")]
     pub phone_no: Option<String>,
-    #[serde(rename = "usePublicDID")]
+    #[serde(rename = "includePublicDID")] // TODO: BREACKING CHANGE?
     pub use_public_did: Option<bool>,
     pub thread_id: Option<String>,
 }
@@ -554,7 +554,7 @@ pub struct ConnectionRequest {
     pub target_name: Option<String>,
     #[serde(rename = "phoneNo")]
     pub phone_no: Option<String>,
-    #[serde(rename = "usePublicDID")]
+    #[serde(rename = "includePublicDID")] // TODO: breacking change?
     pub include_public_did: bool,
     #[serde(rename = "~thread")]
     pub thread: Thread,

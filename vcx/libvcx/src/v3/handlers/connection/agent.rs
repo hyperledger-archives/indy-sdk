@@ -15,6 +15,7 @@ use utils::httpclient;
 use utils::libindy::signus::create_my_did;
 use settings;
 use error::prelude::*;
+use settings::ProtocolTypes;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentInfo {
@@ -46,7 +47,7 @@ impl AgentInfo {
             Create User Pairwise Agent in old way.
             Send Messages corresponding to V2 Protocol to avoid code changes on Agency side.
         */
-        let (agent_did, agent_vk) = create_agent_keys("", &pw_did, &pw_vk)?;
+        let (agent_did, agent_vk) = create_agent_keys("", &pw_did, &pw_vk, ProtocolTypes::V2)?;
 
         Ok(AgentInfo { pw_did, pw_vk, agent_did, agent_vk })
     }
@@ -84,7 +85,8 @@ impl AgentInfo {
                                                &self.agent_did,
                                                &self.agent_vk,
                                                None,
-                                               Some(vec![MessageStatusCode::Received]))?;
+                                               Some(vec![MessageStatusCode::Received]),
+        &Some(ProtocolTypes::V2))?;
 
 
         let mut a2a_messages: HashMap<String, A2AMessage> = HashMap::new();
@@ -104,7 +106,8 @@ impl AgentInfo {
                                                    &self.agent_did,
                                                    &self.agent_vk,
                                                    Some(vec![msg_id.to_string()]),
-                                                   None)?;
+                                                   None,
+                                                   &Some(ProtocolTypes::V2))?;
 
         let message =
             messages

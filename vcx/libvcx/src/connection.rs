@@ -7,7 +7,7 @@ use serde_json::Value;
 use api::VcxStateType;
 use error::prelude::*;
 use messages;
-use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, ObjectWithVersion, to_u8, SerializableObjectWithState};
+use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, to_u8, SerializableObjectWithState};
 use messages::invite::{InviteDetail, RedirectDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectionDetails};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
@@ -15,7 +15,6 @@ use messages::send_message::SendMessageOptions;
 use messages::get_message::{Message, MessagePayload};
 use object_cache::ObjectCache;
 use settings;
-use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use utils::error;
 use utils::libindy::signus::create_my_did;
 use utils::libindy::crypto;
@@ -295,20 +294,9 @@ impl Connection {
 
     fn get_source_id(&self) -> &String { &self.source_id }
 
+    #[allow(dead_code)]
     fn ready_to_connect(&self) -> bool {
         self.state != VcxStateType::VcxStateNone && self.state != VcxStateType::VcxStateAccepted
-    }
-
-    fn from_str(data: &str) -> VcxResult<Self> {
-        ObjectWithVersion::deserialize(data)
-            .map(|obj: ObjectWithVersion<Self>| obj.data)
-            .map_err(|err| err.extend("Cannot deserialize Connection"))
-    }
-
-    fn to_string(&self) -> VcxResult<String> {
-        ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
-            .serialize()
-            .map_err(|err| err.extend("Cannot serialize Connection"))
     }
 
     fn create_agent_pairwise(&mut self) -> VcxResult<u32> {
@@ -354,7 +342,7 @@ impl Connection {
     pub fn update_state(&mut self, _message: Option<String>) -> VcxResult<u32> {
         debug!("updating state for connection {}", self.source_id);
 
-        if self.state == VcxStateType::VcxStateInitialized || self.state == VcxStateType::VcxStateAccepted {
+        if self.state == VcxStateType::VcxStateInitialized || self.state == VcxStateType::VcxStateAccepted || self.state == VcxStateType::VcxStateRedirected {
             return Ok(error::SUCCESS.code_num);
         }
 
@@ -364,6 +352,7 @@ impl Connection {
                 .to_vk(&self.pw_verkey)?
                 .agent_did(&self.agent_did)?
                 .agent_vk(&self.agent_vk)?
+                .version(&self.version)?
                 .send_secure()
                 .map_err(|err| err.map(VcxErrorKind::PostMessageFailed, format!("Could not update state for connection {}", self.source_id)))?;
 
@@ -429,7 +418,7 @@ impl Connection {
     }
 }
 
-pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str) -> VcxResult<(String, String)> {
+pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str, protocol_type: ProtocolTypes) -> VcxResult<(String, String)> {
     /*
         Create User Pairwise Agent in old way.
         Send Messages corresponding to V2 Protocol version to avoid code changes on Agency side.
@@ -439,6 +428,7 @@ pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str) -> VcxR
     let (agent_did, agent_verkey) = messages::create_keys()
         .for_did(pw_did)?
         .for_verkey(pw_verkey)?
+        .version(Some(protocol_type))?
         .send_secure()
         .map_err(|err| err.extend("Cannot create pairwise keys"))?;
 
@@ -581,6 +571,15 @@ pub fn get_agent_verkey(handle: u32) -> VcxResult<String> {
         match cxn {
             Connections::V1(ref connection) => Ok(connection.get_agent_verkey().clone()),
             Connections::V3(ref connection) => Ok(connection.agent_info().agent_vk.clone())
+        }
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+}
+
+pub fn get_version(handle: u32) -> VcxResult<Option<ProtocolTypes>> {
+    CONNECTION_MAP.get(handle, |cxn| {
+        match cxn {
+            Connections::V1(ref connection) => Ok(connection.get_version()),
+            Connections::V3(_) => Ok(Some(ProtocolTypes::V2))
         }
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
@@ -1887,7 +1886,10 @@ pub mod tests {
 
         let rd: RedirectDetail = serde_json::from_str(&redirect_data).unwrap();
         let alice_serialized = to_string(alice).unwrap();
-        let to_alice_old = Connection::from_str(&alice_serialized).unwrap();
+
+        let to_alice_old: Connection = ::messages::ObjectWithVersion::deserialize(&alice_serialized)
+            .map(|obj: ::messages::ObjectWithVersion<Connection>| obj.data).unwrap();
+
 
         // Assert redirected data match old connection to alice
         assert_eq!(rd.did, to_alice_old.pw_did);
@@ -1896,5 +1898,7 @@ pub mod tests {
         assert_eq!(rd.their_did, to_alice_old.their_pw_did);
         assert_eq!(rd.their_verkey, to_alice_old.their_pw_verkey);
         assert_eq!(rd.their_public_did, to_alice_old.their_public_did);
+
+        teardown!("agency");
     }
 }

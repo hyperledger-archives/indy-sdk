@@ -60,12 +60,16 @@ pub fn verify(vk: &str, msg: &[u8], signature: &[u8]) -> VcxResult<bool> {
 }
 
 pub fn pack_message(sender_vk: Option<&str>, receiver_keys: &str, msg: &[u8]) -> VcxResult<Vec<u8>> {
+    if settings::test_indy_mode_enabled() { return Ok(msg.to_vec()) }
+
     crypto::pack_message(::utils::libindy::wallet::get_wallet_handle(), msg, receiver_keys, sender_vk)
         .wait()
         .map_err(map_rust_indy_sdk_error)
 }
 
 pub fn unpack_message(msg: &[u8]) -> VcxResult<Vec<u8>> {
+    if settings::test_indy_mode_enabled() { return Ok(Vec::from(msg).to_owned()); }
+
     crypto::unpack_message(::utils::libindy::wallet::get_wallet_handle(), msg)
         .wait()
         .map_err(map_rust_indy_sdk_error)
