@@ -533,15 +533,17 @@ mod tests {
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
+    #[ignore] // Dummy cloud agent has not implemented this functionality yet
     fn test_download_agent_messages() {
         init!("agency");
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
 
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::tests::set_consumer();
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 0);
 
-        let wallet_backup = ::wallet_backup::create_wallet_backup("123", ::settings::DEFAULT_WALLET_KEY).unwrap();
+        let hello_uid = ::connection::send_generic_message(alice, "hello", &json!({"msg_type":"hello", "msg_title": "hello", "ref_msg_id": null}).to_string()).unwrap();
         thread::sleep(Duration::from_millis(2000));
         let all_messages = download_agent_messages(None, None).unwrap();
         assert_eq!(all_messages.len(), 1);
