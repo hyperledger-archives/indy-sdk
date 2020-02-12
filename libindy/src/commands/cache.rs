@@ -9,7 +9,6 @@ use indy_wallet::{WalletService, WalletRecord};
 use indy_api_types::{WalletHandle, PoolHandle};
 use crate::domain::cache::{GetCacheOptions, PurgeOptions};
 use crate::domain::crypto::did::DidValue;
-use crate::domain::ledger::request::Request;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::pool::PoolService;
@@ -46,24 +45,6 @@ pub struct CacheCommandExecutor {
 }
 
 macro_rules! check_cache {
-    ($cache: ident, $options: ident, $cb: ident) => {
-    if let Some(cache) = $cache {
-            let min_fresh = $options.min_fresh.unwrap_or(-1);
-            if min_fresh >= 0 {
-                let ts = match CacheCommandExecutor::get_seconds_since_epoch() {
-                    Ok(ts) => ts,
-                    Err(err) => {
-                        return $cb(Err(err))
-                    }
-                };
-                if ts - min_fresh <= cache.get_tags().unwrap_or(&Tags::new()).get("timestamp").unwrap_or(&"-1".to_string()).parse().unwrap_or(-1) {
-                    return $cb(Ok(cache.get_value().unwrap_or("").to_string()))
-                }
-            } else {
-                return $cb(Ok(cache.get_value().unwrap_or("").to_string()))
-            }
-        }
-    };
     ($cache: ident, $options: ident) => {
     if let Some(cache) = $cache {
             let min_fresh = $options.min_fresh.unwrap_or(-1);
@@ -133,22 +114,22 @@ impl CacheCommandExecutor {
         }
 
         let ledger_response = {
-            let request_json = { self.validate_opt_did(Some(submitter_did))?;
+            let request_json = { self.crypto_service.validate_opt_did(Some(submitter_did))?;
 
                 self.ledger_service.build_get_schema_request(Some(submitter_did), id)?
             };
 
-            let pool_response = self._submit_request(pool_handle, &request_json).await?;
+            let pool_response = self.pool_service.send_tx(pool_handle, &request_json).await?;
 
             self.ledger_service.parse_get_schema_response(&pool_response, id.get_method().as_ref().map(String::as_str))
         };
 
         let (schema_id, schema_json) = ledger_response?;
 
-        match self._delete_and_add_record(wallet_handle, options, &schema_id, &schema_json, SCHEMA_CACHE) {
-            Ok(_) => Ok(schema_json),
-            Err(err) => Err(IndyError::from_msg(IndyErrorKind::InvalidState, format!("get_schema_continue failed: {:?}", err)))
-        }
+        self._delete_and_add_record(wallet_handle, options, &schema_id, &schema_json, SCHEMA_CACHE)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("get_schema_continue failed: {:?}", err)))?;
+
+        Ok(schema_json)
     }
 
     fn _delete_and_add_record(&self,
@@ -200,33 +181,12 @@ impl CacheCommandExecutor {
     }
 
     async fn ledger_get_cred_def_and_parse<'a>(&'a self, pool_handle: i32, submitter_did: Option<&'a DidValue>, id: &'a CredentialDefinitionId) -> IndyResult<(String, String)> {
-        self.validate_opt_did(submitter_did)?;
+        self.crypto_service.validate_opt_did(submitter_did)?;
         let request_json = self.ledger_service.build_get_cred_def_request(submitter_did, id)?;
 
-        let id = id.clone();
-
-        let pool_response = self._submit_request(pool_handle, &request_json).await?;
+        let pool_response = self.pool_service.send_tx(pool_handle, &request_json).await?;
 
         self.ledger_service.parse_get_cred_def_response(&pool_response, id.get_method().as_ref().map(String::as_str))
-    }
-
-    fn validate_opt_did(&self, did: Option<&DidValue>) -> IndyResult<()> {
-        match did {
-            Some(did) => Ok(self.crypto_service.validate_did(did)?),
-            None => Ok(())
-        }
-    }
-
-    async fn _submit_request<'a>(&'a self, handle: PoolHandle, request_json: &'a str) -> IndyResult<String> {
-        debug!("submit_request >>> handle: {:?}, request_json: {:?}", handle, request_json);
-
-        if let Err(err) = serde_json::from_str::<Request<serde_json::Value>>(&request_json) {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Request is invalid json: {:?}", err)));
-        }
-
-        let x: IndyResult<String> = self.pool_service.send_tx(handle, request_json).await;
-
-        x
     }
 
     fn get_record_from_cache(&self, wallet_handle: WalletHandle, id: &str, options: &GetCacheOptions, which_cache: &str) -> Result<Option<WalletRecord>, IndyError> {
