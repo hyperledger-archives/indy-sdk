@@ -388,8 +388,11 @@ vcx_error_t vcx_wallet_send_tokens(vcx_command_handle_t chandle, vcx_payment_han
 /** Shutdown vcx wallet */
 vcx_error_t vcx_shutdown(vcx_bool_t deleteWallet);
 
-/** Get Messages of given status */
+/** Get Messages (Connections) of given status */
 vcx_error_t vcx_messages_download( vcx_command_handle_t command_handle, const char *message_status, const char *uids, const char *pw_dids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));
+
+/** Get Messages (Cloud Agent) of given status */
+vcx_error_t vcx_download_agent_messages( vcx_command_handle_t command_handle, const char *message_status, const char *uids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));
 
 /** Update Message status */
 vcx_error_t vcx_messages_update_status( vcx_command_handle_t command_handle, const char *message_status, const char *msg_json, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err));

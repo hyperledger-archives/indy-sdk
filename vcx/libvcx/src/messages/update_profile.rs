@@ -9,7 +9,8 @@ use error::prelude::*;
 pub struct UpdateProfileDataBuilder {
     to_did: String,
     agent_payload: String,
-    configs: Vec<ConfigOption>
+    configs: Vec<ConfigOption>,
+    version: settings::ProtocolTypes,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -39,6 +40,7 @@ impl UpdateProfileDataBuilder {
             to_did: String::new(),
             configs: Vec::new(),
             agent_payload: String::new(),
+            version: settings::get_protocol_type()
         }
     }
 
@@ -78,6 +80,15 @@ impl UpdateProfileDataBuilder {
         Ok(self)
     }
 
+    pub fn version(&mut self, version: &Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
+        };
+        Ok(self)
+    }
+
+
     pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("UpdateProfileData::send_secure >>>");
 
@@ -93,7 +104,7 @@ impl UpdateProfileDataBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::UpdateConfigs(
@@ -116,11 +127,11 @@ impl UpdateProfileDataBuilder {
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        prepare_message_for_agency(&message, &agency_did, &settings::get_protocol_type())
+        prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<()> {
-        let mut response = parse_response_from_agency(&response, &settings::get_protocol_type())?;
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(_)) => Ok(()),
