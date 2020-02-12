@@ -30,21 +30,21 @@ class AnoncredsRevocation {
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		//2. Issuer Create and Open Wallet
-		String issuerWalletConfig = "{\"id\":\"issuerWallet\"}";
-		String issuerWalletCredentials = "{\"key\":\"issuer_wallet_key\"}";
+		String issuerWalletConfig = new JSONObject().put("id", "issuerWallet").toString();
+		String issuerWalletCredentials = new JSONObject().put("key", "issuer_wallet_key").toString();
 		Wallet.createWallet(issuerWalletConfig, issuerWalletCredentials).get();
 		Wallet issuerWallet = Wallet.openWallet(issuerWalletConfig, issuerWalletCredentials).get();
 
 		//3. Prover Create and Open Wallet
-		String proverWalletConfig = "{\"id\":\"trusteeWallet\"}";
-		String proverWalletCredentials = "{\"key\":\"prover_wallet_key\"}";
+		String proverWalletConfig = new JSONObject().put("id", "trusteeWallet").toString();
+		String proverWalletCredentials = new JSONObject().put("key", "prover_wallet_key").toString();
 		Wallet.createWallet(proverWalletConfig, proverWalletCredentials).get();
 		Wallet proverWallet = Wallet.openWallet(proverWalletConfig, proverWalletCredentials).get();
 
 		//4. Issuer Creates Credential Schema
 		String schemaName = "gvt";
 		String schemaVersion = "1.0";
-		String schemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
+		String schemaAttributes = new JSONArray().put("name").put("age").put("sex").put("height").toString();
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult =
 				issuerCreateSchema(issuerDid, schemaName, schemaVersion, schemaAttributes).get();
 		String schemaId = createSchemaResult.getSchemaId();
@@ -52,15 +52,21 @@ class AnoncredsRevocation {
 
 		//5. Issuer create Credential Definition
 		String credDefTag = "Tag1";
-		String credDefConfigJson = "{\"support_revocation\":true}";
+		String credDefConfigJson = new JSONObject().put("support_revocation", true).toString();
 		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredDefResult =
 				issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, schemaJson, credDefTag, null, credDefConfigJson).get();
 		String credDefId = createCredDefResult.getCredDefId();
 		String credDefJson = createCredDefResult.getCredDefJson();
 
 		//6. Issuer create Revocation Registry
-		String revRegDefConfig = new JSONObject("{\"issuance_type\":\"ISSUANCE_ON_DEMAND\",\"max_cred_num\":5}").toString();
-		String tailsWriterConfig = new JSONObject(String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails")).replace('\\', '/')).toString();
+		String revRegDefConfig = new JSONObject()
+				.put("issuance_type", "ISSUANCE_ON_DEMAND")
+				.put("max_cred_num", 5)
+				.toString();
+		String tailsWriterConfig = new JSONObject()
+				.put("base_dir", getIndyHomePath("tails").replace('\\', '/'))
+				.put("uri_pattern", "")
+				.toString();
 		BlobStorageWriter tailsWriter = BlobStorageWriter.openWriter("default", tailsWriterConfig).get();
 
 		String revRegDefTag = "Tag2";
@@ -87,12 +93,12 @@ class AnoncredsRevocation {
 
 		//11. Issuer create Credential
 		//    note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
-		String credValuesJson = new JSONObject("{\n" +
-				"        \"sex\": {\"raw\": \"male\", \"encoded\": \"594465709955896723921094925839488742869205008160769251991705001\"},\n" +
-				"        \"name\": {\"raw\": \"Alex\", \"encoded\": \"1139481716457488690172217916278103335\"},\n" +
-				"        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
-				"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
-				"    }").toString();
+		String credValuesJson = new JSONObject()
+				.put("sex", new JSONObject().put("raw", "male").put("encoded", "594465709955896723921094925839488742869205008160769251991705001"))
+				.put("name", new JSONObject().put("raw", "Alex").put("encoded", "1139481716457488690172217916278103335"))
+				.put("height", new JSONObject().put("raw", "175").put("encoded", "175"))
+				.put("age", new JSONObject().put("raw", "28").put("encoded", "28"))
+				.toString();
 
 		AnoncredsResults.IssuerCreateCredentialResult createCredentialResult =
 				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReqJson, credValuesJson, revRegId, blobStorageReaderHandle).get();
@@ -104,17 +110,26 @@ class AnoncredsRevocation {
 		Anoncreds.proverStoreCredential(proverWallet, null, credReqMetadataJson, credentialJson, credDefJson, revRegDefJson).get();
 
 		//13. Prover Gets Credentials for Proof Request
-		String proofRequestJson = new JSONObject("{\n" +
-				"                   \"nonce\":\"123432421212\",\n" +
-				"                   \"name\":\"proof_req_1\",\n" +
-				"                   \"version\":\"0.1\", " +
-				"                   \"requested_attributes\":{" +
-				"                          \"attr1_referent\":{\"name\":\"name\"}" +
-				"                    },\n" +
-				"                    \"requested_predicates\":{" +
-				"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
-				"                    }" +
-				"               }").toString();
+		long timestamp = System.currentTimeMillis() / 1000;
+		String nonce = generateNonce().get();
+		String proofRequestJson = new JSONObject()
+				.put("nonce", nonce)
+				.put("name", "proof_req_1")
+				.put("version", "0.1")
+				.put("requested_attributes", new JSONObject()
+						.put("attr1_referent", new JSONObject().put("name", "name"))
+				)
+				.put("requested_predicates", new JSONObject()
+						.put("predicate1_referent", new JSONObject()
+								.put("name", "age")
+								.put("p_type", ">=")
+								.put("p_value", 18)
+						)
+				)
+				.put("non_revoked", new JSONObject()
+						.put("to", timestamp)
+				)
+				.toString();
 
 		CredentialsSearchForProofReq credentialsSearch = CredentialsSearchForProofReq.open(proverWallet, proofRequestJson, null).get();
 
@@ -127,19 +142,29 @@ class AnoncredsRevocation {
 		credentialsSearch.close();
 
 		//14. Prover create RevocationState
-		int timestamp = 100;
 		String revStateJson = Anoncreds.createRevocationState(blobStorageReaderHandle, revRegDefJson, revRegDeltaJson, timestamp, credRevId).get();
 
 		//15. Prover Creates Proof
-		String requestedCredentialsJson = new JSONObject(String.format("{" +
-				"\"self_attested_attributes\":{}," +
-				"\"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
-				"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\", \"timestamp\":%d}}" +
-				"}", credIdForAttr1, timestamp, credIdForPred1, timestamp)).toString();
+		String requestedCredentialsJson = new JSONObject()
+				.put("self_attested_attributes", new JSONObject())
+				.put("requested_attributes", new JSONObject()
+						.put("attr1_referent", new JSONObject()
+								.put("cred_id", credIdForAttr1)
+								.put("revealed", true)
+								.put("timestamp", timestamp)
+						)
+				)
+				.put("requested_predicates", new JSONObject()
+						.put("predicate1_referent", new JSONObject()
+								.put("cred_id", credIdForPred1)
+								.put("timestamp", timestamp)
+						)
+				)
+				.toString();
 
-		String schemas = new JSONObject(String.format("{\"%s\":%s}", schemaId, schemaJson)).toString();
-		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDefJson)).toString();
-		String revStates = new JSONObject(String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revStateJson)).toString();
+		String schemas = new JSONObject().put(schemaId, new JSONObject(schemaJson)).toString();
+		String credentialDefs = new JSONObject().put(credDefId, new JSONObject(credDefJson)).toString();
+		String revStates = new JSONObject().put(revRegId, new JSONObject().put("" + timestamp, new JSONObject(revStateJson))).toString();
 
 		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson, masterSecretId, schemas,
 				credentialDefs, revStates).get();
@@ -149,8 +174,8 @@ class AnoncredsRevocation {
 		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
 		assertEquals("Alex", revealedAttr1.getString("raw"));
 
-		String revRegDefs = new JSONObject(String.format("{\"%s\":%s}", revRegId, revRegDefJson)).toString();
-		String revRegs = new JSONObject(String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revRegDeltaJson)).toString();
+		String revRegDefs = new JSONObject().put(revRegId, new JSONObject(revRegDefJson)).toString();
+		String revRegs = new JSONObject().put(revRegId, new JSONObject().put("" + timestamp, new JSONObject(revRegDeltaJson))).toString();
 
 		boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revRegDefs, revRegs).get();
 		assertTrue(valid);

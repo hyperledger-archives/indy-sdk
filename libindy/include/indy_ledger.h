@@ -194,7 +194,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
     /// verkey: Target identity verification key as base58-encoded string.
     /// alias: NYM's alias.
@@ -229,7 +230,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
     /// hash: (Optional) Hash of attribute data.
     /// raw: (Optional) Json, where key is attribute name and value is attribute value.
@@ -306,11 +308,41 @@ extern "C" {
                                                                         const char*   request_json)
                                                   );
 
+    /// Parse a GET_NYM response to get NYM data.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// get_nym_response: response on GET_NYM request.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// NYM data
+    /// {
+    ///     did: DID as base58-encoded string for 16 or 32 bit DID value.
+    ///     verkey: verification key as base58-encoded string.
+    ///     role: Role associated number
+    ///                             null (common USER)
+    ///                             0 - TRUSTEE
+    ///                             2 - STEWARD
+    ///                             101 - TRUST_ANCHOR
+    ///                             101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+    ///                             201 - NETWORK_MONITOR
+    /// }
+
+    extern indy_error_t indy_parse_get_nym_response(indy_handle_t command_handle,
+                                                    const char *  get_nym_response,
+
+                                                    void           (*cb)(indy_handle_t command_handle_,
+                                                                         indy_error_t  err,
+                                                                         const char*   nym_json)
+                                                   );
+
     /// Builds a SCHEMA request. Request to add Credential's schema.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// data: Credential schema.
     /// {
     ///     id: identifier of schema
@@ -393,7 +425,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// data: credential definition json
     /// {
     ///     id: string - identifier of credential definition
@@ -483,7 +516,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// target_did: Target Node's DID.  It differs from submitter_did field.
     /// data: Data associated with the Node: {
     ///     alias: string - Node's alias
@@ -567,7 +601,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// writes: Whether any write requests can be processed by the pool
     ///         (if false, then pool goes to read-only state). True by default.
     /// force: Whether we should apply transaction (for example, move pool to read-only state)
@@ -594,7 +629,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: Id of Identity stored in secured Wallet.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// action: Either start or cancel
     /// datetime:
     /// cb: Callback that takes command result as parameter.
@@ -619,7 +655,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// name: Human-readable name for the upgrade.
     /// version: The version of indy-node package we perform upgrade to.
     ///          Must be greater than existing one (or equal if reinstall flag is True).
@@ -663,7 +700,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// data: Revocation Registry data:
     ///     {
     ///         "id": string - ID of the Revocation Registry,
@@ -764,7 +802,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// revoc_reg_def_id: ID of the corresponding RevocRegDef.
     /// rev_def_type: Revocation Registry type (only CL_ACCUM is supported for now).
     /// value: Registry-specific data: {
@@ -960,6 +999,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// txn_type: ledger transaction alias or associated value.
     /// action: type of an action.
     ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
@@ -970,10 +1011,11 @@ extern "C" {
     ///     {
     ///         constraint_id - <string> type of a constraint.
     ///             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-    ///         role - <string> role of a user which satisfy to constrain.
+    ///         role - <string> (optional) role of a user which satisfy to constrain.
     ///         sig_count - <u32> the number of signatures required to execution action.
-    ///         need_to_be_owner - <bool> if user must be an owner of transaction.
-    ///         metadata - <object> additional parameters of the constraint.
+    ///         need_to_be_owner - <bool> (optional) if user must be an owner of transaction (false by default).
+    ///         off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default).
+    ///         metadata - <object> (optional) additional parameters of the constraint.
     ///     }
     /// can be combined by
     ///     {
@@ -1007,7 +1049,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the request sender.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// data: a list of auth rules: [
     ///     {
     ///         "auth_type": ledger transaction alias or associated value,
@@ -1047,7 +1090,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: (Optional) DID of the read request sender.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// txn_type: (Optional) target ledger transaction alias or associated value.
     /// action: (Optional) target action type. Can be either "ADD" or "EDIT".
     /// field: (Optional) target transaction field.
@@ -1080,9 +1123,30 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the request sender.
-    /// text: a content of the TTA.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+    /// text: (Optional) a content of the TTA.
+    ///             Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+    ///             for Indy Node version <= 1.12.0:
+    ///                 Use empty string to reset TAA on the ledger
+    ///             for Indy Node version > 1.12.0
+    ///                 Should be omitted in case of updating an existing TAA (setting `retirement_ts`)
     /// version: a version of the TTA (unique UTF-8 string).
+    /// ratification_ts: (Optional) the date (timestamp) of TAA ratification by network government. (-1 to omit)
+    ///              for Indy Node version <= 1.12.0:
+    ///                 Must be omitted
+    ///              for Indy Node version > 1.12.0:
+    ///                 Must be specified in case of adding a new TAA
+    ///                 Can be omitted in case of updating an existing TAA
+    /// retirement_ts: (Optional) the date (timestamp) of TAA retirement. (-1 to omit)
+    ///              for Indy Node version <= 1.12.0:
+    ///                 Must be omitted
+    ///              for Indy Node version > 1.12.0:
+    ///                 Must be omitted in case of adding a new (latest) TAA.
+    ///                 Should be used for updating (deactivating) non-latest TAA on the ledger.
+    ///
+    /// Note: Use `indy_build_disable_all_txn_author_agreements_request` to disable all TAA's on the ledger.
+    ///
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -1094,11 +1158,36 @@ extern "C" {
                                                                 const char *  submitter_did,
                                                                 const char *  text,
                                                                 const char *  version,
+                                                                indy_i64_t  ratification_ts,
+                                                                indy_i64_t  retirement_ts,
 
                                                                 void           (*cb)(indy_handle_t command_handle_,
                                                                                      indy_error_t  err,
                                                                                      const char*   request_json)
                                                                );
+
+    /// Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+    ///
+    /// EXPERIMENTAL
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_build_disable_all_txn_author_agreements_request(indy_handle_t command_handle,
+                                                                             const char *  submitter_did,
+
+                                                                             void           (*cb)(indy_handle_t command_handle_,
+                                                                                                  indy_error_t  err,
+                                                                                                  const char*   request_json)
+                                                                            );
 
     /// Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
     ///
@@ -1106,7 +1195,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: (Optional) DID of the request sender.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// data: (Optional) specifies a condition for getting specific TAA.
     /// Contains 3 mutually exclusive optional fields:
     /// {
@@ -1139,7 +1228,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the request sender.
+    /// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+    ///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
     /// aml: a set of new acceptance mechanisms:
     /// {
     ///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
@@ -1173,7 +1263,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: (Optional) DID of the request sender.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
     /// version: (Optional) version of acceptance mechanisms.
     /// cb: Callback that takes command result as parameter.
@@ -1210,7 +1300,9 @@ extern "C" {
     /// text and version - (optional) raw data about TAA from ledger.
     ///     These parameters should be passed together.
     ///     These parameters are required if taa_digest parameter is omitted.
-    /// taa_digest - (optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+    /// taa_digest - (optional) digest on text and version.
+    ///     Digest is sha256 hash calculated on concatenated strings: version || text.
+    ///     This parameter is required if text and version parameters are omitted.
     /// mechanism - mechanism how user has accepted the TAA
     /// time - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
     ///
@@ -1233,6 +1325,34 @@ extern "C" {
                                                                                                     indy_error_t  err,
                                                                                                     const char*   request_with_meta_json)
                                                                                );
+
+    /// Append Endorser to an existing request.
+    ///
+    /// An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+    /// But it is expecting that the transaction will be sent by the specified Endorser.
+    ///
+    /// Note: Both Transaction Author and Endorser must sign output request after that.
+    ///
+    /// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
+    ///                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+    ///
+    /// #Params
+    /// request_json: original request
+    /// endorser_did: DID of the Endorser that will submit the transaction.
+    ///               The Endorser's DID must be present on the ledger.
+    /// cb: Callback that takes command result as parameter.
+    ///     The command result is a request JSON with Endorser field appended.
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_append_request_endorser(indy_handle_t command_handle,
+                                                     const char *  request_json,
+                                                     const char *  endorser_did,
+
+                                                     void           (*cb)(indy_handle_t command_handle_,
+                                                                          indy_error_t  err,
+                                                                          const char*   out_request_json)
+                                                     );
 
 #ifdef __cplusplus
 }

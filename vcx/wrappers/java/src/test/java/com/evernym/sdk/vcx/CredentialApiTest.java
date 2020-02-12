@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 
@@ -122,6 +123,22 @@ class CredentialApiTest {
         assertEquals(2, state);
 
     }
+
+    @Test
+    @DisplayName("get credential request message")
+    void getRequestMsg() throws VcxException, ExecutionException, InterruptedException {
+        int credential = TestHelper._createCredential();
+        int connection = TestHelper._createConnection();
+        String myPwDid = TestHelper.getResultFromFuture(ConnectionApi.connectionGetPwDid(connection));
+        String theirPwDid = TestHelper.getResultFromFuture(ConnectionApi.connectionGetTheirPwDid(connection));
+        String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
+        TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connection,TestHelper.convertToValidJson(payload)));
+        assertNotSame(0, credential);
+        String message = TestHelper.getResultFromFuture(CredentialApi.credentialGetRequestMsg(credential, myPwDid, theirPwDid, 0));
+        assertTrue(message.length() > 0);
+    }
+
+
 
     @Test
     @DisplayName("send credential request with message id")

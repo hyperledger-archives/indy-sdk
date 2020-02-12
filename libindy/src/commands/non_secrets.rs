@@ -2,11 +2,11 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use domain::wallet::Tags;
-use errors::prelude::*;
-use services::wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
-use utils::sequence;
-use api::WalletHandle;
+use indy_api_types::domain::wallet::Tags;
+use indy_api_types::errors::prelude::*;
+use indy_wallet::{RecordOptions, SearchOptions, WalletRecord, WalletSearch, WalletService};
+use indy_utils::next_search_handle;
+use indy_api_types::{WalletHandle, SearchHandle};
 
 
 pub enum NonSecretsCommand {
@@ -15,52 +15,52 @@ pub enum NonSecretsCommand {
               String, // id
               String, // value
               Option<Tags>, //tags
-              Box<Fn(IndyResult<()>) + Send>),
+              Box<dyn Fn(IndyResult<()>) + Send>),
     UpdateRecordValue(WalletHandle,
                       String, // type
                       String, // id
                       String, // value
-                      Box<Fn(IndyResult<()>) + Send>),
+                      Box<dyn Fn(IndyResult<()>) + Send>),
     UpdateRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      Tags, //tags
-                     Box<Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send>),
     AddRecordTags(WalletHandle,
                   String, // type
                   String, // id
                   Tags, //tags
-                  Box<Fn(IndyResult<()>) + Send>),
+                  Box<dyn Fn(IndyResult<()>) + Send>),
     DeleteRecordTags(WalletHandle,
                      String, // type
                      String, // id
                      String, //tag names json
-                     Box<Fn(IndyResult<()>) + Send>),
+                     Box<dyn Fn(IndyResult<()>) + Send>),
     DeleteRecord(WalletHandle,
                  String, // type
                  String, // id
-                 Box<Fn(IndyResult<()>) + Send>),
+                 Box<dyn Fn(IndyResult<()>) + Send>),
     GetRecord(WalletHandle,
               String, // type
               String, // id
               String, // options json
-              Box<Fn(IndyResult<String>) + Send>),
+              Box<dyn Fn(IndyResult<String>) + Send>),
     OpenSearch(WalletHandle,
                String, // type
                String, // query json
                String, // options json
-               Box<Fn(IndyResult<i32>) + Send>),
+               Box<dyn Fn(IndyResult<SearchHandle>) + Send>),
     FetchSearchNextRecords(WalletHandle,
-                           i32, // wallet search handle
+                           SearchHandle, // wallet search handle
                            usize, // count
-                           Box<Fn(IndyResult<String>) + Send>),
-    CloseSearch(i32, // wallet search handle
-                Box<Fn(IndyResult<()>) + Send>),
+                           Box<dyn Fn(IndyResult<String>) + Send>),
+    CloseSearch(SearchHandle, // wallet search handle
+                Box<dyn Fn(IndyResult<()>) + Send>),
 }
 
 pub struct NonSecretsCommandExecutor {
     wallet_service: Rc<WalletService>,
-    searches: RefCell<HashMap<i32, Box<WalletSearch>>>,
+    searches: RefCell<HashMap<SearchHandle, Box<WalletSearch>>>,
 }
 
 impl NonSecretsCommandExecutor {
@@ -74,43 +74,43 @@ impl NonSecretsCommandExecutor {
     pub fn execute(&self, command: NonSecretsCommand) {
         match command {
             NonSecretsCommand::AddRecord(handle, type_, id, value, tags, cb) => {
-                info!(target: "non_secrets_command_executor", "AddRecord command received");
+                debug!(target: "non_secrets_command_executor", "AddRecord command received");
                 cb(self.add_record(handle, &type_, &id, &value, tags.as_ref()));
             }
             NonSecretsCommand::UpdateRecordValue(handle, type_, id, value, cb) => {
-                info!(target: "non_secrets_command_executor", "UpdateRecordValue command received");
+                debug!(target: "non_secrets_command_executor", "UpdateRecordValue command received");
                 cb(self.update_record_value(handle, &type_, &id, &value));
             }
             NonSecretsCommand::UpdateRecordTags(handle, type_, id, tags, cb) => {
-                info!(target: "non_secrets_command_executor", "UpdateRecordTags command received");
+                debug!(target: "non_secrets_command_executor", "UpdateRecordTags command received");
                 cb(self.update_record_tags(handle, &type_, &id, &tags));
             }
             NonSecretsCommand::AddRecordTags(handle, type_, id, tags, cb) => {
-                info!(target: "non_secrets_command_executor", "AddRecordTags command received");
+                debug!(target: "non_secrets_command_executor", "AddRecordTags command received");
                 cb(self.add_record_tags(handle, &type_, &id, &tags));
             }
             NonSecretsCommand::DeleteRecordTags(handle, type_, id, tags_names_json, cb) => {
-                info!(target: "non_secrets_command_executor", "DeleteRecordTags command received");
+                debug!(target: "non_secrets_command_executor", "DeleteRecordTags command received");
                 cb(self.delete_record_tags(handle, &type_, &id, &tags_names_json));
             }
             NonSecretsCommand::DeleteRecord(handle, type_, id, cb) => {
-                info!(target: "non_secrets_command_executor", "DeleteRecord command received");
+                debug!(target: "non_secrets_command_executor", "DeleteRecord command received");
                 cb(self.delete_record(handle, &type_, &id));
             }
             NonSecretsCommand::GetRecord(handle, type_, id, options_json, cb) => {
-                info!(target: "non_secrets_command_executor", "GetRecord command received");
+                debug!(target: "non_secrets_command_executor", "GetRecord command received");
                 cb(self.get_record(handle, &type_, &id, &options_json));
             }
             NonSecretsCommand::OpenSearch(handle, type_, query_json, options_json, cb) => {
-                info!(target: "non_secrets_command_executor", "OpenSearch command received");
+                debug!(target: "non_secrets_command_executor", "OpenSearch command received");
                 cb(self.open_search(handle, &type_, &query_json, &options_json));
             }
             NonSecretsCommand::FetchSearchNextRecords(wallet_handle, wallet_search_handle, count, cb) => {
-                info!(target: "non_secrets_command_executor", "SearchNextRecords command received");
+                debug!(target: "non_secrets_command_executor", "SearchNextRecords command received");
                 cb(self.fetch_search_next_records(wallet_handle, wallet_search_handle, count));
             }
             NonSecretsCommand::CloseSearch(wallet_search_handle, cb) => {
-                info!(target: "non_secrets_command_executor", "CloseSearch command received");
+                debug!(target: "non_secrets_command_executor", "CloseSearch command received");
                 cb(self.close_search(wallet_search_handle));
             }
         };
@@ -126,11 +126,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, tags.unwrap_or(&Tags::new()))?;
+        self.wallet_service.add_record(wallet_handle, type_, id, value, tags.unwrap_or(&Tags::new()))?;
 
-        trace!("add_record <<< res: {:?}", res);
+        trace!("add_record <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn update_record_value(&self,
@@ -142,11 +142,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.update_record_value(wallet_handle, type_, id, value)?;
+        self.wallet_service.update_record_value(wallet_handle, type_, id, value)?;
 
-        trace!("update_record_value <<< res: {:?}", res);
+        trace!("update_record_value <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn update_record_tags(&self,
@@ -158,11 +158,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.update_record_tags(wallet_handle, type_, id, &tags)?;
+        self.wallet_service.update_record_tags(wallet_handle, type_, id, &tags)?;
 
-        trace!("update_record_tags <<< res: {:?}", res);
+        trace!("update_record_tags <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn add_record_tags(&self,
@@ -174,11 +174,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record_tags(wallet_handle, type_, id, &tags)?;
+        self.wallet_service.add_record_tags(wallet_handle, type_, id, &tags)?;
 
-        trace!("add_record_tags <<< res: {:?}", res);
+        trace!("add_record_tags <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn delete_record_tags(&self,
@@ -193,11 +193,11 @@ impl NonSecretsCommandExecutor {
         let tag_names: Vec<&str> = serde_json::from_str(tag_names_json)
             .to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize tag names")?;
 
-        let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, &tag_names)?;
+        self.wallet_service.delete_record_tags(wallet_handle, type_, id, &tag_names)?;
 
-        trace!("delete_record_tags <<< res: {:?}", res);
+        trace!("delete_record_tags <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn delete_record(&self,
@@ -208,11 +208,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.delete_record(wallet_handle, type_, id)?;
+        self.wallet_service.delete_record(wallet_handle, type_, id)?;
 
-        trace!("delete_record <<< res: {:?}", res);
+        trace!("delete_record <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn get_record(&self,
@@ -241,7 +241,7 @@ impl NonSecretsCommandExecutor {
                    wallet_handle: WalletHandle,
                    type_: &str,
                    query_json: &str,
-                   options_json: &str) -> IndyResult<i32> {
+                   options_json: &str) -> IndyResult<SearchHandle> {
         trace!("open_search >>> wallet_handle: {:?}, type_: {:?}, query_json: {:?}, options_json: {:?}", wallet_handle, type_, query_json, options_json);
 
         self._check_type(type_)?;
@@ -251,7 +251,7 @@ impl NonSecretsCommandExecutor {
 
         let search = self.wallet_service.search_records(wallet_handle, type_, query_json, &options_json)?;
 
-        let search_handle = sequence::get_next_id();
+        let search_handle = next_search_handle();
 
         self.searches.borrow_mut().insert(search_handle, Box::new(search));
 
@@ -262,13 +262,13 @@ impl NonSecretsCommandExecutor {
 
     fn fetch_search_next_records(&self,
                                  wallet_handle: WalletHandle,
-                                 wallet_search_handle: i32,
+                                 wallet_search_handle: SearchHandle,
                                  count: usize) -> IndyResult<String> {
         trace!("fetch_search_next_records >>> wallet_handle: {:?}, wallet_search_handle: {:?}, count: {:?}", wallet_handle, wallet_search_handle, count);
 
         let mut searches = self.searches.borrow_mut();
         let search = searches.get_mut(&wallet_search_handle)
-            .ok_or(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown WalletSearch handle: {}", wallet_search_handle)))?;
+            .ok_or_else(||err_msg(IndyErrorKind::InvalidWalletHandle, format!("Unknown WalletSearch handle: {:?}", wallet_search_handle)))?;
 
         let mut records: Vec<WalletRecord> = Vec::new();
         for _ in 0..count {
@@ -291,17 +291,17 @@ impl NonSecretsCommandExecutor {
     }
 
     fn close_search(&self,
-                    wallet_search_handle: i32) -> IndyResult<()> {
+                    wallet_search_handle: SearchHandle) -> IndyResult<()> {
         trace!("close_search >>> wallet_search_handle: {:?}", wallet_search_handle);
 
-        let res = match self.searches.borrow_mut().remove(&wallet_search_handle) {
+        match self.searches.borrow_mut().remove(&wallet_search_handle) {
             Some(_) => Ok(()),
-            None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Wallet Search Handle is invalid: {}", wallet_search_handle)))
+            None => Err(err_msg(IndyErrorKind::InvalidWalletHandle, format!("Wallet Search Handle is invalid: {:?}", wallet_search_handle)))
         }?;
 
-        trace!("close_search <<< res: {:?}", res);
+        trace!("close_search <<< res: ()");
 
-        Ok(res)
+        Ok(())
     }
 
     fn _check_type(&self, type_: &str) -> IndyResult<()> {

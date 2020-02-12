@@ -5,22 +5,24 @@ use indy::anoncreds;
 use self::futures::Future;
 use serde_json;
 
-use utils::{environment, wallet, blob_storage, test, pool};
-use utils::types::CredentialOfferInfo;
+use crate::utils::{environment, wallet, blob_storage, test};
+use crate::utils::types::CredentialOfferInfo;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use std::mem;
-use utils::constants::*;
+use crate::utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
 
-use utils::domain::anoncreds::schema::{Schema, SchemaV1};
-use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
-use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryConfig;
-use utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
-use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use crate::utils::domain::anoncreds::schema::{Schema, SchemaV1, SchemaId};
+use crate::utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CredentialDefinitionId};
+use crate::utils::domain::anoncreds::revocation_registry_definition::{RevocationRegistryConfig, IssuanceType, RevocationRegistryId};
+use crate::utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
+use crate::utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use crate::utils::domain::crypto::did::DidValue;
 
-pub static mut WALLET_HANDLE: i32 = 0;
+use indy::WalletHandle;
+
 pub static mut CREDENTIAL_DEF_JSON: &'static str = "";
 pub static mut CREDENTIAL_OFFER_JSON: &'static str = "";
 pub static mut CREDENTIAL_REQUEST_JSON: &'static str = "";
@@ -28,6 +30,7 @@ pub static mut CREDENTIAL_JSON: &'static str = "";
 pub const ANONCREDS_WALLET_CONFIG: &'static str = r#"{"id": "anoncreds_wallet"}"#;
 pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
 pub const CREDENTIAL1_ID: &'static str = "credential1_id";
+pub const CREDENTIAL1_SUB_ID: &'static str = "credential1_sub_id";
 pub const CREDENTIAL2_ID: &'static str = "credential2_id";
 pub const CREDENTIAL3_ID: &'static str = "credential3_id";
 pub const DELIMITER: &'static str = ":";
@@ -49,27 +52,35 @@ pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_na
     anoncreds::issuer_create_schema(issuer_did, name, version, attr_names).wait()
 }
 
-pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str,
+pub fn issuer_create_credential_definition(wallet_handle: WalletHandle, issuer_did: &str, schema: &str, tag: &str,
                                            signature_type: Option<&str>, config: Option<&str>) -> Result<(String, String), IndyError> {
     anoncreds::issuer_create_and_store_credential_def(wallet_handle, issuer_did, schema, tag, signature_type, config.unwrap_or("{}")).wait() // TODO: FIXME OPTIONAL CONFIG
 }
 
-pub fn issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
+pub fn issuer_rotate_credential_def_start(wallet_handle: WalletHandle, cred_def_id: &str, config_json: Option<&str>) -> Result<String, IndyError> {
+    anoncreds::issuer_rotate_credential_def_start(wallet_handle, cred_def_id, config_json).wait()
+}
+
+pub fn issuer_rotate_credential_def_apply(wallet_handle: WalletHandle, cred_def_id: &str) -> Result<(), IndyError> {
+    anoncreds::issuer_rotate_credential_def_apply(wallet_handle, cred_def_id).wait()
+}
+
+pub fn issuer_create_and_store_revoc_reg(wallet_handle: WalletHandle, issuer_did: &str, type_: Option<&str>, tag: &str,
                                          cred_def_id: &str, config_json: &str, tails_writer_handle: i32)
                                          -> Result<(String, String, String), IndyError> {
     anoncreds::issuer_create_and_store_revoc_reg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle).wait()
 }
 
-pub fn issuer_create_credential_offer(wallet_handle: i32, cred_def_id: &str) -> Result<String, IndyError> {
+pub fn issuer_create_credential_offer(wallet_handle: WalletHandle, cred_def_id: &str) -> Result<String, IndyError> {
     anoncreds::issuer_create_credential_offer(wallet_handle, cred_def_id).wait()
 }
 
-pub fn issuer_create_credential(wallet_handle: i32, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str,
+pub fn issuer_create_credential(wallet_handle: WalletHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str,
                                 rev_reg_id: Option<&str>, blob_storage_reader_handle: Option<i32>) -> Result<(String, Option<String>, Option<String>), IndyError> {
     anoncreds::issuer_create_credential(wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle.unwrap_or(-1)).wait() // TODO OPTIONAL blob_storage_reader_handle
 }
 
-pub fn issuer_revoke_credential(wallet_handle: i32, blob_storage_reader_handle: i32, rev_reg_id: &str, cred_revoc_id: &str) -> Result<String, IndyError> {
+pub fn issuer_revoke_credential(wallet_handle: WalletHandle, blob_storage_reader_handle: i32, rev_reg_id: &str, cred_revoc_id: &str) -> Result<String, IndyError> {
     anoncreds::issuer_revoke_credential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id).wait()
 }
 
@@ -77,43 +88,43 @@ pub fn issuer_merge_revocation_registry_deltas(rev_reg_delta: &str, other_rev_re
     anoncreds::issuer_merge_revocation_registry_deltas(rev_reg_delta, other_rev_reg_delta).wait()
 }
 
-pub fn prover_create_master_secret(wallet_handle: i32, master_secret_id: &str) -> Result<String, IndyError> {
+pub fn prover_create_master_secret(wallet_handle: WalletHandle, master_secret_id: &str) -> Result<String, IndyError> {
     anoncreds::prover_create_master_secret(wallet_handle, Some(master_secret_id)).wait()
 }
 
-pub fn prover_create_credential_req(wallet_handle: i32, prover_did: &str, cred_offer_json: &str,
+pub fn prover_create_credential_req(wallet_handle: WalletHandle, prover_did: &str, cred_offer_json: &str,
                                     cred_def_json: &str, master_secret_id: &str) -> Result<(String, String), IndyError> {
     anoncreds::prover_create_credential_req(wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id).wait()
 }
 
-pub fn prover_set_credential_attr_tag_policy(wallet_handle: i32, cred_def_id: &str, tag_attrs_json: Option<&str>,
+pub fn prover_set_credential_attr_tag_policy(wallet_handle: WalletHandle, cred_def_id: &str, tag_attrs_json: Option<&str>,
                                              retroactive: bool) -> Result<(), IndyError> {
     anoncreds::prover_set_credential_attr_tag_policy(wallet_handle, cred_def_id, tag_attrs_json, retroactive).wait()
 }
 
-pub fn prover_get_credential_attr_tag_policy(wallet_handle: i32, cred_def_id: &str) -> Result<String, IndyError> {
+pub fn prover_get_credential_attr_tag_policy(wallet_handle: WalletHandle, cred_def_id: &str) -> Result<String, IndyError> {
     anoncreds::prover_get_credential_attr_tag_policy(wallet_handle, cred_def_id).wait()
 }
 
-pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_metadata_json: &str, cred_json: &str,
+pub fn prover_store_credential(wallet_handle: WalletHandle, cred_id: &str, cred_req_metadata_json: &str, cred_json: &str,
                                cred_def_json: &str, rev_reg_def_json: Option<&str>) -> Result<String, IndyError> {
     anoncreds::prover_store_credential(wallet_handle, Some(cred_id), cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json).wait()
 }
 
-pub fn prover_delete_credential(wallet_handle: i32, cred_id: &str) -> Result<(), IndyError> {
+pub fn prover_delete_credential(wallet_handle: WalletHandle, cred_id: &str) -> Result<(), IndyError> {
     anoncreds::prover_delete_credential(wallet_handle, cred_id).wait()
 }
 
 //TODO mark as deprecated and use only in target tests
-pub fn prover_get_credentials(wallet_handle: i32, filter_json: &str) -> Result<String, IndyError> {
+pub fn prover_get_credentials(wallet_handle: WalletHandle, filter_json: &str) -> Result<String, IndyError> {
     anoncreds::prover_get_credentials(wallet_handle, Some(filter_json)).wait()
 }
 
-pub fn prover_get_credential(wallet_handle: i32, cred_id: &str) -> Result<String, IndyError> {
+pub fn prover_get_credential(wallet_handle: WalletHandle, cred_id: &str) -> Result<String, IndyError> {
     anoncreds::prover_get_credential(wallet_handle, cred_id).wait()
 }
 
-pub fn prover_search_credentials(wallet_handle: i32, filter_json: &str) -> Result<(i32, usize), IndyError> {
+pub fn prover_search_credentials(wallet_handle: WalletHandle, filter_json: &str) -> Result<(i32, usize), IndyError> {
     anoncreds::prover_search_credentials(wallet_handle, Some(filter_json)).wait()
 }
 
@@ -126,11 +137,11 @@ pub fn prover_close_credentials_search(search_handle: i32) -> Result<(), IndyErr
 }
 
 //TODO mark as deprecated and use only in target tests
-pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, IndyError> {
+pub fn prover_get_credentials_for_proof_req(wallet_handle: WalletHandle, proof_request_json: &str) -> Result<String, IndyError> {
     anoncreds::prover_get_credentials_for_proof_req(wallet_handle, proof_request_json).wait()
 }
 
-pub fn prover_search_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str, extra_query_json: Option<&str>) -> Result<i32, IndyError> {
+pub fn prover_search_credentials_for_proof_req(wallet_handle: WalletHandle, proof_request_json: &str, extra_query_json: Option<&str>) -> Result<i32, IndyError> {
     anoncreds::prover_search_credentials_for_proof_req(wallet_handle, proof_request_json, extra_query_json).wait()
 }
 
@@ -142,11 +153,11 @@ pub fn prover_close_credentials_search_for_proof_req(search_handle: i32) -> Resu
     anoncreds::prover_close_credentials_search_for_proof_req(search_handle).wait()
 }
 
-pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_credentials_json: &str,
+pub fn prover_create_proof(wallet_handle: WalletHandle, proof_req_json: &str, requested_credentials_json: &str,
                            master_secret_name: &str, schemas_json: &str, cred_defs_json: &str,
                            rev_states_json: &str) -> Result<String, IndyError> {
     anoncreds::prover_create_proof(wallet_handle, proof_req_json, requested_credentials_json,
-                         master_secret_name, schemas_json, cred_defs_json, rev_states_json).wait()
+                                   master_secret_name, schemas_json, cred_defs_json, rev_states_json).wait()
 }
 
 pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str,
@@ -164,6 +175,14 @@ pub fn update_revocation_state(tails_reader_handle: i32, rev_state_json: &str, r
     anoncreds::update_revocation_state(tails_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id).wait()
 }
 
+pub fn generate_nonce() -> Result<String, IndyError> {
+    anoncreds::generate_nonce().wait()
+}
+
+pub fn to_unqualified(entity: &str) -> Result<String, IndyError> {
+    anoncreds::to_unqualified(entity).wait()
+}
+
 pub fn default_cred_def_config() -> String {
     serde_json::to_string(&CredentialDefinitionConfig { support_revocation: false }).unwrap()
 }
@@ -177,20 +196,62 @@ pub fn issuance_on_demand_rev_reg_config() -> String {
 }
 
 pub fn issuance_by_default_rev_reg_config() -> String {
-    serde_json::to_string(&RevocationRegistryConfig { max_cred_num: Some(5), issuance_type: Some("ISSUANCE_BY_DEFAULT".to_string()) }).unwrap()
+    serde_json::to_string(&RevocationRegistryConfig { max_cred_num: Some(5), issuance_type: Some(IssuanceType::ISSUANCE_BY_DEFAULT) }).unwrap()
 }
 
 pub fn gvt_schema_id() -> String {
-    Schema::schema_id(ISSUER_DID, GVT_SCHEMA_NAME, SCHEMA_VERSION)
+    SchemaId::new(&DidValue(ISSUER_DID.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
+}
+
+pub fn gvt_sub_schema_id() -> String {
+    SchemaId::new(&DidValue(ISSUER_DID_2.to_string()), GVT_SUB_SCHEMA_NAME, SCHEMA_SUB_VERSION).0
+}
+
+pub fn gvt_schema_id_fully_qualified() -> String {
+    SchemaId::new(&DidValue(ISSUER_DID_V1.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
+}
+
+pub fn gvt_cred_def_id() -> String {
+    CredentialDefinitionId::new(&DidValue(ISSUER_DID.to_string()), &SchemaId(SEQ_NO.to_string()), SIGNATURE_TYPE, TAG_1).0
+}
+
+pub fn local_gvt_cred_def_id() -> String {
+    CredentialDefinitionId::new(&DidValue(ISSUER_DID.to_string()), &SchemaId(gvt_schema_id()), SIGNATURE_TYPE, TAG_1).0
+}
+
+pub fn gvt_cred_def_id_fully_qualified() -> String {
+    CredentialDefinitionId::new(&DidValue(ISSUER_DID_V1.to_string()), &SchemaId(SEQ_NO.to_string()), SIGNATURE_TYPE, TAG_1).0
+}
+
+pub fn local_gvt_cred_def_id_fully_qualified() -> String {
+    CredentialDefinitionId::new(&DidValue(ISSUER_DID_V1.to_string()), &SchemaId(gvt_schema_id_fully_qualified()), SIGNATURE_TYPE, TAG_1).0
+}
+
+pub fn gvt_rev_reg_id() -> String {
+    RevocationRegistryId::new(&DidValue(ISSUER_DID.to_string()), &CredentialDefinitionId(gvt_cred_def_id()), REVOC_REG_TYPE, TAG_1).0
+}
+
+pub fn gvt_rev_reg_id_fully_qualified() -> String {
+    RevocationRegistryId::new(&DidValue(ISSUER_DID_V1.to_string()), &CredentialDefinitionId(gvt_cred_def_id()), REVOC_REG_TYPE, TAG_1).0
 }
 
 pub fn gvt_schema() -> SchemaV1 {
     SchemaV1 {
-        id: gvt_schema_id().to_string(),
+        id: SchemaId(gvt_schema_id()),
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
-        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
-        seq_no: None
+        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap().into(),
+        seq_no: None,
+    }
+}
+
+pub fn gvt_sub_schema() -> SchemaV1 {
+    SchemaV1 {
+        id: SchemaId(gvt_sub_schema_id()),
+        version: SCHEMA_SUB_VERSION.to_string(),
+        name: GVT_SUB_SCHEMA_NAME.to_string(),
+        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SUB_SCHEMA_ATTRIBUTES).unwrap().into(),
+        seq_no: None,
     }
 }
 
@@ -198,17 +259,21 @@ pub fn gvt_schema_json() -> String {
     serde_json::to_string(&Schema::SchemaV1(gvt_schema())).unwrap()
 }
 
+pub fn gvt_sub_schema_json() -> String {
+    serde_json::to_string(&Schema::SchemaV1(gvt_sub_schema())).unwrap()
+}
+
 pub fn gvt_schema_id_issuer2() -> String {
-    Schema::schema_id(ISSUER_DID_2, GVT_SCHEMA_NAME, SCHEMA_VERSION)
+    SchemaId::new(&DidValue(ISSUER_DID_2.to_string()), GVT_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn gvt_schema_issuer2() -> SchemaV1 {
     SchemaV1 {
-        id: gvt_schema_id_issuer2().to_string(),
+        id: SchemaId(gvt_schema_id_issuer2()),
         version: SCHEMA_VERSION.to_string(),
         name: GVT_SCHEMA_NAME.to_string(),
-        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
-        seq_no: None
+        attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap().into(),
+        seq_no: None,
     }
 }
 
@@ -218,16 +283,16 @@ pub fn gvt_schema_issuer2_json() -> String {
 
 
 pub fn xyz_schema_id() -> String {
-    Schema::schema_id(ISSUER_DID, XYZ_SCHEMA_NAME, SCHEMA_VERSION)
+    SchemaId::new(&DidValue(ISSUER_DID.to_string()), XYZ_SCHEMA_NAME, SCHEMA_VERSION).0
 }
 
 pub fn xyz_schema() -> SchemaV1 {
     SchemaV1 {
-        id: xyz_schema_id().to_string(),
+        id: SchemaId(xyz_schema_id()),
         version: SCHEMA_VERSION.to_string(),
         name: XYZ_SCHEMA_NAME.to_string(),
-        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
-        seq_no: None
+        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap().into(),
+        seq_no: None,
     }
 }
 
@@ -236,16 +301,16 @@ pub fn xyz_schema_json() -> String {
 }
 
 pub fn xyz_schema_id_tag2() -> String {
-    Schema::schema_id(ISSUER_DID, &format!("{}{}", XYZ_SCHEMA_NAME, TAG_2), SCHEMA_VERSION)
+    SchemaId::new(&DidValue(ISSUER_DID.to_string()), &format!("{}{}", XYZ_SCHEMA_NAME, TAG_2), SCHEMA_VERSION).0
 }
 
 pub fn xyz_schema_tag2() -> SchemaV1 {
     SchemaV1 {
-        id: xyz_schema_id_tag2().to_string(),
+        id: SchemaId(xyz_schema_id_tag2()),
         version: SCHEMA_VERSION.to_string(),
         name: format!("{}{}", XYZ_SCHEMA_NAME, TAG_2),
-        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
-        seq_no: None
+        attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap().into(),
+        seq_no: None,
     }
 }
 
@@ -299,6 +364,17 @@ pub fn gvt_credential_values_json() -> String {
     serde_json::to_string(&gvt_credential_values()).unwrap()
 }
 
+pub fn gvt_sub_credential_values() -> HashMap<String, AttributeValues> {
+    map! {
+            "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()},
+            "height_sub".to_string() => AttributeValues {raw: "175".to_string(), encoded: "175".to_string()}
+          }
+}
+
+pub fn gvt_sub_credential_values_json() -> String {
+    serde_json::to_string(&gvt_sub_credential_values()).unwrap()
+}
+
 pub fn xyz_credential_values() -> HashMap<String, AttributeValues> {
     map! {
             "status".to_string() => AttributeValues {raw: "partial".to_string(), encoded: "51792877103171595686471452153480627530895".to_string()},
@@ -338,8 +414,8 @@ pub fn gvt3_credential_values_json() -> String {
 
 pub fn issuer_1_gvt_credential() -> CredentialInfo {
     CredentialInfo {
-        schema_id: gvt_schema_id(),
-        cred_def_id: issuer_1_gvt_cred_def_id(),
+        schema_id: SchemaId(gvt_schema_id()),
+        cred_def_id: CredentialDefinitionId(issuer_1_gvt_cred_def_id()),
         referent: CREDENTIAL1_ID.to_string(),
         rev_reg_id: None,
         cred_rev_id: None,
@@ -348,28 +424,28 @@ pub fn issuer_1_gvt_credential() -> CredentialInfo {
                        "name".to_string() => "Alex".to_string(),
                        "height".to_string() => "175".to_string(),
                        "age".to_string() => "28".to_string()
-                   }
+                   },
     }
 }
 
 pub fn issuer_1_xyz_credential() -> CredentialInfo {
     CredentialInfo {
-        schema_id: xyz_schema_id(),
-        cred_def_id: issuer_1_xyz_cred_def_id(),
+        schema_id: SchemaId(xyz_schema_id()),
+        cred_def_id: CredentialDefinitionId(issuer_1_xyz_cred_def_id()),
         referent: CREDENTIAL2_ID.to_string(),
         rev_reg_id: None,
         cred_rev_id: None,
         attrs: map! {
                        "status".to_string() => "partial".to_string(),
                        "period".to_string() => "8".to_string()
-                   }
+                   },
     }
 }
 
 pub fn issuer_2_gvt_credential() -> CredentialInfo {
     CredentialInfo {
-        schema_id: gvt_schema_id(),
-        cred_def_id: issuer_2_gvt_cred_def_id(),
+        schema_id: SchemaId(gvt_schema_id()),
+        cred_def_id: CredentialDefinitionId(issuer_2_gvt_cred_def_id()),
         referent: CREDENTIAL3_ID.to_string(),
         rev_reg_id: None,
         cred_rev_id: None,
@@ -378,7 +454,7 @@ pub fn issuer_2_gvt_credential() -> CredentialInfo {
                        "name".to_string() => "Alexander".to_string(),
                        "height".to_string() => "170".to_string(),
                        "Age".to_string() => "28".to_string()
-                   }
+                   },
     }
 }
 
@@ -522,6 +598,66 @@ pub fn proof_request_attr_and_predicate() -> String {
         }).to_string()
 }
 
+pub fn proof_request_attr_names() -> String {
+    json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": {
+               "attr1_referent": {
+                   "names":["name", "age"],
+                   "revealed": "true"
+               }
+           },
+           "requested_predicates": {},
+        }).to_string()
+}
+
+pub fn proof_request_attr_no_name_or_names() -> String {
+    json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": {
+               "attr1_referent": {
+                    "revealed": "true"
+               }
+           },
+           "requested_predicates": {},
+        }).to_string()
+}
+
+pub fn proof_request_attr_both_name_and_names() -> String {
+    json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": {
+               "attr1_referent": {
+                    "name": "test",
+                    "names": ["test_1", "test_2"],
+                    "revealed": "true"
+               }
+           },
+           "requested_predicates": {},
+        }).to_string()
+}
+
+pub fn proof_request_attr_empty_names() -> String {
+    json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": {
+               "attr1_referent": {
+                    "names": [],
+                    "revealed": "true"
+               }
+           },
+           "requested_predicates": {},
+        }).to_string()
+}
+
 pub fn proof_request_attr() -> String {
     json!({
            "nonce":"123432421212",
@@ -534,6 +670,43 @@ pub fn proof_request_attr() -> String {
            }),
            "requested_predicates": json!({}),
         }).to_string()
+}
+
+pub fn proof_json_names() -> String {
+    r#"{"proof":{"proofs":[{"primary_proof":{"eq_proof":{"revealed_attrs":{"age":"28","name":"1139481716457488690172217916278103335"},"a_prime":"37059438242994259998790346319434066563259262851520355480091172150889826130883393237926093321799440681909856961532640980048449223384805671899607862659376095023842581006802537983950207932496792785144734656825477404865618508668977376090591355838593886141620410371749415095554373277355509688260699210360869358785006563706591833856987245193114424070438013063355809733139650073893157583349774448671800293597451613258120928500855420774040035399988790635466156695875407657672993004830316697816281308896527384225080552033515729968331567171219679379473102757252104487685693002070188976642694202528257589046582080709109752935022","e":"109922005779405233943121743010554164412839436706339658425836679038556189672243290902929142208097769762943034219777885671776752614244091909","v":"1284125915860499669248852735479317096776719124959570347995473846767193414681232645848163339499108677754895570637169906769917439890666153543756837147366902490935443325961637122673889400243827346197368006028001780374947587482033411185560936517011006508036126537084103997207939297366657758940447914263690958368525082493075666522936208229179177506160262689731500367805118210523383098538513341379010456780856240340164863012154755712101591845153767452478810954083326872665765593321265442487243886298797961711223784823025655610368018613908959702591553249764645833524021917311744642968807457723747488191724643933369323339439131438966193247834546274609039204958605178132803990774813639824288602105473621379074346108397569767201430866324929811858040334046133024151120890828681541301553801379580949720247081708351217629622993044672922686194020828891720587862076224530881559036468002049156322198695898248214640042505280000582614623246","m":{"height":"6959077476651161779684574416838553328889210956914819956415532052678753320921972039328902793176095008644286859578890788916500546569517337307957606535111643517870736617007894947290","sex":"893288084832905070533301048840996400689551521791830443783389909394169951782753885801543504768735861345250554844473703958225223057610041365470394500145847061634125263984993695118","master_secret":"28964969107326245445186522007509714666417333989344308192807238824533729139528375723094650589872809641576900097517905181465585338145114953472640727001478696440390332622000037914"},"m2":"13335055121995665245887259625985450346942763879809728105637603608948578710861386965292046088372415755254360438523216452082325286343438346537397088988052200472812564806383761270685"},"ge_proofs":[]},"non_revoc_proof":null}],"aggregated_proof":{"c_hash":"2779655636103467443483025522910754087684294079111604105703620998863293181442","c_list":[[1,37,145,58,133,4,199,32,127,85,224,91,135,252,1,247,67,6,63,22,34,5,55,78,75,84,54,197,117,43,172,54,219,107,79,237,139,15,215,69,5,242,97,100,62,149,165,29,92,48,24,53,219,159,64,249,101,15,37,229,76,53,121,85,239,147,0,58,114,117,21,194,171,66,218,252,154,125,62,228,230,169,71,45,37,131,247,32,212,204,231,168,243,246,39,152,121,130,187,213,109,99,186,203,7,198,67,162,25,109,38,188,234,208,204,15,93,215,47,110,122,179,202,85,185,90,23,114,35,44,253,236,144,220,41,228,44,21,55,3,107,55,37,229,2,13,0,217,116,33,220,242,68,157,149,90,55,188,20,23,253,222,13,114,4,109,230,123,100,218,210,201,139,251,58,90,204,70,132,153,194,192,25,168,98,161,193,236,221,143,219,136,242,217,10,235,250,43,179,153,224,110,35,83,168,201,162,4,182,51,38,9,62,74,249,153,217,94,174,89,224,99,20,18,108,29,130,38,239,41,188,44,154,170,194,1,185,157,35,185,71,40,240,63,94,62,133,30,166,53,50,249,198,220,14,50,110]]}},"requested_proof":{"revealed_attrs":{},"revealed_attr_groups":{"attr1_referent":{"sub_proof_index":0,"values":{"age":{"sub_proof_index":0,"raw":"28","encoded":"28"},"name":{"sub_proof_index":0,"raw":"Alex","encoded":"1139481716457488690172217916278103335"}}}},"self_attested_attrs":{},"unrevealed_attrs":{},"predicates":{}},"identifiers":[{"schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0","cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG1","rev_reg_id":null,"timestamp":null}]}"#.to_string()
+}
+
+pub fn proof_json_names_diff_creds() -> String {
+    r#"{"proof":{"proofs":[{"primary_proof":{"eq_proof":{"revealed_attrs":{"name":"1139481716457488690172217916278103335", "age": "29"},"a_prime":"18017896431923240505908365485075789148452168415116206328291489071230607620619028995263932900056921507032528080183268960807711894122144333310053202926605966192328263536945647116166810074344574038293730607257155382357985975688088422223520166731897840822699744762240546655662386494770620420488496975385522964510724614716862290911965443814238358554653895723431607230003718708950593308633603143490127732842456632850013987212326223160169815330300582908768800090611574776175074188808918847861865749073430719711540128976239401026267393103013986040292911362679944546062820846133778574434979875055932311508478389914735000207003","e":"83559519121287395878717669622136044815646318620514874311709459571206234463327454292630917628062700115436217341863867347698462127710406070","v":"297806490214829420686766230078875761656411019398322192340660159408525437640356447298628486670199561773289627996231003178671763674854234378582742045593152090786356168548722050923919022437294919948020197450167438513621012738971001614937494783631173417424906834450196046209089992511255664827703967570135975184640411362392658102117144696565696778260226160184205166662563339868760502203244658568114681738362874425865611483890117120551575951385574973597994708955280610971400101828731369032088887281109139124193124939540584287884165616875914678163284636131307587450221606961891189538460301724046217944798864977650080735467274438530373131735445981882185267246263755499371761873417456882351522370247911160083566690732440450139886893927311033972081322669303047930705926280689044826420220280688545215188219142706778436864160051113903892157722488901121137377923901441440141923017426694473886970495058317115339857648593543510755814225","m":{"height":"12006903624253341849897414349528320249916574584890409251234494044009772650118943979177359842712363134185042426360823508114521187446806481412797317456510257618078868574564525071674","master_secret":"6919686208640537777905634061289167918950072425929046468445054398351611354176109670910397217504584288829564076584234033108276953010251873235101744003423827510526144551331667620558","sex":"13165539014140341601812739414059384997370961293541830348392691981504671830007166315875893835129825775324685721111876571565247345930495388423719630010802561730225421962397547387507","age":"1464765639220538429462362069428301097018775282316000466628871517541386680138790057277673679234302501393691766391852725957692111731926315506123255980720728976368733501055706839955"},"m2":"13578671683654549858852643988215668906078095112870901210808381907605213325376098264588427251159007228787606553068475182937945754440107583457297550054908391037290899567766980153744"},"ge_proofs":[]},"non_revoc_proof":null}],"aggregated_proof":{"c_hash":"92451972292295535930734088937643227098723372505615593632453853864067889786715","c_list":[[1,143,68,138,222,128,151,4,206,134,41,21,121,239,118,74,230,249,16,232,65,80,218,64,216,231,211,85,196,120,71,36,165,150,25,158,3,248,76,1,127,104,97,110,107,164,97,185,127,42,250,73,52,137,139,170,152,200,177,163,50,0,128,112,156,124,215,45,69,40,200,65,65,129,107,134,218,129,232,8,222,219,218,178,196,40,89,181,94,123,198,220,5,28,193,85,7,17,26,116,159,145,239,160,41,158,27,12,144,112,27,129,34,150,100,234,235,144,173,188,60,108,75,168,141,190,59,142,4,72,35,228,121,176,195,68,52,169,92,66,108,7,214,176,200,8,147,25,192,146,253,3,159,116,102,228,136,64,182,89,164,29,154,20,47,173,76,47,255,177,109,203,173,212,210,112,254,205,131,110,170,36,214,59,175,220,116,60,24,150,88,63,12,29,22,122,58,55,94,33,31,201,8,2,98,142,50,52,164,9,215,168,55,135,15,37,42,124,42,73,184,191,96,105,242,172,243,131,14,130,2,31,59,152,154,14,2,213,112,10,191,53,209,239,145,251,163,175,192,184,160,29,191,79,214,40,100],[142,186,175,2,20,110,52,23,79,202,111,137,29,71,73,90,209,23,34,203,73,30,188,128,68,129,77,72,76,249,91,77,148,242,147,74,60,49,156,202,153,188,180,191,181,222,44,227,144,164,247,79,150,172,154,162,172,164,204,2,215,214,97,86,254,3,44,236,183,84,9,219,168,125,237,3,121,132,163,74,104,146,99,216,95,206,227,89,232,183,191,156,206,133,4,14,143,177,17,147,177,0,224,218,75,186,205,60,79,214,79,30,43,28,228,93,252,216,164,10,43,224,40,235,38,179,38,246,213,219,151,140,95,24,108,61,23,160,133,110,143,196,118,116,112,14,194,174,207,133,209,130,158,201,124,34,17,125,165,225,80,136,20,153,215,42,113,89,81,18,192,172,174,122,234,36,169,176,120,37,195,252,19,247,85,12,30,165,250,240,153,241,36,134,90,224,157,158,215,177,24,185,121,155,52,151,208,141,181,196,159,172,134,182,51,228,247,243,193,156,138,222,106,104,234,6,89,211,99,222,155,214,123,174,185,188,36,10,61,94,40,146,193,77,27,140,185,0,6,188,187,152,1,152,190,155]]}},
+        "requested_proof":{
+	        "revealed_attrs":{},
+            "revealed_attr_groups":{
+                "attr1_referent":{
+                    "sub_proof_index":0,
+                    "values":{
+                        "name":{"raw":"Alex","encoded":"1139481716457488690172217916278103335"},
+                        "age":{"raw":"29","encoded":"29"}
+                    }
+                }
+            },
+            "self_attested_attrs":{},
+            "unrevealed_attrs":{},
+            "predicates":{}
+        },
+        "identifiers":[{"schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0","cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG1","rev_reg_id":null,"timestamp":null}]}
+    "#.to_string()
+}
+
+pub fn cred_defs_names() -> String {
+    r#"{
+        "NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG1": {"ver":"1.0","id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG1","schemaId":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0","type":"CL","tag":"TAG1","value":{"primary":{"n":"103643346393845275674640947963517640959341364800001498302360615696811800436853570598226635556206782056017108616401751128764891668126024496689984398292790001833962277974492640424375663143977133523408000338914980071623310865759379704138347909743626704834849589208010894771669047489759670624223420738983274636985733732817381003552388020158483750044902942029694408803816687233383567950712661075932249633288902332456154719732901523792530993107020670255716148528908061724351279359013028125494116528692296179832938992525116968924864645033367866112782093052304842841695662188904575461773278691171441164640468498936898548822961","s":"54822618443866209168352390646516970171692268351255705964324890820655555536844269368083112564663040886691690357518137913913851456980804740769095081281331568188360750646498021934662032327693250468598454967722301464234459636495850865224391999449766311288958890434234613688144418472914263652993730498111573243983592129437106960567928938213693844755547617988707695273081422650864025005777423456919937278227759790112692946315871730838728313573505822719779055770101438556244978220637745583964035779120946484981484244869612719059958094106508205010216749504887420219701355521415946533068900478171105140027940119076255040696360","r":{"master_secret":"21425866197572384062628227194464891714156374610141012384461581348365120908605278410323220952474017412306135450580118550540437728188359888590948197635134588545589091052407046545942207235016161583149373682351466989066269120996279864435557569196540520391810838084585341114461860501161109395768522889847155923115130975545305402980362921716271119462622840400234342486330844075138870120860006843715759294992210691837620004539067400600516841749888381337846509599423365443728150963320181855847744030640726283764098892020276321707557615206879891875680106353497981731503326804905717237138201176626474351449246082684820132978570","age":"45896901353995160445978387844699592703133036025099352750898266372964830207166941136996790217676372532920553925138777466267003700135162350479522623300298584973661267820445439715765094754232744337013710464559658285188600621507020083609102806722359565815605695315341934730703660211844694918436823660402045649465334189417440798816135712983731377808041977980814757299823667534167999849188593391970063412813082841269439697272607574256268026035546914701198698550305688087387956114332278588283870629094318506670933049355915020126916771611552278002263251015892361545719715049068470300032003538304598091054469910389331384577974","height":"4221002407005984423212190198398284728440929641232368725218578512393813615156013892338789867281385924668638715574080419943329990870453359527853553186274717009654214731069115515044687088555910844826756000998130090765935804499830649613782409467283723293807074901087954196385641523552555530081140452877980829429262438118263341391791477073355602772244978401151361021396142300113344103180780419266132906324807999802516470516337247456030064493854194598878878359527963789497903050121642959744956972333750467805569828376906169006006677887190946169426595114354749816600318887852407081680689591565211969531983309394999310215690","name":"55821888754379574444274347969239309214669096344182795896442772767165802253625684782808092946663161154477245454437228295689924108373383345714837117496635275551463599418309612940839462839591434978877169781158874575725325352168719700821644499270490964481646961843688156989732559770914667683505609881195966214647319014277753992611817499000283181845433053783962788019962661502416268571849389197531749145685201938251556822532563899886899730589195281288488435420894032614744402247844326503178107540034949843472286314368667720380983335175064713086835421532934021299267345727166356932677108561402137557792441291994395308417091","sex":"42643025673446729762816674570769849409692245764106121818625902368695453319759554688888639016334648500645929017602360733256156654476564346054352017290215025747835557451392247630617314944559117043358985248641744757651131432238247602477096654010555300286716932508602113826095821317420814670523504108998519549091300130622886149492085258276862787678317172035682824071514406288636316907042524503317048761222456138230146059037916323087426042597632575233092855412252116770053173039780130616320676368552589658421120777318093236117148547256237045434870125481935340815386532833182205775276361508091040101087580291158395096248559"},"rctxt":"31992296843801676419002251244571234188908617875737111965307805411711440137833955675753481353370798422552299763575457897093806000022648849035961238035756079922314435615410225785025116609642145363614683598253278559703740325116325475904143371799075727822754390855047833763476357818627562176083677917632158653889771251787647538508513720930934901860753297059032955828284586924945763206106801946523945886996921411204653206076328679835066062941303627608933435349077918619011152320089446868864551416857096600755315328457840592276640681321837903065178924598004689000075403324248676571699195373649922706248102368135426433140480","z":"48080767937237636685843182901757011094735969085033070985311264407046854205230155767794004046881564849977637323672450699564097991649050552022493835142041689529039228856996103514300988580136934919156886001156783367772685023905188703162742930724665619126199211612466903711166572493356027661192032647618322906856866625035472531927030350990340200726083246566521827993906484376817111857571652986215187880532663473563453916686603372697643738169264640142823640194129012710689193402020962720271825844652556914903310346673139441328343095408798925136070900501618726857155844753922445347010608331282659277380357914960811457571299"}}}
+    }"#.to_string()
+}
+
+pub fn schema_names() -> String {
+    r#"{
+        "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0": {"ver":"1.0","id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0","name":"gvt","version":"1.0","attrNames":["sex","height","name","age"],"seqNo":null}
+    }"#.to_string()
 }
 
 pub fn proof_json() -> String {
@@ -554,6 +727,7 @@ pub fn proof_json() -> String {
                 "revealed_attrs":{
                     "attr1_referent":{"sub_proof_index":0,"raw":"Alex","encoded":"1139481716457488690172217916278103335"}
                 },
+                "revealed_attr_groups": {},
                 "self_attested_attrs":{},
                 "unrevealed_attrs":{},
                 "predicates":{}
@@ -570,7 +744,6 @@ pub fn proof_json() -> String {
 }
 
 pub fn proof_json_restrictions() -> String {
-
     r#"{
         "proof":{
             "proofs":[
@@ -613,6 +786,7 @@ pub fn proof_json_restrictions() -> String {
                 "attr3_referent":{"sub_proof_index":0,"raw":"partial","encoded":"51792877103171595686471452153480627530895"},
                 "attr4_referent":{"sub_proof_index":2,"raw":"male","encoded":"5944657099558967239210949258394887428692050081607692519917050011144233115103"}
             },
+            "revealed_attr_groups": {},
             "self_attested_attrs":{},
             "unrevealed_attrs":{},
             "predicates":{}
@@ -647,7 +821,6 @@ pub fn proof_json_restrictions() -> String {
 }
 
 pub fn proof_request_restrictions() -> String {
-
     json!({
         "name":"proof_req_1",
         "nonce":"123432421212",
@@ -774,15 +947,13 @@ pub fn tails_writer_config() -> String {
 
 pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'static str) {
     lazy_static! {
-                    static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
+                    static ref COMMON_WALLET_INIT: Once = Once::new();
                  }
 
     unsafe {
         COMMON_WALLET_INIT.call_once(|| {
             // this name must match the one in ANONCREDS_WALLET_CONFIG
             test::cleanup_storage("anoncreds_wallet");
-
-            pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             //1. Create and Open wallet
             wallet::create_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
@@ -793,6 +964,15 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
                 issuer_create_credential_definition(wallet_handle,
                                                     ISSUER_DID,
                                                     &gvt_schema_json(),
+                                                    TAG_1,
+                                                    None,
+                                                    Some(&default_cred_def_config())).unwrap();
+
+            //2.1 Issuer1 Creates GVT Subscheme (for "names" tests, IS-1381)
+            let (issuer1_gvt_sub_cred_def_id, issuer1_gvt_sub_credential_def_json) =
+                issuer_create_credential_definition(wallet_handle,
+                                                    ISSUER_DID_SUB,
+                                                    &gvt_sub_schema_json(),
                                                     TAG_1,
                                                     None,
                                                     Some(&default_cred_def_config())).unwrap();
@@ -817,6 +997,9 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
 
             //5. Issuer1 Creates GVT CredentialOffer
             let issuer1_gvt_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_gvt_cred_deg_id).unwrap();
+
+            //5.1 Issuer1 Creates GVT sub CredentialOffer
+            let issuer1_gvt_sub_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_gvt_sub_cred_def_id).unwrap();
 
             //6. Issuer1 Creates XYZ CredentialOffer
             let issuer1_xyz_credential_offer = issuer_create_credential_offer(wallet_handle, &issuer1_xyz_cred_deg_id).unwrap();
@@ -848,6 +1031,29 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
                                     &issuer1_gvt_credential_req_metadata,
                                     &issuer1_gvt_cred,
                                     &issuer1_gvt_credential_def_json,
+                                    None).unwrap();
+
+            // Issuer1 issues GVT SUB Credential
+            //9.1 Prover creates Credential Request
+            let (issuer1_gvt_sub_credential_req, issuer1_gvt_sub_credential_req_metadata) = prover_create_credential_req(wallet_handle,
+                                                                                                                         DID_MY1,
+                                                                                                                         &issuer1_gvt_sub_credential_offer,
+                                                                                                                         &issuer1_gvt_sub_credential_def_json,
+                                                                                                                         COMMON_MASTER_SECRET).unwrap();
+            //10.1 Issuer1 creates GVT Credential
+            let (issuer1_gvt_sub_cred, _, _) = issuer_create_credential(wallet_handle,
+                                                                        &issuer1_gvt_sub_credential_offer,
+                                                                        &issuer1_gvt_sub_credential_req,
+                                                                        &gvt_sub_credential_values_json(),
+                                                                        None,
+                                                                        None).unwrap();
+
+            //11. Prover stores Credential
+            prover_store_credential(wallet_handle,
+                                    CREDENTIAL1_SUB_ID,
+                                    &issuer1_gvt_sub_credential_req_metadata,
+                                    &issuer1_gvt_sub_cred,
+                                    &issuer1_gvt_sub_credential_def_json,
                                     None).unwrap();
 
             // Issuer1 issue XYZ Credential
@@ -920,7 +1126,7 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
     }
 }
 
-pub fn multi_steps_issuer_preparation(wallet_handle: i32,
+pub fn multi_steps_issuer_preparation(wallet_handle: WalletHandle,
                                       did: &str,
                                       schema_name: &str,
                                       schema_attrs: &str) -> (String, String, String, String) {
@@ -939,7 +1145,7 @@ pub fn multi_steps_issuer_preparation(wallet_handle: i32,
     (schema_id, schema_json, cred_def_id, cred_def_json)
 }
 
-pub fn multi_steps_issuer_revocation_preparation(wallet_handle: i32,
+pub fn multi_steps_issuer_revocation_preparation(wallet_handle: WalletHandle,
                                                  did: &str,
                                                  schema_name: &str,
                                                  schema_attrs: &str,
@@ -977,8 +1183,8 @@ pub fn multi_steps_issuer_revocation_preparation(wallet_handle: i32,
 }
 
 pub fn multi_steps_create_credential(prover_master_secret_id: &str,
-                                     prover_wallet_handle: i32,
-                                     issuer_wallet_handle: i32,
+                                     prover_wallet_handle: WalletHandle,
+                                     issuer_wallet_handle: WalletHandle,
                                      cred_id: &str,
                                      cred_values: &str,
                                      cred_def_id: &str,
@@ -1011,8 +1217,8 @@ pub fn multi_steps_create_credential(prover_master_secret_id: &str,
 }
 
 pub fn multi_steps_create_revocation_credential(prover_master_secret_id: &str,
-                                                prover_wallet_handle: i32,
-                                                issuer_wallet_handle: i32,
+                                                prover_wallet_handle: WalletHandle,
+                                                issuer_wallet_handle: WalletHandle,
                                                 credential_id: &str,
                                                 cred_values: &str,
                                                 cred_def_id: &str,

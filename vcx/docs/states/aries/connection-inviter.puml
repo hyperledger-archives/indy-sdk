@@ -1,0 +1,23 @@
+@startuml
+title
+ Connection API as Inviter
+
+ The diagram shows Connection object state transitions in case acting as an Inviter
+end title
+
+[*] --> VcxStateInitialized: vcx_connection_create
+
+VcxStateInitialized --> VcxStateOfferSent: vcx_connection_connect
+
+note left of VcxStateOfferSent : use vcx_connection_update_state \n or vcx_connection_update_state_with_message \n for connection status updates
+
+VcxStateOfferSent --> VcxStateRequestReceived: received `ConnectionRequest` message
+VcxStateOfferSent --> VcxStateNone: received `ConnectionProblemReport` message
+
+note left of VcxStateRequestReceived : use vcx_connection_update_state \n or vcx_connection_update_state_with_message \n for connection status updates
+
+VcxStateRequestReceived --> VcxStateAccepted: received `Ack` message
+VcxStateRequestReceived --> VcxStateAccepted: received `Ping` message
+VcxStateRequestReceived --> VcxStateNone: received `ConnectionProblemReport` message
+
+@enduml

@@ -3,7 +3,7 @@ import '../module-resolver-helper'
 import { assert } from 'chai'
 import { validateUTXO } from 'helpers/asserts'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { shutdownVcx, VCXCode, Wallet } from 'src'
+import { initMinimal, setPoolHandle, shutdownVcx, VCXCode, Wallet } from 'src'
 
 const WALLET_RECORD = {
   id: 'RecordId',
@@ -96,6 +96,23 @@ describe('Wallet:', () => {
     })
   })
 
+  describe('signWithAddress:', () => {
+    it('success', async () => {
+      const msg = Buffer.from('random string');
+      const sig = await Wallet.signWithAddress('pay:sov:1234', msg)
+      assert.ok(sig)
+    })
+  })
+
+  describe('verifyWithAddress:', () => {
+    it('success', async () => {
+      const msg = Buffer.from('random string');
+      const sig = Buffer.from('random string');
+      const valid = await Wallet.verifyWithAddress('pay:sov:1234', msg, sig)
+      assert.ok(valid)
+    })
+  })
+
   describe('records:', () => {
     it('success', async () => {
       await Wallet.addRecord(WALLET_RECORD)
@@ -119,7 +136,7 @@ describe('Wallet:', () => {
 
   describe('import:', () => {
     it('throws: libindy error', async () => {
-      let config = '{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}'
+      let config = '{"wallet_name":"name","wallet_key":"","exported_wallet_path":"","backup_key":""}'
       let error = await shouldThrow(async () => Wallet.import(config))
       assert.equal(error.vcxCode, VCXCode.IO_ERROR)
       shutdownVcx(false)
@@ -149,6 +166,15 @@ describe('Wallet:', () => {
     it('throws: libindy error', async () => {
       const error = await shouldThrow(async () => Wallet.export('/tmp/foobar.wallet', 'key_for_wallet'))
       assert.equal(error.vcxCode, VCXCode.INVALID_WALLET_HANDLE)
+    })
+  })
+
+  describe('setting:', () => {
+    it('can be initialized when wallet is set', async () => {
+      Wallet.setHandle(1)
+      setPoolHandle(1)
+      assert.equal(initMinimal('{"institution_name":"faber","institution_did":"44x8p4HubxzUK1dwxcc5FU",\
+      "institution_verkey":"444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"}'), 0)
     })
   })
 })

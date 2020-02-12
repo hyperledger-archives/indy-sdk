@@ -4,21 +4,11 @@ import json
 import random
 from ctypes import cdll
 from time import sleep
-import platform
-
-import logging
-
-from indy import wallet
-from indy.error import ErrorCode, IndyError
 
 from vcx.api.connection import Connection
-from vcx.api.credential_def import CredentialDef
-from vcx.api.issuer_credential import IssuerCredential
-from vcx.api.proof import Proof
-from vcx.api.schema import Schema
 from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
-from vcx.state import State, ProofState
+from vcx.state import State
 
 from demo_utils import *
 
@@ -32,13 +22,15 @@ from demo_utils import *
 # 'wallet_key': encryption key for encoding wallet
 # 'payment_method': method that will be used for payments
 provisionConfig = {
-  'agency_url':'http://localhost:8080',
-  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
-  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
-  'wallet_name':'faber_wallet_' + str(random.randint(100, 999)),
-  'wallet_key':'123',
-  'payment_method': 'null',
-  'enterprise_seed':'000000000000000000000000Trustee1'
+    'agency_url': 'http://localhost:8080',
+    'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
+    'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
+    'wallet_name': 'faber_wallet_' + str(random.randint(100, 999)),
+    'wallet_key': '123',
+    'payment_method':  'null',
+    'enterprise_seed': '000000000000000000000000Trustee1',
+    'protocol_type': '2.0',
+    'communication_method': 'aries'
 }
 
 

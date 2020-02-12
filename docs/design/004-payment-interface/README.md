@@ -18,6 +18,7 @@ This design proposes to make libindy aware about payments and tokens that can be
     Payment addresses would be things like “pay:sov:12345”.
   * The idea of payments take inputs and outputs.
   * General payment errors that might happen (e.g., “insufficient funds”).
+  * Proof of address control
 * Out-of-box libindy will not provide support of any payment method, but there will be
   API to register payment methods.
 * Each payment method should be aware about:
@@ -740,4 +741,121 @@ pub extern fn indy_parse_verify_payment_response(command_handle: i32,
                                                  cb: Option<extern fn(command_handle_: i32,
                                                                       err: ErrorCode,
                                                                       txn_json: *const c_char)>) -> ErrorCode {}
+
+/// Signs a message with a payment address.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// address: payment address of message signer. The key must be created by calling indy_create_address
+/// message_raw: a pointer to first byte of message to be signed
+/// message_len: a message length
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// a signature string
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+pub extern fn indy_sign_with_address(command_handle: CommandHandle,
+                                     wallet_handle: WalletHandle,
+                                     address: *const c_char,
+                                     message_raw: *const u8,
+                                     message_len: u32,
+                                     cb: Option<extern fn(command_handle_: CommandHandle,
+                                                          err: ErrorCode,
+                                                          signature_raw: *const u8,
+                                                          signature_len: u32)>) -> ErrorCode {
+    trace!("indy_sign_with_address: >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
+           wallet_handle, address, message_raw, message_len);
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_sign_with_address: entities >>> wallet_handle: {:?}, address: {:?}, message_raw: {:?}, message_len: {:?}",
+           wallet_handle, address, message_raw, message_len);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Payments(
+            PaymentsCommand::SignWithAddressReq(wallet_handle,
+                                                address,
+                                                message_raw,
+                                                Box::new(move |result| {
+                                                    let (err, signature) = prepare_result_1!(result, Vec::new());
+                                                    trace!("indy_sign_with_address: signature: {:?}", signature);
+                                                    let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
+                                                    cb(command_handle, err, signature_raw, signature_len)
+                                        }))
+        ));
+
+
+    let res = prepare_result!(result);
+
+    trace!("indy_sign_with_address: <<< res: {:?}", res);
+
+    res
+}
+
+/// Verify a signature with a payment address.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// address: payment address of the message signer
+/// message_raw: a pointer to first byte of message that has been signed
+/// message_len: a message length
+/// signature_raw: a pointer to first byte of signature to be verified
+/// signature_len: a signature length
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// valid: true - if signature is valid, false - otherwise
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
+#[no_mangle]
+pub extern fn indy_verify_with_address(command_handle: CommandHandle,
+                                       address: *const c_char,
+                                       message_raw: *const u8,
+                                       message_len: u32,
+                                       signature_raw: *const u8,
+                                       signature_len: u32,
+                                       cb: Option<extern fn(command_handle_: CommandHandle,
+                                                            err: ErrorCode,
+                                                            result: bool)>) -> ErrorCode {
+    trace!("indy_verify_with_address: >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+           address, message_raw, message_len, signature_raw, signature_len);
+
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam2);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
+    check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+
+    trace!("indy_verify_with_address: entities >>> address: {:?}, message_raw: {:?}, message_len: {:?}, signature_raw: {:?}, signature_len: {:?}",
+           address, message_raw, message_len, signature_raw, signature_len);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Payments(PaymentsCommand::VerifyWithAddressReq(
+            address,
+            message_raw,
+            signature_raw,
+            Box::new(move |result| {
+                let (err, valid) = prepare_result_1!(result, false);
+                trace!("indy_verify_with_address: valid: {:?}", valid);
+                cb(command_handle, err, valid)
+            })
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_verify_with_address: <<< res: {:?}", res);
+
+    res
+}
+
 ```

@@ -14,9 +14,15 @@ extern void IndyWrapperCommonHandleCallback(indy_handle_t xcommand_handle,
         indy_error_t err,
         indy_handle_t pool_handle);
 
+extern void IndyWrapperCommonStringNumber64Callback(indy_handle_t xcommand_handle,
+        indy_error_t err,
+        const char *const arg1,
+        indy_i64_t handle);
+
 extern void IndyWrapperCommonStringCallback(indy_handle_t xcommand_handle,
         indy_error_t err,
         const char *const arg1);
+
 
 extern void IndyWrapperCommonBoolCallback(indy_handle_t xcommand_handle,
         indy_error_t err,

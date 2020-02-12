@@ -7,13 +7,90 @@ import { Connection } from './connection'
 import { VCXBaseWithState } from './vcx-base-with-state'
 import { PaymentManager } from './vcx-payment-txn'
 
+/**
+ *    The object of the VCX API representing an Issuer side in the credential issuance process.
+ *    Assumes that pairwise connection between Issuer and Holder is already established.
+ *
+ *    # State
+ *
+ *    The set of object states and transitions depends on communication method is used.
+ *    The communication method can be specified as config option on one of *_init function. The default communication method us `proprietary`.
+ *
+ *    proprietary:
+ *        VcxStateType::VcxStateInitialized - once `vcx_issuer_create_credential` (create IssuerCredential object) is called.
+ *
+ *        VcxStateType::VcxStateOfferSent - once `vcx_issuer_send_credential_offer` (send `CRED_OFFER` message) is called.
+ *
+ *        VcxStateType::VcxStateRequestReceived - once `CRED_REQ` messages is received.
+ *                                                use `vcx_issuer_credential_update_state` or `vcx_issuer_credential_update_state_with_message` functions for state updates.
+ *        VcxStateType::VcxStateAccepted - once `vcx_issuer_send_credential` (send `CRED` message) is called.
+ *
+ *    aries:
+ *        VcxStateType::VcxStateInitialized - once `vcx_issuer_create_credential` (create IssuerCredential object) is called.
+ *
+ *        VcxStateType::VcxStateOfferSent - once `vcx_issuer_send_credential_offer` (send `CredentialOffer` message) is called.
+ *
+ *        VcxStateType::VcxStateRequestReceived - once `CredentialRequest` messages is received.
+ *        VcxStateType::None - once `ProblemReport` messages is received.
+ *                                                use `vcx_issuer_credential_update_state` or `vcx_issuer_credential_update_state_with_message` functions for state updates.
+ *
+ *        VcxStateType::VcxStateAccepted - once `vcx_issuer_send_credential` (send `Credential` message) is called.
+ *
+ *    # Transitions
+ *
+ *    proprietary:
+ *        VcxStateType::None - `vcx_issuer_create_credential` - VcxStateType::VcxStateInitialized
+ *
+ *        VcxStateType::VcxStateInitialized - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+ *
+ *        VcxStateType::VcxStateOfferSent - received `CRED_REQ` - VcxStateType::VcxStateRequestReceived
+ *
+ *        VcxStateType::VcxStateRequestReceived - `vcx_issuer_send_credential` - VcxStateType::VcxStateAccepted
+ *
+ *    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+ *        VcxStateType::None - `vcx_issuer_create_credential` - VcxStateType::VcxStateInitialized
+ *
+ *        VcxStateType::VcxStateInitialized - `vcx_issuer_send_credential_offer` - VcxStateType::VcxStateOfferSent
+ *
+ *        VcxStateType::VcxStateOfferSent - received `CredentialRequest` - VcxStateType::VcxStateRequestReceived
+ *        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+ *
+ *        VcxStateType::VcxStateRequestReceived - vcx_issuer_send_credential` - VcxStateType::VcxStateAccepted
+ *
+ *        VcxStateType::VcxStateAccepted - received `Ack` - VcxStateType::VcxStateAccepted
+ *
+ *   # Messages
+ *
+ *    proprietary:
+ *        CredentialOffer (`CRED_OFFER`)
+ *        CredentialRequest (`CRED_REQ`)
+ *        Credential (`CRED`)
+ *
+ *    aries:
+ *        CredentialProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#propose-credential
+ *        CredentialOffer - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#offer-credential
+ *        CredentialRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#request-credential
+ *        Credential - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential#issue-credential
+ *        ProblemReport - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0035-report-problem#the-problem-report-message-type
+ *        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+ */
+
+/**
+ * @description Interface that represents the parameters for `IssuerCredential.create` function.
+ * @interface
+ */
 export interface IIssuerCredentialCreateData {
+  // Enterprise's personal identification for the user.
   sourceId: string,
+  // Handle of the correspondent credential definition object
   credDefHandle: number,
+  // Data attributes offered to person in the credential ('{"state":"UT"}')
   attr: {
     [ index: string ]: string
   },
+  // Name of the credential - ex. Drivers Licence
   credentialName: string,
+  // price of credential
   price: string,
 }
 
@@ -59,7 +136,8 @@ export class IssuerCredentialPaymentManager extends PaymentManager {
  */
 export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   /**
-   * Builds a generic Issuer Credential object
+   * Create a Issuer Credential object that provides a credential for an enterprise's user
+    * Assumes a credential definition has been already written to the ledger.
    * ```
    * issuerCredential = await IssuerCredential.create({sourceId: "12",
    * credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: "0"})
@@ -126,6 +204,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   public paymentManager!: IssuerCredentialPaymentManager
   protected _releaseFn = rustAPI().vcx_issuer_credential_release
   protected _updateStFn = rustAPI().vcx_issuer_credential_update_state
+  protected _updateStWithMessageFn = rustAPI(). vcx_issuer_credential_update_state_with_message
   protected _getStFn = rustAPI().vcx_issuer_credential_get_state
   protected _serializeFn = rustAPI().vcx_issuer_credential_serialize
   protected _deserializeFn = rustAPI().vcx_issuer_credential_deserialize
@@ -182,40 +261,43 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   }
 
   /**
+   * Gets the credential offer message for sending to connection.
    *
-   * Updates the state of the credential from the given message.
+   * ```
+   * connection = await connectionCreateConnect()
+   * issuerCredential = await issuerCredentialCreate()
+   * await issuerCredential.getCredentialOfferMsg()
+   * ```
    *
-   * Example:
-   * ```
-   * await object.updateStateWithMessage(message)
-   * ```
-   * @returns {Promise<void>}
    */
-  public async updateStateWithMessage (message: string): Promise<void> {
+  public async getCredentialOfferMsg (): Promise<string> {
     try {
-      const commandHandle = 0
-      await createFFICallbackPromise<number>(
-        (resolve, reject, cb) => {
-          const rc = rustAPI().vcx_issuer_credential_update_state_with_message(commandHandle, this.handle, message, cb)
-          if (rc) {
-            resolve(StateType.None)
-          }
-        },
-        (resolve, reject) => ffi.Callback(
-          'void',
-          ['uint32', 'uint32', 'uint32'],
-          (handle: number, err: any, state: StateType) => {
-            if (err) {
-              reject(err)
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_issuer_get_credential_offer_msg(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
             }
-            resolve(state)
-          })
-      )
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`Credential ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
     } catch (err) {
       throw new VCXInternalError(err)
     }
   }
-
   /**
    * Sends the credential to the end user.
    *
@@ -254,7 +336,48 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Gets the credential message for sending to connection.
+   *
+   * Credential is made up of the data sent during Credential Offer
+   * ```
+   * connection = await connectionCreateConnect()
+   * issuerCredential = await issuerCredentialCreate()
+   * await issuerCredential.sendOffer(connection)
+   * await issuerCredential.updateState()
+   * assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
+   * await issuerCredential.getCredentialMsg()
+   * ```
+   *
+   */
+  public async getCredentialMsg (myPwDid: string): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_issuer_get_credential_msg(0, this.handle, myPwDid, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`Credential ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
   /**
    * Revokes credential.
    *

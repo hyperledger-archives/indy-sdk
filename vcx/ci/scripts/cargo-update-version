@@ -1,11 +1,9 @@
 #!/usr/bin/env python
-import subprocess
 import os
 import sys
 from toml_utils import extract_version_from_file, update_major_minor_build_to_toml, \
         update_revision, extract_revision
 from version_utils import get_revision_number
-from subprocess import Popen, PIPE
 import buildnum
 import json
 
@@ -56,7 +54,7 @@ def update_npm_package(package, version):
         j = json.loads(o)
         j['version'] = version
         w = open(package, 'w')
-        j_to_write = json.dump(j,w, indent = 4)
+        json.dump(j,w, indent = 4)
         w.close()
     except IOError:
         print(str(IOError)+ ' ' + package)

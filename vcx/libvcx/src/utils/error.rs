@@ -107,6 +107,12 @@ pub static INVALID_REV_ENTRY: Error = Error{ code_num: 1092, message: "Unable to
 pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1093, message: "Invalid Credential Revocation timestamp"};
 pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1094, message: "Unknown Rejection of Schema Creation, refer to libindy documentation"};
 pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1095, message: "Failed to create Revocation Registration Definition"};
+/* EC 1096 - 1099 are reserved for proprietary forks of libVCX */
+pub static INVALID_ATTACHMENT_ENCODING: Error = Error { code_num: 1100, message: "Failed to decode attachment"};
+pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1101, message: "This type of attachment can not be used"};
+pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown mime type"};
+pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
+pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1104, message: "Invalid redirect details structure"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -207,6 +213,11 @@ lazy_static! {
         insert_c_message(&mut m, &UKNOWN_LIBINDY_TRANSACTION_REJECTION);
         insert_c_message(&mut m, &MISSING_PAYMENT_METHOD);
         insert_c_message(&mut m, &LOGGING_ERROR);
+        insert_c_message(&mut m, &INVALID_ATTACHMENT_ENCODING);
+        insert_c_message(&mut m, &UNKNOWN_ATTACHMENT_ENCODING);
+        insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
+        insert_c_message(&mut m, &ACTION_NOT_SUPPORTED);
+        insert_c_message(&mut m, &INVALID_REDIRECT_DETAILS);
 
         m
     };
@@ -224,7 +235,7 @@ fn insert_c_message(map: &mut HashMap<u32, CString>, error: &Error) {
 }
 
 // Helper function for static defining of error messages. Does limited checking that it can.
-fn insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
+fn _insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
     if map.contains_key(&error.code_num) {
         panic!("Error Code number was repeated which is not allowed! (likely a copy/paste error)")
     }
@@ -232,6 +243,7 @@ fn insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
 
 }
 
+#[derive(Clone, Copy)]
 pub struct Error {
     pub code_num: u32,
     pub message: &'static str
@@ -419,6 +431,11 @@ mod tests {
     #[test]
     fn test_invalid_invite_details() {
         assert_eq!(error_message(&INVALID_INVITE_DETAILS.code_num), INVALID_INVITE_DETAILS.message);
+    }
+
+    #[test]
+    fn test_invalid_redirect_details() {
+        assert_eq!(error_message(&INVALID_REDIRECT_DETAILS.code_num), INVALID_REDIRECT_DETAILS.message);
     }
 
     #[test]

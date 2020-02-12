@@ -1,0 +1,30 @@
+[package]
+name = "indy-wallet"
+version = "0.1.0"
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+byteorder = "1.3.2"
+indy-api-types = { path = "../indy-api-types"}
+indy-utils = { path = "../indy-utils"}
+libc = "*"
+log = "0.4.8"
+named_type = "0.2.1"
+owning_ref = "0.4"
+rmp-serde = "0.13.7"
+rusqlite = "0.20" # Make sure rusqlite for android is also bumped with this. Rusqlite for android is at the bottom of this document.
+rust-base58 = "0.0.4"
+serde = "1.0.99"
+serde_json = "1.0.40"
+serde_derive = "1.0.99"
+zeroize = "*"
+
+[dev-dependencies]
+rand = "0.7.0"
+lazy_static = "1.3"
+
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
+rusqlite = { version = "0.20", features=["bundled"] }

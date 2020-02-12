@@ -29,29 +29,4 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 
 		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "InvalidSchema", null, defaultCredentialDefinitionConfig).get();
 	}
-
-	@Test
-	public void testIssuerCreateAndStoreCredentialDefWorksForEmptyKeys() throws Exception {
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		String schema = "{\n" +
-				"           \"id\":\"1\",\n" +
-				"           \"name\":\"gvt\",\n" +
-				"           \"version\":\"1.0\",\n" +
-				"           \"attr_names\":[]\n" +
-				"       }";
-
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "EmptyKeys", null, defaultCredentialDefinitionConfig).get();
-	}
-
-	@Test
-	public void testIssuerCreateAndStoreCredentialDefWorksForDuplicate() throws Exception {
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(CredDefAlreadyExistsException.class));
-
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefinitionConfig).get();
-	}
 }

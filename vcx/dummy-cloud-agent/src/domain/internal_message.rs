@@ -1,10 +1,10 @@
-use domain::a2a::RemoteMessageType;
-use domain::status::MessageStatusCode;
-use domain::payload::Thread;
-
-use utils::rand::rand_string;
-
 use std::collections::HashMap;
+use crate::domain::invite::RedirectDetail;
+
+use crate::domain::a2a::RemoteMessageType;
+use crate::domain::payload::Thread;
+use crate::domain::status::MessageStatusCode;
+use crate::utils::rand::rand_string;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InternalMessage {
@@ -15,7 +15,8 @@ pub struct InternalMessage {
     pub ref_msg_id: Option<String>,
     pub payload: Option<Vec<u8>>,
     pub sending_data: HashMap<String, Option<String>>,
-    pub thread: Option<Thread>
+    pub thread: Option<Thread>,
+    pub redirect_detail: Option<RedirectDetail>,
 }
 
 impl InternalMessage {
@@ -26,7 +27,9 @@ impl InternalMessage {
                ref_msg_id: Option<&str>,
                payload: Option<Vec<u8>>,
                sending_data: Option<HashMap<String, Option<String>>>,
-               thread: Option<Thread>) -> InternalMessage {
+               thread: Option<Thread>,
+               redirect_detail: Option<RedirectDetail>
+    ) -> InternalMessage {
         InternalMessage {
             uid: uid.map(String::from).unwrap_or(rand_string(10)),
             _type: mtype.clone(),
@@ -36,6 +39,7 @@ impl InternalMessage {
             payload,
             sending_data: sending_data.unwrap_or(HashMap::new()),
             thread,
+            redirect_detail
         }
     }
 }

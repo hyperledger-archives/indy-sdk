@@ -4,8 +4,8 @@ use messages::get_message::MessagePayload;
 use settings::{ProtocolTypes, get_protocol_type};
 use utils::libindy::crypto;
 use error::prelude::*;
-
-use std::collections::HashMap;
+use messages::thread::Thread;
+use serde_json::Value;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(untagged)]
@@ -17,15 +17,23 @@ pub enum Payloads {
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct PayloadV1 {
     #[serde(rename = "@type")]
-    type_: PayloadTypeV1,
+    pub type_: PayloadTypeV1,
     #[serde(rename = "@msg")]
     pub msg: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
-pub struct PayloadV2 {
+pub struct PayloadV12 {
     #[serde(rename = "@type")]
     type_: PayloadTypeV2,
+    #[serde(rename = "@msg")]
+    pub msg: Value
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+pub struct PayloadV2 {
+    #[serde(rename = "@type")]
+    pub type_: PayloadTypeV2,
     #[serde(rename = "@id")]
     pub id: String,
     #[serde(rename = "@msg")]
@@ -86,7 +94,7 @@ impl Payloads {
             MessagePayload::V1(payload) => {
                 let payload = Payloads::decrypt_payload_v1(my_vk, payload)?;
                 Ok((payload.msg, None))
-            },
+            }
             MessagePayload::V2(payload) => {
                 let payload = Payloads::decrypt_payload_v2(my_vk, payload)?;
                 Ok((payload.msg, Some(payload.thread)))
@@ -103,7 +111,7 @@ impl Payloads {
         Ok(my_payload)
     }
 
-    pub fn decrypt_payload_v2(my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
+    pub fn decrypt_payload_v2(_my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
         let payload = ::serde_json::to_vec(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -124,6 +132,27 @@ impl Payloads {
         if my_payload.thread.thid.is_none() {
             my_payload.thread.thid = Some(my_payload.id.clone());
         }
+
+        Ok(my_payload)
+    }
+
+    pub fn decrypt_payload_v12(_my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV12> {
+        let payload = ::serde_json::to_vec(&payload)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+
+        let unpacked_msg = crypto::unpack_message(&payload)?;
+
+        let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err)))?;
+
+        let message = message["message"].as_str()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
+
+        let my_payload: PayloadV12 = serde_json::from_str(&message)
+            .map_err(|err| {
+                error!("could not deserialize bundle with i8 or u8: {}", err);
+                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
+            })?;
 
         Ok(my_payload)
     }
@@ -209,30 +238,5 @@ impl PayloadTypes {
             version: kind.family().version().to_string(),
             type_: kind.name().to_string(),
         }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
-pub struct Thread {
-    pub thid: Option<String>,
-    pub pthid: Option<String>,
-    pub sender_order: u32,
-    pub received_orders: HashMap<String, u32>,
-}
-
-impl Thread {
-    pub fn new() -> Thread {
-        Thread {
-            thid: None,
-            pthid: None,
-            sender_order: 0,
-            received_orders: HashMap::new(),
-        }
-    }
-
-    pub fn increment_receiver(&mut self, did: &str) {
-        self.received_orders.entry(did.to_string())
-            .and_modify(|e| *e += 1)
-            .or_insert(0);
     }
 }

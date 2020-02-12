@@ -1,8 +1,7 @@
 import operator
 import pytest
 
-from indy import IndyError
-from indy.error import ErrorCode
+from indy import error
 from tests.non_secrets.common import *
 
 
@@ -38,6 +37,5 @@ async def test_get_wallet_record_works_for_full_data(wallet_handle):
 
 @pytest.mark.asyncio
 async def test_get_wallet_record_works_for_not_found_record(wallet_handle):
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.WalletItemNotFound):
         await non_secrets.get_wallet_record(wallet_handle, type_, id1, options_empty)
-    assert ErrorCode.WalletItemNotFound == e.value.error_code

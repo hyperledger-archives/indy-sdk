@@ -2,26 +2,37 @@ use serde_json;
 
 use std::collections::HashMap;
 use api::VcxStateType;
+use v3;
 use messages;
 use settings;
-use messages::{RemoteMessageType, MessageStatusCode, GeneralMessage, ObjectWithVersion};
-use messages::payload::{Payloads, PayloadKinds, Thread};
+use messages::{RemoteMessageType, MessageStatusCode, GeneralMessage};
+use messages::payload::{Payloads, PayloadKinds};
+use messages::thread::Thread;
 use connection;
 use credential_request::CredentialRequest;
 use utils::error;
 use utils::libindy::{payments, anoncreds};
-use utils::constants::{CRED_MSG, DEFAULT_SERIALIZE_VERSION};
+use utils::constants::{CRED_MSG};
 use utils::openssl::encode;
 use utils::libindy::payments::PaymentTxn;
+use utils::qualifier::Qualifier;
 use object_cache::ObjectCache;
 use error::prelude::*;
-use messages::get_message::Message;
+
+use v3::handlers::issuance::Issuer;
 
 lazy_static! {
-    static ref ISSUER_CREDENTIAL_MAP: ObjectCache < IssuerCredential > = Default::default();
+    static ref ISSUER_CREDENTIAL_MAP: ObjectCache < IssuerCredentials > = Default::default();
 }
 
-static CREDENTIAL_OFFER_ID_KEY: &str = "claim_offer_id";
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "version", content = "data")]
+enum IssuerCredentials {
+    #[serde(rename = "1.0")]
+    V1(IssuerCredential),
+    #[serde(rename = "2.0")]
+    V3(Issuer),
+}
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct IssuerCredential {
@@ -116,7 +127,7 @@ impl PaymentInfo {
 
     pub fn to_string(&self) -> VcxResult<String> {
         serde_json::to_string(&self)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payment info")))
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payment info: {:?}", err)))
     }
 }
 
@@ -125,6 +136,33 @@ impl IssuerCredential {
         //TODO: validate credential_attributes against credential_def
         debug!("successfully validated issuer_credential {}", self.source_id);
         Ok(error::SUCCESS.code_num)
+    }
+
+    pub fn generate_credential_offer_msg(&mut self) -> VcxResult<(String, String)> {
+        let mut payload = Vec::new();
+
+        let connection_name = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?;
+
+        let payment = self.generate_payment_info()?;
+
+        let title = if let Some(x) = payment {
+            payload.push(json!(x));
+            format!("{} wants you to pay tokens for: {}", connection_name, self.credential_name)
+        } else {
+            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
+        };
+
+        let credential_offer = self.generate_credential_offer(&self.issued_did)?;
+        let cred_json = json!(credential_offer);
+
+        payload.push(cred_json);
+
+        let payload = serde_json::to_string(&payload)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payload: {}", err)))?;
+
+        self.credential_offer = Some(credential_offer);
+
+        Ok((payload, title))
     }
 
     fn send_credential_offer(&mut self, connection_handle: u32) -> VcxResult<u32> {
@@ -147,24 +185,8 @@ impl IssuerCredential {
         self.issued_vk = connection::get_pw_verkey(connection_handle)?;
         self.remote_vk = connection::get_their_pw_verkey(connection_handle)?;
 
-        let payment = self.generate_payment_info()?;
-        let credential_offer = self.generate_credential_offer(&self.issued_did)?;
-        let cred_json = json!(credential_offer);
-        let mut payload = Vec::new();
 
-        let connection_name = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?;
-
-        let title = if let Some(x) = payment {
-            payload.push(json!(x));
-            format!("{} wants you to pay tokens for: {}", connection_name, self.credential_name)
-        } else {
-            format!("{} is offering you a credential: {}", connection_name, self.credential_name)
-        };
-
-        payload.push(cred_json);
-
-        let payload = serde_json::to_string(&payload)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize payload: {}", err)))?;
+        let (payload, title) = self.generate_credential_offer_msg()?;
 
         debug!("credential offer data: {}", secret!(&payload));
 
@@ -184,10 +206,23 @@ impl IssuerCredential {
 
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
-        self.credential_offer = Some(credential_offer);
 
         debug!("sent credential offer for: {}", self.source_id);
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
+    }
+
+    fn generate_credential_msg(&mut self, my_pw_did: &str) -> VcxResult<String> {
+        let attrs_with_encodings = self.create_attributes_encodings()?;
+
+        let data = if settings::test_indy_mode_enabled() {
+            CRED_MSG.to_string()
+        } else {
+            let cred = self.generate_credential(&attrs_with_encodings, my_pw_did)?;
+            serde_json::to_string(&cred)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot serialize credential: {}", err)))?
+        };
+
+        Ok(data)
     }
 
     fn send_credential(&mut self, connection_handle: u32) -> VcxResult<u32> {
@@ -206,16 +241,7 @@ impl IssuerCredential {
 
         self.verify_payment()?;
 
-        let to = connection::get_pw_did(connection_handle)?;
-        let attrs_with_encodings = self.create_attributes_encodings()?;
-
-        let data = if settings::test_indy_mode_enabled() {
-            CRED_MSG.to_string()
-        } else {
-            let cred = self.generate_credential(&attrs_with_encodings, &to)?;
-            serde_json::to_string(&cred)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot serialize credential: {}", err)))?
-        };
+        let data = self.generate_credential_msg(&connection::get_pw_did(connection_handle)?)?;
 
         debug!("credential data: {}", secret!(&data));
 
@@ -242,7 +268,7 @@ impl IssuerCredential {
         self.state = VcxStateType::VcxStateAccepted;
 
         debug!("issued credential: {}", self.source_id);
-        return Ok(error::SUCCESS.code_num);
+        Ok(error::SUCCESS.code_num)
     }
 
     pub fn create_attributes_encodings(&self) -> VcxResult<String> {
@@ -251,37 +277,41 @@ impl IssuerCredential {
 
     // TODO: The error arm of this Result is never used in any calling functions.
     // So currently there is no way to test the error status.
-    fn get_credential_offer_status(&mut self, message: Option<Message>) -> VcxResult<u32> {
+    fn get_credential_offer_status(&mut self, message: Option<String>) -> VcxResult<u32> {
         debug!("updating state for credential offer: {} msg_uid: {:?}", self.source_id, self.msg_uid);
         if self.state == VcxStateType::VcxStateRequestReceived {
             return Ok(self.get_state());
         }
-        if self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
+        if message.is_none() && (self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty()) {
             return Ok(self.get_state());
         }
 
-        let (offer_uid, payload) = match message {
-            None => messages::get_message::get_ref_msg(&self.msg_uid,
-                                               &self.issued_did,
-                                               &self.issued_vk,
-                                               &self.agent_did,
-                                               &self.agent_vk)?,
-            Some(ref message) if (message.payload.is_some()) => (message.uid.clone(), message.payload.clone().unwrap()),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Cannot find referent message")),
-        };
+        let (payload, offer_uid) = match message {
+            None => {
+                // Check cloud agent for pending messages
+                let (msg_id, message) = messages::get_message::get_ref_msg(&self.msg_uid,
+                                                                           &self.issued_did,
+                                                                           &self.issued_vk,
+                                                                           &self.agent_did,
+                                                                           &self.agent_vk)?;
 
-        let (payload, thread) = Payloads::decrypt(&self.issued_vk, &payload)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::Common(err.into()), "Cannot decrypt CredentialOffer payload"))?;
+                let (payload, thread) = Payloads::decrypt(&self.issued_vk, &message)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::Common(err.into()), "Cannot decrypt CredentialOffer payload"))?;
+
+                if let Some(_) = thread {
+                    let remote_did = self.remote_did.as_str();
+                    self.thread.as_mut().map(|thread| thread.increment_receiver(&remote_did));
+                }
+
+                (payload, Some(msg_id))
+            }
+            Some(ref payload) => (payload.clone(), None)
+        };
 
         let mut cred_req: CredentialRequest = serde_json::from_str(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize CredentialRequest: {}", err)))?;
 
-        cred_req.msg_ref_id = Some(offer_uid);
-
-        if let Some(tr) = thread {
-            let remote_did = self.remote_did.as_str();
-            self.thread.as_mut().map(|thread| thread.increment_receiver(&remote_did));
-        }
+        cred_req.msg_ref_id = offer_uid;
 
         self.credential_request = Some(cred_req);
         debug!("received credential request for credential offer: {}", self.source_id);
@@ -289,19 +319,19 @@ impl IssuerCredential {
         Ok(self.get_state())
     }
 
-    fn update_state(&mut self, message: Option<Message>) -> VcxResult<u32> {
+    fn update_state(&mut self, message: Option<String>) -> VcxResult<u32> {
         trace!("IssuerCredential::update_state >>>");
-        self.get_credential_offer_status(message)
+        let result = self.get_credential_offer_status(message);
+        debug!("result: {:?}", result);
+        result
         //There will probably be more things here once we do other things with the credential
     }
 
     fn get_state(&self) -> u32 {
         trace!("IssuerCredential::get_state >>>");
-        let state = self.state as u32;
-        state
+        self.state as u32
     }
     fn get_offer_uid(&self) -> &String { &self.msg_uid }
-    fn set_offer_uid(&mut self, uid: &str) { self.msg_uid = uid.to_owned(); }
 
     fn get_credential_attributes(&self) -> &String { &self.credential_attributes }
     fn get_source_id(&self) -> &String { &self.source_id }
@@ -324,6 +354,13 @@ impl IssuerCredential {
 
         self.cred_rev_id = cred_revoc_id.clone();
 
+        let cred_def_id =
+            if !Qualifier::is_fully_qualified(&self.remote_did) {
+                anoncreds::libindy_to_unqualified(&self.cred_def_id)?
+            } else {
+                self.cred_def_id.clone()
+            };
+
         Ok(CredentialMessage {
             claim_offer_id: self.msg_uid.clone(),
             from_did: String::from(did),
@@ -331,7 +368,7 @@ impl IssuerCredential {
             msg_type: PayloadKinds::Cred.name().to_string(),
             libindy_cred: cred,
             rev_reg_def_json: self.rev_reg_def_json.clone().unwrap_or(String::new()),
-            cred_def_id: self.cred_def_id.clone(),
+            cred_def_id,
             cred_revoc_id,
             revoc_reg_delta_json,
         })
@@ -341,6 +378,15 @@ impl IssuerCredential {
         let attr_map = convert_to_map(&self.credential_attributes)?;
         //Todo: make a cred_def_offer error
         let libindy_offer = anoncreds::libindy_issuer_create_credential_offer(&self.cred_def_id)?;
+
+        debug!("generate_credential_offer remote_did {:?}", self.remote_did);
+        let (libindy_offer, cred_def_id) =
+            if !Qualifier::is_fully_qualified(&self.remote_did) {
+                (anoncreds::libindy_to_unqualified(&libindy_offer)?,
+                 anoncreds::libindy_to_unqualified(&self.cred_def_id)?)
+            } else {
+                (libindy_offer, self.cred_def_id.clone())
+            };
 
         Ok(CredentialOffer {
             msg_type: PayloadKinds::CredOffer.name().to_string(),
@@ -352,7 +398,7 @@ impl IssuerCredential {
             claim_name: String::from(self.credential_name.clone()),
             claim_id: String::from(self.credential_id.clone()),
             msg_ref_id: None,
-            cred_def_id: self.cred_def_id.clone(),
+            cred_def_id,
             libindy_offer,
             thread_id: None,
         })
@@ -419,16 +465,13 @@ impl IssuerCredential {
         }
     }
 
+    #[cfg(test)]
     pub fn to_string(&self) -> VcxResult<String> {
+        use messages::ObjectWithVersion;
+        use utils::constants::DEFAULT_SERIALIZE_VERSION;
         ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
             .serialize()
             .map_err(|err| err.extend("Cannot serialize credential"))
-    }
-
-    fn from_str(data: &str) -> VcxResult<IssuerCredential> {
-        ObjectWithVersion::deserialize(data)
-            .map(|obj: ObjectWithVersion<IssuerCredential>| obj.data)
-            .map_err(|err| err.extend("Cannot deserialize IssuerCredential"))
     }
 }
 
@@ -503,20 +546,29 @@ pub fn encode_attributes(attributes: &str) -> VcxResult<String> {
 }
 
 pub fn get_encoded_attributes(handle: u32) -> VcxResult<String> {
-    ISSUER_CREDENTIAL_MAP.get(handle, |i| {
-        i.create_attributes_encodings()
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref obj) => obj.create_attributes_encodings(),
+            IssuerCredentials::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle))
+        }
     })
 }
 
 pub fn get_offer_uid(handle: u32) -> VcxResult<String> {
-    ISSUER_CREDENTIAL_MAP.get(handle, |i| {
-        Ok(i.get_offer_uid().to_string())
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref obj) => Ok(obj.get_offer_uid().to_string()),
+            IssuerCredentials::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle))
+        }
     })
 }
 
 pub fn get_payment_txn(handle: u32) -> VcxResult<PaymentTxn> {
-    ISSUER_CREDENTIAL_MAP.get(handle, |i| {
-        i.get_payment_txn()
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref obj) => obj.get_payment_txn(),
+            IssuerCredentials::V3(_) => Err(VcxError::from(VcxErrorKind::NoPaymentInformation))
+        }
     })
 }
 
@@ -528,6 +580,12 @@ pub fn issuer_credential_create(cred_def_handle: u32,
                                 price: u64) -> VcxResult<u32> {
     trace!("issuer_credential_create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
            cred_def_handle, source_id, issuer_did, credential_name, secret!(&credential_data), price);
+
+    // Initiate connection of new format -- redirect to v3 folder
+    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+        let issuer = v3::handlers::issuance::Issuer::create(cred_def_handle, &credential_data, &source_id)?;
+        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer))
+    }
 
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
     let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle)?;
@@ -569,24 +627,44 @@ pub fn issuer_credential_create(cred_def_handle: u32,
 
     new_issuer_credential.state = VcxStateType::VcxStateInitialized;
 
-    let handle = ISSUER_CREDENTIAL_MAP.add(new_issuer_credential)?;
+    let handle = ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V1(new_issuer_credential))?;
     debug!("creating issuer_credential {} with handle {}", get_source_id(handle).unwrap_or_default(), handle);
 
     Ok(handle)
 }
 
-pub fn update_state(handle: u32, message: Option<Message>) -> VcxResult<u32> {
-    ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
-        match i.update_state(message.clone()) {
-            Ok(x) => Ok(x),
-            Err(x) => Ok(i.get_state()),
+pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref mut obj) => {
+                match obj.update_state(message.clone()) {
+                    Ok(x) => Ok(x),
+                    Err(_) => Ok(obj.get_state()),
+                }
+            }
+            IssuerCredentials::V3(ref mut obj) => {
+                obj.update_status(message.clone())?;
+                obj.get_state()
+            }
         }
     })
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
-    ISSUER_CREDENTIAL_MAP.get(handle, |i| {
-        Ok(i.get_state())
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref obj) => Ok(obj.get_state()),
+            IssuerCredentials::V3(ref obj) => obj.get_state(),
+        }
+    })
+}
+
+pub fn get_credential_status(handle: u32) -> VcxResult<u32> {
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle)),
+            IssuerCredentials::V3(ref obj) => obj.get_credential_status(),
+        }
     })
 }
 
@@ -604,51 +682,97 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 pub fn to_string(handle: u32) -> VcxResult<String> {
-    ISSUER_CREDENTIAL_MAP.get(handle, |i| {
-        i.to_string()
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        serde_json::to_string(obj)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, format!("cannot serialize IssuerCredential object: {:?}", err)))
     })
 }
 
 pub fn from_string(credential_data: &str) -> VcxResult<u32> {
-    let schema: IssuerCredential = IssuerCredential::from_str(credential_data)?;
-    ISSUER_CREDENTIAL_MAP.add(schema)
+    let issuer_credential: IssuerCredentials = serde_json::from_str(credential_data)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize IssuerCredential: {:?}", err)))?;
+
+    ISSUER_CREDENTIAL_MAP.add(issuer_credential)
+}
+
+pub fn generate_credential_offer_msg(handle: u32) -> VcxResult<(String, String)> {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref mut obj) => obj.generate_credential_offer_msg(),
+            IssuerCredentials::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle)), // TODO: implement
+        }
+    })
 }
 
 pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
-        i.send_credential_offer(connection_handle)
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref mut obj) => {
+                obj.send_credential_offer(connection_handle)
+            }
+            IssuerCredentials::V3(ref mut obj) => {
+                obj.send_credential_offer(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+    })
+}
+
+pub fn generate_credential_msg(handle: u32, my_pw_did: &str) -> VcxResult<String> {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref mut obj) => obj.generate_credential_msg(my_pw_did),
+            IssuerCredentials::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidIssuerCredentialHandle)), // TODO: implement
+        }
     })
 }
 
 pub fn send_credential(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
-        i.send_credential(connection_handle)
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref mut obj) => {
+                obj.send_credential(connection_handle)
+            }
+            IssuerCredentials::V3(ref mut obj) => {
+                obj.send_credential(connection_handle)?;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
     })
 }
 
 pub fn revoke_credential(handle: u32) -> VcxResult<()> {
-    ISSUER_CREDENTIAL_MAP.get_mut(handle, |i| {
-        i.revoke_cred()
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref mut obj) => obj.revoke_cred(),
+            IssuerCredentials::V3(_) => Err(VcxError::from(VcxErrorKind::NotReady)), // TODO: implement
+        }
     })
 }
 
 pub fn convert_to_map(s: &str) -> VcxResult<serde_json::Map<String, serde_json::Value>> {
     serde_json::from_str(s)
-        .map_err(|err| {
+        .map_err(|_| {
             warn!("{}", error::INVALID_ATTRIBUTES_STRUCTURE.message);
             VcxError::from_msg(VcxErrorKind::InvalidAttributesStructure, error::INVALID_ATTRIBUTES_STRUCTURE.message)
         })
 }
 
 pub fn get_credential_attributes(handle: u32) -> VcxResult<String> {
-    ISSUER_CREDENTIAL_MAP.get(handle, |i| {
-        Ok(i.get_credential_attributes().to_string())
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref obj) => Ok(obj.get_credential_attributes().to_string()),
+            IssuerCredentials::V3(_) => Err(VcxError::from(VcxErrorKind::NotReady)), // TODO: implement
+        }
     })
 }
 
 pub fn get_source_id(handle: u32) -> VcxResult<String> {
-    ISSUER_CREDENTIAL_MAP.get(handle, |i| {
-        Ok(i.get_source_id().to_string())
+    ISSUER_CREDENTIAL_MAP.get(handle, |obj| {
+        match obj {
+            IssuerCredentials::V1(ref obj) => Ok(obj.get_source_id().to_string()),
+            IssuerCredentials::V3(ref obj) => obj.get_source_id()
+        }
     })
 }
 
@@ -671,14 +795,6 @@ pub mod tests {
 
     static DEFAULT_CREDENTIAL_NAME: &str = "Credential";
     static DEFAULT_CREDENTIAL_ID: &str = "defaultCredentialId";
-    static SCHEMA: &str = r#"{{
-                            "seqNo":32,
-                            "data":{{
-                                "name":"gvt",
-                                "version":"1.0",
-                                "attr_names":["address1","address2","city","state", "zip"]
-                            }}
-                         }}"#;
 
     static CREDENTIAL_DATA: &str =
         r#"{"address2":["101 Wilson Lane"],
@@ -688,12 +804,7 @@ pub mod tests {
         "address1":["101 Tela Lane"]
         }"#;
 
-    static X_CREDENTIAL_JSON: &str =
-        r#"{"claim":{"address1":["101 Tela Lane","63690509275174663089934667471948380740244018358024875547775652380902762701972"],"address2":["101 Wilson Lane","68086943237164982734333428280784300550565381723532936263016368251445461241953"],"city":["SLC","101327353979588246869873249766058188995681113722618593621043638294296500696424"],"state":["UT","93856629670657830351991220989031130499313559332549427637940645777813964461231"],"zip":["87121","87121"]},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":15,"signature":{"non_revocation_claim":null,"primary_claim":{"a":"","e":"","m2":"","v":""}}}"#;
-
-    pub fn util_put_credential_def_in_issuer_wallet(schema_seq_num: u32, wallet_handle: i32) {
-        let stored_xcredential = String::from("");
-
+    pub fn util_put_credential_def_in_issuer_wallet(_schema_seq_num: u32, _wallet_handle: i32) {
         let issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let tag = "test_tag";
         let config = "{support_revocation: false}";
@@ -737,7 +848,6 @@ pub mod tests {
     }
 
     pub fn create_pending_issuer_credential() -> IssuerCredential {
-        let connection_handle = build_test_connection();
         let credential_req: CredentialRequest = serde_json::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
         let credential: IssuerCredential = IssuerCredential {
@@ -770,20 +880,6 @@ pub mod tests {
             thread: Some(Thread::new()),
         };
         credential
-    }
-
-    fn normalize_credentials(c1: &str, c2: &str) -> (serde_json::Value, serde_json::Value) {
-        let mut v1: serde_json::Value = serde_json::from_str(c1.clone()).unwrap();
-        let mut v2: serde_json::Value = serde_json::from_str(c2.clone()).unwrap();
-        v1["signature"]["primary_claim"]["a"] = serde_json::to_value("".to_owned()).unwrap();
-        v1["signature"]["primary_claim"]["e"] = serde_json::to_value("".to_owned()).unwrap();
-        v1["signature"]["primary_claim"]["v"] = serde_json::to_value("".to_owned()).unwrap();
-        v1["signature"]["primary_claim"]["m2"] = serde_json::to_value("".to_owned()).unwrap();
-        v2["signature"]["primary_claim"]["a"] = serde_json::to_value("".to_owned()).unwrap();
-        v2["signature"]["primary_claim"]["e"] = serde_json::to_value("".to_owned()).unwrap();
-        v2["signature"]["primary_claim"]["v"] = serde_json::to_value("".to_owned()).unwrap();
-        v2["signature"]["primary_claim"]["m2"] = serde_json::to_value("".to_owned()).unwrap();
-        (v1, v2)
     }
 
     pub fn create_full_issuer_credential() -> (IssuerCredential, ::credential::Credential) {
@@ -873,8 +969,6 @@ pub mod tests {
         init!("true");
         let connection_handle = build_test_connection();
 
-        let credential_id = DEFAULT_CREDENTIAL_ID;
-
         let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                               "1".to_string(),
                                               "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
@@ -892,15 +986,13 @@ pub mod tests {
     #[test]
     fn test_generate_cred_offer() {
         init!("ledger");
-        let issuer = create_full_issuer_credential().0.generate_credential_offer(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap()).unwrap();
+        let _issuer = create_full_issuer_credential().0.generate_credential_offer(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap()).unwrap();
     }
 
     #[test]
     fn test_retry_send_credential_offer() {
         init!("true");
         let connection_handle = build_test_connection();
-
-        let credential_id = DEFAULT_CREDENTIAL_ID;
 
         let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                               "1".to_string(),
@@ -975,8 +1067,7 @@ pub mod tests {
     fn test_update_state_with_message() {
         init!("true");
         let mut credential = create_pending_issuer_credential();
-        let message: Message = serde_json::from_str(CREDENTIAL_REQ_RESPONSE_STR).unwrap();
-        credential.update_state(Some(message)).unwrap();
+        credential.update_state(Some(CREDENTIAL_REQ_RESPONSE_STR.to_string())).unwrap();
         assert_eq!(credential.get_state(), VcxStateType::VcxStateRequestReceived as u32);
     }
 
@@ -984,8 +1075,7 @@ pub mod tests {
     fn test_update_state_with_bad_message() {
         init!("true");
         let mut credential = create_pending_issuer_credential();
-        let message: Message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
-        let rc = credential.update_state(Some(message));
+        let rc = credential.update_state(Some(INVITE_ACCEPTED_RESPONSE.to_string()));
         assert_eq!(credential.get_state(), VcxStateType::VcxStateOfferSent as u32);
         assert!(rc.is_err());
     }
@@ -1082,7 +1172,7 @@ pub mod tests {
                                                                 r#"{"name":["frank"],"gpa":["4.0"]}"#.to_string(),
                                                                 1).unwrap();
 
-        let encoded_attributes = self::get_encoded_attributes(issuer_credential_handle).unwrap();
+        let _encoded_attributes = self::get_encoded_attributes(issuer_credential_handle).unwrap();
     }
 
     #[test]
@@ -1170,27 +1260,27 @@ pub mod tests {
         //        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
-"address2": {
-"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-"raw": "101 Wilson Lane"
-},
-"zip": {
-"encoded": "87121",
-"raw": "87121"
-},
-"city": {
-"encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
-"raw": "SLC"
-},
-"address1": {
-"encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
-"raw": "101 Tela Lane"
-},
-"state": {
-"encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
-"raw": "UT"
-}
-});
+            "address2": {
+                "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+                "raw": "101 Wilson Lane"
+            },
+            "zip": {
+                "encoded": "87121",
+                "raw": "87121"
+            },
+            "city": {
+                "encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
+                "raw": "SLC"
+            },
+            "address1": {
+                "encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
+                "raw": "101 Tela Lane"
+            },
+            "state": {
+                "encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
+                "raw": "UT"
+            }
+        });
 
 
         static TEST_CREDENTIAL_DATA: &str =
@@ -1204,28 +1294,17 @@ pub mod tests {
         let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
 
         let results: Value = serde_json::from_str(&results_json).unwrap();
-
-        let address2: &Value = &results["address2"];
-        assert_eq!(encode("101 Wilson Lane").unwrap(), address2["encoded"]);
-        assert_eq!("101 Wilson Lane", address2["raw"]);
-
-        let state: &Value = &results["state"];
-        assert_eq!(encode("UT").unwrap(), state["encoded"]);
-        assert_eq!("UT", state["raw"]);
-
-        let zip: &Value = &results["zip"];
-        assert_eq!("87121", zip["encoded"]);
-        assert_eq!("87121", zip["raw"]);
+        assert_eq!(expected, results);
     }
 
     #[test]
     fn test_encode_with_one_attribute_success() {
         let expected = json!({
-"address2": {
-"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-"raw": "101 Wilson Lane"
-}
-});
+            "address2": {
+                "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+                "raw": "101 Wilson Lane"
+            }
+        });
 
         static TEST_CREDENTIAL_DATA: &str =
             r#"{"address2":["101 Wilson Lane"]}"#;
@@ -1242,28 +1321,27 @@ pub mod tests {
         //        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
-"address2": {
-"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-"raw": "101 Wilson Lane"
-},
-"zip": {
-"encoded": "87121",
-"raw": "87121"
-},
-"city": {
-"encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
-"raw": "SLC"
-},
-"address1": {
-"encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
-"raw": "101 Tela Lane"
-},
-"state": {
-"encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
-"raw": "UT"
-}
-});
-
+            "address2": {
+                "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+                "raw": "101 Wilson Lane"
+            },
+            "zip": {
+                "encoded": "87121",
+                "raw": "87121"
+            },
+            "city": {
+                "encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
+                "raw": "SLC"
+            },
+            "address1": {
+                "encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
+                "raw": "101 Tela Lane"
+            },
+            "state": {
+                "encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
+                "raw": "UT"
+            }
+        });
 
         static TEST_CREDENTIAL_DATA: &str =
             r#"{"address2":"101 Wilson Lane",
@@ -1276,28 +1354,17 @@ pub mod tests {
         let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
 
         let results: Value = serde_json::from_str(&results_json).unwrap();
-
-        let address2: &Value = &results["address2"];
-        assert_eq!(encode("101 Wilson Lane").unwrap(), address2["encoded"]);
-        assert_eq!("101 Wilson Lane", address2["raw"]);
-
-        let state: &Value = &results["state"];
-        assert_eq!(encode("UT").unwrap(), state["encoded"]);
-        assert_eq!("UT", state["raw"]);
-
-        let zip: &Value = &results["zip"];
-        assert_eq!("87121", zip["encoded"]);
-        assert_eq!("87121", zip["raw"]);
+        assert_eq!(expected, results);
     }
 
     #[test]
     fn test_encode_with_new_format_one_attribute_success() {
         let expected = json!({
-"address2": {
-"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-"raw": "101 Wilson Lane"
-}
-});
+            "address2": {
+                "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+                "raw": "101 Wilson Lane"
+            }
+        });
 
         static TEST_CREDENTIAL_DATA: &str =
             r#"{"address2": "101 Wilson Lane"}"#;
@@ -1314,27 +1381,27 @@ pub mod tests {
         //        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
-"address2": {
-"encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
-"raw": "101 Wilson Lane"
-},
-"zip": {
-"encoded": "87121",
-"raw": "87121"
-},
-"city": {
-"encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
-"raw": "SLC"
-},
-"address1": {
-"encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
-"raw": "101 Tela Lane"
-},
-"state": {
-"encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
-"raw": "UT"
-}
-});
+            "address2": {
+                "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
+                "raw": "101 Wilson Lane"
+            },
+            "zip": {
+                "encoded": "87121",
+                "raw": "87121"
+            },
+            "city": {
+                "encoded": "101327353979588246869873249766058188995681113722618593621043638294296500696424",
+                "raw": "SLC"
+            },
+            "address1": {
+                "encoded": "63690509275174663089934667471948380740244018358024875547775652380902762701972",
+                "raw": "101 Tela Lane"
+            },
+            "state": {
+                "encoded": "93856629670657830351991220989031130499313559332549427637940645777813964461231",
+                "raw": "UT"
+            }
+        });
 
 
         static TEST_CREDENTIAL_DATA: &str =
@@ -1348,18 +1415,8 @@ pub mod tests {
         let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
 
         let results: Value = serde_json::from_str(&results_json).unwrap();
-        let address2: &Value = &results["address2"];
+        assert_eq!(expected, results);
 
-        assert_eq!("68086943237164982734333428280784300550565381723532936263016368251445461241953", address2["encoded"]);
-        assert_eq!("101 Wilson Lane", address2["raw"]);
-
-        let state: &Value = &results["state"];
-        assert_eq!("93856629670657830351991220989031130499313559332549427637940645777813964461231", state["encoded"]);
-        assert_eq!("UT", state["raw"]);
-
-        let zip: &Value = &results["zip"];
-        assert_eq!("87121", zip["encoded"]);
-        assert_eq!("87121", zip["raw"]);
     }
 
     #[test]
@@ -1378,5 +1435,14 @@ pub mod tests {
             r#"{"address2":[]}"#;
 
         assert!(encode_attributes(BAD_TEST_CREDENTIAL_DATA).is_err())
+    }
+
+    #[test]
+    fn test_encode_empty_field() {
+        let empty_field = r#"{"empty_field": ""}"#;
+        let field_encoded = encode_attributes(empty_field).unwrap();
+        let field_encoded_json: serde_json::Map<String, serde_json::Value> = serde_json::from_str(&field_encoded).unwrap();
+        assert!(field_encoded_json["empty_field"]["raw"].as_str().unwrap().is_empty());
+        assert!(!field_encoded_json["empty_field"]["encoded"].as_str().unwrap().is_empty());
     }
 }

@@ -3,7 +3,6 @@ use super::*;
 use {CString, Error, CommandHandle, WalletHandle, PoolHandle};
 
 extern {
-
     #[no_mangle]
     pub fn indy_create_and_store_my_did(command_handle: CommandHandle,
                                         wallet_handle: WalletHandle,
@@ -86,5 +85,12 @@ extern {
                                   did: CString,
                                   full_verkey: CString,
                                   cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_qualify_did(command_handle: CommandHandle,
+                            wallet_handle: WalletHandle,
+                            method: CString,
+                            prefix: CString,
+                            cb: Option<ResponseStringCB>) -> Error;
 }
 

@@ -1,10 +1,10 @@
 
-use api::{ErrorCode, CommandHandle, WalletHandle, SearchHandle};
-use commands::{Command, CommandExecutor};
-use commands::non_secrets::NonSecretsCommand;
-use domain::wallet::Tags;
-use errors::prelude::*;
-use utils::ctypes;
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, SearchHandle, INVALID_SEARCH_HANDLE};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::non_secrets::NonSecretsCommand;
+use indy_api_types::domain::wallet::Tags;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
 
 use serde_json;
 use libc::c_char;
@@ -355,12 +355,7 @@ pub  extern fn indy_get_wallet_record(command_handle: CommandHandle,
                 type_,
                 id,
                 options_json,
-                Box::new(move |result| {
-                    let (err, record_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_get_wallet_record: record_json: {:?}", record_json);
-                    let record_json = ctypes::string_to_cstring(record_json);
-                    cb(command_handle, err, record_json.as_ptr())
-                })
+                boxed_callback_string!("indy_get_wallet_record", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -423,7 +418,7 @@ pub  extern fn indy_open_wallet_search(command_handle: CommandHandle,
                 query_json,
                 options_json,
                 Box::new(move |result| {
-                    let (err, handle) = prepare_result_1!(result, 0);
+                    let (err, handle) = prepare_result_1!(result, INVALID_SEARCH_HANDLE);
                     trace!("indy_open_wallet_search: handle: {:?}", handle);
                     cb(command_handle, err, handle)
                 })
@@ -475,12 +470,7 @@ pub  extern fn indy_fetch_wallet_search_next_records(command_handle: CommandHand
                 wallet_handle,
                 wallet_search_handle,
                 count,
-                Box::new(move |result| {
-                    let (err, records_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_fetch_wallet_search_next_records: records_json: {:?}", records_json);
-                    let records_json = ctypes::string_to_cstring(records_json);
-                    cb(command_handle, err, records_json.as_ptr())
-                })
+                boxed_callback_string!("indy_fetch_wallet_search_next_records", cb, command_handle)
             )));
 
     let res = prepare_result!(result);

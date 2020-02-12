@@ -59,7 +59,13 @@ async def open_pool_ledger(config_name: str,
             "extended_timeout": int (optional), extended timeout for network request (in sec).
             "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
                 ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
-                Note: Not specified nodes will be placed in a random way.
+                This can be useful if a user prefers querying specific nodes.
+                Assume that `Node1` and `Node2` nodes reply faster.
+                If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
+                Note: Nodes not specified will be placed randomly.
+            "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
+                By default Libindy sends a read requests to 2 nodes in the pool.
+                If response isn't received or `state proof` is invalid Libindy sends the request again but to 2 (`number_read_nodes`) * 2 = 4 nodes and so far until completion.
         }
     :return: Handle to opened pool to use in methods that require pool connection.
     """

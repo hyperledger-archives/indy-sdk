@@ -99,7 +99,8 @@
 /**
  Builds a NYM request. Request to create a new NYM record for a specific user.
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param targetDid Target DID as base58-encoded string for 16 or 32 bit DID value.
  @param verkey Target identity verification key as base58-encoded string.
  @param alias NYM's alias.
@@ -131,12 +132,34 @@
                                  targetDID:(NSString *)targetDid
                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
+/**
+ Parse a GET_NYM response to get NYM data.
+ 
+ @param response Response on GET_NYM request.
+ @param completion Callback that takes command result as parameter. 
+ Returns NYM data as JSON
+    {
+        did: DID as base58-encoded string for 16 or 32 bit DID value.
+        verkey: verification key as base58-encoded string.
+        role: Role associated number
+                                null (common USER)
+                                0 - TRUSTEE
+                                2 - STEWARD
+                                101 - TRUST_ANCHOR
+                                101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+                                201 - NETWORK_MONITOR
+    }
+ */
++ (void)parseGetNymResponse:(NSString *)response
+                 completion:(void (^)(NSError *error, NSString *nymDataJson))completion;
+
 // MARK: - Attribute request
 
 /**
  Builds an ATTRIB request. Request to add attribute to a NYM record.
 
- @param submitterDid DID of the read request sender.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param targetDid Target DID as base58-encoded string for 16 or 32 bit DID value.
  @param raw (Optional) Json, where key is attribute name and value is attribute value.
  @param hash (Optional) Hash of attribute data.
@@ -183,7 +206,8 @@
 /**
  Builds a SCHEMA request. Request to add Credential's schema.
  
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param data  Credential schema.
               {
                   id: identifier of schema
@@ -232,7 +256,8 @@
  Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),
  that Issuer creates for a particular Credential Schema.
  
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param data credential definition json
  {
      id: string - identifier of credential definition
@@ -303,7 +328,8 @@
 /**
  Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
  
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param targetDid Target Node's DID.  It differs from submitter_did field.
  @param data Data associated with the Node: Data associated with the Node:
  {
@@ -347,7 +373,8 @@
 /**
  Builds a POOL_CONFIG request. Request to change Pool's configuration.
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param writes Whether any write requests can be processed by the pool
                (if false, then pool goes to read-only state). True by default.
  @param force Whether we should apply transaction (for example, move pool to read-only state)
@@ -364,7 +391,8 @@
 /**
  Builds a POOL_RESTART request.
 
- @param submitterDid - Id of Identity stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param action  - Action that pool has to do after received transaction.
         Can be "start" or "cancel".
  @param datetime - Time when pool must be restarted
@@ -381,7 +409,8 @@
  Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
  It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param name Human-readable name for the upgrade.
  @param version The version of indy-node package we perform upgrade to.
                 Must be greater than existing one (or equal if reinstall flag is True).
@@ -413,7 +442,8 @@
  Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
  to an exists credential definition.
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param data Revocation Registry data:
   {
       "id": string - ID of the Revocation Registry,
@@ -480,7 +510,8 @@
  This is just a delta of indices, not the whole list.
  So, it can be sent each time a new credential is issued/revoked.
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param type Revocation Registry type (only CL_ACCUM is supported for now).
  @param revocRegDefId ID of the corresponding RevocRegDef.
  @param value Registry-specific data: 
@@ -575,7 +606,8 @@
 /**
  Builds a AUTH_RULE request. Request to change authentication rules for a ledger transaction.
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param txnType - ledger transaction alias or associated value.
  @param action - type of an action.
           Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
@@ -586,10 +618,11 @@
         {
             constraint_id - <string> type of a constraint.
                 Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-            role - <string> role of a user which satisfy to constrain.
+            role - <string> (optional) role of a user which satisfy to constrain.
             sig_count - <u32> the number of signatures required to execution action.
-            need_to_be_owner - <bool> if user must be an owner of transaction.
-            metadata - <object> additional parameters of the constraint.
+            need_to_be_owner - <bool> if user must be an owner of transaction (false by default).
+            off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default).
+            metadata - <object> (optional) additional parameters of the constraint.
         }
       can be combined by
         {
@@ -616,7 +649,8 @@
 /**
  Builds a AUTH_RULES request. Request to change multiple authentication rules for a ledger transaction.
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param data - a list of auth rules: [
         {
             "auth_type": ledger transaction alias or associated value,
@@ -646,7 +680,7 @@
      * none - to get all authentication rules for all ledger transactions
      * all - to get authentication rules for specific action (`old_value` can be skipped for `ADD` action)
 
- @param submitterDid (Optional) DID of the submitter stored in secured Wallet.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param txnType - (Optional) target ledger transaction alias or associated value.
  @param action - (Optional) target action type. Can be either "ADD" or "EDIT".
  @param field - (Optional) target transaction field.
@@ -699,23 +733,58 @@
 
  EXPERIMENTAL
 
- @param submitterDid DID of the request sender.
- @param text a content of the TTA.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
+ @param text (Optional) a content of the TTA.
+                 Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+                 for Indy Node version <= 1.12.0:
+                     Use empty string to reset TAA on the ledger
+                 for Indy Node version > 1.12.0
+                     Should be omitted in case of updating an existing TAA (setting `retirementTimestamp`)
  @param version a version of the TTA (unique UTF-8 string).
- 
+ @param ratificationTimestamp  (Optional) the date (timestamp) of TAA ratification by network government.
+                 for Indy Node version <= 1.12.0:
+                    Must be omitted
+                 for Indy Node version > 1.12.0:
+                    Must be specified in case of adding a new TAA
+                    Can be omitted in case of updating an existing TAA
+ @param retirementTimestamp  (Optional) the date (timestamp) of TAA retirement.
+                for Indy Node version <= 1.12.0:
+                    Must be omitted
+                for Indy Node version > 1.12.0:
+                    Must be omitted in case of adding a new (latest) TAA.
+                    Should be used for updating (deactivating) non-latest TAA on the ledger.
+
+ Note: Use `buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid` to disable all TAA's on the ledger.
+
  Returns Request result as json.
  */
 + (void)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
                                                   text:(NSString *)text
                                                version:(NSString *)version
-                                            completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
+                                 ratificationTimestamp:(NSNumber *)ratificationTimestamp
+                                   retirementTimestamp:(NSNumber *)retirementTimestamp
+                                            completion:(void (^)(NSError *error, NSString *requestJson))completion;
+
+/**
+ Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+
+ EXPERIMENTAL
+
+ @param submitterDid  Identifier (DID) of the transaction author as base58-encoded string.
+                      Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+
+ Returns Result as json.
+ */
++ (void)buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                       completion:(void (^)(NSError *error, NSString *requestJson))completion;
 
 /**
  Builds a GET_TXN_AUTHR_AGRMT request. Request to get a specific Transaction Author Agreement from the ledger.
 
  EXPERIMENTAL
 
- @param submitterDid (Optional) DID of the request sender.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param data (Optional) specifies a condition for getting specific TAA.
  Contains 3 mutually exclusive optional fields:
  {
@@ -724,7 +793,7 @@
      timestamp: Optional<u64> - ledger will return TAA valid at requested timestamp.
  }
  Null data or empty JSON are acceptable here. In this case, ledger will return the latest version of TAA.
- 
+
  Returns Request result as json.
  */
 + (void)buildGetTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
@@ -737,7 +806,8 @@
  
  EXPERIMENTAL
 
- @param submitterDid DID of the request sender.
+ @param submitterDid Identifier (DID) of the transaction author as base58-encoded string.
+                     Actual request sender may differ if Endorser is used (look at `appendEndorserToRequest`)
  @param aml a set of new acceptance mechanisms:
  {
      “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
@@ -761,7 +831,7 @@
  
  EXPERIMENTAL
 
- @param submitterDid (Optional) DID of the request sender.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param timestamp time to get an active acceptance mechanisms. The latest one will be returned for nil.
  @param version (Optional) version of acceptance mechanisms.
 
@@ -789,7 +859,9 @@
  @param version (Optional) version of TAA from ledger.
      text and version should be passed together.
      text and version are required if taaDigest parameter is omitted.
- @param taaDigest (Optional) hash on text and version. This parameter is required if text and version parameters are omitted.
+ @param taaDigest (Optional) digest on text and version.
+  Digest is sha256 hash calculated on concatenated strings: version || text.
+  This parameter is required if text and version parameters are omitted.
  @param accMechType mechanism how user has accepted the TAA
  @param timeOfAcceptance UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
 
@@ -802,5 +874,26 @@
                                         accMechType:(NSString *)accMechType
                                    timeOfAcceptance:(NSNumber *)timeOfAcceptance
                                          completion:(void (^)(NSError *error, NSString *responseMetadata))completion;
+
+/**
+ Append Endorser to an existing request.
+
+ An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+ But it is expecting that the transaction will be sent by the specified Endorser.
+
+ Note: Both Transaction Author and Endorser must sign output request after that.
+
+ More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
+                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+
+ @param requestJson original request data json.
+ @param endorserDid DID of the Endorser that will submit the transaction.
+                    The Endorser's DID must be present on the ledger.
+
+ Returns Updated request result as json.
+ */
++ (void)appendEndorserToRequest:(NSString *)requestJson
+                    endorserDid:(NSString *)endorserDid
+                     completion:(void (^)(NSError *error, NSString *outRequestJson))completion;
 
 @end

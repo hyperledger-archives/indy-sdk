@@ -1,5 +1,6 @@
-use domain::a2a::*;
 use std::convert::Into;
+
+use crate::domain::a2a::*;
 
 #[derive(Debug)]
 pub enum A2ConnMessage {

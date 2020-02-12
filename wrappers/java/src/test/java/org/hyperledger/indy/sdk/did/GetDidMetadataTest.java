@@ -29,21 +29,6 @@ public class GetDidMetadataTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testGetDidMetadataWorksForEmptyString() throws Exception {
-		Did.setDidMetadata(wallet, did, "").get();
-		String receivedMetadata = Did.getDidMetadata(wallet, did).get();
-		assertEquals("", receivedMetadata);
-	}
-
-	@Test
-	public void testGetDidMetadataWorksForNotFoundDid() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletItemNotFoundException.class));
-
-		Did.getDidMetadata(wallet, DID).get();
-	}
-
-	@Test
 	public void testGetDidMetadataWorksForNoMetadata() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletItemNotFoundException.class));

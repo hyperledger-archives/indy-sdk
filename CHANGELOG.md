@@ -1,5 +1,152 @@
 # Changelog
 
+## 1.14.2 - 2020-01-31
+* LibVCX Aries support:
+    * Implemented Basic Message RFC (IS-1189)
+* Indy-CLI changes:
+    * Added new command `pool set-protocol-version` to set a protocol version that will be used for ledger requests (IS-1391).
+    * Added new command `payment-address new` that does exactly the same work as the existing `payment-address create` command.
+     The new command was added to match the naming of `did new` command. The `payment-address create` command will be removed in future releases (IS-1415).
+* Bugfixes
+    * Updated behavior of `indy_store_their_did` function to allow updating of existing `theirDID` record`. It can be used to rotate a pairwise key (IS-1166).
+    * Enhanced validation of `schema_json`: added check that `id` is consistent with `name` and `version` values (IS-1430).
+    * Updated Vcx library to support "names" parameter in Proof Request Revealed Attributes (IS-1381)
+    * Added support of the additional format of `rev_states_json` which is used for proof creation. Both `rev_reg_def_id` and `credential_id` can be used as map keys. 
+    `credential_id` must be used in case of proving that two credentials matching the same `rev_reg_def_id` are not revoked at the same timestamp (IS-1447).
+    * others minor bugfixes
+
+## 1.14.1 - 2019-12-30
+* Bugfixes
+
+## 1.14.0 - 2019-12-27
+* LibVCX Aries support:
+    * Implemented Trust Ping RFC (IS-1435)
+    * Implemented Discover Features RFC (IS-1155)
+    * Implemented Service Decorator RFC (IS-1449)
+* Transaction author agreement changes (IS-1427):
+    * Extended the definition of `indy_build_txn_author_agreement_request` function to accept new parameters:
+        * `ratification_ts` - the date (timestamp) of TAA ratification by network government.
+        * `retirement_ts` - the date (timestamp) of TAA retirement.
+    * Added a new function `indy_build_disable_all_txn_author_agreements_request` to disable all Transaction Author Agreement on the ledger.
+    * new Indy-CLI commands:
+        * `ledger disable-all-txn-author-agreements` - to disable All Transaction Author Agreements on the ledger. 
+        * `ledger get-acceptance-mechanisms` - to get a list of acceptance mechanisms set on the ledger.
+* Bugfixes
+    * Added validation for `nonce` field in the proof request message. Now it must be a decimal number only represented as a string. It is highly recommended to use `indy_generate_nonce` function to generate a correct nonce.
+    * others minor bugfixes
+
+
+## 1.13.0 - 2019-12-03
+* LibVCX Aries support:
+    * Implemented Connection RFC (IS-1180)
+    * Implemented Credential Issuance RFC (IS-1393)
+    * Implemented Credential Presentation RFC (IS-1394)
+    * Integrated Connection Protocol into Dummy Cloud Agent (IS-1392)
+* Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
+* Bugfixes:
+    * Fixed bool representation in Java wrapper (IS-1368)
+
+## 1.12.0 - 2019-10-08
+* Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
+    * general format of fully-qualified identifier is `<prefix>:<method>:<value>`.
+    * extended `did_info` parameter of `indy_create_and_store_my_did` function to accepts optional `method_name` filed. This field should be used to create fully qualified DID.
+    * all functions can work with fully-qualified identifiers (new way) as well as with unqualified.
+    * added a new function -- `indy_to_unqualified` -- that gets unqualified form of a fully qualified identifier.
+    * proof requests now support versioning (`ver` field) -- now it specifies whether restrictions are full qualified or not.
+         - omit or set "1.0" to use unqualified identifiers.
+         - set "2.0" to use fully qualified identifiers.
+        
+        The same format of identifiers will be used in generated proof and must be used for proof verification. 
+        
+    * added a new function -- `indy_qualify_did` -- that updates DID stored in the wallet to make it fully qualified, or to do other DID maintenance.
+        * added correspondent `did qualify` command to Indy-CLI.
+    * all functions in Ledger API can accept fully-qualified identifiers but always return results in an unqualified form.
+    * extended VCX provisioning config to accept optional `did_method` filed. This field should be used to create fully qualified DIDs.
+* Migrated Android onto the API v21 and NDK 20.
+* Supported MacOS builds for Indy CLI.
+* The default value of `Protocol Version` was changed on 2. Henceforth `indy_set_protocol_version` function should be called if you are going to work with Indy-Node 1.3 and less. 
+* Bugfixes
+    * Fixed `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
+    * Fixed `attr::{}::value` verification (IS-1380, thanks @nrempel for reporting the vulnerability)
+    * others minor bugfixes
+
+## 1.11.1 - 2019-08-30
+* Supported endorsing of transactions in Indy-CLI and Libvcx.
+    * CLI:
+        * added `endorser` parameter into `nym`, `attrib`, `ledger`, `cred def` commands to set endorser for transaction.
+        * added `ledger endorse` command to endorse a transaction to the ledger.
+    * Libvcx:
+        * added `vcx_*_prepare_for_endorser` - functions for `schema` and `credentialdef` which build transaction and crete internal object in differed state.
+        * added `vcx_*_update_state` - functions to update state of `schema`/`credentialdef` internal object (checks if it is published on the ledger).
+        * added  `vcx_*_get_state` - functions to get state of `schema`/`credentialdef` internal object.
+        * added `vcx_endorse_transaction` - function to endorse a transaction to the ledger.
+* Added new functions to Anoncreds API to rotate credential definition:
+    `indy_issuer_rotate_credential_def_start` - to generate temporary keys for an existing Credential Definition.
+    `indy_issuer_rotate_credential_def_apply` - to apply temporary keys as the main for an existing Credential Definition in the wallet.
+* Added sign/verify with payment address functions to Libvcx.
+* Supported state proof verification for GET_TXN request. 
+* Extended `config` parameter of `indy_open_pool_ledger` function to accept `number_read_nodes` value. This value set the number of nodes to send read requests.
+* Extended Libvcx initialization config to accept pool configuration.
+* Supported new platforms Ubuntu 18.04 and Centos:
+    * Updated CI pipeline to run tests.
+    * Updated CD pipeline to build and to publish artifacts.
+* Bugfixes
+
+## 1.11.0 - 2019-08-2
+* Updated `indy_append_txn_author_agreement_acceptance_to_request` Libindy function to discard the time portion of `acceptance time` on appending TAA metadata into request. 
+It was done cause too much time precision can lead to privacy risk.
+
+    *NOTE* that if the following points are met:
+    - Indy Pool consists of nodes with version less 1.9.2
+    - Transaction Author Agreement is set on the Pool
+    
+    Requests to the Pool will fail during the day TAA was set.
+
+* Added new Libindy Payment API functions (`indy_build_get_payment_sources_with_from_request` and `indy_parse_get_payment_sources_with_from_response`) to get payment sources with pagination support.
+Old `indy_build_get_payment_sources_request` and `indy_parse_get_payment_sources_response` were marked as *Deprecated*.
+
+    *NOTE* that `indy_register_payment_method` API function was updated to accept callbacks correspondent to the new functions instead of deprecated.
+
+* Added new Libindy Payment API functions (`indy_sign_with_address` and `indy_verify_with_address`) to sign/verify a message with a payment address.
+
+    *NOTE* that `indy_register_payment_method` API function was updated to accept additional callbacks correspondent to the new functions.
+
+    Added correspondent `payment-address sign/verify` commands to Indy CLI.
+    
+* Added new *EXPERIMENTAL* functions to get requirements and price for a ledger request.
+    * Libindy `indy_get_request_info` - returns request requirements (with minimal price) correspondent to specific auth rule in case the requester can perform this action.
+    * Libvcx `vcx_get_request_price` - returns request minimal request price for performing an action in case the requester can do it.
+* Added a set of new Libvcx APIs around credentials and proofs that work with messages that should be exchanged without handling the transport of those messages.
+This removes the dependency on an agency/cloud-agent and allows the user of the SDK to transport those messages themselves. 
+There are three types of functions:
+    * `vcx_*_get_request_msg` - gets a message that can be sent to the specified connection.
+    * `vcx_*_update_state_with_message` - checks for any state change from the given message and updates the the state attribute.
+    * `vcx_init_minimal` - initialize vcx with the minimal configuration.
+* Added new Libindy API function `indy_append_request_endorser` to append Endorser to an existing request. 
+It allows writing transactions to the ledger with preserving an original author but by different Endorser.
+An example flow can be found [here](https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md)
+* Updated Indy CLI behavior to complete values for the following parameters: wallet names, pool names, dids, payment addresses.
+* Updated Indy CLI  behavior to work with payment addresses for `ledger payment` command and commands providing the ability to set fees for a request.
+* Added new Libindy API function `indy_generate_nonce` to generate a nonce of the size recommended for usage within a proof request. 
+* Updated behavior of `indy_prover_create_proof` to create revocation proof based on `non_revoked` timestamps within a proof request. Now only `primary` proof can be built if `non_revoked` intervals were not requested by a verifier.
+* Updated `constraint` parameter of `indy_build_auth_rule_request` Libindy Ledger API function to accept new optional `off_ledger_signature` field that specifies if a signature of unknown ledger `DID` is allowed for an action performing (false by default). 
+* Updated Indy-SDK CI/CD pipelines to test, to build and to publish Android artifacts for Libvcx.
+* Improved state proof verification to support pagination. 
+* Bugfixes:
+    * CLI to build transactions without adding a signature.
+    * CLI to handle exit signals proper way.
+    * CLI to persist both successes and failed commands.
+    * Android Crash upon logging
+    * others minor bugfixes
+
+## 1.10.1 - 2019-07-15
+* Updated Indy CLI to persist command history between sessions.
+* Bugfixes:
+    * Corrected behavior of Indy-CLI `ledger set-fees-prepare` command to not add `Transaction Author Agreement` to request.
+    * Corrected response data types in Indy-CLI `ledger get-fees` command.
+    * Fixed `State Proof` verification for GET_REVOC_REG_DELTA requests in case of from and to are before first entry.
+    * others minor bugfixes
+
 ## 1.10.0 - 2019-07-1
 * Added new *EXPERIMENTAL* functions to Libindy Anoncreds API to configure what tags to build on credential storage in prover wallet:
     * `indy_prover_set_credential_attr_tag_policy` to set credential attribute tagging policy. 
@@ -9,7 +156,7 @@ Added correspondent `ledger auth-rules` command to Indy CLI.
 * Bugfixes:
     * Allowed offline signing of transactions in Indy-CLI.
     * others minor bugfixes
-    
+
 ## 1.9.0 - 2019-05-31
 * Added a set of functions to support work with `Transaction Author Agreement` concept.
    This guarantees that every write transaction author agree that the information they submit 
@@ -35,7 +182,7 @@ Added correspondent `ledger auth-rules` command to Indy CLI.
 * Implemented `State Proof` verification for some types of GET requests to the ledger.
 * Bugfixes:
     * others minor bugfixes
-    
+
 ## 1.8.3 - 2019-04-30
 * Bugfixes:
     * Fixed behavior of `auth_rule` and `get_auth_rule` request builders

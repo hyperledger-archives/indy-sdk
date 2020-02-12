@@ -1,11 +1,11 @@
 use linefeed::{Reader, Terminal};
 
-use utils::environment::EnvironmentUtils;
-use utils::file::{read_lines_from_file, write_file};
+use crate::utils::environment::EnvironmentUtils;
+use crate::utils::file::{read_lines_from_file, write_file};
 
 
 const HISTORY_SIZE: usize = 100;
-const SECRET_DATA: [&str; 2] = ["seed=", "key="];
+const SECRET_DATA: [&str; 2] = [" seed=", " key="];
 
 pub fn load<T>(reader: &mut Reader<T>) -> Result<(), String> where T: Terminal {
     reader.set_history_size(HISTORY_SIZE);
@@ -27,8 +27,6 @@ pub fn persist<T>(reader: &Reader<T>) -> Result<(), String> where T: Terminal {
             .filter(|record|
                 !SECRET_DATA.iter().any(|secret_word| record.contains(secret_word))
             )
-            .collect::<std::collections::HashSet<&str>>()
-            .into_iter()
             .collect::<Vec<&str>>()
             .join("\n");
 

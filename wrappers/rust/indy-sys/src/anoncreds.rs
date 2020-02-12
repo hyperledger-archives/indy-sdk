@@ -1,6 +1,7 @@
 use super::*;
 
-use {CString, Error, CommandHandle, WalletHandle};
+use {CString, Error};
+
 
 extern {
 
@@ -21,6 +22,19 @@ extern {
                                                        signature_type: CString,
                                                        config_json: CString,
                                                        cb: Option<ResponseStringStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_issuer_rotate_credential_def_start(command_handle: CommandHandle,
+                                                   wallet_handle: WalletHandle,
+                                                   cred_def_id: CString,
+                                                   config_json: CString,
+                                                   cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_issuer_rotate_credential_def_apply(command_handle: CommandHandle,
+                                                   wallet_handle: WalletHandle,
+                                                   cred_def_id: CString,
+                                                   cb: Option<ResponseEmptyCB>) -> Error;
 
     #[no_mangle]
     pub fn indy_issuer_create_and_store_revoc_reg(command_handle: CommandHandle,
@@ -201,5 +215,13 @@ extern {
                                         timestamp: u64,
                                         cred_rev_id: CString,
                                         cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_generate_nonce(command_handle: CommandHandle,
+                               cb: Option<ResponseStringCB>) -> Error;
+    #[no_mangle]
+    pub fn indy_to_unqualified(command_handle: CommandHandle,
+                               entity: CString,
+                               cb: Option<ResponseStringCB>) -> Error;
 }
 

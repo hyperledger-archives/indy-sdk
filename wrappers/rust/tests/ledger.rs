@@ -395,14 +395,16 @@ mod test_build_get_attrib_request {
 
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
-        let (submitter_did, _) = did::create_and_store_my_did(submitter_wallet.handle, "{}").wait().unwrap();
-        let (did, _) = did::create_and_store_my_did(wallet.handle, "{}").wait().unwrap();
-        match ledger::build_get_attrib_request(Some(&submitter_did), &did, Some("{}"), None, None).wait() {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "build_attrib_request failed with error {:?}", ec);
+        let f1 = did::create_and_store_my_did(submitter_wallet.handle, "{}");
+        let f2 = did::create_and_store_my_did(wallet.handle, "{}");
+        f1.join(f2).map(|((submitter_did, _), (did, _))| {
+            match ledger::build_get_attrib_request(Some(&submitter_did), &did, Some("{}"), None, None).wait() {
+                Ok(_) => {},
+                Err(ec) => {
+                    assert!(false, "build_attrib_request failed with error {:?}", ec);
+                }
             }
-        }
+        }).wait().unwrap();
     }
 }
 
@@ -410,7 +412,7 @@ mod test_build_get_attrib_request {
 mod test_build_schema_request {
     use super::*;
 
-    const SCHEMA_DATA: &str = r#"{"id":"id","attrNames": ["name", "male"],"name":"gvt2","version":"3.1","ver":"1.0"}"#;
+    const SCHEMA_DATA: &str = r#"{"id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt2:3.1","attrNames": ["name", "male"],"name":"gvt2","version":"3.1","ver":"1.0"}"#;
 
     #[test]
     pub fn build_schema_request_success() {
@@ -454,7 +456,7 @@ mod test_parse_get_schema_response {
     use super::*;
 
     const SCHEMA_NAME: &str = "schema_1234";
-    const SCHEMA_DATA: &str = r#"{"id":"schema_id1234","attrNames": ["name", "male"],"name":"schema_1234","version":"1.0","ver":"1.0"}"#;
+    const SCHEMA_DATA: &str = r#"{"id":"NcYxiDXkpYi6ov5FcYDi1e:2:schema_1234:1.0","attrNames": ["name", "male"],"name":"schema_1234","version":"1.0","ver":"1.0"}"#;
 
 
     fn create_build_schema_request(did: &String) -> String {

@@ -1,4 +1,4 @@
-# LibVCX migration guide from 0.1.x to 0.2.0
+# LibVCX migration guide from 0.2.x to 0.3.0
 
 ## A Developer Guide for LibVCX migration
 
@@ -9,6 +9,7 @@ to simplify their transition to LibVCX 0.3 from LibVCX 0.2.x.
 * [API]()
     * [VCX API](#vcx-api)
 * [Libvcx 0.3.0 to 0.3.1 migration](#libvcx-030-to-031-migration-guide)
+* [Libvcx 0.3.1 to 0.3.2 migration](#libvcx-030-to-031-migration-guide)
 
 ### Notes
 
@@ -103,7 +104,7 @@ These functions check the message any state change and update the state attribut
     <tr>
       <th colspan="2">
           <a href="https://github.com/hyperledger/indy-sdk/blob/v1.3.1/vcx/libvcx/src/api/connection.rs#L357">
-              Checks the message any connection state change and updates the the state attribute.
+              Checks the message any connection state change and updates the  state attribute.
           </a>
       </th>
     <tr>
@@ -161,3 +162,7 @@ These functions check the message any state change and update the state attribut
       </td>
     </tr>
 </table>
+
+## Libvcx 0.3.1 to 0.3.2 migration Guide
+
+The Libvcx 0.3.2 release contains fixes that don't affect API functions. 

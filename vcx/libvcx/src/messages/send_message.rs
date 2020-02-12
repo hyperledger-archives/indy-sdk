@@ -3,7 +3,8 @@ use connection;
 use api::VcxStateType;
 use messages::*;
 use messages::message_type::MessageTypes;
-use messages::payload::{Payloads, PayloadKinds, Thread};
+use messages::payload::{Payloads, PayloadKinds};
+use messages::thread::Thread;
 use utils::httpclient;
 use utils::uuid::uuid;
 use error::prelude::*;
@@ -21,6 +22,7 @@ pub struct SendMessageBuilder {
     uid: Option<String>,
     title: Option<String>,
     detail: Option<String>,
+    version: settings::ProtocolTypes
 }
 
 impl SendMessageBuilder {
@@ -39,6 +41,7 @@ impl SendMessageBuilder {
             uid: None,
             title: None,
             detail: None,
+            version: settings::get_protocol_type()
         }
     }
 
@@ -82,6 +85,14 @@ impl SendMessageBuilder {
         Ok(self)
     }
 
+    pub fn version(&mut self, version: Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version,
+            None => settings::get_protocol_type()
+        };
+        Ok(self)
+    }
+
     pub fn send_secure(&mut self) -> VcxResult<SendResponse> {
         trace!("SendMessage::send >>>");
 
@@ -99,9 +110,9 @@ impl SendMessageBuilder {
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<SendResponse> {
-        let mut response = parse_response_from_agency(&response)?;
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
-        let index = match settings::get_protocol_type() {
+        let index = match self.version {
             // TODO: THINK better
             settings::ProtocolTypes::V1 => {
                 if response.len() <= 1 {
@@ -117,7 +128,7 @@ impl SendMessageBuilder {
                 Ok(SendResponse { uid: res.uid, uids: res.uids }),
             A2AMessage::Version2(A2AMessageV2::SendRemoteMessageResponse(res)) =>
                 Ok(SendResponse { uid: Some(res.id.clone()), uids: if res.sent { vec![res.id] } else { vec![] } }),
-            _ => return Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
+            _ => Err(VcxError::from(VcxErrorKind::InvalidHttpResponse))
         }
     }
 }
@@ -133,7 +144,7 @@ impl GeneralMessage for SendMessageBuilder {
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
         let messages =
-            match settings::get_protocol_type() {
+            match self.version {
                 settings::ProtocolTypes::V1 => {
                     let create = CreateMessage {
                         msg_type: MessageTypes::build_v1(A2AMessageKinds::CreateMessage),
@@ -169,7 +180,7 @@ impl GeneralMessage for SendMessageBuilder {
                 }
             };
 
-        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk)
+        prepare_message_for_agent(messages, &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
     }
 }
 
@@ -190,9 +201,9 @@ impl SendResponse {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct SendMessageOptions {
-    msg_type: String,
-    msg_title: String,
-    ref_msg_id: Option<String>,
+    pub msg_type: String,
+    pub msg_title: String,
+    pub ref_msg_id: Option<String>,
 }
 
 pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str) -> VcxResult<String> {
@@ -205,6 +216,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
     let did = connection::get_pw_did(connection_handle)?;
     let vk = connection::get_pw_verkey(connection_handle)?;
     let remote_vk = connection::get_their_pw_verkey(connection_handle)?;
+    let version = connection::get_version(connection_handle)?;
 
     let msg_options: SendMessageOptions = serde_json::from_str(msg_options).map_err(|_| {
         error!("Invalid SendMessage msg_options");
@@ -223,10 +235,11 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
             .set_detail(&msg_options.msg_title)?
             .ref_msg_id(msg_options.ref_msg_id.clone())?
             .status_code(&MessageStatusCode::Accepted)?
+            .version(version)?
             .send_secure()?;
 
     let msg_uid = response.get_msg_uid()?;
-    return Ok(msg_uid);
+    Ok(msg_uid)
 }
 
 #[cfg(test)]
@@ -251,10 +264,11 @@ mod tests {
             uid: Some("123".to_string()),
             title: Some("this is the title".to_string()),
             detail: Some("this is the detail".to_string()),
+            version: settings::get_protocol_type()
         };
 
         /* just check that it doesn't panic */
-        let packed = message.prepare_request().unwrap();
+        let _packed = message.prepare_request().unwrap();
     }
 
     #[test]
@@ -286,7 +300,6 @@ mod tests {
         let uid = response.get_msg_uid().unwrap();
         assert_eq!(test_val, uid);
 
-        let test_val = "devin";
         let response = SendResponse {
             uid: None,
             uids: vec![],
@@ -301,8 +314,7 @@ mod tests {
     #[test]
     fn test_send_generic_message() {
         init!("agency");
-        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (faber, alice) = ::connection::tests::create_connected_connections();
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
 
         match send_generic_message(alice, "this is the message", &json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()) {
             Ok(x) => println!("message id: {}", x),
@@ -319,7 +331,6 @@ mod tests {
     #[test]
     fn test_send_message_and_download_response() {
         init!("agency");
-        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
         let msg_id = send_generic_message(alice, "this is the message", &json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()).unwrap();

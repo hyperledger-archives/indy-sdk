@@ -1,17 +1,17 @@
-
-use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
-use commands::{Command, CommandExecutor};
-use commands::did::DidCommand;
-use domain::crypto::did::{MyDidInfo, TheirDidInfo};
-use domain::crypto::key::KeyInfo;
-use errors::prelude::*;
-use utils::ctypes;
+use indy_api_types::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::did::DidCommand;
+use crate::domain::crypto::did::{TheirDidInfo, DidValue, MyDidInfo, DidMethod};
+use crate::domain::crypto::key::KeyInfo;
+use indy_api_types::errors::prelude::*;
+use indy_utils::ctypes;
+use indy_api_types::validation::Validatable;
 
 use serde_json;
 use libc::c_char;
 
 use std::ptr;
-use domain::ledger::attrib::Endpoint;
+use crate::domain::ledger::attrib::Endpoint;
 
 
 /// Creates keys (signing and encryption keys) for a new
@@ -35,6 +35,7 @@ use domain::ledger::attrib::Endpoint;
 ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
 ///               currently only 'ed25519' value is supported for this field)
 ///     "cid": bool, (optional; if not set then false is used;)
+///     "method_name": string, (optional) method name to create fully qualified did.
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -60,7 +61,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: CommandHandle,
                                                                  verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_info);
 
-    check_useful_json!(did_info, ErrorCode::CommonInvalidParam3, MyDidInfo); // redefine to MyDidInfo if valid
+    check_useful_validatable_json!(did_info, ErrorCode::CommonInvalidParam3, MyDidInfo); // redefine to MyDidInfo if valid
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(&did_info));
@@ -123,7 +124,7 @@ pub  extern fn indy_replace_keys_start(command_handle: CommandHandle,
                                                             verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_replace_keys_start: >>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, key_info);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_json!(key_info, ErrorCode::CommonInvalidParam4, KeyInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -134,12 +135,7 @@ pub  extern fn indy_replace_keys_start(command_handle: CommandHandle,
             wallet_handle,
             key_info,
             did,
-            Box::new(move |result| {
-                let (err, verkey) = prepare_result_1!(result, String::new());
-                trace!("indy_replace_keys_start: verkey: {:?}", verkey);
-                let verkey = ctypes::string_to_cstring(verkey);
-                cb(command_handle, err, verkey.as_ptr())
-            })
+            boxed_callback_string!("indy_replace_keys_start", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -175,7 +171,7 @@ pub  extern fn indy_replace_keys_apply(command_handle: CommandHandle,
                                                             err: ErrorCode)>) -> ErrorCode {
     trace!("indy_replace_keys_apply: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_replace_keys_apply: entities >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
@@ -200,6 +196,7 @@ pub  extern fn indy_replace_keys_apply(command_handle: CommandHandle,
 
 /// Saves their DID for a pairwise connection in a secured Wallet,
 /// so that it can be used to verify transaction.
+/// Updates DID associated verkey in case DID already exists in the Wallet.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -207,7 +204,9 @@ pub  extern fn indy_replace_keys_apply(command_handle: CommandHandle,
 /// identity_json: Identity information as json. Example:
 ///     {
 ///        "did": string, (required)
-///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+///        "verkey": string
+///             - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+///             - mandatory in case of updating an existing DID
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -229,7 +228,7 @@ pub  extern fn indy_store_their_did(command_handle: CommandHandle,
                                                          err: ErrorCode)>) -> ErrorCode {
     trace!("indy_store_their_did: >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
 
-    check_useful_json!(identity_json, ErrorCode::CommonInvalidParam3, TheirDidInfo);
+    check_useful_validatable_json!(identity_json, ErrorCode::CommonInvalidParam3, TheirDidInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_store_their_did: entities >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
@@ -293,7 +292,7 @@ pub extern fn indy_key_for_did(command_handle: CommandHandle,
                                                     key: *const c_char)>) -> ErrorCode {
     trace!("indy_key_for_did: >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam4, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_key_for_did: entities >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
@@ -303,12 +302,7 @@ pub extern fn indy_key_for_did(command_handle: CommandHandle,
             pool_handle,
             wallet_handle,
             did,
-            Box::new(move |result| {
-                let (err, key) = prepare_result_1!(result, String::new());
-                trace!("indy_key_for_did: key: {:?}", key);
-                let key = ctypes::string_to_cstring(key);
-                cb(command_handle, err, key.as_ptr())
-            })
+            boxed_callback_string!("indy_key_for_did", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -355,7 +349,7 @@ pub extern fn indy_key_for_local_did(command_handle: CommandHandle,
                                                           key: *const c_char)>) -> ErrorCode {
     trace!("indy_key_for_local_did: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_key_for_local_did: entities >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
@@ -364,12 +358,7 @@ pub extern fn indy_key_for_local_did(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::KeyForLocalDid(
             wallet_handle,
             did,
-            Box::new(move |result| {
-                let (err, key) = prepare_result_1!(result, String::new());
-                trace!("indy_key_for_local_did: key: {:?}", key);
-                let key = ctypes::string_to_cstring(key);
-                cb(command_handle, err, key.as_ptr())
-            })
+            boxed_callback_string!("indy_key_for_local_did", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -409,7 +398,7 @@ pub extern fn indy_set_endpoint_for_did(command_handle: CommandHandle,
                                                              err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_endpoint_for_did: >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}", wallet_handle, did, address, transport_key);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(address, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(transport_key, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -469,7 +458,7 @@ pub extern fn indy_get_endpoint_for_did(command_handle: CommandHandle,
                                                              transport_vk: *const c_char)>) -> ErrorCode {
     trace!("indy_get_endpoint_for_did: >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_get_endpoint_for_did: entities >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
@@ -524,7 +513,7 @@ pub extern fn indy_set_did_metadata(command_handle: CommandHandle,
                                                          err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_did_metadata: >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str_empty_accepted!(metadata, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -577,7 +566,7 @@ pub extern fn indy_get_did_metadata(command_handle: CommandHandle,
                                                          metadata: *const c_char)>) -> ErrorCode {
     trace!("indy_get_did_metadata: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_get_did_metadata: entities >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
@@ -586,13 +575,7 @@ pub extern fn indy_get_did_metadata(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::GetDidMetadata(
             wallet_handle,
             did,
-            Box::new(move |result| {
-                let (err, metadata) = prepare_result_1!(result, String::new());
-                trace!("indy_get_did_metadata: metadata: {:?}", metadata);
-                let metadata = ctypes::string_to_cstring(metadata);
-                cb(command_handle, err, metadata.as_ptr())
-            })
-        )));
+            boxed_callback_string!("indy_get_did_metadata", cb, command_handle))));
 
     let res = prepare_result!(result);
 
@@ -635,7 +618,7 @@ pub extern fn indy_get_my_did_with_meta(command_handle: CommandHandle,
                                                              did_with_meta: *const c_char)>) -> ErrorCode {
     trace!("indy_get_my_did_with_meta: >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
-    check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(my_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_get_my_did_with_meta: entities >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
@@ -644,12 +627,7 @@ pub extern fn indy_get_my_did_with_meta(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::GetMyDidWithMeta(
             wallet_handle,
             my_did,
-            Box::new(move |result| {
-                let (err, did_with_meta) = prepare_result_1!(result, String::new());
-                trace!("indy_get_my_did_with_meta: did_with_meta: {:?}", did_with_meta);
-                let did_with_meta = ctypes::string_to_cstring(did_with_meta);
-                cb(command_handle, err, did_with_meta.as_ptr())
-            })
+            boxed_callback_string!("indy_get_my_did_with_meta", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -696,12 +674,7 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::ListMyDidsWithMeta(
             wallet_handle,
-            Box::new(move |result| {
-                let (err, dids) = prepare_result_1!(result, String::new());
-                trace!("indy_list_my_dids_with_meta: dids: {:?}", dids);
-                let dids = ctypes::string_to_cstring(dids);
-                cb(command_handle, err, dids.as_ptr())
-            })
+            boxed_callback_string!("indy_list_my_dids_with_meta", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -738,7 +711,7 @@ pub  extern fn indy_abbreviate_verkey(command_handle: CommandHandle,
                                                            verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_abbreviate_verkey: >>> did: {:?}, full_verkey: {:?}", did, full_verkey);
 
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(full_verkey, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -748,17 +721,65 @@ pub  extern fn indy_abbreviate_verkey(command_handle: CommandHandle,
         .send(Command::Did(DidCommand::AbbreviateVerkey(
             did,
             full_verkey,
-            Box::new(move |result| {
-                let (err, verkey) = prepare_result_1!(result, String::new());
-                trace!("indy_abbreviate_verkey: verkey: {:?}", verkey);
-                let verkey = ctypes::string_to_cstring(verkey);
-                cb(command_handle, err, verkey.as_ptr())
-            })
+            boxed_callback_string!("indy_abbreviate_verkey", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
 
     trace!("indy_abbreviate_verkey: <<< res: {:?}", res);
+
+    res
+}
+
+/// Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+///     - If the DID has no method, a method will be appended (prepend did:peer to a legacy did)
+///     - If the DID has a method, a method will be updated (migrate did:peer to did:peer-new)
+///
+/// Update DID related entities stored in the wallet.
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// did: target DID stored in the wallet.
+/// method: method to apply to the DID.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - did: fully qualified form of did
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+pub extern fn indy_qualify_did(command_handle: CommandHandle,
+                               wallet_handle: WalletHandle,
+                               did: *const c_char,
+                               method: *const c_char,
+                               cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                 err: ErrorCode,
+                                                                 full_qualified_did: *const c_char)>) -> ErrorCode {
+    trace!("indy_qualify_did: >>> wallet_handle: {:?}, did: {:?}, method: {:?}", wallet_handle, did, method);
+
+    check_useful_validatable_string!(did, ErrorCode::CommonInvalidParam3, DidValue);
+    check_useful_validatable_string!(method, ErrorCode::CommonInvalidParam4, DidMethod);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_qualify_did: entities >>> wallet_handle: {:?}, did: {:?}, method: {:?}", wallet_handle, did, method);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Did(DidCommand::QualifyDid(
+            wallet_handle,
+            did,
+            method,
+            boxed_callback_string!("indy_qualify_did", cb, command_handle)
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_qualify_did: <<< res: {:?}", res);
 
     res
 }

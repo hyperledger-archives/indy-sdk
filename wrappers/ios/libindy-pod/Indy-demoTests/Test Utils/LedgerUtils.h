@@ -43,6 +43,9 @@
                                       targetDid:(NSString *)targetDid
                                      outRequest:(NSString **)requestJson;
 
+- (NSError *)parseGetNymResponse:(NSString *)response
+                         nymData:(NSString **)nymData;
+
 // MARK: - Attrib request
 - (NSError *)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
                                       targetDid:(NSString *)targetDid
@@ -205,7 +208,12 @@
 - (NSError *)buildTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
                                                        text:(NSString *)text
                                                     version:(NSString *)version
+                                      ratificationTimestamp:(NSNumber *)ratificationTimestamp
+                                        retirementTimestamp:(NSNumber *)retirementTimestamp
                                                  outRequest:(NSString **)resultJson;
+
+- (NSError *)buildDisableAllTxnAuthorAgreementsRequestWithSubmitterDid:(NSString *)submitterDid
+                                                            outRequest:(NSString **)resultJson;
 
 - (NSError *)buildGetTxnAuthorAgreementRequestWithSubmitterDid:(NSString *)submitterDid
                                                           data:(NSString *)data
@@ -232,9 +240,17 @@
                                         timeOfAcceptance:(NSNumber *)timeOfAcceptance
                                               outRequest:(NSString **)resultJson;
 
+// MARK: - Endorser
+- (NSError *)appendEndorserToRequest:(NSString *)requestJson
+                         endorserDid:(NSString *)endorserDid
+                          outRequest:(NSString **)outRequestJson;
+
 // MARK: - Response Metadata
 - (NSError *)getResponseMetadata:(NSString *)response
                 responseMetadata:(NSString **)responseMetadata;
+
+- (NSString *)submitRetry:(NSString *)requestJson
+               poolHandle:(IndyHandle)poolHandle;
 
 
 @end

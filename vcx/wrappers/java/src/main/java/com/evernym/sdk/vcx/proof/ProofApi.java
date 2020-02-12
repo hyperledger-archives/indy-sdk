@@ -73,6 +73,30 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
+    private static Callback vcxProofGetRequestMsgCB = new Callback() {
+        public void callback(int commandHandle, int err, String msg){
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], msg = [" + msg + "]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if(!checkCallback(future,err)) return;
+            Integer result = commandHandle;
+            future.complete(msg);
+        }
+    };
+
+    public static CompletableFuture<String> proofGetRequestMsg(
+            int proofHandle
+    ) throws VcxException {
+        ParamGuard.notNull(proofHandle, "proofHandle");
+        logger.debug("proofGetRequestMsg() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_proof_get_request_msg(commandHandle, proofHandle, vcxProofGetRequestMsgCB);
+        checkResult(result);
+
+        return future;
+    }
+
     private static Callback vcxGetProofCB = new Callback() {
         public void callback(int commandHandle, int err, int proofState, String responseData){
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], proofState = [" + proofState + "], responseData = [" + responseData + "]");
@@ -98,6 +122,21 @@ public class ProofApi extends VcxJava.API {
 
         return future;
     }
+
+    public static CompletableFuture<GetProofResult> getProofMsg(
+            int proofHandle
+    ) throws VcxException {
+        ParamGuard.notNull(proofHandle, "proofHandle");
+        logger.debug("getProof() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<GetProofResult> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_get_proof_msg(commandHandle, proofHandle, vcxGetProofCB);
+        checkResult(result);
+
+        return future;
+    }
+
 
     // vcx_proof_accepted
     public static CompletableFuture<Integer> proofAccepted(
@@ -225,13 +264,12 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
-    public static Integer proofRelease(
-            int proofHandle
-    ) throws VcxException {
+    public static int proofRelease(int proofHandle) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("proofRelease() called with: proofHandle = [" + proofHandle + "]");
 
         int result = LibVcx.api.vcx_proof_release(proofHandle);
+        checkResult(result);
 
         return result;
     }

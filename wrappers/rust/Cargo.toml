@@ -1,13 +1,8 @@
 [package]
 name = "indy"
-version = "1.10.0"
+version = "1.14.2"
 description = "A library for assisting developers using LibIndy API"
-authors = ["Mike Lodder <redmike7@gmail.com>",
-           "Matt Raffel <matt.raffel@evernyn.com>",
-           "Darien Hess <darien.hess@evernym.com>",
-           "Stephen Felt <stephen.felt@evernym.com>",
-           "Cam Parra <camilo.parra@evernym.com>",
-           "Brent Zundel <brent.zundel@evernym.com>"]
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 homepage = "https://github.com/hyperledger/indy-sdk"
 repository = "https://github.com/hyperledger/indy-sdk"
 categories = ["api-bindings", "development-tools"]
@@ -25,21 +20,21 @@ crate-type = ["rlib"]
 [dependencies]
 failure = "0.1.2"
 futures = "0.1.24"
-lazy_static = "0.2"
+lazy_static = "1.3"
 log = { version = "0.4.1", features = ["std"] }
 num-traits = "0.2"
 num-derive = "0.2"
-indy-sys = { path ="indy-sys", version = "=1.10.0" }
-libc = "=0.2.41"
-serde_json = "1.0.22"
-serde_derive = "1.0.76"
-serde = "1.0.76"
+indy-sys = { path ="indy-sys", version = "=1.14.2" }
+libc = "=0.2.66"
+serde_json = "1.0.40"
+serde_derive = "1.0.97"
+serde = "1.0.97"
 
 [dev-dependencies]
 bs58 = {version = "0.2.2", features = ["check"]}
 rand = "0.5.5"
 rmp-serde = "0.13.6"
-byteorder = "1.0.0"
+byteorder = "1.3.2"
 dirs = "1.0.4"
 
 [features]

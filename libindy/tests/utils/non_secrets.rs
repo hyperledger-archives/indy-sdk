@@ -5,12 +5,14 @@ use self::futures::Future;
 use serde_json;
 
 use indy::wallet;
-use utils::{test};
-use utils::constants::WALLET_CREDENTIALS;
-use utils::types::WalletRecord;
+use crate::utils::{test};
+use crate::utils::constants::WALLET_CREDENTIALS;
+use crate::utils::types::WalletRecord;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use std::collections::HashMap;
+
+use indy::WalletHandle;
 
 pub const SEARCH_COMMON_WALLET_CONFIG: &'static str = r#"{"id":"search_common"}"#;
 pub const TYPE: &'static str = "TestType";
@@ -36,39 +38,39 @@ pub const TAGS_3: &'static str = r#"{"tagName1":"str1","tagName2":"str2","tagNam
 pub const TAGS_4: &'static str = r#"{"tagName1":"somestr","~tagName2":"4","~tagName3":"5"}"#;
 pub const TAGS_5: &'static str = r#"{"tagName1":"prefix_str2","~tagName2":"str3","~tagName3":"6"}"#;
 
-pub fn add_wallet_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags_json: Option<&str>) -> Result<(), IndyError> {
+pub fn add_wallet_record(wallet_handle: WalletHandle, type_: &str, id: &str, value: &str, tags_json: Option<&str>) -> Result<(), IndyError> {
     wallet::add_wallet_record(wallet_handle, type_, id, value, tags_json).wait()
 }
 
-pub fn update_wallet_record_value(wallet_handle: i32, type_: &str, id: &str, value: &str) -> Result<(), IndyError> {
+pub fn update_wallet_record_value(wallet_handle: WalletHandle, type_: &str, id: &str, value: &str) -> Result<(), IndyError> {
     wallet::update_wallet_record_value(wallet_handle, type_, id, value).wait()
 }
 
-pub fn update_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), IndyError> {
+pub fn update_wallet_record_tags(wallet_handle: WalletHandle, type_: &str, id: &str, tags_json: &str) -> Result<(), IndyError> {
     wallet::update_wallet_record_tags(wallet_handle, type_, id, tags_json).wait()
 }
 
-pub fn add_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), IndyError> {
+pub fn add_wallet_record_tags(wallet_handle: WalletHandle, type_: &str, id: &str, tags_json: &str) -> Result<(), IndyError> {
     wallet::add_wallet_record_tags(wallet_handle, type_, id, tags_json).wait()
 }
 
-pub fn delete_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tag_names_json: &str) -> Result<(), IndyError> {
+pub fn delete_wallet_record_tags(wallet_handle: WalletHandle, type_: &str, id: &str, tag_names_json: &str) -> Result<(), IndyError> {
     wallet::delete_wallet_record_tags(wallet_handle, type_, id, tag_names_json).wait()
 }
 
-pub fn delete_wallet_record(wallet_handle: i32, type_: &str, id: &str) -> Result<(), IndyError> {
+pub fn delete_wallet_record(wallet_handle: WalletHandle, type_: &str, id: &str) -> Result<(), IndyError> {
     wallet::delete_wallet_record(wallet_handle, type_, id).wait()
 }
 
-pub fn get_wallet_record(wallet_handle: i32, type_: &str, id: &str, options_json: &str) -> Result<String, IndyError> {
+pub fn get_wallet_record(wallet_handle: WalletHandle, type_: &str, id: &str, options_json: &str) -> Result<String, IndyError> {
     wallet::get_wallet_record(wallet_handle, type_, id, options_json).wait()
 }
 
-pub fn open_wallet_search(wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<i32, IndyError> {
+pub fn open_wallet_search(wallet_handle: WalletHandle, type_: &str, query_json: &str, options_json: &str) -> Result<i32, IndyError> {
     wallet::open_wallet_search(wallet_handle, type_, query_json, options_json).wait()
 }
 
-pub fn fetch_wallet_search_next_records(wallet_handle: i32, wallet_search_handle: i32, count: usize) -> Result<String, IndyError> {
+pub fn fetch_wallet_search_next_records(wallet_handle: WalletHandle, wallet_search_handle: i32, count: usize) -> Result<String, IndyError> {
     wallet::fetch_wallet_search_next_records(wallet_handle, wallet_search_handle, count).wait()
 }
 
@@ -164,7 +166,7 @@ pub fn init_non_secret_test_wallet(name: &str, wallet_config: &str) {
 
 pub fn populate_common_wallet_for_search() {
     lazy_static! {
-                    static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
+                    static ref COMMON_WALLET_INIT: Once = Once::new();
 
                 }
 

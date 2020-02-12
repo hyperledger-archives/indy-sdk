@@ -35,12 +35,4 @@ public class AddRequestFeesTest extends PaymentIntegrationTest {
 
 		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, incompatibleInputs, emptyObject, null).get();
 	}
-
-	@Test
-	public void testAddRequestFeesWorksForInvalidInputs() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, invalidInputs, emptyObject, null).get();
-	}
 }

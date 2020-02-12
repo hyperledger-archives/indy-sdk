@@ -167,5 +167,8 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     PaymentOperationNotSupportedError = 704,
 
     // Extra funds on inputs
-    PaymentExtraFundsError = 705
+    PaymentExtraFundsError = 705,
+
+    // The transaction is not allowed to a requester
+    TransactionNotAllowedError = 706
 };

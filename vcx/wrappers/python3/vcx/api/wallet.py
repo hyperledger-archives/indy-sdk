@@ -1,5 +1,5 @@
 from ctypes import *
-from vcx.common import do_call, create_cb
+from vcx.common import do_call, do_call_sync, create_cb
 import json
 
 import logging
@@ -361,7 +361,8 @@ class Wallet:
         Example:
         payment_handle = 0 // payment handle is always 0, for now.
         info = await Wallet.get_token_info(payment_handle)
-        :return:
+        :return: info
+           "{"balance":6,"balance_str":"6","addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"source":"pay:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"}]}]}"
         """
         logger = logging.getLogger(__name__)
 
@@ -516,3 +517,73 @@ class Wallet:
         logger.debug("vcx_wallet_export completed")
         return result
 
+    @staticmethod
+    def set_handle(handle: int) -> None:
+        """
+        Sets the wallet handle for libvcx to use, called before vcx_init_minimal
+        :param handle: wallet handle
+        """
+        c_handle = c_uint32(handle)
+
+        do_call_sync('vcx_wallet_set_handle', c_handle)
+
+    @staticmethod
+    async def sign_with_address(address: str, msg: bytes) -> bytes:
+        """
+        Sign data using payment address
+        :param payment_address
+        :param msg:
+        :return: signature
+        """
+
+        logger = logging.getLogger(__name__)
+
+        def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+            return bytes(arr_ptr[:arr_len]),
+
+        if not hasattr(Wallet.sign_with_address, "cb"):
+            logger.debug("vcx_wallet_sign_with_address: Creating callback")
+            Wallet.sign_with_address.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, POINTER(c_uint8), c_uint32), transform_cb)
+
+        c_address = c_char_p(address.encode('utf-8'))
+        c_msg_len = c_uint32(len(msg))
+
+        result = await do_call('vcx_wallet_sign_with_address',
+                               c_address,
+                               msg,
+                               c_msg_len,
+                               Wallet.sign_with_address.cb)
+
+        logger.debug("vcx_wallet_sign_with_address completed")
+        return result
+
+    @staticmethod
+    async def verify_with_address(address: str, msg: bytes, signature: bytes) -> bool:
+        """
+        Verify the signature using payment address
+        :param payment_address
+        :param msg:
+        :param signature:
+        :return: bool
+        """
+
+        logger = logging.getLogger(__name__)
+
+        if not hasattr(Wallet.verify_with_address, "cb"):
+            logger.debug("vcx_wallet_verify_with_address: Creating callback")
+            Wallet.verify_with_address.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_bool))
+
+        c_address = c_char_p(address.encode('utf-8'))
+        c_msg_len = c_uint32(len(msg))
+        c_signature_len = c_uint32(len(signature))
+
+        result = await do_call('vcx_wallet_verify_with_address',
+                               c_address,
+                               msg,
+                               c_msg_len,
+                               signature,
+                               c_signature_len,
+                               Wallet.verify_with_address.cb)
+
+        logger.debug("vcx_wallet_sign_verify_address completed")
+        return result

@@ -24,15 +24,16 @@ pub struct UpdateMessageStatusByConnectionsResponse {
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
-struct UIDsByConn {
+pub struct UIDsByConn {
     #[serde(rename = "pairwiseDID")]
-    pairwise_did: String,
-    uids: Vec<String>,
+    pub pairwise_did: String,
+    pub uids: Vec<String>,
 }
 
 struct UpdateMessageStatusByConnectionsBuilder {
     status_code: Option<MessageStatusCode>,
-    uids_by_conns: Vec<UIDsByConn>
+    uids_by_conns: Vec<UIDsByConn>,
+    version: settings::ProtocolTypes,
 }
 
 impl UpdateMessageStatusByConnectionsBuilder {
@@ -42,6 +43,7 @@ impl UpdateMessageStatusByConnectionsBuilder {
         UpdateMessageStatusByConnectionsBuilder {
             status_code: None,
             uids_by_conns: Vec::new(),
+            version: settings::get_protocol_type()
         }
     }
 
@@ -54,6 +56,15 @@ impl UpdateMessageStatusByConnectionsBuilder {
     pub fn status_code(&mut self, code: MessageStatusCode) -> VcxResult<&mut Self> {
         //Todo: validate that it can be parsed to number??
         self.status_code = Some(code.clone());
+        Ok(self)
+    }
+
+    #[allow(dead_code)]
+    pub fn version(&mut self, version: &Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
+        };
         Ok(self)
     }
 
@@ -72,7 +83,7 @@ impl UpdateMessageStatusByConnectionsBuilder {
     }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::UpdateMessageStatusByConnections(
@@ -96,18 +107,18 @@ impl UpdateMessageStatusByConnectionsBuilder {
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-        prepare_message_for_agency(&message, &agency_did)
+        prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
         trace!("parse_create_keys_response >>>");
 
-        let mut response = parse_response_from_agency(response)?;
+        let mut response = parse_response_from_agency(response, &self.version)?;
 
         match response.remove(0) {
-            A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
-            A2AMessage::Version2(A2AMessageV2::UpdateMessageStatusByConnectionsResponse(res)) => Ok(()),
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateMessageStatusByConnectionsResponse"))
+            A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(_)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateMessageStatusByConnectionsResponse(_)) => Ok(()),
+            _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateMessageStatusByConnectionsResponse"))
         }
     }
 }
@@ -123,12 +134,14 @@ pub fn update_agency_messages(status_code: &str, msg_json: &str) -> VcxResult<()
     let uids_by_conns: Vec<UIDsByConn> = serde_json::from_str(msg_json)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize UIDsByConn: {}", err)))?;
 
+    update_messages(status_code, uids_by_conns)
+}
+
+pub fn update_messages(status_code: MessageStatusCode, uids_by_conns: Vec<UIDsByConn>) -> VcxResult<()> {
     UpdateMessageStatusByConnectionsBuilder::create()
         .uids_by_conns(uids_by_conns)?
         .status_code(status_code)?
-        .send_secure()?;
-
-    Ok(())
+        .send_secure()
 }
 
 #[cfg(test)]
@@ -152,7 +165,7 @@ mod tests {
         use std::time::Duration;
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (faber, alice) = ::connection::tests::create_connected_connections();
+        let (_faber, alice) = ::connection::tests::create_connected_connections();
 
         let (_, cred_def_handle) = ::credential_def::tests::create_cred_def_real(false);
 

@@ -4,7 +4,7 @@ extern crate futures;
 use self::tokio_threadpool::{Builder, ThreadPool};
 use self::futures::Future;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use std::sync::Mutex;
 use std::collections::HashMap;
 use std::thread;
@@ -14,7 +14,7 @@ lazy_static! {
     static ref THREADPOOL: Mutex<HashMap<u32, ThreadPool>> = Default::default();
 }
 
-static TP_INIT: Once = ONCE_INIT;
+static TP_INIT: Once = Once::new();
 
 pub static mut TP_HANDLE: u32 = 0;
 
@@ -23,7 +23,6 @@ pub fn init() {
 
     if size == 0 {
         info!("no threadpool created, threadpool_size is 0");
-        return;
     } else {
         TP_INIT.call_once(|| {
             let pool = Builder::new().pool_size(size).build();
@@ -56,7 +55,7 @@ where
     unsafe { handle = TP_HANDLE; }
     match THREADPOOL.lock().unwrap().get(&handle) {
         Some(x) => {
-            let n = x.spawn(future);
+            let _n= x.spawn(future);
         },
         None => panic!("no threadpool!"),
     }

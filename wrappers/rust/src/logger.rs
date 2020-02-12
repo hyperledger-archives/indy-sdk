@@ -10,7 +10,7 @@ use std::ptr::null;
 
 use utils::ctypes::c_str_to_string;
 
-static mut LOGGER: Option<Box<(&'static Log)>> = None;
+static mut LOGGER: Option<Box<&'static dyn Log>> = None;
 
 /// Set default logger implementation.
 ///
@@ -36,7 +36,7 @@ pub fn set_default_logger(pattern: Option<&str>) -> Result<(), IndyError> {
 ///
 /// # Arguments
 /// * `logger` - reference to logger used by application.
-pub fn set_logger(logger: &'static Log) -> Result<(), IndyError> {
+pub fn set_logger(logger: &'static dyn Log) -> Result<(), IndyError> {
     {
         unsafe {
             if LOGGER.is_some() {
@@ -97,36 +97,30 @@ impl IndyLogger {
                      file: IndyCString,
                      line: u32) {
         unsafe {
-            match LOGGER {
-                Some(ref logger) => {
-                    let target = c_str_to_string(target).unwrap().unwrap();
-                    let args = c_str_to_string(args).unwrap().unwrap();
-                    let module_path = c_str_to_string(module_path).unwrap();
-                    let file = c_str_to_string(file).unwrap();
-                    let level = Self::get_level(level);
+            if let Some(ref logger) = LOGGER {
+                let target = c_str_to_string(target).unwrap().unwrap();
+                let args = c_str_to_string(args).unwrap().unwrap();
+                let module_path = c_str_to_string(module_path).unwrap();
+                let file = c_str_to_string(file).unwrap();
+                let level = Self::get_level(level);
 
-                    logger.log(
-                        &Record::builder()
-                            .args(format_args!("{}", args))
-                            .level(level)
-                            .target(&target)
-                            .module_path(module_path)
-                            .file(file)
-                            .line(Some(line))
-                            .build(),
-                    );
-                }
-                None => {}
+                logger.log(
+                    &Record::builder()
+                        .args(format_args!("{}", args))
+                        .level(level)
+                        .target(&target)
+                        .module_path(module_path)
+                        .file(file)
+                        .line(Some(line))
+                        .build(),
+                );
             }
         }
     }
 
     pub extern fn flush_cb(_context: *const CVoid) {
         unsafe {
-            match LOGGER {
-                Some(ref logger) => { logger.flush() }
-                None => {}
-            }
+            if let Some(ref logger) = LOGGER { logger.flush() }
         }
     }
 

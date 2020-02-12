@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde_json;
 use futures::Future;
 use indy::ledger;
@@ -155,10 +157,16 @@ pub fn libindy_build_get_auth_rule_request(submitter_did: Option<&str>, txn_type
         .map_err(map_rust_indy_sdk_error)
 }
 
+pub fn libindy_build_get_nym_request(submitter_did: Option<&str>, did: &str) -> VcxResult<String> {
+    ledger::build_get_nym_request(submitter_did, did)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)
+}
+
 pub mod auth_rule {
     use super::*;
-    use std::collections::{HashMap, HashSet};
-    use std::sync::{Once, ONCE_INIT};
+    use std::collections::HashMap;
+    use std::sync::Once;
     use std::sync::Mutex;
 
     use indy::future::Future;
@@ -275,6 +283,15 @@ pub mod auth_rule {
         constraint: Constraint
     }
 
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+    pub struct Action {
+        pub auth_type: String,
+        pub auth_action: String,
+        pub field: String,
+        pub old_value: Option<String>,
+        pub new_value: Option<String>,
+    }
+
     // Helpers to set fee alias for auth rules
     pub fn set_actions_fee_aliases(submitter_did: &str, rules_fee: &str) -> VcxResult<()> {
         _get_default_ledger_auth_rules();
@@ -318,7 +335,7 @@ pub mod auth_rule {
 
     fn _get_default_ledger_auth_rules() {
         lazy_static! {
-            static ref GET_DEFAULT_AUTH_CONSTRAINTS: Once = ONCE_INIT;
+            static ref GET_DEFAULT_AUTH_CONSTRAINTS: Once = Once::new();
 
         }
 
@@ -348,66 +365,43 @@ pub mod auth_rule {
         }
     }
 
-    pub fn get_action_fee_alias(action: (&str, &str, &str, Option<&str>, &str)) -> VcxResult<Option<String>> {
+    pub fn get_action_auth_rule(action: (&str, &str, &str, Option<&str>, Option<&str>)) -> VcxResult<String> {
         let (txn_type, action, field, old_value, new_value) = action;
 
-        if settings::test_indy_mode_enabled() { return Ok(Some(txn_type.to_string())); }
+        if settings::test_indy_mode_enabled() { return Ok(json!({"result":{"data":[{"new_value":"0","constraint":{"need_to_be_owner":false,"sig_count":1,"metadata":{"fees":txn_type},"role":"0","constraint_id":"ROLE"},"field":"role","auth_type":"1","auth_action":"ADD"}],"identifier":"LibindyDid111111111111","auth_action":"ADD","new_value":"0","reqId":15616,"auth_type":"1","type":"121","field":"role"},"op":"REPLY"}).to_string()); }
 
-        let constraint = _get_action_constraint(txn_type, action, field, old_value, Some(new_value))?;
-        _extract_fee_alias_from_constraint(&constraint, None)
-    }
-
-    fn _get_action_constraint(txn_type: &str, action: &str, field: &str,
-                              old_value: Option<&str>, new_value: Option<&str>) -> VcxResult<Constraint> {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
         let request = libindy_build_get_auth_rule_request(Some(&did), Some(txn_type), Some(action), Some(field), old_value, new_value)?;
 
-        let response = libindy_submit_request(&request)?;
+        let response_json = libindy_submit_request(&request)?;
 
-        let mut response: GetAuthRuleResponse = ::serde_json::from_str(&response)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, err))?;
+        let response: serde_json::Value = ::serde_json::from_str(&response_json)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
 
-        let auth_rule = response.result.data.pop()
-            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse,
-                                      format!("Auth Rule not found for action: auth_type: {:?}, auth_action: {:?}, field: {:?}, old_value: {:?}, new_value: {:?}",
-                                              txn_type, action, field, old_value, new_value)))?;
-
-        Ok(auth_rule.constraint)
-    }
-
-    fn _extract_fee_alias_from_constraint(constraint: &Constraint, cur_fee: Option<String>) -> VcxResult<Option<String>> {
-        let fee = match constraint {
-            Constraint::RoleConstraint(constraint) => {
-                constraint.metadata.as_ref().and_then(|metadata| metadata.fees.clone())
-            }
-            Constraint::AndConstraint(constraint) | Constraint::OrConstraint(constraint) => {
-                let fees: HashSet<Option<String>> = constraint.auth_constraints
-                    .iter()
-                    .map(|constraint| _extract_fee_alias_from_constraint(constraint, cur_fee.clone()))
-                    .collect::<VcxResult<HashSet<Option<String>>>>()?;
-                if fees.len() != 1 {
-                    return Err(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("There are multiple different fees: {:?}", fees)));
-                }
-
-                fees.into_iter().next().unwrap()
-            }
-            Constraint::ForbiddenConstraint(_) => None
-        };
-
-        match (cur_fee, fee) {
-            (None, None) => Ok(None),
-            (Some(cur_fee_), None) => Ok(Some(cur_fee_)),
-            (None, Some(fee)) => Ok(Some(fee)),
-            (Some(cur_fee_), Some(fee)) => {
-                if cur_fee_ != fee {
-                    return Err(VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("Fee values are different. current fee: {}, new fee: {}", cur_fee_, fee)));
-                } else {
-                    Ok(Some(cur_fee_))
-                }
-            }
+        match response["op"].as_str().unwrap_or_default() {
+            "REPLY" => Ok(response_json),
+            _ => Err(VcxError::from(VcxErrorKind::InvalidLedgerResponse))
         }
     }
+}
+
+pub fn get_nym(did: &str) -> VcxResult<String> {
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+    let get_nym_req = libindy_build_get_nym_request(Some(&submitter_did), &did)?;
+    libindy_submit_request(&get_nym_req)
+}
+
+pub fn get_role(did: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() { return Ok(settings::DEFAULT_ROLE.to_string()); }
+
+    let get_nym_resp = get_nym(&did)?;
+    let get_nym_resp: serde_json::Value = serde_json::from_str(&get_nym_resp)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+    let data: serde_json::Value = serde_json::from_str(&get_nym_resp["result"]["data"].as_str().unwrap_or("{}"))
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
+    let role = data["role"].as_str().unwrap_or("null").to_string();
+    Ok(role)
 }
 
 pub fn parse_response(response: &str) -> VcxResult<Response> {
@@ -432,6 +426,106 @@ pub fn libindy_get_cred_def(cred_def_id: &str) -> VcxResult<String> {
     cache::get_cred_def(pool_handle, wallet_handle, &submitter_did, cred_def_id, "{}")
         .wait()
         .map_err(map_rust_indy_sdk_error)
+}
+
+pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
+    if settings::test_indy_mode_enabled() { return Ok(::utils::constants::REQUEST_WITH_ENDORSER.to_string()); }
+
+    let _did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    let request = ledger::append_request_endorser(request, endorser)
+        .wait()
+        .map_err(map_rust_indy_sdk_error)?;
+
+    multisign_request(&_did, &request)
+}
+
+pub fn endorse_transaction(transaction_json: &str) -> VcxResult<()> {
+    //TODO Potentially VCX should handle case when endorser would like to pay fee
+    if settings::test_indy_mode_enabled() { return Ok(()); }
+
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    _verify_transaction_can_be_endorsed(transaction_json, &submitter_did)?;
+
+    let transaction = multisign_request(&submitter_did, transaction_json)?;
+    let response = libindy_submit_request(&transaction)?;
+
+    match parse_response(&response)? {
+        Response::Reply(_) => Ok(()),
+        Response::Reject(res) | Response::ReqNACK(res) => Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, format!("{:?}", res.reason))),
+    }
+}
+
+fn _verify_transaction_can_be_endorsed(transaction_json: &str, _did: &str) -> VcxResult<()> {
+    let transaction: Request = serde_json::from_str(transaction_json)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("{:?}", err)))?;
+
+    let transaction_endorser = transaction.endorser
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Transaction cannot be endorsed: endorser DID is not set."))?;
+
+    if transaction_endorser != _did {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                      format!("Transaction cannot be endorsed: transaction endorser DID `{}` and sender DID `{}` are different", transaction_endorser, _did)));
+    }
+
+    let identifier = transaction.identifier.as_str();
+    if transaction.signature.is_none() && !transaction.signatures.as_ref().map(|signatures| signatures.contains_key(identifier)).unwrap_or(false) {
+        return Err(VcxError::from_msg(VcxErrorKind::InvalidJson,
+                                      format!("Transaction cannot be endorsed: the author must sign the transaction.")));
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_verify_transaction_can_be_endorsed() {
+        // success
+        let transaction = r#"{"reqId":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "signature": "gkVDhwe2", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
+        assert!(_verify_transaction_can_be_endorsed(transaction, "NcYxiDXkpYi6ov5FcYDi1e").is_ok());
+
+        // no author signature
+        let transaction = r#"{"reqId":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
+        assert!(_verify_transaction_can_be_endorsed(transaction, "NcYxiDXkpYi6ov5FcYDi1e").is_err());
+
+        // different endorser did
+        let transaction = r#"{"reqId":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
+        assert!(_verify_transaction_can_be_endorsed(transaction, "EbP4aYNeTHL6q385GuVpRV").is_err());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_endorse_transaction() {
+        init!("ledger");
+
+        use utils::libindy::payments::add_new_did;
+
+        let (author_did, _) = add_new_did(None);
+        let (endorser_did, _) = add_new_did(Some("ENDORSER"));
+
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &endorser_did);
+
+        let schema_request = libindy_build_schema_request(&author_did, ::utils::constants::SCHEMA_DATA).unwrap();
+        let schema_request = ledger::append_request_endorser(&schema_request, &endorser_did).wait().unwrap();
+        let schema_request = multisign_request(&author_did, &schema_request).unwrap();
+
+        endorse_transaction(&schema_request).unwrap();
+    }
+}
+
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Request {
+    pub req_id: u64,
+    pub identifier: String,
+    pub signature: Option<String>,
+    pub signatures: Option<HashMap<String, String>>,
+    pub endorser: Option<String>
 }
 
 #[serde(tag = "op")]

@@ -244,6 +244,25 @@ void IndyWrapperCommonStringCallback(indy_handle_t xcommand_handle,
     }
 }
 
+void IndyWrapperCommonStringNumber64Callback(indy_handle_t xcommand_handle,
+        indy_error_t err,
+        const char *const arg1,
+        indy_i64_t arg2) {
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor:xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor:xcommand_handle];
+
+    void (^completion)(NSError *, NSString *, NSNumber *) = (void (^)(NSError *, NSString *arg1, NSNumber *arg2)) block;
+    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
+    NSNumber *sarg2 = @(arg2);
+    NSError *error = [NSError errorFromIndyError:err];
+
+    if (completion) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(error, sarg1, sarg2);
+        });
+    }
+}
+
 void IndyWrapperCommonBoolCallback(indy_handle_t xcommand_handle,
         indy_error_t err,
         indy_bool_t arg1) {

@@ -1,16 +1,16 @@
 extern crate regex;
 extern crate chrono;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
-use commands::*;
+use crate::command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata, DynamicCompletionType};
+use crate::commands::*;
 
 use indy::{ErrorCode, IndyError};
-use libindy::payment::Payment;
+use crate::libindy::payment::Payment;
 
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use utils::table::print_list_table;
+use crate::utils::table::print_list_table;
 
 
 pub mod group {
@@ -19,18 +19,18 @@ pub mod group {
     command_group!(CommandGroupMetadata::new("payment-address", "Payment address management commands"));
 }
 
-pub mod create_command {
+pub mod new_command {
     use super::*;
 
-    command!(CommandMetadata::build("create", "Create the payment address for specified payment method.")
+    command!(CommandMetadata::build("new", "Create the payment address for specified payment method.")
                 .add_required_param("payment_method", "Payment method to use")
                 .add_optional_param("seed", "Seed for creating payment address")
-                .add_example("payment-address create payment_method=sov")
-                .add_example("payment-address create payment_method=sov seed=000000000000000000000000000Seed1")
+                .add_example("payment-address new payment_method=sov")
+                .add_example("payment-address new payment_method=sov seed=000000000000000000000000000Seed1")
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+    pub(super) fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
@@ -45,12 +45,34 @@ pub mod create_command {
         };
 
         let res = match Payment::create_payment_address(wallet_handle, payment_method, &config) {
-            Ok(payment_address) => Ok(println_succ!("Payment Address has been created \"{}\"", payment_address)),
-            Err(err) => Err(handle_payment_error(err, Some(payment_method))),
+            Ok(payment_address) => {
+                println_succ!("Payment Address has been created \"{}\"", payment_address);
+                Ok(())
+            },
+            Err(err) => {
+                handle_payment_error(err, Some(payment_method));
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+pub mod create_command {
+    use super::*;
+
+    command!(CommandMetadata::build("create", r#"Create the payment address for specified payment method. TAKE NOTE that this command will be removed in one of the future releases in favor `payment-address new` command."#)
+                .add_required_param("payment_method", "Payment method to use")
+                .add_optional_param("seed", "Seed for creating payment address")
+                .add_example("payment-address create payment_method=sov")
+                .add_example("payment-address create payment_method=sov seed=000000000000000000000000000Seed1")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        new_command::execute(ctx, params)
     }
 }
 
@@ -67,13 +89,13 @@ pub mod list_command {
 
         let res = match Payment::list_payment_addresses(wallet_handle) {
             Ok(payment_addresses_json) => {
-                let mut payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
+                let payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 let list_addresses =
                     payment_addresses.iter()
                         .map(|payment_address| {
-                            let parts = payment_address.split(":").collect::<Vec<&str>>();
+                            let parts = payment_address.split(':').collect::<Vec<&str>>();
                             json!({
                                 "address": payment_address,
                                 "method": parts.get(1).unwrap_or(&"Unknown payment method")
@@ -82,16 +104,118 @@ pub mod list_command {
                         .collect::<Vec<serde_json::Value>>();
 
                 print_list_table(&list_addresses,
-                                 &vec![("address", "Payment Address"),
-                                       ("method", "Payment Method")],
+                                 &[("address", "Payment Address"),
+                                     ("method", "Payment Method")],
                                  "There are no payment addresses");
                 Ok(())
             }
-            Err(err) => Err(handle_indy_error(err, None, None, None)),
+            Err(err) => {
+                handle_indy_error(err, None, None, None);
+                Err(())
+            },
         };
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+pub mod sign_command {
+    use super::*;
+
+    command!(CommandMetadata::build("sign", "Create a proof of payment address control by signing an input and producing a signature.")
+                .add_required_param_with_dynamic_completion("address","Payment address to use", DynamicCompletionType::PaymentAddress)
+                .add_required_param("input", "The input data to be signed")
+                .add_example("payment-address sign address=pay:null:lUdSMj9AmoUbmRQ input=123456789")
+                .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let address = get_str_param("address", params).map_err(error_err!())?;
+        let input = get_str_param("input", params).map_err(error_err!())?;
+
+        let res = match Payment::sign_with_address(wallet_handle, address, input) {
+            Ok(signature) => Ok(println_succ!("Signature \"0x{}\"", bin2hex(signature.as_slice()))),
+            Err(err) => Err(handle_indy_error(err, None, None, None))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+
+    fn bin2hex(b: &[u8]) -> String {
+        b.iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<Vec<_>>()
+            .join("")
+    }
+}
+
+pub mod verify_command {
+    use super::*;
+
+    command!(CommandMetadata::build("verify", "Verify a proof of payment address control by verifying a signature.")
+             .add_required_param_with_dynamic_completion("address","Payment address to use", DynamicCompletionType::PaymentAddress)
+             .add_required_param("input", "The input data that was signed")
+             .add_required_param("signature", "The signature generated from sign-with-address")
+             .add_example("payment-address verify address=pay:null:lUdSMj9AmoUbmRQ input=123456789 signature=0x0006e83221cdaf70b3c01a613675274dd2064ea376bf35656cff8436e62cdf89")
+             .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let address = get_str_param("address", params).map_err(error_err!())?;
+        let input = get_str_param("input", params).map_err(error_err!())?;
+        let signature = get_str_param("signature", params).map_err(error_err!())?;
+
+        if &signature[0..2] != "0x" {
+            println_err!("Wrong data has been received. Expected signature to start with '0x'");
+            return Err(());
+        }
+
+        let sig = hex2bin(&signature[2..]).map_err(|e| println_err!("{}", e))?;
+
+        let res = match Payment::verify_with_address(address, input, sig.as_slice()) {
+            Ok(valid) => {
+                if valid {
+                    Ok(println_succ!("Valid signature"))
+                } else {
+                    Ok(println_err!("Invalid signature"))
+                }
+            }
+            Err(err) => Err(handle_indy_error(err, None, None, None))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+
+    fn hex2bin(s: &str) -> Result<Vec<u8>, String> {
+        if s.len() % 2 != 0 {
+            return Err("Bad input".to_string());
+        }
+        for (i, ch) in s.chars().enumerate() {
+            if !ch.is_digit(16) {
+                return Err(format!(
+                    "Bad character position {}",
+                    i
+                ));
+            }
+        }
+
+        let input: Vec<_> = s.chars().collect();
+
+        let decoded: Vec<u8> = input
+            .chunks(2)
+            .map(|chunk| {
+                ((chunk[0].to_digit(16).unwrap() << 4) | (chunk[1].to_digit(16).unwrap())) as u8
+            })
+            .collect();
+
+        Ok(decoded)
     }
 }
 
@@ -108,22 +232,35 @@ pub fn handle_payment_error(err: IndyError, payment_method: Option<&str>) {
     }
 }
 
+pub fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
+    get_opened_wallet(ctx)
+        .and_then(|(wallet_handle, _)|
+            Payment::list_payment_addresses(wallet_handle).ok()
+        )
+        .and_then(|payment_addresses|
+            serde_json::from_str(&payment_addresses).ok()
+        )
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 #[cfg(feature = "nullpay_plugin")]
 pub mod tests {
     use super::*;
-    use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
-    use commands::did::tests::SEED_MY1;
+    use crate::commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
+    use crate::commands::did::tests::SEED_MY1;
 
-    mod create {
+    pub const INPUT: &str = "123456789";
+
+    mod new {
         use super::*;
 
         #[test]
-        pub fn create_works() {
+        pub fn new_works() {
             let ctx = setup_with_wallet();
             load_null_payment_plugin(&ctx);
             {
-                let cmd = create_command::new();
+                let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -136,11 +273,11 @@ pub mod tests {
         }
 
         #[test]
-        pub fn create_works_for_seed() {
+        pub fn new_works_for_seed() {
             let ctx = setup_with_wallet();
             load_null_payment_plugin(&ctx);
             {
-                let cmd = create_command::new();
+                let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 params.insert("seed", SEED_MY1.to_string());
@@ -154,10 +291,10 @@ pub mod tests {
         }
 
         #[test]
-        pub fn create_works_for_unknown_payment_method() {
+        pub fn new_works_for_unknown_payment_method() {
             let ctx = setup_with_wallet();
             {
-                let cmd = create_command::new();
+                let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", "unknown_payment_method".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -166,11 +303,11 @@ pub mod tests {
         }
 
         #[test]
-        pub fn create_works_for_no_opened_wallet() {
+        pub fn new_works_for_no_opened_wallet() {
             let ctx = setup();
             load_null_payment_plugin(&ctx);
             {
-                let cmd = create_command::new();
+                let cmd = new_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -226,10 +363,59 @@ pub mod tests {
         }
     }
 
-    fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
-        let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
-        let payment_addresses = Payment::list_payment_addresses(wallet_handle).unwrap();
-        serde_json::from_str(&payment_addresses).unwrap()
+    mod sign {
+        use super::*;
+
+        #[test]
+        pub fn sign_works() {
+            let ctx = setup_with_wallet();
+            load_null_payment_plugin(&ctx);
+            let payment_address = create_payment_address(&ctx);
+            {
+                let cmd = sign_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", payment_address);
+                params.insert("input", INPUT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+    }
+
+    mod verify {
+        use super::*;
+
+        const PAYMENT_ADDRESS: &str = "pay:null:lUdSMj9AmoUbmRQ";
+
+        #[test]
+        pub fn verify_works() {
+            let ctx = setup_with_wallet();
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = verify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", PAYMENT_ADDRESS.to_string());
+                params.insert("input", INPUT.to_string());
+                params.insert("signature", "0x0006e83221cdaf70b3c01a613675274dd2064ea376bf35656cff8436e62cdf89".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn verify_works_for_invalid_signature() {
+            let ctx = setup_with_wallet();
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = verify_command::new();
+                let mut params = CommandParams::new();
+                params.insert("address", PAYMENT_ADDRESS.to_string());
+                params.insert("input", INPUT.to_string());
+                params.insert("signature", "0x0006e83221cdaf70b3c01a613675274dd2064ea376bf11111111111111111111".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            tear_down_with_wallet(&ctx);
+        }
     }
 
     pub fn create_payment_address(ctx: &CommandContext) -> String {

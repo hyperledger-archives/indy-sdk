@@ -6,22 +6,22 @@ import org.junit.Test;
 
 import java.util.Date;
 
-import static org.junit.Assert.assertTrue;
-
 public class RevocGetRegDeltaRequestTest extends LedgerIntegrationTest {
 
 	@Test
 	public void testBuildGetRevocRegDeltaRequestWorks() throws Exception {
-		String expectedResult =
-				"\"operation\": {\n" +
-						"            \"type\": \"117\",\n" +
-						"            \"revocRegDefId\": \"RevocRegID\",\n" +
-						"            \"to\": 100\n" +
-						"        }";
+		JSONObject expectedResult = new JSONObject()
+				.put("operation", new JSONObject()
+						.put("type", "117")
+						.put("revocRegDefId", revRegDefId)
+						.put("to", 100)
+				);
 
-		String request = Ledger.buildGetRevocRegDeltaRequest(DID, "RevocRegID", - 1, 100).get();
+		String request = Ledger.buildGetRevocRegDeltaRequest(DID, revRegDefId, - 1, 100).get();
 
-		assertTrue(request.replaceAll("\\s+", "").contains(expectedResult.replaceAll("\\s+", "")));
+		assert (new JSONObject(request).toMap().entrySet()
+				.containsAll(
+						expectedResult.toMap().entrySet()));
 	}
 
 	@Test

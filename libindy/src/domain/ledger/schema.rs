@@ -1,5 +1,7 @@
 use super::constants::{SCHEMA, GET_SCHEMA};
 use super::response::{GetReplyResultV1, ReplyType};
+use super::super::crypto::did::ShortDidValue;
+use super::super::anoncreds::schema::SchemaId;
 
 use std::collections::HashSet;
 
@@ -40,12 +42,12 @@ impl SchemaOperationData {
 pub struct GetSchemaOperation {
     #[serde(rename = "type")]
     pub _type: String,
-    pub dest: String,
+    pub dest: ShortDidValue,
     pub data: GetSchemaOperationData
 }
 
 impl GetSchemaOperation {
-    pub fn new(dest: String, data: GetSchemaOperationData) -> GetSchemaOperation {
+    pub fn new(dest: ShortDidValue, data: GetSchemaOperationData) -> GetSchemaOperation {
         GetSchemaOperation {
             _type: GET_SCHEMA.to_string(),
             dest,
@@ -87,14 +89,14 @@ impl ReplyType for GetSchemaReplyResult {
 pub struct GetSchemaResultV0 {
     pub seq_no: u32,
     pub data: SchemaOperationData,
-    pub dest: String
+    pub dest: ShortDidValue
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetSchemaResultDataV1 {
     pub ver: String,
-    pub id: String,
+    pub id: SchemaId,
     pub schema_name: String,
     pub schema_version: String,
     pub value: GetSchemaResultDataValueV1

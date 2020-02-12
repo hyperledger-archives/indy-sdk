@@ -2,6 +2,7 @@ package com.evernym.sdk.vcx;
 
 import com.evernym.sdk.vcx.credential.InvalidCredentialDefHandle;
 import com.evernym.sdk.vcx.credentialDef.CredentialDefApi;
+import com.evernym.sdk.vcx.credentialDef.CredentialDefPrepareForEndorserResult;
 import com.evernym.sdk.vcx.vcx.VcxApi;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +12,18 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.ExecutionException;
 
 public class CredentialDefApiTest {
+
+    private CredentialDefPrepareForEndorserResult prepareCredDefForEndorser() throws VcxException, ExecutionException, InterruptedException {
+        return TestHelper.getResultFromFuture(CredentialDefApi.credentialDefPrepareForEndorser(
+                "testCredentialDefSourceId",
+                "testCredentialDefName",
+                "testCredentialDefSchemaId",
+                null,
+                "tag1",
+                "{\"support_revocation\":false}",
+                "V4SGRU86Z58d6TV7PBUe6f"
+        ));
+    }
 
     @BeforeEach
     void setup() throws Exception {
@@ -50,6 +63,27 @@ public class CredentialDefApiTest {
         assert(json.contains("name"));
         int deserialisedCredDef = TestHelper.getResultFromFuture(CredentialDefApi.credentialDefDeserialize(json));
         Assertions.assertNotEquals(0,deserialisedCredDef);
+    }
+
+    @Test
+    @DisplayName("prepare a credentialdef for endorser")
+    void prepareForEndorser() throws VcxException, ExecutionException, InterruptedException {
+        CredentialDefPrepareForEndorserResult credentialdefForEndorser = prepareCredDefForEndorser();
+        assert (credentialdefForEndorser.getCredentialDefHandle() != 0);
+        assert (!credentialdefForEndorser.getCredDefTransaction().isEmpty());
+        assert (credentialdefForEndorser.getRevocRegDefTransaction() == null);
+        assert (credentialdefForEndorser.getRevocRegEntryTransaction() == null);
+    }
+
+    @Test
+    @DisplayName("update schema state")
+    void updateState() throws VcxException, ExecutionException, InterruptedException {
+        CredentialDefPrepareForEndorserResult credentialdefForEndorser = prepareCredDefForEndorser();
+
+        assert (credentialdefForEndorser.getCredentialDefHandle() != 0);
+        assert (TestHelper.getResultFromFuture(CredentialDefApi.credentialDefGetState(credentialdefForEndorser.getCredentialDefHandle())) == 0);
+        assert (TestHelper.getResultFromFuture(CredentialDefApi.credentialDefUpdateState(credentialdefForEndorser.getCredentialDefHandle())) == 1);
+        assert (TestHelper.getResultFromFuture(CredentialDefApi.credentialDefGetState(credentialdefForEndorser.getCredentialDefHandle())) == 1);
     }
 
 

@@ -7,10 +7,10 @@ import {
   dataIssuerCredentialCreate,
   issuerCredentialCreate
 } from 'helpers/entities'
-import { CRED_REQ_MESSAGE } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import {
   Connection,
+  Credential,
   IssuerCredential,
   IssuerCredentialPaymentManager,
   StateType,
@@ -154,6 +154,13 @@ describe('IssuerCredential:', () => {
       const error = await shouldThrow(() => issuerCredential.sendOffer(connection))
       assert.equal(error.vcxCode, VCXCode.INVALID_CONNECTION_HANDLE)
     })
+
+    it('can generate the offer message', async () => {
+      await connectionCreateConnect()
+      const issuerCredential = await issuerCredentialCreate()
+      const message = await issuerCredential.getCredentialOfferMsg()
+      assert(message.length > 0)
+    })
   })
 
   describe('sendCredential:', () => {
@@ -172,11 +179,15 @@ describe('IssuerCredential:', () => {
     it('success', async () => {
       const connection = await connectionCreateConnect()
       const issuerCredential = await issuerCredentialCreate()
-      await issuerCredential.sendOffer(connection)
-      await issuerCredential.updateStateWithMessage(CRED_REQ_MESSAGE)
+      const offer = await issuerCredential.getCredentialOfferMsg()
+      const cred = await Credential.create({ sourceId: 'name', offer, connection })
+      const pwDid = await connection.getPwDid()
+      const request = await cred.getRequestMessage({ myPwDid: pwDid, payment: 0 })
+      await issuerCredential.updateStateWithMessage(request)
       assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
-      await issuerCredential.sendCredential(connection)
-      assert.equal(await issuerCredential.getState(), StateType.Accepted)
+      const credMsg = await issuerCredential.getCredentialMsg(pwDid)
+      await cred.updateStateWithMessage(credMsg)
+      assert.equal(await cred.getState(), StateType.Accepted)
     })
 
     it('throws: not initialized', async () => {
@@ -199,6 +210,18 @@ describe('IssuerCredential:', () => {
       await issuerCredential.sendOffer(connection)
       const error = await shouldThrow(() => issuerCredential.sendCredential(connection))
       assert.equal(error.vcxCode, VCXCode.NOT_READY)
+    })
+
+    it('can generate the credential message', async () => {
+      const connection = await connectionCreateConnect()
+      const issuerCredential = await issuerCredentialCreate()
+      await issuerCredential.sendOffer(connection)
+      VCXMock.setVcxMock(VCXMockMessage.IssuerCredentialReq)
+      VCXMock.setVcxMock(VCXMockMessage.UpdateIssuerCredential)
+      await issuerCredential.updateState()
+      assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
+      const message = await issuerCredential.getCredentialMsg('44x8p4HubxzUK1dwxcc5FU')
+      assert(message.length > 0)
     })
   })
 

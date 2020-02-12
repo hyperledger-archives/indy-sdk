@@ -1,8 +1,8 @@
-from indy.anoncreds import verifier_verify_proof
-from indy.error import ErrorCode, IndyError
-
 import json
 import pytest
+
+from indy.anoncreds import verifier_verify_proof
+from indy import error
 
 proof = {
     "proof": {
@@ -123,11 +123,10 @@ async def test_verifier_verify_proof_works_for_proof_does_not_correspond_to_requ
     proof["identifiers"][0]["schema_id"] = gvt_schema_id
     proof["identifiers"][0]["cred_def_id"] = issuer_1_gvt_cred_def_id
 
-    with pytest.raises(IndyError) as e:
+    with pytest.raises(error.AnoncredsProofRejected):
         await verifier_verify_proof(json.dumps(xproof_req), json.dumps(proof),
                                     json.dumps(schemas), json.dumps(credential_defs), "{}", "{}")
 
-    assert ErrorCode.AnoncredsProofRejected == e.value.error_code
 
 
 @pytest.mark.asyncio

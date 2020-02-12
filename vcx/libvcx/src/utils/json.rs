@@ -11,7 +11,7 @@ pub trait KeyMatch {
 }
 
 impl KeyMatch for String {
-    fn matches(&self, key: &String, context: &Vec<String>) -> bool {
+    fn matches(&self, key: &String, _context: &Vec<String>) -> bool {
         key.eq(self)
     }
 }

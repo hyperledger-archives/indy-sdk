@@ -38,6 +38,14 @@
     return @"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
 }
 
+- (NSString *)credDefId {
+    return @"NcYxiDXkpYi6ov5FcYDi1e:3:CL:1";
+}
+
+- (NSString *)revRegId {
+    return @"NcYxiDXkpYi6ov5FcYDi1e:4:NcYxiDXkpYi6ov5FcYDi1e:3:CL:1:CL_ACCUM:TAG_1";
+}
+
 - (NSString *)getGvtSchemaJson {
     return [self toJson:@{
             @"id": [self getGvtSchemaId],
@@ -237,6 +245,47 @@
 
     if (credentialDefId) {*credentialDefId = outCredentialDefId;}
     if (credentialDefJson) {*credentialDefJson = outCredentialDefJson;}
+
+    return err;
+}
+
+- (NSError *)issuerRotateCredentialDefStartForId:(NSString *)credDefId
+                                      configJSON:(NSString *)configJSON
+                                    walletHandle:(IndyHandle)walletHandle
+                                     credDefJson:(NSString **)credentialDefJson {
+    __block NSError *err = nil;
+    __block NSString *outCredentialDefJson = nil;
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds issuerRotateCredentialDefStartForId:credDefId
+                                            configJSON:configJSON
+                                          walletHandle:walletHandle
+                                            completion:^(NSError *error, NSString *credDefJSON) {
+                                                       err = error;
+                                                       outCredentialDefJson = credDefJSON;
+                                                       [completionExpectation fulfill];
+                                                   }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (credentialDefJson) {*credentialDefJson = outCredentialDefJson;}
+
+    return err;
+}
+
+- (NSError *)issuerRotateCredentialDefApplyForId:(NSString *)credDefId
+                                    walletHandle:(IndyHandle)walletHandle {
+    __block NSError *err = nil;
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds issuerRotateCredentialDefApplyForId:credDefId
+                                          walletHandle:walletHandle
+                                            completion:^(NSError *error) {
+                                                       err = error;
+                                                       [completionExpectation fulfill];
+                                                   }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
     return err;
 }
@@ -807,6 +856,46 @@
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
     if (updatedRevStateJson) {*updatedRevStateJson = outUpdatedRevSateJson;}
+    return err;
+}
+
+- (NSError *)toUnqualified:(NSString *)entity
+                       res:(NSString **)res {
+    __block NSError *err = nil;
+    __block NSString *outRes;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds toUnqualified:entity
+                      completion:^(NSError *error, NSString *result) {
+                          err = error;
+                          outRes = result;
+                          [completionExpectation fulfill];
+                      }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (res) {*res = outRes;}
+    return err;
+}
+
+- (NSError *)generateNonce:(NSString **)nonce {
+    __block NSError *err = nil;
+    __block NSString *outNonce;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds generateNonce:^(NSError *error, NSString *n) {
+                                  err = error;
+                                  outNonce = n;
+                                  [completionExpectation fulfill];
+                              }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (nonce) {*nonce = outNonce;}
     return err;
 }
 

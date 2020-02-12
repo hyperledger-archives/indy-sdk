@@ -32,36 +32,6 @@ public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testCreateMyDidWorksAsCid() throws Exception {
-		String  didJson = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, true).toJson();
-
-		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(this.wallet, didJson).get();
-
-		assertEquals(VERKEY_MY1, result.getDid());
-		assertEquals(VERKEY_MY1, result.getVerkey());
-	}
-
-	@Test
-	public void testCreateMyDidWorksForPassedDid() throws Exception {
-
-		String didJson = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(DID, null, null, false).toJson();
-
-		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(this.wallet, didJson).get();
-
-		assertEquals(DID, result.getDid());
-	}
-
-	@Test
-	public void testCreateMyDidWorksForCorrectCryptoType() throws Exception {
-		String didJson = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, CRYPTO_TYPE, null).toJson();
-
-		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(this.wallet, didJson).get();
-
-		assertEquals(DID_MY1, result.getDid());
-		assertEquals(VERKEY_MY1, result.getVerkey());
-	}
-
-	@Test
 	public void testCreateMyDidWorksForInvalidSeed() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
@@ -69,26 +39,6 @@ public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 		String didJson = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, "aaaaaaaaaaa", null, null).toJson();
 
 		Did.createAndStoreMyDid(this.wallet, didJson).get();
-	}
-
-	@Test
-	public void testCreateMyDidWorksForInvalidCryptoType() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(UnknownCryptoException.class));
-
-		String didJson = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, "crypto_type", null).toJson();
-
-		Did.createAndStoreMyDid(this.wallet, didJson).get();
-	}
-
-	@Test
-	public void testCreateMyDidWorksForAllParams() throws Exception {
-		String didJson = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(DID, MY1_SEED, CRYPTO_TYPE, true).toJson();
-
-		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(this.wallet, didJson).get();
-
-		assertEquals(DID, result.getDid());
-		assertEquals(VERKEY_MY1, result.getVerkey());
 	}
 
 	@Test

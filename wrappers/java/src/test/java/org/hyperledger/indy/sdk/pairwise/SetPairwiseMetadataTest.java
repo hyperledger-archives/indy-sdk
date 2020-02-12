@@ -29,19 +29,6 @@ public class SetPairwiseMetadataTest extends PairwiseIntegrationTest {
 	}
 
 	@Test
-	public void testSetPairwiseMetadataWorksForReset() throws Exception {
-		Pairwise.createPairwise(wallet, theirDid, myDid, metadata).get();
-		String pairwiseWithMetadata = Pairwise.getPairwise(wallet, theirDid).get();
-		assertEquals(String.format(PAIRWISE_TEMPLATE_WITH_META, myDid, metadata), pairwiseWithMetadata);
-
-		Pairwise.setPairwiseMetadata(wallet, theirDid, null).get();
-		String pairwiseWithoutMetadata = Pairwise.getPairwise(wallet, theirDid).get();
-
-		assertNotEquals(pairwiseWithMetadata, pairwiseWithoutMetadata);
-		assertEquals(String.format(PAIRWISE_TEMPLATE_WITHOUT_META, myDid), pairwiseWithoutMetadata);
-	}
-
-	@Test
 	public void testSetPairwiseMetadataWorksForNotCreatedPairwise() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletItemNotFoundException.class));

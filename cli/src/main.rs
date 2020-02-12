@@ -25,12 +25,12 @@ mod command_executor;
 mod commands;
 mod libindy;
 
-use command_executor::CommandExecutor;
+use crate::command_executor::CommandExecutor;
 
-use commands::{common, did, ledger, pool, wallet, payment_address};
-use utils::history;
+use crate::commands::{common, did, ledger, pool, wallet, payment_address};
+use crate::utils::history;
 
-use linefeed::{Reader, ReadResult, Terminal};
+use linefeed::{Reader, ReadResult, Terminal, Signal};
 use linefeed::complete::{Completer, Completion};
 
 use std::env;
@@ -40,7 +40,7 @@ use std::rc::Rc;
 
 fn main() {
     #[cfg(target_os = "windows")]
-    ansi_term::enable_ansi_support().is_ok();
+    let _ = ansi_term::enable_ansi_support().is_ok();
 
     let mut args = env::args();
     args.next(); // skip library
@@ -133,6 +133,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(did::use_command::new())
         .add_command(did::rotate_key_command::new())
         .add_command(did::list_command::new())
+        .add_command(did::qualify_command::new())
         .finalize_group()
         .add_group(pool::group::new())
         .add_command(pool::create_command::new())
@@ -142,6 +143,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(pool::disconnect_command::new())
         .add_command(pool::delete_command::new())
         .add_command(pool::show_taa_command::new())
+        .add_command(pool::set_protocol_version_command::new())
         .finalize_group()
         .add_group(wallet::group::new())
         .add_command(wallet::create_command::new())
@@ -183,10 +185,16 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::load_transaction_command::new())
         .add_command(ledger::taa_command::new())
         .add_command(ledger::aml_command::new())
+        .add_command(ledger::get_acceptance_mechanisms_command::new())
+        .add_command(ledger::endorse_transaction_command::new())
+        .add_command(ledger::taa_disable_all_command::new())
         .finalize_group()
         .add_group(payment_address::group::new())
+        .add_command(payment_address::new_command::new())
         .add_command(payment_address::create_command::new())
         .add_command(payment_address::list_command::new())
+        .add_command(payment_address::sign_command::new())
+        .add_command(payment_address::verify_command::new())
         .finalize_group()
         .finalize()
 }
@@ -205,21 +213,28 @@ fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<
     reader.set_prompt(&command_executor.ctx().get_prompt());
     history::load(&mut reader).ok();
 
-    while let Ok(ReadResult::Input(line)) = reader.read_line() {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
+    while let Ok(read_result) = reader.read_line() {
+        match read_result {
+            ReadResult::Input(line) => {
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
 
-        if command_executor.execute(&line).is_ok() {
-            reader.add_history(line.to_string());
-        };
+                let _ = command_executor.execute(&line).is_ok();
+                reader.add_history(line.to_string());
+                reader.set_prompt(&command_executor.ctx().get_prompt());
 
-        reader.set_prompt(&command_executor.ctx().get_prompt());
-
-        if command_executor.ctx().is_exit() {
-            history::persist(&mut reader).ok();
-            break;
+                if command_executor.ctx().is_exit() {
+                    history::persist(&reader).ok();
+                    break;
+                }
+            },
+            ReadResult::Eof | ReadResult::Signal(Signal::Quit) | ReadResult::Signal(Signal::Break)| ReadResult::Signal(Signal::Interrupt) => {
+                history::persist(&reader).ok();
+                break;
+            },
+            _ => {break}
         }
     }
 }
@@ -240,8 +255,8 @@ fn execute_batch(command_executor: &CommandExecutor, script_path: Option<&str>) 
 }
 
 fn _load_plugins(command_executor: &CommandExecutor, plugins_str: &str) {
-    for plugin in plugins_str.split(",") {
-        let parts: Vec<&str> = plugin.split(":").collect::<Vec<&str>>();
+    for plugin in plugins_str.split(',') {
+        let parts: Vec<&str> = plugin.split(':').collect::<Vec<&str>>();
 
         let name = unwrap_or_return!(parts.get(0), println_err!("Plugin Name not found in {}", plugin));
         let init_func = unwrap_or_return!(parts.get(1), println_err!("Plugin Init function not found in {}", plugin));
@@ -282,13 +297,13 @@ fn _iter_batch<T>(command_executor: &CommandExecutor, reader: T) where T: std::i
             return println_err!("Can't parse line #{}", line_num);
         };
 
-        if line.starts_with("#") || line.is_empty() {
+        if line.starts_with('#') || line.is_empty() {
             // Skip blank lines and lines starting with #
             continue;
         }
 
         println!("{}", line);
-        let (line, force) = if line.starts_with("-") {
+        let (line, force) = if line.starts_with('-') {
             (line[1..].as_ref(), true)
         } else {
             (line[0..].as_ref(), false)
@@ -307,12 +322,11 @@ fn _iter_batch<T>(command_executor: &CommandExecutor, reader: T) where T: std::i
 
 impl<Term: Terminal> Completer<Term> for CommandExecutor {
     fn complete(&self, word: &str, reader: &Reader<Term>,
-                start: usize, end: usize) -> Option<Vec<Completion>> {
+                _start: usize, _end: usize) -> Option<Vec<Completion>> {
         Some(self
             .complete(reader.buffer(),
                       word,
-                      start,
-                      end)
+                      reader.cursor())
             .into_iter()
             .map(|c| Completion {
                 completion: c.0,

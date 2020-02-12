@@ -1,7 +1,7 @@
 [package]
 name = "issue-credential"
 version = "0.1.0"
-authors = ["matt raffel <matt.raffel@evernym.com>"]
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
 
 [[bin]]
 name = "issue-credential"

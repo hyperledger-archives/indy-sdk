@@ -35,8 +35,6 @@ mod tests {
     use serde_json;
     use utils::constants::{CREDENTIAL_REQ_STRING, CRED_REQ, CRED_REQ_META};
 
-    static TEMP_ISSUER_DID: &'static str = "4reqXeZVm7JZAffAoaNLsb";
-
     fn create_credential_req() -> CredentialRequest {
         ::settings::set_defaults();
         let issuer_did = ::settings::get_config_value(::settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -59,7 +57,6 @@ mod tests {
 
     #[test]
     fn test_deserialize() {
-        let issuer_did = String::from("4reqXeZVm7JZAffAoaNLsb");
         let req: CredentialRequest = serde_json::from_str(CREDENTIAL_REQ_STRING).unwrap();
         assert_eq!(&req.libindy_cred_req, CRED_REQ);
     }

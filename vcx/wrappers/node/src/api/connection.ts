@@ -7,6 +7,124 @@ import { ISerializedData, StateType } from './common'
 import { VCXBaseWithState } from './vcx-base-with-state'
 
 /**
+ *   The object of the VCX API representing a pairwise relationship with another identity owner.
+ *   Once the relationship, or connection, is established communication can happen securely and privately.
+ *   Credentials and Proofs are exchanged using this object.
+ *
+ *   # States
+ *
+ *   The set of object states and transitions depends on communication method is used.
+ *   The communication method can be specified as config option on one of *_init function. The default communication method us `proprietary`.
+ *
+ *   proprietary:
+ *       Inviter:
+ *           VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+ *
+ *           VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (send Connection invite) is called.
+ *
+ *           VcxStateType::VcxStateAccepted - once `connReqAnswer` messages is received.
+ *                                            use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+ *
+ *       Invitee:
+ *           VcxStateType::VcxStateRequestReceived - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+ *
+ *           VcxStateType::VcxStateAccepted - once `vcx_connection_connect` (accept Connection invite) is called.
+ *
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called.
+ *
+ *   aries:
+ *       Inviter:
+ *           VcxStateType::VcxStateInitialized - once `vcx_connection_create` (create Connection object) is called.
+ *
+ *           VcxStateType::VcxStateOfferSent - once `vcx_connection_connect` (prepared Connection invite) is called.
+ *
+ *           VcxStateType::VcxStateRequestReceived - once `ConnectionRequest` messages is received.
+ *                                                   accept `ConnectionRequest` and send `ConnectionResponse` message.
+ *                                                   use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *
+ *           VcxStateType::VcxStateAccepted - once `Ack` messages is received.
+ *                                            use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+ *                                           OR
+ *                                       `ConnectionProblemReport` messages is received on state updates.
+ *
+ *       Invitee:
+ *           VcxStateType::VcxStateOfferSent - once `vcx_connection_create_with_invite` (create Connection object with invite) is called.
+ *
+ *           VcxStateType::VcxStateRequestReceived - once `vcx_connection_connect` (accept `ConnectionInvite` and send `ConnectionRequest` message) is called.
+ *
+ *           VcxStateType::VcxStateAccepted - once `ConnectionResponse` messages is received.
+ *                                            send `Ack` message if requested.
+ *                                            use `vcx_connection_update_state` or `vcx_connection_update_state_with_message` functions for state updates.
+ *
+ *           VcxStateType::VcxStateNone - once `vcx_connection_delete_connection` (delete Connection object) is called
+ *                                           OR
+ *                                       `ConnectionProblemReport` messages is received on state updates.
+ *
+ *   # Transitions
+ *
+ *   proprietary:
+ *       Inviter:
+ *           VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+ *           VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+ *           VcxStateType::VcxStateOfferSent - received `connReqAnswer` - VcxStateType::VcxStateAccepted
+ *           any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+ *
+ *       Invitee:
+ *           VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateRequestReceived
+ *           VcxStateType::VcxStateRequestReceived - `vcx_connection_connect` - VcxStateType::VcxStateAccepted
+ *           any state - `vcx_connection_delete_connection` - `VcxStateType::VcxStateNone`
+ *
+ *   aries - RFC: https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0036-issue-credential
+ *       Inviter:
+ *           VcxStateType::None - `vcx_connection_create` - VcxStateType::VcxStateInitialized
+ *
+ *           VcxStateType::VcxStateInitialized - `vcx_connection_connect` - VcxStateType::VcxStateOfferSent
+ *
+ *           VcxStateType::VcxStateOfferSent - received `ConnectionRequest` - VcxStateType::VcxStateRequestReceived
+ *           VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateRequestReceived - received `Ack` - VcxStateType::VcxStateAccepted
+ *           VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+ *
+ *           any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+ *
+ *       Invitee:
+ *           VcxStateType::None - `vcx_connection_create_with_invite` - VcxStateType::VcxStateOfferSent
+ *
+ *           VcxStateType::VcxStateOfferSent - `vcx_connection_connect` - VcxStateType::VcxStateRequestReceived
+ *           VcxStateType::VcxStateOfferSent - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateRequestReceived - received `ConnectionResponse` - VcxStateType::VcxStateAccepted
+ *           VcxStateType::VcxStateRequestReceived - received `ConnectionProblemReport` - VcxStateType::VcxStateNone
+ *
+ *           VcxStateType::VcxStateAccepted - received `Ping`, `PingResponse`, `Query`, `Disclose` - VcxStateType::VcxStateAccepted
+ *
+ *           any state - `vcx_connection_delete_connection` - VcxStateType::VcxStateNone
+ *
+ *   # Messages
+ *
+ *   proprietary:
+ *       ConnectionRequest (`connReq`)
+ *       ConnectionRequestAnswer (`connReqAnswer`)
+ *
+ *   aries:
+ *       Invitation - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#0-invitation-to-connect
+ *       ConnectionRequest - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#1-connection-request
+ *       ConnectionResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#2-connection-response
+ *       ConnectionProblemReport - https://github.com/hyperledger/aries-rfcs/tree/master/features/0160-connection-protocol#error-message-example
+ *       Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+ *       Ping - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+ *       PingResponse - https://github.com/hyperledger/aries-rfcs/tree/master/features/0048-trust-ping#messages
+ *       Query - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#query-message-type
+ *       Disclose - https://github.com/hyperledger/aries-rfcs/tree/master/features/0031-discover-features#disclose-message-type
+ */
+
+/**
  * @description Interface that represents the attributes of a Connection object.
  * This data is expected as the type for deserialize's parameter and serialize's return value
  * @interface
@@ -24,33 +142,63 @@ export interface IConnectionData {
   state: StateType
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.create` function.
+ * @interface
+ */
 export interface IConnectionCreateData {
+  // Institution's personal identification for the connection
   id: string
 }
 
+// A string representing a invitation json object.
 export type IConnectionInvite = string
 
+/**
+ * @description Interface that represents the parameters for `Connection.createWithInvite` function.
+ * @interface
+ */
 export interface IRecipientInviteInfo extends IConnectionCreateData {
+  // Invitation provided by an entity that wishes to make a connection.
   invite: IConnectionInvite
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.connect` function.
+ * @interface
+ */
 export interface IConnectOptions {
+  // Provides details indicating if the connection will be established by text or QR Code
   data: string
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.sendMessage` function.
+ * @interface
+ */
 export interface IMessageData {
+  // Actual message to send
   msg: string,
+  // Type of message to send. Can be any string
   type: string,
+  // Message title (user notification)
   title: string,
+  // If responding to a message, id of the message
   refMsgId?: string,
 }
 
+/**
+ * @description Interface that represents the parameters for `Connection.verifySignature` function.
+ * @interface
+ */
 export interface ISignatureData {
+  // Message was signed
   data: Buffer,
+  // Generated signature
   signature: Buffer
 }
 
-function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
+export function voidPtrToUint8Array (origPtr: any, length: number): Buffer {
   /**
    * Read the contents of the pointer and copy it into a new Buffer
    */
@@ -122,6 +270,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
 
   protected _releaseFn = rustAPI().vcx_connection_release
   protected _updateStFn = rustAPI().vcx_connection_update_state
+  protected _updateStWithMessageFn = rustAPI().vcx_connection_update_state_with_message
   protected _getStFn = rustAPI().vcx_connection_get_state
   protected _serializeFn = rustAPI().vcx_connection_serialize
   protected _deserializeFn = rustAPI().vcx_connection_deserialize
@@ -164,6 +313,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
 
   /**
    * Delete the object from the agency and release any memory associated with it
+   * NOTE: This eliminates the connection and any ability to use it for any communication.
    *
    * Example:
    * ```
@@ -279,7 +429,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
     }
   }
   /**
-   * Sign data using pairwise key.
+   * Sign data using connection pairwise key.
    *
    * Example:
    * ```
@@ -318,7 +468,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
     }
   }
   /**
-   * Verify the signature of the data using pairwise key.
+   * Verify the signature of the data using connection pairwise key.
    *
    * Example:
    * ```
@@ -354,14 +504,14 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   }
 
   /**
-   * Gets the details of the invitation that was returned from the Agent Service.
+   * Get the invite details that were sent or can be sent to the remote side.
    *
    * Example:
    * ```
    * phoneNumber = '8019119191'
    * connection = await Connection.create('foobar123')
    * inviteDetails = await connection.connect({phone: phoneNumber})
-   * inivteDetailsAgain = await connection.inviteDetails()
+   * inviteDetailsAgain = await connection.inviteDetails()
    * ```
    */
   public async inviteDetails (abbr: boolean = false): Promise<IConnectionInvite> {
@@ -391,6 +541,232 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
       return data
     } catch (err) {
       throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+   *
+   * Note that this function is useful in case `aries` communication method is used.
+   * In other cases it returns ActionNotSupported error.
+   *
+   */
+  public async sendPing (comment: string | null | undefined): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_send_ping(0, this.handle, comment, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+   *
+   * Note that this function is useful in case `aries` communication method is used.
+   * In other cases it returns ActionNotSupported error.
+   *
+   */
+  public async sendDiscoveryFeatures (query: string | null | undefined, comment: string | null | undefined): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_send_discovery_features(0, this.handle, query, comment, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Retrieves pw_did from Connection object
+   *
+   */
+  public async getPwDid (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_get_pw_did(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!details) {
+                reject(`Connection ${this.sourceId} connect returned empty string`)
+                return
+              }
+              resolve(details)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Retrieves their_pw_did from Connection object
+   *
+   */
+  public async getTheirDid (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_get_their_pw_did(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!details) {
+                reject(`Connection ${this.sourceId} connect returned empty string`)
+                return
+              }
+              resolve(details)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Redirects to an existing connection if one already present.
+   *
+   * Example:
+   * ```
+   * const oldConnectionToAcme = searchConnectionsByPublicDID({
+   *  public_did: inviteDetails.publicDID
+   * })
+   * const redirectConnectionToAcme = await Connection.createWithInvite({
+   *  id: 'faber-redirect',
+   *  invite: JSON.stringify(inviteDetails)
+   * })
+   * await redirectConnectionToAcme.redirect({
+   *  redirectToConnection: oldConnectionToAcme
+   * })
+   * ```
+   */
+  public async connectionRedirect (existingConnection: Connection): Promise<void> {
+    try {
+      await createFFICallbackPromise<void>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_redirect(0, this.handle, existingConnection.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32'],
+            (xcommandHandle: number, err: number) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve()
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+/**
+ * Gets the redirection details if the connection already exists.
+ *
+ * Example:
+ * ```
+ * await connectionToAlice.updateState()
+ * connectionState = await connectionToAlice.getState()
+ *
+ * if (connectionState == StateType.Redirected) {
+ * redirectDetails = await connectionToAlice.getRedirectDetails()
+ * serializedOldConnection = searchConnectionsByTheirDid({
+ *   theirDid: redirectDetails.theirDID
+ * })
+ * oldConnection = await Connection.deserialize({
+ *   connectionData: serializedOldConnection
+ * })
+ *}
+ * ```
+ */
+  public async getRedirectDetails (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_get_redirect_details(
+            0,
+            this.handle,
+            cb
+          );
+          if (rc) {
+            reject(rc);
+          }
+        },
+        (resolve, reject) =>
+          ffi.Callback(
+            "void",
+            ["uint32", "uint32", "string"],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              if (!details) {
+                reject(`proof ${this.sourceId} returned empty string`);
+                return;
+              }
+              resolve(details);
+            }
+          )
+      );
+    } catch (err) {
+      throw new VCXInternalError(err);
     }
   }
 }

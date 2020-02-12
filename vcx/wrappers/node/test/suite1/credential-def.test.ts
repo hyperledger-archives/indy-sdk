@@ -2,9 +2,9 @@ import '../module-resolver-helper'
 
 import { assert } from 'chai'
 import { validatePaymentTxn } from 'helpers/asserts'
-import { credentialDefCreate } from 'helpers/entities'
+import { credentialDefCreate, credentialDefPrepareForEndorser } from 'helpers/entities'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { CredentialDef, CredentialDefPaymentManager, VCXCode } from 'src'
+import { CredentialDef, CredentialDefPaymentManager, CredentialDefState, VCXCode } from 'src'
 
 describe('CredentialDef:', () => {
   before(() => initVcxTestMode())
@@ -81,4 +81,18 @@ describe('CredentialDef:', () => {
     })
   })
 
+  describe('prepareForEndorser:', () => {
+    it('success', async () => {
+      await credentialDefPrepareForEndorser()
+    })
+  })
+
+  describe('updateState:', () => {
+    it(`success`, async () => {
+      const credentialDef = await credentialDefPrepareForEndorser()
+      assert.equal(await credentialDef.getState(), CredentialDefState.Built)
+      await credentialDef.updateState()
+      assert.equal(await credentialDef.getState(), CredentialDefState.Published)
+    })
+  })
 })

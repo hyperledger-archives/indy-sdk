@@ -1,82 +1,87 @@
 use std::collections::HashMap;
 
-use domain::crypto::key::{Key, KeyInfo, KeyMetadata};
-use domain::crypto::pack::*;
-use errors::prelude::*;
-use services::crypto::CryptoService;
-use services::wallet::{RecordOptions, WalletService};
+use crate::domain::crypto::key::{Key, KeyInfo, KeyMetadata};
+use crate::domain::crypto::pack::*;
+use indy_api_types::errors::prelude::*;
+use crate::services::crypto::CryptoService;
+use indy_wallet::{RecordOptions, WalletService};
 
 use std::rc::Rc;
 use std::str;
-use utils::crypto::base64;
-use utils::crypto::chacha20poly1305_ietf;
-use domain::crypto::combo_box::ComboBox;
-use api::WalletHandle;
+use indy_utils::crypto::base64;
+use indy_utils::crypto::chacha20poly1305_ietf;
+use crate::domain::crypto::combo_box::ComboBox;
+use indy_api_types::WalletHandle;
+
+pub const PROTECTED_HEADER_ENC: &str = "xchacha20poly1305_ietf";
+pub const PROTECTED_HEADER_TYP: &str = "JWM/1.0";
+pub const PROTECTED_HEADER_ALG_AUTH: &str = "Authcrypt";
+pub const PROTECTED_HEADER_ALG_ANON: &str = "Anoncrypt";
 
 pub enum CryptoCommand {
     CreateKey(
         WalletHandle,
         KeyInfo, // key info
-        Box<Fn(IndyResult<String /*verkey*/>) + Send>,
+        Box<dyn Fn(IndyResult<String /*verkey*/>) + Send>,
     ),
     SetKeyMetadata(
         WalletHandle,
         String, // verkey
         String, // metadata
-        Box<Fn(IndyResult<()>) + Send>,
+        Box<dyn Fn(IndyResult<()>) + Send>,
     ),
     GetKeyMetadata(
         WalletHandle,
         String, // verkey
-        Box<Fn(IndyResult<String>) + Send>,
+        Box<dyn Fn(IndyResult<String>) + Send>,
     ),
     CryptoSign(
         WalletHandle,
         String,  // my vk
         Vec<u8>, // msg
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     CryptoVerify(
         String,  // their vk
         Vec<u8>, // msg
         Vec<u8>, // signature
-        Box<Fn(IndyResult<bool>) + Send>,
+        Box<dyn Fn(IndyResult<bool>) + Send>,
     ),
     AuthenticatedEncrypt(
         WalletHandle,
         String,  // my vk
         String,  // their vk
         Vec<u8>, // msg
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     AuthenticatedDecrypt(
         WalletHandle,
         String,  // my vk
         Vec<u8>, // encrypted msg
-        Box<Fn(IndyResult<(String, Vec<u8>)>) + Send>,
+        Box<dyn Fn(IndyResult<(String, Vec<u8>)>) + Send>,
     ),
     AnonymousEncrypt(
         String,  // their vk
         Vec<u8>, // msg
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     AnonymousDecrypt(
         WalletHandle,
         String,  // my vk
         Vec<u8>, // msg
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     PackMessage(
         Vec<u8>, // plaintext message
         Vec<String>,  // list of receiver's keys
         Option<String>,  // senders verkey
         WalletHandle,
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
     UnpackMessage(
-        Vec<u8>, // JWE
+        JWE,
         WalletHandle,
-        Box<Fn(IndyResult<Vec<u8>>) + Send>,
+        Box<dyn Fn(IndyResult<Vec<u8>>) + Send>,
     ),
 }
 
@@ -99,47 +104,47 @@ impl CryptoCommandExecutor {
     pub fn execute(&self, command: CryptoCommand) {
         match command {
             CryptoCommand::CreateKey(wallet_handle, key_info, cb) => {
-                info!("CreateKey command received");
+                debug!("CreateKey command received");
                 cb(self.create_key(wallet_handle, &key_info));
             }
             CryptoCommand::SetKeyMetadata(wallet_handle, verkey, metadata, cb) => {
-                info!("SetKeyMetadata command received");
+                debug!("SetKeyMetadata command received");
                 cb(self.set_key_metadata(wallet_handle, &verkey, &metadata));
             }
             CryptoCommand::GetKeyMetadata(wallet_handle, verkey, cb) => {
-                info!("GetKeyMetadata command received");
+                debug!("GetKeyMetadata command received");
                 cb(self.get_key_metadata(wallet_handle, &verkey));
             }
             CryptoCommand::CryptoSign(wallet_handle, my_vk, msg, cb) => {
-                info!("CryptoSign command received");
+                debug!("CryptoSign command received");
                 cb(self.crypto_sign(wallet_handle, &my_vk, &msg));
             }
             CryptoCommand::CryptoVerify(their_vk, msg, signature, cb) => {
-                info!("CryptoVerify command received");
+                debug!("CryptoVerify command received");
                 cb(self.crypto_verify(&their_vk, &msg, &signature));
             }
             CryptoCommand::AuthenticatedEncrypt(wallet_handle, my_vk, their_vk, msg, cb) => {
-                info!("AuthenticatedEncrypt command received");
+                debug!("AuthenticatedEncrypt command received");
                 cb(self.authenticated_encrypt(wallet_handle, &my_vk, &their_vk, &msg));
             }
             CryptoCommand::AuthenticatedDecrypt(wallet_handle, my_vk, encrypted_msg, cb) => {
-                info!("AuthenticatedDecrypt command received");
+                debug!("AuthenticatedDecrypt command received");
                 cb(self.authenticated_decrypt(wallet_handle, &my_vk, &encrypted_msg));
             }
             CryptoCommand::AnonymousEncrypt(their_vk, msg, cb) => {
-                info!("AnonymousEncrypt command received");
+                debug!("AnonymousEncrypt command received");
                 cb(self.anonymous_encrypt(&their_vk, &msg));
             }
             CryptoCommand::AnonymousDecrypt(wallet_handle, my_vk, encrypted_msg, cb) => {
-                info!("AnonymousDecrypt command received");
+                debug!("AnonymousDecrypt command received");
                 cb(self.anonymous_decrypt(wallet_handle, &my_vk, &encrypted_msg));
             }
             CryptoCommand::PackMessage(message, receivers, sender_vk, wallet_handle, cb) => {
-                info!("PackMessage command received");
+                debug!("PackMessage command received");
                 cb(self.pack_msg(message, receivers, sender_vk, wallet_handle));
             }
             CryptoCommand::UnpackMessage(jwe_json, wallet_handle, cb) => {
-                info!("UnpackMessage command received");
+                debug!("UnpackMessage command received");
                 cb(self.unpack_msg(jwe_json, wallet_handle));
             }
         };
@@ -392,7 +397,7 @@ impl CryptoCommandExecutor {
                                     cek: &chacha20poly1305_ietf::Key,
                                     receiver_list: Vec<String>,
     ) -> IndyResult<String> {
-        let mut encrypted_recipients_struct : Vec<Recipient> = vec![];
+        let mut encrypted_recipients_struct : Vec<Recipient> = Vec::with_capacity(receiver_list.len());
 
         for their_vk in receiver_list {
             //encrypt sender verkey
@@ -446,12 +451,12 @@ impl CryptoCommandExecutor {
     }
 
     fn _base64_encode_protected(&self, encrypted_recipients_struct: Vec<Recipient>, alg_is_authcrypt: bool) -> IndyResult<String> {
-        let alg_val = if alg_is_authcrypt { String::from("Authcrypt") } else { String::from("Anoncrypt") };
+        let alg_val = if alg_is_authcrypt { String::from(PROTECTED_HEADER_ALG_AUTH) } else { String::from(PROTECTED_HEADER_ALG_ANON) };
 
         //structure protected and base64URL encode it
         let protected_struct = Protected {
-            enc: "xchacha20poly1305_ietf".to_string(),
-            typ: "JWM/1.0".to_string(),
+            enc: PROTECTED_HEADER_ENC.to_string(),
+            typ: PROTECTED_HEADER_TYP.to_string(),
             alg: alg_val,
             recipients: encrypted_recipients_struct,
         };
@@ -489,14 +494,7 @@ impl CryptoCommandExecutor {
         })
     }
 
-    pub fn unpack_msg(&self, jwe_json: Vec<u8>, wallet_handle: WalletHandle) -> IndyResult<Vec<u8>> {
-        //serialize JWE to struct
-        let jwe_struct: JWE = serde_json::from_slice(jwe_json.as_slice()).map_err(|err| {
-            err_msg(IndyErrorKind::InvalidStructure, format!(
-                "Failed to deserialize JWE {}",
-                err
-            ))
-        })?;
+    pub fn unpack_msg(&self, jwe_struct: JWE, wallet_handle: WalletHandle) -> IndyResult<Vec<u8>> {
         //decode protected data
         let protected_decoded_vec = base64::decode_urlsafe(&jwe_struct.protected)?;
         let protected_decoded_str = String::from_utf8(protected_decoded_vec).map_err(|err| {

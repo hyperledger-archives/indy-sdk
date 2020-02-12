@@ -1,27 +1,28 @@
 use indy::IndyError;
 use indy::future::Future;
 use indy::ledger;
+use indy::{PoolHandle, WalletHandle};
 
 pub struct Ledger {}
 
 impl Ledger {
-    pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+    pub fn sign_and_submit_request(pool_handle: PoolHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
         ledger::sign_and_submit_request(pool_handle, wallet_handle, submitter_did, request_json).wait()
     }
 
-    pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, IndyError> {
+    pub fn submit_request(pool_handle: PoolHandle, request_json: &str) -> Result<String, IndyError> {
         ledger::submit_request(pool_handle, request_json).wait()
     }
 
-    pub fn submit_action(pool_handle: i32, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, IndyError> {
+    pub fn submit_action(pool_handle: PoolHandle, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, IndyError> {
         ledger::submit_action(pool_handle, request_json, nodes, timeout).wait()
     }
 
-    pub fn sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+    pub fn sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
         ledger::sign_request(wallet_handle, submitter_did, request_json).wait()
     }
 
-    pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+    pub fn multi_sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
         ledger::multi_sign_request(wallet_handle, submitter_did, request_json).wait()
     }
 
@@ -107,12 +108,20 @@ impl Ledger {
                                             old_value, new_value).wait()
     }
 
-    pub fn build_txn_author_agreement_request(submitter_did: &str, text: &str, version: &str) -> Result<String, IndyError> {
-        ledger::build_txn_author_agreement_request(submitter_did, text, version).wait()
+    pub fn build_txn_author_agreement_request(submitter_did: &str, text: Option<&str>, version: &str, ratification_ts: Option<u64>, retirement_ts: Option<u64>) -> Result<String, IndyError> {
+        ledger::build_txn_author_agreement_request(submitter_did, text, version, ratification_ts, retirement_ts).wait()
+    }
+
+    pub fn build_disable_all_txn_author_agreements_request(submitter_did: &str) -> Result<String, IndyError> {
+        ledger::build_disable_all_txn_author_agreements_request(submitter_did).wait()
     }
 
     pub fn build_acceptance_mechanisms_request(submitter_did: &str, aml: &str, version: &str, aml_context: Option<&str>) -> Result<String, IndyError> {
         ledger::build_acceptance_mechanisms_request(submitter_did, aml, version, aml_context).wait()
+    }
+
+    pub fn build_get_acceptance_mechanisms_request(submitter_did: Option<&str>, timestamp: Option<i64>, version: Option<&str>) -> Result<String, IndyError> {
+        ledger::build_get_acceptance_mechanisms_request(submitter_did, timestamp, version).wait()
     }
 
     pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
@@ -132,5 +141,10 @@ impl Ledger {
                                                                   hash,
                                                                   acc_mech_type,
                                                                   time_of_acceptance).wait()
+    }
+
+    pub fn append_request_endorser(request_json: &str,
+                                   endorser_did: &str) -> Result<String, IndyError> {
+        ledger::append_request_endorser(request_json, endorser_did).wait()
     }
 }

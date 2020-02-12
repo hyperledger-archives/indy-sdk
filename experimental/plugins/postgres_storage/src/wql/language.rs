@@ -80,7 +80,7 @@ pub enum Operator {
 
 #[allow(dead_code)]
 impl Operator {
-    pub fn transform(self, f: &Fn(Operator) -> Result<Operator, WalletQueryError>) -> Result<Operator, WalletQueryError> {
+    pub fn transform(self, f: &dyn Fn(Operator) -> Result<Operator, WalletQueryError>) -> Result<Operator, WalletQueryError> {
         match self {
             Operator::And(operators) => Ok(Operator::And(Operator::transform_list_operators(operators, f)?)),
             Operator::Or(operators) => Ok(Operator::Or(Operator::transform_list_operators(operators, f)?)),
@@ -89,7 +89,7 @@ impl Operator {
         }
     }
 
-    fn transform_list_operators(operators: Vec<Operator>, f: &Fn(Operator) -> Result<Operator, WalletQueryError>) -> Result<Vec<Operator>, WalletQueryError> {
+    fn transform_list_operators(operators: Vec<Operator>, f: &dyn Fn(Operator) -> Result<Operator, WalletQueryError>) -> Result<Vec<Operator>, WalletQueryError> {
         let mut transformed = Vec::new();
 
         for operator in operators {

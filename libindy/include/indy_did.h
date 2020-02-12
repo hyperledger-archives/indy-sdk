@@ -25,6 +25,7 @@ extern "C" {
     ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
     ///               currently only 'ed25519' value is supported for this field)
     ///     "cid": bool, (optional; if not set then false is used;)
+    ///     "method_name": string, method name to create fully qualified did (Example:  `did:method_name:NcYxiDXkpYi6ov5FcYDi1e`).
     /// }
     /// cb: Callback that takes command result as parameter.
     ///
@@ -125,7 +126,9 @@ extern "C" {
     /// identity_json: Identity information as json. Example:
     ///     {
     ///        "did": string, (required)
-    ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+    ///        "verkey": string
+    ///             - optional is case of adding a new DID, and DID is cryptonym: did == verkey,
+    ///             - mandatory in case of updating an existing DID
     ///     }
     /// cb: Callback that takes command result as parameter.
     ///
@@ -423,6 +426,36 @@ extern "C" {
                                                                  indy_error_t err,
                                                                  const char *const verkey)
                                             );
+
+    /// Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.
+    ///     - If the DID has no prefix, a prefix will be appended (prepend did:peer to a legacy did)
+    ///     - If the DID has a prefix, a prefix will be updated (migrate did:peer to did:peer-new)
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did: target DID stored in the wallet.
+    /// prefix: prefix to apply to the DID.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - did: fully qualified did
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_qualify_did(indy_handle_t     command_handle,
+                                         indy_handle_t     wallet_handle,
+                                         const char *const did,
+                                         const char *const method,
+
+                                         void              (*cb)(indy_handle_t     command_handle,
+                                                                 indy_error_t      err,
+                                                                 const char *const full_qualified_did)
+                                        );
 
 #ifdef __cplusplus
 }

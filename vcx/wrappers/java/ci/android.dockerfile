@@ -21,5 +21,5 @@ RUN yes | .//home/android/android-sdk-linux/tools/bin/sdkmanager "ndk-bundle"
 RUN echo "android ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers 
 
 USER android
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.34.1
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.39.0
 ENV PATH /home/android/.cargo/bin:$PATH

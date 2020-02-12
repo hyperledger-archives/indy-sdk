@@ -16,7 +16,7 @@
     logValue('Steward Verkey: ', stewardVerkey)
 
     // Now, create a new DID and verkey for a trust anchor, and store it in our wallet as well. Don't use a seed;
-    // this DID and its keyas are secure and random. Again, we're not writing to the ledger yet.
+    // this DID and its keys are secure and random. Again, we're not writing to the ledger yet.
 
     // 6.
     log('6. Generating and storing trust anchor DID and verkey')

@@ -4,15 +4,12 @@ import os
 import sys
 import shutil
 import json
-from toml_utils import get_version_from_file
 import tarfile
 
 # Packs the npm project into .tgz
 # Then creates a debian package of it.
 
 def create_deb(filename):
-    cur_dir = os.getcwd()
-    
     if not os.path.isfile(filename):
         print('%s doesnt exist' % filename)
         sys.exit(1)

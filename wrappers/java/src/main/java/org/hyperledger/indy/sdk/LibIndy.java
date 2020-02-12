@@ -1,13 +1,17 @@
 package org.hyperledger.indy.sdk;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.PointerByReference;
+import static com.sun.jna.Native.detach;
 
 public abstract class LibIndy {
 
 	public static final String LIBRARY_NAME = "indy";
+	static final DefaultTypeMapper MAPPER = new DefaultTypeMapper();
 
 	/*
 	 * Native library interface
@@ -49,6 +53,7 @@ public abstract class LibIndy {
 		public int indy_build_attrib_request(int command_handle, String submitter_did, String target_did, String hash, String raw, String enc, Callback cb);
 		public int indy_build_get_attrib_request(int command_handle, String submitter_did, String target_did, String raw, String hash, String enc, Callback cb);
 		public int indy_build_get_nym_request(int command_handle, String submitter_did, String target_did, Callback cb);
+		public int indy_parse_get_nym_response(int command_handle, String response, Callback cb);
 		public int indy_build_schema_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_schema_request(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_schema_response(int command_handle, String get_schema_response, Callback cb);
@@ -73,11 +78,13 @@ public abstract class LibIndy {
 		public int indy_build_auth_rule_request(int command_handle, String submitter_did, String txn_type, String action, String field, String old_value, String new_value, String constraint, Callback cb);
 		public int indy_build_auth_rules_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_auth_rule_request(int command_handle, String submitter_did, String txn_type, String action, String field, String old_value, String new_value, Callback cb);
-		public int indy_build_txn_author_agreement_request(int command_handle, String submitter_did, String text, String version, Callback cb);
+		public int indy_build_txn_author_agreement_request(int command_handle, String submitter_did, String text, String version, long ratification_ts, long retirement_ts, Callback cb);
+		public int indy_build_disable_all_txn_author_agreements_request(int command_handle, String submitter_did, Callback cb);
 		public int indy_build_get_txn_author_agreement_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_acceptance_mechanisms_request(int command_handle, String submitter_did, String aml, String version, String aml_context, Callback cb);
 		public int indy_build_get_acceptance_mechanisms_request(int command_handle, String submitter_did, int timestamp, String version, Callback cb);
 		public int indy_append_txn_author_agreement_acceptance_to_request(int command_handle, String request_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
+		public int indy_append_request_endorser(int command_handle, String request_json, String endorser_did, Callback cb);
 
 		// did.rs
 
@@ -94,6 +101,7 @@ public abstract class LibIndy {
 		public int indy_get_my_did_with_meta(int command_handle, int wallet_handle, String did, Callback cb);
 		public int indy_list_my_dids_with_meta(int command_handle, int wallet_handle, Callback cb);
 		public int indy_abbreviate_verkey(int command_handle, String did, String full_verkey, Callback cb);
+		public int indy_qualify_did(int command_handle, int wallet_handle, String did, String method, Callback cb);
 
 		// crypto.rs
 
@@ -101,7 +109,7 @@ public abstract class LibIndy {
 		public int indy_set_key_metadata(int command_handle, int wallet_handle, String verkey, String metadata, Callback cb);
 		public int indy_get_key_metadata(int command_handle, int wallet_handle, String verkey, Callback cb);
 		public int indy_crypto_sign(int command_handle, int wallet_handle, String my_vk, byte[] message_raw, int message_len, Callback cb);
-		public int indy_crypto_verify(int command_handle, String their_vk, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
+		public int indy_crypto_verify(int command_handle, String their_vk, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, BoolCallback cb);
 		public int indy_crypto_auth_crypt(int command_handle, int wallet_handle, String my_vk, String their_vk, byte[] message_raw, int message_len, Callback cb);
 		public int indy_crypto_auth_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 		public int indy_crypto_anon_crypt(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
@@ -113,6 +121,8 @@ public abstract class LibIndy {
 
 		public int indy_issuer_create_schema(int command_handle, String issuer_did, String name, String version, String attr_names, Callback cb);
 		public int indy_issuer_create_and_store_credential_def(int command_handle, int wallet_handle, String issuer_did, String schema_json, String tag, String signature_type, String config_json, Callback cb);
+		public int indy_issuer_rotate_credential_def_start(int command_handle, int wallet_handle, String cred_def_id, String config_json, Callback cb);
+		public int indy_issuer_rotate_credential_def_apply(int command_handle, int wallet_handle, String cred_def_id, Callback cb);
 		public int indy_issuer_create_and_store_revoc_reg(int command_handle, int wallet_handle, String issuer_did, String revoc_def_type, String tag, String cred_def_id, String config_json, int blob_storage_writer_handle, Callback cb);
 		public int indy_issuer_create_credential_offer(int command_handle, int wallet_handle, String cred_def_id, Callback cb);
 		public int indy_issuer_create_credential(int command_handle, int wallet_handle, String cred_offer_json, String cred_req_json, String cred_values_json, String rev_reg_id, int blob_storage_reader_handle, Callback cb);
@@ -136,6 +146,8 @@ public abstract class LibIndy {
 		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String cred_defs_jsons, String rev_reg_defs_json, String revoc_regs_json, Callback cb);
 		public int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
 		public int indy_update_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_state_json, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
+		public int indy_generate_nonce(int command_handle, Callback cb);
+		public int indy_to_unqualified(int command_handle, String entity, Callback cb);
 
 
 		// pairwise.rs
@@ -172,7 +184,9 @@ public abstract class LibIndy {
 		int indy_add_request_fees(int command_handle, int wallet_handle, String submitter_did, String req_json, String inputs_json, String outputs_json, String extra, Callback cb);
 		int indy_parse_response_with_fees(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_get_payment_sources_request(int command_handle, int wallet_handle, String submitter_did, String payment_address, Callback cb);
+		int indy_build_get_payment_sources_with_from_request(int command_handle, int wallet_handle, String submitter_did, String payment_address, int from, Callback cb);
 		int indy_parse_get_payment_sources_response(int command_handle, String payment_method, String resp_json, Callback cb);
+		int indy_parse_get_payment_sources_with_from_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_payment_req(int command_handle, int wallet_handle, String submitter_did, String inputs_json, String outputs_json, String extra, Callback cb);
 		int indy_parse_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_mint_req(int command_handle, int wallet_handle, String submitter_did, String outputs_json, String extra, Callback cb);
@@ -182,12 +196,18 @@ public abstract class LibIndy {
 		int indy_build_verify_payment_req(int command_handle, int wallet_handle, String submitter_did, String receipt, Callback cb);
 		int indy_parse_verify_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_prepare_payment_extra_with_acceptance_data(int command_handle, String extra_json, String text, String version, String hash, String acc_mech_type, long time_of_acceptance, Callback cb);
+		int indy_get_request_info(int command_handle, String get_auth_rule_response_json, String requester_info_json, String fees_json, Callback cb);
+		int indy_sign_with_address(int command_handle, int wallet_handle, String address, byte[] message_raw, int message_len, Callback cb);
+		int indy_verify_with_address(int command_handle, String address, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
 
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 
 		int indy_set_runtime_config(String config);
 		int indy_get_current_error(PointerByReference error);
 
+		interface BoolCallback extends Callback {
+			void callback(int xcommand_handle, int err, IndyBool valid);
+		}
 	}
 
 	/*
@@ -197,6 +217,7 @@ public abstract class LibIndy {
 	public static API api = null;
 
 	static {
+		MAPPER.addTypeConverter(IndyBool.class, IndyBool.MAPPER);
 
 		try {
 
@@ -216,8 +237,7 @@ public abstract class LibIndy {
 	public static void init(String searchPath) {
 
 		NativeLibrary.addSearchPath(LIBRARY_NAME, searchPath);
-		api = Native.loadLibrary(LIBRARY_NAME, API.class);
-		initLogger();
+		init();
 	}
 
 	/**
@@ -227,8 +247,10 @@ public abstract class LibIndy {
 	 * @param file The absolute path to the C-Callable library file.
 	 */
 	public static void init(File file) {
+		Map<String, Object> options = new HashMap<String, Object>();
+		options.put(Library.OPTION_TYPE_MAPPER, MAPPER);
 
-		api = Native.loadLibrary(file.getAbsolutePath(), API.class);
+		api = Native.loadLibrary(file.getAbsolutePath(), API.class, options);
 		initLogger();
 	}
 
@@ -236,8 +258,10 @@ public abstract class LibIndy {
 	 * Initializes the API with the default library.
 	 */
 	public static void init() {
+		Map<String, Object> options = new HashMap<String, Object>();
+		options.put(Library.OPTION_TYPE_MAPPER, MAPPER);
 
-		api = Native.loadLibrary(LIBRARY_NAME, API.class);
+		api = Native.loadLibrary(LIBRARY_NAME, API.class, options);
 		initLogger();
 	}
 
@@ -258,7 +282,9 @@ public abstract class LibIndy {
 
 			@SuppressWarnings({"unused", "unchecked"})
 			public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
-				 org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibIndy.class.getName(), target.replace("::", ".")));
+				detach(false);
+
+				org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibIndy.class.getName(), target.replace("::", ".")));
 
 				String logMessage = String.format("%s:%d | %s", file, line, message);
 

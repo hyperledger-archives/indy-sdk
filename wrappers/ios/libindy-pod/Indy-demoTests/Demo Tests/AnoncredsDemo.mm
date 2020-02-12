@@ -328,8 +328,12 @@
 
 
     // 10. Prover gets Credentials for Proof Request
+    NSString *nonce = nil;
+    ret = [[AnoncredsUtils sharedInstance] generateNonce:&nonce];
+    XCTAssertEqual(ret.code, Success, @"generateNonce() failed!");
+
     NSString *proofReqJson = [[AnoncredsUtils sharedInstance] toJson:@{
-            @"nonce": @"123432421212",
+            @"nonce": nonce,
             @"name": @"proof_req_1",
             @"version": @"0.1",
             @"requested_attributes": @{

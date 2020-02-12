@@ -8,20 +8,21 @@ use std::slice;
 use std::ops::Deref;
 use std::hash::Hash;
 
-use utils::libindy::next_i32_command_handle;
+use utils::libindy::next_command_handle;
+use indy_sys::CommandHandle;
 
 pub const POISON_MSG: &str = "FAILED TO LOCK CALLBACK MAP!";
 
 lazy_static! {
-    pub static ref CALLBACKS_I32: Mutex<HashMap<i32, Box<FnMut(i32) + Send>>> = Default::default();
-    pub static ref CALLBACKS_I32_I32: Mutex<HashMap<i32, Box<FnMut(i32, i32) + Send>>> = Default::default();
-    pub static ref CALLBACKS_I32_STR: Mutex<HashMap<i32, Box<FnMut(i32, Option<String>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_I32_STR_STR: Mutex<HashMap <i32, Box<FnMut(i32, Option<String>, Option<String>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_I32_STR_STR_STR: Mutex<HashMap <i32, Box<FnMut(i32, Option<String>, Option<String>, Option<String>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_I32_BOOL: Mutex<HashMap<i32, Box<FnMut(i32, bool) + Send>>> = Default::default();
-    pub static ref CALLBACKS_I32_BIN: Mutex<HashMap<i32, Box<FnMut(i32, Vec<u8>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_I32_OPTSTR_BIN: Mutex<HashMap<i32,Box<FnMut(i32, Option<String>, Vec<u8>) + Send>>> = Default::default();
-    pub static ref CALLBACKS_I32_BIN_BIN: Mutex<HashMap<i32, Box<FnMut(i32, Vec<u8>, Vec<u8>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32: Mutex<HashMap<i32, Box<dyn FnMut(i32) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32_I32: Mutex<HashMap<i32, Box<dyn FnMut(i32, i32) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32_STR: Mutex<HashMap<i32, Box<dyn FnMut(i32, Option<String>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32_STR_STR: Mutex<HashMap <i32, Box<dyn FnMut(i32, Option<String>, Option<String>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32_STR_STR_STR: Mutex<HashMap <i32, Box<dyn FnMut(i32, Option<String>, Option<String>, Option<String>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32_BOOL: Mutex<HashMap<i32, Box<dyn FnMut(i32, bool) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32_BIN: Mutex<HashMap<i32, Box<dyn FnMut(i32, Vec<u8>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32_OPTSTR_BIN: Mutex<HashMap<i32,Box<dyn FnMut(i32, Option<String>, Vec<u8>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32_BIN_BIN: Mutex<HashMap<i32, Box<dyn FnMut(i32, Vec<u8>, Vec<u8>) + Send>>> = Default::default();
 }
 
 pub extern "C" fn call_cb_i32(command_handle: i32, arg1: i32) {
@@ -163,10 +164,10 @@ mod tests {
 
     #[test]
     fn test_get_cb(){
-        let mutex_map: Mutex<HashMap<i32, Box<FnMut(i32) + Send>>> = Default::default();
+        let mutex_map: Mutex<HashMap<i32, Box<dyn FnMut(i32) + Send>>> = Default::default();
         assert!(get_cb(2123, &mutex_map).is_none());
 
-        let closure: Box<FnMut(i32) + Send> = Box::new(move |err | {
+        let closure: Box<dyn FnMut(i32) + Send> = Box::new(move |_ | {
 
         });
 
@@ -184,8 +185,8 @@ mod tests {
 // Should be come not needed as the transition is complete
 //**************************************
 
-fn init_callback<T>(closure: T, map: &Mutex<HashMap<i32, T>>) -> (i32) {
-    let command_handle = next_i32_command_handle();
+fn init_callback<T>(closure: T, map: &Mutex<HashMap<CommandHandle, T>>) -> CommandHandle {
+    let command_handle = next_command_handle();
     {
         let mut callbacks = map.lock().unwrap();
         callbacks.insert(command_handle, closure);
@@ -193,42 +194,42 @@ fn init_callback<T>(closure: T, map: &Mutex<HashMap<i32, T>>) -> (i32) {
     command_handle
 }
 
-pub fn closure_cb_i32(closure: Box<FnMut(i32) + Send>)
+pub fn closure_cb_i32(closure: Box<dyn FnMut(i32) + Send>)
                       -> (i32, Option<extern fn(command_handle: i32, arg1: i32)>) {
     (init_callback(closure, CALLBACKS_I32.deref()), Some(call_cb_i32))
 }
 
-pub fn closure_cb_i32_i32(closure: Box<FnMut(i32, i32) + Send>)
+pub fn closure_cb_i32_i32(closure: Box<dyn FnMut(i32, i32) + Send>)
                           -> (i32, Option<extern fn(command_handle: i32, arg1: i32, arg2: i32)>) {
     (init_callback(closure, CALLBACKS_I32_I32.deref()), Some(call_cb_i32_i32))
 }
 
-pub fn closure_cb_i32_str(closure: Box<FnMut(i32, Option<String>) + Send>)
+pub fn closure_cb_i32_str(closure: Box<dyn FnMut(i32, Option<String>) + Send>)
                           -> (i32, Option<extern fn(command_handle: i32, arg1: i32, arg2: *const c_char)>) {
     (init_callback(closure, CALLBACKS_I32_STR.deref()), Some(call_cb_i32_str))
 }
 
-pub fn closure_cb_i32_str_str(closure: Box<FnMut(i32, Option<String>, Option<String>) + Send>)
+pub fn closure_cb_i32_str_str(closure: Box<dyn FnMut(i32, Option<String>, Option<String>) + Send>)
                               -> (i32, Option<extern fn(command_handle: i32, arg1: i32, arg2: *const c_char, arg3: *const c_char)>) {
     (init_callback(closure, CALLBACKS_I32_STR_STR.deref()), Some(call_cb_i32_str_str))
 }
 
-pub fn closure_cb_i32_bool(closure: Box<FnMut(i32, bool) + Send>)
+pub fn closure_cb_i32_bool(closure: Box<dyn FnMut(i32, bool) + Send>)
                            -> (i32, Option<extern fn(command_handle: i32, arg1: i32, arg2: bool)>) {
     (init_callback(closure, CALLBACKS_I32_BOOL.deref()), Some(call_cb_i32_bool))
 }
 
-pub fn closure_cb_i32_bin(closure: Box<FnMut(i32, Vec<u8>) + Send>)
+pub fn closure_cb_i32_bin(closure: Box<dyn FnMut(i32, Vec<u8>) + Send>)
                           -> (i32, Option<extern fn(command_handle: i32, arg1: i32, buf: *const u8, len: u32)>) {
     (init_callback(closure, CALLBACKS_I32_BIN.deref()), Some(call_cb_i32_bin))
 }
 
-pub fn closure_cb_i32_str_bin(closure: Box<FnMut(i32, Option<String>, Vec<u8>) + Send>)
+pub fn closure_cb_i32_str_bin(closure: Box<dyn FnMut(i32, Option<String>, Vec<u8>) + Send>)
                               -> (i32, Option<extern fn(command_handle: i32, arg1: i32, arg2: *const c_char, buf: *const u8, len: u32)>){
     (init_callback(closure, CALLBACKS_I32_OPTSTR_BIN.deref()), Some(call_cb_i32_str_bin))
 }
 
-pub fn closure_cb_i32_bin_bin(closure: Box<FnMut(i32, Vec<u8>, Vec<u8>) + Send>)
+pub fn closure_cb_i32_bin_bin(closure: Box<dyn FnMut(i32, Vec<u8>, Vec<u8>) + Send>)
                               -> (i32, Option<extern fn(command_handle: i32, arg1: i32, buf1: *const u8, buf1_len: u32, buf2: *const u8, buf2_len: u32)>){
     (init_callback(closure, CALLBACKS_I32_BIN_BIN.deref()), Some(call_cb_i32_bin_bin))
 }

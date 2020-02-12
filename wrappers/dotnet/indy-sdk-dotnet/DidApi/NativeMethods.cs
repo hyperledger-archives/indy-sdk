@@ -166,60 +166,22 @@ namespace Hyperledger.Indy.DidApi
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_get_did_metadata(int command_handle, int wallet_handle, string did, DidGetDidMetadataCompletedDelegate cb);
-
-        /// <summary>
-        /// Delegate to be used on completion of calls to indy_get_did_metadata.
-        /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="metadata">The metadata associated with the DID.</param>
         internal delegate void DidGetDidMetadataCompletedDelegate(int xcommand_handle, int err, string metadata);
 
-        /// <summary>
-        /// Get info about My DID in format: DID, verkey, metadata
-        /// </summary>
-        /// <returns>The get my did with meta.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="wallet_handle">Wallet handle.</param>
-        /// <param name="my_did">My did.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_get_my_did_with_meta(int command_handle, int wallet_handle, string my_did, GetMyDidWithMetaCompletedDelegate cb);
-
-        /// <summary>
-        /// Delegate to be used on comletion of calls to indy_get_my_did_with_meta
-        /// </summary>
         internal delegate void GetMyDidWithMetaCompletedDelegate(int xcommand_handle, int err, string did_with_meta);
 
-        /// <summary>
-        /// Lists created DIDs with metadata as JSON array with each DID in format: DID, verkey, metadata
-        /// </summary>
-        /// <returns>The list my dids with meta.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="wallet_handle">Wallet handle.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_list_my_dids_with_meta(int command_handle, int wallet_handle, ListMyDidsWithMetaCompletedDelegate cb);
-
-        /// <summary>
-        /// Delegate to be used on comletion of calls to indy_list_my_dids_with_meta
-        /// </summary>
         internal delegate void ListMyDidsWithMetaCompletedDelegate(int xcommand_handle, int err, string dids);
 
-        /// <summary>
-        /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
-        /// </summary>
-        /// <returns>The abbreviate verkey.</returns>
-        /// <param name="command_handle">Command handle.</param>
-        /// <param name="did">Did.</param>
-        /// <param name="full_verkey">Full verkey.</param>
-        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_abbreviate_verkey(int command_handle, string did, string full_verkey, AbbreviateVerkeyCompletedDelegate cb);
-
-        /// <summary>
-        /// Delegate to be used on completion of calls to indy_abbreviate_verkey
-        /// </summary>
         internal delegate void AbbreviateVerkeyCompletedDelegate(int xcommand_handle, int err, string verkey);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_qualify_did(int command_handle, int wallet_handle, string did, string method, QualifyDidCompletedDelegate cb);
+        internal delegate void QualifyDidCompletedDelegate(int xcommand_handle, int err, string full_qualified_did);
     }
 }

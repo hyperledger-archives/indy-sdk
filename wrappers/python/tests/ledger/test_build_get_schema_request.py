@@ -3,7 +3,7 @@ from indy import ledger
 import json
 import pytest
 
-id_ = "identifier:2:name:1.0"
+id_ = "V4SGRU86Z58d6TV7PBUe6f:2:name:1.0"
 
 
 @pytest.mark.asyncio
@@ -12,7 +12,7 @@ async def test_build_get_schema_requests_works_for_correct_data_json(did_trustee
         "identifier": did_trustee,
         "operation": {
             "type": "107",
-            "dest": "identifier",
+            "dest": did_trustee,
             "data": {
                 "name": "name",
                 "version": "1.0"

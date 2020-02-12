@@ -49,9 +49,9 @@ public class IndyException extends Exception {
 	}
 
 	/**
-	 * Sets the SDK error message for the exception.
+	 * Gets the SDK error message for the exception.
 	 */
-	private String setSdkMessage() {
+	public String getSdkMessage() {
 		return sdkMessage;
 	}
 
@@ -194,6 +194,8 @@ public class IndyException extends Exception {
 				return new PaymentSourceDoesNotExistException();
 			case PaymentOperationNotSupportedError:
 				return new PaymentOperationNotSupportedException();
+			case TransactionNotAllowedError:
+				return new TransactionNotAllowedException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
 				return new IndyException(message, sdkErrorCode);

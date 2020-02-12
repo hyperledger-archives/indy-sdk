@@ -353,7 +353,7 @@ pub fn register_wallet_storage(
 ) -> ErrorCode {
     let (sender, receiver) = channel();
 
-    let closure: Box<FnMut(ErrorCode) + Send> = Box::new(move |err| {
+    let closure: Box<dyn FnMut(ErrorCode) + Send> = Box::new(move |err| {
         sender.send(err).unwrap();
     });
 

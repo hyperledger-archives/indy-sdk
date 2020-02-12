@@ -1,13 +1,15 @@
 from ctypes import *
 import logging
-from vcx.common import do_call, create_cb
+from vcx.common import do_call, do_call_sync, create_cb
 
 __all__ = ["vcx_init", "vcx_init_with_config"]
 
 async def vcx_init(config_path: str) -> None:
     """
     Initializes VCX with config file.
-    :param config_path: String
+    The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+
+    :param config_path: String - path to a config file to populate config attributes
     Example:
     await vcx_init('/home/username/vcxconfig.json')
     :return:
@@ -30,8 +32,11 @@ async def vcx_init(config_path: str) -> None:
 
 async def vcx_init_with_config(config: str) -> None:
     """
+    Initializes VCX with config settings
 
-    :param config:
+    :param config: config as json.
+    The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+
     Example:
     config = {
       "agency_did": "VsKV7grR1BUE29mG2Fm2kX",
@@ -63,4 +68,24 @@ async def vcx_init_with_config(config: str) -> None:
                            vcx_init_with_config.cb)
 
     logger.debug("vcx_init_with_config completed")
+    return result
+
+def vcx_init_minimal(config_string: str) -> None:
+    """
+    Initializes VCX with minimal (no-agency) config file AFTER the wallet and pool are set.
+
+    :param config_string: String
+    Example:
+    vcx_wallet_set_handle(wallet_handle)
+    vcx_pool_set_handle(pool_handle)
+    await vcx_init_minimal('{"wallet_name":"wallet1",.....}')
+    :return:
+    """
+    logger = logging.getLogger(__name__)
+
+    c_config_string = c_char_p(config_string.encode('utf-8'))
+
+    result = do_call_sync('vcx_init_minimal', c_config_string)
+
+    logger.debug("vcx_init_minimal completed")
     return result

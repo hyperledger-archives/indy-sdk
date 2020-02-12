@@ -67,7 +67,11 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  - 'CL':
    - revocationSupport: whether to request non-revocation credential (optional, default false)
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Callback that takes command result as parameter. 
+ @param completion Callback that takes command result as parameter.
+
+ Note: Use combination of `issuerRotateCredentialDefStartForId` and `issuerRotateCredentialDefApplyForId` functions
+ to generate new keys for an existing credential definition
+
  Returns:
     credDefId: identifier of created credential definition.
     credDefJson: public part of created credential definition
@@ -93,6 +97,41 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                                         configJSON:(NSString *)configJSON
                                       walletHandle:(IndyHandle)walletHandle
                                         completion:(void (^)(NSError *error, NSString *credDefId, NSString *credDefJSON))completion;
+
+/**
+ Generate temporary credential definitional keys for an existing one (owned by the caller of the library).
+
+ Use `issuerRotateCredentialDefApplyForId` function to set temporary keys as the main.
+
+ WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+ @param credDefId an identifier of created credential definition stored in the wallet
+ @param configJSON: type-specific configuration of credential definition as json:
+ - 'CL':
+   - revocationSupport: whether to request non-revocation credential (optional, default false)
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns:
+    credDefJson: public part of temporary created credential definition
+*/
++ (void)issuerRotateCredentialDefStartForId:(NSString *)credDefId
+                                 configJSON:(NSString *)configJSON
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error, NSString *credDefJSON))completion;
+
+/**
+ Apply temporary keys as main for an existing Credential Definition (owned by the caller of the library).
+
+ WARNING: Rotating the credential definitional keys will result in making all credentials issued under the previous keys unverifiable.
+
+ @param credDefId an identifier of created credential definition stored in the wallet
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns: void
+*/
++ (void)issuerRotateCredentialDefApplyForId:(NSString *)credDefId
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error))completion;
 
 /**
  Create a new revocation registry for the given credential definition as tuple of entities:
@@ -130,6 +169,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
      }
  @param tailsWriterHandle: handle of blob storage to store tails
  @param completion Callback that takes command result as parameter.
+ 
+ NOTE:
+     Recursive creation of folder for Default Tails Writer (correspondent to `tailsWriterHandle`)
+     in the system-wide temporary directory may fail in some setup due to permissions: `IO error: Permission denied`.
+     In this case use `TMPDIR` environment variable to define temporary directory specific for an application.
+ 
  Returns 
     revocRegID: identifier of created revocation registry definition
     revocRegDefJSON: public part of revocation registry definition
@@ -211,6 +256,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
       "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
       "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
      }
+     If you want to use empty value for some credential field, you should set "raw" to "" and "encoded" should not be empty
  @param revRegId: (Optional) id of stored revocation registry definition
  @param blobStorageReaderHandle: (Optional) Pre-configured blob storage reader instance handle that will allow to read revocation tails
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
@@ -377,12 +423,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  @param completion Callback that takes command result as parameter.
  Returns credential json:
     {
-         "referent": string, // cred_id in the wallet
-         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
-         "schema_id": string,
-         "cred_def_id": string,
-         "rev_reg_id": Optional<string>,
-         "cred_rev_id": Optional<string>
+        "referent": string, - id of credential in the wallet
+        "attrs": {"key1":"raw_value1", "key2":"raw_value2"}, - credential attributes
+        "schema_id": string, - identifier of schema
+        "cred_def_id": string, - identifier of credential definition
+        "rev_reg_id": Optional<string>, - identifier of revocation registry definition
+        "cred_rev_id": Optional<string> - identifier of credential in the revocation registry definition
      }
 
  */
@@ -411,12 +457,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  @param completion Callback that takes command result as parameter. 
  Returns credentials json. 
      [{ 
-         "referent": string, // cred_id in the wallet 
-         "attrs": {"key1":"raw_value1", "key2":"raw_value2"}, 
-         "schema_id": string, 
-         "cred_def_id": string, 
-         "rev_reg_id": Optional<string>, 
-         "cred_rev_id": Optional<string> 
+        "referent": string, - id of credential in the wallet
+        "attrs": {"key1":"raw_value1", "key2":"raw_value2"}, - credential attributes
+        "schema_id": string, - identifier of schema
+        "cred_def_id": string, - identifier of credential definition
+        "rev_reg_id": Optional<string>, - identifier of revocation registry definition
+        "cred_rev_id": Optional<string> - identifier of credential in the revocation registry definition
      }]
 
  */
@@ -454,12 +500,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  Returns 
     credentialsJson: List of human readable credentials:
       [{
-          "referent": string, // cred_id in the wallet
-          "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
-          "schema_id": string,
-          "cred_def_id": string,
-          "rev_reg_id": Optional<string>,
-          "cred_rev_id": Optional<string>
+        "referent": string, - id of credential in the wallet
+        "attrs": {"key1":"raw_value1", "key2":"raw_value2"}, - credential attributes
+        "schema_id": string, - identifier of schema
+        "cred_def_id": string, - identifier of credential definition
+        "rev_reg_id": Optional<string>, - identifier of revocation registry definition
+        "cred_rev_id": Optional<string> - identifier of credential in the revocation registry definition
       }]
 
       NOTE: The list of length less than the requested count means credentials search iterator is completed.
@@ -488,7 +534,7 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     {
         "name": string,
         "version": string,
-        "nonce": string,
+        "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
         "requested_attributes": { // set of requested attributes
              "<attr_referent>": <attr_info>, // see below
              ...,
@@ -500,14 +546,20 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
         "non_revoked": Optional<<non_revoc_interval>>, // see below,
                        // If specified prover must proof non-revocation
                        // for date in this interval for each attribute
-                       // (can be overridden on attribute level)
+                       // (applies to every attribute and predicate but can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
     }
- where
  attr_referent: Proof-request local identifier of requested attribute
  attr_info: Describes requested attribute
      {
-         "name": string, // attribute name, (case insensitive and ignore spaces)
-         "restrictions": Optional<filterJSON>, // see above
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
                         // for date in this interval this attribute
@@ -517,9 +569,9 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  predicate_info: Describes requested attribute predicate
      {
          "name": attribute name, (case insensitive and ignore spaces)
-         "p_type": predicate type (Currently ">=" only)
+         "p_type": predicate type (">=", ">", "<=", "<")
          "p_value": int predicate value
-         "restrictions": Optional<filterJSON>, // see above,
+         "restrictions": Optional<filter_json>, // see below
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
                         // for date in this interval this attribute
@@ -530,25 +582,35 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
          "from": Optional<int>, // timestamp of interval beginning
          "to": Optional<int>, // timestamp of interval ending
      }
+  filter_json:
+     {
+        "schema_id": string, (Optional)
+        "schema_issuer_did": string, (Optional)
+        "schema_name": string, (Optional)
+        "schema_version": string, (Optional)
+        "issuer_did": string, (Optional)
+        "cred_def_id": string, (Optional)
+     }
+     
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
  @param completion Callback that takes command result as parameter. Returns json with credentials for the given proof request.
      {
-         "requested_attrs": {
+         "attrs": {
              "<attr_referent>": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],
              ...,
          },
-         "requested_predicates": {
+         "predicates": {
              "requested_predicates": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],
              "requested_predicate_2_referent": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]
          }
-     }, where credential is
+     }, where <credential_info> is
      {
-         "referent": <string>,
-         "attrs": [{"attr_name" : "attr_raw_value"}],
-         "schema_id": string,
-         "cred_def_id": string,
-         "rev_reg_id": Optional<int>,
-         "cred_rev_id": Optional<int>,
+         "referent": string, - id of credential in the wallet
+         "attrs": {"key1":"raw_value1", "key2":"raw_value2"}, - credential attributes
+         "schema_id": string, - identifier of schema
+         "cred_def_id": string, - identifier of credential definition
+         "rev_reg_id": Optional<string>, - identifier of revocation registry definition
+         "cred_rev_id": Optional<string> - identifier of credential in the revocation registry definition
      }
  */
 + (void)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
@@ -565,28 +627,77 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param proofReqJSON: proof request json
     {
-        "name": string,
-        "version": string,
-        "nonce": string,
-        "requested_attributes": { // set of requested attributes
-             "<attr_referent>": <attr_info>, // see above
-             ...,
-        },
-        "requested_predicates": { // set of requested predicates
-             "<predicate_referent>": <predicate_info>, // see above
-             ...,
+         "name": string,
+         "version": string,
+         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+         "requested_attributes": { // set of requested attributes
+              "<attr_referent>": <attr_info>, // see below
+              ...,
          },
-        "non_revoked": Optional<<non_revoc_interval>>, // see above,
-                       // If specified prover must proof non-revocation
-                       // for date in this interval for each attribute
-                       // (can be overridden on attribute level)
+         "requested_predicates": { // set of requested predicates
+              "<predicate_referent>": <predicate_info>, // see below
+              ...,
+          },
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval for each attribute
+                        // (applies to every attribute and predicate but can be overridden on attribute level)
+                        // (can be overridden on attribute level)
+        "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
     }
  @param extraQueryJSON: (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
     {
         "<attr_referent>": <wql query>,
         "<predicate_referent>": <wql query>,
     }
+    
+ attr_info: Describes requested attribute
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ predicate_referent: Proof-request local identifier of requested attribute predicate
+ predicate_info: Describes requested attribute predicate
+     {
+         "name": attribute name, (case insensitive and ignore spaces)
+         "p_type": predicate type (">=", ">", "<=", "<")
+         "p_value": predicate value
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ non_revoc_interval: Defines non-revocation interval
+     {
+         "from": Optional<int>, // timestamp of interval beginning
+         "to": Optional<int>, // timestamp of interval ending
+     }
+ extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+     {
+         "<attr_referent>": <wql query>,
+         "<predicate_referent>": <wql query>,
+     }
  where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
+     The list of allowed fields:
+         "schema_id": <credential schema id>,
+         "schema_issuer_did": <credential schema issuer did>,
+         "schema_name": <credential schema name>,
+         "schema_version": <credential schema version>,
+         "issuer_did": <credential issuer did>,
+         "cred_def_id": <credential definition id>,
+         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+     
  @param completion Callback that takes command result as parameter.
  Returns
     searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReqItemReferent)
@@ -612,12 +723,12 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
     where
     credential_info:
          {
-             "referent": <string>,
-             "attrs": {"attr_name" : "attr_raw_value"},
-             "schema_id": string,
-             "cred_def_id": string,
-             "rev_reg_id": Optional<int>,
-             "cred_rev_id": Optional<int>,
+            "referent": string, - id of credential in the wallet
+            "attrs": {"key1":"raw_value1", "key2":"raw_value2"}, - credential attributes
+            "schema_id": string, - identifier of schema
+            "cred_def_id": string, - identifier of credential definition
+            "rev_reg_id": Optional<string>, - identifier of revocation registry definition
+            "cred_rev_id": Optional<string> - identifier of credential in the revocation registry definition
          }
     non_revoc_interval:
          {
@@ -654,23 +765,28 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  The proof contains either proof or self-attested attribute value for each requested attribute.
  
  @param  proofReqJSON: proof request json
-    {
-        "name": string,
-        "version": string,
-        "nonce": string,
-        "requested_attributes": { // set of requested attributes
-             "<attr_referent>": <attr_info>, // see below
-             ...,
-        },
-        "requested_predicates": { // set of requested predicates
-             "<predicate_referent>": <predicate_info>, // see below
-             ...,
+     {
+         "name": string,
+         "version": string,
+         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+         "requested_attributes": { // set of requested attributes
+              "<attr_referent>": <attr_info>, // see below
+              ...,
          },
-        "non_revoked": Optional<<non_revoc_interval>>, // see below,
-                       // If specified prover must proof non-revocation
-                       // for date in this interval for each attribute
-                       // (can be overridden on attribute level)
-    }
+         "requested_predicates": { // set of requested predicates
+              "<predicate_referent>": <predicate_info>, // see below
+              ...,
+          },
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval for each attribute
+                        // (applies to every attribute and predicate but can be overridden on attribute level)
+                        // (can be overridden on attribute level)
+         "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
+     }
  @param requestedCredentialsJSON: either a credential or self-attested attribute for each requested attribute
      {
          "self_attested_attributes": {
@@ -687,15 +803,15 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
  @param masterSecretID: the id of the master secret stored in the wallet
  @param schemasJSON: all schemas json participating in the proof request
      {
-         <schema1_id>: <schema1_json>,
-         <schema2_id>: <schema2_json>,
-         <schema3_id>: <schema3_json>,
+         <schema1_id>: <schema1>,
+         <schema2_id>: <schema2>,
+         <schema3_id>: <schema3>,
      }
  @param credentialDefsJSON: all credential definitions json participating in the proof request
      {
-         "cred_def1_id": <credential_def1_json>,
-         "cred_def2_id": <credential_def2_json>,
-         "cred_def3_id": <credential_def3_json>,
+         "cred_def1_id": <credential_def1>,
+         "cred_def2_id": <credential_def2>,
+         "cred_def3_id": <credential_def3>,
      }
  @param revocStatesJSON: all revocation states json participating in the proof request
      {
@@ -710,6 +826,51 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
              "timestamp4": <rev_state4>
          },
      }
+
+  where
+  attr_referent: Proof-request local identifier of requested attribute
+  attr_info: Describes requested attribute
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+  predicate_referent: Proof-request local identifier of requested attribute predicate
+  predicate_info: Describes requested attribute predicate
+      {
+          "name": attribute name, (case insensitive and ignore spaces)
+          "p_type": predicate type (">=", ">", "<=", "<")
+          "p_value": predicate value
+          "restrictions": Optional<wql query>, // see below
+          "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                         // If specified prover must proof non-revocation
+                         // for date in this interval this attribute
+                         // (overrides proof level interval)
+          "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
+      }
+  non_revoc_interval: Defines non-revocation interval
+      {
+          "from": Optional<int>, // timestamp of interval beginning
+          "to": Optional<int>, // timestamp of interval ending
+      }
+  where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
+      The list of allowed fields:
+          "schema_id": <credential schema id>,
+          "schema_issuer_did": <credential schema issuer did>,
+          "schema_name": <credential schema name>,
+          "schema_version": <credential schema version>,
+          "issuer_did": <credential issuer did>,
+          "cred_def_id": <credential definition id>,
+          "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
  
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
  
@@ -719,30 +880,41 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
   self-attested attribute value is provided.
   Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
   There is also aggregated proof part common for all credential proofs.
-      {
-          "requested_proof": {
-              "revealed_attrs": {
-                  "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
-                  "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
-              },
-              "unrevealed_attrs": {
-                  "requested_attr3_id": {sub_proof_index: number}
-              },
-              "self_attested_attrs": {
-                  "requested_attr2_id": self_attested_value,
-              },
-              "requested_predicates": {
-                  "requested_predicate_1_referent": {sub_proof_index: int},
-                  "requested_predicate_2_referent": {sub_proof_index: int},
-              }
-          }
-          "proof": {
-              "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
-              "aggregated_proof": <aggregated_proof>
-          } - (opaque type that contains data structures internal to Ursa.
-              It should not be parsed and are likely to change in future versions).
-          "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
-      }
+     {
+         "requested_proof": {
+             "revealed_attrs": {
+                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+             },
+             "revealed_attr_groups": {
+                 "requested_attr5_id": {
+                     "sub_proof_index": number,
+                     "values": {
+                         "attribute_name": {
+                             "raw": string,
+                             "encoded": string
+                         }
+                     },
+                 }
+             },
+             "unrevealed_attrs": {
+                 "requested_attr3_id": {sub_proof_index: number}
+             },
+             "self_attested_attrs": {
+                 "requested_attr2_id": self_attested_value,
+             },
+             "predicates": {
+                 "requested_predicate_1_referent": {sub_proof_index: int},
+                 "requested_predicate_2_referent": {sub_proof_index: int},
+             }
+         }
+         "proof": {
+             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
+             "aggregated_proof": <aggregated_proof>
+         } (opaque type that contains data structures internal to Ursa.
+           It should not be parsed and are likely to change in future versions).
+         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+     }
   */
 + (void)proverCreateProofForRequest:(NSString *)proofRequestJSON
            requestedCredentialsJSON:(NSString *)requestedCredentialsJSON
@@ -756,80 +928,139 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
 /**
  Verifies a proof (of multiple credential).
  All required schemas, public keys and revocation registries must be provided.
- 
+
+ IMPORTANT: You must use *_id's (`schema_id`, `cred_def_id`, `rev_reg_id`) listed in `proof[identifiers]`
+ as the keys for corresponding `schemasJSON`, `credentialDefsJSON`, `revocRegDefsJSON`, `revocRegsJSON` objects.
+
  @param  proofRequestJson: proof request json
-    {
-        "name": string,
-        "version": string,
-        "nonce": string,
-        "requested_attributes": { // set of requested attributes
-             "<attr_referent>": <attr_info>, // see below
-             ...,
-        },
-        "requested_predicates": { // set of requested predicates
-             "<predicate_referent>": <predicate_info>, // see below
-             ...,
+     {
+         "name": string,
+         "version": string,
+         "nonce": string, - a decimal number represented as a string (use `indy_generate_nonce` function to generate 80-bit number)
+         "requested_attributes": { // set of requested attributes
+              "<attr_referent>": <attr_info>, // see below
+              ...,
          },
-        "non_revoked": Optional<<non_revoc_interval>>, // see below,
-                       // If specified prover must proof non-revocation
-                       // for date in this interval for each attribute
-                       // (can be overridden on attribute level)
-    }
+         "requested_predicates": { // set of requested predicates
+              "<predicate_referent>": <predicate_info>, // see below
+              ...,
+          },
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval for each attribute
+                        // (can be overridden on attribute level)
+         "ver": Optional<str>  - proof request version:
+            - omit to use unqualified identifiers for restrictions
+            - "1.0" to use unqualified identifiers for restrictions
+            - "2.0" to use fully qualified identifiers for restrictions
+     }
  @param proofJSON: proof json
-      {
-          "requested_proof": {
-              "revealed_attrs": {
-                  "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
-                  "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
-              },
-              "unrevealed_attrs": {
-                  "requested_attr3_id": {sub_proof_index: number}
-              },
-              "self_attested_attrs": {
-                  "requested_attr2_id": self_attested_value,
-              },
-              "requested_predicates": {
-                  "requested_predicate_1_referent": {sub_proof_index: int},
-                  "requested_predicate_2_referent": {sub_proof_index: int},
-              }
-          }
-          "proof": {
-              "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
-              "aggregated_proof": <aggregated_proof>
-          }
-          "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
-      }
+     {
+         "requested_proof": {
+             "revealed_attrs": {
+                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
+                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
+             },
+             "revealed_attr_groups": {
+                 "requested_attr5_id": {
+                     "sub_proof_index": number,
+                     "values": {
+                         "attribute_name": {
+                             "raw": string,
+                             "encoded": string
+                         }
+                     }, // NOTE: check that `encoded` value match to `raw` value on application level
+                 }
+             },
+             "unrevealed_attrs": {
+                 "requested_attr3_id": {sub_proof_index: number}
+             },
+             "self_attested_attrs": {
+                 "requested_attr2_id": self_attested_value,
+             },
+             "requested_predicates": {
+                 "requested_predicate_1_referent": {sub_proof_index: int},
+                 "requested_predicate_2_referent": {sub_proof_index: int},
+             }
+         }
+         "proof": {
+             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
+             "aggregated_proof": <aggregated_proof>
+         }
+         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+     }
  @param schemasJSON: all schemas json participating in the proof request
      {
-         <schema1_id>: <schema1_json>,
-         <schema2_id>: <schema2_json>,
-         <schema3_id>: <schema3_json>,
+         <schema1_id>: <schema1>,
+         <schema2_id>: <schema2>,
+         <schema3_id>: <schema3>,
      }
  @param credentialDefsJSON: all credential definitions json participating in the proof request
      {
-         "cred_def1_id": <credential_def1_json>,
-         "cred_def2_id": <credential_def2_json>,
-         "cred_def3_id": <credential_def3_json>,
+         "cred_def1_id": <credential_def1>,
+         "cred_def2_id": <credential_def2>,
+         "cred_def3_id": <credential_def3>,
      }
  @param revocRegDefsJSON: all revocation registry definitions json participating in the proof
      {
-         "rev_reg_def1_id": <rev_reg_def1_json>,
-         "rev_reg_def2_id": <rev_reg_def2_json>,
-         "rev_reg_def3_id": <rev_reg_def3_json>,
+         "rev_reg_def1_id": <rev_reg_def1>,
+         "rev_reg_def2_id": <rev_reg_def2>,
+         "rev_reg_def3_id": <rev_reg_def3>,
      }
  @param revocRegsJSON: all revocation registries json participating in the proof
      {
-         "rev_reg_def1_id": {
+         "rev_reg_def1_id  or credential_1_id": {
              "timestamp1": <rev_reg1>,
              "timestamp2": <rev_reg2>,
          },
-         "rev_reg_def2_id": {
+         "rev_reg_def2_id"  or credential_3_id: {
              "timestamp3": <rev_reg3>
          },
-         "rev_reg_def3_id": {
+         "rev_reg_def3_id  or credential_3_id": {
              "timestamp4": <rev_reg4>
          },
+     } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
+     
+ where
+ attr_referent: Proof-request local identifier of requested attribute
+ attr_info: Describes requested attribute
+     {
+         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+                                              // NOTE: should either be "name" or "names", not both and not none of them.
+                                              // Use "names" to specify several attributes that have to match a single credential.
+         "restrictions": Optional<filter_json>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
      }
+ predicate_referent: Proof-request local identifier of requested attribute predicate
+ predicate_info: Describes requested attribute predicate
+     {
+         "name": attribute name, (case insensitive and ignore spaces)
+         "p_type": predicate type (">=", ">", "<=", "<")
+         "p_value": predicate value
+         "restrictions": Optional<wql query>, // see below
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
+     }
+ non_revoc_interval: Defines non-revocation interval
+     {
+         "from": Optional<int>, // timestamp of interval beginning
+         "to": Optional<int>, // timestamp of interval ending
+     }
+ where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
+     The list of allowed fields:
+         "schema_id": <credential schema id>,
+         "schema_issuer_did": <credential schema issuer did>,
+         "schema_name": <credential schema name>,
+         "schema_version": <credential schema version>,
+         "issuer_did": <credential issuer did>,
+         "cred_def_id": <credential definition id>,
+         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
 
  @param completion Callback that takes command result as parameter. Returns result flag: valid: true - if signature is valid, false - otherwise.
 
@@ -843,18 +1074,26 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                         completion:(void (^)(NSError *error, BOOL valid))completion;
 
 /**
- Create revocation state for a credential in the particular time moment.
+ Create revocation state for a credential that corresponds to a particular time.
+
+ Note that revocation delta must cover the whole registry existence time.
+ You can use `from`: `0` and `to`: `needed_time` as parameters for building request to get correct revocation delta.
+
+ The resulting revocation state and provided timestamp can be saved and reused later with applying a new
+ revocation delta with `updateRevocationState` function.
+ This new delta should be received with parameters: `from`: `timestamp` and `to`: `needed_time`.
 
  @param  credRevID: user credential revocation id in revocation registry
  @param  timestamp: time represented as a total number of seconds from Unix Epoch
  @param  revRegDefJSON: revocation registry definition json
- @param  revRegDeltaJSON: revocation registry definition delta json
+ @param  revRegDeltaJSON: revocation registry definition delta which covers the whole registry existence time
  @param  blobStorageReaderHandle: configuration of blob storage reader handle that will allow to read revocation tails
  @param completion Callback that takes command result as parameter. 
  Returns result revocation state json:
  {
      "rev_reg": <revocation registry>,
-     "witness": <witness>,
+     "witness": <witness>,  (opaque type that contains data structures internal to Ursa.
+                             It should not be parsed and are likely to change in future versions).
      "timestamp" : integer
  }
  */
@@ -866,19 +1105,26 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
                                completion:(void (^)(NSError *error, NSString *revStateJSON))completion;
 
 /**
- Create new revocation state for a credential based on existed state at the particular time moment (to reduce calculation time).
+ Create a new revocation state for a credential based on a revocation state created before.
+ Note that provided revocation delta must cover the registry gap from based state creation until the specified time
+ (this new delta should be received with parameters: `from`: `state_timestamp` and `to`: `needed_time`).
+
+ This function reduces the calculation time.
+
+ The resulting revocation state and provided timestamp can be saved and reused later by applying a new revocation delta again.
 
  @param  revStateJSON: revocation registry state json
  @param  credRevID: user credential revocation id in revocation registry
  @param  timestamp: time represented as a total number of seconds from Unix Epoch
  @param  revRegDefJSON: revocation registry definition json
- @param  revRegDeltaJSON: revocation registry definition delta json
+ @param  revRegDeltaJSON: revocation registry definition delta which covers the gap form original `rev_state_json` creation till the requested timestamp
  @param  blobStorageReaderHandle: configuration of blob storage reader handle that will allow to read revocation tails
  @param completion Callback that takes command result as parameter.
  Returns result revocation state json:
  {
      "rev_reg": <revocation registry>,
-     "witness": <witness>,
+     "witness": <witness>,  (opaque type that contains data structures internal to Ursa.
+                             It should not be parsed and are likely to change in future versions).
      "timestamp" : integer
  }
  */
@@ -889,5 +1135,39 @@ https://github.com/hyperledger/indy-hipe/blob/c761c583b1e01c1e9d3ceda2b03b35336f
               revRegDeltaJSON:(NSString *)revRegDeltaJSON
       blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
                    completion:(void (^)(NSError *error, NSString *updatedRevStateJSON))completion;
+
+/**
+ Generates 80-bit numbers that can be used as a nonce for proof request.
+
+ @param completion Callback that takes command result as parameter.
+ Returns nonce: generated number as a string
+ */
++ (void)generateNonce:(void (^)(NSError *error, NSString *nonce))completion;
+
+/**
+ Get unqualified form (short form without method) of a fully qualified entity like DIDs..
+
+ This function should be used to the proper casting of fully qualified entity to unqualified form in the following cases:
+     Issuer, which works with fully qualified identifiers, creates a Credential Offer for Prover, which doesn't support fully qualified identifiers.
+     Verifier prepares a Proof Request based on fully qualified identifiers or Prover, which doesn't support fully qualified identifiers.
+     another case when casting to unqualified form needed
+
+ @param  entity: utarget entity to disqualify.
+    Can be one of:
+        Did
+        SchemaId
+        CredentialDefinitionId
+        RevocationRegistryId
+        Schema
+        CredentialDefinition
+        RevocationRegistryDefinition
+        CredentialOffer
+        CredentialRequest
+        ProofRequest
+
+ Returns entity either in unqualified form or original if casting isn't possible
+ */
++ (void)toUnqualified:(NSString *)entity
+        completion:(void (^)(NSError *error, NSString *res))completion;
 
 @end

@@ -20,9 +20,4 @@ public class ProverCreateMasterSecretTest extends AnoncredsIntegrationTest {
 
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 	}
-
-	@Test
-	public void testProverCreateMasterSecretWorksForEmptyName() throws Exception {
-		Anoncreds.proverCreateMasterSecret(wallet, null).get();
-	}
 }

@@ -1,5 +1,5 @@
-use domain::status::MessageStatusCode;
-use domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::status::MessageStatusCode;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct InviteDetail {
@@ -44,6 +44,23 @@ pub struct SenderDetail {
     pub logo_url: Option<String>,
     #[serde(rename = "publicDID")]
     pub public_did: Option<String>
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct RedirectDetail {
+    #[serde(rename = "DID")]
+    pub did: String,
+    #[serde(rename = "verKey")]
+    pub verkey: String,
+    #[serde(rename = "publicDID")]
+    pub public_did: Option<String>,
+    #[serde(rename = "theirDID")]
+    pub their_did: String,
+    #[serde(rename = "theirVerKey")]
+    pub their_verkey: String,
+    #[serde(rename = "theirPublicDID")]
+    pub their_public_did: Option<String>,
+    pub signature: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

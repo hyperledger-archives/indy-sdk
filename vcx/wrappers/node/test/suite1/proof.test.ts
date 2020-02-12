@@ -6,9 +6,8 @@ import {
   dataProofCreate,
   proofCreate
 } from 'helpers/entities'
-import { TEST_PROOF_RESPONSE } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { Connection, Proof, ProofState, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
+import { Connection, DisclosedProof, Proof, ProofState, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
 describe('Proof:', () => {
   before(() => initVcxTestMode())
@@ -114,6 +113,12 @@ describe('Proof:', () => {
       assert.equal(await proof.getState(), StateType.OfferSent)
     })
 
+    it('successfully get request message', async () => {
+      const proof = await proofCreate()
+      const msg = await proof.getProofRequestMessage()
+      assert(msg)
+    })
+
     it('success -> received', async () => {
       const connection = await connectionCreateConnect()
       const proof = await proofCreate()
@@ -133,9 +138,10 @@ describe('Proof:', () => {
     it('success via message-> received', async () => {
       const connection = await connectionCreateConnect()
       const proof = await proofCreate()
-      await proof.requestProof(connection)
-      assert.equal(await proof.getState(), StateType.OfferSent)
-      await proof.updateStateWithMessage(TEST_PROOF_RESPONSE)
+      const request = await proof.getProofRequestMessage()
+      const disProof = await DisclosedProof.create({ connection, sourceId: 'name', request })
+      const proofMsg = await disProof.getProofMessage()
+      await proof.updateStateWithMessage(proofMsg)
       assert.equal(await proof.getState(), StateType.Accepted)
       const proofData = await proof.getProof(connection)
       assert.ok(proofData)

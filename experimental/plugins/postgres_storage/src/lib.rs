@@ -19,7 +19,6 @@ extern crate serde_json;
 extern crate lazy_static;
 
 // Note that to use macroses from indy_common::util inside of other modules it must me loaded first!
-extern crate indy_crypto;
 extern crate libc;
 extern crate time;
 extern crate rand;
@@ -55,11 +54,11 @@ pub static POSTGRES_STORAGE_NAME: &str = "postgres_storage";
 
 #[no_mangle]
 pub extern fn postgresstorage_init() -> libindy::ErrorCode {
-    //if let Err(err) = utils::logger::LibnullpayLogger::init() {
-    //    return err;
-    //}
-
+    debug!("Initializing postgress storage plugin");
     let postgres_storage_name = CString::new(POSTGRES_STORAGE_NAME).unwrap();
+    if let Err(err) = utils::logger::PostgressStorageLogger::init() {
+        return err;
+    }
 
     libindy::wallet::register_wallet_storage(
         postgres_storage_name.as_ptr(),
@@ -88,6 +87,11 @@ pub extern fn postgresstorage_init() -> libindy::ErrorCode {
         PostgresWallet::fetch_search_next_record,
         PostgresWallet::free_search,
     )
+}
+
+#[no_mangle]
+pub extern fn init_storagetype(config: *const c_char, credentials: *const c_char) -> libindy::ErrorCode {
+    return PostgresWallet::init(config, credentials);
 }
 
 struct PostgresStorageContext {
@@ -140,16 +144,40 @@ pub struct PostgresWallet {}
 
 impl PostgresWallet {
 
+    /// This needs to be called once at the beginning to create the database
+    pub extern fn init(config: *const c_char, credentials: *const c_char) -> ErrorCode {
+        check_useful_c_str!(config, ErrorCode::CommonInvalidState);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidState);
+
+        // create Postgres database, and create schema
+        let storage_type = ::postgres_storage::PostgresStorageType::new();
+        let res = storage_type.init_storage(Some(&config), Some(&credentials));
+
+        match res {
+            Ok(_) => ErrorCode::Success,
+            Err(err) => {
+                match err {
+                    WalletStorageError::AlreadyExists => ErrorCode::WalletAlreadyExistsError,
+                    _ => {
+                        error!("Init storage failed: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
+                }
+            }
+        }
+    }
+
     pub extern fn create(id: *const c_char,
                              config: *const c_char,
                              credentials: *const c_char,
                              metadata: *const c_char) -> ErrorCode {
-        check_useful_c_str!(id, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(config, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(credentials, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(metadata, ErrorCode::CommonInvalidState);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidParam1);
+        check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
+        check_useful_c_str!(metadata, ErrorCode::CommonInvalidParam4);
 
         // create Postgres database, create schema, and insert metadata
+        // ... or ... insert metadata
         let storage_type = ::postgres_storage::PostgresStorageType::new();
         let res = storage_type.create_storage(&id, Some(&config), Some(&credentials), &metadata.as_bytes()[..]);
 
@@ -158,7 +186,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::AlreadyExists => ErrorCode::WalletAlreadyExistsError,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Create storage failed: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -169,9 +200,9 @@ impl PostgresWallet {
                            config: *const c_char,
                            credentials: *const c_char,
                            handle: *mut i32) -> ErrorCode {
-        check_useful_c_str!(id, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(config, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(credentials, ErrorCode::CommonInvalidState);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidParam1);
+        check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
 
         // open wallet and return handle
         // PostgresStorageType::open_storage(), returns a PostgresStorage that goes into the handle
@@ -192,7 +223,6 @@ impl PostgresWallet {
                 return ErrorCode::WalletNotFoundError;
             }
         };
-
         // get a handle (to use to identify wallet for subsequent calls)
         let xhandle = SequenceUtils::get_next_id();
 
@@ -245,7 +275,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Error adding a record. Error details: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -280,7 +313,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::ItemNotFound => ErrorCode::WalletItemNotFound,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Error updating a record. Error details: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -322,7 +358,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::ItemNotFound => ErrorCode::WalletItemNotFound,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Error getting a record. Error details: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -469,7 +508,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Error adding record tags. Error details: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -503,7 +545,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Error updating record tags. Error details: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -538,7 +583,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Error deleting record tags. Error details: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -568,7 +616,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::ItemNotFound => ErrorCode::WalletItemNotFound,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Error deleting record. Error details: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -603,7 +654,8 @@ impl PostgresWallet {
 
                 ErrorCode::Success
             },
-            Err(_err) => {
+            Err(err) => {
+                error!("Error getting storage metadata. Error details: {:?}", err);
                 ErrorCode::CommonInvalidState
             }
         }
@@ -630,7 +682,10 @@ impl PostgresWallet {
             Err(err) => {
                 match err {
                     WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
-                    _ => ErrorCode::WalletStorageError
+                    _ => {
+                        error!("Error setting storage metadata. Error details: {:?}", err);
+                        ErrorCode::WalletStorageError
+                    }
                 }
             }
         }
@@ -672,7 +727,7 @@ impl PostgresWallet {
         let storage = &*wallet_box;
 
         let res = storage.search(&type_.as_bytes(), &query, Some(&options_json));
-        
+
         match res {
             Ok(iter) => {
                 // iter: Box<StorageIterator>
@@ -724,7 +779,7 @@ impl PostgresWallet {
         let storage = &*wallet_box;
 
         let res = storage.get_all();
-        
+
         match res {
             Ok(iter) => {
                 // iter: Box<StorageIterator>
@@ -889,7 +944,7 @@ fn _storagerecord_to_postgresrecord(in_rec: &StorageRecord) -> Result<PostgresWa
     Ok(out_rec)
 }
 
-fn _iterator_to_record_set(mut iter: Box<StorageIterator>) -> Result<Vec<PostgresWalletRecord>, ErrorCode> {
+fn _iterator_to_record_set(mut iter: Box<dyn StorageIterator>) -> Result<Vec<PostgresWalletRecord>, ErrorCode> {
     let mut search_continue: bool = true;
     let mut search_records = Vec::new();
     while search_continue {
@@ -992,9 +1047,11 @@ fn _tag_names_from_json(json: &str) -> Result<Vec<TagName>, WalletStorageError> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{env, thread};
     use std::ffi::{CString, CStr};
     use std::{slice, ptr};
     use wql::storage::ENCRYPTED_KEY_LEN;
+    use rand::{thread_rng, Rng};
 
     #[test]
     fn postgres_wallet_crud_works() {
@@ -1003,35 +1060,35 @@ mod tests {
         let id = _wallet_id();
         let config = _wallet_config();
         let credentials = _wallet_credentials();
-        let metadata = _metadata();
+        let metadata = _metadata_cstring();
 
         // open wallet - should return error
         let mut handle: i32 = -1;
-        let err = PostgresWallet::open(id.as_ptr(), 
-                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
-                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+        let err = PostgresWallet::open(id.as_ptr(),
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                             &mut handle);
         assert_eq!(err, ErrorCode::WalletNotFoundError);
-        
+
         // create wallet
-        let err = PostgresWallet::create(id.as_ptr(), 
-                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
-                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+        let err = PostgresWallet::create(id.as_ptr(),
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                             metadata.as_ptr());
         assert_eq!(err, ErrorCode::Success);
 
         // open wallet
-        let err = PostgresWallet::open(id.as_ptr(), 
-                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
-                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+        let err = PostgresWallet::open(id.as_ptr(),
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                             &mut handle);
         assert_eq!(err, ErrorCode::Success);
 
         // ensure we can fetch metadata
         let mut metadata_handle: i32 = -1;
         let mut metadata_ptr: *const c_char = ptr::null_mut();
-        let err = PostgresWallet::get_storage_metadata(handle, 
-                                            &mut metadata_ptr, 
+        let err = PostgresWallet::get_storage_metadata(handle,
+                                            &mut metadata_ptr,
                                             &mut metadata_handle);
         assert_eq!(err, ErrorCode::Success);
         let _metadata = unsafe { CStr::from_ptr(metadata_ptr).to_bytes() };
@@ -1042,14 +1099,14 @@ mod tests {
         assert_eq!(err, ErrorCode::Success);
 
         // update metadata to some new metadata
-        let metadata2 = _metadata2();
+        let metadata2 = _metadata2_cstring();
         let err = PostgresWallet::set_storage_metadata(handle, metadata2.as_ptr());
         assert_eq!(err, ErrorCode::Success);
 
         let mut metadata_handle2: i32 = -1;
         let mut metadata_ptr2: *const c_char = ptr::null_mut();
-        let err = PostgresWallet::get_storage_metadata(handle, 
-                                            &mut metadata_ptr2, 
+        let err = PostgresWallet::get_storage_metadata(handle,
+                                            &mut metadata_ptr2,
                                             &mut metadata_handle2);
         assert_eq!(err, ErrorCode::Success);
         let _metadata2 = unsafe { CStr::from_ptr(metadata_ptr2).to_bytes() };
@@ -1064,15 +1121,15 @@ mod tests {
         assert_eq!(err, ErrorCode::Success);
 
         // delete wallet
-        let err = PostgresWallet::delete(id.as_ptr(), 
-                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+        let err = PostgresWallet::delete(id.as_ptr(),
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                             credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
         assert_eq!(err, ErrorCode::Success);
 
         // open wallet - should return error
-        let err = PostgresWallet::open(id.as_ptr(), 
-                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
-                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+        let err = PostgresWallet::open(id.as_ptr(),
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                             &mut handle);
         assert_eq!(err, ErrorCode::WalletNotFoundError);
     }
@@ -1166,7 +1223,7 @@ mod tests {
         let err = PostgresWallet::get_record(handle,
                                 type1_.as_ptr(),
                                 id1.as_ptr(),
-                                get_options.as_ptr() as *const i8,
+                                get_options.as_ptr(),
                                 &mut rec_handle);
         assert_match!(ErrorCode::Success, err);
 
@@ -1264,7 +1321,7 @@ mod tests {
         let err = PostgresWallet::get_record(handle,
                                 type1_.as_ptr(),
                                 id1.as_ptr(),
-                                get_options.as_ptr() as *const i8,
+                                get_options.as_ptr(),
                                 &mut rec_handle);
         assert_match!(ErrorCode::Success, err);
 
@@ -1341,7 +1398,7 @@ mod tests {
         let err = PostgresWallet::get_record(handle,
                                 type1_.as_ptr(),
                                 id1.as_ptr(),
-                                get_options.as_ptr() as *const i8,
+                                get_options.as_ptr(),
                                 &mut rec_handle);
         assert_match!(ErrorCode::Success, err);
 
@@ -1360,7 +1417,7 @@ mod tests {
         let err = PostgresWallet::get_record(handle,
                                 type1_.as_ptr(),
                                 id1.as_ptr(),
-                                get_options.as_ptr() as *const i8,
+                                get_options.as_ptr(),
                                 &mut rec_handle);
         assert_match!(ErrorCode::WalletItemNotFound, err);
 
@@ -1396,7 +1453,7 @@ mod tests {
         let err = PostgresWallet::get_record(handle,
                                 type1_.as_ptr(),
                                 id1.as_ptr(),
-                                get_options.as_ptr() as *const i8,
+                                get_options.as_ptr(),
                                 &mut rec_handle);
         assert_match!(ErrorCode::Success, err);
 
@@ -1418,7 +1475,7 @@ mod tests {
         let err = PostgresWallet::get_record(handle,
                                 type1_.as_ptr(),
                                 id1.as_ptr(),
-                                get_options.as_ptr() as *const i8,
+                                get_options.as_ptr(),
                                 &mut rec_handle);
         assert_match!(ErrorCode::Success, err);
 
@@ -1484,7 +1541,7 @@ mod tests {
         let mut search_handle: i32 = -1;
         let err = PostgresWallet::search_all_records(handle, &mut search_handle);
         assert_match!(ErrorCode::Success, err);
-        
+
         let mut rec_count: i32 = 0;
         let mut search_continue: bool = true;
         while search_continue {
@@ -1579,13 +1636,13 @@ mod tests {
         println!("query_json {:?}", query_json);
         let options_json = _search_options(true, true, true, true, true);
         println!("Options {:?}", options_json);
-        let err = PostgresWallet::search_records(handle, 
-                                type1_.as_ptr(), 
-                                query_json.as_ptr(), 
-                                options_json.as_ptr() as *const i8, 
+        let err = PostgresWallet::search_records(handle,
+                                type1_.as_ptr(),
+                                query_json.as_ptr(),
+                                options_json.as_ptr() as *const i8,
                                 &mut search_handle);
         assert_match!(ErrorCode::Success, err);
-        
+
         let mut rec_count: i32 = 0;
         let mut search_continue: bool = true;
         while search_continue {
@@ -1635,20 +1692,20 @@ mod tests {
         let id = _wallet_id();
         let config = _wallet_config();
         let credentials = _wallet_credentials();
-        let metadata = _metadata();
+        let metadata = _metadata_cstring();
 
         // create wallet
-        let err = PostgresWallet::create(id.as_ptr(), 
-                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
-                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+        let err = PostgresWallet::create(id.as_ptr(),
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                             metadata.as_ptr());
         assert_eq!(err, ErrorCode::Success);
 
         // open wallet
         let mut handle: i32 = -1;
-        let err = PostgresWallet::open(id.as_ptr(), 
-                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
-                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+        let err = PostgresWallet::open(id.as_ptr(),
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                             &mut handle);
         assert_eq!(err, ErrorCode::Success);
 
@@ -1665,29 +1722,73 @@ mod tests {
         assert_eq!(err, ErrorCode::Success);
 
         // delete wallet
-        let err = PostgresWallet::delete(id.as_ptr(), 
-                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+        let err = PostgresWallet::delete(id.as_ptr(),
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                             credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
         assert_eq!(err, ErrorCode::Success);
     }
 
     fn _cleanup() {
+        let ten_millis = std::time::Duration::from_millis(1);
+        let _now = time::now();
+        thread::sleep(ten_millis);
+
         let id = _wallet_id();
         let config = _wallet_config();
         let credentials = _wallet_credentials();
 
-        let _err = PostgresWallet::delete(id.as_ptr(), 
-                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+        let err = PostgresWallet::init(config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+                                       credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
+        assert_eq!(err, ErrorCode::Success);
+
+        let _err = PostgresWallet::delete(id.as_ptr(),
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                             credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
     }
 
-    fn _wallet_id() -> CString {
-        CString::new("my_walle1").unwrap()
+    fn _random_string(len: usize) -> String {
+        thread_rng().gen_ascii_chars().take(len).collect()
     }
 
+    fn _wallet_id() -> CString {
+        CString::new("walle1").unwrap()
+    }
+
+
     fn _wallet_config() -> Option<CString> {
+        let wallet_scheme = env::var("WALLET_SCHEME");
+        match wallet_scheme {
+            Ok(scheme) => {
+                if scheme == "MultiWalletSingleTable" {
+                    return _wallet_config_multi();
+                }
+                if scheme == "MultiWalletSingleTableSharedPool" {
+                    return _wallet_config_multi_with_shared_pool();
+                }
+            },
+            Err(_) => ()
+        };
         let config = Some(json!({
             "url": "localhost:5432".to_owned()
+        }).to_string());
+        config.map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap()
+    }
+
+    fn _wallet_config_multi() -> Option<CString> {
+        let config = Some(json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSingleTable".to_owned(),
+            "database_name": "multi_wallet_db".to_owned()
+        }).to_string());
+        config.map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap()
+    }
+
+    fn _wallet_config_multi_with_shared_pool() -> Option<CString> {
+        let config = Some(json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSingleTableSharedPool".to_owned()
         }).to_string());
         config.map(CString::new)
             .map_or(Ok(None), |r| r.map(Some)).unwrap()
@@ -1704,7 +1805,7 @@ mod tests {
             .map_or(Ok(None), |r| r.map(Some)).unwrap()
     }
 
-    fn _metadata() -> Vec<i8> {
+    fn _metadata() -> Vec<u8> {
         return vec![
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
@@ -1717,7 +1818,12 @@ mod tests {
         ];
     }
 
-    fn _metadata2() -> Vec<i8> {
+    fn _metadata_cstring() -> CString {
+        let foo = _metadata();
+        CString::new(foo).unwrap()
+    }
+
+    fn _metadata2() -> Vec<u8> {
         return vec![
             2, 3, 4, 5, 6, 7, 8, 9,
             2, 3, 4, 5, 6, 7, 8, 9,
@@ -1728,6 +1834,11 @@ mod tests {
             2, 3, 4, 5, 6, 7, 8, 9,
             2, 3, 4, 5, 6, 7, 8, 9
         ];
+    }
+
+    fn _metadata2_cstring() -> CString {
+        let foo = _metadata2();
+        CString::new(foo).unwrap()
     }
 
     fn _type(i: u8) -> CString {
@@ -1827,12 +1938,13 @@ mod tests {
         v
     }
 
-    fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
-        json!({
+    fn _fetch_options(type_: bool, value: bool, tags: bool) -> CString {
+        let get_options_string = json!({
             "retrieveType": type_,
             "retrieveValue": value,
             "retrieveTags": tags,
-        }).to_string()
+        }).to_string();
+        CString::new(get_options_string).unwrap()
     }
 
     fn _search_options(retrieve_records: bool, retrieve_total_count: bool, retrieve_value: bool, retrieve_tags: bool, retrieve_type: bool) -> String {

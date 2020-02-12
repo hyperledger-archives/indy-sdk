@@ -45,27 +45,6 @@ public class OpenPoolTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testOpenPoolWorksForTwoNodes() throws Exception {
-		String poolName = PoolUtils.createPoolLedgerConfig();
-
-		Pool pool = Pool.openPoolLedger(poolName, null).get();
-
-		assertNotNull(pool);
-		openedPools.add(pool);
-	}
-
-	@Test
-	public void testOpenPoolWorksForThreeNodes() throws Exception {
-		String poolName = PoolUtils.createPoolLedgerConfig();
-
-		Pool pool = Pool.openPoolLedger(poolName, null).get();
-
-		assertNotNull(pool);
-		openedPools.add(pool);
-	}
-
-
-	@Test
 	public void testOpenPoolWorksForIncompatibleProtocolVersion() throws Exception {
 		thrown.expectCause(isA(PoolIncompatibleProtocolVersionException.class));
 

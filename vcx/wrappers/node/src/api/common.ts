@@ -96,7 +96,13 @@ export enum VCXCode {
     INVALID_REV_ENTRY = 1092,
     INVALID_REVOCATION_TIMESTAMP = 1093,
     UNKNOWN_SCHEMA_REJECTION = 1094,
-    INVALID_REV_REG_DEF_CREATION = 1095
+    INVALID_REV_REG_DEF_CREATION = 1095,
+    /* EC 1096 - 1099 are reserved for proprietary forks of libVCX */
+    INVALID_ATTACHMENT_ENCODING = 1100,
+    UNKNOWN_ATTACHMENT_ENCODING = 1101,
+    UNKNOWN_MIME_TYPE = 1102,
+    ACTION_NOT_SUPPORTED = 1103,
+    INVALID_REDIRECT_DETAILS = 1104
 }
 export enum StateType {
     None = 0,
@@ -106,7 +112,9 @@ export enum StateType {
     Accepted = 4,
     Unfulfilled = 5,
     Expired = 6,
-    Revoked = 7
+    Revoked = 7,
+    Redirected = 8,
+    Rejected = 9,
 }
 
 export interface IInitVCXOptions {

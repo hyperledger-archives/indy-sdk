@@ -10,8 +10,8 @@ pub mod payment_address;
 
 use self::regex::Regex;
 
-use command_executor::{CommandContext, CommandParams};
-use indy::{ErrorCode, IndyError};
+use crate::command_executor::{CommandContext, CommandParams};
+use indy::{ErrorCode, IndyError, WalletHandle, PoolHandle};
 
 use std;
 
@@ -58,11 +58,23 @@ pub fn _get_int_param<T>(name: &str, params: &CommandParams) -> Result<T, ()>
     }
 }
 
+pub fn get_number_param<T>(key: &str, params: &CommandParams) -> Result<T, ()>
+    where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
+    match params.get(key) {
+        Some(value) => value.parse::<T>().map_err(|err|
+            println_err!("Can't parse number parameter \"{}\": value: \"{}\", err \"{}\"", key, value, err)),
+        None => {
+            println_err!("No required \"{}\" parameter present", key);
+            Err(())
+        }
+    }
+}
+
 pub fn get_opt_number_param<T>(key: &str, params: &CommandParams) -> Result<Option<T>, ()>
     where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
     let res = match params.get(key) {
         Some(value) => Some(value.parse::<T>().map_err(|err|
-            println_err!("Can't parse integer parameter \"{}\": err {}", key, err))?),
+            println_err!("Can't parse number parameter \"{}\": value: \"{}\", err \"{}\"", key, value, err))?),
         None => None
     };
     Ok(res)
@@ -89,9 +101,15 @@ pub fn get_opt_bool_param(key: &str, params: &CommandParams) -> Result<Option<bo
 
 pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<&'a str>, ()> {
     match params.get(name) {
-        None => Err(println_err!("No required \"{}\" parameter present", name)),
-        Some(v) if v.is_empty() => Err(println_err!("No required \"{}\" parameter present", name)),
-        Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>())
+        None => {
+            println_err!("No required \"{}\" parameter present", name);
+            Err(())
+        },
+        Some(v) if v.is_empty() => {
+            println_err!("No required \"{}\" parameter present", name);
+            Err(())
+        },
+        Some(v) => Ok(v.split(',').collect::<Vec<&'a str>>())
     }
 }
 
@@ -101,7 +119,7 @@ pub fn get_opt_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> 
             if v.is_empty() {
                 Ok(Some(Vec::<&'a str>::new()))
             } else {
-                Ok(Some(v.split(",").collect::<Vec<&'a str>>()))
+                Ok(Some(v.split(',').collect::<Vec<&'a str>>()))
             },
         None => Ok(None)
     }
@@ -125,7 +143,7 @@ pub fn get_opt_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Res
     }
 }
 
-fn extract_array_tuples<'a>(param: &'a str) -> Vec<String> {
+fn extract_array_tuples(param: &str) -> Vec<String> {
     let re = Regex::new(r#"\(([^\(\)]+)\),?"#).unwrap();
     re.captures_iter(param).map(|c| c[1].to_string()).collect::<Vec<String>>()
 }
@@ -134,13 +152,17 @@ pub fn get_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -
     match params.get(name) {
         Some(v) if !v.is_empty() => {
             let tuples = extract_array_tuples(v);
-            if tuples.len() == 0 {
-                Err(println_err!("Parameter \"{}\" has invalid format", name))
+            if tuples.is_empty() {
+                println_err!("Parameter \"{}\" has invalid format", name);
+                Err(())
             } else {
                 Ok(tuples)
             }
         }
-        _ => Err(println_err!("No required \"{}\" parameter present", name))
+        _ => {
+            println_err!("No required \"{}\" parameter present", name);
+            Err(())
+        }
     }
 }
 
@@ -159,7 +181,10 @@ pub fn get_opt_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParam
 pub fn ensure_active_did(ctx: &CommandContext) -> Result<String, ()> {
     match ctx.get_string_value("ACTIVE_DID") {
         Some(did) => Ok(did),
-        None => Err(println_err!("There is no active did"))
+        None => {
+            println_err!("There is no active did");
+            Err(())
+        }
     }
 }
 
@@ -172,58 +197,83 @@ pub fn set_active_did(ctx: &CommandContext, did: Option<String>) {
     ctx.set_sub_prompt(3, did.map(|did| format!("did({}...{})", &did[..3], &did[did.len() - 3..])));
 }
 
-pub fn ensure_opened_wallet_handle(ctx: &CommandContext) -> Result<i32, ()> {
+pub fn ensure_opened_wallet_handle(ctx: &CommandContext) -> Result<WalletHandle, ()> {
     match ctx.get_int_value("OPENED_WALLET_HANDLE") {
-        Some(wallet_handle) => Ok(wallet_handle),
-        None => Err(println_err!("There is no opened wallet now"))
+        Some(wallet_handle) => Ok(WalletHandle(wallet_handle)),
+        None => {
+            println_err!("There is no opened wallet now");
+            Err(())
+        }
     }
 }
 
-pub fn ensure_opened_wallet(ctx: &CommandContext) -> Result<(i32, String), ()> {
+pub fn ensure_opened_wallet(ctx: &CommandContext) -> Result<(WalletHandle, String), ()> {
     let handle = ctx.get_int_value("OPENED_WALLET_HANDLE");
     let name = ctx.get_string_value("OPENED_WALLET_NAME");
 
     match (handle, name) {
-        (Some(handle), Some(name)) => Ok((handle, name)),
-        _ => Err(println_err!("There is no opened wallet now"))
+        (Some(handle), Some(name)) => Ok((WalletHandle(handle), name)),
+        _ => {
+            println_err!("There is no opened wallet now");
+            Err(())
+        }
     }
 }
 
-pub fn get_opened_wallet(ctx: &CommandContext) -> Option<(i32, String)> {
+pub fn get_opened_wallet(ctx: &CommandContext) -> Option<(WalletHandle, String)> {
     let handle = ctx.get_int_value("OPENED_WALLET_HANDLE");
     let name = ctx.get_string_value("OPENED_WALLET_NAME");
 
     if let (Some(handle), Some(name)) = (handle, name) {
-        Some((handle, name))
+        Some((WalletHandle(handle), name))
     } else {
         None
     }
 }
 
-pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(i32, String)>) {
-    ctx.set_int_value("OPENED_WALLET_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
-    ctx.set_string_value("OPENED_WALLET_NAME", value.as_ref().map(|value| value.1.to_owned()));
-    ctx.set_sub_prompt(2, value.map(|value| format!("wallet({})", value.1)));
+pub fn get_opened_wallet_handle(ctx: &CommandContext) -> Option<WalletHandle> {
+    ctx.get_int_value("OPENED_WALLET_HANDLE").map(|val| WalletHandle(val))
 }
 
-pub fn ensure_connected_pool_handle(ctx: &CommandContext) -> Result<i32, ()> {
+pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(WalletHandle, String)>) {
+    match value {
+        Some((wallet_handle, wallet_name)) => {
+            ctx.set_int_value("OPENED_WALLET_HANDLE", Some(wallet_handle.0));
+            ctx.set_string_value("OPENED_WALLET_NAME", Some(wallet_name.to_owned()));
+            ctx.set_sub_prompt(2, Some(wallet_name));
+        },
+        None => {
+            ctx.set_int_value("OPENED_WALLET_HANDLE", None);
+            ctx.set_string_value("OPENED_WALLET_NAME", None);
+            ctx.set_sub_prompt(2, None);
+        }
+    }
+}
+
+pub fn ensure_connected_pool_handle(ctx: &CommandContext) -> Result<PoolHandle, ()> {
     match ctx.get_int_value("CONNECTED_POOL_HANDLE") {
         Some(pool_handle) => Ok(pool_handle),
-        None => Err(println_err!("There is no opened pool now"))
+        None => {
+            println_err!("There is no opened pool now");
+            Err(())
+        }
     }
 }
 
-pub fn ensure_connected_pool(ctx: &CommandContext) -> Result<(i32, String), ()> {
+pub fn ensure_connected_pool(ctx: &CommandContext) -> Result<(PoolHandle, String), ()> {
     let handle = ctx.get_int_value("CONNECTED_POOL_HANDLE");
     let name = ctx.get_string_value("CONNECTED_POOL_NAME");
 
     match (handle, name) {
         (Some(handle), Some(name)) => Ok((handle, name)),
-        _ => Err(println_err!("There is no opened pool now"))
+        _ => {
+            println_err!("There is no opened pool now");
+            Err(())
+        }
     }
 }
 
-pub fn get_connected_pool(ctx: &CommandContext) -> Option<(i32, String)> {
+pub fn get_connected_pool(ctx: &CommandContext) -> Option<(PoolHandle, String)> {
     let handle = ctx.get_int_value("CONNECTED_POOL_HANDLE");
     let name = ctx.get_string_value("CONNECTED_POOL_NAME");
 
@@ -234,7 +284,7 @@ pub fn get_connected_pool(ctx: &CommandContext) -> Option<(i32, String)> {
     }
 }
 
-pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
+pub fn set_connected_pool(ctx: &CommandContext, value: Option<(PoolHandle, String)>) {
     ctx.set_int_value("CONNECTED_POOL_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
     ctx.set_string_value("CONNECTED_POOL_NAME", value.as_ref().map(|value| value.1.to_owned()));
     ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
@@ -252,7 +302,10 @@ pub fn get_transaction(ctx: &CommandContext) -> Option<String> {
 pub fn ensure_set_transaction(ctx: &CommandContext) -> Result<String, ()> {
     match ctx.get_string_value("LEDGER_TRANSACTION") {
         Some(transaction) => Ok(transaction),
-        None => Err(println_err!("There is no transaction stored into context"))
+        None => {
+            println_err!("There is no transaction stored into context");
+            Err(())
+        }
     }
 }
 
@@ -268,10 +321,23 @@ pub fn get_transaction_author_info(ctx: &CommandContext) -> Option<(String, Stri
     let acc_mech_type = ctx.get_taa_acceptance_mechanism();
     let time_of_acceptance = ctx.get_uint_value("AGREEMENT_TIME_OF_ACCEPTANCE");
 
-    if let (Some(text), Some(version),Some(time_of_acceptance)) = (text, version, time_of_acceptance) {
+    if let (Some(text), Some(version), Some(time_of_acceptance)) = (text, version, time_of_acceptance) {
         Some((text, version, acc_mech_type, time_of_acceptance))
     } else {
         None
+    }
+}
+
+const DEFAULT_POOL_PROTOCOL_VERSION: usize = 2;
+
+pub fn set_pool_protocol_version(ctx: &CommandContext, protocol_version: usize) {
+    ctx.set_uint_value("POOL_PROTOCOL_VERSION", Some(protocol_version as u64));
+}
+
+pub fn get_pool_protocol_version(ctx: &CommandContext) -> usize {
+    match ctx.get_uint_value("POOL_PROTOCOL_VERSION") {
+        Some(protocol_version) => protocol_version as usize,
+        None => DEFAULT_POOL_PROTOCOL_VERSION
     }
 }
 
@@ -292,7 +358,7 @@ pub fn handle_indy_error(err: IndyError, submitter_did: Option<&str>, pool_name:
 }
 
 #[cfg(test)]
-use libindy::ledger::Ledger;
+use crate::libindy::ledger::Ledger;
 
 #[cfg(test)]
 pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
@@ -314,7 +380,7 @@ pub fn submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> 
 }
 
 #[cfg(test)]
-use utils::test::TestUtils;
+use crate::utils::test::TestUtils;
 
 #[cfg(test)]
 fn setup() -> CommandContext {

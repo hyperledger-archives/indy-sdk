@@ -6,6 +6,8 @@ import { VCXBase } from './vcx-base'
 
 export abstract class VCXBaseWithState<SerializedData> extends VCXBase<SerializedData> {
   protected abstract _updateStFn: (commandHandle: number, handle: number, cb: ICbRef) => number
+  protected abstract _updateStWithMessageFn: (commandHandle: number, handle: number,
+                                              message: string, cb: ICbRef) => number
   protected abstract _getStFn: (commandHandle: number, handle: number, cb: ICbRef) => number
 
   /**
@@ -24,6 +26,41 @@ export abstract class VCXBaseWithState<SerializedData> extends VCXBase<Serialize
       await createFFICallbackPromise<number>(
         (resolve, reject, cb) => {
           const rc = this._updateStFn(commandHandle, this.handle, cb)
+          if (rc) {
+            resolve(StateType.None)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'uint32'],
+          (handle: number, err: any, state: StateType) => {
+            if (err) {
+              reject(err)
+            }
+            resolve(state)
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   *
+   * Communicates with the agent service for polling and setting the state of the entity.
+   *
+   * Example:
+   * ```
+   * await object.updateState()
+   * ```
+   * @returns {Promise<void>}
+   */
+  public async updateStateWithMessage (message: string): Promise<void> {
+    try {
+      const commandHandle = 0
+      await createFFICallbackPromise<number>(
+        (resolve, reject, cb) => {
+          const rc = this._updateStWithMessageFn(commandHandle, this.handle, message, cb)
           if (rc) {
             resolve(StateType.None)
           }

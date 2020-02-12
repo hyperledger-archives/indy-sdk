@@ -19,6 +19,7 @@ version you can check migration guides history:
 * [Libindy 1.9 to 1.10 migration](#libindy-19-to-110-migration-guide)
     * [Ledger API](#libindy-api)
     * [Anoncreds API](#anoncreds-api)
+* [Libindy 1.10.0 to 1.10.1 migration](#libindy-1100-to-1101-migration-guide)
 
 ## Notes
 
@@ -128,3 +129,7 @@ indy_prover_get_credential_attr_tag_policy(command_handle: i32,
       </td>
     </tr>
 </table>
+
+## Libindy 1.10.0 to 1.10.1 migration Guide
+
+The Libindy 1.10.1 release contains fixes that don't affect API functions. 

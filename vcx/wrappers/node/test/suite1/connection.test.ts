@@ -2,7 +2,7 @@ import '../module-resolver-helper'
 
 import { assert } from 'chai'
 import { connectionCreate, connectionCreateConnect, dataConnectionCreate } from 'helpers/entities'
-import { INVITE_ACCEPTED_MESSAGE } from 'helpers/test-constants'
+import { INVITE_ACCEPTED_MESSAGE, INVITE_REDIRECTED_MESSAGE, INVITE_DETAILS } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow, sleep } from 'helpers/utils'
 import { Connection, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
@@ -147,6 +147,12 @@ describe('Connection:', () => {
       assert.equal(await connection.getState(), StateType.Accepted)
     })
 
+    it(`returns ${StateType.Redirected}: redirected with message`, async () => {
+      const connection = await connectionCreateConnect()
+      await connection.updateStateWithMessage(INVITE_REDIRECTED_MESSAGE)
+      assert.equal(await connection.getState(), StateType.Redirected)
+    })
+
     it.skip(`returns ${StateType.Accepted}: mocked accepted in parallel`, async () => {
       const numConnections = 50
       const interval = 50
@@ -178,6 +184,46 @@ describe('Connection:', () => {
       const connection = await connectionCreateConnect()
       const details = await connection.inviteDetails()
       assert.include(details, '"senderAgencyDetail":')
+    })
+  })
+
+  describe('sendPing:', () => {
+    it('success: send ping', async () => {
+      const connection = await connectionCreate()
+      const error = await shouldThrow(() => connection.sendPing('ping'))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
+
+  describe('sendDiscoveryFeatures:', () => {
+    it('success: send discovery features', async () => {
+      const connection = await connectionCreate()
+      const error = await shouldThrow(() => connection.sendDiscoveryFeatures('*', 'comment'))
+      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+    })
+  })
+  describe('redirect:', () => {
+    it('success', async () => {
+      // create an connection.
+      const old_connection = await connectionCreateConnect()
+      await old_connection.updateStateWithMessage(INVITE_ACCEPTED_MESSAGE)
+      assert.equal(await old_connection.getState(), StateType.Accepted)
+
+      const connection = await Connection.createWithInvite({
+        'id': 'new',
+        'invite': INVITE_DETAILS
+      })
+      await connection.connectionRedirect(old_connection)
+      assert.equal(await connection.getState(), StateType.Redirected)
+    })
+  })
+
+  describe('getRedirectDetails:', () => {
+    it('success', async () => {
+      const connection = await connectionCreateConnect()
+      await connection.updateStateWithMessage(INVITE_REDIRECTED_MESSAGE)
+      const details = await connection.getRedirectDetails()
+      assert.include(details, '"DID":')
     })
   })
 

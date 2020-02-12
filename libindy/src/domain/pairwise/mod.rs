@@ -1,16 +1,17 @@
 use named_type::NamedType;
+use super::crypto::did::DidValue;
 
 #[derive(Serialize, Deserialize, NamedType)]
 pub struct Pairwise {
-    pub my_did: String,
-    pub their_did: String,
+    pub my_did: DidValue,
+    pub their_did: DidValue,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct PairwiseInfo {
-    pub my_did: String,
+    pub my_did: DidValue,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<String>,
 }

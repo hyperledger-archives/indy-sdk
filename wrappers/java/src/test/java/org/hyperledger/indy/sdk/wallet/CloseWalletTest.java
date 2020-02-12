@@ -21,18 +21,6 @@ public class CloseWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testCloseWalletWorksForTwice() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidWalletException.class));
-
-		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-
-		wallet.closeWallet().get();
-		wallet.closeWallet().get();
-	}
-
-	@Test
 	public void testAutoCloseWorks() throws Exception {
 		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 		try (Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get()) {

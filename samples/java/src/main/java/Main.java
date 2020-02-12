@@ -5,5 +5,6 @@ public class Main {
 		AnoncredsRevocation.demo();
 		Ledger.demo();
 		Crypto.demo();
+		Endorser.demo();
 	}
 }

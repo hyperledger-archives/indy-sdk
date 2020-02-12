@@ -8,6 +8,7 @@ import { IInitVCXOptions } from './common'
 /**
  * Initializes VCX with config file.
  * An example config file is at libvcx/sample_config/config.json
+ * The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
  *
  * Example:
  * ```
@@ -43,7 +44,7 @@ export async function initVcx (configPath: string, options: IInitVCXOptions = {}
 
 /**
  * Initializes VCX with config file.
- * An example config file is at libvcx/sample_config/config.json
+ * The list of available options see here: https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
  *
  * Example:
  * ```
@@ -89,4 +90,8 @@ export async function initVcxWithConfig (config: string, options: IInitVCXOption
   } catch (err) {
     throw new VCXInternalError(err)
   }
+}
+
+export function initMinimal (config: string): number {
+  return rustAPI().vcx_init_minimal(config)
 }

@@ -3,13 +3,13 @@ extern "C" {
     fn vcx_version() -> *const c_char;
     fn vcx_agent_provision_async(command_handle : u32,
             json: *const c_char,
-            cb: Option<extern fn(xcommand_handle: u32, err: u32, config: *const c_char)>) -> u32;
+            cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, config: *const c_char)>) -> u32;
 }
 
 //extern crate libloading as lib;
 extern crate libc;
 
-use std::sync::{Arc, Mutex, Once, ONCE_INIT};
+use std::sync::{Arc, Mutex, Once};
 use std::time::Duration;
 use std::{mem, thread};
 use self::libc::c_char;
@@ -26,7 +26,7 @@ struct SingletonReader {
 fn singleton() -> SingletonReader {
     // Initialize it to a null value
     static mut SINGLETON: *const SingletonReader = 0 as *const SingletonReader;
-    static ONCE: Once = ONCE_INIT;
+    static ONCE: Once = Once::new();
 
     unsafe {
         ONCE.call_once(|| {
@@ -54,7 +54,7 @@ fn get_version() -> &'static str {
     }
 }
 
-extern "C" fn generic_cb(command_handle: u32, err: u32, config: *const c_char) {
+extern "C" fn generic_cb(command_handle: CommandHandle, err: u32, config: *const c_char) {
     if err != 0 {panic!("generic_cb failed")}
     //check_useful_c_str!(config, ());
     println!("successfully called generic_cb: {:?}", config);
@@ -72,7 +72,7 @@ fn do_provision() -> u32 {
         //let vcx_agent_provision_async: lib::Symbol<
         //    unsafe extern fn(command_handle : u32,
         //        json: *const c_char,
-        //        cb: Option<extern fn(xcommand_handle: u32, err: u32, config: *const c_char)>) -> u32>
+        //        cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32, config: *const c_char)>) -> u32>
         //    = libvcxall.get(b"vcx_agent_provision_async")?;
 
         let json_string = r#"{"agency_url": "https://cagency.pdev.evernym.com", "agency_did": "dTLdJqRZLwMuWSogcKfBT","wallet_name":"wallet2","wallet_key":"wallet-key","agent_seed":null,"enterprise_seed":null, "agency_verkey": "LsPQTDHi294TexkFmZK9Q9vW4YGtQRuLV8wuyZi94yH"}"#;

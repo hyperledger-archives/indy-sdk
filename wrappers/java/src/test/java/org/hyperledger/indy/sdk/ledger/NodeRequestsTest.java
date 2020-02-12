@@ -1,15 +1,11 @@
 package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
-import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.did.DidResults;
 import org.junit.*;
 
-import java.util.concurrent.ExecutionException;
-
-import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
 public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -40,54 +36,6 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 		String nodeRequest = Ledger.buildNodeRequest(DID, dest, data).get();
 
 		assertTrue(nodeRequest.replace("\\", "").contains(expectedResult));
-	}
-
-	@Test
-	public void testSendNodeRequestWorksWithoutSignature() throws Exception {
-		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, stewardDidJson.toJson()).get();
-		String did = didResult.getDid();
-
-		String nodeRequest = Ledger.buildNodeRequest(did, did, data).get();
-		String response = Ledger.submitRequest(pool, nodeRequest).get();
-		checkResponseType(response,"REQNACK" );
-	}
-
-	@Test
-	public void testBuildNodeRequestWorksForWrongServiceType() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		String data = "{\"node_ip\":\"10.0.0.100\"," +
-				"\"node_port\":910," +
-				"\"client_ip\":\"10.0.0.100\"," +
-				"\"client_port\":911," +
-				"\"alias\":\"some\"," +
-				"\"services\":[\"SERVICE\"]" +
-				"\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\"," +
-				"\"blskey_pop\":\"RahHYiCvoNCtPTrVtP7nMC5eTYrsUA8WjXbdhNc8debh1agE9bGiJxWBXYNFbnJXoXhWFMvyqhqhRoq737YQemH5ik9oL7R4NTTCz2LEZhkgLJzB3QRQqJyBNyv7acbdHrAT8nQ9UkLbaVL9NBpnWXBTw4LEMePaSHEw66RzPNdAX1\"" +
-				"}";
-
-		Ledger.buildNodeRequest(DID, dest, data).get();
-	}
-
-	@Test
-	public void testBuildNodeRequestWorksForMissedFields() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		String data = "{ }";
-
-		Ledger.buildNodeRequest(DID, dest, data).get();
-	}
-
-	@Test
-	public void testSendNodeRequestWorksForWrongRole() throws Exception {
-		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = didResult.getDid();
-
-		String nodeRequest = Ledger.buildNodeRequest(did, dest, data).get();
-		String response = Ledger.signAndSubmitRequest(pool, wallet, did, nodeRequest).get();
-		checkResponseType(response,"REJECT" );
 	}
 
 	@Test

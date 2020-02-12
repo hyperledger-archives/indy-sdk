@@ -1,30 +1,36 @@
+use std::collections::HashMap;
+use std::convert::Into;
+
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg, RouteA2AMsg, RouteA2ConnMsg};
-use actors::agent_connection::{AgentConnection, AgentConnectionConfig};
-use actors::router::Router;
-use domain::a2a::*;
-use domain::a2connection::*;
-use domain::config::WalletStorageConfig;
-use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, pairwise, wallet, pairwise::Pairwise, ErrorCode, IndyError};
-use std::convert::Into;
-use std::collections::HashMap;
-use utils::futures::*;
-use utils::rand;
+use futures::future::Either;
 use serde_json;
+
+use crate::actors::{AddA2ARoute, AdminRegisterAgent, HandleA2AMsg, HandleAdminMessage, RouteA2AMsg, RouteA2ConnMsg};
+use crate::actors::admin::Admin;
+use crate::actors::agent_connection::{AgentConnection, AgentConnectionConfig};
+use crate::actors::router::Router;
+use crate::domain::a2a::*;
+use crate::domain::a2connection::*;
+use crate::domain::admin_message::{ResAdminQuery, ResQueryAgent};
+use crate::domain::config::WalletStorageConfig;
+use crate::domain::invite::ForwardAgentDetail;
+use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
+use crate::utils::futures::*;
+use crate::utils::rand;
 
 #[allow(unused)] //FIXME:
 pub struct Agent {
-    wallet_handle: i32,
+    wallet_handle: WalletHandle,
     owner_did: String,
     owner_verkey: String,
     did: String,
     verkey: String,
     forward_agent_detail: ForwardAgentDetail,
     router: Addr<Router>,
-    configs: HashMap<String, String>
+    admin: Option<Addr<Admin>>,
+    configs: HashMap<String, String>,
 }
 
 impl Agent {
@@ -32,8 +38,9 @@ impl Agent {
                   owner_verkey: &str,
                   router: Addr<Router>,
                   forward_agent_detail: ForwardAgentDetail,
-                  wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(String, String, String, String), Error> {
-        trace!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
+                  wallet_storage_config: WalletStorageConfig,
+                  admin: Option<Addr<Admin>>) -> BoxedFuture<(String, String, String, String), Error> {
+        debug!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
                owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
         let wallet_id = format!("dummy_{}_{}", owner_did, rand::rand_string(10));
@@ -76,17 +83,28 @@ impl Agent {
                     owner_did,
                     owner_verkey,
                     router: router.clone(),
+                    admin: admin.clone(),
                     forward_agent_detail,
-                    configs: HashMap::new()
+                    configs: HashMap::new(),
                 };
 
                 let agent = agent.start();
 
                 router
-                    .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
+                    .send(AddA2ARoute(did.clone(), verkey.clone(), agent.clone().recipient()))
                     .from_err()
-                    .map(move |_| (wallet_id, wallet_key, did, verkey))
+                    .map(move |_| (wallet_id, wallet_key, did, verkey, admin, agent))
                     .map_err(|err: Error| err.context("Can't add route for Agent").into())
+            })
+            .and_then(move |(wallet_id, wallet_key, did, verkey, admin, agent)| {
+                match admin {
+                    Some(admin) =>
+                        Either::A(admin.send(AdminRegisterAgent(did.clone(), agent.clone().recipient()))
+                            .from_err()
+                            .map(move |_| (wallet_id, wallet_key, did, verkey))
+                            .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into())),
+                    None => Either::B(future::ok((wallet_id, wallet_key, did, verkey)))
+                }
             })
             .into_box()
     }
@@ -98,8 +116,9 @@ impl Agent {
                    owner_verkey: &str,
                    router: Addr<Router>,
                    forward_agent_detail: ForwardAgentDetail,
-                   wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(), Error> {
-        trace!("Agent::restore >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
+                   wallet_storage_config: WalletStorageConfig,
+                   admin: Option<Addr<Admin>>) -> BoxedFuture<(), Error> {
+        debug!("Agent::restore >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
                wallet_id, did, owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
         let wallet_config = json!({
@@ -119,8 +138,9 @@ impl Agent {
 
         future::ok(())
             .and_then(move |_| {
+                debug!("Opening agent wallet {:?}", &wallet_config);
                 wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
-                    .map_err(|err| err.context("Can't open Agent wallet.").into())
+                    .map_err(move |err| err.context(format!("Can't open Agent wallet using config {:?}.", wallet_config.clone())).into())
             })
             .and_then(move |wallet_handle| {
                 did::key_for_local_did(wallet_handle, &did)
@@ -140,6 +160,7 @@ impl Agent {
                 // Resolve information about existing connections from the wallet
                 // and start Agent Connection actor for each exists connection
 
+                debug!("Agent restore. Agent configs to be loaded: {:?}", metadata);
                 let configs: HashMap<String, String> = serde_json::from_str(&metadata).expect("Can't restore Agent config.");
 
                 Agent::_restore_connections(wallet_handle,
@@ -147,10 +168,11 @@ impl Agent {
                                             &owner_verkey,
                                             &forward_agent_detail,
                                             router.clone(),
+                                            admin.clone(),
                                             configs.clone())
-                    .map(move |_| (wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, configs))
+                    .map(move |_| (wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, admin, configs))
             })
-            .and_then(move |(wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, configs)| {
+            .and_then(move |(wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, admin, configs)| {
                 let agent = Agent {
                     wallet_handle,
                     verkey: verkey.clone(),
@@ -158,25 +180,38 @@ impl Agent {
                     owner_did,
                     owner_verkey,
                     router: router.clone(),
+                    admin: admin.clone(),
                     forward_agent_detail,
-                    configs
+                    configs,
                 };
 
                 let agent = agent.start();
 
                 router
-                    .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
+                    .send(AddA2ARoute(did.clone(), verkey.clone(), agent.clone().recipient()))
+                    .map(move |_| (admin, agent, did))
                     .from_err()
                     .map_err(|err: Error| err.context("Can't add route for Agent.").into())
+            })
+            .and_then(move |(admin, agent, agent_did)| {
+                match admin {
+                    Some(admin) => Either::A(
+                        admin.send(AdminRegisterAgent(agent_did.clone(), agent.clone().recipient()))
+                        .from_err()
+                        .map(|_| ())
+                        .map_err(|err: Error| err.context("Can't register Agent in Admin").into())),
+                    None => Either::B(future::ok(()))
+                }
             })
             .into_box()
     }
 
-    fn _restore_connections(wallet_handle: i32,
+    fn _restore_connections(wallet_handle: WalletHandle,
                             owner_did: &str,
                             owner_verkey: &str,
                             forward_agent_detail: &ForwardAgentDetail,
                             router: Addr<Router>,
+                            admin: Option<Addr<Admin>>,
                             agent_configs: HashMap<String, String>) -> ResponseFuture<(), Error> {
         trace!("Agent::_restore_connections >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, owner_verkey, forward_agent_detail);
@@ -199,6 +234,7 @@ impl Agent {
                                                  &pairwise.metadata,
                                                  &forward_agent_detail,
                                                  router.clone(),
+                                                 admin.clone(),
                                                  agent_configs.clone())
                     })
                     .collect();
@@ -240,6 +276,15 @@ impl Agent {
                             .into_actor(slf)
                             .into_box()
                     }
+                    Some(A2AMessage::Version2(A2AMessageV2::ForwardV3(msg))) => {
+                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
+                        slf.router
+                            .send(RouteA2AMsg(msg.to, msg_))
+                            .from_err()
+                            .and_then(|res| res)
+                            .into_actor(slf)
+                            .into_box()
+                    }
                     Some(msg) => slf.handle_agent_msg(sender_vk, msg),
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
@@ -261,7 +306,7 @@ impl Agent {
     fn handle_agent_msg_v1(&mut self,
                            sender_vk: String,
                            msg: A2AMessageV1) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("Agent::handle_agent_msg_v1 >> {:?}, {:?}", sender_vk, msg);
+        debug!("Agent::handle_agent_msg_v1 >> {:?}, {:?}", sender_vk, msg);
 
         match msg {
             A2AMessageV1::CreateKey(msg) => self.handle_create_key_v1(msg),
@@ -285,7 +330,7 @@ impl Agent {
     fn handle_agent_msg_v2(&mut self,
                            sender_vk: String,
                            msg: A2AMessageV2) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("Agent::handle_agent_msg_v2 >> {:?}, {:?}", sender_vk, msg);
+        debug!("Agent::handle_agent_msg_v2 >> {:?}, {:?}", sender_vk, msg);
 
         match msg {
             A2AMessageV2::CreateKey(msg) => self.handle_create_key_v2(msg),
@@ -296,7 +341,7 @@ impl Agent {
             A2AMessageV2::RemoveConfigs(msg) => self.handle_remove_configs_v2(msg),
             _ => err_act!(self, err_msg("Unsupported message"))
         }
-            .and_then(move |msg,slf,  _|
+            .and_then(move |msg, slf, _|
                 A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.verkey), &sender_vk, &msg)
                     .map_err(|err| err.context("Can't pack message.").into())
                     .into_actor(slf)
@@ -445,7 +490,7 @@ impl Agent {
             .into_box()
     }
 
-    fn get_pairwise_list(wallet_handle: i32) -> ResponseFuture<Vec<Pairwise>, Error> {
+    fn get_pairwise_list(wallet_handle: WalletHandle) -> ResponseFuture<Vec<Pairwise>, Error> {
         future::ok(())
             .and_then(move |_| {
                 pairwise::list_pairwise(wallet_handle)
@@ -531,7 +576,7 @@ impl Agent {
                     .into_actor(slf)
             })
             .and_then(|(for_did, pairwise_did, pairwise_did_verkey), slf, _| {
-                pairwise::create_pairwise(slf.wallet_handle, &for_did, &pairwise_did, None)
+                pairwise::create_pairwise(slf.wallet_handle, &for_did, &pairwise_did, Some("{}"))
                     .map_err(|err| err.context("Can't store agent pairwise connection.").into())
                     .map(|_| (for_did, pairwise_did, pairwise_did_verkey))
                     .into_actor(slf)
@@ -549,7 +594,7 @@ impl Agent {
                     forward_agent_detail: slf.forward_agent_detail.clone(),
                 };
 
-                AgentConnection::create(config, slf.router.clone())
+                AgentConnection::create(config, slf.router.clone(), slf.admin.clone())
                     .map(|_| (pairwise_did, pairwise_did_verkey))
                     .into_actor(slf)
             })
@@ -558,7 +603,7 @@ impl Agent {
 
     fn handle_update_com_method_v1(&mut self, _msg: UpdateComMethod) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         trace!("UpdateComMethod: {:?}", _msg);
-        let messages = vec![A2AMessage::Version1(A2AMessageV1::ComMethodUpdated(ComMethodUpdated {id: "123".to_string()}))];
+        let messages = vec![A2AMessage::Version1(A2AMessageV1::ComMethodUpdated(ComMethodUpdated { id: "123".to_string() }))];
         ok_act!(self,  messages)
     }
 
@@ -581,8 +626,11 @@ impl Agent {
     fn handle_update_configs(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, (), Error> {
         for config_option in msg.configs {
             match config_option.name.as_str() {
-                "name" | "logo_url" => self.configs.insert(config_option.name, config_option.value),
-                _ => continue
+                "name" | "logoUrl" | "notificationWebhookUrl" => self.configs.insert(config_option.name, config_option.value),
+                _ => {
+                    warn!("Agent was trying to set up unsupported agent configuration option {}", config_option.name.as_str());
+                    continue
+                }
             };
         }
 
@@ -677,17 +725,33 @@ impl Handler<HandleA2AMsg> for Agent {
     }
 }
 
+impl Handler<HandleAdminMessage> for Agent {
+    type Result = Result<ResAdminQuery, Error>;
+
+    fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
+        trace!("Agent Handler<HandleAdminMessage>::handle >>");
+        Ok(ResAdminQuery::Agent(ResQueryAgent {
+            owner_did: self.owner_did.clone(),
+            owner_verkey: self.owner_verkey.clone(),
+            did: self.did.clone(),
+            verkey: self.verkey.clone(),
+            configs: self.configs.iter().map(|(key, value)| (key.clone(), value.clone())).collect(),
+        }))
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use actors::ForwardA2AMsg;
+    use crate::actors::ForwardA2AMsg;
+    use crate::domain::status::MessageStatusCode;
+    use crate::utils::tests::*;
+    use crate::utils::to_i8;
+
     use super::*;
-    use utils::to_i8;
-    use utils::tests::*;
-    use domain::status::MessageStatusCode;
 
     #[test]
     fn agent_create_key_works() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .and_then(|()| {
                     setup_agent(forward_agent)
@@ -761,7 +825,7 @@ mod tests {
                             type_: RemoteMessageType::CredOffer,
                             payload: Some(MessageDetailPayload::V1(to_i8(&PAYLOAD.to_vec()))),
                             ref_msg_id: None,
-                        }]
+                        }],
                     };
                     assert_eq!(expected_message, messages[0]);
                     e_wallet_handle
@@ -771,7 +835,7 @@ mod tests {
 
     #[test]
     fn agent_configs_happy_path() {
-        run_test(|forward_agent| {
+        run_test(|forward_agent, _| {
             future::ok(())
                 .and_then(|()| {
                     setup_agent(forward_agent)
@@ -801,7 +865,7 @@ mod tests {
 
                     assert_eq!(configs.len(), 2);
                     assert!(configs.contains(&ConfigOption { name: "name".to_string(), value: "super agent".to_string() }));
-                    assert!(configs.contains(&ConfigOption { name: "logo_url".to_string(), value: "http://logo.url".to_string() }));
+                    assert!(configs.contains(&ConfigOption { name: "logoUrl".to_string(), value: "http://logo.url".to_string() }));
 
                     let msg = compose_remove_configs(e_wallet_handle,
                                                      &agent_did,
@@ -827,7 +891,7 @@ mod tests {
 
                     assert_eq!(configs.len(), 1);
                     assert!(!configs.contains(&ConfigOption { name: "name".to_string(), value: "super agent".to_string() }));
-                    assert!(configs.contains(&ConfigOption { name: "logo_url".to_string(), value: "http://logo.url".to_string() }));
+                    assert!(configs.contains(&ConfigOption { name: "logoUrl".to_string(), value: "http://logo.url".to_string() }));
 
                     wallet::close_wallet(e_wallet_handle).wait().unwrap();
                 })

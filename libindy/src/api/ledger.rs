@@ -1,18 +1,21 @@
-use api::{ErrorCode, CommandHandle, WalletHandle, PoolHandle};
-use errors::prelude::*;
-use commands::{Command, CommandExecutor};
-use commands::ledger::LedgerCommand;
-use domain::anoncreds::credential_definition::CredentialDefinition;
-use domain::anoncreds::schema::Schema;
-use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
-use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
-use domain::ledger::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
-use domain::ledger::node::NodeOperationData;
-use domain::ledger::auth_rule::AuthRules;
-use utils::ctypes;
-
-use serde_json;
+use indy_api_types::{CommandHandle, ErrorCode, PoolHandle, WalletHandle};
+use indy_api_types::errors::prelude::*;
+use indy_api_types::validation::Validatable;
+use indy_utils::ctypes;
 use libc::c_char;
+use serde_json;
+
+use crate::commands::{Command, CommandExecutor};
+use crate::commands::ledger::LedgerCommand;
+use crate::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionId};
+use crate::domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryId};
+use crate::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
+use crate::domain::anoncreds::schema::{Schema, SchemaId};
+use crate::domain::crypto::did::DidValue;
+use crate::domain::ledger::auth_rule::{AuthRules, Constraint};
+use crate::domain::ledger::author_agreement::{AcceptanceMechanisms, GetTxnAuthorAgreementData};
+use crate::domain::ledger::node::NodeOperationData;
+use crate::domain::ledger::pool::Schedule;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -48,7 +51,7 @@ pub extern fn indy_sign_and_submit_request(command_handle: CommandHandle,
     trace!("indy_sign_and_submit_request: >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
            pool_handle, wallet_handle, submitter_did, request_json);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -61,12 +64,7 @@ pub extern fn indy_sign_and_submit_request(command_handle: CommandHandle,
             wallet_handle,
             submitter_did,
             request_json,
-            Box::new(move |result| {
-                let (err, request_result_json) = prepare_result_1!(result, String::new());
-                trace!("indy_sign_and_submit_request: request_result_json: {:?}", request_result_json);
-                let request_result_json = ctypes::string_to_cstring(request_result_json);
-                cb(command_handle, err, request_result_json.as_ptr())
-            })
+            boxed_callback_string!("indy_sign_and_submit_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -110,12 +108,7 @@ pub extern fn indy_submit_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::SubmitRequest(
             pool_handle,
             request_json,
-            Box::new(move |result| {
-                let (err, request_result_json) = prepare_result_1!(result, String::new());
-                trace!("indy_submit_request: request_result_json: {:?}", request_result_json);
-                let request_result_json = ctypes::string_to_cstring(request_result_json);
-                cb(command_handle, err, request_result_json.as_ptr())
-            })
+            boxed_callback_string!("indy_submit_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -175,12 +168,7 @@ pub extern fn indy_submit_action(command_handle: CommandHandle,
                 request_json,
                 nodes,
                 timeout,
-                Box::new(move |result| {
-                    let (err, request_result_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_submit_action: request_result_json: {:?}", request_result_json);
-                    let request_result_json = ctypes::string_to_cstring(request_result_json);
-                    cb(command_handle, err, request_result_json.as_ptr())
-                })
+                boxed_callback_string!("indy_submit_action", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -220,7 +208,7 @@ pub extern fn indy_sign_request(command_handle: CommandHandle,
                                                      signed_request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -231,12 +219,7 @@ pub extern fn indy_sign_request(command_handle: CommandHandle,
             wallet_handle,
             submitter_did,
             request_json,
-            Box::new(move |result| {
-                let (err, signed_request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_sign_request: signed_request_json: {:?}", signed_request_json);
-                let signed_request_json = ctypes::string_to_cstring(signed_request_json);
-                cb(command_handle, err, signed_request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_sign_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -275,7 +258,7 @@ pub extern fn indy_multi_sign_request(command_handle: CommandHandle,
                                                            signed_request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_multi_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -286,12 +269,7 @@ pub extern fn indy_multi_sign_request(command_handle: CommandHandle,
             wallet_handle,
             submitter_did,
             request_json,
-            Box::new(move |result| {
-                let (err, signed_request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_multi_sign_request: signed_request_json: {:?}", signed_request_json);
-                let signed_request_json = ctypes::string_to_cstring(signed_request_json);
-                cb(command_handle, err, signed_request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_multi_sign_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -324,8 +302,8 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_ddo_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_ddo_request: entities >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
@@ -334,12 +312,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetDdoRequest(
             submitter_did,
             target_did,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_ddo_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_ddo_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -354,7 +327,8 @@ pub extern fn indy_build_get_ddo_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// verkey: Target identity verification key as base58-encoded string.
 /// alias: NYM's alias.
@@ -386,8 +360,8 @@ pub extern fn indy_build_nym_request(command_handle: CommandHandle,
     trace!("indy_build_nym_request: >>> submitter_did: {:?}, target_did: {:?}, verkey: {:?}, alias: {:?}, role: {:?}",
            submitter_did, target_did, verkey, alias, role);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_opt_c_str!(verkey, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(alias, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(role, ErrorCode::CommonInvalidParam6);
@@ -403,12 +377,7 @@ pub extern fn indy_build_nym_request(command_handle: CommandHandle,
             verkey,
             alias,
             role,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_nym_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_nym_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -440,8 +409,8 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_nym_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_nym_request: entities >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
@@ -450,12 +419,7 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetNymRequest(
             submitter_did,
             target_did,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_nym_request: >>> request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_nym_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -465,11 +429,64 @@ pub extern fn indy_build_get_nym_request(command_handle: CommandHandle,
     res
 }
 
-/// Builds an ATTRIB request. Request to add attribute to a NYM record.
+/// Parse a GET_NYM response to get NYM data.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// get_nym_response: response on GET_NYM request.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// NYM data
+/// {
+///     did: DID as base58-encoded string for 16 or 32 bit DID value.
+///     verkey: verification key as base58-encoded string.
+///     role: Role associated number
+///                             null (common USER)
+///                             0 - TRUSTEE
+///                             2 - STEWARD
+///                             101 - TRUST_ANCHOR
+///                             101 - ENDORSER - equal to TRUST_ANCHOR that will be removed soon
+///                             201 - NETWORK_MONITOR
+/// }
+///
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_parse_get_nym_response(command_handle: CommandHandle,
+                                          get_nym_response: *const c_char,
+                                          cb: Option<extern fn(command_handle_: CommandHandle,
+                                                               err: ErrorCode,
+                                                               nym_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_parse_get_nym_response: >>> get_nym_response: {:?}", get_nym_response);
+
+    check_useful_c_str!(get_nym_response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_parse_get_nym_response: entities >>> get_nym_response: {:?}", get_nym_response);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::ParseGetNymResponse(
+            get_nym_response,
+            boxed_callback_string!("indy_parse_get_nym_response", cb, command_handle)
+        )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_parse_get_nym_response: <<< res: {:?}", res);
+
+    res
+}
+
+/// Builds an ATTRIB request. Request to add attribute to a NYM record.
+///
+/// Note: one of the fields `hash`, `raw`, `enc` must be specified.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// hash: (Optional) Hash of attribute data.
 /// raw: (Optional) Json, where key is attribute name and value is attribute value.
@@ -494,15 +511,19 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
     trace!("indy_build_attrib_request: >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
            submitter_did, target_did, hash, raw, enc);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_opt_c_str!(hash, ErrorCode::CommonInvalidParam4);
-    check_useful_opt_c_str!(raw, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_json!(raw, ErrorCode::CommonInvalidParam5, serde_json::Value);
     check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     trace!("indy_build_attrib_request: entities >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
            submitter_did, target_did, hash, raw, enc);
+
+    if raw.is_none() && hash.is_none() && enc.is_none() {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, "Either raw or hash or enc must be specified").into();
+    }
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildAttribRequest(
@@ -511,12 +532,7 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
             hash,
             raw,
             enc,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_attrib_request: >>> request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_attrib_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -527,6 +543,8 @@ pub extern fn indy_build_attrib_request(command_handle: CommandHandle,
 }
 
 /// Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
+///
+/// Note: one of the fields `hash`, `raw`, `enc` must be specified.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -555,8 +573,8 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
     trace!("indy_build_get_attrib_request: >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
            submitter_did, target_did, hash, raw, enc);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_opt_c_str!(raw, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(hash, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
@@ -565,6 +583,10 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
     trace!("indy_build_get_attrib_request: entities >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
            submitter_did, target_did, hash, raw, enc);
 
+    if raw.is_none() && hash.is_none() && enc.is_none() {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, "Either raw or hash or enc must be specified").into();
+    }
+
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetAttribRequest(
             submitter_did,
@@ -572,12 +594,7 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
             raw,
             hash,
             enc,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_attrib_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_attrib_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -591,7 +608,8 @@ pub extern fn indy_build_get_attrib_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// data: Credential schema.
 /// {
 ///     id: identifier of schema
@@ -616,8 +634,8 @@ pub extern fn indy_build_schema_request(command_handle: CommandHandle,
                                                              request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_schema_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_json!(data, ErrorCode::CommonInvalidParam3, Schema);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, Schema);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_schema_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -626,12 +644,7 @@ pub extern fn indy_build_schema_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildSchemaRequest(
             submitter_did,
             data,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_schema_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_schema_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -663,8 +676,8 @@ pub extern fn indy_build_get_schema_request(command_handle: CommandHandle,
                                                                  request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_schema_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, SchemaId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_schema_request: entities >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
@@ -673,12 +686,7 @@ pub extern fn indy_build_get_schema_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetSchemaRequest(
             submitter_did,
             id,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_schema_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_schema_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -745,7 +753,8 @@ pub extern fn indy_parse_get_schema_response(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// data: credential definition json
 /// {
 ///     id: string - identifier of credential definition
@@ -774,8 +783,8 @@ pub extern fn indy_build_cred_def_request(command_handle: CommandHandle,
                                                                request_result_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_cred_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_json!(data, ErrorCode::CommonInvalidParam3, CredentialDefinition);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, CredentialDefinition);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_cred_def_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -784,12 +793,7 @@ pub extern fn indy_build_cred_def_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildCredDefRequest(
             submitter_did,
             data,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_cred_def_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_cred_def_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -822,8 +826,8 @@ pub extern fn indy_build_get_cred_def_request(command_handle: CommandHandle,
                                                                    request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_cred_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, CredentialDefinitionId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_cred_def_request: entities >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
@@ -832,12 +836,7 @@ pub extern fn indy_build_get_cred_def_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildGetCredDefRequest(
             submitter_did,
             id,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_cred_def_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_cred_def_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -907,7 +906,8 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// target_did: Target Node's DID.  It differs from submitter_did field.
 /// data: Data associated with the Node: {
 ///     alias: string - Node's alias
@@ -936,8 +936,8 @@ pub extern fn indy_build_node_request(command_handle: CommandHandle,
                                                            request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_node_request: >>> submitter_did: {:?}, target_did: {:?}, data: {:?}", submitter_did, target_did, data);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(target_did, ErrorCode::CommonInvalidParam3, DidValue);
     check_useful_json!(data, ErrorCode::CommonInvalidParam4, NodeOperationData);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -948,12 +948,7 @@ pub extern fn indy_build_node_request(command_handle: CommandHandle,
             submitter_did,
             target_did,
             data,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_node_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_node_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -980,17 +975,13 @@ pub extern fn indy_build_get_validator_info_request(command_handle: CommandHandl
                                                     submitter_did: *const c_char,
                                                     cb: Option<extern fn(command_handle_: CommandHandle, err: ErrorCode,
                                                                          request_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetValidatorInfoRequest(
             submitter_did,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_validator_info_request", cb, command_handle)
         )));
 
     prepare_result!(result)
@@ -1024,7 +1015,7 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_request: >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}", submitter_did, ledger_type, seq_no);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_opt_c_str!(ledger_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1035,12 +1026,7 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
             submitter_did,
             ledger_type,
             seq_no,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_txn_request: request_json: {:?}, cmd_handle: {}", request_json, command_handle);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_txn_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1054,7 +1040,8 @@ pub extern fn indy_build_get_txn_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// writes: Whether any write requests can be processed by the pool
 ///         (if false, then pool goes to read-only state). True by default.
 /// force: Whether we should apply transaction (for example, move pool to read-only state)
@@ -1076,7 +1063,7 @@ pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
                                                                   request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_pool_config_request: >>> submitter_did: {:?}, writes: {:?}, force: {:?}", submitter_did, writes, force);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_build_pool_config_request: entities >>> submitter_did: {:?}, writes: {:?}, force: {:?}", submitter_did, writes, force);
@@ -1086,12 +1073,7 @@ pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
             submitter_did,
             writes,
             force,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_pool_config_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_pool_config_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1105,8 +1087,8 @@ pub extern fn indy_build_pool_config_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: Id of Identity stored in secured Wallet.
-/// action:        Action that pool has to do after received transaction.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+/// action:        Action that pool has to do after received transaction. Either `start` or `cancel`.
 /// datetime:      <Optional> Restart time in datetime format. Skip to restart as early as possible.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1125,12 +1107,16 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
                                                                    request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_pool_restart_request: >>> submitter_did: {:?}, action: {:?}, datetime: {:?}", submitter_did, action, datetime);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(action, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(datetime, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_build_pool_restart_request: entities >>> submitter_did: {:?}, action: {:?}, datetime: {:?}", submitter_did, action, datetime);
+
+    if action != "start" && action != "cancel" {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Unsupported action: {}. Must be either `start` or `cancel`", action)).into();
+    }
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
@@ -1138,12 +1124,8 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
                 submitter_did,
                 action,
                 datetime,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_pool_restart_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                }))));
+                boxed_callback_string!("indy_build_pool_restart_request", cb, command_handle)
+            )));
 
     let res = prepare_result!(result);
 
@@ -1158,7 +1140,8 @@ pub extern fn indy_build_pool_restart_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// name: Human-readable name for the upgrade.
 /// version: The version of indy-node package we perform upgrade to.
 ///          Must be greater than existing one (or equal if reinstall flag is True).
@@ -1198,12 +1181,12 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
     schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
            submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(action, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(sha256, ErrorCode::CommonInvalidParam6);
-    check_useful_opt_c_str!(schedule, ErrorCode::CommonInvalidParam8);
+    check_useful_opt_json!(schedule, ErrorCode::CommonInvalidParam8, Schedule);
     check_useful_opt_c_str!(justification, ErrorCode::CommonInvalidParam9);
     check_useful_opt_c_str!(package, ErrorCode::CommonInvalidParam12);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam13);
@@ -1213,6 +1196,14 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
     trace!("indy_build_pool_upgrade_request: entities >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?}, timeout: {:?}, \
     schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
            submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
+
+    if action != "start" && action != "cancel" {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Invalid action: {}", action)).into();
+    }
+
+    if action == "start" && schedule.is_none() {
+        return IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Schedule is required for `{}` action", action)).into();
+    }
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
@@ -1228,12 +1219,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
                 reinstall,
                 force,
                 package,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_pool_upgrade_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_build_pool_upgrade_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -1248,7 +1234,8 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// data: Revocation Registry data:
 ///     {
 ///         "id": string - ID of the Revocation Registry,
@@ -1280,8 +1267,8 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: CommandHandle,
                                                                     rev_reg_def_req: *const c_char)>) -> ErrorCode {
     trace!("indy_build_revoc_reg_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_json!(data, ErrorCode::CommonInvalidParam3, RevocationRegistryDefinition);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_json!(data, ErrorCode::CommonInvalidParam3, RevocationRegistryDefinition);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_revoc_reg_def_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -1290,12 +1277,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildRevocRegDefRequest(
             submitter_did,
             data,
-            Box::new(move |result| {
-                let (err, rev_reg_def_req) = prepare_result_1!(result, String::new());
-                trace!("indy_build_revoc_reg_def_request: rev_reg_def_req: {:?}", rev_reg_def_req);
-                let rev_reg_def_req = ctypes::string_to_cstring(rev_reg_def_req);
-                cb(command_handle, err, rev_reg_def_req.as_ptr())
-            })
+            boxed_callback_string!("indy_build_revoc_reg_def_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1328,8 +1310,8 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: CommandHandle
                                                                         request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_revoc_reg_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_revoc_reg_def_request: entities>>> submitter_did: {:?}, id: {:?}", submitter_did, id);
@@ -1338,12 +1320,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: CommandHandle
         .send(Command::Ledger(LedgerCommand::BuildGetRevocRegDefRequest(
             submitter_did,
             id,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_revoc_reg_def_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_revoc_reg_def_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1421,7 +1398,8 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandl
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the submitter stored in secured Wallet.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// revoc_reg_def_id: ID of the corresponding RevocRegDef.
 /// rev_def_type: Revocation Registry type (only CL_ACCUM is supported for now).
 /// value: Registry-specific data: {
@@ -1432,7 +1410,6 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: CommandHandl
 ///         revoked: array<number> an array of revoked indices.
 ///     },
 ///     ver: string - version revocation registry entry json
-///
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1453,8 +1430,8 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: CommandHandle,
     trace!("indy_build_revoc_reg_entry_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, rev_def_type: {:?}, value: {:?}",
            submitter_did, revoc_reg_def_id, rev_def_type, value);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_str!(rev_def_type, ErrorCode::CommonInvalidParam4);
     check_useful_json!(value, ErrorCode::CommonInvalidParam5, RevocationRegistryDelta);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -1468,12 +1445,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: CommandHandle,
             revoc_reg_def_id,
             rev_def_type,
             value,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_revoc_reg_entry_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_revoc_reg_entry_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1508,8 +1480,8 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: CommandHandle,
                                                                     request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_build_get_revoc_reg_request: entities >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
@@ -1519,12 +1491,7 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: CommandHandle,
             submitter_did,
             revoc_reg_def_id,
             timestamp,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_revoc_reg_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1617,8 +1584,8 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: CommandHand
     trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}",
            submitter_did, revoc_reg_def_id, from, to);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_string!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3, RevocationRegistryId);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let from = if from != -1 { Some(from) } else { None };
@@ -1632,12 +1599,7 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: CommandHand
             revoc_reg_def_id,
             from,
             to,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_revoc_reg_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_revoc_reg_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1820,13 +1782,7 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::GetResponseMetadata(
             response,
-            Box::new(move |result| {
-                let (err, response_metadata) = prepare_result_1!(result, String::new());
-                trace!("indy_get_response_metadata: response_metadata: {:?}", response_metadata);
-
-                let response_metadata = ctypes::string_to_cstring(response_metadata);
-                cb(command_handle, err, response_metadata.as_ptr())
-            })
+            boxed_callback_string!("indy_get_response_metadata", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1840,7 +1796,8 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the request sender.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// txn_type: ledger transaction alias or associated value.
 /// action: type of an action.
 ///     Can be either "ADD" (to add a new rule) or "EDIT" (to edit an existing one).
@@ -1851,10 +1808,11 @@ pub extern fn indy_get_response_metadata(command_handle: CommandHandle,
 ///     {
 ///         constraint_id - <string> type of a constraint.
 ///             Can be either "ROLE" to specify final constraint or  "AND"/"OR" to combine constraints.
-///         role - <string> role of a user which satisfy to constrain.
+///         role - <string> (optional) role of a user which satisfy to constrain.
 ///         sig_count - <u32> the number of signatures required to execution action.
-///         need_to_be_owner - <bool> if user must be an owner of transaction.
-///         metadata - <object> additional parameters of the constraint.
+///         need_to_be_owner - <bool> (optional) if user must be an owner of transaction (false by default).
+///         off_ledger_signature - <bool> (optional) allow signature of unknow for ledger did (false by default).
+///         metadata - <object> (optional) additional parameters of the constraint.
 ///     }
 /// can be combined by
 ///     {
@@ -1889,13 +1847,13 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
     old_value: {:?}, new_value: {:?}, constraint: {:?}",
            submitter_did, txn_type, action, field, old_value, new_value, constraint);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(action, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(field, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(old_value, ErrorCode::CommonInvalidParam6);
     check_useful_opt_c_str!(new_value, ErrorCode::CommonInvalidParam7);
-    check_useful_c_str!(constraint, ErrorCode::CommonInvalidParam8);
+    check_useful_json!(constraint, ErrorCode::CommonInvalidParam8, Constraint);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     trace!("indy_build_auth_rule_request: entities >>> submitter_did: {:?}, txn_type: {:?}, action: {:?}, field: {:?}, \
@@ -1911,12 +1869,7 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
             old_value,
             new_value,
             constraint,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_auth_rule_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_auth_rule_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -1930,7 +1883,8 @@ pub extern fn indy_build_auth_rule_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the request sender.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// rules: a list of auth rules: [
 ///     {
 ///         "auth_type": ledger transaction alias or associated value,
@@ -1963,7 +1917,7 @@ pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
                                                                  request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_auth_rules_request: >>> submitter_did: {:?}, rules: {:?}", submitter_did, rules);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_json!(rules, ErrorCode::CommonInvalidParam3, AuthRules);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -1977,12 +1931,7 @@ pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
         .send(Command::Ledger(LedgerCommand::BuildAuthRulesRequest(
             submitter_did,
             rules,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_auth_rules_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_auth_rules_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -2000,7 +1949,7 @@ pub extern fn indy_build_auth_rules_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// txn_type: (Optional) target ledger transaction alias or associated value.
 /// action: (Optional) target action type. Can be either "ADD" or "EDIT".
 /// field: (Optional) target transaction field.
@@ -2029,7 +1978,7 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
     old_value: {:?}, new_value: {:?}",
            submitter_did, txn_type, action, field, old_value, new_value);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_opt_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(action, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(field, ErrorCode::CommonInvalidParam5);
@@ -2049,12 +1998,7 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
             field,
             old_value,
             new_value,
-            Box::new(move |result| {
-                let (err, request_json) = prepare_result_1!(result, String::new());
-                trace!("indy_build_get_auth_rule_request: request_json: {:?}", request_json);
-                let request_json = ctypes::string_to_cstring(request_json);
-                cb(command_handle, err, request_json.as_ptr())
-            })
+            boxed_callback_string!("indy_build_get_auth_rule_request", cb, command_handle)
         )));
 
     let res = prepare_result!(result);
@@ -2070,9 +2014,30 @@ pub extern fn indy_build_get_auth_rule_request(command_handle: CommandHandle,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the request sender.
-/// text: a content of the TTA.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+/// text: (Optional) a content of the TTA.
+///             Mandatory in case of adding a new TAA. An existing TAA text can not be changed.
+///             for Indy Node version <= 1.12.0:
+///                 Use empty string to reset TAA on the ledger
+///             for Indy Node version > 1.12.0
+///                 Should be omitted in case of updating an existing TAA (setting `retirement_ts`)
 /// version: a version of the TTA (unique UTF-8 string).
+/// ratification_ts: (Optional) the date (timestamp) of TAA ratification by network government. (-1 to omit)
+///              for Indy Node version <= 1.12.0:
+///                 Must be omitted
+///              for Indy Node version > 1.12.0:
+///                 Must be specified in case of adding a new TAA
+///                 Can be omitted in case of updating an existing TAA
+/// retirement_ts: (Optional) the date (timestamp) of TAA retirement. (-1 to omit)
+///              for Indy Node version <= 1.12.0:
+///                 Must be omitted
+///              for Indy Node version > 1.12.0:
+///                 Must be omitted in case of adding a new (latest) TAA.
+///                 Should be used for updating (deactivating) non-latest TAA on the ledger.
+///
+/// Note: Use `indy_build_disable_all_txn_author_agreements_request` to disable all TAA's on the ledger.
+///
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -2085,17 +2050,23 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
                                                       submitter_did: *const c_char,
                                                       text: *const c_char,
                                                       version: *const c_char,
+                                                      ratification_ts: i64,
+                                                      retirement_ts: i64,
                                                       cb: Option<extern fn(command_handle_: CommandHandle,
                                                                            err: ErrorCode,
                                                                            request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+    trace!("indy_build_txn_author_agreement_request: >>> submitter_did: {:?}, text: {:?}, version: {:?}, ratification_ts {:?}, retirement_ts {:?}",
+           submitter_did, text, version, ratification_ts, retirement_ts);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str_empty_accepted!(text, ErrorCode::CommonInvalidParam3);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_opt_c_str!(text, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_u64!(ratification_ts, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_u64!(retirement_ts, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_txn_author_agreement_request: entities >>> submitter_did: {:?}, text: {:?}, version: {:?}", submitter_did, text, version);
+    trace!("indy_build_txn_author_agreement_request: entities >>> submitter_did: {:?}, text: {:?}, version: {:?}, ratification_ts {:?}, retirement_ts {:?}",
+           submitter_did, text, version, ratification_ts, retirement_ts);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
@@ -2103,17 +2074,57 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
                 submitter_did,
                 text,
                 version,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_txn_author_agreement_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                ratification_ts,
+                retirement_ts,
+                boxed_callback_string!("indy_build_txn_author_agreement_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
 
     trace!("indy_build_txn_author_agreement_request: <<< res: {:?}", res);
+
+    res
+}
+
+
+/// Builds a DISABLE_ALL_TXN_AUTHR_AGRMTS request. Request to disable all Transaction Author Agreement on the ledger.
+///
+/// EXPERIMENTAL
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_disable_all_txn_author_agreements_request(command_handle: CommandHandle,
+                                                                   submitter_did: *const c_char,
+                                                                   cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                                        err: ErrorCode,
+                                                                                        request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_build_disable_all_txn_author_agreements_request: >>> submitter_did: {:?}", submitter_did);
+
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+
+    trace!("indy_build_disable_all_txn_author_agreements_request: entities >>> submitter_did: {:?}", submitter_did);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::BuildDisableAllTxnAuthorAgreementsRequest(
+                submitter_did,
+                boxed_callback_string!("indy_build_disable_all_txn_author_agreements_request", cb, command_handle)
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_build_disable_all_txn_author_agreements_request: <<< res: {:?}", res);
 
     res
 }
@@ -2124,7 +2135,7 @@ pub extern fn indy_build_txn_author_agreement_request(command_handle: CommandHan
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// data: (Optional) specifies a condition for getting specific TAA.
 /// Contains 3 mutually exclusive optional fields:
 /// {
@@ -2150,8 +2161,8 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
                                                                                request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_author_agreement_request: >>> submitter_did: {:?}, data: {:?}?", submitter_did, data);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_json!(data, ErrorCode::CommonInvalidParam3, GetTxnAuthorAgreementData);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_opt_validatable_json!(data, ErrorCode::CommonInvalidParam3, GetTxnAuthorAgreementData);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_get_txn_author_agreement_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -2161,12 +2172,7 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
             LedgerCommand::BuildGetTxnAuthorAgreementRequest(
                 submitter_did,
                 data,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_get_txn_author_agreement_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_build_get_txn_author_agreement_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -2183,7 +2189,8 @@ pub extern fn indy_build_get_txn_author_agreement_request(command_handle: Comman
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the request sender.
+/// submitter_did: Identifier (DID) of the transaction author as base58-encoded string.
+///                Actual request sender may differ if Endorser is used (look at `indy_append_request_endorser`)
 /// aml: a set of new acceptance mechanisms:
 /// {
 ///     “<acceptance mechanism label 1>”: { acceptance mechanism description 1},
@@ -2211,16 +2218,11 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
     trace!("indy_build_acceptance_mechanisms_request: >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}",
            submitter_did, aml, version, aml_context);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_json!(aml, ErrorCode::CommonInvalidParam3, AcceptanceMechanisms);
+    check_useful_validatable_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
+    check_useful_validatable_json!(aml, ErrorCode::CommonInvalidParam3, AcceptanceMechanisms);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(aml_context, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
-
-    //break early and error out if no acceptance mechanisms
-    if aml.is_empty() {
-        return ErrorCode::CommonInvalidParam3;
-    }
 
     trace!("indy_build_acceptance_mechanisms_request: entities >>> submitter_did: {:?}, aml: {:?}, version: {:?}, aml_context: {:?}",
            submitter_did, aml, version, aml_context);
@@ -2232,12 +2234,7 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
                 aml,
                 version,
                 aml_context,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_acceptance_mechanisms_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_build_acceptance_mechanisms_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -2254,7 +2251,7 @@ pub extern fn indy_build_acceptance_mechanisms_request(command_handle: CommandHa
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// timestamp: i64 - time to get an active acceptance mechanisms. Pass -1 to get the latest one.
 /// version: (Optional) version of acceptance mechanisms.
 /// cb: Callback that takes command result as parameter.
@@ -2272,11 +2269,11 @@ pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: Comma
                                                            timestamp: i64,
                                                            version: *const c_char,
                                                            cb: Option<extern fn(command_handle_: CommandHandle,
-                                                                               err: ErrorCode,
-                                                                               request_json: *const c_char)>) -> ErrorCode {
+                                                                                err: ErrorCode,
+                                                                                request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_acceptance_mechanisms_request: >>> submitter_did: {:?}, timestamp: {:?}, version: {:?}", submitter_did, timestamp, version);
 
-    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_opt_string!(submitter_did, ErrorCode::CommonInvalidParam2, DidValue);
     check_useful_opt_c_str!(version, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -2290,12 +2287,7 @@ pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: Comma
                 submitter_did,
                 timestamp,
                 version,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_build_get_acceptance_mechanisms_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_build_get_acceptance_mechanisms_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
@@ -2320,7 +2312,9 @@ pub extern fn indy_build_get_acceptance_mechanisms_request(command_handle: Comma
 /// text and version - (optional) raw data about TAA from ledger.
 ///     These parameters should be passed together.
 ///     These parameters are required if taa_digest parameter is omitted.
-/// taa_digest - (optional) digest on text and version. This parameter is required if text and version parameters are omitted.
+/// taa_digest - (optional) digest on text and version.
+///     Digest is sha256 hash calculated on concatenated strings: version || text.
+///     This parameter is required if text and version parameters are omitted.
 /// mechanism - mechanism how user has accepted the TAA
 /// time - UTC timestamp when user has accepted the TAA. Note that the time portion will be discarded to avoid a privacy risk.
 /// cb: Callback that takes command result as parameter.
@@ -2365,17 +2359,62 @@ pub extern fn indy_append_txn_author_agreement_acceptance_to_request(command_han
                 taa_digest,
                 mechanism,
                 time,
-                Box::new(move |result| {
-                    let (err, request_json) = prepare_result_1!(result, String::new());
-                    trace!("indy_append_txn_author_agreement_acceptance_to_request: request_json: {:?}", request_json);
-                    let request_json = ctypes::string_to_cstring(request_json);
-                    cb(command_handle, err, request_json.as_ptr())
-                })
+                boxed_callback_string!("indy_append_txn_author_agreement_acceptance_to_request", cb, command_handle)
             )));
 
     let res = prepare_result!(result);
 
     trace!("indy_append_txn_author_agreement_acceptance_to_request: <<< res: {:?}", res);
+
+    res
+}
+
+/// Append Endorser to an existing request.
+///
+/// An author of request still is a `DID` used as a `submitter_did` parameter for the building of the request.
+/// But it is expecting that the transaction will be sent by the specified Endorser.
+///
+/// Note: Both Transaction Author and Endorser must sign output request after that.
+///
+/// More about Transaction Endorser: https://github.com/hyperledger/indy-node/blob/master/design/transaction_endorser.md
+///                                  https://github.com/hyperledger/indy-sdk/blob/master/docs/configuration.md
+///
+/// #Params
+/// request_json: original request
+/// endorser_did: DID of the Endorser that will submit the transaction.
+///               The Endorser's DID must be present on the ledger.
+/// cb: Callback that takes command result as parameter.
+///     The command result is a request JSON with Endorser field appended.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_append_request_endorser(command_handle: CommandHandle,
+                                           request_json: *const c_char,
+                                           endorser_did: *const c_char,
+                                           cb: Option<extern fn(command_handle_: CommandHandle,
+                                                                err: ErrorCode,
+                                                                out_request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_append_request_endorser: >>> request_json: {:?}, endorser_did: {:?}",
+           request_json, endorser_did);
+
+    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam2);
+    check_useful_validatable_string!(endorser_did, ErrorCode::CommonInvalidParam3, DidValue);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_append_request_endorser: entities >>> request_json: {:?},endorser_did: {:?}", request_json, endorser_did);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::AppendRequestEndorser(
+                request_json,
+                endorser_did,
+                boxed_callback_string!("indy_append_request_endorser", cb, command_handle)
+            )));
+
+    let res = prepare_result!(result);
+
+    trace!("indy_append_request_endorser: <<< res: {:?}", res);
 
     res
 }

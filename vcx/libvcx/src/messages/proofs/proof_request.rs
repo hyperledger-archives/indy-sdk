@@ -5,9 +5,13 @@ use std::vec::Vec;
 
 use messages::validation;
 use error::prelude::*;
+use utils::libindy::anoncreds;
+use utils::qualifier::Qualifier;
+use v3::messages::connection::service::Service;
 
 static PROOF_REQUEST: &str = "PROOF_REQUEST";
 static PROOF_DATA: &str = "proof_request_data";
+pub const PROOF_REQUEST_V2: &str = "2.0";
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 struct ProofType {
@@ -23,10 +27,22 @@ struct ProofTopic {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum Restrictions {
+    V1(Vec<Filter>),
+    V2(::serde_json::Value),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct AttrInfo {
-    pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub restrictions: Option<Vec<Filter>>,
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub names: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub restrictions: Option<Restrictions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub self_attest_allowed: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub non_revoked: Option<NonRevokedInterval>
 }
@@ -38,7 +54,7 @@ pub struct Filter {
     pub schema_name: Option<String>,
     pub schema_version: Option<String>,
     pub issuer_did: Option<String>,
-    pub cred_def_id: Option<String>
+    pub cred_def_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -48,9 +64,9 @@ pub struct PredicateInfo {
     pub p_type: String,
     pub p_value: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub restrictions: Option<Vec<Filter>>,
+    pub restrictions: Option<Restrictions>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub non_revoked: Option<NonRevokedInterval>
+    pub non_revoked: Option<NonRevokedInterval>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -61,18 +77,21 @@ pub struct ProofPredicates {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct NonRevokedInterval {
     pub from: Option<u64>,
-    pub to: Option<u64>
+    pub to: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ProofRequestData {
-    nonce: String,
-    name: String,
+    pub nonce: String,
+    pub name: String,
     #[serde(rename = "version")]
-    data_version: String,
+    pub data_version: String,
+    #[serde(default)]
     pub requested_attributes: HashMap<String, AttrInfo>,
+    #[serde(default)]
     pub requested_predicates: HashMap<String, PredicateInfo>,
-    pub non_revoked: Option<NonRevokedInterval>
+    pub non_revoked: Option<NonRevokedInterval>,
+    pub ver: Option<ProofRequestVersion>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -85,7 +104,10 @@ pub struct ProofRequestMessage {
     pub msg_ref_id: Option<String>,
     from_timestamp: Option<u64>,
     to_timestamp: Option<u64>,
-    pub thread_id: Option<String>
+    pub thread_id: Option<String>,
+    #[serde(rename = "~service")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service: Option<Service>,
 }
 
 impl ProofPredicates {
@@ -113,12 +135,14 @@ impl ProofRequestMessage {
                 data_version: String::new(),
                 requested_attributes: HashMap::new(),
                 requested_predicates: HashMap::new(),
-                non_revoked: None
+                non_revoked: None,
+                ver: None,
             },
             msg_ref_id: None,
             from_timestamp: None,
             to_timestamp: None,
             thread_id: None,
+            service: None,
         }
     }
 
@@ -148,6 +172,11 @@ impl ProofRequestMessage {
         Ok(self)
     }
 
+    pub fn proof_request_format_version(&mut self, version: Option<ProofRequestVersion>) -> VcxResult<&mut Self> {
+        self.proof_request_data.ver = version;
+        Ok(self)
+    }
+
     pub fn proof_data_version(&mut self, version: &str) -> VcxResult<&mut Self> {
         self.proof_request_data.data_version = String::from(version);
         Ok(self)
@@ -163,11 +192,31 @@ impl ProofRequestMessage {
             })?;
 
         let mut index = 1;
-        for attr in proof_attrs {
-            if check_req_attrs.contains_key(&attr.name) {
-                check_req_attrs.insert(format!("{}_{}", attr.name, index), attr);
+        for mut attr in proof_attrs.into_iter() {
+            let attr_name = match (attr.name.as_ref(), attr.names.as_ref()) {
+                (Some(name), None) => { name.clone() }
+                (None, Some(names)) => {
+                    if names.is_empty(){
+                        return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest, "Proof Request validation failed: there is empty request attribute names"))
+                    }
+                    names.join(",")
+                }
+                (Some(_), Some(_)) => {
+                    return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest,
+                                                  format!("Proof Request validation failed: there is empty requested attribute: {:?}", attrs)));
+                }
+                (None, None) => {
+                    return Err(VcxError::from_msg(VcxErrorKind::InvalidProofRequest,
+                                                  format!("Proof request validation failed: there is a requested attribute with both name and names: {:?}", attrs)));
+                }
+            };
+
+            attr.restrictions = self.process_restrictions(attr.restrictions);
+
+            if check_req_attrs.contains_key(&attr_name) {
+                check_req_attrs.insert(format!("{}_{}", attr_name, index), attr);
             } else {
-                check_req_attrs.insert(attr.name.clone(), attr);
+                check_req_attrs.insert(attr_name, attr);
             }
             index = index + 1;
         }
@@ -184,7 +233,9 @@ impl ProofRequestMessage {
             })?;
 
         let mut index = 1;
-        for attr in attr_values {
+        for mut attr in attr_values.into_iter() {
+            attr.restrictions = self.process_restrictions(attr.restrictions);
+
             if check_predicates.contains_key(&attr.name) {
                 check_predicates.insert(format!("{}_{}", attr.name, index), attr);
             } else {
@@ -197,6 +248,30 @@ impl ProofRequestMessage {
         Ok(self)
     }
 
+    fn process_restrictions(&self, restrictions: Option<Restrictions>) -> Option<Restrictions> {
+        match restrictions {
+            Some(Restrictions::V2(restrictions)) => Some(Restrictions::V2(restrictions)),
+            Some(Restrictions::V1(restrictions)) => {
+                Some(Restrictions::V1(
+                    restrictions
+                        .into_iter()
+                        .map(|filter| {
+                            Filter {
+                                schema_id: filter.schema_id.as_ref().and_then(|schema_id| anoncreds::libindy_to_unqualified(&schema_id).ok()),
+                                schema_issuer_did: filter.schema_issuer_did.as_ref().and_then(|schema_issuer_did| anoncreds::libindy_to_unqualified(&schema_issuer_did).ok()),
+                                schema_name: filter.schema_name,
+                                schema_version: filter.schema_version,
+                                issuer_did: filter.issuer_did.as_ref().and_then(|issuer_did| anoncreds::libindy_to_unqualified(&issuer_did).ok()),
+                                cred_def_id: filter.cred_def_id.as_ref().and_then(|cred_def_id| anoncreds::libindy_to_unqualified(&cred_def_id).ok()),
+                            }
+                        })
+                        .collect()
+                ))
+            }
+            None => None
+        }
+    }
+
     pub fn from_timestamp(&mut self, from: Option<u64>) -> VcxResult<&mut Self> {
         self.from_timestamp = from;
         Ok(self)
@@ -204,6 +279,22 @@ impl ProofRequestMessage {
 
     pub fn to_timestamp(&mut self, to: Option<u64>) -> VcxResult<&mut Self> {
         self.to_timestamp = to;
+        Ok(self)
+    }
+
+    pub fn set_proof_request_data(&mut self, proof_request_data: ProofRequestData) -> VcxResult<&mut Self> {
+        self.proof_request_data = proof_request_data;
+        Ok(self)
+    }
+
+
+    pub fn set_thread_id(&mut self, thid: String) -> VcxResult<&mut Self> {
+        self.thread_id = Some(thid);
+        Ok(self)
+    }
+
+    pub fn set_service(&mut self, service: Option<Service>) -> VcxResult<&mut Self> {
+        self.service = service;
         Ok(self)
     }
 
@@ -222,6 +313,114 @@ impl ProofRequestMessage {
     }
 }
 
+impl ProofRequestData {
+    const DEFAULT_VERSION: &'static str = "1.0";
+
+    pub fn create() -> ProofRequestData {
+        ProofRequestData::default()
+    }
+
+    pub fn set_name(mut self, name: String) -> ProofRequestData {
+        self.name = name;
+        self
+    }
+
+    pub fn set_version(mut self, version: String) -> ProofRequestData {
+        self.data_version = version;
+        self
+    }
+
+    pub fn set_format_version(mut self, version: ProofRequestVersion) -> ProofRequestData {
+        self.ver = Some(version);
+        self
+    }
+
+    pub fn set_nonce(mut self) -> VcxResult<ProofRequestData> {
+        self.nonce = anoncreds::generate_nonce()?;
+        Ok(self)
+    }
+
+    pub fn set_requested_attributes(mut self, requested_attrs: String) -> VcxResult<ProofRequestData> {
+        let requested_attributes: Vec<AttrInfo> = ::serde_json::from_str(&requested_attrs)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}, err: {:?}", requested_attrs, err)))?;
+
+        self.requested_attributes = requested_attributes
+            .into_iter()
+            .enumerate()
+            .map(|(index, attribute)| (format!("attribute_{}", index), attribute))
+            .collect();
+        Ok(self)
+    }
+
+    pub fn set_requested_predicates(mut self, requested_predicates: String) -> VcxResult<ProofRequestData> {
+        let requested_predicates: Vec<PredicateInfo> = ::serde_json::from_str(&requested_predicates)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Requested Attributes: {:?}, err: {:?}", requested_predicates, err)))?;
+
+        self.requested_predicates = requested_predicates
+            .into_iter()
+            .enumerate()
+            .map(|(index, attribute)| (format!("predicate_{}", index), attribute))
+            .collect();
+        Ok(self)
+    }
+
+    pub fn set_not_revoked_interval(mut self, non_revoc_interval: String) -> VcxResult<ProofRequestData> {
+        let non_revoc_interval: NonRevokedInterval = ::serde_json::from_str(&non_revoc_interval)
+            .map_err(|_| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Invalid Revocation Interval: {:?}", non_revoc_interval)))?;
+
+        self.non_revoked = match (non_revoc_interval.from, non_revoc_interval.to) {
+            (None, None) => None,
+            (from, to) => Some(NonRevokedInterval { from, to })
+        };
+
+        Ok(self)
+    }
+
+    pub fn set_format_version_for_did(mut self, my_did: &str, remote_did: &str) -> VcxResult<ProofRequestData> {
+        if Qualifier::is_fully_qualified(&my_did) && Qualifier::is_fully_qualified(&remote_did) {
+            self.ver = Some(ProofRequestVersion::V2)
+        } else {
+            let proof_request_json = serde_json::to_string(&self)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize ProofRequestData: {:?}", err)))?;
+
+            let proof_request_json = anoncreds::libindy_to_unqualified(&proof_request_json)?;
+
+            self = serde_json::from_str(&proof_request_json)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize ProofRequestData: {:?}", err)))?;
+
+            self.ver = Some(ProofRequestVersion::V1)
+        }
+        Ok(self)
+    }
+}
+
+impl Default for ProofRequestData {
+    fn default() -> ProofRequestData {
+        ProofRequestData {
+            nonce: String::new(),
+            name: String::new(),
+            data_version: String::from(ProofRequestData::DEFAULT_VERSION),
+            requested_attributes: HashMap::new(),
+            requested_predicates: HashMap::new(),
+            non_revoked: None,
+            ver: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub enum ProofRequestVersion {
+    #[serde(rename = "1.0")]
+    V1,
+    #[serde(rename = "2.0")]
+    V2,
+}
+
+impl Default for ProofRequestVersion {
+    fn default() -> ProofRequestVersion {
+        ProofRequestVersion::V1
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -238,7 +437,8 @@ mod tests {
             data_version: String::new(),
             requested_attributes: HashMap::new(),
             requested_predicates: HashMap::new(),
-            non_revoked: None
+            non_revoked: None,
+            ver: None,
         };
         assert_eq!(request.proof_request_data, proof_data);
     }
@@ -249,7 +449,6 @@ mod tests {
         let data_name = "Test";
         let nonce = "123432421212";
         let data_version = "3.75";
-        let attrs = "";
         let version = "1.3";
         let tid = 89;
         let mid = 98;
@@ -259,6 +458,7 @@ mod tests {
             .tid(tid).unwrap()
             .mid(mid).unwrap()
             .nonce(nonce).unwrap()
+            .proof_request_format_version(Some(ProofRequestVersion::V2)).unwrap()
             .proof_name(data_name).unwrap()
             .proof_data_version(data_version).unwrap()
             .requested_attrs(REQUESTED_ATTRS).unwrap()
@@ -275,6 +475,7 @@ mod tests {
         assert!(serialized_msg.contains(r#""age":{"name":"age","restrictions":[{"schema_id":"6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB","schema_name":"Faber Student Info","schema_version":"1.0","issuer_did":"8XFh8yBzrpJQmNyZzgoTqB","cred_def_id":"8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766"},{"schema_id":"5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB","schema_name":"BYU Student Info","schema_version":"1.0","issuer_did":"66Fh8yBzrpJQmNyZzgoTqB","cred_def_id":"66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}"#));
         assert!(serialized_msg.contains(r#""to_timestamp":100"#));
         assert!(serialized_msg.contains(r#""from_timestamp":1"#));
+        assert!(serialized_msg.contains(r#""ver":"2.0""#));
     }
 
     #[test]
@@ -301,7 +502,33 @@ mod tests {
     }
 
     #[test]
+    fn test_requested_attrs_constructed_correctly_for_names() {
+        let attr_info = json!({ "names":["name", "age", "email"], "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11" } ] });
+        let attr_info_2 = json!({ "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11" } ] });
+
+        let requested_attrs = json!([ attr_info, attr_info_2 ]).to_string();
+
+        let request = proof_request().requested_attrs(&requested_attrs).unwrap().clone();
+
+        let mut expected_req_attrs: HashMap<String, AttrInfo> = HashMap::new();
+        expected_req_attrs.insert("name,age,email".to_string(), serde_json::from_value(attr_info).unwrap());
+        expected_req_attrs.insert("name".to_string(), serde_json::from_value(attr_info_2).unwrap());
+
+        assert_eq!(request.proof_request_data.requested_attributes, expected_req_attrs);
+    }
+
+    #[test]
+    fn test_requested_attrs_constructed_correctly_for_name_and_names_passed_together() {
+        let attr_info = json!({ "name":"name", "names":["name", "age", "email"], "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11" } ] });
+
+        let requested_attrs = json!([ attr_info ]).to_string();
+
+        let err = proof_request().requested_attrs(&requested_attrs).unwrap_err();
+        assert_eq!(VcxErrorKind::InvalidProofRequest, err.kind());
+    }
+
+    #[test]
     fn test_indy_proof_req_parses_correctly() {
-        let proof_req: ProofRequestData = serde_json::from_str(::utils::constants::INDY_PROOF_REQ_JSON).unwrap();
+        let _proof_req: ProofRequestData = serde_json::from_str(::utils::constants::INDY_PROOF_REQ_JSON).unwrap();
     }
 }

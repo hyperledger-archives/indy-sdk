@@ -6,15 +6,84 @@ import { ISerializedData, StateType } from './common'
 import { Connection } from './connection'
 import { VCXBaseWithState } from './vcx-base-with-state'
 
+/**
+ *    The object of the VCX API representing a Verifier side in the credential presentation process.
+ *    Assumes that pairwise connection between Verifier and Prover is already established.
+ *
+ *    # State
+ *
+ *    The set of object states and transitions depends on communication method is used.
+ *    The communication method can be specified as config option on one of *_init function. The default communication method us `proprietary`.
+ *
+ *    proprietary:
+ *        VcxStateType::VcxStateInitialized - once `vcx_proof_create` (create Proof object) is called.
+ *
+ *        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `PROOF_REQ` message) is called.
+ *
+ *        VcxStateType::VcxStateAccepted - once `PROOF` messages is received.
+ *                                         use `vcx_proof_update_state` or `vcx_proof_update_state_with_message` functions for state updates.
+ *
+ *    aries:
+ *        VcxStateType::VcxStateInitialized - once `vcx_proof_create` (create Proof object) is called.
+ *
+ *        VcxStateType::VcxStateOfferSent - once `vcx_credential_send_request` (send `PresentationRequest` message) is called.
+ *
+ *        VcxStateType::VcxStateAccepted - once `Presentation` messages is received.
+ *        VcxStateType::None - once `ProblemReport` messages is received.
+ *        VcxStateType::None - once `PresentationProposal` messages is received.
+ *        VcxStateType::None - on `Presentation` validation failed.
+ *                                                use `vcx_proof_update_state` or `vcx_proof_update_state_with_message` functions for state updates.
+ *
+ *    # Transitions
+ *
+ *    proprietary:
+ *        VcxStateType::None - `vcx_proof_create` - VcxStateType::VcxStateInitialized
+ *
+ *        VcxStateType::VcxStateInitialized - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+ *
+ *        VcxStateType::VcxStateOfferSent - received `PROOF` - VcxStateType::VcxStateAccepted
+ *
+ *    aries: RFC - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+ *        VcxStateType::None - `vcx_proof_create` - VcxStateType::VcxStateInitialized
+ *
+ *        VcxStateType::VcxStateInitialized - `vcx_credential_send_request` - VcxStateType::VcxStateOfferSent
+ *
+ *        VcxStateType::VcxStateOfferSent - received `Presentation` - VcxStateType::VcxStateAccepted
+ *        VcxStateType::VcxStateOfferSent - received `PresentationProposal` - VcxStateType::None
+ *        VcxStateType::VcxStateOfferSent - received `ProblemReport` - VcxStateType::None
+ *
+ *    # Messages
+ *
+ *    proprietary:
+ *        ProofRequest (`PROOF_REQ`)
+ *        Proof (`PROOF`)
+ *
+ *    aries:
+ *        PresentationRequest - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#request-presentation
+ *        Presentation - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#presentation
+ *        PresentationProposal - https://github.com/hyperledger/aries-rfcs/tree/7b6b93acbaf9611d3c892c4bada142fe2613de6e/features/0037-present-proof#propose-presentation
+ *        Ack - https://github.com/hyperledger/aries-rfcs/tree/master/features/0015-acks#explicit-acks
+ */
+
+/**
+ * @description Interface that represents the parameters for `Proof.create` function.
+ * @interface
+ */
 export interface IProofCreateData {
+  // Enterprise's personal identification for the user.
   sourceId: string,
+  //  Describes requested attribute
   attrs: IProofAttr[],
+  // Name of the proof request
   name: string,
+  // Revocation interval
   revocationInterval: IRevocationInterval
 }
 
 export interface IProofConstructorData {
+  //  Describes requested attribute
   attrs: IProofAttr[],
+  // Name of the proof request
   name: string,
 }
 
@@ -35,7 +104,9 @@ export interface IProofData {
 }
 
 export interface IProofResponses {
+  // Proof json
   proof?: string,
+  // Proof status
   proofState: ProofState,
 }
 
@@ -58,7 +129,9 @@ export enum PredicateTypes {
  * @interface
  */
 export interface IProofAttr {
+  // Requested attribute restrictions
   restrictions?: IFilter[],
+  // Requested attribute name
   name: string,
 }
 
@@ -101,7 +174,8 @@ export class Proof extends VCXBaseWithState<IProofData> {
    * data = {
    *   attrs: [
    *     { name: 'attr1' },
-   *     { name: 'attr2' }],
+   *     { name: 'attr2' },
+   *     { names: ['attr3', 'attr4'] }],
    *   name: 'Proof',
    *   sourceId: 'testProofSourceId',
    *   revocationInterval: {from: 1, to: 2}
@@ -162,6 +236,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
 
   protected _releaseFn = rustAPI().vcx_proof_release
   protected _updateStFn = rustAPI().vcx_proof_update_state
+  protected _updateStWithMessageFn = rustAPI(). vcx_proof_update_state_with_message
   protected _getStFn = rustAPI().vcx_proof_get_state
   protected _serializeFn = rustAPI().vcx_proof_serialize
   protected _deserializeFn = rustAPI().vcx_proof_deserialize
@@ -173,41 +248,6 @@ export class Proof extends VCXBaseWithState<IProofData> {
     super(sourceId)
     this._requestedAttributes = attrs
     this._name = name
-  }
-
-  /**
-   *
-   * Updates the state of the proof from the given message.
-   *
-   * Example:
-   * ```
-   * await object.updateStateWithMessage(message)
-   * ```
-   * @returns {Promise<void>}
-   */
-  public async updateStateWithMessage (message: string): Promise<void> {
-    try {
-      const commandHandle = 0
-      await createFFICallbackPromise<number>(
-        (resolve, reject, cb) => {
-          const rc = rustAPI().vcx_proof_update_state_with_message(commandHandle, this.handle, message, cb)
-          if (rc) {
-            resolve(StateType.None)
-          }
-        },
-        (resolve, reject) => ffi.Callback(
-          'void',
-          ['uint32', 'uint32', 'uint32'],
-          (handle: number, err: any, state: StateType) => {
-            if (err) {
-              reject(err)
-            }
-            resolve(state)
-          })
-      )
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
   }
 
   /**
@@ -250,7 +290,50 @@ export class Proof extends VCXBaseWithState<IProofData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Generates the proof request message for sending.
+   *
+   * Example:
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.getProofRequestMessage()
+   * ```
+   */
+  public async getProofRequestMessage (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_proof_get_request_msg(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, message: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!message) {
+                reject(`proof ${this.sourceId} returned empty string`)
+                return
+              }
+              resolve(message)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
   /**
    * Returns the requested proof if available
    *

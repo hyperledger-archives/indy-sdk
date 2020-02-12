@@ -61,6 +61,11 @@ extern {
                                       cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_parse_get_nym_response(command_handle: CommandHandle,
+                                       get_nym_response: CString,
+                                       cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
     pub fn indy_build_attrib_request(command_handle: CommandHandle,
                                      submitter_did: CString,
                                      target_did: CString,
@@ -254,7 +259,15 @@ extern {
                                                    submitter_did: CString,
                                                    text: CString,
                                                    version: CString,
+                                                   ratification_ts: i64,
+                                                   retirement_ts: i64,
                                                    cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_build_disable_all_txn_author_agreements_request(command_handle: CommandHandle,
+                                                                submitter_did: CString,
+                                                                cb: Option<ResponseStringCB>) -> Error;
+
 
     #[no_mangle]
     pub fn indy_build_get_txn_author_agreement_request(command_handle: CommandHandle,
@@ -286,6 +299,12 @@ extern {
                                                                   acc_mech_type: CString,
                                                                   time_of_acceptance: u64,
                                                                   cb: Option<ResponseStringCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_append_request_endorser(command_handle: CommandHandle,
+                                        request_json: CString,
+                                        endorser_did: CString,
+                                        cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type CustomTransactionParser = extern fn(reply_from_node: CString, parsed_sp: *mut CString) -> Error;

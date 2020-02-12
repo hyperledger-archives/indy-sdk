@@ -3,46 +3,51 @@ extern crate indy_sys;
 
 use indy::{IndyError, ErrorCode};
 use indy::ledger;
+use indy_utils::crypto::hash::hash;
 use self::futures::Future;
 use self::indy_sys::ledger::{CustomTransactionParser, CustomFree, indy_register_transaction_parser_for_sp};
 
-use utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
-use utils::constants::*;
+use crate::utils::{timeout, anoncreds, blob_storage, did, wallet, pool, callback};
+use crate::utils::constants::*;
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::{Once};
 use std::mem;
 use std::ffi::CString;
 
+use indy::{WalletHandle, PoolHandle};
+
 pub static mut SCHEMA_ID: &'static str = "";
+pub static mut SCHEMA_ID_V2: &'static str = "";
 pub static mut CRED_DEF_ID: &'static str = "";
+pub static mut CRED_DEF_ID_V2: &'static str = "";
 pub static mut REV_REG_DEF_ID: &'static str = "";
 pub const SCHEMA_DATA: &'static str = r#"{"id":"id","name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#;
 
 const SUBMIT_RETRY_CNT: usize = 3;
 
-pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+pub fn sign_and_submit_request(pool_handle: PoolHandle, wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
     ledger::sign_and_submit_request(pool_handle, wallet_handle, submitter_did, request_json).wait()
 }
 
-pub fn submit_request_with_retries(pool_handle: i32, request_json: &str, previous_response: &str) -> Result<String, IndyError> {
+pub fn submit_request_with_retries(pool_handle: PoolHandle, request_json: &str, previous_response: &str) -> Result<String, IndyError> {
     _submit_retry(extract_seq_no_from_reply(previous_response).unwrap(), || {
         submit_request(pool_handle, request_json)
     })
 }
 
-pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, IndyError> {
+pub fn submit_request(pool_handle: PoolHandle, request_json: &str) -> Result<String, IndyError> {
     ledger::submit_request(pool_handle, request_json).wait()
 }
 
-pub fn submit_action(pool_handle: i32, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, IndyError> {
+pub fn submit_action(pool_handle: PoolHandle, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, IndyError> {
     ledger::submit_action(pool_handle, request_json, nodes, timeout).wait()
 }
 
-pub fn sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+pub fn sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
     ledger::sign_request(wallet_handle, submitter_did, request_json).wait()
 }
 
-pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
+pub fn multi_sign_request(wallet_handle: WalletHandle, submitter_did: &str, request_json: &str) -> Result<String, IndyError> {
     ledger::multi_sign_request(wallet_handle, submitter_did, request_json).wait()
 }
 
@@ -74,6 +79,12 @@ fn _submit_retry<F>(minimal_timestamp: u64, submit_action: F) -> Result<String, 
     Ok(action_result)
 }
 
+pub fn calculate_hash(text: &str, version: &str) -> String {
+    let content: String = version.to_string() + text;
+    let digest = hash(content.as_bytes()).unwrap();
+    hex::encode(digest)
+}
+
 pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, IndyError> {
     ledger::build_get_ddo_request(submitter_did, target_did).wait()
 }
@@ -81,6 +92,10 @@ pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> R
 pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>,
                          alias: Option<&str>, role: Option<&str>) -> Result<String, IndyError> {
     ledger::build_nym_request(submitter_did, target_did, verkey, alias, role).wait()
+}
+
+pub fn parse_get_nym_response(get_nym_response: &str) -> Result<String, IndyError> {
+    ledger::parse_get_nym_response(get_nym_response).wait()
 }
 
 pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, IndyError> {
@@ -225,9 +240,15 @@ pub fn build_get_auth_rule_request(submitter_did: Option<&str>,
 }
 
 pub fn build_txn_author_agreement_request(submitter_did: &str,
-                                          text: &str,
-                                          version: &str) -> Result<String, IndyError> {
-    ledger::build_txn_author_agreement_request(submitter_did, text, version).wait()
+                                          text: Option<&str>,
+                                          version: &str,
+                                          ratification_ts: Option<u64>,
+                                          retirement_ts: Option<u64>) -> Result<String, IndyError> {
+    ledger::build_txn_author_agreement_request(submitter_did, text, version, ratification_ts, retirement_ts).wait()
+}
+
+pub fn build_disable_all_txn_author_agreements_request(submitter_did: &str) -> Result<String, IndyError> {
+    ledger::build_disable_all_txn_author_agreements_request(submitter_did).wait()
 }
 
 pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
@@ -236,15 +257,15 @@ pub fn build_get_txn_author_agreement_request(submitter_did: Option<&str>,
 }
 
 pub fn build_acceptance_mechanisms_request(submitter_did: &str,
-                                          aml: &str,
-                                          version: &str,
-                                          aml_context: Option<&str>) -> Result<String, IndyError> {
+                                           aml: &str,
+                                           version: &str,
+                                           aml_context: Option<&str>) -> Result<String, IndyError> {
     ledger::build_acceptance_mechanisms_request(submitter_did, aml, version, aml_context).wait()
 }
 
 pub fn build_get_acceptance_mechanisms_request(submitter_did: Option<&str>,
-                                              timestamp: Option<i64>,
-                                              version: Option<&str>) -> Result<String, IndyError> {
+                                               timestamp: Option<i64>,
+                                               version: Option<&str>) -> Result<String, IndyError> {
     ledger::build_get_acceptance_mechanisms_request(submitter_did, timestamp, version).wait()
 }
 
@@ -257,9 +278,14 @@ pub fn append_txn_author_agreement_acceptance_to_request(request_json: &str,
     ledger::append_txn_author_agreement_acceptance_to_request(request_json, text, version, taa_digest, acc_mech_type, time_of_acceptance).wait()
 }
 
+pub fn append_request_endorser(request_json: &str,
+                               endorser_did: &str) -> Result<String, IndyError> {
+    ledger::append_request_endorser(request_json, endorser_did).wait()
+}
+
 pub fn post_entities() -> (&'static str, &'static str, &'static str) {
     lazy_static! {
-                    static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
+                    static ref COMMON_ENTITIES_INIT: Once = Once::new();
 
                 }
 
@@ -281,7 +307,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
 
             let schema_request = build_schema_request(&issuer_did, &schema_json).unwrap();
             let schema_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
-            pool::check_response_type(&schema_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&schema_response, crate::utils::types::ResponseType::REPLY);
 
             let get_schema_request = build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
             let get_schema_response = submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
@@ -295,7 +321,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
                                                                                               Some(&anoncreds::revocation_cred_def_config())).unwrap();
             let cred_def_request = build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
             let cred_def_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
-            pool::check_response_type(&cred_def_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&cred_def_response, crate::utils::types::ResponseType::REPLY);
 
             let tails_writer_config = anoncreds::tails_writer_config();
             let tails_writer_handle = blob_storage::open_writer("default", &tails_writer_config).unwrap();
@@ -311,7 +337,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
 
             let rev_reg_def_request = build_revoc_reg_def_request(&issuer_did, &revoc_reg_def_json).unwrap();
             let rev_reg_def_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_def_request).unwrap();
-            pool::check_response_type(&rev_reg_def_response, ::utils::types::ResponseType::REPLY);
+            pool::check_response_type(&rev_reg_def_response, crate::utils::types::ResponseType::REPLY);
 
             let rev_reg_entry_request = build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &rev_reg_entry_json).unwrap();
             sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
@@ -335,5 +361,63 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
         });
 
         (SCHEMA_ID, CRED_DEF_ID, REV_REG_DEF_ID)
+    }
+}
+
+pub fn post_qualified_entities() -> (&'static str, &'static str) {
+    lazy_static! {
+                    static ref COMMON_ENTITIES_INIT: Once = Once::new();
+
+                }
+
+    unsafe {
+        COMMON_ENTITIES_INIT.call_once(|| {
+            let pool_and_wallet_name = "COMMON_ENTITIES_POOL";
+            super::test::cleanup_storage(pool_and_wallet_name);
+
+            let pool_handle = pool::create_and_open_pool_ledger(pool_and_wallet_name).unwrap();
+
+            let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(pool_and_wallet_name).unwrap();
+
+            let (issuer_did, _) = did::create_store_and_publish_my_did_from_trustee_v1(wallet_handle, pool_handle).unwrap();
+
+            let (schema_id, schema_json) = anoncreds::issuer_create_schema(&issuer_did,
+                                                                           GVT_SCHEMA_NAME,
+                                                                           SCHEMA_VERSION,
+                                                                           GVT_SCHEMA_ATTRIBUTES).unwrap();
+
+            let schema_request = build_schema_request(&issuer_did, &schema_json).unwrap();
+            let schema_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
+            pool::check_response_type(&schema_response, crate::utils::types::ResponseType::REPLY);
+
+            let get_schema_request = build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
+            let get_schema_response = submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
+            let (schema_id, schema_json) = parse_get_schema_response(&get_schema_response).unwrap();
+
+            let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(wallet_handle,
+                                                                                              &issuer_did,
+                                                                                              &schema_json,
+                                                                                              TAG_1,
+                                                                                              None,
+                                                                                              Some(&anoncreds::revocation_cred_def_config())).unwrap();
+            let cred_def_request = build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
+            let cred_def_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
+            pool::check_response_type(&cred_def_response, crate::utils::types::ResponseType::REPLY);
+
+            let res = mem::transmute(&schema_id as &str);
+            mem::forget(schema_id);
+            SCHEMA_ID_V2 = res;
+
+            let res = mem::transmute(&cred_def_id as &str);
+            mem::forget(cred_def_id);
+            CRED_DEF_ID_V2 = res;
+
+            pool::close(pool_handle).unwrap();
+            pool::delete(pool_and_wallet_name).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&wallet_config, WALLET_CREDENTIALS).unwrap();
+        });
+
+        (SCHEMA_ID_V2, CRED_DEF_ID_V2)
     }
 }

@@ -1,25 +1,19 @@
 import sys
-import asyncio
 import json
 import random
-from ctypes import cdll, CDLL
+from ctypes import cdll
 from time import sleep
 import platform
-
-import logging
 
 from indy import wallet
 from indy.error import ErrorCode, IndyError
 
-from vcx.api.connection import Connection
 from vcx.api.credential_def import CredentialDef
 from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.credential import Credential
 from vcx.api.proof import Proof
 from vcx.api.disclosed_proof import DisclosedProof
 from vcx.api.schema import Schema
-from vcx.api.utils import vcx_agent_provision, vcx_messages_download
-from vcx.api.vcx_init import vcx_init_with_config
 from vcx.state import State, ProofState
 
 
@@ -32,7 +26,6 @@ async def create_schema_and_cred_def(schema_uuid, schema_name, schema_attrs, cre
     print("#4 Create a new credential definition on the ledger")
     cred_def = await CredentialDef.create(creddef_uuid, creddef_name, schema_id, 0)
     cred_def_handle = cred_def.handle
-    cred_def_id = await cred_def.get_cred_def_id()
     cred_def_json = await cred_def.serialize()
     print(" >>> cred_def_handle", cred_def_handle)
 
@@ -273,3 +266,8 @@ async def create_postgres_wallet(provisionConfig):
         if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
             pass
     print("Postgres wallet provisioned")
+
+
+def load_payment_library():
+    payment_plugin = cdll.LoadLibrary('libnullpay' + file_ext())
+    payment_plugin.nullpay_init()

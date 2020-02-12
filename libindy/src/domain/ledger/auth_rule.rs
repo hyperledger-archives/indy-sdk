@@ -1,4 +1,5 @@
 use serde_json::Value;
+use std::ops::Not;
 
 use super::constants::{AUTH_RULE, AUTH_RULES, GET_AUTH_RULE};
 
@@ -36,16 +37,20 @@ pub enum Constraint {
    sig_count - The number of signatures required to execution action
    role - The role which the user must have to execute the action.
    metadata -  An additional parameters of the constraint (contains transaction FEE cost).
-   need_to_be_owner - The flag specifying if a user must be an owner of the transaction.
+   need_to_be_owner - The flag specifying if a user must be an owner of the transaction (false by default) .
+   off_ledger_signature - allow signature of unknow for ledger did (false by default).
 */
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct RoleConstraint {
-    pub sig_count: Option<u32>,
+    pub sig_count: u32,
     pub role: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub need_to_be_owner: Option<bool>,
+    #[serde(default)]
+    pub need_to_be_owner: bool,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Not::not")]
+    pub off_ledger_signature: bool,
 }
 
 /**
@@ -210,6 +215,21 @@ pub struct AddAuthRuleData {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct EditAuthRuleData {
     pub auth_type: String,
+    pub field: String,
+    pub old_value: Option<String>,
+    pub new_value: Option<String>,
+    pub constraint: Constraint,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct GetAuthRuleResult {
+    pub data: Vec<AuthRule>
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct AuthRule {
+    pub auth_type: String,
+    pub auth_action: String,
     pub field: String,
     pub old_value: Option<String>,
     pub new_value: Option<String>,

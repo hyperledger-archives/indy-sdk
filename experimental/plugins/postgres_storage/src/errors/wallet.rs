@@ -1,5 +1,3 @@
-extern crate indy_crypto;
-
 use std::error;
 use std::error::Error;
 use std::io;
@@ -78,7 +76,7 @@ impl error::Error for WalletError {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             WalletError::InvalidHandle(_) => None,
             WalletError::UnknownType(_) => None,
@@ -182,6 +180,7 @@ pub enum WalletStorageError {
     PluggedStorageError(ErrorCode),
     CommonError(CommonError),
     QueryError(WalletQueryError),
+    GenericError(String)
 }
 
 impl From<postgres::error::Error> for WalletStorageError {
@@ -237,6 +236,8 @@ impl error::Error for WalletStorageError {
             WalletStorageError::IOError(ref s) => s,
             WalletStorageError::CommonError(ref e) => e.description(),
             WalletStorageError::QueryError(ref e) => e.description(),
+            WalletStorageError::GenericError(ref s) => s,
+
         }
     }
 }
@@ -252,7 +253,8 @@ impl fmt::Display for WalletStorageError {
             WalletStorageError::IOError(ref s) => write!(f, "IO error occurred during storage operation: {}", s),
             WalletStorageError::PluggedStorageError(err_code) => write!(f, "Plugged storage error: {}", err_code as i32),
             WalletStorageError::CommonError(ref e) => write!(f, "Common error: {}", e.description()),
-            WalletStorageError::QueryError(ref e) => write!(f, "Query error: {}", e.description())
+            WalletStorageError::QueryError(ref e) => write!(f, "Query error: {}", e.description()),
+            WalletStorageError::GenericError(ref s) =>  write!(f, "Generic postgresql error: {}", s)
         }
     }
 }

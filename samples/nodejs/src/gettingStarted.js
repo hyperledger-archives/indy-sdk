@@ -48,7 +48,7 @@ async function run() {
         'seed': '000000000000000000000000Steward1'
     };
 
-    let [stewardDid, stewardKey] = await indy.createAndStoreMyDid(stewardWallet, stewardDidInfo);
+    let [stewardDid,] = await indy.createAndStoreMyDid(stewardWallet, stewardDidInfo);
 
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Government Onboarding  ==");
@@ -243,8 +243,9 @@ async function run() {
     console.log("------------------------------");
 
     console.log("\"Acme\" -> Create \"Job-Application\" Proof Request");
+    let nonce = await indy.generateNonce()
     let jobApplicationProofRequestJson = {
-        'nonce': '1432422343242122312411212',
+        'nonce': nonce,
         'name': 'Job-Application',
         'version': '0.1',
         'requested_attributes': {
@@ -439,8 +440,9 @@ async function run() {
     console.log("------------------------------");
 
     console.log("\"Thrift\" -> Create \"Loan-Application-Basic\" Proof Request");
+    nonce = await indy.generateNonce()
     let applyLoanProofRequestJson = {
-        'nonce': '123432421212',
+        'nonce': nonce,
         'name': 'Loan-Application-Basic',
         'version': '0.1',
         'requested_attributes': {
@@ -540,8 +542,9 @@ async function run() {
     console.log("------------------------------");
 
     console.log("\"Thrift\" -> Create \"Loan-Application-KYC\" Proof Request");
+    nonce = await indy.generateNonce()
     let applyLoanKycProofRequestJson = {
-        'nonce': '123432421212',
+        'nonce': nonce,
         'name': 'Loan-Application-KYC',
         'version': '0.1',
         'requested_attributes': {
@@ -608,8 +611,8 @@ async function run() {
     console.log("\"Alice\" -> Send authcrypted \"Loan-Application-KYC\" Proof to Thrift");
 
     console.log("\"Thrift\" -> Authdecrypted \"Loan-Application-KYC\" Proof from Alice");
-    let authdecryptedAliceApplyLoanKycProofJson, authdecryptedAliceApplyLoanKycProof;
-    [, authdecryptedAliceApplyLoanKycProofJson, authdecryptedAliceApplyLoanKycProof] = await authDecrypt(thriftWallet, thriftAliceKey, authcryptedAliceApplyLoanKycProofJson);
+    let authdecryptedAliceApplyLoanKycProof;
+    [, authdecryptedAliceApplyLoanKycProof] = await authDecrypt(thriftWallet, thriftAliceKey, authcryptedAliceApplyLoanKycProofJson);
 
     console.log("\"Thrift\" -> Get Schemas, Credential Definitions and Revocation Registries from Ledger required for Proof verifying");
 
@@ -671,7 +674,7 @@ async function onboarding(poolHandle, From, fromWallet, fromDid, to, toWallet, t
     if (!toWallet) {
         console.log(`\"${to}\" > Create wallet"`);
         try {
-            await indy.createWallet(toWalletConfig, toWalletCredentials)
+            await indy.createWallet(toWalletConfig, toWalletCredentials);
         } catch(e) {
             if(e.message !== "WalletAlreadyExistsError") {
                 throw e;
@@ -737,7 +740,7 @@ async function getVerinym(poolHandle, From, fromWallet, fromDid, fromToKey, to, 
     console.log(`\"${From}\" > Send Nym to Ledger for \"${to} DID\" with ${role} Role`);
     await sendNym(poolHandle, fromWallet, fromDid, authdecryptedDidInfoJson['did'], authdecryptedDidInfoJson['verkey'], role);
 
-    return toDid
+    return toDid;
 }
 
 async function sendNym(poolHandle, walletHandle, Did, newDid, newKey, role) {

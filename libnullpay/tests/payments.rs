@@ -1014,4 +1014,42 @@ mod medium_cases {
             test_utils::tear_down();
         }
     }
+
+    mod verify_sign_with_address {
+        use super::*;
+
+        #[test]
+        pub fn sign_with_address_and_check() {
+            test_utils::setup();
+
+            plugin::init_plugin();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
+
+            let payment_address = payments::create_payment_address(wallet_handle, PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
+            assert!(payment_address.starts_with("pay:null:"));
+
+            let data = b"Please sign this with your address";
+            let res = payments::sign_with_address(wallet_handle, &payment_address, data);
+            assert!(res.is_ok());
+
+            let signature = res.unwrap();
+            let res = payments::verify_with_address(&payment_address, data, signature.as_slice());
+            assert!(res.is_ok());
+            assert!(res.unwrap());
+
+            let data = b"Another message that wasn't signed";
+            let res = payments::verify_with_address(&payment_address, data, signature.as_slice());
+
+            assert!(res.is_ok());
+            assert!(!res.unwrap());
+
+            //Invalid payment address
+            let res = payments::sign_with_address(wallet_handle, "pay:fun:78912hjggehjkdasg", data);
+            assert!(res.is_err());
+
+            wallet::close_wallet(wallet_handle).unwrap();
+            test_utils::tear_down();
+
+        }
+    }
 }

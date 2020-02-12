@@ -6,6 +6,7 @@ import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,7 +39,7 @@ public class IndyIntegrationTest {
 	protected static final String INVALID_DID = "invalid_base58string";
 	protected static final String IDENTITY_JSON_TEMPLATE = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 	protected static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
-	protected static final String SCHEMA_DATA = "{\"id\":\"id\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
+	protected static final String SCHEMA_DATA = "{\"id\":\"1\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
 	protected static final String WALLET = "Wallet1";
 	protected static final String TYPE = "default";
 	protected static final String METADATA = "some metadata";
@@ -84,12 +85,20 @@ public class IndyIntegrationTest {
 	private static final String EXPORT_KEY = "export_key";
 	protected static final String EXPORT_PATH = getTmpPath("export_wallet");
 	protected static final String EXPORT_CONFIG_JSON = "{ \"key\":\"" + EXPORT_KEY + "\", \"path\":\"" + EXPORT_PATH + "\"}";
+	protected static final JSONObject REQUEST = new JSONObject()
+			.put("reqId", 149682221)
+			.put("identifier", "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL")
+			.put("operation", new JSONObject()
+					.put("type", "1")
+					.put("dest", "VsKV7grR1BUE29mG2Fm2kX")
+					.put("verkey", "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
+	);
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Rule
-	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
+	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
 	@Before
 	public void setUp() throws Exception {

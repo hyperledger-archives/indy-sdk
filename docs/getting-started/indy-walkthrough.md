@@ -35,9 +35,17 @@ If the concepts of cryptography and blockchain details feel mysterious, fear not
 
 Our goal is to introduce you to many of the concepts of Indy and give you some idea of what happens behind the scenes to make it all work.
 
-We're going to frame the exploration with a story. Alice, a graduate of the fictional Faber College, wants to apply for a job at the fictional company Acme Corp. As soon as she has the job, she wants to apply for a loan in Thrift Bank so she can buy a car. She would like to use her college transcript as proof of her education on the job application and once hired, Alice would like to use the fact of employment as evidence of her creditworthiness for the loan.
+**Please take note** that we are not going to cover how sides set up connection and interact with each other as part of this tutorial.
+We assume that already there is established some communication channel between each pair and this channel can be used for message exchange.
+Instead of message sending we will just use construction like:
+```
+    faber['alice_reply'] = alice['reply']
+    alice['faber_response'] = faber['response']
+```
 
-The sorts of identity and trust interactions required to pull this off are messy in the world today; they are slow, they violate privacy, and they are susceptible to fraud. We’ll show you how Indy is a quantum leap forward.
+How this communication channel can be built you can find at [Aries](https://github.com/hyperledger/aries) project which describes it in great details.
+
+We're going to frame the exploration with a story. Alice, a graduate of the fictional Faber College, wants to apply for a job at the fictional company Acme Corp. As soon as she has the job, she wants to apply for a loan in Thrift Bank so she can buy a car. She would like to use her college transcript as proof of her education on the job application and once hired, Alice would like to use the fact of employment as evidence of her creditworthiness for the loan.
 
 Ready?
 
@@ -63,7 +71,7 @@ Faber College and other actors have done some preparation to offer this service 
 
 The ledger is intended to store **Identity Records** that describe a **Ledger Entity**. Identity Records are public data and may include Public Keys, Service Endpoints, Credential Schemas, and Credential Definitions. Every **Identity Record** is associated with exactly one **DID** (Decentralized Identifier) that is globally unique and resolvable (via a ledger) without requiring any centralized resolution authority. To maintain privacy each **Identity Owner** can own multiple DIDs.
 
-In this tutorial we will use two types of DIDs. The first one is a **Verinym**. A **Verinym** is associated with the **Legal Identity** of the **Identity Owner**. For example, all parties should be able to verify that some DID is used by a Government to publish schemas for some document type. The second type is a **Pseudonym** - a **Blinded Identifier** used to maintain privacy in the context of an ongoing digital relationship (**Connection**). If the Pseudonym is used to maintain only one digital relationship we will call it a Pairwise-Unique Identifier. We will use Pairwise-Unique Identifiers to maintain secure connections between actors in this tutorial.
+In this tutorial we will use a **Verinym** as DIDs. A **Verinym** is associated with the **Legal Identity** of the **Identity Owner**. For example, all parties should be able to verify that some DID is used by a Government to publish schemas for some document type.
 
 The creation of a DID known to the Ledger is an **Identity Record** itself (NYM transaction). The NYM transaction can be used for creation of new DIDs that is known to that ledger, the setting and rotation of a verification key, and the setting and changing of roles. The most important fields of this transaction are `dest` (target DID), `role` (role of a user NYM record being created for) and the `verkey` (target verification key). See [Requests](https://github.com/hyperledger/indy-node/blob/master/docs/source/requests.md) to get more information about supported ledger transactions.
 
@@ -128,128 +136,25 @@ After the wallet is opened we can create a DID record in this wallet by calling 
 
 **Please note:** We provided only information about the seed to ``did.create_and_store_my_did``, but not any information about the Steward's DID. By default DID's are generated as the first 16 bytes of the verkey. For such DID's, when dealing with operations that require both a DID and the verkey we can use the verkey in an abbreviated form. In this form the verkey starts with a tilde '~' followed by 22 or 23 characters. The tilde indicates that the DID itself represents the first 16 bytes of the verkey and the string following the tilde represents the second 16 bytes of the verkey, both using base58Check encoding.
 
-### Step 4: Onboarding Faber, Acme, Thrift and Government by Steward
+### Step 4: Getting Verinym for Faber, Acme, Thrift and Government by Steward
+
+Remind that in this tutorial we assume that already there is established some communication channel between each pair and this channel can be used for message exchange.
+How this communication channel can be built you can find at [Aries](https://github.com/hyperledger/aries) project which describes it in great details.
 
 **Faber, Acme, Thrift and Government should now establish a Connection with the Steward.**
 
-Each connection is actually a pair of Pairwise-Unique Identifiers (DIDs). The one DID is owned by one party to the connection and the second by another.
+#### Getting Verinym
 
-Both parties know both DIDs and understand what connection this pair describes.
+After the connection is established **Faber** must create a new DID record that he will use as Verinym in the Ledger.
 
-The relationship between them is not shareable with others; it is unique to those two parties in that each pairwise relationship uses different DIDs.
-
-We call the process of establish a connection **Onboarding**.
-
-In this tutorial we will describe the simple version of onboarding process.
-In our case, one party will always be the Trust Anchor. Real enterprise scenarios can use a more complex version.
-
-#### Connecting the Establishment
-Let's look the process of connection establishment between **Steward** and **Faber College**.
-
-1. **Faber** and **Steward** contact in some way to initiate onboarding process.
-   It can be filling the form on web site or a phone call.
-
-2. **Steward** creates a new DID record in the wallet by calling ``did.create_and_store_my_did`` that he will use for secure interactions only with **Faber**.
-    ```python
-    # Steward Agent
-    (steward['did_for_faber'], steward['key_for_faber']) = await did.create_and_store_my_did(steward['wallet'], "{}")
-    ```
-
-3. **Steward** sends the corresponding `NYM` transaction to the Ledger by consistently calling ``ledger.build_nym_request`` to build the NYM request and ``ledger.sign_and_submit_request`` to send the created request.
-    ```python
-    # Steward Agent
-    nym_request = await ledger.build_nym_request(steward['did'], steward['did_for_faber'], steward['key_for_faber'], None, role)
-    await ledger.sign_and_submit_request(steward['pool'], steward['wallet'], steward['did'], nym_request)
-    ```
-
-4. **Steward** creates the connection request which contains the created `DID` and `Nonce`.
-   This nonce is just a big random number generated to track the unique connection request. A nonce is a random arbitrary number that can only be used one time. When a connection request is accepted, the invitee digitally signs the nonce so that the inviter can match the response with a prior request.
-    ```python
-    # Steward Agent
-    connection_request = {
-        'did': steward['did_for_faber'],
-        'nonce': 123456789
-    }
-    ```
-
-5. **Steward** sends the connection request to **Faber**.
-
-6. **Faber** accepts the connection request from **Steward**.
-
-7. **Faber** creates a wallet if it does not exist yet.
+1. **Faber** creates a wallet if it does not exist yet.
     ```python
     # Faber Agent
     await wallet.create_wallet(faber['wallet_config'], faber['wallet_credentials'])
     faber['wallet'] = await wallet.open_wallet(faber['wallet_config'], faber['wallet_credentials'])
     ```
-
-8. **Faber** creates a new DID record in its wallet by calling ``did.create_and_store_my_did`` that it will use only for secure interactions with the **Steward**.
-    ```python
-    # Faber Agent
-    (faber['did_for_steward'], faber['key_for_steward']) = await did.create_and_store_my_did(faber['wallet'], "{}")
-    ```
-
-9. **Faber** creates the connection response which contains the created `DID`, `Verkey` and `Nonce` from the received connection request.
-    ```python
-    # Faber Agent
-    connection_response = json.dumps({
-        'did': faber['did_for_steward'],
-        'verkey': faber['key_for_steward'],
-        'nonce': connection_request['nonce']
-    })
-    ```
-
-10. **Faber** asks the ledger for the Verification key of the **Steward's** DID by calling ``did.key_for_did``.
-    ```python
-    # Faber Agent
-    faber['steward_key_for_faber'] = await did.key_for_did(faber['pool'], faber['wallet'], connection_request['did'])
-    ```
-
-11. **Faber** anonymously encrypts the connection response by calling ``crypto.anon_crypt`` with the **Steward** verkey.
-   The Anonymous-encryption schema is designed for the sending of messages to a Recipient which has been given its public key. Only the Recipient can decrypt these messages, using its private key. While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-    ```python
-    # Faber Agent
-    anoncrypted_connection_response = await crypto.anon_crypt(faber['steward_key_for_faber'], connection_response.encode('utf-8'))
-    ```
-
-12. **Faber** sends the anonymously encrypted connection response to the **Steward**.
-
-13. **Steward** anonymously decrypts the connection response by calling ``crypto.anon_decrypt``.
-    ```python
-    # Steward Agent
-    decrypted_connection_response = \
-        (await crypto.anon_decrypt(steward['wallet'], steward['key_for_faber'], anoncrypted_connection_response)).decode("utf-8")
-    ```
-
-14. **Steward** authenticates **Faber** by the comparison of Nonce.
-    ```python
-    # Steward Agent
-    assert connection_request['nonce'] == decrypted_connection_response['nonce']
-    ```
-
-15. **Steward** sends the `NYM` transaction for **Faber's** DID to the Ledger.
-Please note that despite the fact that the Steward is the sender of this transaction the owner of the DID will be Faber as it uses the verkey as provided by Faber.
-    ```python        
-    # Steward Agent
-    nym_request = await ledger.build_nym_request(steward['did'], decrypted_connection_response['did'], decrypted_connection_response['verkey'], None, role)
-    await ledger.sign_and_submit_request(steward['pool'], steward['wallet'], steward['did'], nym_request)
-    ```
-
-At this point **Faber** is connected to the **Steward** and can interact in a secure peer-to-peer way. **Faber** can trust the response is from **Steward** because:
-
-* it connects to the current endpoint
-* no replay - attack is possible, due to her random challenge
-* it knows the verification key used to verify **Steward** digital signature is the correct one because it just confirmed it on the ledger
-
-**Note:** All parties must not use the same DID's to establish other relationships.
-By having independent pairwise relationships, you're reducing the ability for others to correlate your activities across multiple interactions.
-
-#### Getting Verinym
-
-It is important to understand that earlier created **Faber** DID is not, in and of itself, the same thing as self-sovereign identity. This DID must be used only for secure interaction with the **Steward**.
-After the connection is established **Faber** must create a new DID record that he will use as Verinym in the Ledger.
-
-1. **Faber** creates a new DID in its wallet by calling ``did.create_and_store_my_did``.
+    
+2. **Faber** creates a new DID in its wallet by calling ``did.create_and_store_my_did``.
     ```python        
     # Faber Agent
     (faber['did'], faber['key']) = await did.create_and_store_my_did(faber['wallet'], "{}")
@@ -264,46 +169,22 @@ After the connection is established **Faber** must create a new DID record that 
     })
     ```
 
-3. **Faber** authenticates and encrypts the message by calling ``crypto.auth_crypt`` function, which is an implementation of the authenticated-encryption schema. Authenticated encryption is designed for sending of a confidential message specifically for the Recipient. The Sender can compute a shared secret key using the Recipient's public key (verkey) and his secret (signing) key. The Recipient can compute exactly the same shared secret key using the Sender's public key (verkey) and his secret (signing) key. That shared secret key can be used to verify that the encrypted message was not tampered with, before eventually decrypting it.
-    ```python        
-    # Faber Agent
-    authcrypted_faber_did_info_json = \
-        await crypto.auth_crypt(faber['wallet'], faber['key_for_steward'], faber['steward_key_for_faber, faber['did_info'].encode('utf-8'))
+3. **Faber** sends the message to the **Steward**.
+    ```python
+    steward['faber_info'] = faber['did_info']       
     ```
 
-4. **Faber** sends the encrypted message to the **Steward**.
-
-5. **Steward** decrypts the received message by calling ``crypto.auth_decrypt``.
-    ```python        
-    # Steward Agent    
-    sender['faber_key_for_steward'], authdecrypted_faber_did_info_json = \
-        await crypto.auth_decrypt(steward['wallet'], steward['key_for_faber'], authcrypted_faber_did_info_json)
-    faber_did_info = json.loads(authdecrypted_faber_did_info_json)
-    ```
-
-6. **Steward** asks the ledger for the Verification key of **Faber's** DID by calling ``did.key_for_did``.
-    ```python        
-    # Steward Agent    
-    steward['faber_key_for_steward'] = await did.key_for_did(steward['pool'], steward['wallet'], ['faber_did_for_steward'])
-    ```
-
-7. **Steward** authenticates **Faber** by comparison of the Message Sender Verkey and the **Faber** Verkey received from the Ledger.
-    ```python        
-    # Steward Agent    
-    assert sender_verkey == steward['faber_key_for_steward']
-    ```
-
-8. **Steward** sends the corresponded NYM transaction to the Ledger with `TRUST ANCHOR` role.
+4. **Steward** sends the corresponded NYM transaction to the Ledger with `TRUST ANCHOR` role.
 Please note that despite the fact that the Steward is the sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
     ```python    
     # Steward Agent
-    nym_request = await ledger.build_nym_request(steward['did'], decrypted_faber_did_info_json['did'],
-                                                 decrypted_faber_did_info_json['verkey'], None, 'TRUST_ANCHOR')
+    nym_request = await ledger.build_nym_request(steward['did'], steward['faber_info']['did'],
+                                                 steward['faber_info']['verkey'], None, 'TRUST_ANCHOR')
     await ledger.sign_and_submit_request(steward['pool'], steward['wallet'], steward['did'], nym_request)
     ```
 At this point **Faber** has a DID related to his identity in the Ledger.
 
-**Acme**, **Thrift Bank**, and **Government** must pass the same Onboarding process connection establishment with **Steward**.
+**Acme**, **Thrift Bank**, and **Government** must pass the same process of getting Verinym.
 
 ### Step 5: Credential Schemas Setup
 
@@ -462,9 +343,9 @@ After **Faber College** had established a connection with Alice, it created for 
 ```python
   # Faber Agent
   faber['transcript_cred_offer'] = await anoncreds.issuer_create_credential_offer(faber['wallet'], faber['transcript_cred_def_id'])
+  
+  alice['transcript_cred_offer'] = faber['transcript_cred_offer']
 ```
-
-**Note:** All messages sent between actors are encrypted using `Authenticated-encryption` scheme.
 
 The value of this **Transcript** Credential is that it is provably issued by **Faber College**.
 
@@ -510,6 +391,8 @@ Now Alice has everything to create a Credential Request of the issuance of the *
     (alice['transcript_cred_request'], alice['transcript_cred_request_metadata']) = \
         await anoncreds.prover_create_credential_req(alice['wallet'], alice['did_for_faber'], alice['transcript_cred_offer'],
                                                      alice['transcript_cred_def'], alice['master_secret_id'])
+                                                     
+  faber['transcript_cred_request'] = alice['transcript_cred_request']
 ```
 
 **Faber** prepares both raw and encoded values for each attribute in the **Transcript** Credential Schema.
@@ -527,9 +410,11 @@ Now Alice has everything to create a Credential Request of the issuance of the *
       "average": {"raw": "5", "encoded": "5"}
   })
 
-  faber['transcript_cred_def'], _, _ = \
+  faber['transcript_cred'], _, _ = \
       await anoncreds.issuer_create_credential(faber['wallet'], faber['transcript_cred_offer'], faber['transcript_cred_request'],
                                                transcript_cred_values, None, None)
+                                               
+  alice['transcript_cred'] = faber['transcript_cred']
 ```
 
 Now the **Transcript** Credential has been issued. Alice stores it in her wallet.
@@ -594,6 +479,8 @@ In this case, **Job-Application** Proof Request looks like:
           }
       }
   })
+  
+  alice['job_application_proof_request'] = acme['transcript_cred']
 ```
 
 Notice that some attributes are verifiable and some are not.
@@ -662,6 +549,8 @@ Now Alice has everything to create the Proof for **Acme Job-Application** Proof 
   alice['apply_job_proof'] = \
         await anoncreds.prover_create_proof(alice['wallet'], alice['job_application_proof_request'], alice['job_application_requested_creds'],
                                             alice['master_secret_id'], alice['schemas'], alice['cred_defs'], alice['revoc_states'])
+
+  acme['apply_job_proof'] = alice['apply_job_proof']
 ```
 
 When **Acme** inspects the received Proof he will see following structure:
@@ -710,6 +599,8 @@ Here, we’ll assume the application is accepted and Alice ends up getting the j
 ```python
   # Acme Agent
   acme['job_certificate_cred_offer'] = await anoncreds.issuer_create_credential_offer(acme['wallet'], acme['job_certificate_cred_def_id'])
+  
+  alice['job_certificate_cred_offer'] = acme['job_certificate_cred_offer']
 ```
 
 When Alice inspects her connection with Acme, she sees that a new Credential Offer is available.
@@ -723,9 +614,11 @@ Alice goes through a familiar sequence of interactions.
 1. First she creates a Credential Request.
  ```python  
   # Alice Agent
-    (alice['job_certificate_cred_request'], alice['job_certificate_cred_request_metadata']) = \
+  (alice['job_certificate_cred_request'], alice['job_certificate_cred_request_metadata']) = \
         await anoncreds.prover_create_credential_req(alice['wallet'], alice['did_for_acme'], alice['job_certificate_cred_offer'],
                                                      alice['acme_job_certificate_cred_def'], alice['master_secret_id'])
+
+  acme['job_certificate_cred_request'] = alice['job_certificate_cred_request']
  ```
 
  2. Acme issues a **Job-Certificate** Credential for Alice.
@@ -752,6 +645,8 @@ One difference with the ussuance of the Transcript by Faber here is that a **Job
                                                  acme['job_certificate_cred_values'],
                                                  acme['revoc_reg_id'],
                                                  acme['blob_storage_reader_cfg_handle'])
+                                                 
+    alice['job_certificate_cred'] = acme['job_certificate_cred']
 ```
 
 Furthermore **Acme** must publish a revocation registry entry on the Ledger so other parties can verify later the revocation state of the credential.
@@ -818,6 +713,8 @@ Alice gets a **Loan-Application-Basic** Proof Request from Thrift Bank that look
       },
       'non_revoked': {'to': int(time.time())}
   })
+  
+  alice['apply_loan_proof_request'] = thrift['apply_loan_proof_request']
 ```
 The last line indicates that the *Job-Certificate* provided should not be revoked by the application time. 
 
@@ -866,6 +763,8 @@ Alice creates the Proof for the **Loan-Application-Basic** Proof Request.
                                                 alice['apply_loan_requested_creds'], alice['master_secret_id'],
                                                 alice['schemas_for_loan_app'], alice['cred_defs_for_loan_app'],
                                                 alice['revoc_states_for_loan_app'])
+
+  thrift['apply_loan_proof'] = alice['apply_loan_proof']
 ```
 
 Alice sends just the **Loan-Application-Basic** proof to the bank.
@@ -921,6 +820,8 @@ Thrift Bank sends the second Proof Request where Alice needs to share her person
       },
       'requested_predicates': {}
   })
+  
+  alice['apply_loan_kyc_proof_request'] = thrift['apply_loan_kyc_proof_request']
 ```
 
 Alice has two credentials that meets the proof requirements for this **Loan-Application-KYC** Proof Request.
@@ -978,6 +879,8 @@ Alice creates the Proof for **Loan-Application-KYC** Proof Request.
   alice['apply_loan_kyc_proof'] = \
       await anoncreds.prover_create_proof(alice['wallet'], alice['apply_loan_kyc_proof_request'], alice['apply_loan_kyc_requested_creds'],
                                           alice['alice_master_secret_id'], alice['schemas'], alice['cred_defs'], alice['revoc_states'])
+
+  thrift['apply_loan_kyc_proof'] = alice['apply_loan_kyc_proof']
 ```
 
 When **Thrift** inspects the received Proof he will see following structure:
