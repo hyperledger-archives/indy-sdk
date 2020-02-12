@@ -69,6 +69,7 @@ public enum ErrorCode {
     CREATE_CREDENTIAL_REQUEST_ERROR(1055),
     CREATE_PROOF_ERROR(1056),
     ACTION_NOT_SUPPORTED(1103),
+    INVALID_REDIRECT_DETAILS(1104),
     UNIDENTIFIED_ERROR_CODE(9999); //Wrapper expects to never receive 9999 from libindy. If libindy ever reaches this number in error codes, please increment number in UNIDENTIFIED_ERROR_CODE(<new bigger number>)
 
     private int value;

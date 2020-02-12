@@ -105,6 +105,16 @@ public abstract class LibVcx {
         public int vcx_connection_connect(int command_handle, int connection_handle, String connection_type, Callback cb);
 
         /**
+         * Asynchronously request a connection to be redirected to old one.
+         */
+        public int vcx_connection_redirect(int command_handle, int connection_handle, int redirect_connection_handle, Callback cb);
+
+        /**
+         * Get the redirect details for the connection.
+         */
+        public int vcx_connection_get_redirect_details(int command_handle, int connection_handle, Callback cb);
+
+        /**
          * Returns the contents of the connection handle or null if the connection does not exist.
          */
         public int vcx_connection_serialize(int command_handle, int connection_handle, Callback cb);
@@ -496,6 +506,9 @@ public abstract class LibVcx {
 
         /** Get messages for given uids or pairwise did from agency endpoint */
         public int vcx_messages_download(int command_handle, String messageStatus, String uids, String pwdids, Callback cb);
+
+        /** Get messages for given uids from Cloud Agent */
+        public int vcx_download_agent_messages(int command_handle, String messageStatus, String uids, Callback cb);
 
         /** Update message status for a object of uids */
         public int vcx_messages_update_status(int command_handle, String messageStatus, String msgJson, Callback cb);

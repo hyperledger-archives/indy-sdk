@@ -166,6 +166,8 @@ export interface IFFIEntryPoint {
                                      cb: any) => number,
   vcx_disclosed_proof_get_proof_msg: (commandId: number, handle: number, cb: any) => number,
   vcx_disclosed_proof_get_reject_msg: (commandId: number, handle: number, cb: any) => number,
+  vcx_connection_redirect: (commandId: number, connectionHandle: number, redirectConnectionHandle: number, cb: any) => number,
+  vcx_connection_get_redirect_details: (commandId: number, handle: number, cb: any) => number,
   vcx_disclosed_proof_serialize: (commandId: number, handle: number, cb: any) => number,
   vcx_disclosed_proof_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_disclosed_proof_update_state: (commandId: number, handle: number, cb: any) => number,
@@ -318,6 +320,9 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
                                            FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_connection_get_pw_did: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_get_their_pw_did: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_connection_redirect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_HANDLE,
+    FFI_CALLBACK_PTR]],
+  vcx_connection_get_redirect_details: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
 
   // issuer
   vcx_issuer_credential_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],

@@ -332,10 +332,11 @@ def iosTesting() {
                     sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
                     sh "cp libindy/out_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
 
-                    dir('wrappers/ios/libindy-pod') {
-                        echo "iOS Test: Testing"
-                        sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
-                    }
+                    // FIXME restore Xcode testing
+//                    dir('wrappers/ios/libindy-pod') {
+//                        echo "iOS Test: Testing"
+//                        sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
+//                    }
                 }
             } finally {
                 try {

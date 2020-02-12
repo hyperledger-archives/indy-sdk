@@ -233,7 +233,7 @@ vcx_error_t vcx_issuer_accept_credential(vcx_credential_handle_t credential_hand
 
 /** Creates a proof object.  Populates a handle to the new proof. */
 vcx_error_t vcx_proof_create(vcx_command_handle_t command_handle, const char *source_id, const char *requested_attrs, const char *requested_predicates, const char *name, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
-    
+
 /** Asynchronously send a proof request to the connection. */
 vcx_error_t vcx_proof_send_request(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
@@ -282,6 +282,12 @@ vcx_error_t vcx_disclosed_proof_get_proof_msg(vcx_command_handle_t command_handl
 /** Get proof reject msg */
 vcx_error_t vcx_disclosed_proof_get_reject_msg(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *msg));
 
+/** Asynchronously redirect a connection. */
+vcx_error_t vcx_connection_redirect(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, vcx_connection_handle_t redirect_connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
+/** Get redirect details. */
+vcx_error_t vcx_connection_get_redirect_details(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *details));
+
 /** Populates status with the current state of this disclosed_proof request. */
 vcx_error_t vcx_disclosed_proof_update_state(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
 
@@ -299,10 +305,10 @@ vcx_error_t vcx_disclosed_proof_deserialize(vcx_command_handle_t command_handle,
 
 /** Takes the disclosed proof object and returns a json string of all credentials matching associated proof request from wallet */
 vcx_error_t vcx_disclosed_proof_retrieve_credentials(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *matching_credentials));
-    
+
 /** Takes the disclosed proof object and generates a proof from the selected credentials and self attested attributes */
 vcx_error_t vcx_disclosed_proof_generate_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, const char *selected_credentials, const char *self_attested_attrs, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
-    
+
 /** Releases the disclosed_proof from memory. */
 vcx_error_t vcx_disclosed_proof_release(vcx_proof_handle_t proof_handle);
 
@@ -365,14 +371,14 @@ vcx_error_t vcx_wallet_delete_record(vcx_command_handle_t chandle, const char * 
 
 /** Update a record in wallet if it is already added */
 vcx_error_t vcx_wallet_update_record_value(vcx_command_handle_t chandle, const char *type_, const char *record_id, const char *record_value, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
-    
+
 /**
  * token object
  */
 
 /** Create payment address for using tokens */
 vcx_error_t vcx_wallet_create_payment_address(vcx_command_handle_t chandle, const char *seed, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *address));
-    
+
 /** Get wallet token info which contains balance and addresses */
 vcx_error_t vcx_wallet_get_token_info(vcx_command_handle_t chandle, vcx_payment_handle_t payment_handle, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *token_info));
 
@@ -382,8 +388,11 @@ vcx_error_t vcx_wallet_send_tokens(vcx_command_handle_t chandle, vcx_payment_han
 /** Shutdown vcx wallet */
 vcx_error_t vcx_shutdown(vcx_bool_t deleteWallet);
 
-/** Get Messages of given status */
+/** Get Messages (Connections) of given status */
 vcx_error_t vcx_messages_download( vcx_command_handle_t command_handle, const char *message_status, const char *uids, const char *pw_dids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));
+
+/** Get Messages (Cloud Agent) of given status */
+vcx_error_t vcx_download_agent_messages( vcx_command_handle_t command_handle, const char *message_status, const char *uids, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *messages));
 
 /** Update Message status */
 vcx_error_t vcx_messages_update_status( vcx_command_handle_t command_handle, const char *message_status, const char *msg_json, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
