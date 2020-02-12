@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::sync::{Mutex, MutexGuard};
 use std::thread;
 
-use futures::{SinkExt, StreamExt};
+use futures::StreamExt;
 use futures::channel::mpsc::{unbounded, UnboundedSender};
 use futures::executor::block_on;
 
@@ -229,8 +229,8 @@ impl CommandExecutor {
     }
 
     pub fn send(&mut self, cmd: Command) -> IndyResult<()> {
-        block_on(self.sender
-            .send(cmd))
+        self.sender
+            .unbounded_send(cmd)
             .map_err(|err| err_msg(IndyErrorKind::InvalidState, format!("Can't send msg to CommandExecutor: {}", err)))
     }
 }
