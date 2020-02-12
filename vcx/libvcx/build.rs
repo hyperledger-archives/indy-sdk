@@ -6,7 +6,6 @@ use std::path::Path;
 
 extern crate toml;
 
-#[macro_use]
 extern crate serde_derive;
 
 // error in rust compiler.  Bugfix requested in Sept. 2017
