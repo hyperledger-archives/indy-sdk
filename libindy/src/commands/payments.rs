@@ -144,35 +144,35 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::CreateAddress(wallet_handle, type_, config, cb) => {
                 debug!(target: "payments_command_executor", "CreateAddress command received");
-                self.create_address(wallet_handle, &type_, &config, cb).await;
+                cb(self.create_address(wallet_handle, &type_, &config).await);
             }
             PaymentsCommand::ListAddresses(wallet_handle, cb) => {
                 debug!(target: "payments_command_executor", "ListAddresses command received");
-                self.list_addresses(wallet_handle, cb);
+                cb(self.list_addresses(wallet_handle));
             }
             PaymentsCommand::AddRequestFees(wallet_handle, submitter_did, req, inputs, outputs, extra, cb) => {
                 debug!(target: "payments_command_executor", "AddRequestFees command received");
-                self.add_request_fees(wallet_handle, submitter_did.as_ref(), &req, &inputs, &outputs, extra.as_ref().map(String::as_str), cb).await;
+                cb(self.add_request_fees(wallet_handle, submitter_did.as_ref(), &req, &inputs, &outputs, extra.as_ref().map(String::as_str)).await);
             }
             PaymentsCommand::ParseResponseWithFees(type_, response, cb) => {
                 debug!(target: "payments_command_executor", "ParseResponseWithFees command received");
-                self.parse_response_with_fees(&type_, &response, cb).await;
+                cb(self.parse_response_with_fees(&type_, &response).await);
             }
             PaymentsCommand::BuildGetPaymentSourcesRequest(wallet_handle, submitter_did, payment_address, from, cb) => {
                 debug!(target: "payments_command_executor", "BuildGetPaymentSourcesRequest command received");
-                self.build_get_payment_sources_request(wallet_handle, submitter_did.as_ref(), &payment_address, from, cb).await;
+                cb(self.build_get_payment_sources_request(wallet_handle, submitter_did.as_ref(), &payment_address, from).await);
             }
             PaymentsCommand::ParseGetPaymentSourcesResponse(type_, response, cb) => {
                 debug!(target: "payments_command_executor", "ParseGetPaymentSourcesResponse command received");
-                self.parse_get_payment_sources_response(&type_, &response, cb).await;
+                cb(self.parse_get_payment_sources_response(&type_, &response).await);
             }
             PaymentsCommand::BuildPaymentReq(wallet_handle, submitter_did, inputs, outputs, extra, cb) => {
                 debug!(target: "payments_command_executor", "BuildPaymentReq command received");
-                self.build_payment_req(wallet_handle, submitter_did.as_ref(), &inputs, &outputs, extra.as_ref().map(String::as_str), cb).await;
+                cb(self.build_payment_req(wallet_handle, submitter_did.as_ref(), &inputs, &outputs, extra.as_ref().map(String::as_str)).await);
             }
             PaymentsCommand::ParsePaymentResponse(payment_method, response, cb) => {
                 debug!(target: "payments_command_executor", "ParsePaymentResponse command received");
-                self.parse_payment_response(&payment_method, &response, cb).await;
+                cb(self.parse_payment_response(&payment_method, &response).await);
             }
             PaymentsCommand::AppendTxnAuthorAgreementAcceptanceToExtra(extra, text, version, taa_digest, mechanism, time, cb) => {
                 debug!(target: "payments_command_executor", "AppendTxnAuthorAgreementAcceptanceToExtra command received");
@@ -185,27 +185,27 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::BuildMintReq(wallet_handle, submitter_did, outputs, extra, cb) => {
                 debug!(target: "payments_command_executor", "BuildMintReq command received");
-                self.build_mint_req(wallet_handle, submitter_did.as_ref(), &outputs, extra.as_ref().map(String::as_str), cb).await;
+                cb(self.build_mint_req(wallet_handle, submitter_did.as_ref(), &outputs, extra.as_ref().map(String::as_str)).await);
             }
             PaymentsCommand::BuildSetTxnFeesReq(wallet_handle, submitter_did, type_, fees, cb) => {
                 debug!(target: "payments_command_executor", "BuildSetTxnFeesReq command received");
-                self.build_set_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_, &fees, cb).await;
+                cb(self.build_set_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_, &fees).await);
             }
             PaymentsCommand::BuildGetTxnFeesReq(wallet_handle, submitter_did, type_, cb) => {
                 debug!(target: "payments_command_executor", "BuildGetTxnFeesReq command received");
-                self.build_get_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_, cb).await;
+                cb(self.build_get_txn_fees_req(wallet_handle, submitter_did.as_ref(), &type_).await);
             }
             PaymentsCommand::ParseGetTxnFeesResponse(type_, response, cb) => {
                 debug!(target: "payments_command_executor", "ParseGetTxnFeesResponse command received");
-                self.parse_get_txn_fees_response(&type_, &response, cb).await;
+                cb(self.parse_get_txn_fees_response(&type_, &response).await);
             }
             PaymentsCommand::BuildVerifyPaymentReq(wallet_handle, submitter_did, receipt, cb) => {
                 debug!(target: "payments_command_executor", "BuildVerifyPaymentReq command received");
-                self.build_verify_payment_request(wallet_handle, submitter_did.as_ref(), &receipt, cb).await;
+                cb(self.build_verify_payment_request(wallet_handle, submitter_did.as_ref(), &receipt).await);
             }
             PaymentsCommand::ParseVerifyPaymentResponse(payment_method, resp_json, cb) => {
                 debug!(target: "payments_command_executor", "ParseVerifyPaymentResponse command received");
-                self.parse_verify_payment_response(&payment_method, &resp_json, cb).await;
+                cb(self.parse_verify_payment_response(&payment_method, &resp_json).await);
             }
             PaymentsCommand::GetRequestInfo(get_auth_rule_response_json, requester_info, fees_json, cb) => {
                 debug!(target: "payments_command_executor", "GetRequestInfo command received");
@@ -213,11 +213,11 @@ impl PaymentsCommandExecutor {
 	        },
             PaymentsCommand::SignWithAddressReq(wallet_handle, address, message, cb) => {
                 debug!(target: "payments_command_executor", "SignWithAddressReq command received");
-                self.sign_with_address(wallet_handle, &address, message.as_slice(), cb).await;
+                cb(self.sign_with_address(wallet_handle, &address, message.as_slice()).await);
             },
             PaymentsCommand::VerifyWithAddressReq(address, message, signature, cb) => {
                 debug!(target: "payments_command_executor", "VerifyWithAddressReq command received");
-                self.verify_with_address(&address, message.as_slice(), signature.as_slice(), cb).await;
+                cb(self.verify_with_address(&address, message.as_slice(), signature.as_slice()).await);
             },
         }
     }
@@ -233,143 +233,99 @@ impl PaymentsCommandExecutor {
         res
     }
 
-    async fn create_address<'a>(&'a self, wallet_handle: WalletHandle, type_: &'a str, config: &'a str, cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+    async fn create_address<'a>(&'a self, wallet_handle: WalletHandle, type_: &'a str, config: &'a str) -> IndyResult<String> {
         trace!("create_address >>> wallet_handle: {:?}, type_: {:?}, config: {:?}", wallet_handle, type_, config);
 
-        match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(err)),
-            _ => ()
-        };
+        self.wallet_service.check(wallet_handle).map_err(map_err_err!())?;
 
-        let result = self.payments_service.create_address(wallet_handle, type_, config).await;
-        let total_result: IndyResult<String> = match result {
-            Ok(res) => {
-                //TODO: think about deleting payment_address on wallet save failure
-                self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new()).map(|_| res)
-                    .map_err(IndyError::from)
-            }
-            Err(err) => Err(err)
-        };
-        cb(total_result);
+        let res = self.payments_service.create_address(wallet_handle, type_, config).await?;
 
-        trace!("create_address <<<");
+        //TODO: think about deleting payment_address on wallet save failure
+        self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), &res, &res, &HashMap::new())?;
+
+        trace!("create_address <<< {}", res);
+        Ok(res)
     }
 
-    fn list_addresses(&self, wallet_handle: WalletHandle, cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+    fn list_addresses(&self, wallet_handle: WalletHandle) -> IndyResult<String> {
         trace!("list_addresses >>> wallet_handle: {:?}", wallet_handle);
 
-        match self.wallet_service.search_records(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), "{}", &RecordOptions::id_value()) {
-            Ok(mut search) => {
-                let mut list_addresses: Vec<String> = Vec::new();
+        let mut search = self.wallet_service.search_records(wallet_handle, &self.wallet_service.add_prefix("PaymentAddress"), "{}", &RecordOptions::id_value())?;
 
-                while let Ok(Some(payment_address)) = search.fetch_next_record() {
-                    match payment_address.get_value() {
-                        Some(value) => list_addresses.push(value.to_string()),
-                        None => cb(Err(err_msg(IndyErrorKind::InvalidState, "Record value not found")))
-                    }
-                }
+        let mut list_addresses: Vec<String> = Vec::new();
 
-                let json_string = serde_json::to_string(&list_addresses)
-                    .to_indy(IndyErrorKind::InvalidState, "Cannot deserialize List of Payment Addresses");
-
-                cb(json_string);
-            }
-            Err(err) => cb(Err(err))
+        while let Ok(Some(payment_address)) = search.fetch_next_record() {
+            let value = payment_address.get_value().ok_or(err_msg(IndyErrorKind::InvalidState, "Record value not found"))?;
+            list_addresses.push(value.to_string());
         }
+
+        let json_string_res = serde_json::to_string(&list_addresses)
+            .to_indy(IndyErrorKind::InvalidState, "Cannot deserialize List of Payment Addresses");
+
         trace!("list_addresses <<<");
+        json_string_res
     }
 
-    async fn add_request_fees<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, req: &'a str, inputs: &'a str, outputs: &'a str, extra: Option<&'a str>, cb: BoxedCallbackStringStringSend) {
+    async fn add_request_fees<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, req: &'a str, inputs: &'a str, outputs: &'a str, extra: Option<&'a str>) -> IndyResult<(String, String)> {
         trace!("add_request_fees >>> wallet_handle: {:?}, submitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}",
                wallet_handle, submitter_did, req, inputs, outputs, extra);
-        if let Some(ref did) = submitter_did {
-            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(err)),
-                _ => ()
-            }
-        }
+
+        self.crypto_service.validate_opt_did(submitter_did).map_err(map_err_err!())?;
 
         let method_from_inputs = self.payments_service.parse_method_from_inputs(inputs);
 
         let method = if outputs == "[]" {
-            method_from_inputs
+            method_from_inputs?
         } else {
             let method_from_outputs = self.payments_service.parse_method_from_outputs(outputs);
-            PaymentsCommandExecutor::_merge_parse_result(method_from_inputs, method_from_outputs)
+            PaymentsCommandExecutor::_merge_parse_result(method_from_inputs, method_from_outputs)?
         };
 
-        match method {
-            Ok(type_) => {
-                cb(self.payments_service.add_request_fees(&type_, wallet_handle, submitter_did, req, inputs, outputs, extra)
-                    .await
-                    .map(|s| (s, type_)))
-            }
-            Err(error) => {
-                cb(Err(error))
-            }
-        };
+        let req = self.payments_service.add_request_fees(&method, wallet_handle, submitter_did, req, inputs, outputs, extra).await?;
+
         trace!("add_request_fees <<<");
+        Ok((req, method))
     }
 
-    async fn parse_response_with_fees<'a>(&'a self, type_: &'a str, response: &'a str, cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+    async fn parse_response_with_fees<'a>(&'a self, type_: &'a str, response: &'a str) -> IndyResult<String> {
         trace!("parse_response_with_fees >>> type_: {:?}, response: {:?}", type_, response);
-        cb(self.payments_service.parse_response_with_fees(type_, response).await);
-        trace!("parse_response_with_fees <<<");
+        let res = self.payments_service.parse_response_with_fees(type_, response).await;
+        trace!("parse_response_with_fees <<< {:?}", res);
+        res
     }
 
-    async fn build_get_payment_sources_request<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, payment_address: &'a str, next: Option<i64>, cb: BoxedCallbackStringStringSend) {
+    async fn build_get_payment_sources_request<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, payment_address: &'a str, next: Option<i64>) -> IndyResult<(String, String)> {
         trace!("build_get_payment_sources_request >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
-        if let Some(ref did) = submitter_did {
-            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(err)),
-                _ => ()
-            }
-        }
 
-        let method = match self.payments_service.parse_method_from_payment_address(payment_address) {
-            Ok(method) => method,
-            Err(err) => {
-                cb(Err(err));
-                return;
-            }
-        };
+        self.crypto_service.validate_opt_did(submitter_did).map_err(map_err_err!())?;
 
-        cb(self.payments_service.build_get_payment_sources_request(&method, wallet_handle, submitter_did, payment_address, next)
-            .await
-            .map(|s| (s, method)));
+        let method = self.payments_service.parse_method_from_payment_address(payment_address)?;
+        let req = self.payments_service.build_get_payment_sources_request(&method, wallet_handle, submitter_did, payment_address, next).await?;
+
         trace!("build_get_payment_sources_request <<<");
+        Ok((req, method))
     }
 
-    async fn parse_get_payment_sources_response<'a>(&'a self, type_: &'a str, response: &'a str, cb: Box<dyn Fn(IndyResult<(String, i64)>) + Send>) {
+    async fn parse_get_payment_sources_response<'a>(&'a self, type_: &'a str, response: &'a str) -> IndyResult<(String, i64)> {
         trace!("parse_get_payment_sources_response >>> response: {:?}", response);
-        cb(self.payments_service.parse_get_payment_sources_response(type_, response).await);
-        trace!("parse_get_payment_sources_response <<<");
+        let res = self.payments_service.parse_get_payment_sources_response(type_, response).await;
+        trace!("parse_get_payment_sources_response <<< {:?}", res);
+        res
     }
 
-    async fn build_payment_req<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, inputs: &'a str, outputs: &'a str, extra: Option<&'a str>, cb: BoxedCallbackStringStringSend) {
+    async fn build_payment_req<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, inputs: &'a str, outputs: &'a str, extra: Option<&'a str>) -> IndyResult<(String, String)> {
         trace!("build_payment_req >>> wallet_handle: {:?}, submitter_did: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, inputs, outputs, extra);
-        if let Some(ref did) = submitter_did {
-            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(err)),
-                _ => ()
-            }
-        }
+
+        self.crypto_service.validate_opt_did(submitter_did).map_err(map_err_err!())?;
 
         let method_from_inputs = self.payments_service.parse_method_from_inputs(inputs);
         let method_from_outputs = self.payments_service.parse_method_from_outputs(outputs);
-        let method = PaymentsCommandExecutor::_merge_parse_result(method_from_inputs, method_from_outputs);
+        let method = PaymentsCommandExecutor::_merge_parse_result(method_from_inputs, method_from_outputs)?;
 
-        match method {
-            Ok(type_) => {
-                cb(self.payments_service.build_payment_req(&type_, wallet_handle, submitter_did, inputs, outputs, extra)
-                       .await
-                       .map(|s| (s, type_)));
-            }
-            Err(error) => {
-                cb(Err(error))
-            }
-        }
+        let req = self.payments_service.build_payment_req(&method, wallet_handle, submitter_did, inputs, outputs, extra).await?;
+
         trace!("build_payment_req <<<");
+        Ok((req, method))
     }
 
     fn append_txn_author_agreement_acceptance_to_extra(&self,
@@ -397,123 +353,93 @@ impl PaymentsCommandExecutor {
         Ok(res)
     }
 
-    async fn parse_payment_response<'a>(&'a self, payment_method: &'a str, response: &'a str, cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+    async fn parse_payment_response<'a>(&'a self, payment_method: &'a str, response: &'a str) -> IndyResult<String> {
         trace!("parse_payment_response >>> response: {:?}", response);
-        cb(self.payments_service.parse_payment_response(payment_method, response).await);
-        trace!("parse_payment_response <<<");
+        let res = self.payments_service.parse_payment_response(payment_method, response).await;
+        trace!("parse_payment_response <<< {:?}", res);
+        res
     }
 
-    async fn build_mint_req<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, outputs: &'a str, extra: Option<&'a str>, cb: BoxedCallbackStringStringSend) {
+    async fn build_mint_req<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, outputs: &'a str, extra: Option<&'a str>) -> IndyResult<(String, String)> {
         trace!("build_mint_req >>> wallet_handle: {:?}, submitter_did: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs, extra);
-        if let Some(ref did) = submitter_did {
-            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(err)),
-                _ => ()
-            }
-        }
 
-        match self.payments_service.parse_method_from_outputs(outputs) {
-            Ok(type_) => {
-                cb(self.payments_service.build_mint_req(&type_, wallet_handle, submitter_did, outputs, extra)
-                       .await
-                       .map(|s| (s, type_)));
-            }
-            Err(error) => cb(Err(error))
-        }
+        self.crypto_service.validate_opt_did(submitter_did).map_err(map_err_err!())?;
+
+        let type_ = self.payments_service.parse_method_from_outputs(outputs)?;
+        let req = self.payments_service.build_mint_req(&type_, wallet_handle, submitter_did, outputs, extra).await?;
+
         trace!("build_mint_req <<<");
+        Ok((req, type_))
     }
 
-    async fn build_set_txn_fees_req<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, type_: &'a str, fees: &'a str, cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+    async fn build_set_txn_fees_req<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, type_: &'a str, fees: &'a str) -> IndyResult<String> {
         trace!("build_set_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}, fees: {:?}", wallet_handle, submitter_did, type_, fees);
-        if let Some(ref did) = submitter_did {
-            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(err)),
-                _ => ()
-            }
-        }
 
-        match serde_json::from_str::<HashMap<String, i64>>(fees) {
-            Err(err) => {
-                error!("Cannot deserialize Fees: {:?}", err);
-                cb(Err(err.to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize Fees")))
-            }
-            _ => cb(self.payments_service.build_set_txn_fees_req(type_, wallet_handle, submitter_did, fees).await),
-        };
-        trace!("build_set_txn_fees_req <<<");
+        self.crypto_service.validate_opt_did(submitter_did).map_err(map_err_err!())?;
+        serde_json::from_str::<HashMap<String, i64>>(fees).map_err(|err| {
+            error!("Cannot deserialize Fees: {:?}", err);
+            err.to_indy(IndyErrorKind::InvalidStructure, "Cannot deserialize Fees")
+        })?;
+
+        let res = self.payments_service.build_set_txn_fees_req(type_, wallet_handle, submitter_did, fees).await;
+
+        trace!("build_set_txn_fees_req <<< {:?}", res);
+        res
     }
 
-    async fn build_get_txn_fees_req<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, type_: &'a str, cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+    async fn build_get_txn_fees_req<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, type_: &'a str) -> IndyResult<String> {
         trace!("build_get_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}", wallet_handle, submitter_did, type_);
-        if let Some(ref did) = submitter_did {
-            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(err)),
-                _ => ()
-            }
-        }
 
-        cb(self.payments_service.build_get_txn_fees_req(type_, wallet_handle, submitter_did).await);
-        trace!("build_get_txn_fees_req <<<");
+        self.crypto_service.validate_opt_did(submitter_did).map_err(map_err_err!())?;
+
+        let res = self.payments_service.build_get_txn_fees_req(type_, wallet_handle, submitter_did).await;
+
+        trace!("build_get_txn_fees_req <<< {:?}", res);
+        res
     }
 
-    async fn parse_get_txn_fees_response<'a>(&'a self, type_: &'a str, response: &'a str, cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+    async fn parse_get_txn_fees_response<'a>(&'a self, type_: &'a str, response: &'a str) -> IndyResult<String> {
         trace!("parse_get_txn_fees_response >>> response: {:?}", response);
-        cb(self.payments_service.parse_get_txn_fees_response(type_, response).await);
-        trace!("parse_get_txn_fees_response <<<");
+        let res = self.payments_service.parse_get_txn_fees_response(type_, response).await;
+        trace!("parse_get_txn_fees_response <<< {:?}", res);
+        res
     }
 
-    async fn build_verify_payment_request<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, receipt: &'a str, cb: BoxedCallbackStringStringSend) {
+    async fn build_verify_payment_request<'a>(&'a self, wallet_handle: WalletHandle, submitter_did: Option<&'a DidValue>, receipt: &'a str) -> IndyResult<(String, String)> {
         trace!("build_verify_payment_request >>> wallet_handle: {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
-        if let Some(ref did) = submitter_did {
-            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
-                Err(err) => return cb(Err(err)),
-                _ => ()
-            }
-        }
 
-        let method = match self.payments_service.parse_method_from_payment_address(receipt) {
-            Ok(method) => method,
-            Err(err) => {
-                cb(Err(err));
-                return;
-            }
-        };
-        cb(self.payments_service.build_verify_payment_req(&method, wallet_handle, submitter_did, receipt)
-            .await
-            .map(|s| (s, method)));
+        self.crypto_service.validate_opt_did(submitter_did).map_err(map_err_err!())?;
+
+        let method = self.payments_service.parse_method_from_payment_address(receipt)?;
+        let req = self.payments_service.build_verify_payment_req(&method, wallet_handle, submitter_did, receipt).await?;
+
         trace!("build_verify_payment_request <<<");
+        Ok((req, method))
     }
 
-    async fn parse_verify_payment_response<'a>(&'a self, type_: &'a str, resp_json: &'a str, cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+    async fn parse_verify_payment_response<'a>(&'a self, type_: &'a str, resp_json: &'a str) -> IndyResult<String> {
         trace!("parse_verify_payment_response >>> response: {:?}", resp_json);
-        cb(self.payments_service.parse_verify_payment_response(type_, resp_json).await);
-        trace!("parse_verify_payment_response <<<");
+
+        let res = self.payments_service.parse_verify_payment_response(type_, resp_json).await;
+
+        trace!("parse_verify_payment_response <<< {:?}", res);
+        res
     }
 
-    async fn sign_with_address<'a>(&'a self, wallet_handle: WalletHandle, address: &'a str, message: &'a [u8], cb: Box<dyn Fn(IndyResult<Vec<u8>>) + Send>) {
+    async fn sign_with_address<'a>(&'a self, wallet_handle: WalletHandle, address: &'a str, message: &'a [u8]) -> IndyResult<Vec<u8>> {
         trace!("sign_with_address >>> address: {:?}, message: {:?}", address, hex::encode(message));
-        let method = match self.payments_service.parse_method_from_payment_address(address) {
-            Ok(method) => method,
-            Err(err) => {
-                cb(Err(err));
-                return;
-            }
-        };
 
-        cb(self.payments_service.sign_with_address(&method, wallet_handle, address, message).await);
+        let method = self.payments_service.parse_method_from_payment_address(address)?;
+
+        self.payments_service.sign_with_address(&method, wallet_handle, address, message).await
     }
 
-    async fn verify_with_address<'a>(&'a self, address: &'a str, message: &'a [u8], signature: &'a [u8], cb: Box<dyn Fn(IndyResult<bool>) + Send>) {
+    async fn verify_with_address<'a>(&'a self, address: &'a str, message: &'a [u8], signature: &'a [u8]) -> IndyResult<bool> {
         trace!("sign_with_address >>> address: {:?}, message: {:?}, signature: {:?}", address, hex::encode(message), hex::encode(signature));
 
-        let method = match self.payments_service.parse_method_from_payment_address(address) {
-            Ok(method) => method,
-            Err(err) => {
-                cb(Err(err));
-                return;
-            }
-        };
+        let method = self.payments_service.parse_method_from_payment_address(address)?;
 
-        cb(self.payments_service.verify_with_address(&method, address, message, signature).await);
+        self.payments_service.verify_with_address(&method, address, message, signature).await
     }
 
 
