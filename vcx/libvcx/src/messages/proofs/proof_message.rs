@@ -1,6 +1,7 @@
 use serde_json;
 use serde_json::Value;
 use error::prelude::*;
+use api::VcxStateType;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ProofMessage {
@@ -9,6 +10,8 @@ pub struct ProofMessage {
     from_did: Option<String>,
     proof_request_id: Option<String>,
     pub libindy_proof: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state: Option<VcxStateType>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -27,6 +30,18 @@ impl ProofMessage {
             from_did: None,
             proof_request_id: None,
             libindy_proof: String::new(),
+            state: None
+        }
+    }
+
+    pub fn new_reject() -> ProofMessage {
+        ProofMessage {
+            version: None,
+            to_did: None,
+            from_did: None,
+            proof_request_id: None,
+            libindy_proof: String::new(),
+            state: Some(VcxStateType::VcxStateRejected)
         }
     }
 
@@ -92,6 +107,13 @@ pub mod tests {
         init!("true");
         let offer = create_default_proof();
         assert_eq!(offer.from_did, Some(::settings::get_config_value(::settings::CONFIG_INSTITUTION_DID).unwrap()));
+    }
+
+    #[test]
+    fn test_proof_reject() {
+        init!("true");
+        let proof = ProofMessage::new_reject();
+        assert_eq!(proof.state, Some(VcxStateType::VcxStateRejected));
     }
 
     #[test]

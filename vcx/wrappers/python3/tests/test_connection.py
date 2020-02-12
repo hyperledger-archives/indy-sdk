@@ -1,5 +1,4 @@
 import pytest
-import base64
 import random
 from vcx.error import ErrorCode, VcxError
 from vcx.state import State

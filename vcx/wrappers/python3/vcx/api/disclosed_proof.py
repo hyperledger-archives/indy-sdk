@@ -333,6 +333,31 @@ class DisclosedProof(VcxStateful):
                       c_connection_handle,
                       DisclosedProof.send_proof.cb)
 
+    async def reject_proof(self, connection: Connection):
+        """
+        Sends the reject of proof to the Connection
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        await disclosed_proof.reject_proof(connection)
+        :param connection: Connection
+        :return: None
+        """
+        if not hasattr(DisclosedProof.reject_proof, "cb"):
+            self.logger.debug("vcx_disclosed_proof_reject_proof: Creating callback")
+            DisclosedProof.reject_proof.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_disclosed_proof_handle = c_uint32(self.handle)
+        c_connection_handle = c_uint32(connection.handle)
+
+        await do_call('vcx_disclosed_proof_reject_proof',
+                      c_disclosed_proof_handle,
+                      c_connection_handle,
+                      DisclosedProof.reject_proof.cb)
+
     async def get_send_proof_msg(self):
         """
         Gets the proof message that can be sent to the specified connection
@@ -353,6 +378,24 @@ class DisclosedProof(VcxStateful):
 
         return json.loads(msg.decode())
 
+    async def get_reject_proof_msg(self):
+        """
+        Example:
+        msg = await disclosed_proof.get_reject_proof_msg()
+        :param
+        :return:
+        """
+        if not hasattr(DisclosedProof.get_reject_proof_msg, "cb"):
+            self.logger.debug("vcx_proof_send_request: Creating callback")
+            DisclosedProof.get_reject_proof_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_proof_handle = c_uint32(self.handle)
+
+        msg = await do_call('vcx_disclosed_proof_get_reject_msg',
+                      c_proof_handle,
+                      DisclosedProof.get_reject_proof_msg.cb)
+
+        return json.loads(msg.decode())
 
     async def generate_proof(self, selected_creds: dict, self_attested_attrs: dict):
         """

@@ -42,7 +42,9 @@ pub struct AttrInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restrictions: Option<Restrictions>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub non_revoked: Option<NonRevokedInterval>,
+    pub self_attest_allowed: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub non_revoked: Option<NonRevokedInterval>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]

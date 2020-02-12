@@ -277,6 +277,41 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   protected _inviteDetailFn = rustAPI().vcx_connection_invite_details
 
   /**
+   *
+   * Updates the state of the connection from the given message.
+   *
+   * Example:
+   * ```
+   * await object.updateStateWithMessage(message)
+   * ```
+   * @returns {Promise<void>}
+   */
+  public async updateStateWithMessage (message: string): Promise<void> {
+    try {
+      const commandHandle = 0
+      await createFFICallbackPromise<number>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_update_state_with_message(commandHandle, this.handle, message, cb)
+          if (rc) {
+            resolve(StateType.None)
+          }
+        },
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'uint32'],
+          (handle: number, err: any, state: StateType) => {
+            if (err) {
+              reject(err)
+            }
+            resolve(state)
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
    * Delete the object from the agency and release any memory associated with it
    * NOTE: This eliminates the connection and any ability to use it for any communication.
    *
@@ -570,6 +605,168 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
       )
     } catch (err) {
       throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Retrieves pw_did from Connection object
+   *
+   */
+  public async getPwDid (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_get_pw_did(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!details) {
+                reject(`Connection ${this.sourceId} connect returned empty string`)
+                return
+              }
+              resolve(details)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Retrieves their_pw_did from Connection object
+   *
+   */
+  public async getTheirDid (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_get_their_pw_did(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!details) {
+                reject(`Connection ${this.sourceId} connect returned empty string`)
+                return
+              }
+              resolve(details)
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Redirects to an existing connection if one already present.
+   *
+   * Example:
+   * ```
+   * const oldConnectionToAcme = searchConnectionsByPublicDID({
+   *  public_did: inviteDetails.publicDID
+   * })
+   * const redirectConnectionToAcme = await Connection.createWithInvite({
+   *  id: 'faber-redirect',
+   *  invite: JSON.stringify(inviteDetails)
+   * })
+   * await redirectConnectionToAcme.redirect({
+   *  redirectToConnection: oldConnectionToAcme
+   * })
+   * ```
+   */
+  public async connectionRedirect (existingConnection: Connection): Promise<void> {
+    try {
+      await createFFICallbackPromise<void>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_connection_redirect(0, this.handle, existingConnection.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32'],
+            (xcommandHandle: number, err: number) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve()
+            })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+/**
+ * Gets the redirection details if the connection already exists.
+ *
+ * Example:
+ * ```
+ * await connectionToAlice.updateState()
+ * connectionState = await connectionToAlice.getState()
+ *
+ * if (connectionState == StateType.Redirected) {
+ * redirectDetails = await connectionToAlice.getRedirectDetails()
+ * serializedOldConnection = searchConnectionsByTheirDid({
+ *   theirDid: redirectDetails.theirDID
+ * })
+ * oldConnection = await Connection.deserialize({
+ *   connectionData: serializedOldConnection
+ * })
+ *}
+ * ```
+ */
+  public async getRedirectDetails (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_get_redirect_details(
+            0,
+            this.handle,
+            cb
+          );
+          if (rc) {
+            reject(rc);
+          }
+        },
+        (resolve, reject) =>
+          ffi.Callback(
+            "void",
+            ["uint32", "uint32", "string"],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              if (!details) {
+                reject(`proof ${this.sourceId} returned empty string`);
+                return;
+              }
+              resolve(details);
+            }
+          )
+      );
+    } catch (err) {
+      throw new VCXInternalError(err);
     }
   }
 }
