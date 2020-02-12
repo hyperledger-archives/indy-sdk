@@ -78,7 +78,6 @@ def get_version_from_file(filename):
 
 # extract the version from a toml file
 def extract_version_from_file(filename):
-    raw_version = ""
     try:
         f = open(filename, 'r')
         for line in f.readlines():
