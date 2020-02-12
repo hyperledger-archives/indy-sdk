@@ -120,6 +120,7 @@ impl From<RemoteMessageType> for PayloadKinds {
         match type_ {
             RemoteMessageType::ConnReq => PayloadKinds::Other("connReq".to_string()),
             RemoteMessageType::ConnReqAnswer => PayloadKinds::Other("ConnReqAnswer".to_string()),
+            RemoteMessageType::ConnReqRedirect => PayloadKinds::Other("ConnReqRedirect".to_string()),
             RemoteMessageType::CredOffer => PayloadKinds::CredOffer,
             RemoteMessageType::CredReq => PayloadKinds::CredReq,
             RemoteMessageType::Cred => PayloadKinds::Cred,

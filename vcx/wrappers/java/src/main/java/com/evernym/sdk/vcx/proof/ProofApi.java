@@ -123,6 +123,21 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
+    public static CompletableFuture<GetProofResult> getProofMsg(
+            int proofHandle
+    ) throws VcxException {
+        ParamGuard.notNull(proofHandle, "proofHandle");
+        logger.debug("getProof() called with: proofHandle = [" + proofHandle + "]");
+        CompletableFuture<GetProofResult> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_get_proof_msg(commandHandle, proofHandle, vcxGetProofCB);
+        checkResult(result);
+
+        return future;
+    }
+
+
     // vcx_proof_accepted
     public static CompletableFuture<Integer> proofAccepted(
             int proofHandle,

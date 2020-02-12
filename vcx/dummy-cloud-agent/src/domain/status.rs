@@ -12,6 +12,8 @@ pub enum MessageStatusCode {
     Rejected,
     #[serde(rename = "MS-106")]
     Reviewed,
+    #[serde(rename = "MS-107")]
+    Redirected,
 }
 
 impl MessageStatusCode{
@@ -23,16 +25,17 @@ impl MessageStatusCode{
             MessageStatusCode::Accepted => "message accepted",
             MessageStatusCode::Rejected => "message rejected",
             MessageStatusCode::Reviewed => "message reviewed",
+            MessageStatusCode::Redirected => "message redirected",
         }
     }
 
     pub fn valid_status_codes() -> Vec<MessageStatusCode>{
-        vec![MessageStatusCode::Accepted, MessageStatusCode::Rejected]
+        vec![MessageStatusCode::Accepted, MessageStatusCode::Rejected, MessageStatusCode::Redirected]
     }
 
     //validNewMsgStatusesAllowedToBeUpdatedTo
     pub fn valid_new_message_status_codes_allowed_update_to() -> Vec<MessageStatusCode>{
-        vec![MessageStatusCode::Accepted, MessageStatusCode::Rejected, MessageStatusCode::Reviewed]
+        vec![MessageStatusCode::Accepted, MessageStatusCode::Rejected, MessageStatusCode::Redirected, MessageStatusCode::Reviewed]
     }
 
     //validExistingMsgStatusesAllowedToBeUpdated
