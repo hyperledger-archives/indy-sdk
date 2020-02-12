@@ -274,15 +274,15 @@ impl LedgerCommandExecutor {
         match command {
             LedgerCommand::SignAndSubmitRequest(pool_handle, wallet_handle, submitter_did, request_json, cb) => {
                 debug!(target: "ledger_command_executor", "SignAndSubmitRequest command received");
-                self.sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request_json, cb).await;
+                cb(self.sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request_json).await);
             }
             LedgerCommand::SubmitRequest(handle, request_json, cb) => {
                 debug!(target: "ledger_command_executor", "SubmitRequest command received");
-                self.submit_request(handle, &request_json, cb).await;
+                cb(self.submit_request(handle, &request_json).await);
             }
             LedgerCommand::SubmitAction(handle, request_json, nodes, timeout, cb) => {
                 debug!(target: "ledger_command_executor", "SubmitRequest command received");
-                self.submit_action(handle, &request_json, nodes.as_ref().map(String::as_str), timeout, cb).await;
+                cb(self.submit_action(handle, &request_json, nodes.as_ref().map(String::as_str), timeout).await);
             }
             LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
                 debug!(target: "ledger_command_executor", "RegisterSPParser command received");
@@ -482,18 +482,16 @@ impl LedgerCommandExecutor {
     }
 
     async fn sign_and_submit_request<'a>(&'a self,
-                                     pool_handle: PoolHandle,
-                                     wallet_handle: WalletHandle,
-                                     submitter_did: &'a DidValue,
-                                     request_json: &'a str,
-                                     cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+                                         pool_handle: PoolHandle,
+                                         wallet_handle: WalletHandle,
+                                         submitter_did: &'a DidValue,
+                                         request_json: &'a str) -> IndyResult<String> {
         debug!("sign_and_submit_request >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
                pool_handle, wallet_handle, submitter_did, request_json);
 
-        match self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single) {
-            Ok(signed_request) => self.submit_request(pool_handle, signed_request.as_str(), cb).await,
-            Err(err) => cb(Err(err))
-        }
+        let signed_request = self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single)?;
+
+        self.submit_request(pool_handle, signed_request.as_str()).await
     }
 
     fn _sign_request(&self,
@@ -545,18 +543,12 @@ impl LedgerCommandExecutor {
     }
 
     async fn submit_request<'a>(&'a self,
-                                 handle: PoolHandle,
-                                 request_json: &'a str,
-                                 cb: Box<dyn Fn(IndyResult<String>) + Send>) {
-        cb(self._submit_request(handle, request_json).await)
-    }
-
-    async fn _submit_request<'a>(&'a self, handle: PoolHandle, request_json: &'a str) -> IndyResult<String> {
+                                handle: PoolHandle,
+                                request_json: &'a str) -> IndyResult<String> {
         debug!("submit_request >>> handle: {:?}, request_json: {:?}", handle, request_json);
 
-        if let Err(err) = serde_json::from_str::<Request<serde_json::Value>>(&request_json) {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Request is invalid json: {:?}", err)));
-        }
+        serde_json::from_str::<Request<serde_json::Value>>(&request_json)
+            .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Request is invalid json: {:?}", err)))?;
 
         let x: IndyResult<String> = self.pool_service.send_tx(handle, request_json).await;
 
@@ -567,17 +559,12 @@ impl LedgerCommandExecutor {
                      handle: PoolHandle,
                      request_json: &'a str,
                      nodes: Option<&'a str>,
-                     timeout: Option<i32>,
-                     cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+                     timeout: Option<i32>) -> IndyResult<String> {
         debug!("submit_action >>> handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", handle, request_json, nodes, timeout);
 
-        if let Err(err) = self.ledger_service.validate_action(request_json) {
-            return cb(Err(err));
-        }
+        self.ledger_service.validate_action(request_json)?;
 
-        let x: IndyResult<String> = self.pool_service.send_action(handle, request_json, nodes, timeout).await;
-
-        cb(x)
+        self.pool_service.send_action(handle, request_json, nodes, timeout).await
     }
 
     fn sign_request(&self,
