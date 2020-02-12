@@ -13,7 +13,7 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
-default = ["agency", "pool_tests"]
+default = []
 pool_tests = []
 agency = []
 agency_v2 = []
