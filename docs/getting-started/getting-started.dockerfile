@@ -20,7 +20,8 @@ RUN pip3 install -U \
 	pip \
 	setuptools \
 	jupyter \
-	python3-indy==1.11.0
+	python3-indy==1.11.0 \
+	jsonschema
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 \
     && add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" \
