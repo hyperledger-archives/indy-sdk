@@ -278,6 +278,6 @@ impl WalletCommandExecutor {
             let res = key_data.calc_master_key();
             s.send(res).unwrap();
         });
-        r.await.unwrap()
+        r.await?
     }
 }
