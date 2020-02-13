@@ -34,8 +34,7 @@ use indy_api_types::{CommandHandle, PoolHandle};
 use indy_utils::{next_command_handle, next_pool_handle};
 use ursa::bls::VerKey;
 
-use futures::{channel::oneshot, lock::Mutex as MutexF};
-use futures::executor::block_on;
+use futures::channel::oneshot;
 
 use log_derive::logfn;
 
@@ -51,9 +50,9 @@ mod types;
 
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
-    static ref POOL_HANDLE_SENDERS: Arc<MutexF<HashMap<PoolHandle, oneshot::Sender<IndyResult<PoolHandle>>>>> = Arc::new(MutexF::new(HashMap::new()));
-    static ref SUBMIT_SENDERS: Arc<MutexF<HashMap<PoolHandle, oneshot::Sender<IndyResult<String>>>>> = Arc::new(MutexF::new(HashMap::new()));
-    static ref CLOSE_SENDERS: Arc<MutexF<HashMap<PoolHandle, oneshot::Sender<IndyResult<()>>>>> = Arc::new(MutexF::new(HashMap::new()));
+    static ref POOL_HANDLE_SENDERS: Arc<Mutex<HashMap<PoolHandle, oneshot::Sender<IndyResult<PoolHandle>>>>> = Arc::new(Mutex::new(HashMap::new()));
+    static ref SUBMIT_SENDERS: Arc<Mutex<HashMap<PoolHandle, oneshot::Sender<IndyResult<String>>>>> = Arc::new(Mutex::new(HashMap::new()));
+    static ref CLOSE_SENDERS: Arc<Mutex<HashMap<PoolHandle, oneshot::Sender<IndyResult<()>>>>> = Arc::new(Mutex::new(HashMap::new()));
 }
 
 type Nodes = HashMap<String, Option<VerKey>>;
@@ -173,7 +172,7 @@ impl PoolService {
         let (sender, receiver) = oneshot::channel::<IndyResult<PoolHandle>>();
 
         self.pending_pools.try_borrow_mut()?.insert(name.clone());
-        POOL_HANDLE_SENDERS.lock().await.insert(pool_handle, sender);
+        POOL_HANDLE_SENDERS.lock().unwrap().insert(pool_handle, sender);
 
         let res = receiver.await?;
 
@@ -188,13 +187,13 @@ impl PoolService {
 
     #[logfn(trace)]
     pub fn open_ack(pool_hanlde: PoolHandle, result: IndyResult<()>) {
-        let sender: futures::channel::oneshot::Sender<IndyResult<PoolHandle>> = block_on(POOL_HANDLE_SENDERS.lock()).remove(&pool_hanlde).unwrap();
+        let sender: futures::channel::oneshot::Sender<IndyResult<PoolHandle>> = POOL_HANDLE_SENDERS.lock().unwrap().remove(&pool_hanlde).unwrap();
         sender.send(result.map(|()| pool_hanlde)).unwrap(); //FIXME
     }
 
     #[logfn(trace)]
     pub fn refresh_ack(cmd_id: CommandHandle, result: IndyResult<()>) {
-        let sender: futures::channel::oneshot::Sender<IndyResult<String>> = block_on(SUBMIT_SENDERS.lock()).remove(&cmd_id).unwrap();
+        let sender: futures::channel::oneshot::Sender<IndyResult<String>> = SUBMIT_SENDERS.lock().unwrap().remove(&cmd_id).unwrap();
         sender.send(result.map(|()| String::new())).unwrap(); //FIXME
     }
 
@@ -206,7 +205,6 @@ impl PoolService {
         trace!("send_action >>");
 
         let receiver = {
-            let mut locked_senders = SUBMIT_SENDERS.lock().await;
             let borrowed_pools = self.open_pools.try_borrow()?;
 
             let pool = borrowed_pools.get(&handle)
@@ -216,7 +214,7 @@ impl PoolService {
 
             let (sender, receiver) = oneshot::channel::<IndyResult<String>>();
 
-            locked_senders.insert(cmd_id, sender);
+            SUBMIT_SENDERS.lock().unwrap().insert(cmd_id, sender);
 
             self._send_msg(cmd_id, msg, &pool.cmd_socket, nodes, timeout)?;
 
@@ -231,7 +229,7 @@ impl PoolService {
 
     #[logfn(trace)]
     fn submit_ack(cmd_id: CommandHandle, result: IndyResult<String>) {
-        let sender: futures::channel::oneshot::Sender<IndyResult<String>> = block_on(SUBMIT_SENDERS.lock()).remove(&cmd_id).unwrap();
+        let sender: futures::channel::oneshot::Sender<IndyResult<String>> = SUBMIT_SENDERS.lock().unwrap().remove(&cmd_id).unwrap();
         sender.send(result).unwrap(); //FIXME
     }
 
@@ -260,7 +258,7 @@ impl PoolService {
         let pool = self.open_pools.try_borrow_mut()?.remove(&handle);
 
         let (sender, receiver) = oneshot::channel::<IndyResult<()>>();
-        CLOSE_SENDERS.lock().await.insert(handle, sender);
+        CLOSE_SENDERS.lock().unwrap().insert(handle, sender);
 
         match pool {
             Some(pool) => self._send_msg(handle, COMMAND_EXIT, &pool.cmd_socket, None, None)?,
@@ -272,7 +270,7 @@ impl PoolService {
 
     #[logfn(trace)]
     fn close_ack(cmd_id: CommandHandle, result: IndyResult<()>) {
-        let sender: futures::channel::oneshot::Sender<IndyResult<()>> = block_on(CLOSE_SENDERS.lock()).remove(&cmd_id).unwrap();
+        let sender: futures::channel::oneshot::Sender<IndyResult<()>> = CLOSE_SENDERS.lock().unwrap().remove(&cmd_id).unwrap();
         sender.send(result).unwrap(); //FIXME
     }
 
@@ -392,14 +390,14 @@ pub mod test_utils {
     pub fn fake_pool_handle_for_poolsm() -> (indy_api_types::PoolHandle, oneshot::Receiver<IndyResult<indy_api_types::PoolHandle>>) {
         let pool_handle = indy_utils::next_pool_handle();
         let (sender, receiver) = oneshot::channel();
-        block_on(super::POOL_HANDLE_SENDERS.lock()).insert(pool_handle, sender);
+        super::POOL_HANDLE_SENDERS.lock().unwrap().insert(pool_handle, sender);
         (pool_handle, receiver)
     }
 
     pub fn fake_cmd_id() -> (indy_api_types::CommandHandle, oneshot::Receiver<IndyResult<String>>) {
         let cmd_id = indy_utils::next_command_handle();
         let (sender, receiver) = oneshot::channel();
-        block_on(super::SUBMIT_SENDERS.lock()).insert(cmd_id, sender);
+        super::SUBMIT_SENDERS.lock().unwrap().insert(cmd_id, sender);
         (cmd_id, receiver)
     }
 }
