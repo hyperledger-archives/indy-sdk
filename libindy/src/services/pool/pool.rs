@@ -8,9 +8,6 @@ use std::thread::JoinHandle;
 
 use failure::Context;
 
-use crate::commands::Command;
-use crate::commands::CommandExecutor;
-use crate::commands::pool::PoolCommand;
 use crate::domain::ledger::request::ProtocolVersion;
 use crate::domain::pool::PoolOpenConfig;
 use indy_api_types::errors::prelude::*;
@@ -707,8 +704,7 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> IndyResult<(Nodes, Vec<RemoteN
 }
 
 fn _close_pool_ack(cmd_id: CommandHandle) {
-    let pc = PoolCommand::CloseAck(cmd_id, Ok(()));
-    CommandExecutor::instance().send(Command::Pool(pc)).unwrap();
+    PoolService::close_ack(cmd_id, Ok(()));
 }
 
 fn _send_submit_ack(cmd_id: CommandHandle, res: IndyResult<String>) {
