@@ -669,12 +669,17 @@ impl PaymentsService {
 
         let (cmd_handle, bool_receiver) = cbs::create_bool_receiver();
 
-        let err = verify_with_address(cmd_handle, address.as_ptr(), message.as_ptr() as *const u8, message.len() as u32, signature.as_ptr() as *const u8, signature.len() as u32, cbs::verify_with_address_cb(cmd_handle));
+        IndyResult::from(
+            verify_with_address(cmd_handle,
+                                address.as_ptr(),
+                                message.as_ptr() as *const u8,
+                                message.len() as u32,
+                                signature.as_ptr() as *const u8,
+                                signature.len() as u32,
+                                cbs::verify_with_address_cb(cmd_handle)))?;
 
-        let res = match err {
-            ErrorCode::Success => bool_receiver.await?,
-            err => Err(err.into())
-        };
+        let res = bool_receiver.await?;
+
         trace!("verify_with_address <<< result: {:?}", res);
         res
     }
