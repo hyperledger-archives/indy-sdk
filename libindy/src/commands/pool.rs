@@ -24,8 +24,6 @@ pub enum PoolCommand {
     Close(
         PoolHandle, // pool handle
         Box<dyn Fn(IndyResult<()>) + Send>),
-    CloseAck(CommandHandle,
-             IndyResult<()>),
     Refresh(
         PoolHandle, // pool handle
         Box<dyn Fn(IndyResult<()>) + Send>),
@@ -36,14 +34,12 @@ pub enum PoolCommand {
 
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
-    close_callbacks: RefCell<HashMap<CommandHandle, Box<dyn Fn(IndyResult<()>)>>>,
 }
 
 impl PoolCommandExecutor {
     pub fn new(pool_service: Rc<PoolService>) -> PoolCommandExecutor {
         PoolCommandExecutor {
             pool_service,
-            close_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -67,21 +63,7 @@ impl PoolCommandExecutor {
             }
             PoolCommand::Close(handle, cb) => {
                 debug!(target: "pool_command_executor", "Close command received");
-                self.close(handle, cb);
-            }
-            PoolCommand::CloseAck(handle, result) => {
-                debug!(target: "pool_command_executor", "CloseAck command received");
-                match self.close_callbacks.try_borrow_mut() {
-                    Ok(mut cbs) => {
-                        match cbs.remove(&handle) {
-                            Some(cb) => cb(result.map_err(IndyError::from)),
-                            None => {
-                                error!("Can't process PoolCommand::CloseAck for handle {:?} with result {:?} - appropriate callback not found!", handle, result);
-                            }
-                        }
-                    }
-                    Err(err) => { error!("{:?}", err); }
-                }
+                self.close(handle, cb).await;
             }
             PoolCommand::Refresh(handle, cb) => {
                 debug!(target: "pool_command_executor", "Refresh command received");
@@ -135,20 +117,12 @@ impl PoolCommandExecutor {
         Ok(res)
     }
 
-    fn close(&self, pool_handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
+    async fn close(&self, pool_handle: PoolHandle, cb: Box<dyn Fn(IndyResult<()>) + Send>) {
         debug!("close >>> handle: {:?}", pool_handle);
 
-        let result = self.pool_service.close(pool_handle)
-            .and_then(|cmd_id| {
-                match self.close_callbacks.try_borrow_mut() {
-                    Ok(cbs) => Ok((cbs, cmd_id)),
-                    Err(err) => Err(err.into())
-                }
-            });
-        match result {
-            Err(err) => { cb(Err(err)); }
-            Ok((mut cbs, cmd_id)) => { cbs.insert(cmd_id, cb); /* TODO check if map contains same key */ }
-        };
+        let result = self.pool_service.close(pool_handle).await;
+
+        cb(result);
 
         debug!("close <<<");
     }
