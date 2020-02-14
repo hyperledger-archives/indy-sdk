@@ -5,7 +5,6 @@ set -x
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: <package> <version> <type> <suffix> <repo> <host> <key> <package_type> <extra_flags>"
-  echo "Usage: <package> <version> <type> <suffix> <repo> <host> <key> <package_type>"
   return
 fi
 
