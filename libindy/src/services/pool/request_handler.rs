@@ -1485,7 +1485,6 @@ pub mod tests {
 
         // this test is marked ignore until https://jira.hyperledger.org/browse/IS-1137 is resolved
         #[test]
-        #[ignore]
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached_with_0_concensus() {
             // the test will use 4 nodes, each node replying with a response to the "custom consensus request" message
             // some nodes accept, some reject and some nack.  the end result is consensus should not be reached
