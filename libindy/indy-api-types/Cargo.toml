@@ -11,7 +11,7 @@ default = ["casting_errors"]
 casting_errors = ["openssl", "rust-base58", "rusqlite", "zmq", "ursa", "rusqlite"]
 
 [dependencies]
-failure = "0.1.5"
+failure = "0.1.6"
 libc = "0.2.66"
 log = "0.4.8"
 openssl = {version = "0.10", optional = true}
@@ -25,6 +25,7 @@ zmq = {version = "0.9.1", optional = true}
 [dependencies.ursa]
 version =  "0.3.2"
 optional = true
+features = ["logger"]
 
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 rusqlite = { version = "0.20", features=["bundled"], optional = true }
