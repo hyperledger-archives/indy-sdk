@@ -400,10 +400,16 @@ pub mod test_utils {
         super::SUBMIT_SENDERS.lock().unwrap().insert(cmd_id, sender);
         (cmd_id, receiver)
     }
+
+    pub fn fake_pool_handle_for_close_cmd() -> (indy_api_types::CommandHandle, oneshot::Receiver<IndyResult<()>>) {
+        let pool_handle = indy_utils::next_command_handle();
+        let (sender, receiver) = oneshot::channel();
+        super::CLOSE_SENDERS.lock().unwrap().insert(pool_handle, sender);
+        (pool_handle, receiver)
+    }
 }
 
 #[cfg(test)]
-#[cfg(not(feature="only_high_cases"))]
 pub mod tests {
     use std::thread;
 
@@ -454,15 +460,19 @@ pub mod tests {
             let pool_id = next_pool_handle();
             let (send_cmd_sock, recv_cmd_sock) = pool_create_pair_of_sockets("pool_service_close_works");
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id, PoolOpenConfig::default()), send_cmd_sock));
+            let pool_mock = thread::spawn(move || {
+                let recv = recv_cmd_sock.recv_multipart(0).unwrap();
+                assert_eq!(recv.len(), 3);
+                assert_eq!(COMMAND_EXIT, String::from_utf8(recv[0].clone()).unwrap());
+                assert_eq!(pool_id, LittleEndian::read_i32(recv[1].as_slice()));
+                PoolService::close_ack(pool_id, Ok(()));
+            });
+
             block_on(ps.close(pool_id)).unwrap();
-            let recv = recv_cmd_sock.recv_multipart(zmq::DONTWAIT).unwrap();
-            assert_eq!(recv.len(), 3);
-            assert_eq!(COMMAND_EXIT, String::from_utf8(recv[0].clone()).unwrap());
-            assert_eq!(pool_id, LittleEndian::read_i32(recv[1].as_slice()));
+            pool_mock.join().unwrap();
         }
 
         #[test]
-        #[ignore] //FIXME async
         fn pool_service_refresh_works() {
             test::cleanup_storage("pool_service_refresh_works");
 
@@ -470,11 +480,16 @@ pub mod tests {
             let pool_id = next_pool_handle();
             let (send_cmd_sock, recv_cmd_sock) = pool_create_pair_of_sockets("pool_service_refresh_works");
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id, PoolOpenConfig::default()), send_cmd_sock));
+            let pool_mock = thread::spawn(move || {
+                assert_eq!(1, zmq::poll(&mut [recv_cmd_sock.as_poll_item(zmq::POLLIN)], 10_000).unwrap());
+                let recv = recv_cmd_sock.recv_multipart(zmq::DONTWAIT).unwrap();
+                assert_eq!(recv.len(), 3);
+                assert_eq!(COMMAND_REFRESH, String::from_utf8(recv[0].clone()).unwrap());
+                let cmd_id = LittleEndian::read_i32(recv[1].as_slice());
+                PoolService::refresh_ack(cmd_id, Ok(()));
+            });
             block_on(ps.refresh(pool_id)).unwrap();
-            let recv = recv_cmd_sock.recv_multipart(zmq::DONTWAIT).unwrap();
-            assert_eq!(recv.len(), 3);
-            assert_eq!(COMMAND_REFRESH, String::from_utf8(recv[0].clone()).unwrap());
-            assert_eq!(pool_id, LittleEndian::read_i32(recv[1].as_slice()));
+            pool_mock.join().unwrap();
         }
 
         #[test]
@@ -515,7 +530,6 @@ pub mod tests {
         }
 
         #[test]
-        #[ignore] //FIXME async
         fn pool_send_tx_works() {
             test::cleanup_storage("pool_send_tx_works");
 
@@ -526,8 +540,14 @@ pub mod tests {
             let ps = PoolService::new();
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
             let test_data = "str_instead_of_tx_json";
+            let pool_mock = thread::spawn(move || {
+                assert_eq!(1, zmq::poll(&mut [recv_cmd_sock.as_poll_item(zmq::POLLIN)], 10_000).unwrap());
+                assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
+                let cmd_id = LittleEndian::read_i32(recv_cmd_sock.recv_bytes(zmq::DONTWAIT).unwrap().as_slice());
+                PoolService::submit_ack(cmd_id, Ok("".to_owned()));
+            });
             block_on(ps.send_tx(pool_id, test_data)).unwrap();
-            assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
+            pool_mock.join().unwrap();
         }
 
         #[test]
@@ -555,7 +575,6 @@ pub mod tests {
         }
 
         #[test]
-        #[ignore] //FIXME async
         fn pool_send_action_works() {
             test::cleanup_storage("pool_send_action_works");
 
@@ -565,8 +584,14 @@ pub mod tests {
             let ps = PoolService::new();
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
             let test_data = "str_instead_of_tx_json";
+            let pool_mock = thread::spawn(move || {
+                assert_eq!(1, zmq::poll(&mut [recv_cmd_sock.as_poll_item(zmq::POLLIN)], 10_000).unwrap());
+                assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
+                let cmd_id = LittleEndian::read_i32(recv_cmd_sock.recv_bytes(zmq::DONTWAIT).unwrap().as_slice());
+                PoolService::submit_ack(cmd_id, Ok("".to_owned()));
+            });
             block_on(ps.send_action(pool_id, test_data, None, None)).unwrap();
-            assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
+            pool_mock.join().unwrap();
         }
 
         #[test]
