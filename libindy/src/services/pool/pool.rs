@@ -797,7 +797,7 @@ mod tests {
         use indy_utils::next_pool_handle;
         use crate::domain::pool::NUMBER_READ_NODES;
         use futures::executor::block_on;
-        use crate::services::pool::test_utils::{fake_cmd_id, fake_pool_handle_for_poolsm};
+        use crate::services::pool::test_utils::{fake_cmd_id, fake_pool_handle_for_poolsm, fake_pool_handle_for_close_cmd};
 
         #[test]
         pub fn pool_wrapper_new_initialization_works() {
@@ -836,7 +836,7 @@ mod tests {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_terminated_close_works", pool_handle, 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
-            let cmd_id: CommandHandle = next_command_handle();
+            let (cmd_id, _receiver): (CommandHandle, _) = fake_pool_handle_for_close_cmd();
             let p = p.handle_event(PoolEvent::Close(cmd_id));
             assert_match!(PoolState::Closed(_), p.state);
         }
@@ -884,9 +884,9 @@ mod tests {
         }
 
         #[test]
-        pub fn pool_wrapper_cloe_works_from_initialization() {
+        pub fn pool_wrapper_close_works_from_initialization() {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_cloe_works_from_initialization", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
-            let cmd_id: CommandHandle = next_command_handle();
+            let (cmd_id, _receiver): (CommandHandle, _) = fake_pool_handle_for_close_cmd();
             let p = p.handle_event(PoolEvent::Close(cmd_id));
             assert_match!(PoolState::Closed(_), p.state);
         }
@@ -902,7 +902,7 @@ mod tests {
                 PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), "pool_wrapper_close_works_from_getting_catchup_target", next_pool_handle(), 0, 0, NUMBER_READ_NODES);
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
-            let cmd_id: CommandHandle = next_command_handle();
+            let (cmd_id, _receiver): (CommandHandle, _) = fake_pool_handle_for_close_cmd();
             let p = p.handle_event(PoolEvent::Close(cmd_id));
             assert_match!(PoolState::Closed(_), p.state);
 
@@ -1042,7 +1042,7 @@ mod tests {
             let cmd_id: CommandHandle = next_command_handle();
             let p = p.handle_event(PoolEvent::CheckCache(cmd_id));
             let p = p.handle_event(PoolEvent::CatchupTargetFound(mt.root_hash().to_vec(), mt.count, mt));
-            let cmd_id: CommandHandle = next_command_handle();
+            let (cmd_id, _receiver): (CommandHandle, _) = fake_pool_handle_for_close_cmd();
             let p = p.handle_event(PoolEvent::Close(cmd_id));
             assert_match!(PoolState::Closed(_), p.state);
 
