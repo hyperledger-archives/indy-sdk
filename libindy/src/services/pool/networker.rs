@@ -386,7 +386,6 @@ impl Networker for MockNetworker {
 
 
 #[cfg(test)]
-#[cfg(not(feature="only_high_cases"))]
 pub mod networker_tests {
     use std;
     use std::thread;
