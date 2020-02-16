@@ -9,11 +9,11 @@ use std::ptr;
 
 use failure::{Backtrace, Context, Fail};
 
+use log;
+
 #[cfg(feature = "casting_errors")]
 use ursa::errors::{UrsaCryptoError, UrsaCryptoErrorKind};
 
-#[cfg(feature = "casting_errors")]
-use log;
 use libc::c_char;
 
 use crate::ErrorCode;
@@ -216,7 +216,6 @@ impl From<cell::BorrowMutError> for IndyError {
     }
 }
 
-#[cfg(feature = "casting_errors")]
 impl From<log::SetLoggerError> for IndyError {
     fn from(err: log::SetLoggerError) -> IndyError {
         err.context(IndyErrorKind::InvalidState).into()
