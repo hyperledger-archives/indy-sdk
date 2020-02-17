@@ -2,8 +2,10 @@ import '../module-resolver-helper'
 
 import { assert } from 'chai'
 import * as ffi from 'ffi'
+import * as os from 'os'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import { initVcx, VCXCode, VCXRuntime } from 'src'
+
 
 describe('vcxInit', () => {
   it('should throw if invalid path provided', async () => {
@@ -20,8 +22,15 @@ describe('vcxInit', () => {
 // these tests were created to only test that the ffi could be called with each function
 
 describe('Using the vcx ffi directly', () => {
-  const path = '/usr/lib/libvcx.so'
-  const run = new VCXRuntime({ basepath: path })
+  const extension = {"darwin": ".dylib", "linux": ".so", "win32": ".dll"}
+  const libPath = {"darwin": "/usr/local/lib/", "linux": '/usr/lib/', "win32": 'c:\\windows\\system32\\'}
+
+  const platform = os.platform()
+  // @ts-ignore
+  const postfix = extension[platform.toLowerCase()] || extension['linux']
+  // @ts-ignore
+  const libDir = libPath[platform.toLowerCase()] || libPath['linux']
+  const run = new VCXRuntime({ basepath: `${libDir}libvcx${postfix}` })
 
   before(() => initVcxTestMode())
 
