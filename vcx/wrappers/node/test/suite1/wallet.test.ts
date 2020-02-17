@@ -98,7 +98,7 @@ describe('Wallet:', () => {
 
   describe('signWithAddress:', () => {
     it('success', async () => {
-      const msg = Buffer.from('random string');
+      const msg = Buffer.from('random string')
       const sig = await Wallet.signWithAddress('pay:sov:1234', msg)
       assert.ok(sig)
     })
@@ -106,8 +106,8 @@ describe('Wallet:', () => {
 
   describe('verifyWithAddress:', () => {
     it('success', async () => {
-      const msg = Buffer.from('random string');
-      const sig = Buffer.from('random string');
+      const msg = Buffer.from('random string')
+      const sig = Buffer.from('random string')
       const valid = await Wallet.verifyWithAddress('pay:sov:1234', msg, sig)
       assert.ok(valid)
     })
