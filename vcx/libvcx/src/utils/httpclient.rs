@@ -33,7 +33,7 @@ pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
     let mut response =
         client.post(url)
             .body(body_content.to_owned())
-            .header(CONTENT_TYPE, "octet_stream")
+            .header(CONTENT_TYPE, "application/ssi-agent-wire")
             .send()
             .map_err(|err| {
                 error!("error: {}", err);
