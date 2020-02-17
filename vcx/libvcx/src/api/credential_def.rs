@@ -539,10 +539,12 @@ mod tests {
     use settings;
     use api::return_types_u32;
     use utils::constants::{SCHEMA_ID};
+    use utils::devsetup::*;
 
     #[test]
     fn test_vcx_create_credentialdef_success() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -558,7 +560,8 @@ mod tests {
 
     #[test]
     fn test_vcx_create_credentialdef_fails() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
+
         settings::set_defaults();
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
@@ -575,7 +578,8 @@ mod tests {
 
     #[test]
     fn test_vcx_credentialdef_serialize() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -596,7 +600,8 @@ mod tests {
 
     #[test]
     fn test_vcx_credentialdef_deserialize_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
 
         let original = r#"{"version":"1.0", "data": {"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:1697","issuer_did":"2hoqvcwupRTUNkXn6ArYzs","tag":"tag","name":"Test Credential Definition","rev_ref_def":null,"rev_reg_entry":null,"rev_reg_id":null,"source_id":"SourceId"}}"#;
@@ -611,7 +616,8 @@ mod tests {
 
     #[test]
     fn test_vcx_credentialdef_deserialize_succeeds_with_old_data() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
 
         let original = r#"{"data":{"id":"V4SGRU86Z58d6TV7PBUe6f:3:CL:912:tag1","name":"color","payment_txn":null,"source_id":"1","tag":"tag1"},"version":"1.0"}"#;
@@ -627,7 +633,7 @@ mod tests {
 
     #[test]
     fn test_vcx_credentialdef_release() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
@@ -648,7 +654,8 @@ mod tests {
 
     #[test]
     fn test_vcx_creddef_get_id() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -667,7 +674,8 @@ mod tests {
 
     #[test]
     fn test_get_payment_txn() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let handle = credential_def::create_and_publish_credentialdef("sid".to_string(),
                                                                       "name".to_string(),
@@ -681,7 +689,8 @@ mod tests {
 
     #[test]
     fn test_vcx_prepare_cred_def_success() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let cb = return_types_u32::Return_U32_U32_STR_STR_STR::new().unwrap();
         assert_eq!(vcx_credentialdef_prepare_for_endorser(cb.command_handle,
@@ -704,7 +713,8 @@ mod tests {
 
     #[test]
     fn test_vcx_prepare_cred_def_with_revocation_success() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let cb = return_types_u32::Return_U32_U32_STR_STR_STR::new().unwrap();
         assert_eq!(vcx_credentialdef_prepare_for_endorser(cb.command_handle,
@@ -727,7 +737,8 @@ mod tests {
 
     #[test]
     fn test_vcx_cred_def_get_state() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let (handle, _, _, _) = credential_def::prepare_credentialdef_for_endorser("testid".to_string(),
                                                                                    "Test Credential Def".to_string(),
                                                                                    "6vkhW3L28AophhA68SSzRS".to_string(),

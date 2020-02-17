@@ -12,19 +12,11 @@ pub mod logger;
 
 pub mod error_codes;
 
-use settings;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
-use error::prelude::*;
+use settings;
+
+use std::sync::atomic::{AtomicUsize, Ordering};
 use indy_sys::CommandHandle;
-
-lazy_static! {
-    static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
-}
-
-pub fn mock_libindy_rc() -> u32 { NEXT_LIBINDY_RC.lock().unwrap().pop().unwrap_or(0) as u32 }
-
-pub fn set_libindy_rc(rc: u32) { NEXT_LIBINDY_RC.lock().unwrap().push(rc as i32); }
 
 static COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
@@ -32,28 +24,24 @@ pub fn next_command_handle() -> CommandHandle {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as CommandHandle
 }
 
-pub fn init_pool() -> VcxResult<()> {
-    trace!("init_pool >>>");
+lazy_static! {
+    static ref LIBINDY_MOCK: Mutex<LibindyMock> = Mutex::new(LibindyMock::default());
+}
 
-    if settings::test_indy_mode_enabled() { return Ok(()); }
+#[derive(Default)]
+pub struct LibindyMock {
+    results: Vec<u32>
+}
 
-    let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
-        .unwrap_or(settings::DEFAULT_POOL_NAME.to_string());
-
-    let path: String = settings::get_config_value(settings::CONFIG_GENESIS_PATH)?;
-
-    trace!("opening pool {} with genesis_path: {}", pool_name, path);
-    match pool::create_pool_ledger_config(&pool_name, &path) {
-        Err(e) => {
-            warn!("Pool Config Creation Error: {}", e);
-            Err(e)
+impl LibindyMock {
+    pub fn set_next_result(rc: u32) {
+        if settings::mock_indy_test_mode_enabled() {
+            LIBINDY_MOCK.lock().unwrap().results.push(rc);
         }
-        Ok(()) => {
-            debug!("Pool Config Created Successfully");
-            let pool_config: Option<String> = settings::get_config_value(settings::CONFIG_POOL_CONFIG).ok();
-            pool::open_pool_ledger(&pool_name, pool_config.as_ref().map(String::as_str))?;
-            Ok(())
-        }
+    }
+
+    pub fn get_result() -> u32 {
+        LIBINDY_MOCK.lock().unwrap().results.pop().unwrap_or_default()
     }
 }
 
@@ -61,13 +49,10 @@ pub fn init_pool() -> VcxResult<()> {
 pub mod tests {
     use super::*;
     use futures::Future;
-    use indy_sys::WalletHandle;
+    use utils::devsetup::*;
+    use settings;
 
-    pub fn create_key(_wallet_handle: WalletHandle, seed: Option<&str>) -> String {
-        let key_config = json!({"seed": seed}).to_string();
-        indy::crypto::create_key(::utils::libindy::wallet::get_wallet_handle(), Some(&key_config)).wait().unwrap()
-    }
-
+    // TODO:  Is used for Aries tests...try to remove and use one of devsetup's
     pub mod test_setup {
         use super::*;
         use indy;
@@ -111,13 +96,9 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_pool_and_wallet() {
-        use super::*;
+        let _setup = SetupWalletAndPool::init();
 
-        init!("ledger");
-        // make sure there's a valid wallet and pool before trying to use them.
-        wallet::close_wallet().unwrap();
-        pool::close().unwrap();
-        init_pool().unwrap();
+        pool::init_pool().unwrap();
         wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
     }
 }

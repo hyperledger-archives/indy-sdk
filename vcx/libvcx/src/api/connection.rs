@@ -1140,8 +1140,8 @@ pub extern fn vcx_connection_send_discovery_features(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_connection_get_pw_did(command_handle: u32,
-                                       connection_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, serialized_data: *const c_char)>) -> u32 {
+                                        connection_handle: u32,
+                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, serialized_data: *const c_char)>) -> u32 {
     info!("vcx_connection_get_pw_did >>>");
 
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
@@ -1234,13 +1234,15 @@ mod tests {
     use utils::error;
     use std::time::Duration;
     use api::{return_types_u32, VcxStateType};
-    use utils::httpclient;
-    use utils::constants::{GET_MESSAGES_RESPONSE, INVITE_ACCEPTED_RESPONSE};
+    use utils::constants::{GET_MESSAGES_RESPONSE, INVITE_ACCEPTED_RESPONSE, DELETE_CONNECTION_RESPONSE};
     use utils::error::SUCCESS;
+    use utils::devsetup::*;
+    use utils::httpclient::AgencyMock;
 
     #[test]
     fn test_vcx_connection_create() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_connection_create(cb.command_handle,
                                        CString::new("test_create").unwrap().into_raw(),
@@ -1251,7 +1253,8 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_create_fails() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let rc = vcx_connection_create(0,
                                        CString::new("test_create_fails").unwrap().into_raw(),
                                        None);
@@ -1265,7 +1268,8 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_connect() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_connection_connect(cb.command_handle, 0, CString::new("{}").unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
@@ -1280,7 +1284,8 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_redirect() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32::new().unwrap();
         let rc = vcx_connection_redirect(cb.command_handle, 0, 0,Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
@@ -1303,12 +1308,13 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_update_state() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = build_test_connection();
         assert!(handle > 0);
         connect(handle, None).unwrap();
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
+        AgencyMock::set_next_response(GET_MESSAGES_RESPONSE.to_vec());
         let rc = vcx_connection_update_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
@@ -1316,7 +1322,8 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_update_state_with_message() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = build_test_connection();
         assert!(handle > 0);
         connect(handle, None).unwrap();
@@ -1328,20 +1335,22 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_update_state_fails() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let rc = vcx_connection_update_state(0, 0, None);
         assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 
     #[test]
     fn test_vcx_connection_serialize() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = build_test_connection();
         assert!(handle > 0);
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_connection_serialize(cb.command_handle, handle, Some(cb.get_callback()));
-        assert_eq!(rc, 0);
+        assert_eq!(rc, error::SUCCESS.code_num);
 
         // unwraps on the option, if none, then serializing failed and panic! ensues.
         cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
@@ -1349,14 +1358,16 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_release() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = build_test_connection();
-        assert!(handle > 0);
 
         let rc = vcx_connection_release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
+
         let unknown_handle = handle + 1;
         assert_eq!(vcx_connection_release(unknown_handle), error::INVALID_CONNECTION_HANDLE.code_num);
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_connection_connect(0, handle, CString::new("{}").unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
@@ -1364,7 +1375,8 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_deserialize_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let string = ::utils::constants::DEFAULT_CONNECTION;
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let err = vcx_connection_deserialize(cb.command_handle,
@@ -1377,14 +1389,16 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_get_state() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = build_test_connection();
-        assert!(handle > 0);
+
+        AgencyMock::set_next_response(GET_MESSAGES_RESPONSE.to_vec());
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        connect(handle, None).unwrap();
-        httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
         let _rc = vcx_connection_update_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_connection_get_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
@@ -1393,53 +1407,56 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_delete_connection() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let connection_handle = build_test_connection();
-        connect(connection_handle, Some("{}".to_string())).unwrap();
+
+        AgencyMock::set_next_response(DELETE_CONNECTION_RESPONSE.to_vec());
+
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_connection_delete_connection(cb.command_handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
+
+        assert_eq!(::connection::get_source_id(connection_handle).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
     }
 
     #[test]
     fn test_send_message() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
+        let connection_handle = build_test_connection();
+        ::connection::set_state(connection_handle, VcxStateType::VcxStateAccepted).unwrap();
 
         let msg = CString::new("MESSAGE").unwrap().into_raw();
         let send_msg_options = CString::new(json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()).unwrap().into_raw();
-        let connection_handle = ::connection::tests::build_test_connection();
-        ::connection::set_state(connection_handle, VcxStateType::VcxStateAccepted).unwrap();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_connection_send_message(cb.command_handle, connection_handle, msg, send_msg_options, Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
-    extern "C" fn test_sign_cb(_command_handle: CommandHandle, error: u32, _signature: *const u8, _signature_length: u32) {
-        assert_eq!(error, error::SUCCESS.code_num);
-    }
-
     #[test]
     fn test_sign() {
-        use std::thread;
-        init!("true");
-
-        let msg = format!("My message");
-
-        let msg_len = msg.len();
+        let _setup = SetupMocks::init();
 
         let connection_handle = ::connection::tests::build_test_connection();
-        assert_eq!(vcx_connection_sign_data(0, connection_handle, CString::new(msg).unwrap().as_ptr() as *const u8, msg_len as u32, Some(test_sign_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(2));
-    }
 
-    extern "C" fn test_verify_cb(_command_handle: CommandHandle, _error: u32, valid: bool) {
-        assert_eq!(valid, true);
+        let msg = format!("My message");
+        let msg_len = msg.len();
+
+        let cb = return_types_u32::Return_U32_BIN::new().unwrap();
+        assert_eq!(vcx_connection_sign_data(cb.command_handle,
+                                            connection_handle,
+                                            CString::new(msg).unwrap().as_ptr() as *const u8,
+                                            msg_len as u32,
+                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+        let _sig = cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
     fn test_verify_signature() {
-        use std::thread;
-        init!("true");
+        let _setup = SetupMocks::init();
+
+        let connection_handle = ::connection::tests::build_test_connection();
 
         let msg = format!("My message");
         let msg_len = msg.len();
@@ -1447,15 +1464,14 @@ mod tests {
         let signature = format!("signature");
         let signature_length = signature.len();
 
-        let connection_handle = ::connection::tests::build_test_connection();
-        assert_eq!(vcx_connection_verify_signature(0,
+        let cb = return_types_u32::Return_U32_BOOL::new().unwrap();
+        assert_eq!(vcx_connection_verify_signature(cb.command_handle,
                                                    connection_handle,
                                                    CString::new(msg).unwrap().as_ptr() as *const u8,
                                                    msg_len as u32,
                                                    CString::new(signature).unwrap().as_ptr() as *const u8,
                                                    signature_length as u32,
-                                                   Some(test_verify_cb)), error::SUCCESS.code_num);
-
-        thread::sleep(Duration::from_secs(2));
+                                                   Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 }

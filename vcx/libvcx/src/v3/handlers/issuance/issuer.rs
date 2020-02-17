@@ -279,9 +279,9 @@ fn _create_credential(request: &CredentialRequest, rev_reg_id: &Option<String>, 
 pub mod test {
     use super::*;
 
+    use utils::devsetup::SetupAriesMocks;
     use v3::handlers::connection::tests::mock_connection;
     use v3::test::source_id;
-    use v3::test::setup::TestModeSetup;
     use v3::messages::issuance::test::{_ack, _problem_report};
     use v3::messages::issuance::credential::tests::_credential;
     use v3::messages::issuance::credential_request::tests::_credential_request;
@@ -317,7 +317,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_new() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let issuer_sm = _issuer_sm();
 
@@ -331,7 +331,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_init() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let issuer_sm = _issuer_sm();
 
@@ -340,7 +340,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_credential_init_message_from_initial_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
@@ -350,7 +350,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_other_messages_from_initial_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
 
@@ -363,7 +363,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_credential_request_message_from_offer_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
@@ -374,7 +374,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_credential_proposal_message_from_offer_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
@@ -386,7 +386,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_problem_report_message_from_offer_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
@@ -398,7 +398,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_other_messages_from_offer_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
@@ -409,7 +409,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_credential_send_message_from_request_received_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
@@ -422,7 +422,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_credential_send_message_from_request_received_state_with_invalid_request() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
@@ -435,7 +435,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_other_messages_from_request_received_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
@@ -453,7 +453,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_handle_messages_from_finished_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut issuer_sm = _issuer_sm();
             issuer_sm = issuer_sm.handle_message(CredentialIssuanceMessage::CredentialInit(mock_connection())).unwrap();
@@ -476,7 +476,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_find_message_to_handle_from_initial_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let issuer = _issuer_sm();
 
@@ -497,7 +497,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_find_message_to_handle_from_offer_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let issuer = _issuer_sm().to_offer_sent_state();
 
@@ -568,7 +568,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_find_message_to_handle_from_request_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let issuer = _issuer_sm().to_finished_state();
 
@@ -589,7 +589,7 @@ pub mod test {
 
         #[test]
         fn test_issuer_find_message_to_handle_from_credential_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let issuer = _issuer_sm().to_finished_state();
 
@@ -614,7 +614,7 @@ pub mod test {
 
         #[test]
         fn test_get_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             assert_eq!(VcxStateType::VcxStateInitialized as u32, _issuer_sm().state());
             assert_eq!(VcxStateType::VcxStateOfferSent as u32, _issuer_sm().to_offer_sent_state().state());

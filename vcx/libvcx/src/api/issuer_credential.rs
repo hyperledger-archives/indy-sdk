@@ -800,12 +800,12 @@ mod tests {
     use std::ptr;
     use std::time::Duration;
     use settings;
-    use connection;
     use utils::{
-        constants::{DEFAULT_SERIALIZED_ISSUER_CREDENTIAL, CREDENTIAL_REQ_RESPONSE_STR},
-        get_temp_dir_path
+        constants::CREDENTIAL_REQ_RESPONSE_STR,
+        get_temp_dir_path,
     };
     use api::{return_types_u32, VcxStateType};
+    use utils::devsetup::*;
 
     static DEFAULT_CREDENTIAL_NAME: &str = "Credential Name Default";
     static DEFAULT_DID: &str = "8XFh8yBzrpJQmNyZzgoTqB";
@@ -816,7 +816,7 @@ mod tests {
             "version": "1.0",
             "data": {
                 "cred_def_handle":1,
-                "tails_file": get_temp_dir_path(Some("tails")).to_str().unwrap(),
+                "tails_file": get_temp_dir_path("tails").to_str().unwrap(),
                 "rev_reg_id": "123",
                 "cred_rev_id": "456",
                 "source_id": "standard_credential",
@@ -870,24 +870,31 @@ mod tests {
         }).to_string()
     }
 
-    #[test]
-    fn test_vcx_issuer_create_credential_success() {
-        init!("true");
+    fn _vcx_issuer_create_credential_c_closure() -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
                                                 ::credential_def::tests::create_cred_def_fake(),
-                                                ptr::null(),
+                                                CString::new(DEFAULT_DID).unwrap().into_raw(),
                                                 CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
                                                 CString::new("1").unwrap().into_raw(),
                                                 Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(Some(Duration::from_secs(10)))
+    }
+
+    #[test]
+    fn test_vcx_issuer_create_credential_success() {
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
+        assert!(handle > 0);
     }
 
     #[test]
     fn test_vcx_issuer_create_credential_fails() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
@@ -902,55 +909,37 @@ mod tests {
         let _ = cb.receive(Some(Duration::from_secs(10))).is_err();
     }
 
-    fn create_default_issuer_credential() -> u32 {
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_issuer_create_credential(cb.command_handle,
-                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                ::credential_def::tests::create_cred_def_fake(),
-                                                ptr::null(),
-                                                CString::new(DEFAULT_ATTR).unwrap().into_raw(),
-                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                CString::new("1").unwrap().into_raw(),
-                                                Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap()
-    }
-
     #[test]
     fn test_vcx_issuer_credential_serialize_deserialize() {
-        init!("true");
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_issuer_create_credential(cb.command_handle,
-                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                ::credential_def::tests::create_cred_def_fake(),
-                                                CString::new(DEFAULT_DID).unwrap().into_raw(),
-                                                CString::new(DEFAULT_ATTR).unwrap().into_raw(),
-                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                CString::new("1").unwrap().into_raw(),
-                                                Some(cb.get_callback())), error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_issuer_credential_serialize(cb.command_handle,
                                                    handle,
                                                    Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+        let credential_json = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_credential_deserialize(cb.command_handle,
-                                                     CString::new(s).unwrap().into_raw(),
+                                                     CString::new(credential_json).unwrap().into_raw(),
                                                      Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
-        assert!(handle > 0);
+        let handle_2 = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        assert!(handle_2 > 0);
+
+        assert_ne!(handle, handle_2);
     }
 
     #[test]
     fn test_vcx_issuer_send_credential_offer() {
-        init!("true");
-        let handle = issuer_credential::from_string(DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
-        assert_eq!(issuer_credential::get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
+        let _setup = SetupMocks::init();
 
         let connection_handle = ::connection::tests::build_test_connection();
-        connection::connect(connection_handle, None).unwrap();
+
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_issuer_send_credential_offer(cb.command_handle,
@@ -961,38 +950,37 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_issuer_credential_update_state_with_message(cb.command_handle, handle, CString::new(CREDENTIAL_REQ_RESPONSE_STR).unwrap().into_raw(), Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert_eq!(vcx_issuer_credential_update_state_with_message(cb.command_handle,
+                                                                   handle,
+                                                                   CString::new(CREDENTIAL_REQ_RESPONSE_STR).unwrap().into_raw(),
+                                                                   Some(cb.get_callback())), error::SUCCESS.code_num);
         let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert_eq!(state, VcxStateType::VcxStateRequestReceived as u32);
     }
 
     #[test]
     fn test_vcx_issuer_get_credential_offer_msg() {
-        init!("true");
-        let handle = issuer_credential::from_string(DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
-        assert_eq!(issuer_credential::get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
+        let _setup = SetupMocks::init();
 
-        let connection_handle = ::connection::tests::build_test_connection();
-        connection::connect(connection_handle, None).unwrap();
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_issuer_get_credential_offer_msg(cb.command_handle,
                                                        handle,
                                                        Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
-        assert!(msg.len() > 0);
+        let _msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
     }
 
     #[test]
     fn test_vcx_issuer_send_a_credential() {
-        init!("true");
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
-        let handle = issuer_credential::from_string(&issuer_credential_state_accepted()).unwrap();
+        let _setup = SetupMocks::init();
 
         // create connection
         let connection_handle = ::connection::tests::build_test_connection();
-        connection::connect(connection_handle, None).unwrap();
+
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
+        let handle = issuer_credential::from_string(&issuer_credential_state_accepted()).unwrap();
 
         // send the credential
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -1006,13 +994,9 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_get_credential_msg() {
-        init!("true");
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
-        let handle = issuer_credential::from_string(&issuer_credential_state_accepted()).unwrap();
+        let _setup = SetupMocks::init();
 
-        // create connection
-        let connection_handle = ::connection::tests::build_test_connection();
-        connection::connect(connection_handle, None).unwrap();
+        let handle = issuer_credential::from_string(&issuer_credential_state_accepted()).unwrap();
 
         // send the credential
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
@@ -1021,25 +1005,14 @@ mod tests {
                                                  CString::new(DEFAULT_DID).unwrap().into_raw(),
                                                  Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
-        assert!(msg.len() > 0);
+        let _msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
     }
 
     #[test]
     fn test_create_credential_arguments_correct() {
-        init!("true");
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_issuer_create_credential(cb.command_handle,
-                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                ::credential_def::tests::create_cred_def_fake(),
-                                                CString::new(DEFAULT_DID).unwrap().into_raw(),
-                                                CString::new(DEFAULT_ATTR).unwrap().into_raw(),
-                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                CString::new("1").unwrap().into_raw(),
-                                                Some(cb.get_callback())),
-                   error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_issuer_credential_serialize(cb.command_handle,
@@ -1051,7 +1024,8 @@ mod tests {
 
     #[test]
     fn test_create_credential_invalid_price() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
@@ -1067,25 +1041,28 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_credential_get_state() {
-        init!("true");
-        let handle = issuer_credential::from_string(DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
-        assert!(handle > 0);
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_credential_get_state(cb.command_handle,
                                                    handle,
                                                    Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
-        assert!(state > 0);
+        assert_eq!(state, VcxStateType::VcxStateInitialized as u32);
     }
 
     #[test]
     fn test_get_payment_txn() {
-        init!("false");
-        //settings::set_defaults();
+        let _setup = SetupMocks::init();
+
         let credential = issuer_credential::tests::create_standard_issuer_credential();
+
         let s = credential.to_string().unwrap();
         let handle = issuer_credential::from_string(&s).unwrap();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         vcx_issuer_credential_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
         cb.receive(Some(Duration::from_secs(10))).unwrap();
@@ -1093,7 +1070,8 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_revoke_credential() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
         let handle = issuer_credential::from_string(&issuer_credential_state_accepted()).unwrap();
 
@@ -1108,9 +1086,12 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_credential_release() {
-        init!("true");
-        let handle = create_default_issuer_credential();
-        let unknown_handle = handle + 1;
-        assert_eq!(vcx_issuer_credential_release(unknown_handle), error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num);
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_issuer_create_credential_c_closure().unwrap();
+
+        assert_eq!(vcx_issuer_credential_release(handle), error::SUCCESS.code_num);
+
+        assert_eq!(vcx_issuer_credential_release(handle), error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num);
     }
 }

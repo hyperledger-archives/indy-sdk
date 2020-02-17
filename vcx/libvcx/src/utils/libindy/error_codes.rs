@@ -68,9 +68,12 @@ pub fn map_indy_error_code<C: PrimInt>(error_code: C) -> u32 {
 pub mod tests {
     use super::*;
     use indy::ErrorCode;
+    use utils::devsetup::SetupDefaults;
 
     #[test]
     fn test_invalid_param_err() {
+        let _setup = SetupDefaults::init();
+
         let err100: IndyError = IndyError {
             error_code: ErrorCode::CommonInvalidParam1,
             message: String::new(),

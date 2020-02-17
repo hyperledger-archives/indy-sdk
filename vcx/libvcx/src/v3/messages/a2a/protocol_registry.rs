@@ -162,7 +162,7 @@ pub mod tests {
 
     #[test]
     fn test_get_protocols_for_query_works_for_limited_actors() {
-        ::settings::set_config_value(::settings::ACTORS, &json!([Actors::Invitee]).to_string());
+        ::settings::set_config_value(::settings::CONFIG_ACTORS, &json!([Actors::Invitee]).to_string());
 
         let registry: ProtocolRegistry = ProtocolRegistry::init();
 

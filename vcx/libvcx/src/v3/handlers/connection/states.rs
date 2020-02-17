@@ -680,8 +680,9 @@ pub enum Actor {
 pub mod test {
     use super::*;
 
+    use utils::devsetup::SetupAriesMocks;
     use v3::test::source_id;
-    use v3::test::setup::{TestModeSetup, AgencyModeSetup};
+    use v3::test::setup::AgencyModeSetup;
     use v3::messages::connection::invite::tests::_invitation;
     use v3::messages::connection::request::tests::_request;
     use v3::messages::connection::response::tests::_signed_response;
@@ -724,7 +725,7 @@ pub mod test {
 
             #[test]
             fn test_inviter_new() {
-                let _setup = TestModeSetup::init();
+                let _setup = SetupAriesMocks::init();
 
                 let inviter_sm = inviter_sm();
 
@@ -1096,7 +1097,7 @@ pub mod test {
 
             #[test]
             fn test_get_state() {
-                let _setup = TestModeSetup::init();
+                let _setup = SetupAriesMocks::init();
 
                 assert_eq!(VcxStateType::VcxStateInitialized as u32, inviter_sm().state());
                 assert_eq!(VcxStateType::VcxStateOfferSent as u32, inviter_sm().to_inviter_invited_state().state());
@@ -1110,8 +1111,6 @@ pub mod test {
         use super::*;
 
         use v3::messages::connection::did_doc::tests::_service_endpoint;
-        use ::utils::libindy::tests::create_key;
-        use indy_sys::WalletHandle;
 
         pub fn invitee_sm() -> DidExchangeSM {
             DidExchangeSM::new(Actor::Invitee, &source_id())
@@ -1129,8 +1128,8 @@ pub mod test {
                 self
             }
 
-            pub fn to_invitee_completed_state(mut self, wallet_handle: WalletHandle) -> DidExchangeSM {
-                let key = create_key(wallet_handle, Some(::utils::libindy::tests::test_setup::TRUSTEE_SEED));
+            pub fn to_invitee_completed_state(mut self) -> DidExchangeSM {
+                let key = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL".to_string();
                 let invitation = Invitation::default().set_recipient_keys(vec![key.clone()]);
 
                 self = self.step(DidExchangeMessages::InvitationReceived(invitation)).unwrap();
@@ -1154,7 +1153,7 @@ pub mod test {
 
             #[test]
             fn test_invitee_new() {
-                let _setup = TestModeSetup::init();
+                let _setup = SetupAriesMocks::init();
 
                 let invitee_sm = invitee_sm();
 
@@ -1238,11 +1237,11 @@ pub mod test {
             fn test_did_exchange_handle_response_message_from_requested_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let key = create_key(_setup.wallet_handle, Some(::utils::libindy::tests::test_setup::TRUSTEE_SEED));
+                let key = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
 
                 let mut did_exchange_sm = invitee_sm().to_invitee_requested_state();
 
-                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(_response(&key))).unwrap();
+                did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::ExchangeResponseReceived(_response(key))).unwrap();
 
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
             }
@@ -1289,7 +1288,7 @@ pub mod test {
             fn test_did_exchange_handle_messages_from_completed_state() {
                 let _setup = AgencyModeSetup::init();
 
-                let mut did_exchange_sm = invitee_sm().to_invitee_completed_state(_setup.wallet_handle);
+                let mut did_exchange_sm = invitee_sm().to_invitee_completed_state();
 
                 // Send Ping
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::SendPing(None)).unwrap();
@@ -1398,9 +1397,9 @@ pub mod test {
 
             #[test]
             fn test_find_message_to_handle_from_completed_state() {
-                let setup = AgencyModeSetup::init();
+                let _setup = AgencyModeSetup::init();
 
-                let connection = invitee_sm().to_invitee_completed_state(setup.wallet_handle);
+                let connection = invitee_sm().to_invitee_completed_state();
 
                 // Ping
                 {
@@ -1465,7 +1464,7 @@ pub mod test {
 
             #[test]
             fn test_get_state() {
-                let _setup = TestModeSetup::init();
+                let _setup = SetupAriesMocks::init();
 
                 assert_eq!(VcxStateType::VcxStateInitialized as u32, invitee_sm().state());
                 assert_eq!(VcxStateType::VcxStateOfferSent as u32, invitee_sm().to_invitee_invited_state().state());

@@ -9,11 +9,12 @@ pub const SERIALIZE_VERSION: &'static str = "2.0";
 pub mod test {
     use rand;
     use rand::Rng;
-    use utils::devsetup::tests::{init_plugin, config_with_wallet_handle};
+    use utils::devsetup::config_with_wallet_handle;
     use messages::agent_utils::connect_register_provision;
     use utils::libindy::wallet::*;
     use v3::messages::a2a::A2AMessage;
     use indy_sys::WalletHandle;
+    use utils::plugins::init_plugin;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -45,17 +46,6 @@ pub mod test {
             })
         }
 
-        pub struct TestModeSetup {}
-
-        impl TestModeSetup {
-            pub fn init() -> TestModeSetup {
-                let mut config = base_config();
-                config["enable_test_mode"] = json!("true");
-                ::settings::process_config_string(&config.to_string(), false).unwrap();
-                TestModeSetup {}
-            }
-        }
-
         pub struct AgencyModeSetup {
             pub wallet_name: String,
             pub wallet_handle: WalletHandle,
@@ -67,12 +57,12 @@ pub mod test {
 
                 let mut config = base_config();
                 config["wallet_name"] = json!(wallet_name);
-                config["enable_test_mode"] = json!("agency");
+                config["enable_test_mode"] = json!("true");
 
                 ::settings::process_config_string(&config.to_string(), false).unwrap();
 
                 ::utils::libindy::wallet::create_wallet(wallet_name, None, None, None).unwrap();
-                let config = ::utils::devsetup::tests::config_with_wallet_handle(wallet_name, &config.to_string());
+                let config = ::utils::devsetup::config_with_wallet_handle(wallet_name, &config.to_string());
 
                 ::settings::process_config_string(&config.to_string(), false).unwrap();
 
@@ -102,7 +92,7 @@ pub mod test {
 
     impl Pool {
         pub fn open() -> Pool {
-            ::utils::libindy::pool::tests::open_sandbox_pool();
+            ::utils::libindy::pool::tests::open_test_pool();
             Pool {}
         }
     }

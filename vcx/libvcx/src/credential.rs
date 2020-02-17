@@ -17,11 +17,12 @@ use settings;
 use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
 use utils::libindy::anoncreds;
 use utils::libindy::payments::{pay_a_payee, PaymentTxn};
-use utils::error;
+use utils::{error, constants};
 use error::prelude::*;
 use std::convert::TryInto;
 
 use v3::handlers::issuance::Holder;
+use utils::httpclient::AgencyMock;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credentials>  = Default::default();
@@ -512,7 +513,6 @@ pub fn send_credential_request(handle: u32, connection_handle: u32) -> VcxResult
             }
         }
     }).map_err(handle_err)
-
 }
 
 pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
@@ -534,7 +534,7 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResu
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
     let version = connection::get_version(connection_handle)?;
 
-    if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
+    AgencyMock::set_next_response(constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
 
     let message = get_message::get_connection_messages(&my_did,
                                                        &my_vk,
@@ -584,7 +584,7 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
     let version = connection::get_version(connection_handle)?;
 
-    if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
+    AgencyMock::set_next_response(constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
 
     let payload = get_message::get_connection_messages(&my_did,
                                                        &my_vk,
@@ -592,7 +592,7 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
                                                        &agent_vk,
                                                        None,
                                                        None,
-    &version)
+                                                       &version)
         .map_err(|err| err.extend("Cannot get messages"))?;
 
     let mut messages = Vec::new();
@@ -725,18 +725,15 @@ pub fn get_credential_status(handle: u32) -> VcxResult<u32> {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate serde_json;
-
     use super::*;
-    use utils::httpclient;
     use api::VcxStateType;
-    use serde_json::Value;
+    use utils::devsetup::*;
 
     pub const BAD_CREDENTIAL_OFFER: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
 
     use utils::constants::{DEFAULT_SERIALIZED_CREDENTIAL,
                            DEFAULT_SERIALIZED_CREDENTIAL_PAYMENT_REQUIRED};
-    use utils::libindy::payments::build_test_address;
+    use utils::libindy::payments::{build_test_address, get_wallet_token_info};
 
     pub fn create_credential(offer: &str) -> Credential {
         let mut credential = _credential_create("source_id");
@@ -758,108 +755,129 @@ pub mod tests {
         cred
     }
 
+    fn _get_offer(handle: u32) -> String {
+        let offers = get_credential_offer_messages(handle).unwrap();
+        let offers: serde_json::Value = serde_json::from_str(&offers).unwrap();
+        let offer = serde_json::to_string(&offers[0]).unwrap();
+        offer
+    }
+
     #[test]
     fn test_credential_defaults() {
+        let _setup = SetupDefaults::init();
+
         let credential = Credential::default();
         assert_eq!(credential.build_request("test1", "test2").unwrap_err().kind(), VcxErrorKind::NotReady);
     }
 
     #[test]
     fn test_credential_create_with_offer() {
-        let handle = credential_create_with_offer("test_credential_create_with_offer", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
+        let _setup = SetupDefaults::init();
+
+        let handle = credential_create_with_offer("test_credential_create_with_offer", constants::CREDENTIAL_OFFER_JSON).unwrap();
         assert!(handle > 0);
     }
 
     #[test]
     fn test_credential_create_with_bad_offer() {
-        match credential_create_with_offer("test_credential_create_with_bad_offer", BAD_CREDENTIAL_OFFER) {
-            Ok(_) => panic!("should have failed with bad credential offer"),
-            Err(x) => assert_eq!(x.kind(), VcxErrorKind::InvalidJson)
-        };
+        let _setup = SetupDefaults::init();
+
+        let err = credential_create_with_offer("test_credential_create_with_bad_offer", BAD_CREDENTIAL_OFFER).unwrap_err();
+        assert_eq!(err.kind(), VcxErrorKind::InvalidJson);
     }
 
     #[test]
     fn test_credential_serialize_deserialize() {
-        let handle = credential_create_with_offer("test_credential_serialize_deserialize", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
+        let _setup = SetupDefaults::init();
+
+        let handle = credential_create_with_offer("test_credential_serialize_deserialize", constants::CREDENTIAL_OFFER_JSON).unwrap();
         let credential_string = to_string(handle).unwrap();
         release(handle).unwrap();
-        assert_eq!(release(handle).unwrap_err().kind(), VcxErrorKind::InvalidCredentialHandle);
+
         let handle = from_string(&credential_string).unwrap();
         let cred1: Credential = Credential::from_str(&credential_string).unwrap();
         assert_eq!(cred1.get_state(), 3);
+
         let cred2: Credential = Credential::from_str(&to_string(handle).unwrap()).unwrap();
         assert!(!cred1.is_payment_required());
+
         assert_eq!(cred1, cred2);
-        let handle = from_string(DEFAULT_SERIALIZED_CREDENTIAL_PAYMENT_REQUIRED).unwrap();
-        let payment_required_credential: Credential = Credential::from_str(&to_string(handle).unwrap()).unwrap();
-        assert!(payment_required_credential.is_payment_required())
     }
 
     #[test]
     fn full_credential_test() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let connection_h = connection::tests::build_test_connection();
-        let offers = get_credential_offer_messages(connection_h).unwrap();
-        let offers: Value = serde_json::from_str(&offers).unwrap();
-        let offers = serde_json::to_string(&offers[0]).unwrap();
 
-        let c_h = credential_create_with_offer("TEST_CREDENTIAL", &offers).unwrap();
+        let offer = _get_offer(connection_h);
+
+        let c_h = credential_create_with_offer("TEST_CREDENTIAL", &offer).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(c_h).unwrap());
 
         send_credential_request(c_h, connection_h).unwrap();
         assert_eq!(VcxStateType::VcxStateOfferSent as u32, get_state(c_h).unwrap());
 
         assert_eq!(get_credential_id(c_h).unwrap(), "");
-        httpclient::set_next_u8_response(::utils::constants::CREDENTIAL_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(::utils::constants::UPDATE_CREDENTIAL_RESPONSE.to_vec());
+
+        {
+            AgencyMock::set_next_response(::utils::constants::CREDENTIAL_RESPONSE.to_vec());
+            AgencyMock::set_next_response(::utils::constants::UPDATE_CREDENTIAL_RESPONSE.to_vec());
+        }
         update_state(c_h, None).unwrap();
         assert_eq!(get_state(c_h).unwrap(), VcxStateType::VcxStateAccepted as u32);
+
         assert_eq!(get_credential_id(c_h).unwrap(), "cred_id"); // this is set in test mode
-        assert!(get_credential(c_h).unwrap().len() > 100);
-        let _serialized = to_string(c_h).unwrap();
+
+        let msg = get_credential(c_h).unwrap();
+        let msg_value: serde_json::Value = serde_json::from_str(&msg).unwrap();
+
+        let _credential_struct: CredentialMessage = serde_json::from_str(msg_value["credential"].as_str().unwrap()).unwrap();
     }
 
     #[test]
     fn test_get_request_msg() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let connection_h = connection::tests::build_test_connection();
+
+        let offer = _get_offer(connection_h);
+
         let my_pw_did = ::connection::get_pw_did(connection_h).unwrap();
         let their_pw_did = ::connection::get_their_pw_did(connection_h).unwrap();
-        let offers = get_credential_offer_messages(connection_h).unwrap();
-        let offers: Value = serde_json::from_str(&offers).unwrap();
-        let offers = serde_json::to_string(&offers[0]).unwrap();
 
-        let c_h = credential_create_with_offer("TEST_CREDENTIAL", &offers).unwrap();
+        let c_h = credential_create_with_offer("TEST_CREDENTIAL", &offer).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(c_h).unwrap());
 
         let msg = generate_credential_request_msg(c_h, &my_pw_did, &their_pw_did).unwrap();
-        assert!(msg.len() > 0);
+        ::serde_json::from_str::<CredentialRequest>(&msg).unwrap();
     }
 
     #[test]
     fn test_get_credential_offer() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let connection_h = connection::tests::build_test_connection();
+
         let offer = get_credential_offer_messages(connection_h).unwrap();
         let o: serde_json::Value = serde_json::from_str(&offer).unwrap();
         let _credential_offer: CredentialOffer = serde_json::from_str(&o[0][0].to_string()).unwrap();
-        assert!(offer.len() > 50);
     }
 
     #[test]
     fn test_pay_for_credential_with_sufficient_funds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cred = create_credential_with_price(1);
         assert!(cred.is_payment_required());
-        let payment = serde_json::to_string(&cred.submit_payment().unwrap().0).unwrap();
-        assert!(payment.len() > 50);
+        let (payment, _receipt): (PaymentTxn, String) = cred.submit_payment().unwrap();
+        assert!(payment.amount > 0);
     }
 
     #[test]
     fn test_pay_for_non_premium_credential() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cred: Credential = Credential::from_str(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         assert!(cred.payment_info.is_none());
         assert_eq!(cred.submit_payment().unwrap_err().kind(), VcxErrorKind::NoPaymentInformation);
@@ -867,14 +885,16 @@ pub mod tests {
 
     #[test]
     fn test_pay_for_credential_with_insufficient_funds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cred = create_credential_with_price(10000000000);
         assert!(cred.submit_payment().is_err());
     }
 
     #[test]
     fn test_pay_for_credential_with_handle() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = from_string(DEFAULT_SERIALIZED_CREDENTIAL_PAYMENT_REQUIRED).unwrap();
         submit_payment(handle).unwrap();
         get_payment_information(handle).unwrap();
@@ -886,29 +906,39 @@ pub mod tests {
 
     #[test]
     fn test_get_credential() {
-        init!("true");
-        let handle = from_string(::utils::constants::DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
+        let _setup = SetupMocks::init();
+
+        let handle = from_string(constants::DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         let _offer_string = get_credential_offer(handle).unwrap();
-        let handle = from_string(::utils::constants::FULL_CREDENTIAL_SERIALIZED).unwrap();
+
+        let handle = from_string(constants::FULL_CREDENTIAL_SERIALIZED).unwrap();
         let _cred_string = get_credential(handle).unwrap();
     }
 
     #[test]
     fn test_submit_payment_through_credential_request() {
-        init!("true");
-        use utils::libindy::payments::get_wallet_token_info;
+        let _setup = SetupMocks::init();
+
+        let connection_h = connection::tests::build_test_connection();
+
         let balance = get_wallet_token_info().unwrap().get_balance();
         assert!(balance > 0);
-        let mut cred = create_credential_with_price(5);
-        assert!(cred.send_request(1234).is_err());
-        let new_balance = get_wallet_token_info().unwrap().get_balance();
-        assert_eq!(new_balance, balance);
+
+        let price = 5;
+        let mut cred = create_credential_with_price(price);
+
+        assert_eq!(cred.send_request(0).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        assert_eq!(get_wallet_token_info().unwrap().get_balance(), balance);
+
+        cred.send_request(connection_h).unwrap();
+        assert_eq!(get_wallet_token_info().unwrap().get_balance(), balance); // test mode doesn't change balance?
     }
 
     #[test]
     fn test_get_cred_offer_returns_json_string_with_cred_offer_json_nested() {
-        init!("true");
-        let handle = from_string(::utils::constants::DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
+        let _setup = SetupMocks::init();
+
+        let handle = from_string(constants::DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         let offer_string = get_credential_offer(handle).unwrap();
         let offer_value: serde_json::Value = serde_json::from_str(&offer_string).unwrap();
 

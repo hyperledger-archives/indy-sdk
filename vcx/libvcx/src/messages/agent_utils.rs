@@ -1,11 +1,11 @@
 use settings;
 use messages::{A2AMessage, A2AMessageV1, A2AMessageV2, A2AMessageKinds, prepare_message_for_agency, parse_response_from_agency};
 use messages::message_type::MessageTypes;
-use utils::constants::*;
-use utils::{error, httpclient};
+use utils::{error, httpclient, constants};
 use utils::libindy::{wallet, anoncreds};
-use utils::libindy::signus::create_my_did;
+use utils::libindy::signus::create_and_store_my_did;
 use error::prelude::*;
+use utils::httpclient::AgencyMock;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Connect {
@@ -85,7 +85,7 @@ pub struct CreateAgentResponse {
 pub struct ComMethodUpdated {
     #[serde(rename = "@type")]
     msg_type: MessageTypes,
-    id: String
+    id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -193,10 +193,10 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
 
     let method_name = my_config.did_method.as_ref().map(String::as_str);
 
-    let (my_did, my_vk) = create_my_did(my_config.agent_seed.as_ref().map(String::as_str), method_name)?;
+    let (my_did, my_vk) = create_and_store_my_did(my_config.agent_seed.as_ref().map(String::as_str), method_name)?;
 
     let (issuer_did, issuer_vk) = if my_config.enterprise_seed != my_config.agent_seed {
-        create_my_did(my_config.enterprise_seed.as_ref().map(String::as_str), method_name)?
+        create_and_store_my_did(my_config.enterprise_seed.as_ref().map(String::as_str), method_name)?
     } else {
         (my_did.clone(), my_vk.clone())
     };
@@ -257,9 +257,7 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
 
 fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
     /* STEP 1 - CONNECT */
-    if settings::test_agency_mode_enabled() {
-        httpclient::set_next_u8_response(CONNECTED_RESPONSE.to_vec());
-    }
+    AgencyMock::set_next_response(constants::CONNECTED_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
         A2AMessageV1::Connect(Connect::build(my_did, my_vk))
@@ -276,9 +274,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agency_pw_vk);
 
     /* STEP 2 - REGISTER */
-    if settings::test_agency_mode_enabled() {
-        httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
-    }
+    AgencyMock::set_next_response(constants::REGISTER_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
         A2AMessageV1::SignUp(SignUp::build())
@@ -293,9 +289,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
         };
 
     /* STEP 3 - CREATE AGENT */
-    if settings::test_agency_mode_enabled() {
-        httpclient::set_next_u8_response(AGENT_CREATED.to_vec());
-    }
+    AgencyMock::set_next_response(constants::AGENT_CREATED.to_vec());
 
     let message = A2AMessage::Version1(
         A2AMessageV1::CreateAgent(CreateAgent::build())
@@ -366,10 +360,10 @@ pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
     let com_method = ComMethod {
         id: id.to_string(),
         e_type: 1,
-        value: value.to_string()
+        value: value.to_string(),
     };
 
-    match settings::ProtocolTypes::from(settings::get_protocol_type()) {
+    match settings::get_protocol_type() {
         settings::ProtocolTypes::V1 => {
             update_agent_info_v1(&to_did, com_method)
         }
@@ -380,9 +374,7 @@ pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
 }
 
 fn update_agent_info_v1(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
-    if settings::test_agency_mode_enabled() {
-        httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
-    }
+    AgencyMock::set_next_response(constants::REGISTER_RESPONSE.to_vec());
 
     let message = A2AMessage::Version1(
         A2AMessageV1::UpdateComMethod(UpdateComMethod::build(com_method))
@@ -411,10 +403,11 @@ fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<A2AM
 #[cfg(test)]
 mod tests {
     use super::*;
+    use utils::devsetup::*;
 
     #[test]
     fn test_connect_register_provision() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let agency_did = "Ab8TvZa3Q19VNkQVzAWVL7";
         let agency_vk = "5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf";
@@ -428,13 +421,32 @@ mod tests {
         });
 
         let result = connect_register_provision(&config.to_string()).unwrap();
-        assert!(result.len() > 0);
+
+        let expected = json!({
+            "agency_did":"Ab8TvZa3Q19VNkQVzAWVL7",
+            "agency_endpoint":"http://www.whocares.org",
+            "agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf",
+            "genesis_path":"<CHANGE_ME>",
+            "institution_did":"FhrSrYtQcw3p9xwf7NYemf",
+            "institution_logo_url":"<CHANGE_ME>",
+            "institution_name":"<CHANGE_ME>",
+            "institution_verkey":"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "protocol_type":"1.0",
+            "remote_to_sdk_did":"A4a69qafqZHPLPPu5JFQrc",
+            "remote_to_sdk_verkey":"5wTKXrdfUiTQ7f3sZJzvHpcS7XHHxiBkFtPCsynZtv4k",
+            "sdk_to_remote_did":"FhrSrYtQcw3p9xwf7NYemf",
+            "sdk_to_remote_verkey":"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "wallet_key":"test_key",
+            "wallet_name":"LIBVCX_SDK_WALLET"
+        });
+
+        assert_eq!(expected, ::serde_json::from_str::<serde_json::Value>(&result).unwrap());
     }
 
     #[ignore]
     #[test]
     fn test_real_connect_register_provision() {
-        settings::set_defaults();
+        let _setup = SetupDefaults::init();
 
         let agency_did = "VsKV7grR1BUE29mG2Fm2kX";
         let agency_vk = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
@@ -453,9 +465,7 @@ mod tests {
 
     #[test]
     fn test_update_agent_info() {
-        init!("true");
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        let _setup = SetupMocks::init();
 
         update_agent_info("123", "value").unwrap();
     }
@@ -464,9 +474,9 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_update_agent_info_real() {
-        init!("agency");
-        ::utils::devsetup::tests::set_consumer();
-        assert!(update_agent_info("7b7f97f2", "FCM:Value").is_ok());
-        teardown!("agency");
+        let _setup = SetupLibraryAgencyV1::init();
+
+        ::utils::devsetup::set_consumer();
+        update_agent_info("7b7f97f2", "FCM:Value").unwrap();
     }
 }

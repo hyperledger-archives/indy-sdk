@@ -537,48 +537,54 @@ mod tests {
     #[allow(unused_imports)]
     use utils::constants::{SCHEMA_ID, SCHEMA_WITH_VERSION, DEFAULT_SCHEMA_ATTRS, DEFAULT_SCHEMA_ID, DEFAULT_SCHEMA_NAME};
     use api::return_types_u32;
+    use utils::devsetup::*;
+    use schema::tests::prepare_schema_data;
+    use schema::CreateSchema;
 
-    #[test]
-    fn test_vcx_create_schema_success() {
-        init!("true");
+    fn vcx_schema_create_c_closure(name: &str, version: &str, data: &str) -> u32 {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_schema_create(cb.command_handle,
                                      CString::new("Test Source ID").unwrap().into_raw(),
-                                     CString::new("Test Schema").unwrap().into_raw(),
-                                     CString::new("0.0").unwrap().into_raw(),
-                                     CString::new("[att1, att2]").unwrap().into_raw(),
+                                     CString::new(name).unwrap().into_raw(),
+                                     CString::new(version).unwrap().into_raw(),
+                                     CString::new(data).unwrap().into_raw(),
                                      0,
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        handle
+    }
+
+    fn vcx_schema_serialize_c_closure(handle: u32) -> String {
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_schema_serialize(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        let schema_json = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+        schema_json
+    }
+
+    #[test]
+    fn test_vcx_create_schema_success() {
+        let _setup = SetupMocks::init();
+
+        let (_, schema_name, schema_version, data) = prepare_schema_data();
+        let handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data);
         assert!(handle > 0)
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_create_schema_with_pool() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPool::init();
 
-        let data = r#"["name","male"]"#;
-        let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
-        let schema_version: String = format!("{}.{}", rand::thread_rng().gen::<u32>().to_string(),
-                                             rand::thread_rng().gen::<u32>().to_string());
-
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_schema_create(cb.command_handle,
-                                     CString::new("Test Source ID").unwrap().into_raw(),
-                                     CString::new(schema_name).unwrap().into_raw(),
-                                     CString::new(schema_version).unwrap().into_raw(),
-                                     CString::new(data).unwrap().into_raw(),
-                                     0,
-                                     Some(cb.get_callback())), error::SUCCESS.code_num);
-
-        let _handle = cb.receive(Some(Duration::from_secs(5))).unwrap();
+        let (_, schema_name, schema_version, data) = prepare_schema_data();
+        let handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data);
+        assert!(handle > 0)
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_schema_get_attrs_with_pool() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPool::init();
+
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
 
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
@@ -595,23 +601,18 @@ mod tests {
 
     #[test]
     fn test_vcx_schema_serialize() {
-        init!("true");
-        let data = r#"["name","male"]"#;
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_schema_create(cb.command_handle,
-                                     CString::new("Test Source ID").unwrap().into_raw(),
-                                     CString::new("Test Schema").unwrap().into_raw(),
-                                     CString::new("0.0.0").unwrap().into_raw(),
-                                     CString::new(data).unwrap().into_raw(),
-                                     0,
-                                     Some(cb.get_callback())), error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_millis(200))).unwrap();
-        assert!(handle > 0);
+        let _setup = SetupMocks::init();
+
+        let (_, schema_name, schema_version, data) = prepare_schema_data();
+        let handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data);
+
+        let _schema_json = vcx_schema_serialize_c_closure(handle);
     }
 
     #[test]
     fn test_vcx_schema_deserialize_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let err = vcx_schema_deserialize(cb.command_handle, CString::new(SCHEMA_WITH_VERSION).unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(err, error::SUCCESS.code_num);
@@ -621,17 +622,11 @@ mod tests {
 
     #[test]
     fn test_vcx_schema_get_schema_id_succeeds() {
-        init!("true");
-        let data = r#"["name","male"]"#;
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_schema_create(cb.command_handle,
-                                     CString::new("Test Source ID").unwrap().into_raw(),
-                                     CString::new(DEFAULT_SCHEMA_NAME).unwrap().into_raw(),
-                                     CString::new("0.0.0").unwrap().into_raw(),
-                                     CString::new(data).unwrap().into_raw(),
-                                     0,
-                                     Some(cb.get_callback())), error::SUCCESS.code_num);
-        let schema_handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let _setup = SetupMocks::init();
+
+        let (_, schema_name, schema_version, data) = prepare_schema_data();
+        let schema_handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data);
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_schema_get_schema_id(cb.command_handle, schema_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         let id = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
@@ -640,7 +635,8 @@ mod tests {
 
     #[test]
     fn test_vcx_schema_get_attrs() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         let data = r#"["height","name","sex","age"]"#;
@@ -656,10 +652,13 @@ mod tests {
 
     #[test]
     fn test_get_payment_txn() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let handle = schema::create_and_publish_schema("testid", did, "name".to_string(), "1.0".to_string(), "[\"name\":\"male\"]".to_string()).unwrap();
+
+        let (_, schema_name, schema_version, data) = prepare_schema_data();
+        let handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data);
+
         let _rc = vcx_schema_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
         let txn = cb.receive(Some(Duration::from_secs(2))).unwrap();
         assert!(txn.is_some());
@@ -668,44 +667,33 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_schema_serialize_contains_version() {
-        init!("ledger");
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let schema_name = format!("TestSchema-{}", rand::thread_rng().gen::<u32>());
-        let source_id = "Test Source ID";
-        assert_eq!(vcx_schema_create(cb.command_handle,
-                                     CString::new(source_id).unwrap().into_raw(),
-                                     CString::new(schema_name).unwrap().into_raw(),
-                                     CString::new("0.0.0").unwrap().into_raw(),
-                                     CString::new(r#"["name","dob"]"#).unwrap().into_raw(),
-                                     0,
-                                     Some(cb.get_callback())), error::SUCCESS.code_num);
-        let handle = match cb.receive(Some(Duration::from_secs(5))) {
-            Ok(h) => h,
-            Err(e) => panic!("Error Creating serialized schema: {}", e),
-        };
+        let _setup = SetupLibraryWalletPool::init();
 
-        let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        assert_eq!(vcx_schema_serialize(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        let data = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
-        use schema::CreateSchema;
-        let j: serde_json::Value = serde_json::from_str(&data.clone()).unwrap();
-        let schema: CreateSchema = serde_json::from_value(j["data"].clone()).unwrap();
+        let (_, schema_name, schema_version, data) = prepare_schema_data();
+        let handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data);
+
+        let schema_json = vcx_schema_serialize_c_closure(handle);
+
+        let j: serde_json::Value = serde_json::from_str(&schema_json).unwrap();
+        let _schema: CreateSchema = serde_json::from_value(j["data"].clone()).unwrap();
         assert_eq!(j["version"], "1.0");
-        assert_eq!(schema.get_source_id(), source_id);
     }
 
     #[test]
     fn test_vcx_schema_release() {
-        init!("true");
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let handle = schema::create_and_publish_schema("testid", did, "name".to_string(), "1.0".to_string(), "[\"name\":\"male\"]".to_string()).unwrap();
+        let _setup = SetupMocks::init();
+
+        let (_, schema_name, schema_version, data) = prepare_schema_data();
+        let handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data);
+
         let unknown_handle = handle + 1;
         assert_eq!(vcx_schema_release(unknown_handle), error::INVALID_SCHEMA_HANDLE.code_num);
     }
 
     #[test]
     fn test_vcx_prepare_schema_success() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         assert_eq!(vcx_schema_prepare_for_endorser(cb.command_handle,
@@ -724,7 +712,8 @@ mod tests {
 
     #[test]
     fn test_vcx_schema_get_state() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (handle, _) = schema::prepare_schema_for_endorser("testid", did, "name".to_string(), "1.0".to_string(), "[\"name\":\"male\"]".to_string(), "V4SGRU86Z58d6TV7PBUe6f".to_string()).unwrap();
         {

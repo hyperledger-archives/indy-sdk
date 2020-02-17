@@ -6,20 +6,8 @@ use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use utils::libindy::wallet::get_wallet_handle;
 use error::prelude::*;
 
-pub fn create_and_store_my_did(seed: Option<&str>) -> VcxResult<(String, String)> {
-    if settings::test_indy_mode_enabled() {
-        return Ok((::utils::constants::DID.to_string(), ::utils::constants::VERKEY.to_string()));
-    }
-
-    let my_did_json = seed.map_or(json!({}), |seed| json!({"seed": seed}));
-
-    did::create_and_store_my_did(get_wallet_handle(), &my_did_json.to_string())
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
-}
-
-pub fn create_my_did(seed: Option<&str>, method_name: Option<&str>) -> VcxResult<(String, String)> {
-    if settings::test_indy_mode_enabled() {
+pub fn create_and_store_my_did(seed: Option<&str>, method_name: Option<&str>) -> VcxResult<(String, String)> {
+    if settings::mock_indy_test_mode_enabled() {
         return Ok((::utils::constants::DID.to_string(), ::utils::constants::VERKEY.to_string()));
     }
 
@@ -31,7 +19,7 @@ pub fn create_my_did(seed: Option<&str>, method_name: Option<&str>) -> VcxResult
 }
 
 pub fn get_local_verkey(did: &str) -> VcxResult<String> {
-    if settings::test_indy_mode_enabled() {
+    if settings::mock_indy_test_mode_enabled() {
         return Ok(::utils::constants::VERKEY.to_string());
     }
 

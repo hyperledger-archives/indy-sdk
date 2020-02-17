@@ -4,7 +4,6 @@ use utils::error;
 use utils::libindy::payments::{pay_a_payee, get_wallet_token_info, create_address, sign_with_address, verify_with_address};
 use utils::libindy::wallet::{export, import, get_wallet_handle};
 use utils::libindy::wallet;
-use std::path::Path;
 use utils::threadpool::spawn;
 use std::thread;
 use std::ptr::null;
@@ -781,7 +780,6 @@ pub extern fn vcx_wallet_export(command_handle: CommandHandle,
 
 
     spawn(move || {
-        let path = Path::new(&path);
         trace!("vcx_wallet_export(command_handle: {}, path: {:?}, backup_key: ****)", command_handle, path);
         match export(get_wallet_handle(), &path, &backup_key) {
             Ok(()) => {
@@ -904,10 +902,12 @@ pub mod tests {
     use utils::libindy::wallet::delete_wallet;
     #[cfg(feature = "pool_tests")]
     use utils::libindy::payments::build_test_address;
+    use utils::devsetup::*;
 
     #[test]
     fn test_get_token_info() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_wallet_get_token_info(cb.command_handle,
                                              0,
@@ -918,7 +918,8 @@ pub mod tests {
 
     #[test]
     fn test_send_tokens() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_wallet_send_tokens(cb.command_handle,
                                           0,
@@ -931,7 +932,8 @@ pub mod tests {
 
     #[test]
     fn test_create_address() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_wallet_create_payment_address(cb.command_handle,
                                                      ptr::null_mut(),
@@ -942,7 +944,8 @@ pub mod tests {
 
     #[test]
     fn test_sign_with_address_api() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_BIN::new().unwrap();
         let msg = "message";
         let msg_len = msg.len();
@@ -959,7 +962,8 @@ pub mod tests {
 
     #[test]
     fn test_verify_with_address_api() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_BOOL::new().unwrap();
         let msg = "message";
         let msg_len = msg.len();
@@ -980,12 +984,10 @@ pub mod tests {
     }
 
     #[cfg(feature = "pool_tests")]
-    use utils::libindy::pool;
-
-    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_sign_verify_with_address() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPool::init();
+
         let cb_sign = return_types_u32::Return_U32_BIN::new().unwrap();
         let cb_verify = return_types_u32::Return_U32_BOOL::new().unwrap();
         let cb_addr = return_types_u32::Return_U32_STR::new().unwrap();
@@ -1020,13 +1022,13 @@ pub mod tests {
         assert_eq!(res_verify, error::SUCCESS.code_num);
         let valid = cb_verify.receive(Some(Duration::from_secs(10))).unwrap();
         assert!(valid);
-        let _ = pool::close().unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_send_payment() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPool::init();
+
         let recipient = CStringUtils::string_to_cstring(build_test_address("2ZrAm5Jc3sP4NAXMQbaWzDxEa12xxJW3VgWjbbPtMPQCoznJyS"));
         println!("sending payment to {:?}", recipient);
         let balance = ::utils::libindy::payments::get_wallet_token_info().unwrap().get_balance();
@@ -1045,7 +1047,8 @@ pub mod tests {
 
     #[test]
     fn test_add_record() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
+
         let xtype = CStringUtils::string_to_cstring("record_type".to_string());
         let id = CStringUtils::string_to_cstring("123".to_string());
         let value = CStringUtils::string_to_cstring("Record Value".to_string());
@@ -1077,7 +1080,8 @@ pub mod tests {
 
     #[test]
     fn test_add_record_with_tag() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
+
         let xtype = CStringUtils::string_to_cstring("record_type".to_string());
         let id = CStringUtils::string_to_cstring("123".to_string());
         let value = CStringUtils::string_to_cstring("Record Value".to_string());
@@ -1096,7 +1100,8 @@ pub mod tests {
 
     #[test]
     fn test_get_record_fails_with_no_value() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
+
         let xtype = CStringUtils::string_to_cstring("record_type".to_string());
         let id = CStringUtils::string_to_cstring("123".to_string());
         let options = json!({
@@ -1118,7 +1123,8 @@ pub mod tests {
 
     #[test]
     fn test_get_record_value_success() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
+
         let xtype = CStringUtils::string_to_cstring("record_type".to_string());
         let id = CStringUtils::string_to_cstring("123".to_string());
         let value = CStringUtils::string_to_cstring("Record Value".to_string());
@@ -1153,7 +1159,8 @@ pub mod tests {
 
     #[test]
     fn test_delete_record() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
+
         let xtype = CStringUtils::string_to_cstring("record_type".to_string());
         let id = CStringUtils::string_to_cstring("123".to_string());
         let value = CStringUtils::string_to_cstring("Record Value".to_string());
@@ -1191,7 +1198,8 @@ pub mod tests {
 
     #[test]
     fn test_update_record_value() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
+
         let xtype = CStringUtils::string_to_cstring("record_type".to_string());
         let id = CStringUtils::string_to_cstring("123".to_string());
         let value = CStringUtils::string_to_cstring("Record Value".to_string());
@@ -1241,10 +1249,11 @@ pub mod tests {
         use std::path::Path;
         use std::time::Duration;
         use settings;
-        use utils::devsetup::tests::setup_wallet_env;
+        use utils::devsetup::setup_wallet_env;
+
+        let _setup = SetupDefaults::init();
 
         settings::set_defaults();
-        teardown!("false");
         let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
         let filename_str = &settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
         let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();

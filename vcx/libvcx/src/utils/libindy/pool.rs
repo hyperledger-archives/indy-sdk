@@ -11,10 +11,18 @@ lazy_static! {
     static ref POOL_HANDLE: RwLock<Option<i32>> = RwLock::new(None);
 }
 
-pub fn change_pool_handle(handle: Option<i32>) {
+pub fn set_pool_handle(handle: Option<i32>) {
     let mut h = POOL_HANDLE.write().unwrap();
     *h = handle;
 }
+
+pub fn get_pool_handle() -> VcxResult<i32> {
+    POOL_HANDLE.read()
+        .or(Err(VcxError::from_msg(VcxErrorKind::NoPoolOpen, "There is no pool opened")))?
+        .ok_or(VcxError::from_msg(VcxErrorKind::NoPoolOpen, "There is no pool opened"))
+}
+
+pub fn reset_pool_handle() { set_pool_handle(None); }
 
 pub fn set_protocol_version() -> VcxResult<()> {
     pool::set_protocol_version(settings::get_protocol_version())
@@ -43,37 +51,58 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> VcxResult<u32>
         .wait()
         .map_err(map_rust_indy_sdk_error)?;
 
-    change_pool_handle(Some(handle));
+    set_pool_handle(Some(handle));
     Ok(handle as u32)
+}
+
+pub fn init_pool() -> VcxResult<()> {
+    trace!("init_pool >>>");
+
+    if settings::mock_indy_test_mode_enabled() { return Ok(()); }
+
+    let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
+        .unwrap_or(settings::DEFAULT_POOL_NAME.to_string());
+
+    let path: String = settings::get_config_value(settings::CONFIG_GENESIS_PATH)?;
+
+    trace!("opening pool {} with genesis_path: {}", pool_name, path);
+
+    create_pool_ledger_config(&pool_name, &path)
+        .map_err(|err|{
+            warn!("Pool Config Creation Error: {}", err);
+            err
+        })?;
+
+    debug!("Pool Config Created Successfully");
+    let pool_config: Option<String> = settings::get_config_value(settings::CONFIG_POOL_CONFIG).ok();
+    open_pool_ledger(&pool_name, pool_config.as_ref().map(String::as_str))?;
+    Ok(())
 }
 
 pub fn close() -> VcxResult<()> {
     let handle = get_pool_handle()?;
-    change_pool_handle(None);
 
     //TODO there was timeout here (before future-based Rust wrapper)
     pool::close_pool_ledger(handle)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(map_rust_indy_sdk_error)?;
+
+    reset_pool_handle();
+
+    Ok(())
 }
 
 pub fn delete(pool_name: &str) -> VcxResult<()> {
     trace!("delete >>> pool_name: {}", pool_name);
 
-    if settings::test_indy_mode_enabled() {
-        change_pool_handle(None);
+    if settings::mock_indy_test_mode_enabled() {
+        set_pool_handle(None);
         return Ok(());
     }
 
     pool::delete_pool_ledger(pool_name)
         .wait()
         .map_err(map_rust_indy_sdk_error)
-}
-
-pub fn get_pool_handle() -> VcxResult<i32> {
-    POOL_HANDLE.read()
-        .or(Err(VcxError::from_msg(VcxErrorKind::NoPoolOpen, "There is no pool opened")))?
-        .ok_or(VcxError::from_msg(VcxErrorKind::NoPoolOpen, "There is no pool opened"))
 }
 
 #[cfg(test)]
@@ -83,19 +112,22 @@ pub mod tests {
     use std::io::Write;
     use utils::{
         constants::{POOL, GENESIS_PATH},
-        get_temp_dir_path
+        get_temp_dir_path,
     };
+    use utils::devsetup::SetupLibraryWalletPool;
 
-    pub fn delete_test_pool() {
-        match delete(POOL) {
-            Ok(()) => (),
-            Err(_) => (),
-        };
+    pub fn create_test_pool() {
+        create_genesis_txn_file();
+        create_pool_ledger_config(POOL, get_temp_dir_path(GENESIS_PATH).to_str().unwrap()).unwrap();
     }
 
-    pub fn open_sandbox_pool() -> u32 {
-        create_genesis_txn_file();
-        create_pool_ledger_config(POOL, get_temp_dir_path(Some(GENESIS_PATH)).to_str().unwrap()).unwrap();
+    pub fn delete_test_pool() {
+        close().ok();
+        delete(POOL).unwrap();
+    }
+
+    pub fn open_test_pool() -> u32 {
+        create_test_pool();
         open_pool_ledger(POOL, None).unwrap()
     }
 
@@ -111,8 +143,7 @@ pub mod tests {
 
         let node_txns = get_txns(&test_pool_ip);
         let txn_file_data = node_txns[0..4].join("\n");
-
-        let mut f = fs::File::create(get_temp_dir_path(Some(GENESIS_PATH)).to_str().unwrap()).unwrap();
+        let mut f = fs::File::create(get_temp_dir_path(GENESIS_PATH).to_str().unwrap()).unwrap();
         f.write_all(txn_file_data.as_bytes()).unwrap();
         f.flush().unwrap();
         f.sync_all().unwrap();
@@ -121,8 +152,8 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_open_close_pool() {
-        use super::*;
-        init!("ledger");
+        let _setup = SetupLibraryWalletPool::init();
+
         assert!(get_pool_handle().unwrap() > 0);
     }
 }
