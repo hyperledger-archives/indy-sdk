@@ -347,6 +347,7 @@ pub mod tests {
         time::Duration,
     };
     use utils::devsetup::*;
+    #[cfg(feature = "pool_tests")]
     use utils::libindy::payments::add_new_did;
 
     static CREDENTIAL_DEF_NAME: &str = "Test Credential Definition";

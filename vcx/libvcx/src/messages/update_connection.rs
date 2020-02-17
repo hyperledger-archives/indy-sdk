@@ -3,6 +3,8 @@ use messages::message_type::MessageTypes;
 use settings;
 use utils::httpclient;
 use error::prelude::*;
+use utils::httpclient::AgencyMock;
+use utils::constants::DELETE_CONNECTION_RESPONSE;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -85,6 +87,8 @@ impl DeleteConnectionBuilder {
 
     pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("DeleteConnection::send >>>");
+
+        AgencyMock::set_next_response(DELETE_CONNECTION_RESPONSE.to_vec());
 
         let data = self.prepare_request()?;
 

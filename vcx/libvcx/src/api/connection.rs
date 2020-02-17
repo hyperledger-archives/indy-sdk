@@ -1234,7 +1234,7 @@ mod tests {
     use utils::error;
     use std::time::Duration;
     use api::{return_types_u32, VcxStateType};
-    use utils::constants::{GET_MESSAGES_RESPONSE, INVITE_ACCEPTED_RESPONSE, DELETE_CONNECTION_RESPONSE};
+    use utils::constants::{GET_MESSAGES_RESPONSE, INVITE_ACCEPTED_RESPONSE};
     use utils::error::SUCCESS;
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
@@ -1410,8 +1410,6 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let connection_handle = build_test_connection();
-
-        AgencyMock::set_next_response(DELETE_CONNECTION_RESPONSE.to_vec());
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_connection_delete_connection(cb.command_handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);

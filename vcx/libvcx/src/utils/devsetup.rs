@@ -5,6 +5,7 @@ use utils::libindy::wallet::{reset_wallet_handle, delete_wallet, create_wallet};
 use utils::libindy::pool::reset_pool_handle;
 use settings::set_defaults;
 use futures::Future;
+use std::sync::Once;
 
 pub struct SetupEmpty; // empty
 
@@ -32,6 +33,18 @@ pub struct SetupLibraryAgencyV1; // init indy wallet, init pool, provision 2 age
 
 pub struct SetupLibraryAgencyV2; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0
 
+fn setup() {
+    threadpool::init();
+    settings::clear_config();
+    set_defaults();
+    init_test_logging();
+}
+
+fn tear_down() {
+    settings::clear_config();
+    reset_wallet_handle();
+    reset_pool_handle();
+}
 
 impl SetupEmpty {
     pub fn init() {
@@ -92,14 +105,14 @@ impl SetupLibraryWallet {
     pub fn init() -> SetupLibraryWallet {
         setup();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        ::utils::libindy::wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+        init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         SetupLibraryWallet
     }
 }
 
 impl Drop for SetupLibraryWallet {
     fn drop(&mut self) {
-        ::utils::libindy::wallet::delete_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+        delete_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         tear_down()
     }
 }
@@ -143,7 +156,7 @@ impl SetupIndyMocks {
     pub fn init() -> SetupIndyMocks {
         setup();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
-        ::utils::libindy::wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+        init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         SetupIndyMocks
     }
 }
@@ -157,7 +170,7 @@ impl Drop for SetupIndyMocks {
 impl SetupLibraryWalletPool {
     pub fn init() -> SetupLibraryWalletPool {
         setup();
-        ::utils::devsetup::setup_indy_env(false);
+        setup_indy_env(false);
         SetupLibraryWalletPool
     }
 }
@@ -172,7 +185,7 @@ impl Drop for SetupLibraryWalletPool {
 impl SetupLibraryWalletPoolZeroFees {
     pub fn init() -> SetupLibraryWalletPoolZeroFees {
         setup();
-        ::utils::devsetup::setup_indy_env(true);
+        setup_indy_env(true);
         SetupLibraryWalletPoolZeroFees
     }
 }
@@ -188,14 +201,14 @@ impl SetupAgencyMock {
     pub fn init() -> SetupAgencyMock {
         setup();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "agency");
-        ::utils::libindy::wallet::init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+        init_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         SetupAgencyMock
     }
 }
 
 impl Drop for SetupAgencyMock {
     fn drop(&mut self) {
-        ::utils::libindy::wallet::delete_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+        delete_wallet(settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
         tear_down()
     }
 }
@@ -203,14 +216,14 @@ impl Drop for SetupAgencyMock {
 impl SetupLibraryAgencyV1 {
     pub fn init() -> SetupLibraryAgencyV1 {
         setup();
-        ::utils::devsetup::setup_agency_env("1.0");
+        setup_agency_env("1.0");
         SetupLibraryAgencyV1
     }
 }
 
 impl Drop for SetupLibraryAgencyV1 {
     fn drop(&mut self) {
-        ::utils::devsetup::cleanup_agency_env();
+        cleanup_agency_env();
         tear_down()
     }
 }
@@ -218,28 +231,16 @@ impl Drop for SetupLibraryAgencyV1 {
 impl SetupLibraryAgencyV2 {
     pub fn init() -> SetupLibraryAgencyV2 {
         setup();
-        ::utils::devsetup::setup_agency_env("2.0");
+        setup_agency_env("2.0");
         SetupLibraryAgencyV2
     }
 }
 
 impl Drop for SetupLibraryAgencyV2 {
     fn drop(&mut self) {
-        ::utils::devsetup::cleanup_agency_env();
+        cleanup_agency_env();
         tear_down()
     }
-}
-
-fn setup() {
-    threadpool::init();
-    settings::clear_config();
-    set_defaults();
-}
-
-fn tear_down() {
-    settings::clear_config();
-    reset_wallet_handle();
-    reset_pool_handle();
 }
 
 #[macro_export]
@@ -261,6 +262,7 @@ use utils::libindy::wallet::init_wallet;
 use utils::plugins::init_plugin;
 use utils::libindy::pool::tests::{open_test_pool, delete_test_pool, create_test_pool};
 use utils::file::write_file;
+use utils::logger::LibvcxDefaultLogger;
 
 static mut INSTITUTION_CONFIG: u32 = 0;
 static mut CONSUMER_CONFIG: u32 = 0;
@@ -297,6 +299,17 @@ pub const AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzN
 pub const C_AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
 pub const C_AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
 pub const C_AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+
+
+lazy_static! {
+    static ref TEST_LOGGING_INIT: Once = Once::new();
+}
+
+fn init_test_logging(){
+    TEST_LOGGING_INIT.call_once(|| {
+        LibvcxDefaultLogger::init(Some(String::from("vcx=info"))).ok();
+    })
+}
 
 pub fn create_new_seed() -> String {
     let x = rand::random::<u32>();
@@ -479,14 +492,6 @@ pub fn config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
     config.to_string()
 }
 
-#[cfg(feature = "pool_tests")]
-#[test]
-fn test_local_env() {
-    let _setup = SetupLibraryWalletPool::init();
-
-    ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
-}
-
 pub fn setup_wallet_env(test_name: &str) -> Result<WalletHandle, String> {
     settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
     init_wallet(test_name, None, None, None).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
@@ -529,6 +534,8 @@ impl Drop for TempFile {
     }
 }
 
+#[cfg(feature = "agency")]
+#[cfg(feature = "pool_tests")]
 mod tests {
     use super::*;
 

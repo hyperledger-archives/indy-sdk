@@ -952,9 +952,10 @@ pub fn delete_connection(handle: u32) -> VcxResult<u32> {
                 Ok(error::SUCCESS.code_num)
             }
         }
-    })?;
-
-    release(handle)
+    })
+        .map(|_| error::SUCCESS.code_num)
+        .or(Err(VcxError::from(VcxErrorKind::DeleteConnection)))
+        .and(release(handle))
         .and_then(|_| Ok(error::SUCCESS.code_num))
 }
 

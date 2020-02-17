@@ -574,7 +574,7 @@ pub mod tests {
     use std::time::Duration;
     #[cfg(feature = "pool_tests")]
     use utils::constants::TEST_TAILS_FILE;
-    use utils::devsetup::{SetupMocks, SetupLibraryWalletPool, SetupLibraryWallet};
+    use utils::devsetup::*;
 
 
     pub fn create_schema(attr_list: &str) -> (String, String) {

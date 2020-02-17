@@ -114,6 +114,7 @@ pub mod tests {
         constants::{POOL, GENESIS_PATH},
         get_temp_dir_path,
     };
+    #[cfg(feature = "pool_tests")]
     use utils::devsetup::SetupLibraryWalletPool;
 
     pub fn create_test_pool() {

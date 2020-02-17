@@ -899,10 +899,11 @@ pub mod tests {
     use std::ptr;
     use std::ffi::CString;
     use std::time::Duration;
-    use utils::libindy::wallet::delete_wallet;
+    use utils::libindy::wallet::{delete_wallet, init_wallet};
     #[cfg(feature = "pool_tests")]
     use utils::libindy::payments::build_test_address;
     use utils::devsetup::*;
+    use settings;
 
     #[test]
     fn test_get_token_info() {
@@ -1244,54 +1245,39 @@ pub mod tests {
 
     #[test]
     fn test_wallet_import_export() {
-        use std::env;
-        use std::fs;
-        use std::path::Path;
-        use std::time::Duration;
-        use settings;
-        use utils::devsetup::setup_wallet_env;
-
         let _setup = SetupDefaults::init();
 
-        settings::set_defaults();
-        let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
-        let filename_str = &settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
+        let wallet_name = "test_wallet_import_export";
+
+        let export_file = TempFile::prepare_path(wallet_name);
+
+        init_wallet(wallet_name, None, None, None).unwrap();
+
+        let backup_key = settings::get_config_value(settings::CONFIG_WALLET_BACKUP_KEY).unwrap();
         let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
-        let backup_key = "backup_key";
-        let mut dir = env::temp_dir();
-        dir.push(filename_str);
-        if Path::new(&dir).exists() {
-            fs::remove_file(Path::new(&dir)).unwrap();
-        }
-        let _handle = setup_wallet_env(&wallet_name).unwrap();
-        let dir_c_str = CString::new(dir.to_str().unwrap()).unwrap();
-        let backup_key_c_str = CString::new(backup_key).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_wallet_export(cb.command_handle,
-                                     dir_c_str.as_ptr(),
-                                     backup_key_c_str.as_ptr(),
+                                     CString::new(export_file.path.clone()).unwrap().as_ptr(),
+                                     CString::new(backup_key.clone()).unwrap().as_ptr(),
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(50))).unwrap();
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
 
-        let cb = return_types_u32::Return_U32::new().unwrap();
-        let exported_path = dir.to_str().unwrap();
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: wallet_name,
             settings::CONFIG_WALLET_KEY: wallet_key,
-            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_file.path,
             settings::CONFIG_WALLET_BACKUP_KEY: backup_key,
         }).to_string();
-        let import_config_c = CString::new(import_config).unwrap();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_wallet_import(cb.command_handle,
-                                     import_config_c.as_ptr(),
+                                     CString::new(import_config).unwrap().as_ptr(),
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(50))).unwrap();
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
-        fs::remove_file(Path::new(&dir)).unwrap();
-        assert!(!Path::new(&dir).exists());
     }
 }

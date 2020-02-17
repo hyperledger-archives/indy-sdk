@@ -472,8 +472,11 @@ mod tests {
     #[cfg(any(feature = "agency", feature = "pool_tests"))]
     use utils::get_temp_dir_path;
     use utils::devsetup::*;
+    #[cfg(feature = "pool_tests")]
     use indy_sys::INVALID_POOL_HANDLE;
+    #[cfg(feature = "pool_tests")]
     use utils::libindy::wallet::get_wallet_handle;
+    #[cfg(feature = "pool_tests")]
     use utils::libindy::pool::tests::delete_test_pool;
 
     #[cfg(any(feature = "agency", feature = "pool_tests"))]
@@ -1037,6 +1040,7 @@ mod tests {
         assert_eq!(::credential::get_state(mycred).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
 
+    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_minimal_with_invalid_agency_config() {
         let _setup = SetupLibraryWalletPool::init();

@@ -84,11 +84,6 @@ pub fn close_wallet() -> VcxResult<()> {
 pub fn delete_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>, storage_creds: Option<&str>) -> VcxResult<()> {
     trace!("delete_wallet >>> wallet_name: {}", wallet_name);
 
-    if settings::mock_indy_test_mode_enabled() {
-        set_wallet_handle(INVALID_WALLET_HANDLE);
-        return Ok(());
-    }
-
     close_wallet().ok();
 
     let config = settings::get_wallet_config(wallet_name, wallet_type, storage_config);

@@ -218,8 +218,11 @@ pub mod tests {
     use rand::Rng;
     use utils::constants::SCHEMA_ID;
     use utils::devsetup::*;
+    #[cfg(feature = "pool_tests")]
     use utils::libindy::payments::add_new_did;
+    #[cfg(feature = "pool_tests")]
     use utils::libindy::anoncreds::tests::create_and_write_test_schema;
+    #[cfg(feature = "pool_tests")]
     use utils::constants;
 
     fn data() -> Vec<String> {

@@ -147,7 +147,9 @@ pub fn update_messages(status_code: MessageStatusCode, uids_by_conns: Vec<UIDsBy
 mod tests {
     use super::*;
     use utils::devsetup::*;
+    #[cfg(any(feature = "agency", feature = "pool_tests"))]
     use std::thread;
+    #[cfg(any(feature = "agency", feature = "pool_tests"))]
     use std::time::Duration;
     #[test]
     fn test_parse_parse_update_messages_response() {

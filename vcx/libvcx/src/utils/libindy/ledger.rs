@@ -440,7 +440,7 @@ fn _verify_transaction_can_be_endorsed(transaction_json: &str, _did: &str) -> Vc
 #[cfg(test)]
 mod test {
     use super::*;
-    use utils::devsetup::{SetupDefaults, SetupLibraryWalletPool};
+    use utils::devsetup::*;
 
     #[test]
     fn test_verify_transaction_can_be_endorsed() {

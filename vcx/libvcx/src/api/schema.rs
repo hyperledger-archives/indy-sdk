@@ -539,6 +539,7 @@ mod tests {
     use api::return_types_u32;
     use utils::devsetup::*;
     use schema::tests::prepare_schema_data;
+    #[cfg(feature = "pool_tests")]
     use schema::CreateSchema;
 
     fn vcx_schema_create_c_closure(name: &str, version: &str, data: &str) -> u32 {
