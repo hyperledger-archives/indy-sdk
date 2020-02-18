@@ -32,7 +32,8 @@ provisionConfig = {
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
     'protocol_type': '2.0',
-    'communication_method': 'aries'
+    'communication_method': 'aries',
+    'use_latest_protocols': True,
 }
 
 
@@ -47,6 +48,10 @@ async def main():
     config['institution_name'] = 'Faber'
     config['institution_logo_url'] = 'http://robohash.org/234'
     config['genesis_path'] = 'docker.txn'
+    config['payment_method'] = 'null'
+    config['protocol_type'] = '2.0'
+    config['communication_method'] = 'aries'
+    config['use_latest_protocols'] = 'true'
 
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))

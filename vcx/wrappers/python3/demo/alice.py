@@ -24,7 +24,8 @@ provisionConfig = {
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
     'protocol_type': '2.0',
-    'communication_method': 'aries'
+    'communication_method': 'aries',
+    'use_latest_protocols': True,
 }
 
 
@@ -39,6 +40,10 @@ async def main():
     config['institution_name'] = 'alice'
     config['institution_logo_url'] = 'http://robohash.org/456'
     config['genesis_path'] = 'docker.txn'
+    config['payment_method'] = 'null'
+    config['protocol_type'] = '2.0'
+    config['communication_method'] = 'aries'
+    config['use_latest_protocols'] = 'true'
 
     config = json.dumps(config)
 
