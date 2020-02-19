@@ -100,6 +100,7 @@ impl Credential {
                                                                                     &my_did,
                                                                                     &credential_offer.libindy_offer)?;
 
+        debug!("Credential::build_request <<< Success");
         Ok(CredentialRequest {
             libindy_cred_req: req,
             libindy_cred_req_meta: req_meta,

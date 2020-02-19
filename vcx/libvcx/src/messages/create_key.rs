@@ -1,6 +1,6 @@
 use settings;
 use messages::*;
-use messages::message_type::MessageTypes;
+use messages::message_type::{MessageTypes, MessageTypeV2 };
 use utils::{httpclient, constants};
 use error::prelude::*;
 use settings::ProtocolTypes;
@@ -25,6 +25,16 @@ impl CreateKey {
             for_verkey: for_verkey.to_string(),
         }
     }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub struct CreateKeyReq {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypeV2,
+    #[serde(rename = "forDID")]
+    for_did: String,
+    #[serde(rename = "forDIDVerKey")]
+    for_verkey: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -98,10 +108,15 @@ impl CreateKeyBuilder {
                 A2AMessage::Version1(
                     A2AMessageV1::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
                 ),
-            settings::ProtocolTypes::V2 =>
-                A2AMessage::Version2(
-                    A2AMessageV2::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
-                )
+            settings::ProtocolTypes::V2 => {
+                let msg = CreateKeyReq {
+                    msg_type: MessageTypes::build_v2(A2AMessageKinds::CreateKey),
+                    for_did: self.for_did.clone(),
+                    for_verkey: self.for_verkey.clone()
+                };
+
+                A2AMessage::Version2(A2AMessageV2::CreateKey(msg))
+            },
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -125,7 +140,7 @@ impl CreateKeyBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED};
+    use utils::constants::{MY1_SEED, MY2_SEED, MY3_SEED, CREATE_KEYS_V2_RESPONSE};
     use utils::constants::CREATE_KEYS_RESPONSE;
     use utils::libindy::signus::create_and_store_my_did;
     use messages::create_keys;
@@ -163,15 +178,27 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_create_keys_response() {
+    fn test_parse_create_keys_v1_response() {
         let _setup = SetupMocks::init();
 
-        let builder = create_keys();
+        let mut builder = create_keys();
 
-        let (for_did, for_verkey) = builder.parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
+        let (for_did, for_verkey) = builder.version(&Some(ProtocolTypes::V1)).unwrap().parse_response(&CREATE_KEYS_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(for_did, "U5LXs4U7P9msh647kToezy");
         assert_eq!(for_verkey, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
+    }
+
+    #[test]
+    fn test_parse_create_keys_v2_response() {
+        let _setup = SetupMocks::init();
+
+        let mut builder = create_keys();
+
+        let (for_did, for_verkey) = builder.version(&Some(ProtocolTypes::V2)).unwrap().parse_response(&CREATE_KEYS_V2_RESPONSE.to_vec()).unwrap();
+
+        assert_eq!(for_did, "MNepeSWtGfhnv8jLB1sFZC");
+        assert_eq!(for_verkey, "C73MRnns4qUjR5N4LRwTyiXVPKPrA5q4LCT8PZzxVdt9");
     }
 
     #[test]

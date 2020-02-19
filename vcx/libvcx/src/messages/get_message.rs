@@ -39,6 +39,24 @@ impl GetMessages {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GetMessagesReq {
+    #[serde(rename = "@type")]
+    msg_type: MessageTypeV2,
+    #[serde(rename = "excludePayload")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    exclude_payload: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    uids: Option<Vec<String>>,
+    #[serde(rename = "statusCodes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    status_codes: Option<Vec<MessageStatusCode>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "pairwiseDIDs")]
+    pairwise_dids: Option<Vec<String>>,
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetMessagesResponse {
@@ -91,6 +109,13 @@ impl GetMessagesBuilder {
             pairwise_dids: None,
             version: settings::get_protocol_type(),
         }
+    }
+
+    #[cfg(test)]
+    pub fn create_v1() -> GetMessagesBuilder {
+        let mut builder = GetMessagesBuilder::create();
+        builder.version = settings::ProtocolTypes::V1;
+        builder
     }
 
     pub fn uid(&mut self, uids: Option<Vec<String>>) -> VcxResult<&mut Self> {
@@ -177,15 +202,17 @@ impl GetMessagesBuilder {
                                            self.status_codes.clone(),
                                            self.pairwise_dids.clone()))
                 ),
-            settings::ProtocolTypes::V2 =>
-                A2AMessage::Version2(
-                    A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
-                )
+            settings::ProtocolTypes::V2 => {
+                let msg = GetMessagesReq {
+                    msg_type: MessageTypes::build_v2(A2AMessageKinds::GetMessagesByConnections),
+                    exclude_payload: self.exclude_payload.clone(),
+                    uids: self.uids.clone(),
+                    status_codes: self.status_codes.clone(),
+                    pairwise_dids: self.pairwise_dids.clone()
+                };
+
+                A2AMessage::Version2(A2AMessageV2::GetMessages(msg))
+            },
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -197,6 +224,7 @@ impl GetMessagesBuilder {
         trace!("parse_download_messages_response >>>");
         let mut response = parse_response_from_agency(&response, &self.version)?;
 
+        trace!("parse_download_messages_response: parsed response {:?}", response);
         let msgs = match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::GetMessagesByConnectionsResponse(res)) => res.msgs,
             A2AMessage::Version2(A2AMessageV2::GetMessagesByConnectionsResponse(res)) => res.msgs,
@@ -236,6 +264,18 @@ impl GeneralMessage for GetMessagesBuilder {
                                            self.status_codes.clone(),
                                            self.pairwise_dids.clone()))
                 ),
+            settings::ProtocolTypes::V2 => {
+                let msg = GetMessagesReq {
+                    msg_type: MessageTypes::build_v2(A2AMessageKinds::GetMessages),
+                    exclude_payload: self.exclude_payload.clone(),
+                    uids: self.uids.clone(),
+                    status_codes: self.status_codes.clone(),
+                    pairwise_dids: self.pairwise_dids.clone()
+                };
+
+                A2AMessage::Version2(A2AMessageV2::GetMessages(msg))
+            },
+            /*
             settings::ProtocolTypes::V2 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
@@ -245,6 +285,7 @@ impl GeneralMessage for GetMessagesBuilder {
                                            self.status_codes.clone(),
                                            self.pairwise_dids.clone()))
                 )
+            */
         };
 
         prepare_message_for_agent(vec![message], &self.to_vk, &self.agent_did, &self.agent_vk, &self.version)
@@ -427,6 +468,7 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
             .uid(uids)?
             .status_codes(status_codes)?
             .pairwise_dids(pairwise_dids)?
+            .version(&Some(::settings::get_protocol_type()))?
             .download_messages()?;
 
     trace!("message returned: {:?}", response);
@@ -468,7 +510,7 @@ mod tests {
     fn test_parse_get_messages_response() {
         let _setup = SetupMocks::init();
 
-        let result = GetMessagesBuilder::create().parse_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
+        let result = GetMessagesBuilder::create_v1().parse_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 3)
     }
 

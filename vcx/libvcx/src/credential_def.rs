@@ -416,6 +416,28 @@ pub mod tests {
         assert!(payment.amount > 0);
     }
 
+    #[test]
+    fn test_get_credential_def_by_send_request_fails() {
+        settings::clear_config();
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        assert!(::utils::libindy::anoncreds::get_cred_def_json(CRED_DEF_ID).is_err());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_get_credential_def() {
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+        let (_, _, cred_def_id, cred_def_json, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
+
+        let (id, r_cred_def_json) = ::utils::libindy::anoncreds::get_cred_def_json(&cred_def_id).unwrap();
+
+        assert_eq!(id, cred_def_id);
+        let def1: serde_json::Value = serde_json::from_str(&cred_def_json).unwrap();
+        let def2: serde_json::Value = serde_json::from_str(&r_cred_def_json).unwrap();
+        assert_eq!(def1, def2);
+    }
+
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_revocable_fails_with_no_tails_file() {

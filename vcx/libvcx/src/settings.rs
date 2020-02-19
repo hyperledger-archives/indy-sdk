@@ -13,6 +13,7 @@ use std::borrow::Borrow;
 
 use error::prelude::*;
 use utils::file::read_file;
+use indy_sys::INVALID_WALLET_HANDLE;
 
 pub static CONFIG_POOL_NAME: &str = "pool_name";
 pub static CONFIG_PROTOCOL_TYPE: &str = "protocol_type";
@@ -36,18 +37,18 @@ pub static CONFIG_LINK_SECRET_ALIAS: &str = "link_secret_alias";
 pub static CONFIG_EXPORTED_WALLET_PATH: &str = "exported_wallet_path";
 pub static CONFIG_WALLET_BACKUP_KEY: &str = "backup_key";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
-pub static CONFIG_WALLET_NAME: &str = "wallet_name";
-pub static CONFIG_WALLET_TYPE: &str = "wallet_type";
-pub static CONFIG_WALLET_STORAGE_CONFIG: &str = "storage_config";
-pub static CONFIG_WALLET_STORAGE_CREDS: &str = "storage_credentials";
-pub static CONFIG_WALLET_HANDLE: &str = "wallet_handle";
-pub static CONFIG_THREADPOOL_SIZE: &str = "threadpool_size";
-pub static CONFIG_WALLET_KEY_DERIVATION: &str = "wallet_key_derivation";
-pub static CONFIG_PROTOCOL_VERSION: &str = "protocol_version";
-pub static CONFIG_PAYMENT_METHOD: &str = "payment_method";
-pub static CONFIG_TXN_AUTHOR_AGREEMENT: &str = "author_agreement";
+pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
+pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
+pub static CONFIG_WALLET_STORAGE_CONFIG: &'static str = "storage_config";
+pub static CONFIG_WALLET_STORAGE_CREDS: &'static str = "storage_credentials";
+pub static CONFIG_WALLET_HANDLE: &'static str = "wallet_handle";
+pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
+pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
+pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
+pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
+pub static CONFIG_TXN_AUTHOR_AGREEMENT: &'static str = "author_agreement";
 pub static CONFIG_USE_LATEST_PROTOCOLS: &'static str = "use_latest_protocols";
-pub static CONFIG_POOL_CONFIG: &str = "pool_config";
+pub static CONFIG_POOL_CONFIG: &'static str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
 pub static COMMUNICATION_METHOD: &str = "communication_method";// proprietary or aries
 pub static CONFIG_ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
@@ -124,6 +125,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), DEFAULT_WALLET_BACKUP_KEY.to_string());
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
     settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
+    settings.insert(CONFIG_USE_LATEST_PROTOCOLS.to_string(), DEFAULT_USE_LATEST_PROTOCOLS.to_string());
 
     error::SUCCESS.code_num
 }
@@ -132,7 +134,7 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
     trace!("validate_config >>> config: {:?}", config);
 
     //Mandatory parameters
-    if config.get(CONFIG_WALLET_KEY).is_none() {
+    if ::utils::libindy::wallet::get_wallet_handle() == INVALID_WALLET_HANDLE && config.get(CONFIG_WALLET_KEY).is_none() {
         return Err(VcxError::from(VcxErrorKind::MissingWalletKey));
     }
 
