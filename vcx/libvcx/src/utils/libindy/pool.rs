@@ -115,7 +115,7 @@ pub mod tests {
         get_temp_dir_path,
     };
     #[cfg(feature = "pool_tests")]
-    use utils::devsetup::SetupLibraryWalletPool;
+    use utils::devsetup::SetupLibraryWalletPoolZeroFees;
 
     pub fn create_test_pool() {
         create_genesis_txn_file();
@@ -153,7 +153,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_open_close_pool() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         assert!(get_pool_handle().unwrap() > 0);
     }

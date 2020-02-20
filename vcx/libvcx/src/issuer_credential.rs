@@ -971,11 +971,10 @@ pub mod tests {
         assert_eq!(get_offer_uid(handle).unwrap(), "ntc2ytb");
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_cred_offer() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let _issuer = create_full_issuer_credential().0.generate_credential_offer(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap()).unwrap();
     }

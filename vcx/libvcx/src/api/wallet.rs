@@ -987,7 +987,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_sign_verify_with_address() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let cb_sign = return_types_u32::Return_U32_BIN::new().unwrap();
         let cb_verify = return_types_u32::Return_U32_BOOL::new().unwrap();
@@ -1028,7 +1028,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_send_payment() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let recipient = CStringUtils::string_to_cstring(build_test_address("2ZrAm5Jc3sP4NAXMQbaWzDxEa12xxJW3VgWjbbPtMPQCoznJyS"));
         println!("sending payment to {:?}", recipient);

@@ -462,7 +462,7 @@ mod test {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_endorse_transaction() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         use utils::libindy::payments::add_new_did;
 

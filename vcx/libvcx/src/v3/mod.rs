@@ -157,44 +157,6 @@ pub mod test {
             }
         }
 
-        pub fn setup_local() -> Faber {
-            let wallet_name = "faber_wallet";
-
-            let config = json!({
-                "agency_did":"VsKV7grR1BUE29mG2Fm2kX",
-                "agency_endpoint":"http://localhost:8080",
-                "agency_verkey":"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
-                "communication_method":"aries",
-                "genesis_path":"<CHANGE_ME>",
-                "institution_did":"V4SGRU86Z58d6TV7PBUe6f",
-                "institution_logo_url":"<CHANGE_ME>",
-                "institution_name":"<CHANGE_ME>",
-                "institution_verkey":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-                "protocol_type":"2.0",
-                "remote_to_sdk_did":"LjC6xZPeYPeL5AjuRByMDA",
-                "remote_to_sdk_verkey":"Bkd9WFmCydMCvLKL8x47qyQTN1nbyQ8rUK8JTsQRtLGE",
-                "sdk_to_remote_did":"Mi3bbeWQDVpQCmGFBqWeYa",
-                "sdk_to_remote_verkey":"CHcPnSn48wfrUhekmcFZAmx8NvhHCh72J73WToNiK9EX",
-                "wallet_key":"123",
-                "wallet_name":"faber_wallet"
-            }).to_string();
-
-            ::settings::process_config_string(&config, false).unwrap();
-            ::utils::libindy::wallet::create_wallet(wallet_name, None, None, None).unwrap();
-            let config = config_with_wallet_handle(wallet_name, &config);
-
-            Faber {
-                config,
-                wallet_name: wallet_name.to_string(),
-                schema_handle: 0,
-                cred_def_handle: 0,
-                connection_handle: 0,
-                wallet_handle: get_wallet_handle(),
-                credential_handle: 0,
-                presentation_handle: 0
-            }
-        }
-
         pub fn activate(&self) {
             ::settings::clear_config();
             ::settings::process_config_string(&self.config, false).unwrap();

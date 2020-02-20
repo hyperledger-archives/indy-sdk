@@ -512,7 +512,6 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10)))
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_file() {
@@ -526,7 +525,6 @@ mod tests {
         assert_ne!(get_pool_handle().unwrap(), 0);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_file_no_payment_method() {
@@ -547,7 +545,6 @@ mod tests {
                    error::MISSING_PAYMENT_METHOD.code_num);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_config() {
@@ -630,7 +627,6 @@ mod tests {
         _vcx_init_with_config_c_closure("{}").unwrap();
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_fails() {
@@ -646,7 +642,6 @@ mod tests {
                    error::ALREADY_INITIALIZED.code_num);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_passes_after_shutdown() {
@@ -667,11 +662,10 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_fails_with_open_wallet() {
-        let _setup = SetupLibraryWallet::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let config = TempFile::create_with_data("test_init.json", &config());
 
@@ -978,7 +972,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_minimal() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let config = get_settings();
 

@@ -574,7 +574,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_create_schema_with_pool() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let (_, schema_name, schema_version, data) = prepare_schema_data();
         let handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data);
@@ -584,7 +584,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_schema_get_attrs_with_pool() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
 
@@ -668,7 +668,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_schema_serialize_contains_version() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let (_, schema_name, schema_version, data) = prepare_schema_data();
         let handle = vcx_schema_create_c_closure(&schema_name, &schema_version, &data);

@@ -1157,11 +1157,10 @@ mod tests {
         assert_eq!(proof_good.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_proof_verification() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let (_, _, proof_req, proof) = ::utils::libindy::anoncreds::tests::create_proof();
 
@@ -1181,11 +1180,10 @@ mod tests {
         assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_self_attested_proof_verification() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let (proof_req, proof) = ::utils::libindy::anoncreds::tests::create_self_attested_proof();
 
@@ -1205,11 +1203,10 @@ mod tests {
         assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_proof_verification_restrictions() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let proof_req = json!({
            "nonce":"123432421212",
@@ -1258,7 +1255,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_proof_validate_attribute() {
-        let _setup = SetupLibraryWalletPool::init();
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let (_, _, proof_req, proof_json) = ::utils::libindy::anoncreds::tests::create_proof();
 

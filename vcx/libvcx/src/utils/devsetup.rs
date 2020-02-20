@@ -559,7 +559,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     pub fn test_two_enterprise_connections() {
-        let _setup = SetupLibraryAgencyV1::init();
+        let _setup = SetupLibraryAgencyV1ZeroFees::init();
 
         let (_faber, _alice) = ::connection::tests::create_connected_connections();
         let (_faber, _alice) = ::connection::tests::create_connected_connections();
