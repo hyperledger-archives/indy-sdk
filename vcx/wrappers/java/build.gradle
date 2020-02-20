@@ -3,6 +3,10 @@ import java.text.SimpleDateFormat
 apply plugin: 'java'
 group = 'com.evernym.sdk'
 
+wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+}
+
 repositories {
 
     maven { url "https://repo.maven.apache.org/maven2" }
