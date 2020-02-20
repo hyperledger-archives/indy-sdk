@@ -31,12 +31,16 @@ pub struct SetupAgencyMock; // set default settings and enable mock agency mode
 
 pub struct SetupLibraryAgencyV1; // init indy wallet, init pool, provision 2 agents. use protocol type 1.0
 
+pub struct SetupLibraryAgencyV1ZeroFees; // init indy wallet, init pool, provision 2 agents. use protocol type 1.0, set zero fees
+
 pub struct SetupLibraryAgencyV2; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0
 
+pub struct SetupLibraryAgencyV2ZeroFees; // init indy wallet, init pool, provision 2 agents. use protocol type 2.0, set zero fees
+
 fn setup() {
-    threadpool::init();
     settings::clear_config();
     set_defaults();
+    threadpool::init();
     init_test_logging();
 }
 
@@ -216,7 +220,7 @@ impl Drop for SetupAgencyMock {
 impl SetupLibraryAgencyV1 {
     pub fn init() -> SetupLibraryAgencyV1 {
         setup();
-        setup_agency_env("1.0");
+        setup_agency_env("1.0", false);
         SetupLibraryAgencyV1
     }
 }
@@ -228,15 +232,45 @@ impl Drop for SetupLibraryAgencyV1 {
     }
 }
 
+impl SetupLibraryAgencyV1ZeroFees {
+    pub fn init() -> SetupLibraryAgencyV1ZeroFees {
+        setup();
+        setup_agency_env("1.0", true);
+        SetupLibraryAgencyV1ZeroFees
+    }
+}
+
+impl Drop for SetupLibraryAgencyV1ZeroFees {
+    fn drop(&mut self) {
+        cleanup_agency_env();
+        tear_down()
+    }
+}
+
 impl SetupLibraryAgencyV2 {
     pub fn init() -> SetupLibraryAgencyV2 {
         setup();
-        setup_agency_env("2.0");
+        setup_agency_env("2.0", false);
         SetupLibraryAgencyV2
     }
 }
 
 impl Drop for SetupLibraryAgencyV2 {
+    fn drop(&mut self) {
+        cleanup_agency_env();
+        tear_down()
+    }
+}
+
+impl SetupLibraryAgencyV2ZeroFees  {
+    pub fn init() -> SetupLibraryAgencyV2ZeroFees  {
+        setup();
+        setup_agency_env("2.0", true);
+        SetupLibraryAgencyV2ZeroFees
+    }
+}
+
+impl Drop for SetupLibraryAgencyV2ZeroFees  {
     fn drop(&mut self) {
         cleanup_agency_env();
         tear_down()
@@ -307,7 +341,7 @@ lazy_static! {
 
 fn init_test_logging(){
     TEST_LOGGING_INIT.call_once(|| {
-        LibvcxDefaultLogger::init(Some(String::from("vcx=info"))).ok();
+        LibvcxDefaultLogger::init(Some(String::from("vcx=trace"))).ok();
     })
 }
 
@@ -377,12 +411,10 @@ fn change_wallet_handle() {
     unsafe { wallet::WALLET_HANDLE = WalletHandle(wallet_handle.parse::<i32>().unwrap()) }
 }
 
-pub fn setup_agency_env(protocol_type: &str) {
+pub fn setup_agency_env(protocol_type: &str, use_zero_fees: bool) {
     settings::clear_config();
 
     init_plugin(settings::DEFAULT_PAYMENT_PLUGIN, settings::DEFAULT_PAYMENT_INIT_FUNCTION);
-
-    settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
 
     let enterprise_wallet_name = format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
 
@@ -399,25 +431,14 @@ pub fn setup_agency_env(protocol_type: &str) {
             "name": "institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type
         });
 
-    let set_v2_protocol = |config_: &mut serde_json::Value| {
-        config_["protocol_type"] = json!("2.0");
-        config_["use_latest_protocols"] = json!("true");
-    };
-
-    // TODO: FIXMEEEE
     if protocol_type == "2.0" {
-        set_v2_protocol(&mut config);
+        config["use_latest_protocols"] = json!("true");
     }
 
     let enterprise_config = ::messages::agent_utils::connect_register_provision(&config.to_string()).unwrap();
-
-    let mut enterprise_config: serde_json::Value = serde_json::from_str(&enterprise_config).unwrap();
-
-    if protocol_type == "2.0" {
-        set_v2_protocol(&mut enterprise_config);
-    }
 
     ::api::vcx::vcx_shutdown(false);
 
@@ -434,23 +455,18 @@ pub fn setup_agency_env(protocol_type: &str) {
             "agent_seed": seed2,
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
-            "path": constants::GENESIS_PATH.to_string()
+            "path": constants::GENESIS_PATH.to_string(),
+            "protocol_type": protocol_type
         });
 
     if protocol_type == "2.0" {
-        set_v2_protocol(&mut config);
+        config["use_latest_protocols"] = json!("true");
     }
 
     let consumer_config = ::messages::agent_utils::connect_register_provision(&config.to_string()).unwrap();
 
-    let mut consumer_config: serde_json::Value = serde_json::from_str(&consumer_config).unwrap();
-
-    if protocol_type == "2.0" {
-        set_v2_protocol(&mut consumer_config);
-    }
-
     unsafe {
-        INSTITUTION_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config.to_string())).unwrap();
+        INSTITUTION_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config)).unwrap();
     }
     unsafe {
         CONSUMER_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&consumer_wallet_name, &consumer_config.to_string())).unwrap();
@@ -479,10 +495,10 @@ pub fn setup_agency_env(protocol_type: &str) {
 
     // as trustees, mint tokens into each wallet
     set_consumer();
-    ::utils::libindy::payments::tests::token_setup(None, None, false);
+    ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
 
     set_institution();
-    ::utils::libindy::payments::tests::token_setup(None, None, false);
+    ::utils::libindy::payments::tests::token_setup(None, None, use_zero_fees);
 }
 
 pub fn config_with_wallet_handle(wallet_n: &str, config: &str) -> String {

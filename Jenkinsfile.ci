@@ -558,6 +558,7 @@ def linuxVcxBuild(file, env_name, network_name) {
             sh '''
                 cd vcx/dummy-cloud-agent
                 sed -i 's/\\("protocol_type": "\\)2.0/\\11.0/' config/sample-config.json
+                LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo build
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 

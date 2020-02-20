@@ -556,7 +556,7 @@ pub fn add_new_did(role: Option<&str>) -> (String, String) {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::devsetup::{SetupMocks, SetupDefaults};
+    use utils::devsetup::{SetupMocks, SetupDefaults, SetupLibraryWalletPool};
 
     static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 

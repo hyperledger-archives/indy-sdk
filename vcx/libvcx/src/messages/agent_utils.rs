@@ -135,6 +135,7 @@ pub struct Config {
     did_method: Option<String>,
     communication_method: Option<String>,
     webhook_url: Option<String>,
+    use_latest_protocols: Option<String>,
 }
 
 
@@ -248,6 +249,9 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     }
     if let Some(_webhook_url) = &my_config.webhook_url {
         final_config["webhook_url"] = json!(_webhook_url);
+    }
+    if let Some(_use_latest_protocols) = &my_config.use_latest_protocols {
+        final_config["use_latest_protocols"] = json!(_use_latest_protocols);
     }
 
     wallet::close_wallet()?;
