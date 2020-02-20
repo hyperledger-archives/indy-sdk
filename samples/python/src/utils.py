@@ -1,7 +1,12 @@
 import asyncio
+import json
 from os import environ
 from pathlib import Path
 from tempfile import gettempdir
+
+import time
+from indy import ledger
+
 
 PROTOCOL_VERSION = 2
 
@@ -45,3 +50,14 @@ def run_coroutine(coroutine, loop=None):
     if loop is None:
         loop = asyncio.get_event_loop()
     loop.run_until_complete(coroutine())
+
+
+async def ensure_previous_request_applied(pool_handle, checker_request, checker):
+    for _ in range(3):
+        response = json.loads(await ledger.submit_request(pool_handle, checker_request))
+        try:
+            if checker(response):
+                return json.dumps(response)
+        except TypeError:
+            pass
+        time.sleep(5)

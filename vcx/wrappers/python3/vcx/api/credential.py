@@ -1,4 +1,3 @@
-from typing import Optional
 from ctypes import *
 from vcx.common import do_call, create_cb
 from vcx.api.connection import Connection
@@ -263,7 +262,7 @@ class Credential(VcxStateful):
                  2 - Request Sent
                  3 - Request Received
                  4 - Accepted
-        
+
         Example:
         credential = await Credential.create(source_id, offer)
         credential.update_state()
@@ -304,29 +303,32 @@ class Credential(VcxStateful):
                       c_payment,
                       Credential.send_request.cb)
 
-    async def get_request_msg(self, connection: Connection, payment_handle: int):
+    async def get_request_msg(self, my_pw_did: str, their_pw_did: str, payment_handle: int):
         """
-        Approves the credential offer and gets the credential request message that can be sent to the specified connection
-        :param connection: connection that identifies pairwise connection
+        Approves the credential offer and gets the credential request message
+        :param my_pw_did: my pairwaise did
+        :param their_pw_did: pairwaise did of other side
         :param payment_handle: currently unused
         :return:
         Example:
         connection = await Connection.create(source_id)
         await connection.connect(phone_number)
         credential = await Credential.create(source_id, offer)
-        await credential.send_request(connection, 0)
+        await credential.get_request_msg(my_pw_did, their_pw_did, 0)
         """
         if not hasattr(Credential.get_request_msg, "cb"):
             self.logger.debug("vcx_credential_get_request_msg: Creating callback")
             Credential.get_request_msg.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_credential_handle = c_uint32(self.handle)
-        c_connection_handle = c_uint32(connection.handle)
+        c_my_pw_did = c_char_p(my_pw_did.encode('utf-8'))
+        c_their_pw_did = c_char_p(their_pw_did.encode('utf-8'))
         c_payment = c_uint32(payment_handle)
 
         msg = await do_call('vcx_credential_get_request_msg',
                       c_credential_handle,
-                      c_connection_handle,
+                      c_my_pw_did,
+                      c_their_pw_did,
                       c_payment,
                       Credential.get_request_msg.cb)
 

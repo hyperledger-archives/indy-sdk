@@ -3,9 +3,6 @@ import json
 import random
 from ctypes import cdll
 from time import sleep
-import platform
-
-import logging
 
 from demo_utils import file_ext
 from vcx.api.connection import Connection

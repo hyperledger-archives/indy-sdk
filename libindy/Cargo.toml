@@ -29,7 +29,7 @@ fatal_warnings = []
 [dependencies]
 env_logger = "0.6.2"
 etcommon-rlp = "0.2.4"
-failure = "0.1.5"
+failure = "0.1.6"
 hex = "0.3.2"
 libc = "0.2.66"
 log = "0.4.8"
@@ -55,7 +55,6 @@ regex = "1.2.1"
 indy-api-types = { path = "./indy-api-types"}
 indy-utils = { path = "./indy-utils"}
 indy-wallet = { path = "./indy-wallet"}
-ed25519-dalek = "=1.0.0-pre.2" # TODO: it shouldn't be fixed here
 
 [dependencies.uuid]
 version = "0.7.4"
@@ -63,10 +62,8 @@ default-features = false
 features = ["v4"]
 
 [dependencies.ursa]
-version =  "0.3.0"
+version =  "0.3.2"
 optional = true
-default-features = false
-features = ["bn_openssl", "pair_amcl", "serialization", "native_secp256k1", "cl", "bls", "std", "encryption"]
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.5"

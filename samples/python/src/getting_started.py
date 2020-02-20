@@ -12,7 +12,7 @@ from os.path import dirname
 
 from indy.error import ErrorCode, IndyError
 
-from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION
+from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION, ensure_previous_request_applied
 
 
 logger = logging.getLogger(__name__)
@@ -501,7 +501,9 @@ async def run():
     alice['acme_revoc_reg_des_req'] = \
         await ledger.build_get_revoc_reg_def_request(alice['did'],
                                                      job_certificate_cred_object['rev_reg_id'])
-    alice['acme_revoc_reg_des_resp'] = await ledger.submit_request(alice['pool'], alice['acme_revoc_reg_des_req'])
+    alice['acme_revoc_reg_des_resp'] = \
+        await ensure_previous_request_applied(alice['pool'], alice['acme_revoc_reg_des_req'],
+                                              lambda response: response['result']['data'] is not None)
     (alice['acme_revoc_reg_def_id'], alice['acme_revoc_reg_def_json']) = \
         await ledger.parse_get_revoc_reg_def_response(alice['acme_revoc_reg_des_resp'])
 
@@ -513,6 +515,7 @@ async def run():
     logger.info("==============================")
     logger.info("=== Apply for the loan with Thrift ==")
     logger.info("==============================")
+
 
     async def apply_loan_basic():
         # This method will be called twice: once with a valid Job-Certificate and
@@ -857,13 +860,16 @@ async def send_cred_def(pool_handle, wallet_handle, _did, cred_def_json):
 
 async def get_schema(pool_handle, _did, schema_id):
     get_schema_request = await ledger.build_get_schema_request(_did, schema_id)
-    get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
+    get_schema_response = await ensure_previous_request_applied(
+        pool_handle, get_schema_request, lambda response: response['result']['data'] is not None)
     return await ledger.parse_get_schema_response(get_schema_response)
 
 
 async def get_cred_def(pool_handle, _did, cred_def_id):
     get_cred_def_request = await ledger.build_get_cred_def_request(_did, cred_def_id)
-    get_cred_def_response = await ledger.submit_request(pool_handle, get_cred_def_request)
+    get_cred_def_response = \
+        await ensure_previous_request_applied(pool_handle, get_cred_def_request,
+                                              lambda response: response['result']['data'] is not None)
     return await ledger.parse_get_cred_def_response(get_cred_def_response)
 
 
@@ -899,7 +905,9 @@ async def prover_get_entities_from_ledger(pool_handle, _did, identifiers, actor,
             logger.info("\"{}\" -> Get Revocation Registry Definition from Ledger".format(actor))
             get_revoc_reg_def_request = await ledger.build_get_revoc_reg_def_request(_did, item['rev_reg_id'])
 
-            get_revoc_reg_def_response = await ledger.submit_request(pool_handle, get_revoc_reg_def_request)
+            get_revoc_reg_def_response = \
+                await ensure_previous_request_applied(pool_handle, get_revoc_reg_def_request,
+                                                      lambda response: response['result']['data'] is not None)
             (rev_reg_id, revoc_reg_def_json) = await ledger.parse_get_revoc_reg_def_response(get_revoc_reg_def_response)
 
             logger.info("\"{}\" -> Get Revocation Registry Delta from Ledger".format(actor))
@@ -907,7 +915,8 @@ async def prover_get_entities_from_ledger(pool_handle, _did, identifiers, actor,
             get_revoc_reg_delta_request = \
                 await ledger.build_get_revoc_reg_delta_request(_did, item['rev_reg_id'], timestamp_from, timestamp_to)
             get_revoc_reg_delta_response = \
-                await ledger.submit_request(pool_handle, get_revoc_reg_delta_request)
+                await ensure_previous_request_applied(pool_handle, get_revoc_reg_delta_request,
+                                                      lambda response: response['result']['data'] is not None)
             (rev_reg_id, revoc_reg_delta_json, t) = \
                 await ledger.parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response)
 
@@ -944,14 +953,18 @@ async def verifier_get_entities_from_ledger(pool_handle, _did, identifiers, acto
             logger.info("\"{}\" -> Get Revocation Definition from Ledger".format(actor))
             get_revoc_reg_def_request = await ledger.build_get_revoc_reg_def_request(_did, item['rev_reg_id'])
 
-            get_revoc_reg_def_response = await ledger.submit_request(pool_handle, get_revoc_reg_def_request)
+            get_revoc_reg_def_response = \
+                await ensure_previous_request_applied(pool_handle, get_revoc_reg_def_request,
+                                                      lambda response: response['result']['data'] is not None)
             (rev_reg_id, revoc_reg_def_json) = await ledger.parse_get_revoc_reg_def_response(get_revoc_reg_def_response)
 
             logger.info("\"{}\" -> Get Revocation Registry from Ledger".format(actor))
             if not timestamp: timestamp = item['timestamp']
             get_revoc_reg_request = \
                 await ledger.build_get_revoc_reg_request(_did, item['rev_reg_id'], timestamp)
-            get_revoc_reg_response = await ledger.submit_request(pool_handle, get_revoc_reg_request)
+            get_revoc_reg_response = \
+                await ensure_previous_request_applied(pool_handle, get_revoc_reg_request,
+                                                      lambda response: response['result']['data'] is not None)
             (rev_reg_id, rev_reg_json, timestamp2) = await ledger.parse_get_revoc_reg_response(get_revoc_reg_response)
 
             rev_regs[rev_reg_id] = {timestamp2: json.loads(rev_reg_json)}

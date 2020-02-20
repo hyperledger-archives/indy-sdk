@@ -212,6 +212,84 @@ pub extern fn vcx_set_next_agency_response(message_index: u32) {
     httpclient::set_next_u8_response(message);
 }
 
+/// Retrieve messages from the Cloud Agent
+///
+/// #params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// message_status: optional - query for messages with the specified status
+///
+/// uids: optional, comma separated - query for messages with the specified uids
+///
+/// cb: Callback that provides array of matching messages retrieved
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_download_agent_messages(command_handle: u32,
+                                          message_status: *const c_char,
+                                          uids: *const c_char,
+                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, messages: *const c_char)>) -> u32 {
+    info!("vcx_download_agent_messages >>>");
+
+    check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
+
+    let message_status = if !message_status.is_null() {
+        check_useful_c_str!(message_status, VcxErrorKind::InvalidOption);
+        let v: Vec<&str> = message_status.split(',').collect();
+        let v = v.iter().map(|s| s.to_string()).collect::<Vec<String>>();
+        Some(v.to_owned())
+    } else {
+        None
+    };
+
+    let uids = if !uids.is_null() {
+        check_useful_c_str!(uids, VcxErrorKind::InvalidOption);
+        let v: Vec<&str> = uids.split(',').collect();
+        let v = v.iter().map(|s| s.to_string()).collect::<Vec<String>>();
+        Some(v.to_owned())
+    } else {
+        None
+    };
+
+    trace!("vcx_download_agent_messages(command_handle: {}, message_status: {:?}, uids: {:?})",
+           command_handle, message_status, uids);
+
+    spawn(move || {
+        match ::messages::get_message::download_agent_messages(message_status, uids) {
+            Ok(x) => {
+                match serde_json::to_string(&x) {
+                    Ok(x) => {
+                        trace!("vcx_download_agent_messages(command_handle: {}, rc: {}, messages: {})",
+                               command_handle, error::SUCCESS.message, x);
+
+                        let msg = CStringUtils::string_to_cstring(x);
+                        cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+                    }
+                    Err(e) => {
+                        let err = VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize messages: {}", e));
+                        warn!("vcx_download_agent_messages(command_handle: {}, rc: {}, messages: {})",
+                              command_handle, err, "null");
+
+                        cb(command_handle, err.into(), ptr::null_mut());
+                    }
+                };
+            }
+            Err(e) => {
+                warn!("vcx_download_agent_messages(command_handle: {}, rc: {}, messages: {})",
+                      command_handle, e, "null");
+
+                cb(command_handle, e.into(), ptr::null_mut());
+            }
+        };
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Retrieve messages from the agent
 ///
 /// #params

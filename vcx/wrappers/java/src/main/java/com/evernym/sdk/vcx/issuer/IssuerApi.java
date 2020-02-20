@@ -89,18 +89,15 @@ public class IssuerApi extends VcxJava.API {
         return future;
     }
 
-    public static CompletableFuture<String> issuerGetCredentialOfferMsg(int credentialHandle,
-                                                                        int connectionHandle) throws VcxException {
+    public static CompletableFuture<String> issuerGetCredentialOfferMsg(int credentialHandle) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
-        ParamGuard.notNull(connectionHandle, "connectionHandle");
-        logger.debug("issuerSendCredentialOffer() called with: credentialHandle = [****], connectionHandle = [" + connectionHandle + "]");
+        logger.debug("issuerSendCredentialOffer() called with: credentialHandle = [****]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int issue = addFuture(future);
 
         int result = LibVcx.api.vcx_issuer_get_credential_offer_msg(
                 issue,
                 credentialHandle,
-                connectionHandle,
                 issuerCredentialStringCB
         );
         checkResult(result);
@@ -185,17 +182,16 @@ public class IssuerApi extends VcxJava.API {
     }
 
     public static CompletableFuture<String> issuerGetCredentialMsg(int credentialHandle,
-                                                                   int connectionHandle) throws VcxException {
+                                                                   String myPwDid) throws VcxException {
         ParamGuard.notNull(credentialHandle, "credentialHandle");
-        ParamGuard.notNull(connectionHandle, "connectionHandle");
-        logger.debug("issuerGetCredentialMsg() called with: credentialHandle = [****], connectionHandle = [" + connectionHandle + "]");
+        logger.debug("issuerGetCredentialMsg() called with: credentialHandle = [****]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int issue = addFuture(future);
 
         int result = LibVcx.api.vcx_issuer_get_credential_msg(
                 issue,
                 credentialHandle,
-                connectionHandle,
+                myPwDid,
                 issuerCredentialStringCB
         );
         checkResult(result);

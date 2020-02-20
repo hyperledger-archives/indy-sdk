@@ -117,8 +117,8 @@ pub mod tests {
     fn test_encryption_envelope_works_for_routing_keys() {
         _setup();
         let setup = test_setup::key();
-        let key_1 = create_key().unwrap();
-        let key_2 = create_key().unwrap();
+        let key_1 = create_key(None).unwrap();
+        let key_2 = create_key(None).unwrap();
 
         let mut did_doc = DidDoc::default();
         did_doc.set_service_endpoint(_service_endpoint());

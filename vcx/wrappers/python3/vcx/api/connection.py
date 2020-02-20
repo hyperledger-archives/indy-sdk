@@ -182,7 +182,7 @@ class Connection(VcxStateful):
                     "serviceEndpoint": "https://example.com/endpoint",
                     "routingKeys": ["8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"]
                  }
-        
+
         Example:
         connection2 = await Connection.create_with_details('MyBank', invite_details)
         :return: connection object
@@ -238,6 +238,40 @@ class Connection(VcxStateful):
                                        c_connection_data,
                                        Connection.connect.cb)
         return invite_details
+
+    async def redirect(self, redirect_to) -> None:
+        """
+        Connect securely and privately to the endpoint represented by the object.
+
+        :param redirect_to: Existing connection to redirect to
+
+        Example code:
+        connection = await Connection.create_with_details('Sally', invite_details)
+        await connection.redirect(old_connection)
+        """
+        if not hasattr(Connection.redirect, "cb"):
+            self.logger.debug("vcx_connection_redirect: Creating callback")
+            Connection.redirect.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_connection_handle = c_uint32(self.handle)
+        c_redirect_handle = c_uint32(redirect_to.handle)
+        await do_call('vcx_connection_redirect',
+                      c_connection_handle,
+                      c_redirect_handle,
+                      Connection.redirect.cb)
+
+    async def get_redirect_details(self) -> str:
+        if not hasattr(Connection.get_redirect_details, "cb"):
+            self.logger.debug("vcx_connection_get_redirect_details: Creating callback")
+            Connection.get_redirect_details.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+        result = await do_call('vcx_connection_get_redirect_details',
+                               c_connection_handle,
+                               Connection.get_redirect_details.cb)
+
+        self.logger.debug("vcx_connection_get_redirect_details completed")
+        return result
 
     async def send_message(self, msg: str, msg_type: str, msg_title: str, ref_msg_id: str = None) -> str:
         """
@@ -501,3 +535,24 @@ class Connection(VcxStateful):
                       c_query,
                       c_comment,
                       Connection.send_discovery_features.cb)
+
+    async def get_my_pw_did(self) -> str:
+        if not hasattr(Connection.get_my_pw_did, "cb"):
+            self.logger.debug("get_my_pw_did: Creating callback")
+            Connection.get_my_pw_did.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+
+        my_pw_did = await do_call('vcx_connection_get_pw_did', c_connection_handle, Connection.get_my_pw_did.cb)
+        return my_pw_did.decode()
+
+    async def get_their_pw_did(self) -> str:
+        if not hasattr(Connection.get_their_pw_did, "cb"):
+            self.logger.debug("get_their_pw_did: Creating callback")
+            Connection.get_their_pw_did.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+
+        their_pw_did =\
+            await do_call('vcx_connection_get_their_pw_did', c_connection_handle, Connection.get_their_pw_did.cb)
+        return their_pw_did.decode()
