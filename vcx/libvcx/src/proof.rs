@@ -4,7 +4,6 @@ use openssl;
 use openssl::bn::{BigNum, BigNumRef};
 
 use settings;
-use connection;
 use api::{VcxStateType, ProofStateType};
 use messages;
 use messages::proofs::proof_message::{ProofMessage, CredInfo};
@@ -22,6 +21,7 @@ use utils::qualifier::Qualifier;
 use messages::proofs::proof_message::get_credential_info;
 
 use v3::handlers::proof_presentation::verifier::verifier::Verifier;
+use connection::{get_agent_info, MyAgentInfo};
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proofs> = Default::default();
@@ -49,8 +49,6 @@ pub struct Proof {
     requested_predicates: String,
     msg_uid: String,
     ref_msg_id: String,
-    prover_did: String,
-    prover_vk: String,
     state: VcxStateType,
     proof_state: ProofStateType,
     name: String,
@@ -59,11 +57,8 @@ pub struct Proof {
     proof: Option<ProofMessage>,
     // Refactoring this name to 'proof_message' causes some tests to fail.
     proof_request: Option<ProofRequestMessage>,
-    remote_did: String,
-    remote_vk: String,
-    agent_did: String,
-    agent_vk: String,
     revocation_interval: RevocationInterval,
+    agent_info: MyAgentInfo,
     thread: Option<Thread>
 }
 
@@ -263,7 +258,11 @@ impl Proof {
     }
 
     fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
-        let proof_req_format_version = if Qualifier::is_fully_qualified(&self.remote_did) { Some(ProofRequestVersion::V2) } else { None };
+        let their_did = self.agent_info.their_pw_did.clone().unwrap_or_default();
+
+        let proof_req_format_version = if Qualifier::is_fully_qualified(&their_did) {
+            Some(ProofRequestVersion::V2) }
+        else { None };
 
         let data_version = "0.1";
         let mut proof_obj = messages::proof_request();
@@ -291,33 +290,28 @@ impl Proof {
             return Err(VcxError::from(VcxErrorKind::NotReady));
         }
         debug!("sending proof request with proof: {}, and connection {}", self.source_id, connection_handle);
-        self.prover_did = connection::get_pw_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
-        self.agent_did = connection::get_agent_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
-        self.agent_vk = connection::get_agent_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
-        self.remote_did = connection::get_their_pw_did(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
-        self.remote_vk = connection::get_their_pw_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
-        self.prover_vk = connection::get_pw_verkey(connection_handle).or(Err(VcxError::from(VcxErrorKind::GeneralConnectionError)))?;
+        self.agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
-        debug!("prover_did: {} -- agent_did: {} -- agent_vk: {} -- remote_vk: {} -- prover_vk: {}",
-               self.prover_did,
-               self.agent_did,
-               self.agent_vk,
-               self.remote_vk,
-               self.prover_vk);
-
-        let title = format!("{} wants you to share: {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?, self.name);
+        let title = format!("{} wants you to share: {}",
+                            settings::get_config_value(settings::CONFIG_INSTITUTION_NAME)?,
+                            self.name);
 
         let proof_request = self.generate_proof_request_msg()?;
 
         let response = messages::send_message()
-            .to(&self.prover_did)?
-            .to_vk(&self.prover_vk)?
+            .to(&self.agent_info.my_pw_did()?)?
+            .to_vk(&self.agent_info.my_pw_vk()?)?
             .msg_type(&RemoteMessageType::ProofReq)?
-            .agent_did(&self.agent_did)?
+            .agent_did(&self.agent_info.pw_agent_did()?)?
+            .agent_vk(&self.agent_info.pw_agent_vk()?)?
             .set_title(&title)?
             .set_detail(&title)?
-            .agent_vk(&self.agent_vk)?
-            .edge_agent_payload(&self.prover_vk, &self.remote_vk, &proof_request, PayloadKinds::ProofRequest, self.thread.clone()).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))?
+            .edge_agent_payload(&self.agent_info.my_pw_vk()?,
+                                &self.agent_info.their_pw_vk()?,
+                                &proof_request,
+                                PayloadKinds::ProofRequest,
+                                self.thread.clone())
+            .or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))?
             .send_secure()
             .map_err(|err| err.extend("Cannot send proof request"))?;
 
@@ -334,24 +328,27 @@ impl Proof {
         debug!("updating state for proof {} with msg_id {:?}", self.source_id, self.msg_uid);
         if self.state == VcxStateType::VcxStateAccepted {
             return Ok(self.get_state());
-        } else if message.is_none() && (self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.prover_did.is_empty()) {
+        } else if message.is_none() &&
+            (self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.agent_info.my_pw_did.is_none()) {
             return Ok(self.get_state());
         }
-
 
         let payload = match message {
             None => {
                 // Check cloud agent for pending messages
                 let (_, message) = messages::get_message::get_ref_msg(&self.msg_uid,
-                                                                      &self.prover_did,
-                                                                      &self.prover_vk,
-                                                                      &self.agent_did,
-                                                                      &self.agent_vk)?;
+                                                                      &self.agent_info.my_pw_did()?,
+                                                                      &self.agent_info.my_pw_vk()?,
+                                                                      &self.agent_info.pw_agent_did()?,
+                                                                      &self.agent_info.pw_agent_vk()?)?;
 
-                let (payload, thread) = Payloads::decrypt(&self.prover_vk, &message)?;
+                let (payload, thread) = Payloads::decrypt(
+                    &self.agent_info.my_pw_vk()?,
+                    &message
+                )?;
 
                 if let Some(_) = thread {
-                    let remote_did = self.remote_did.as_str();
+                    let remote_did = &self.agent_info.their_pw_did()?;
                     self.thread.as_mut().map(|thread| thread.increment_receiver(&remote_did));
                 }
 
@@ -443,8 +440,6 @@ pub fn create_proof(source_id: String,
         ref_msg_id: String::new(),
         requested_attrs,
         requested_predicates,
-        prover_did: String::new(),
-        prover_vk: String::new(),
         state: VcxStateType::VcxStateNone,
         proof_state: ProofStateType::ProofUndefined,
         name,
@@ -452,11 +447,8 @@ pub fn create_proof(source_id: String,
         nonce: generate_nonce()?,
         proof: None,
         proof_request: None,
-        remote_did: String::new(),
-        remote_vk: String::new(),
-        agent_did: String::new(),
-        agent_vk: String::new(),
         revocation_interval: revocation_details,
+        agent_info: get_agent_info()?,
         thread: Some(Thread::new()),
     };
 
@@ -594,35 +586,58 @@ pub fn generate_nonce() -> VcxResult<String> {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
+    use connection;
     use utils::httpclient;
     use connection::tests::build_test_connection;
     use utils::libindy::{pool, set_libindy_rc};
 
-    fn create_boxed_proof() -> Box<Proof> {
-        Box::new(Proof {
+    fn default_agent_info(connection_handle: Option<u32>) -> MyAgentInfo {
+        if let Some(h) = connection_handle { get_agent_info().unwrap().pw_info(h).unwrap()}
+        else {
+            MyAgentInfo {
+                my_pw_did: Some("GxtnGN6ypZYgEqcftSQFnC".to_string()),
+                my_pw_vk: Some(VERKEY.to_string()),
+                their_pw_did: Some(DID.to_string()),
+                their_pw_vk: Some(VERKEY.to_string()),
+                pw_agent_did: Some(DID.to_string()),
+                pw_agent_vk: Some(VERKEY.to_string()),
+                agent_did: DID.to_string(),
+                agent_vk: VERKEY.to_string(),
+                agency_did: DID.to_string(),
+                agency_vk: VERKEY.to_string(),
+                version: None,
+                connection_handle
+            }
+        }
+    }
+
+    pub fn create_default_proof(state: Option<VcxStateType>, proof_state: Option<ProofStateType>, connection_handle: Option<u32>) -> Proof {
+        let agent_info = if let Some(h) = connection_handle {
+            get_agent_info().unwrap().pw_info(h).unwrap()
+        } else { default_agent_info(connection_handle) };
+        Proof {
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),
             ref_msg_id: String::new(),
             requested_attrs: String::from("[]"),
             requested_predicates: String::from("[]"),
-            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
-            prover_vk: VERKEY.to_string(),
-            state: VcxStateType::VcxStateOfferSent,
-            proof_state: ProofStateType::ProofUndefined,
+            state: state.unwrap_or(VcxStateType::VcxStateOfferSent),
+            proof_state: proof_state.unwrap_or(ProofStateType::ProofUndefined),
             name: String::new(),
             version: String::from("1.0"),
             nonce: generate_nonce().unwrap(),
             proof: None,
             proof_request: None,
-            remote_did: DID.to_string(),
-            remote_vk: VERKEY.to_string(),
-            agent_did: DID.to_string(),
-            agent_vk: VERKEY.to_string(),
+            agent_info,
             revocation_interval: RevocationInterval { from: None, to: None },
             thread: Some(Thread::new()),
-        })
+        }
+    }
+
+    fn create_boxed_proof(state: Option<VcxStateType>, proof_state: Option<ProofStateType>, connection_handle: Option<u32>) -> Box<Proof> {
+        Box::new(create_default_proof(state, proof_state, connection_handle))
     }
 
     #[test]
@@ -762,14 +777,13 @@ mod tests {
     fn test_update_state_with_pending_proof() {
         init!("true");
 
+        let connection_h = Some(build_test_connection());
         let mut proof = Box::new(Proof {
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),
             ref_msg_id: String::new(),
             requested_attrs: String::from("[]"),
             requested_predicates: String::from("[]"),
-            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
-            prover_vk: VERKEY.to_string(),
             state: VcxStateType::VcxStateOfferSent,
             proof_state: ProofStateType::ProofUndefined,
             name: String::new(),
@@ -777,10 +791,7 @@ mod tests {
             nonce: generate_nonce().unwrap(),
             proof: None,
             proof_request: None,
-            remote_did: DID.to_string(),
-            remote_vk: VERKEY.to_string(),
-            agent_did: DID.to_string(),
-            agent_vk: VERKEY.to_string(),
+            agent_info: default_agent_info(connection_h),
             revocation_interval: RevocationInterval { from: None, to: None },
             thread: Some(Thread::new()),
         });
@@ -802,8 +813,6 @@ mod tests {
             ref_msg_id: String::new(),
             requested_attrs: String::from("[]"),
             requested_predicates: String::from("[]"),
-            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
-            prover_vk: VERKEY.to_string(),
             state: VcxStateType::VcxStateOfferSent,
             proof_state: ProofStateType::ProofUndefined,
             name: String::new(),
@@ -811,10 +820,7 @@ mod tests {
             nonce: generate_nonce().unwrap(),
             proof: None,
             proof_request: None,
-            remote_did: DID.to_string(),
-            remote_vk: VERKEY.to_string(),
-            agent_did: DID.to_string(),
-            agent_vk: VERKEY.to_string(),
+            agent_info: default_agent_info(None),
             revocation_interval: RevocationInterval { from: None, to: None },
             thread: Some(Thread::new()),
         });
@@ -827,7 +833,7 @@ mod tests {
     fn test_update_state_with_reject_message() {
         init!("true");
 
-        let _connection_handle = build_test_connection();
+        let connection_handle = build_test_connection();
 
         let mut proof = Box::new(Proof {
             source_id: "12".to_string(),
@@ -835,8 +841,6 @@ mod tests {
             ref_msg_id: String::new(),
             requested_attrs: String::from("[]"),
             requested_predicates: String::from("[]"),
-            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
-            prover_vk: VERKEY.to_string(),
             state: VcxStateType::VcxStateOfferSent,
             proof_state: ProofStateType::ProofUndefined,
             name: String::new(),
@@ -844,10 +848,7 @@ mod tests {
             nonce: generate_nonce().unwrap(),
             proof: None,
             proof_request: None,
-            remote_did: DID.to_string(),
-            remote_vk: VERKEY.to_string(),
-            agent_did: DID.to_string(),
-            agent_vk: VERKEY.to_string(),
+            agent_info: default_agent_info(Some(connection_handle)),
             revocation_interval: RevocationInterval { from: None, to: None },
             thread: Some(Thread::new()),
         });
@@ -860,41 +861,19 @@ mod tests {
     fn test_get_proof_returns_proof_when_proof_state_invalid() {
         init!("true");
 
-        let mut proof = Box::new(Proof {
-            source_id: "12".to_string(),
-            msg_uid: String::from("1234"),
-            ref_msg_id: String::new(),
-            requested_attrs: String::from("[]"),
-            requested_predicates: String::from("[]"),
-            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
-            prover_vk: VERKEY.to_string(),
-            state: VcxStateType::VcxStateOfferSent,
-            proof_state: ProofStateType::ProofUndefined,
-            name: String::new(),
-            version: String::from("1.0"),
-            nonce: generate_nonce().unwrap(),
-            proof: None,
-            proof_request: None,
-            remote_did: DID.to_string(),
-            remote_vk: VERKEY.to_string(),
-            agent_did: DID.to_string(),
-            agent_vk: VERKEY.to_string(),
-            revocation_interval: RevocationInterval { from: None, to: None },
-            thread: Some(Thread::new()),
-        });
+        let mut proof = create_boxed_proof(Some(VcxStateType::VcxStateOfferSent),
+                                           None,
+                                           Some(build_test_connection()));
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
         httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
-        //httpclient::set_next_u8_response(GET_PROOF_OR_CREDENTIAL_RESPONSE.to_vec());
 
         proof.update_state(None).unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
         assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
-        assert_eq!(proof.prover_did, "GxtnGN6ypZYgEqcftSQFnC");
         let proof_data = proof.get_proof().unwrap();
         assert!(proof_data.contains(r#""cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0""#));
         assert!(proof_data.contains(r#""schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0""#));
-        /* converting proof to a string produces non-deterministic results */
     }
 
     #[test]
@@ -996,7 +975,7 @@ mod tests {
         let mut proof_msg_obj = ProofMessage::new();
         proof_msg_obj.libindy_proof = PROOF_JSON.to_string();
 
-        let mut proof = create_boxed_proof();
+        let mut proof = create_boxed_proof(None, None, None);
         proof.proof = Some(proof_msg_obj);
 
         let proof_str = proof.get_proof().unwrap();
@@ -1036,8 +1015,6 @@ mod tests {
             ref_msg_id: String::new(),
             requested_attrs: String::from("[]"),
             requested_predicates: REQUESTED_PREDICATES.to_string(),
-            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
-            prover_vk: VERKEY.to_string(),
             state: VcxStateType::VcxStateRequestReceived,
             proof_state: ProofStateType::ProofUndefined,
             name: String::new(),
@@ -1045,10 +1022,7 @@ mod tests {
             nonce: generate_nonce().unwrap(),
             proof: Some(proof_msg),
             proof_request: Some(proof_req_msg),
-            remote_did: DID.to_string(),
-            remote_vk: VERKEY.to_string(),
-            agent_did: DID.to_string(),
-            agent_vk: VERKEY.to_string(),
+            agent_info: default_agent_info(None),
             revocation_interval: RevocationInterval { from: None, to: None },
             thread: Some(Thread::new()),
         };
@@ -1092,7 +1066,7 @@ mod tests {
 
         let _new_handle = 1;
 
-        let mut proof = create_boxed_proof();
+        let mut proof = create_boxed_proof(None, None, Some(build_test_connection()));
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
         httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
@@ -1118,13 +1092,13 @@ mod tests {
     fn test_proof_errors() {
         init!("false");
 
-        let mut proof = create_boxed_proof();
+        let mut proof = create_boxed_proof(None, None, None);
 
         let bad_handle = 100000;
         // TODO: Do something to guarantee that this handle is bad
         assert_eq!(proof.send_proof_request(bad_handle).unwrap_err().kind(), VcxErrorKind::NotReady);
         // TODO: Add test that returns a INVALID_PROOF_CREDENTIAL_DATA
-        assert_eq!(proof.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
+        assert_eq!(proof.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
 
 
         let empty = r#""#;
@@ -1142,8 +1116,8 @@ mod tests {
 
         assert_eq!(from_string(empty).unwrap_err().kind(), VcxErrorKind::InvalidJson);
 
-        let mut proof_good = create_boxed_proof();
-        assert_eq!(proof_good.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
+        let mut proof_good = create_boxed_proof(None, None, None);
+        assert_eq!(proof_good.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
     }
 
     #[cfg(feature = "agency")]
@@ -1159,7 +1133,7 @@ mod tests {
         let mut proof_msg = ProofMessage::new();
         proof_msg.libindy_proof = proof;
 
-        let mut proof = create_boxed_proof();
+        let mut proof = create_boxed_proof(None, None, None);
         proof.proof = Some(proof_msg);
         proof.proof_request = Some(proof_req_obj);
 
@@ -1183,7 +1157,7 @@ mod tests {
         let mut proof_msg = ProofMessage::new();
         proof_msg.libindy_proof = proof;
 
-        let mut proof = create_boxed_proof();
+        let mut proof = create_boxed_proof(None, None, None);
         proof.proof = Some(proof_msg);
         proof.proof_request = Some(proof_req_obj);
 
@@ -1198,8 +1172,6 @@ mod tests {
     #[test]
     fn test_proof_verification_restrictions() {
         init!("ledger");
-        use utils::logger::LibvcxDefaultLogger;
-        LibvcxDefaultLogger::init_testing_logger();
         let proof_req = json!({
            "nonce":"123432421212",
            "name":"proof_req_1",
@@ -1223,7 +1195,7 @@ mod tests {
         let mut proof_msg = ProofMessage::new();
         proof_msg.libindy_proof = proof;
 
-        let mut proof = create_boxed_proof();
+        let mut proof = create_boxed_proof(None, None, None);
         proof.proof = Some(proof_msg);
         proof.proof_request = Some(proof_req_obj);
 
@@ -1255,7 +1227,7 @@ mod tests {
         proof_req_obj.proof_request_data = serde_json::from_str(&proof_req).unwrap();
 
         let mut proof_msg = ProofMessage::new();
-        let mut proof = create_boxed_proof();
+        let mut proof = create_boxed_proof(None, None, None);
         proof.proof_request = Some(proof_req_obj);
 
         // valid proof_obj

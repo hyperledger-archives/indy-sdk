@@ -33,6 +33,7 @@ pub mod threadpool;
 pub mod uuid;
 pub mod author_agreement;
 pub mod qualifier;
+pub mod option_util;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::path::PathBuf;

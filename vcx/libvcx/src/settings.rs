@@ -260,15 +260,30 @@ pub fn get_protocol_version() -> usize {
     }
 }
 
+pub fn get_opt_config_value(key: &str) -> Option<String> {
+    trace!("get_opt_config_value >>> key: {}", key);
+    match SETTINGS.read() {
+        Ok(x) => x,
+        Err(_) => return None
+    }
+        .get(key)
+        .map(|v| v.to_string())
+}
+
 pub fn get_config_value(key: &str) -> VcxResult<String> {
     trace!("get_config_value >>> key: {}", key);
 
-    SETTINGS
-        .read()
-        .or(Err(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, "Cannot read settings")))?
-        .get(key)
-        .map(|v| v.to_string())
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot read \"{}\" from settings", key)))
+    get_opt_config_value(key)
+        .ok_or(VcxError::from_msg(
+            VcxErrorKind::InvalidConfiguration,
+            format!("Cannot read \"{}\" from settings", key)
+        ))
+}
+
+pub fn set_opt_config_value(key: &str, value: &Option<String>) {
+    if let Some(v) = value {
+       set_config_value(key, v.as_str())
+    }
 }
 
 pub fn set_config_value(key: &str, value: &str) {

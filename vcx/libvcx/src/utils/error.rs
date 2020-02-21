@@ -113,6 +113,7 @@ pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1101, message:
 pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown mime type"};
 pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
 pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1104, message: "Invalid redirect details structure"};
+pub static NO_AGENT_INFO: Error = Error{code_num: 1105, message: "Agent pairwise information not found"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {

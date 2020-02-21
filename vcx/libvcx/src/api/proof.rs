@@ -751,7 +751,7 @@ mod tests {
         init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_proof_deserialize(cb.command_handle,
-                                         CString::new(PROOF_OFFER_SENT).unwrap().into_raw(),
+                                         CString::new(PROOF_WITH_INVALID_STATE).unwrap().into_raw(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
