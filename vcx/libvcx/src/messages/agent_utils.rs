@@ -346,7 +346,6 @@ pub fn connect_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Str
 
     let mut response = send_message_to_agency(&message, agency_did)?;
 
-    println!("Response: {:?}", response);
     let ConnectResponse { from_vk: agency_pw_vk, from_did: agency_pw_did, .. } =
         match response.remove(0) {
             A2AMessage::Version2(A2AMessageV2::ConnectResponse(resp)) =>
