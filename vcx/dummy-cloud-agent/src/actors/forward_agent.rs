@@ -24,7 +24,7 @@ pub struct ForwardAgent {
     router: Addr<Router>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
-    admin: Option<Addr<Admin>>,
+    admin: Option<Addr<Admin>>
 }
 
 impl ForwardAgent {
@@ -111,7 +111,7 @@ impl ForwardAgent {
                                            forward_agent_detail.clone(),
                                            wallet_storage_config.clone(),
                                            router.clone(),
-                                           admin.clone(),
+                                           admin.clone()
                 )
                     .map(move |_| (wallet_handle, did, verkey,
                                    router, wallet_storage_config, forward_agent_detail, admin))
@@ -188,7 +188,6 @@ impl ForwardAgent {
                                                         admin.clone())
                     })
                     .collect();
-
                 future::join_all(futures)
                     .map(|_| ())
                     .map_err(|err| err.context("Can't restore Forward Agent connections").into())
