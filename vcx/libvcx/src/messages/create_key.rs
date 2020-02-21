@@ -1,6 +1,6 @@
 use settings;
 use messages::*;
-use messages::message_type::{MessageTypes, MessageTypeV2 };
+use messages::message_type::MessageTypes;
 use utils::{httpclient, constants};
 use error::prelude::*;
 use settings::ProtocolTypes;
@@ -25,16 +25,6 @@ impl CreateKey {
             for_verkey: for_verkey.to_string(),
         }
     }
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub struct CreateKeyReq {
-    #[serde(rename = "@type")]
-    msg_type: MessageTypeV2,
-    #[serde(rename = "forDID")]
-    for_did: String,
-    #[serde(rename = "forDIDVerKey")]
-    for_verkey: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -108,15 +98,10 @@ impl CreateKeyBuilder {
                 A2AMessage::Version1(
                     A2AMessageV1::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
                 ),
-            settings::ProtocolTypes::V2 => {
-                let msg = CreateKeyReq {
-                    msg_type: MessageTypes::build_v2(A2AMessageKinds::CreateKey),
-                    for_did: self.for_did.clone(),
-                    for_verkey: self.for_verkey.clone()
-                };
-
-                A2AMessage::Version2(A2AMessageV2::CreateKey(msg))
-            },
+            settings::ProtocolTypes::V2 =>
+                A2AMessage::Version2(
+                    A2AMessageV2::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
+                )
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;

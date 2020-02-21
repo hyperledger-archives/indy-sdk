@@ -476,7 +476,7 @@ pub fn get_ver_str(handle: u32) -> VcxResult<Option<String>> {
     CONNECTION_MAP.get(handle, |connection| {
         match connection {
             Connections::V1(ref connection) => Ok(connection.get_version().as_ref().map(ProtocolTypes::to_string)),
-            Connections::V3(ref connection) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
+            Connections::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
         }
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
