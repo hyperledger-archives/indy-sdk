@@ -118,6 +118,7 @@ pub mod tests {
     static mut INSTITUTION_CONFIG: u32 = 0;
     static mut CONSUMER_CONFIG: u32 = 0;
     use indy::ErrorCode;
+    use indy::WalletHandle;
 
     static INIT_PLUGIN: std::sync::Once = std::sync::Once::new();
 
@@ -211,8 +212,8 @@ pub mod tests {
 
     pub fn setup_ledger_env(use_zero_fees: bool) {
         match pool::get_pool_handle() {
-            Ok(x) => pool::close().unwrap(),
-            Err(x) => (),
+            Ok(_) => pool::close().unwrap(),
+            Err(_) => (),
         };
 
         pool::tests::delete_test_pool();
@@ -267,7 +268,7 @@ pub mod tests {
 
     fn change_wallet_handle() {
         let wallet_handle = settings::get_config_value(settings::CONFIG_WALLET_HANDLE).unwrap();
-        unsafe { wallet::WALLET_HANDLE = wallet_handle.parse::<i32>().unwrap() }
+        unsafe { wallet::WALLET_HANDLE = WalletHandle(wallet_handle.parse::<i32>().unwrap()) }
     }
 
     pub fn setup_local_env(protocol_type: &str) {
@@ -280,7 +281,7 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, settings::DEFAULT_WALLET_KEY_DERIVATION);
         let enterprise_wallet_name = format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
         let seed1 = create_new_seed();
-        let config = json!({
+        let mut config = json!({
             "agency_url": AGENCY_ENDPOINT.to_string(),
             "agency_did": AGENCY_DID.to_string(),
             "agency_verkey": AGENCY_VERKEY.to_string(),
@@ -292,15 +293,31 @@ pub mod tests {
             "name": "institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
             "path": constants::GENESIS_PATH.to_string(),
-            "protocol_type": protocol_type,
-        }).to_string();
-        let enterprise_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
+        });
+
+        let set_v2_protocol = |config_: &mut serde_json::Value|{
+            config_["protocol_type"] = json!("2.0");
+            config_["use_latest_protocols"] = json!("true");
+        };
+
+        // TODO: FIXMEEEE
+        if protocol_type == "2.0" {
+            set_v2_protocol(&mut config);
+        }
+
+        let enterprise_config = ::messages::agent_utils::connect_register_provision(&config.to_string()).unwrap();
+
+        let mut enterprise_config: serde_json::Value = serde_json::from_str(&enterprise_config).unwrap();
+
+        if protocol_type == "2.0" {
+            set_v2_protocol(&mut enterprise_config);
+        }
 
         ::api::vcx::vcx_shutdown(false);
 
         let consumer_wallet_name = format!("{}_{}", constants::CONSUMER_PREFIX, settings::DEFAULT_WALLET_NAME);
         let seed2 = create_new_seed();
-        let config = json!({
+        let mut config = json!({
             "agency_url": C_AGENCY_ENDPOINT.to_string(),
             "agency_did": C_AGENCY_DID.to_string(),
             "agency_verkey": C_AGENCY_VERKEY.to_string(),
@@ -311,16 +328,26 @@ pub mod tests {
             "agent_seed": seed2,
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
-            "path": constants::GENESIS_PATH.to_string(),
-            "protocol_type": protocol_type,
-        }).to_string();
-        let consumer_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
+            "path": constants::GENESIS_PATH.to_string()
+        });
+
+        if protocol_type == "2.0" {
+            set_v2_protocol(&mut config);
+        }
+
+        let consumer_config = ::messages::agent_utils::connect_register_provision(&config.to_string()).unwrap();
+
+        let mut consumer_config: serde_json::Value = serde_json::from_str(&consumer_config).unwrap();
+
+        if protocol_type == "2.0" {
+            set_v2_protocol(&mut consumer_config);
+        }
 
         unsafe {
-            INSTITUTION_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config)).unwrap();
+            INSTITUTION_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config.to_string())).unwrap();
         }
         unsafe {
-            CONSUMER_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&consumer_wallet_name, &consumer_config)).unwrap();
+            CONSUMER_CONFIG = CONFIG_STRING.add(config_with_wallet_handle(&consumer_wallet_name, &consumer_config.to_string())).unwrap();
         }
         pool::tests::open_sandbox_pool();
 
@@ -353,7 +380,7 @@ pub mod tests {
     pub fn config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
         let wallet_handle = wallet::open_wallet(wallet_n, None, None, None).unwrap();
         let mut config: serde_json::Value = serde_json::from_str(config).unwrap();
-        config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.to_string());
+        config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.0.to_string());
         config.to_string()
     }
 
@@ -364,7 +391,7 @@ pub mod tests {
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
     }
 
-    pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
+    pub fn setup_wallet_env(test_name: &str) -> Result<WalletHandle, String> {
         use utils::libindy::wallet::init_wallet;
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         init_wallet(test_name, None, None, None).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
@@ -387,7 +414,7 @@ pub mod tests {
 
         init!("agency");
 
-        let (faber, alice) = ::connection::tests::create_connected_connections();
+        let (_faber, _alice) = ::connection::tests::create_connected_connections();
         set_institution();
         wallet::tests::delete_test_wallet(&format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME));
         pool::close().unwrap();

@@ -5,6 +5,7 @@ use settings::{ProtocolTypes, get_protocol_type};
 use utils::libindy::crypto;
 use error::prelude::*;
 use messages::thread::Thread;
+use serde_json::Value;
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 #[serde(untagged)]
@@ -19,6 +20,14 @@ pub struct PayloadV1 {
     pub type_: PayloadTypeV1,
     #[serde(rename = "@msg")]
     pub msg: String,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+pub struct PayloadV12 {
+    #[serde(rename = "@type")]
+    type_: PayloadTypeV2,
+    #[serde(rename = "@msg")]
+    pub msg: Value
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -102,7 +111,7 @@ impl Payloads {
         Ok(my_payload)
     }
 
-    pub fn decrypt_payload_v2(my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
+    pub fn decrypt_payload_v2(_my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV2> {
         let payload = ::serde_json::to_vec(&payload)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
 
@@ -123,6 +132,27 @@ impl Payloads {
         if my_payload.thread.thid.is_none() {
             my_payload.thread.thid = Some(my_payload.id.clone());
         }
+
+        Ok(my_payload)
+    }
+
+    pub fn decrypt_payload_v12(_my_vk: &str, payload: &::serde_json::Value) -> VcxResult<PayloadV12> {
+        let payload = ::serde_json::to_vec(&payload)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidState, err))?;
+
+        let unpacked_msg = crypto::unpack_message(&payload)?;
+
+        let message: ::serde_json::Value = ::serde_json::from_slice(unpacked_msg.as_slice())
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err)))?;
+
+        let message = message["message"].as_str()
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field"))?.to_string();
+
+        let my_payload: PayloadV12 = serde_json::from_str(&message)
+            .map_err(|err| {
+                error!("could not deserialize bundle with i8 or u8: {}", err);
+                VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
+            })?;
 
         Ok(my_payload)
     }

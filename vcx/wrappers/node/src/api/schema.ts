@@ -7,15 +7,29 @@ import { ISerializedData } from './common'
 import { VCXBase } from './vcx-base'
 import { PaymentManager } from './vcx-payment-txn'
 
+/**
+ * @interface Interface that represents the parameters for `Schema.create` function.
+ * @description
+ */
 export interface ISchemaCreateData {
+  // Enterprise's personal identification for the user.
   sourceId: string,
+  // list of attributes that will make up the schema (the number of attributes should be less or equal than 125)
   data: ISchemaAttrs,
+  // future use (currently uses any address in the wallet)
   paymentHandle: number
 }
 
+/**
+ * @interface Interface that represents the parameters for `Schema.prepareForEndorser` function.
+ * @description
+ */
 export interface ISchemaPrepareForEndorserData {
+  // Enterprise's personal identification for the user.
   sourceId: string,
+  // list of attributes that will make up the schema (the number of attributes should be less or equal than 125)
   data: ISchemaAttrs,
+  // DID of the Endorser that will submit the transaction.
   endorser: string
 }
 
@@ -23,7 +37,7 @@ export interface ISchemaPrepareForEndorserData {
  * @interface
  * @description
  * name: name of schema
- * version:
+ * version: version of the scheme
  * attrNames: a list of named attribtes inteded to be added to the schema
  * (the number of attributes should be less or equal than 125)
  */
@@ -77,7 +91,7 @@ export class SchemaPaymentManager extends PaymentManager {
 
 export class Schema extends VCXBase<ISchemaSerializedData> {
   /**
-   * Builds a generic Schema object
+   * Creates a new Schema object that is written to the ledger
    *
    * Example:
    * ```
@@ -116,7 +130,7 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
   }
 
   /**
-   * Builds a generic Schema object that will be published by Endorser later.
+   * Builds a new Schema object that will be published by Endorser later.
    *
    * Example:
    * ```
@@ -348,7 +362,7 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
 
   /**
    *
-   * Checks if schema is published on the Ledger and updates the the state
+   * Checks if schema is published on the Ledger and updates the state
    *
    * Example:
    * ```

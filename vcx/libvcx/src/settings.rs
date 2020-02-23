@@ -46,6 +46,7 @@ pub static CONFIG_WALLET_KEY_DERIVATION: &str = "wallet_key_derivation";
 pub static CONFIG_PROTOCOL_VERSION: &str = "protocol_version";
 pub static CONFIG_PAYMENT_METHOD: &str = "payment_method";
 pub static CONFIG_TXN_AUTHOR_AGREEMENT: &str = "author_agreement";
+pub static CONFIG_USE_LATEST_PROTOCOLS: &'static str = "use_latest_protocols";
 pub static CONFIG_POOL_CONFIG: &str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
 pub static COMMUNICATION_METHOD: &str = "communication_method"; // proprietary or aries
@@ -72,6 +73,7 @@ pub static MASK_VALUE: &str = "********";
 pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "RAW";
 pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
 pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
+pub static DEFAULT_USE_LATEST_PROTOCOLS: &str = "false";
 pub static DEFAULT_PAYMENT_METHOD: &str = "null";
 pub static DEFAULT_PROTOCOL_TYPE: &str = "1.0";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
@@ -157,11 +159,6 @@ pub fn validate_config(config: &HashMap<String, String>) -> VcxResult<u32> {
     Ok(error::SUCCESS.code_num)
 }
 
-fn validate_wallet_key(key: &str) -> VcxResult<u32> {
-    if key == UNINITIALIZED_WALLET_KEY { return Err(VcxError::from(VcxErrorKind::MissingWalletKey)); }
-    Ok(error::SUCCESS.code_num)
-}
-
 fn validate_optional_config_val<F, S, E>(val: Option<&String>, err: VcxErrorKind, closure: F) -> VcxResult<u32>
     where F: Fn(&str) -> Result<S, E> {
     if val.is_none() { return Ok(error::SUCCESS.code_num); }
@@ -189,7 +186,7 @@ pub fn test_indy_mode_enabled() -> bool {
 pub fn get_threadpool_size() -> usize {
     let size = match get_config_value(CONFIG_THREADPOOL_SIZE) {
         Ok(x) => x.parse::<usize>().unwrap_or(DEFAULT_THREADPOOL_SIZE),
-        Err(x) => DEFAULT_THREADPOOL_SIZE,
+        Err(_) => DEFAULT_THREADPOOL_SIZE,
     };
 
     if size > MAX_THREADPOOL_SIZE {
@@ -281,7 +278,7 @@ pub fn set_config_value(key: &str, value: &str) {
         .insert(key.to_string(), value.to_string());
 }
 
-pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, storage_config: Option<&str>) -> String {
+pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used
     let mut config = json!({
         "id": wallet_name,
         "storage_type": wallet_type
@@ -293,7 +290,7 @@ pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, storage_c
     config.to_string()
 }
 
-pub fn get_wallet_credentials(storage_creds: Option<&str>) -> String {
+pub fn get_wallet_credentials(_storage_creds: Option<&str>) -> String { // TODO: storage_creds must be used?
     let key = get_config_value(CONFIG_WALLET_KEY).unwrap_or(UNINITIALIZED_WALLET_KEY.to_string());
     let mut credentials = json!({"key": key});
 
@@ -304,6 +301,14 @@ pub fn get_wallet_credentials(storage_creds: Option<&str>) -> String {
     if let Some(_creds) = storage_creds { credentials["storage_credentials"] = serde_json::from_str(&_creds).unwrap(); }
 
     credentials.to_string()
+}
+
+pub fn get_connecting_protocol_version() -> ProtocolTypes {
+    let protocol = get_config_value(CONFIG_USE_LATEST_PROTOCOLS).unwrap_or(DEFAULT_USE_LATEST_PROTOCOLS.to_string());
+    match protocol.as_ref() {
+        "true" | "TRUE" | "True" => return ProtocolTypes::V2,
+        "false" | "FALSE" | "False" | _ => return ProtocolTypes::V1,
+    }
 }
 
 pub fn validate_payment_method() -> VcxResult<()> {
@@ -328,7 +333,7 @@ pub fn get_actors() -> Vec<Actors> {
     get_config_value(ACTORS)
         .and_then(|actors|
             ::serde_json::from_str(&actors)
-                .map_err(|err| VcxError::from(VcxErrorKind::InvalidOption))
+                .map_err(|_| VcxError::from(VcxErrorKind::InvalidOption))
         ).unwrap_or_else(|_| Actors::iter().collect())
 }
 
@@ -348,7 +353,7 @@ pub enum Actors {
 pub const ARIES_COMMUNICATION_METHOD: &str = "aries";
 
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ProtocolTypes {
     #[serde(rename = "1.0")]
     V1,
@@ -414,7 +419,7 @@ pub fn remove_file_if_exists(filename: &str) {
     trace!("remove_file_if_exists >>> filename: {}", filename);
     if Path::new(filename).exists() {
         match fs::remove_file(filename) {
-            Ok(t) => (),
+            Ok(()) => (),
             Err(e) => println!("Unable to remove file: {:?}", e)
         }
     }
@@ -547,8 +552,6 @@ pub mod tests {
     #[test]
     fn test_validate_config_failures() {
         let invalid = "invalid";
-        let valid_did = DEFAULT_DID;
-        let valid_ver = DEFAULT_VERKEY;
 
         let mut config: HashMap<String, String> = HashMap::new();
         assert_eq!(validate_config(&config).unwrap_err().kind(), VcxErrorKind::MissingWalletKey);

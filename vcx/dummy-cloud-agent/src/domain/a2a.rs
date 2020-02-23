@@ -1,18 +1,18 @@
 use failure::*;
 use futures::*;
-use indy::crypto;
 use rmp_serde;
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::{self, Value};
-use utils::futures::*;
+use crate::utils::futures::*;
 
-use domain::a2connection::*;
-use domain::invite::{InviteDetail, SenderDetail, ForwardAgentDetail};
-use domain::key_deligation_proof::KeyDlgProof;
-use domain::status::{MessageStatusCode, ConnectionStatus};
-use domain::message_type::*;
-use domain::protocol_type::{ProtocolType, ProtocolTypes};
-use domain::payload::Thread;
+use crate::domain::a2connection::*;
+use crate::domain::invite::{InviteDetail, SenderDetail, RedirectDetail, ForwardAgentDetail};
+use crate::domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::status::{MessageStatusCode, ConnectionStatus};
+use crate::domain::message_type::*;
+use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
+use crate::domain::payload::Thread;
+use crate::indy::{crypto, WalletHandle};
 
 #[derive(Debug)]
 pub enum A2AMessageV1 {
@@ -103,6 +103,8 @@ pub enum A2AMessageV2 {
     ConnectionRequestResponse(ConnectionRequestResponse),
     ConnectionRequestAnswer(ConnectionRequestAnswer),
     ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
+    ConnectionRequestRedirect(ConnectionRequestRedirect),
+    ConnectionRequestRedirectResponse(ConnectionRequestRedirectResponse),
     SendRemoteMessage(SendRemoteMessage),
     SendRemoteMessageResponse(SendRemoteMessageResponse),
 }
@@ -209,6 +211,7 @@ pub struct SendMessages {
 #[serde(untagged)]
 #[derive(Debug, Deserialize, Serialize)]
 pub enum MessageDetail {
+    ConnectionRequestRedirect(ConnectionRequestRedirectMessageDetail),
     ConnectionRequestAnswer(ConnectionRequestAnswerMessageDetail),
     ConnectionRequest(ConnectionRequestMessageDetail),
     ConnectionRequestResp(ConnectionRequestMessageDetailResp),
@@ -336,6 +339,7 @@ pub struct FailedMessageUpdateInfo {
 pub enum RemoteMessageType {
     ConnReq,
     ConnReqAnswer,
+    ConnReqRedirect,
     CredOffer,
     CredReq,
     Cred,
@@ -349,6 +353,7 @@ impl Serialize for RemoteMessageType {
         let value = match self {
             RemoteMessageType::ConnReq => "connReq",
             RemoteMessageType::ConnReqAnswer => "connReqAnswer",
+            RemoteMessageType::ConnReqRedirect => "connReqRedirect",
             RemoteMessageType::CredOffer => "credOffer",
             RemoteMessageType::CredReq => "credReq",
             RemoteMessageType::Cred => "cred",
@@ -366,6 +371,7 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         match value.as_str() {
             Some("connReq") => Ok(RemoteMessageType::ConnReq),
             Some("connReqAnswer") => Ok(RemoteMessageType::ConnReqAnswer),
+            Some("connReqRedirect") => Ok(RemoteMessageType::ConnReqRedirect),
             Some("credOffer") => Ok(RemoteMessageType::CredOffer),
             Some("credReq") => Ok(RemoteMessageType::CredReq),
             Some("cred") => Ok(RemoteMessageType::Cred),
@@ -385,7 +391,7 @@ pub struct ConnectionRequestMessageDetail {
     pub target_name: Option<String>,
     #[serde(rename = "phoneNo")]
     pub phone_no: Option<String>,
-    #[serde(rename = "usePublicDID")]
+    #[serde(rename = "includePublicDID")] // TODO: BREACKING CHANGE?
     pub use_public_did: Option<bool>,
     pub thread_id: Option<String>,
 }
@@ -432,6 +438,35 @@ impl From<ConnectionRequestAnswer> for ConnectionRequestAnswerMessageDetail {
             sender_agency_detail: con_req_answer.sender_agency_detail,
             answer_status_code: con_req_answer.answer_status_code,
             thread: Some(con_req_answer.thread),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestRedirectMessageDetail {
+    #[serde(rename = "keyDlgProof")]
+    pub key_dlg_proof: Option<KeyDlgProof>,
+    #[serde(rename = "senderDetail")]
+    pub sender_detail: SenderDetail,
+    #[serde(rename = "redirectDetail")]
+    pub redirect_detail: RedirectDetail,
+    #[serde(rename = "senderAgencyDetail")]
+    pub sender_agency_detail: ForwardAgentDetail,
+    #[serde(rename = "answerStatusCode")]
+    pub answer_status_code: MessageStatusCode,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread: Option<Thread>
+}
+
+impl From<ConnectionRequestRedirect> for ConnectionRequestRedirectMessageDetail {
+    fn from(con_req_redirect: ConnectionRequestRedirect) -> ConnectionRequestRedirectMessageDetail {
+        ConnectionRequestRedirectMessageDetail {
+            key_dlg_proof: con_req_redirect.key_dlg_proof,
+            sender_detail: con_req_redirect.sender_detail,
+            redirect_detail: con_req_redirect.redirect_detail,
+            sender_agency_detail: con_req_redirect.sender_agency_detail,
+            answer_status_code: con_req_redirect.answer_status_code,
+            thread: Some(con_req_redirect.thread),
         }
     }
 }
@@ -519,7 +554,7 @@ pub struct ConnectionRequest {
     pub target_name: Option<String>,
     #[serde(rename = "phoneNo")]
     pub phone_no: Option<String>,
-    #[serde(rename = "usePublicDID")]
+    #[serde(rename = "includePublicDID")] // TODO: breacking change?
     pub include_public_did: bool,
     #[serde(rename = "~thread")]
     pub thread: Thread,
@@ -561,6 +596,35 @@ pub struct ConnectionRequestAnswerResponse {
     #[serde(rename = "@id")]
     pub id: String,
     pub sent: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestRedirectResponse {
+    #[serde(rename = "@id")]
+    pub id: String,
+    pub sent: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestRedirect {
+    #[serde(rename = "sendMsg")]
+    pub send_msg: bool,
+    #[serde(rename = "@id")]
+    pub id: String,
+    #[serde(rename = "replyToMsgId")]
+    pub reply_to_msg_id: Option<String>,
+    #[serde(rename = "keyDlgProof")]
+    pub key_dlg_proof: Option<KeyDlgProof>,
+    #[serde(rename = "senderDetail")]
+    pub sender_detail: SenderDetail,
+    #[serde(rename = "redirectDetail")]
+    pub redirect_detail: RedirectDetail,
+    #[serde(rename = "senderAgencyDetail")]
+    pub sender_agency_detail: ForwardAgentDetail,
+    #[serde(rename = "answerStatusCode")]
+    pub answer_status_code: MessageStatusCode,
+    #[serde(rename = "~thread")]
+    pub thread: Thread,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -626,6 +690,8 @@ pub enum A2AMessageKinds {
     ConnectionRequestResponse,
     ConnectionRequestAnswer,
     ConnectionRequestAnswerResponse,
+    ConnectionRequestRedirect,
+    ConnectionRequestRedirectResponse,
     SendRemoteMessage,
     SendRemoteMessageResponse,
     UpdateComMethod,
@@ -660,6 +726,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::ConnectionRequestResponse => MessageFamilies::Pairwise,
             A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Pairwise,
             A2AMessageKinds::ConnectionRequestAnswerResponse => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequestRedirect => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequestRedirectResponse => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateMessageStatus => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageStatusUpdated => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateMessageStatusByConnections => MessageFamilies::Pairwise,
@@ -706,8 +774,10 @@ impl A2AMessageKinds {
             A2AMessageKinds::ConnectionStatusUpdated => "CONN_STATUS_UPDATED".to_string(),
             A2AMessageKinds::ConnectionRequest => "CONN_REQUEST".to_string(),
             A2AMessageKinds::ConnectionRequestResponse => "CONN_REQUEST_RESP".to_string(),
-            A2AMessageKinds::ConnectionRequestAnswer => "CONN_REQUEST_ANSWER".to_string(),
+            A2AMessageKinds::ConnectionRequestAnswer => "ACCEPT_CONN_REQ".to_string(),
             A2AMessageKinds::ConnectionRequestAnswerResponse => "CONN_REQUEST_ANSWER_RESP".to_string(),
+            A2AMessageKinds::ConnectionRequestRedirect => "REDIRECT_CONN_REQ".to_string(),
+            A2AMessageKinds::ConnectionRequestRedirectResponse => "CONN_REQ_REDIRECTED".to_string(),
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
             A2AMessageKinds::GetConfigs => "GET_CONFIGS".to_string(),
@@ -1064,9 +1134,24 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map(|msg| A2AMessageV2::ConnectionRequestAnswer(msg))
                     .map_err(de::Error::custom)
             }
+            "ACCEPT_CONN_REQ" => {
+                ConnectionRequestAnswer::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestAnswer(msg))
+                    .map_err(de::Error::custom)
+            }
             "CONN_REQUEST_ANSWER_RESP" => {
                 ConnectionRequestAnswerResponse::deserialize(value)
                     .map(|msg| A2AMessageV2::ConnectionRequestAnswerResponse(msg))
+                    .map_err(de::Error::custom)
+            }
+            "REDIRECT_CONN_REQ" => {
+                ConnectionRequestRedirect::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestRedirect(msg))
+                    .map_err(de::Error::custom)
+            }
+            "CONN_REQ_REDIRECTED" => {
+                ConnectionRequestRedirectResponse::deserialize(value)
+                    .map(|msg| A2AMessageV2::ConnectionRequestRedirectResponse(msg))
                     .map_err(de::Error::custom)
             }
             "SEND_REMOTE_MSG" => {
@@ -1195,6 +1280,8 @@ impl Serialize for A2AMessageV2 {
             A2AMessageV2::ConnectionRequestResponse(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestResponse),
             A2AMessageV2::ConnectionRequestAnswer(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestAnswer),
             A2AMessageV2::ConnectionRequestAnswerResponse(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestAnswerResponse),
+            A2AMessageV2::ConnectionRequestRedirect(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestRedirect),
+            A2AMessageV2::ConnectionRequestRedirectResponse(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::ConnectionRequestRedirectResponse),
             A2AMessageV2::SendRemoteMessage(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::SendRemoteMessage),
             A2AMessageV2::SendRemoteMessageResponse(msg) => set_a2a_message_type_v2(msg, A2AMessageKinds::SendRemoteMessageResponse),
         }.map_err(ser::Error::custom)?;
@@ -1228,7 +1315,7 @@ impl A2AMessage {
             .map_err(|err| err.context("Can't bundle messages").into())
     }
 
-    pub fn prepare_authcrypted(wallet_handle: i32,
+    pub fn prepare_authcrypted(wallet_handle: WalletHandle,
                                sender_vk: &str,
                                recipient_vk: &str,
                                msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
@@ -1239,14 +1326,14 @@ impl A2AMessage {
     }
 
 
-    pub fn prepare_anoncrypted(wallet_handle: i32, recipient_vk: &str, message: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+    pub fn prepare_anoncrypted(wallet_handle: WalletHandle, recipient_vk: &str, message: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         match ProtocolType::get() {
             ProtocolTypes::V1 => A2AMessage::bundle_anoncrypted(recipient_vk, message),
             ProtocolTypes::V2 => A2AMessage::pack(wallet_handle, None, recipient_vk, message)
         }
     }
 
-    pub fn bundle_authcrypted(wallet_handle: i32,
+    pub fn bundle_authcrypted(wallet_handle: WalletHandle,
                               sender_vk: &str,
                               recipient_vk: &str,
                               msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
@@ -1266,7 +1353,7 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn pack(wallet_handle: i32, sender_vk: Option<&str>, recipient_vk: &str, msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+    pub fn pack(wallet_handle: WalletHandle, sender_vk: Option<&str>, recipient_vk: &str, msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         if msgs.len() != 1 {
             return err!(err_msg("Invalid messages count."));
         }
@@ -1279,7 +1366,7 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn pack_v2(wallet_handle: i32, sender_vk: Option<&str>, recipient_vk: &str, msg: &A2AMessageV2) -> BoxedFuture<Vec<u8>, Error> {
+    pub fn pack_v2(wallet_handle: WalletHandle, sender_vk: Option<&str>, recipient_vk: &str, msg: &A2AMessageV2) -> BoxedFuture<Vec<u8>, Error> {
         let message = ftry!(serde_json::to_string(msg));
         let receiver_keys = ftry!(serde_json::to_string(&vec![&recipient_vk]));
 
@@ -1299,7 +1386,7 @@ impl A2AMessage {
             .map_err(|err| err.context("Can't unbundle messages").into())
     }
 
-    pub fn parse_anoncrypted(wallet_handle: i32,
+    pub fn parse_anoncrypted(wallet_handle: WalletHandle,
                              recipient_vk: &str,
                              bundle: &[u8]) -> BoxedFuture<Vec<A2AMessage>, Error> {
         match ProtocolType::get() {
@@ -1311,7 +1398,7 @@ impl A2AMessage {
         }
     }
 
-    pub fn parse_authcrypted(wallet_handle: i32,
+    pub fn parse_authcrypted(wallet_handle: WalletHandle,
                              recipient_vk: &str,
                              message: &[u8]) -> BoxedFuture<(String, Vec<A2AMessage>), Error> {
         match ProtocolType::get() {
@@ -1323,7 +1410,7 @@ impl A2AMessage {
         }
     }
 
-    pub fn unbundle_anoncrypted(wallet_handle: i32,
+    pub fn unbundle_anoncrypted(wallet_handle: WalletHandle,
                                 recipient_vk: &str,
                                 message: &[u8]) -> BoxedFuture<Vec<A2AMessage>, Error> {
         crypto::anon_decrypt(wallet_handle, recipient_vk, message)
@@ -1334,7 +1421,7 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn unbundle_authcrypted(wallet_handle: i32,
+    pub fn unbundle_authcrypted(wallet_handle: WalletHandle,
                                 recipient_vk: &str,
                                 bundle: &[u8]) -> BoxedFuture<(String, Vec<A2AMessage>), Error> {
         crypto::auth_decrypt(wallet_handle, recipient_vk, bundle)
@@ -1345,7 +1432,7 @@ impl A2AMessage {
             .into_box()
     }
 
-    pub fn unpack(wallet_handle: i32, message: &[u8]) -> BoxedFuture<(Option<String>, Vec<A2AMessage>), Error> {
+    pub fn unpack(wallet_handle: WalletHandle, message: &[u8]) -> BoxedFuture<(Option<String>, Vec<A2AMessage>), Error> {
         crypto::unpack_message(wallet_handle, message)
             .from_err()
             .and_then(|message| {

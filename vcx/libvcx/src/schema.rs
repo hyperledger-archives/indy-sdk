@@ -3,7 +3,6 @@ use serde_json;
 use std::string::ToString;
 
 use api::PublicEntityStateType;
-use settings;
 use utils::libindy::anoncreds;
 use utils::libindy::ledger;
 use utils::libindy::payments::PaymentTxn;
@@ -60,7 +59,7 @@ impl CreateSchema {
     }
 
     fn update_state(&mut self) -> VcxResult<u32> {
-        if let Ok(res) = anoncreds::get_schema_json(&self.schema_id) {
+        if anoncreds::get_schema_json(&self.schema_id).is_ok() {
             self.state = PublicEntityStateType::Published
         }
         Ok(self.state as u32)
@@ -78,11 +77,11 @@ pub fn create_and_publish_schema(source_id: &str,
     debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
 
     let (schema_id, schema) = anoncreds::create_schema(&name, &version, &data)?;
-    let payment_txn = anoncreds::publish_schema(&name, &schema)?;
+    let payment_txn = anoncreds::publish_schema(&schema)?;
 
     debug!("created schema on ledger with id: {}", schema_id);
 
-    let schema_handle = _store_schema(source_id, issuer_did, name, version, schema_id, data, payment_txn, PublicEntityStateType::Published)?;
+    let schema_handle = _store_schema(source_id, name, version, schema_id, data, payment_txn, PublicEntityStateType::Published)?;
 
     Ok(schema_handle)
 }
@@ -97,18 +96,17 @@ pub fn prepare_schema_for_endorser(source_id: &str,
     debug!("preparing schema for endorser with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
 
     let (schema_id, schema) = anoncreds::create_schema(&name, &version, &data)?;
-    let schema_request = anoncreds::build_schema_request(&name, &schema)?;
+    let schema_request = anoncreds::build_schema_request(&schema)?;
     let schema_request = ledger::set_endorser(&schema_request, &endorser)?;
 
     debug!("prepared schema for endorser with id: {}", schema_id);
 
-    let schema_handle = _store_schema(source_id, issuer_did, name, version, schema_id, data, None, PublicEntityStateType::Built)?;
+    let schema_handle = _store_schema(source_id, name, version, schema_id, data, None, PublicEntityStateType::Built)?;
 
     Ok((schema_handle, schema_request))
 }
 
 fn _store_schema(source_id: &str,
-                 issuer_did: String,
                  name: String,
                  version: String,
                  schema_id: String,
@@ -131,8 +129,6 @@ fn _store_schema(source_id: &str,
 
 pub fn get_schema_attrs(source_id: String, schema_id: String) -> VcxResult<(u32, String)> {
     trace!("get_schema_attrs >>> source_id: {}, schema_id: {}", source_id, schema_id);
-
-    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let (schema_id, schema_data_json) = anoncreds::get_schema_json(&schema_id)
         .map_err(|err| err.map(VcxErrorKind::InvalidSchemaSeqNo, "Schema not found"))?;
@@ -215,6 +211,7 @@ pub fn get_state(handle: u32) -> VcxResult<u32> {
 #[cfg(test)]
 pub mod tests {
     extern crate rand;
+    use settings;
 
     use super::*;
     #[allow(unused_imports)]
@@ -258,7 +255,7 @@ pub mod tests {
         let value: serde_json::Value = serde_json::from_str(&schema_str).unwrap();
         assert_eq!(value["version"], "1.0");
         let data = value["data"].clone();
-        let schema: CreateSchema = serde_json::from_str(&data.to_string()).unwrap();
+        let _schema: CreateSchema = serde_json::from_str(&data.to_string()).unwrap();
     }
 
     #[test]
@@ -322,7 +319,7 @@ pub mod tests {
         assert!(payment.len() > 50);
 
         assert!(handle > 0);
-        let schema_id = get_schema_id(handle).unwrap();
+        let _schema_id = get_schema_id(handle).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -333,7 +330,7 @@ pub mod tests {
 
         let handle = create_schema_real();
         assert!(handle > 0);
-        let schema_id = get_schema_id(handle).unwrap();
+        let _schema_id = get_schema_id(handle).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]

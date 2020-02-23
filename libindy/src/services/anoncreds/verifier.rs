@@ -360,6 +360,7 @@ impl Verifier {
                                         proof: &Proof,
                                         attr_info: &RevealedAttributeInfo) -> IndyResult<()> {
         let reveal_attr_encoded = attr_info.encoded.to_string();
+        let reveal_attr_encoded = Regex::new("^0*").unwrap().replace_all(&reveal_attr_encoded, "").to_owned();
         let sub_proof_index = attr_info.sub_proof_index as usize;
 
         let crypto_proof_encoded = proof.proof.proofs

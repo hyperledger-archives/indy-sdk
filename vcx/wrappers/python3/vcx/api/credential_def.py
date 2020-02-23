@@ -21,7 +21,7 @@ class CredentialDef(VcxStateful):
 
 
     def __init__(self, source_id: str, name: str, schema_id: str, transaction: Optional[str] = None):
-        VcxBase.__init__(self, source_id)
+        VcxStateful.__init__(self, source_id)
         self._source_id = source_id
         self._schema_id = schema_id
         self._name = name
@@ -97,7 +97,9 @@ class CredentialDef(VcxStateful):
     @staticmethod
     async def prepare_for_endorser(source_id: str, name: str, schema_id: str, endorser: str):
         """
-        Create a new CredentialDef object that will be published by Endorser later.
+        Create a new CredentialDef object that will be published on the ledger by Endorser later.
+        
+        Note that CredentialDef can't be used for credential issuing until it will be published on the ledger.
 
         :param source_id: Institution's unique ID for the credential definition
         :param name: Name of credential definition
@@ -228,6 +230,15 @@ class CredentialDef(VcxStateful):
         credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
         txn = await credential_def1.get_payment_txn()
         :return: JSON object with input address and output UTXOs
+         {
+             "amount":25,
+             "inputs":[
+                 "pay:null:1_3FvPC7dzFbQKzfG"
+             ],
+             "outputs":[
+                 {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null}
+             ]
+         }
         """
         if not hasattr(CredentialDef.get_payment_txn, "cb"):
             self.logger.debug("vcx_credentialdef_get_payment_txn: Creating callback")
@@ -244,14 +255,17 @@ class CredentialDef(VcxStateful):
 
     async def update_state(self) -> int:
         """
-        Checks if credential definition is published on the Ledger and updates the the state
+        Checks if credential definition is published on the Ledger and updates the state.
+        Possible states:
+             0 = Built
+             1 = Published
         Example:
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
         credential_def = await CredentialDef.create(source_id, name, schema_id, payment_handle)
         assert await credential_def.update_state() == PublicEntityState.Published
-        :return: Current state of the сredential definition
+        :return: Current state of the credential definition
         """
         return await self._update_state(CredentialDef, 'vcx_credentialdef_update_state')
 
@@ -259,12 +273,15 @@ class CredentialDef(VcxStateful):
     async def get_state(self) -> int:
         """
         Get the current state of the credential definition object
+        Possible states:
+             0 = Built
+             1 = Published
         Example:
         source_id = 'foobar123'
         schema_name = 'Schema Name'
         payment_handle = 0
         credential_def = await CredentialDef.create(source_id, name, schema_id, payment_handle)
         assert await credential_def.get_state() == PublicEntityState.Published
-        :return:  Current internal state of the schema
+        :return:  Current state of the credential definition
         """
         return await self._get_state(CredentialDef, 'vcx_credentialdef_get_state')

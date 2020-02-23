@@ -9,3 +9,4 @@ pub mod internal_message;
 pub mod message_type;
 pub mod payload;
 pub mod protocol_type;
+pub mod key_derivation;

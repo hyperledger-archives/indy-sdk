@@ -1043,8 +1043,11 @@ public class Anoncreds extends IndyJava.API {
 	 * attr_referent: Proof-request local identifier of requested attribute
 	 * attr_info: Describes requested attribute
 	 *     {
-	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
-	 *         "restrictions": Optional<filter_json>, // see below
+	 *         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+	 *         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+	 *                                              // NOTE: should either be "name" or "names", not both and not none of them.
+	 *                                              // Use "names" to specify several attributes that have to match a single credential.
+	 *         "restrictions": Optional<wql query>, // see below
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval this attribute
@@ -1177,22 +1180,25 @@ public class Anoncreds extends IndyJava.API {
 	 *     }
 	 * @param revStates            All revocation states json participating in the proof request
 	 *     {
-	 *         "rev_reg_def1_id": {
+	 *         "rev_reg_def1_id  or credential_1_id": {
 	 *             "timestamp1": {rev_state1},
 	 *             "timestamp2": {rev_state2},
 	 *         },
-	 *         "rev_reg_def2_id": {
+	 *         "rev_reg_def2_id  or credential_2_id": {
 	 *             "timestamp3": {rev_state3}
 	 *         },
-	 *         "rev_reg_def3_id": {
+	 *         "rev_reg_def3_id  or credential_3_id": {
 	 *             "timestamp4": {rev_state4}
 	 *         },
-	 *     }
+	 *     } - Note: use credential_id instead rev_reg_id in case proving several credentials from the same revocation registry.
 	 * where
 	 * attr_referent: Proof-request local identifier of requested attribute
 	 * attr_info: Describes requested attribute
 	 *     {
-	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
+	 *         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
+	 *         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
+	 *                                              // NOTE: should either be "name" or "names", not both and not none of them.
+	 *                                              // Use "names" to specify several attributes that have to match a single credential.
 	 *         "restrictions": Optional<wql query>, // see below
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
@@ -1236,6 +1242,17 @@ public class Anoncreds extends IndyJava.API {
 	 *             "revealed_attrs": {
 	 *                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
 	 *                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+	 *             },
+	 *             "revealed_attr_groups": {
+	 *                 "requested_attr5_id": {
+	 *                     "sub_proof_index": number,
+	 *                     "values": {
+	 *                         "attribute_name": {
+	 *                             "raw": string,
+	 *                             "encoded": string
+	 *                         }
+	 *                     },
+	 *                 }
 	 *             },
 	 *             "unrevealed_attrs": {
 	 *                 "requested_attr3_id": {sub_proof_index: number}
@@ -1331,6 +1348,17 @@ public class Anoncreds extends IndyJava.API {
 	 *                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
 	 *                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string}, // NOTE: check that `encoded` value match to `raw` value on application level
 	 *             },
+	 *             "revealed_attr_groups": {
+	 *                 "requested_attr5_id": {
+	 *                     "sub_proof_index": number,
+	 *                     "values": {
+	 *                         "attribute_name": {
+	 *                             "raw": string,
+	 *                             "encoded": string
+	 *                         }
+	 *                     }, // NOTE: check that `encoded` value match to `raw` value on application level
+	 *                 }
+	 *             },
 	 *             "unrevealed_attrs": {
 	 *                 "requested_attr3_id": {sub_proof_index: number}
 	 *             },
@@ -1416,11 +1444,18 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/**
-	 * Create revocation state for credential in the particular time moment.
+	 * Create revocation state for a credential that corresponds to a particular time.
+	 *
+	 * Note that revocation delta must cover the whole registry existence time.
+	 * You can use `from`: `0` and `to`: `needed_time` as parameters for building request to get correct revocation delta.
+	 *
+	 * The resulting revocation state and provided timestamp can be saved and reused later with applying a new
+	 * revocation delta with `updateRevocationState` function.
+	 * This new delta should be received with parameters: `from`: `timestamp` and `to`: `needed_time`.
 	 *
 	 * @param blobStorageReaderHandle Configuration of blob storage reader handle that will allow to read revocation tails
 	 * @param revRegDef               Revocation registry definition json
-	 * @param revRegDelta             Revocation registry definition delta json
+	 * @param revRegDelta             Revocation registry delta which covers the whole registry existence time
 	 * @param timestamp               Time represented as a total number of seconds from Unix Epoch
 	 * @param credRevId               user credential revocation id in revocation registry
 	 * @return A future that resolves to a revocation state json:
@@ -1460,13 +1495,18 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/**
-	 * Create new revocation state for a credential based on already state
-	 * at the particular time moment (to reduce calculation time).
+	 * Create a new revocation state for a credential based on a revocation state created before.
+	 * Note that provided revocation delta must cover the registry gap from based state creation until the specified time
+	 * (this new delta should be received with parameters: `from`: `state_timestamp` and `to`: `needed_time`).
+	 *
+	 * This function reduces the calculation time.
+	 *
+	 * The resulting revocation state and provided timestamp can be saved and reused later by applying a new revocation delta again.
 	 *
 	 * @param blobStorageReaderHandle Configuration of blob storage reader handle that will allow to read revocation tails
 	 * @param revState                Rrevocation registry state json
 	 * @param revRegDef               Revocation registry definition json
-	 * @param revRegDelta             Revocation registry definition delta json
+	 * @param revRegDelta             Revocation registry definition delta which covers the gap form original `rev_state_json` creation till the requested timestamp
 	 * @param timestamp               Time represented as a total number of seconds from Unix Epoch
 	 * @param credRevId               user credential revocation id in revocation registry
 	 * @return A future that resolves to a revocation state json:

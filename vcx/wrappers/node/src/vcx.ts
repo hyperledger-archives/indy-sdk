@@ -1,6 +1,5 @@
 import * as ffi from 'ffi'
 import * as os from 'os'
-import * as path from 'path'
 
 import { FFIConfiguration, IFFIEntryPoint } from './rustlib'
 
@@ -35,6 +34,6 @@ export class VCXRuntime {
     const libDir = libPath[platform.toLowerCase()] || libPath['linux']
     const library = `libvcx${postfix}`
     const customPath = process.env.LIBVCX_PATH ? process.env.LIBVCX_PATH + library : undefined
-    return customPath || this._config.basepath || path.resolve(__dirname, `${libDir}${library}`)
+    return customPath || this._config.basepath || `${libDir}${library}`
   }
 }

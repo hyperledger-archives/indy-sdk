@@ -37,8 +37,8 @@ fn anoncreds_demo_works() {
 
     let (issuer_create_wallet_receiver, issuer_create_wallet_command_handle, issuer_create_wallet_callback) = callback::_closure_to_cb_ec();
     let (prover_create_wallet_receiver, prover_create_wallet_command_handle, prover_create_wallet_callback) = callback::_closure_to_cb_ec();
-    let (issuer_open_wallet_receiver, issuer_open_wallet_command_handle, issuer_open_wallet_callback) = callback::_closure_to_cb_ec_i32();
-    let (prover_open_wallet_receiver, prover_open_wallet_command_handle, prover_open_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (issuer_open_wallet_receiver, issuer_open_wallet_command_handle, issuer_open_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
+    let (prover_open_wallet_receiver, prover_open_wallet_command_handle, prover_open_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
     let (issuer_create_schema_receiver, issuer_create_schema_command_handle, issuer_create_schema_callback) = callback::_closure_to_cb_ec_string_string();
     let (issuer_create_credential_definition_receiver, issuer_create_credential_definition_command_handle, issuer_create_credential_definition_callback) = callback::_closure_to_cb_ec_string_string();
     let (issuer_create_credential_offer_receiver, issuer_create_credential_offer_command_handle, issuer_create_credential_offer_callback) = callback::_closure_to_cb_ec_string();
@@ -119,7 +119,7 @@ fn anoncreds_demo_works() {
     let prover_did = "VsKV7grR1BUE29mG2Fm2kX";
     let schema_name = "gvt";
     let version = "1.0";
-    let attrs = r#"["name", "age", "sex", "height", "empty_param"]"#;
+    let attrs = r#"["name", "age", "sex", "height", "empty_param", "ssn"]"#;
 
     // Issuer create Schema
     let err =
@@ -238,7 +238,8 @@ fn anoncreds_demo_works() {
         "name": { "raw": "Alex", "encoded": "1139481716457488690172217916278103335" },
         "height": { "raw": "175", "encoded": "175" },
         "age": { "raw": "28", "encoded": "28" },
-        "empty_param": {"raw": "", "encoded": "111222333"}
+        "empty_param": { "raw": "", "encoded": "111222333" },
+        "ssn": { "raw": "00000001", "encoded": "00000001" },
     }).to_string();
 
     // Creating credential requires access to Tails: Issuer configure blob storage to read
@@ -299,7 +300,7 @@ fn anoncreds_demo_works() {
         "version": "0.1",
         "requested_attributes": {
             "attr1_referent": {
-                "names": ["name", "height", "sex"],
+                "names": ["name", "height", "sex", "ssn"],
                 "restrictions": {
                     "attr::name::value": "Alex",
                     "attr::sex::value": "male"
@@ -489,8 +490,8 @@ fn ledger_demo_works() {
     let (get_nym_receiver, get_nym_command_handle, get_nym_callback) = callback::_closure_to_cb_ec_string();
     let (create_my_wallet_receiver, create_my_wallet_command_handle, create_my_wallet_callback) = callback::_closure_to_cb_ec();
     let (create_their_wallet_receiver, create_their_wallet_command_handle, create_their_wallet_callback) = callback::_closure_to_cb_ec();
-    let (open_my_wallet_receiver, open_my_wallet_command_handle, open_my_wallet_callback) = callback::_closure_to_cb_ec_i32();
-    let (open_their_wallet_receiver, open_their_wallet_command_handle, open_their_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (open_my_wallet_receiver, open_my_wallet_command_handle, open_my_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
+    let (open_their_wallet_receiver, open_their_wallet_command_handle, open_their_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
     let (create_and_store_my_did_receiver, create_and_store_my_did_command_handle, create_and_store_my_did_callback) = callback::_closure_to_cb_ec_string_string();
     let (create_and_store_their_did_receiver, create_and_store_their_did_command_handle, create_and_store_their_did_callback) = callback::_closure_to_cb_ec_string_string();
     let (store_their_did_receiver, store_their_did_command_handle, store_their_did_callback) = callback::_closure_to_cb_ec();
@@ -745,13 +746,14 @@ fn crypto_demo_works() {
     Setup::empty();
 
     let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = callback::_closure_to_cb_ec();
-    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = callback::_closure_to_cb_ec_wallethandle();
     let (create_and_store_did_receiver, create_and_store_did_command_handle, create_and_store_did_callback) = callback::_closure_to_cb_ec_string_string();
     let (sign_receiver, sign_command_handle, sign_callback) = callback::_closure_to_cb_ec_vec_u8();
     let (verify_receiver, verify_command_handle, verify_callback) = callback::_closure_to_cb_ec_bool();
     let (close_wallet_receiver, close_wallet_command_handle, close_wallet_callback) = callback::_closure_to_cb_ec();
 
-    let wallet_config = json!({"id": "wallet_1"}).to_string();
+    let wallet_name = "wallet_crypto_demo_works";
+    let wallet_config = json!({"id": wallet_name}).to_string();
 
     // 1. Create Wallet
     let err =
@@ -843,5 +845,5 @@ fn crypto_demo_works() {
     let res = close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(ErrorCode::from(res), ErrorCode::Success);
 
-    utils::test::cleanup_storage("wallet_1");
+    utils::test::cleanup_storage(wallet_name);
 }

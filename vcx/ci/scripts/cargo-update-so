@@ -13,7 +13,6 @@ SO_DIR = './target/debug/'
 
 
 def remove_old_so(d):
-    cur_path = os.getcwd()
     print(d)
     print(os.path.isdir(d))
     files = os.listdir(d)

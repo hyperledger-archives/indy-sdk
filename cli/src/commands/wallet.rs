@@ -1428,7 +1428,7 @@ pub mod tests {
         create_cmd.execute(&ctx, &params).unwrap();
     }
 
-    pub fn create_and_open_wallet(ctx: &CommandContext) -> i32 {
+    pub fn create_and_open_wallet(ctx: &CommandContext) -> WalletHandle {
         {
             let create_cmd = create_command::new();
             let mut params = CommandParams::new();
@@ -1449,7 +1449,7 @@ pub mod tests {
         ensure_opened_wallet_handle(&ctx).unwrap()
     }
 
-    pub fn open_wallet(ctx: &CommandContext) -> i32 {
+    pub fn open_wallet(ctx: &CommandContext) -> WalletHandle {
         {
             let cmd = open_command::new();
             let mut params = CommandParams::new();

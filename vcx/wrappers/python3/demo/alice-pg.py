@@ -2,21 +2,12 @@ import sys
 import asyncio
 import json
 import random
-from ctypes import cdll, CDLL
+from ctypes import cdll
 from time import sleep
-import platform
-
-import logging
-
-from indy import wallet
-from indy.error import ErrorCode, IndyError
 
 from vcx.api.connection import Connection
-from vcx.api.credential import Credential
-from vcx.api.disclosed_proof import DisclosedProof
-from vcx.api.utils import vcx_agent_provision, vcx_messages_download
+from vcx.api.utils import vcx_agent_provision
 from vcx.api.vcx_init import vcx_init_with_config
-from vcx.state import State
 
 from demo_utils import *
 
@@ -30,7 +21,9 @@ provisionConfig = {
     'wallet_name': 'alice_wallet_' + str(random.randint(100, 999)),
     'wallet_key': '123',
     'payment_method': 'null',
-    'enterprise_seed': '000000000000000000000000Trustee1'
+    'enterprise_seed': '000000000000000000000000Trustee1',
+    'protocol_type': '2.0',
+    'communication_method': 'aries'
 }
 
 if len(sys.argv) > 1 and sys.argv[1] == '--postgres':
@@ -72,7 +65,6 @@ async def main():
     print("Serialize connection")
     connection_data = await connection_to_faber.serialize()
     connection_to_faber.release()
-    connection_to_faber = None
 
     option = input('Poll messages? [Y/n] ')
     while option != 'N' and option != 'n':

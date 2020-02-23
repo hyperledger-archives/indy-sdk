@@ -1,5 +1,7 @@
-use actix::fut::ActorFuture;
 use futures::Future;
+
+
+use actix::fut::ActorFuture;
 
 /// This is the equivalent `try!` adapted to deal with futures.
 #[macro_export]
@@ -63,7 +65,7 @@ macro_rules! err_act {
     }};
 }
 
-pub type BoxedFuture<I, E> = Box<Future<Item = I, Error = E>>;
+pub type BoxedFuture<I, E> = Box<dyn Future<Item = I, Error = E>>;
 
 pub trait FutureExt: Future + Sized {
     /// Box this future. Similar to `boxed` combinator, but does not require
@@ -72,12 +74,12 @@ pub trait FutureExt: Future + Sized {
 }
 
 impl<F: Future + 'static> FutureExt for F {
-    fn into_box(self) -> Box<Future<Item = Self::Item, Error = Self::Error>> {
+    fn into_box(self) -> Box<dyn Future<Item = Self::Item, Error = Self::Error>> {
         Box::new(self)
     }
 }
 
-pub type BoxedActorFuture<A, I, E> = Box<ActorFuture<Actor = A, Item = I, Error = E>>;
+pub type BoxedActorFuture<A, I, E> = Box<dyn ActorFuture<Actor = A, Item = I, Error = E>>;
 
 pub trait ActorFutureExt: ActorFuture + Sized {
     /// Box this future. Similar to `boxed` combinator, but does not require
@@ -86,7 +88,7 @@ pub trait ActorFutureExt: ActorFuture + Sized {
 }
 
 impl<F: ActorFuture + 'static> ActorFutureExt for F {
-    fn into_box(self) -> Box<ActorFuture<Actor = Self::Actor, Item = Self::Item, Error = Self::Error>> {
+    fn into_box(self) -> Box<dyn ActorFuture<Actor = Self::Actor, Item = Self::Item, Error = Self::Error>> {
         Box::new(self)
     }
 }

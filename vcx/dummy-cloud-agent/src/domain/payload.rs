@@ -1,7 +1,8 @@
-use domain::message_type::{MessageTypeV2, MessageFamilies, MESSAGE_VERSION_V1, DID};
-use domain::a2a::RemoteMessageType;
-use domain::protocol_type::{ProtocolType, ProtocolTypes};
 use std::collections::HashMap;
+
+use crate::domain::a2a::RemoteMessageType;
+use crate::domain::message_type::{DID, MESSAGE_VERSION_V1, MessageFamilies, MessageTypeV2};
+use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(untagged)]
@@ -119,6 +120,7 @@ impl From<RemoteMessageType> for PayloadKinds {
         match type_ {
             RemoteMessageType::ConnReq => PayloadKinds::Other("connReq".to_string()),
             RemoteMessageType::ConnReqAnswer => PayloadKinds::Other("ConnReqAnswer".to_string()),
+            RemoteMessageType::ConnReqRedirect => PayloadKinds::Other("ConnReqRedirect".to_string()),
             RemoteMessageType::CredOffer => PayloadKinds::CredOffer,
             RemoteMessageType::CredReq => PayloadKinds::CredReq,
             RemoteMessageType::Cred => PayloadKinds::Cred,

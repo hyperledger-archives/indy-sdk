@@ -8,7 +8,7 @@ use object_cache::ObjectCache;
 use api::VcxStateType;
 use connection;
 use messages;
-use messages::{GeneralMessage, RemoteMessageType, ObjectWithVersion};
+use messages::{GeneralMessage, RemoteMessageType};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
 use messages::proofs::proof_message::ProofMessage;
@@ -17,7 +17,7 @@ use messages::get_message::Message;
 use error::prelude::*;
 use settings;
 use utils::{httpclient, error};
-use utils::constants::{DEFAULT_SERIALIZE_VERSION, CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF};
+use utils::constants::{CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF, DEFAULT_REJECTED_PROOF};
 use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, RevState};
 use utils::libindy::anoncreds;
 use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
@@ -326,7 +326,7 @@ impl DisclosedProof {
         // do same for predicates and self_attested
         if let Value::Object(ref mut map) = rtn["requested_attributes"] {
             for ref cred_info in credentials_identifiers {
-                if let Some(ref attr) = proof_req.requested_attributes.get(&cred_info.requested_attr) {
+                if let Some(_) = proof_req.requested_attributes.get(&cred_info.requested_attr) {
                     let insert_val = json!({"cred_id": cred_info.referent, "revealed": true, "timestamp": cred_info.timestamp});
                     map.insert(cred_info.requested_attr.to_owned(), insert_val);
                 }
@@ -335,7 +335,7 @@ impl DisclosedProof {
 
         if let Value::Object(ref mut map) = rtn["requested_predicates"] {
             for ref cred_info in credentials_identifiers {
-                if let Some(ref attr) = proof_req.requested_predicates.get(&cred_info.requested_attr) {
+                if let Some(_) = proof_req.requested_predicates.get(&cred_info.requested_attr) {
                     let insert_val = json!({"cred_id": cred_info.referent, "timestamp": cred_info.timestamp});
                     map.insert(cred_info.requested_attr.to_owned(), insert_val);
                 }
@@ -456,18 +456,76 @@ impl DisclosedProof {
         Ok(error::SUCCESS.code_num)
     }
 
+    fn generate_reject_proof_msg(&self) -> VcxResult<String> {
+        let msg = match settings::test_indy_mode_enabled() {
+            false => {
+                let proof_reject = ProofMessage::new_reject();
+                serde_json::to_string(&proof_reject)
+                    .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof reject: {}", err)))?
+            }
+            true => DEFAULT_REJECTED_PROOF.to_string(),
+        };
+
+        Ok(msg)
+    }
+
+    fn reject_proof(&mut self, connection_handle: u32) -> VcxResult<u32> {
+        trace!("DisclosedProof::reject_proof >>> connection_handle: {}", connection_handle);
+
+        debug!("rejecting proof {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
+        // There feels like there's a much more rusty way to do the below.
+        self.my_did = Some(connection::get_pw_did(connection_handle)?);
+        self.my_vk = Some(connection::get_pw_verkey(connection_handle)?);
+        self.agent_did = Some(connection::get_agent_did(connection_handle)?);
+        self.agent_vk = Some(connection::get_agent_verkey(connection_handle)?);
+        self.their_did = Some(connection::get_their_pw_did(connection_handle)?);
+        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle)?);
+
+        debug!("verifier_did: {:?} -- verifier_vk: {:?} -- agent_did: {:?} -- agent_vk: {:?} -- remote_vk: {:?}",
+               self.my_did,
+               self.agent_did,
+               self.agent_vk,
+               self.their_vk,
+               self.my_vk);
+
+        self.their_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_their_vk = self.their_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_agent_vk = self.agent_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_my_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+        let local_my_vk = self.my_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
+
+        let proof_req = self.proof_request.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+        let ref_msg_uid = proof_req.msg_ref_id.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+
+        let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
+        self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
+
+        let proof_reject = self.generate_reject_proof_msg()?;
+
+        messages::send_message()
+            .to(local_my_did)?
+            .to_vk(local_my_vk)?
+            .msg_type(&RemoteMessageType::Proof)?
+            .agent_did(local_agent_did)?
+            .agent_vk(local_agent_vk)?
+            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof_reject, PayloadKinds::Proof, self.thread.clone())
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Cannot encrypt payload: {}", err)))?
+            .ref_msg_id(Some(ref_msg_uid.to_string()))?
+            .send_secure()
+            .map_err(|err| err.extend("Could not send proof reject"))?;
+
+        self.state = VcxStateType::VcxStateRejected;
+        return Ok(error::SUCCESS.code_num);
+    }
+
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
 
     fn get_source_id(&self) -> &String { &self.source_id }
 
-    fn to_string(&self) -> VcxResult<String> {
-        trace!("DisclosedProof::to_string >>>");
-        ObjectWithVersion::new(DEFAULT_SERIALIZE_VERSION, self.to_owned())
-            .serialize()
-            .map_err(|err| err.extend("Cannot serialize DisclosedProof"))
-    }
+    #[cfg(test)] // TODO: REMOVE IT
     fn from_str(data: &str) -> VcxResult<DisclosedProof> {
-        trace!("DisclosedProof::from_str >>> data: {}", secret!(&data));
+        use messages::ObjectWithVersion;
         ObjectWithVersion::deserialize(data)
             .map(|obj: ObjectWithVersion<DisclosedProof>| obj.data)
             .map_err(|err| err.extend("Cannot deserialize DisclosedProof"))
@@ -585,6 +643,32 @@ pub fn send_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
     })
 }
 
+pub fn generate_reject_proof_msg(handle: u32) -> VcxResult<String> {
+    HANDLE_MAP.get_mut(handle, |obj| {
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.generate_reject_proof_msg()
+            }
+            DisclosedProofs::V3(_) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
+    })
+}
+
+pub fn reject_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
+    HANDLE_MAP.get_mut(handle, |obj| {
+        match obj {
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.reject_proof(connection_handle)
+            }
+            DisclosedProofs::V3(_) => {
+                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            }
+        }
+    })
+}
+
 pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: String) -> VcxResult<u32> {
     HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
@@ -602,7 +686,7 @@ pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: Str
 pub fn decline_presentation_request(handle: u32, connection_handle: u32, reason: Option<String>, proposal: Option<String>) -> VcxResult<u32> {
     HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
-            DisclosedProofs::V1(obj) => {
+            DisclosedProofs::V1(_) => {
                 Err(VcxError::from(VcxErrorKind::ActionNotSupported))
             },
             DisclosedProofs::V3(ref mut obj) => {
@@ -642,6 +726,7 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
     let my_vk = connection::get_pw_verkey(connection_handle)?;
     let agent_did = connection::get_agent_did(connection_handle)?;
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
+    let version = connection::get_version(connection_handle)?;
 
     if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
@@ -650,7 +735,8 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
                                                                  &agent_did,
                                                                  &agent_vk,
                                                                  Some(vec![msg_id.to_string()]),
-                                                                 None)?;
+                                                                 None,
+    &version)?;
 
     if message[0].msg_type == RemoteMessageType::ProofReq {
         let request = _parse_proof_req_message(&message[0], &my_vk)?;
@@ -674,7 +760,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
 
         return serde_json::to_string(&msgs).
             map_err(|err| {
-                VcxError::from_msg(VcxErrorKind::InvalidState, "Cannot serialize ProofRequestMessage")
+                VcxError::from_msg(VcxErrorKind::InvalidState, format!("Cannot serialize ProofRequestMessage: {:?}", err))
             });
     }
 
@@ -684,6 +770,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
     let my_vk = connection::get_pw_verkey(connection_handle)?;
     let agent_did = connection::get_agent_did(connection_handle)?;
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
+    let version = connection::get_version(connection_handle)?;
 
     if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
@@ -692,7 +779,8 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
                                                                  &agent_did,
                                                                  &agent_vk,
                                                                  None,
-                                                                 None)?;
+                                                                 None,
+    &version)?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 
@@ -736,7 +824,7 @@ pub fn get_source_id(handle: u32) -> VcxResult<String> {
 pub fn get_presentation_status(handle: u32) -> VcxResult<u32> {
     HANDLE_MAP.get(handle, |obj| {
         match obj {
-            DisclosedProofs::V1(obj) => Err(VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle)),
+            DisclosedProofs::V1(_) => Err(VcxError::from(VcxErrorKind::InvalidDisclosedProofHandle)),
             DisclosedProofs::V3(ref obj) => Ok(obj.presentation_status())
         }
     })
@@ -802,6 +890,22 @@ mod tests {
     }
 
     #[test]
+    fn test_proof_reject_cycle() {
+        init!("true");
+
+        let connection_h = connection::tests::build_test_connection();
+
+        let requests = get_proof_request_messages(connection_h, None).unwrap();
+        let requests: Value = serde_json::from_str(&requests).unwrap();
+        let requests = serde_json::to_string(&requests[0]).unwrap();
+
+        let handle = create_proof("TEST_CREDENTIAL", &requests).unwrap();
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(handle).unwrap());
+        reject_proof(handle, connection_h).unwrap();
+        assert_eq!(VcxStateType::VcxStateRejected as u32, get_state(handle).unwrap());
+    }
+
+    #[test]
     fn get_state_test() {
         init!("true");
         let proof: DisclosedProof = Default::default();
@@ -817,7 +921,7 @@ mod tests {
         let serialized = to_string(handle).unwrap();
         let j: Value = serde_json::from_str(&serialized).unwrap();
         assert_eq!(j["version"], "1.0");
-        DisclosedProof::from_str(&serialized).unwrap();
+        from_string(&serialized).unwrap();
     }
 
     #[test]
@@ -826,10 +930,17 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_succeeds_with_self_attest_allowed() {
+        let handle = create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let serialized = to_string(handle).unwrap();
+        let p = DisclosedProof::from_str(&serialized).unwrap();
+        assert_eq!(p.proof_request.unwrap().proof_request_data.requested_attributes.get("attr1_referent").unwrap().self_attest_allowed, Some(true))
+    }
+
+    #[test]
     fn test_find_schemas() {
         init!("true");
 
-        let proof: DisclosedProof = Default::default();
         assert_eq!(DisclosedProof::build_schemas_json(&Vec::new()).unwrap(), "{}".to_string());
 
         let cred1 = CredInfo {
@@ -876,7 +987,6 @@ mod tests {
             tails_file: None,
             timestamp: None,
         }];
-        let proof: DisclosedProof = Default::default();
         assert_eq!(DisclosedProof::build_schemas_json(&credential_ids).unwrap_err().kind(), VcxErrorKind::InvalidSchema);
     }
 
@@ -907,7 +1017,6 @@ mod tests {
         };
         let creds = vec![cred1, cred2];
 
-        let proof: DisclosedProof = Default::default();
         let credential_def = DisclosedProof::build_cred_def_json(&creds).unwrap();
         assert!(credential_def.len() > 0);
         assert!(credential_def.contains(r#""id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2471","schemaId":"2471""#));
@@ -928,7 +1037,6 @@ mod tests {
             tails_file: None,
             timestamp: None,
         }];
-        let proof: DisclosedProof = Default::default();
         assert_eq!(DisclosedProof::build_cred_def_json(&credential_ids).unwrap_err().kind(), VcxErrorKind::InvalidProofCredentialData);
     }
 
@@ -975,7 +1083,6 @@ mod tests {
               "requested_predicates":{}
         });
 
-        let proof: DisclosedProof = Default::default();
         let proof_req = json!({
             "nonce": "123432421212",
             "name": "proof_req_1",
@@ -1095,7 +1202,6 @@ mod tests {
     #[test]
     fn test_retrieve_credentials_fails_with_no_proof_req() {
         init!("false");
-
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof.retrieve_credentials().unwrap_err().kind(), VcxErrorKind::NotReady);
     }
@@ -1281,7 +1387,7 @@ mod tests {
     fn test_generate_proof() {
         init!("ledger");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
+        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
         let mut proof_req = ProofRequestMessage::create();
         let to = time::get_time().sec;
         let indy_proof_req = json!({
@@ -1335,8 +1441,6 @@ mod tests {
     #[test]
     fn test_generate_self_attested_proof() {
         init!("ledger");
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-
         let mut proof_req = ProofRequestMessage::create();
         let indy_proof_req = json!({
            "nonce":"123432421212",
@@ -1374,7 +1478,7 @@ mod tests {
     fn test_generate_proof_with_predicates() {
         init!("ledger");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
+        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
         let mut proof_req = ProofRequestMessage::create();
         let to = time::get_time().sec;
         let indy_proof_req = json!({
@@ -1428,6 +1532,15 @@ mod tests {
 
         let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
         assert!(generated_proof.is_ok());
+    }
+
+    #[test]
+    fn test_generate_reject_proof() {
+        init!("true");
+
+        let proof: DisclosedProof = Default::default();
+        let generated_reject = proof.generate_reject_proof_msg();
+        assert!(generated_reject.is_ok());
     }
 
     #[test]
@@ -1501,7 +1614,6 @@ mod tests {
         let cache = get_rev_reg_cache(&rev_reg_id);
         assert_eq!(cache.rev_state, None);
 
-        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
         let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
         assert!(states.contains(&rev_reg_id));
 
@@ -1552,7 +1664,6 @@ mod tests {
         let cache = get_rev_reg_cache(&rev_reg_id);
         assert_eq!(cache, cached_data);
 
-        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
         let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
         assert!(states.contains(&rev_reg_id));
 
@@ -1607,7 +1718,6 @@ mod tests {
         let cache = get_rev_reg_cache(&rev_reg_id);
         assert_eq!(cache, cached_data);
 
-        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
         let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
         assert!(states.contains(&rev_reg_id));
 
@@ -1662,7 +1772,6 @@ mod tests {
         let cache = get_rev_reg_cache(&rev_reg_id);
         assert_eq!(cache, cached_data);
 
-        let (_, rev_reg_def_json) = get_rev_reg_def_json(&rev_reg_id).unwrap();
         let states = build_rev_states_json(vec![cred2].as_mut()).unwrap();
         assert!(states.contains(&rev_reg_id));
 

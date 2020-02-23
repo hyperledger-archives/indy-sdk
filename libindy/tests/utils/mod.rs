@@ -3,6 +3,8 @@
 extern crate libc;
 extern crate indyrs as indy;
 
+use indy::{WalletHandle, PoolHandle, INVALID_WALLET_HANDLE, INVALID_POOL_HANDLE};
+
 pub mod callback;
 
 #[path = "../../indy-utils/src/environment.rs"]
@@ -45,6 +47,7 @@ pub mod ctypes;
 pub mod qualifier;
 
 pub(crate) use indy::ErrorCode;
+
 #[path = "../../indy-utils/src/inmem_wallet.rs"]
 pub mod inmem_wallet;
 
@@ -90,6 +93,7 @@ macro_rules! inject_indy_dependencies {
         extern crate regex;
         extern crate time;
         extern crate libc;
+        extern crate dirs;
     }
 }
 
@@ -107,8 +111,8 @@ fn tear_down(name: &str) {
 pub struct Setup {
     pub name: String,
     pub wallet_config: String,
-    pub wallet_handle: i32,
-    pub pool_handle: i32,
+    pub wallet_handle: WalletHandle,
+    pub pool_handle: PoolHandle,
     pub did: String,
     pub verkey: String
 }
@@ -116,25 +120,25 @@ pub struct Setup {
 impl Setup {
     pub fn empty() -> Setup {
         let name = setup();
-        Setup { name, wallet_config: String::new(), wallet_handle: 0, pool_handle: 0, did: String::new(), verkey: String::new() }
+        Setup { name, wallet_config: String::new(), wallet_handle: INVALID_WALLET_HANDLE, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey: String::new() }
     }
 
     pub fn wallet() -> Setup {
         let name = setup();
         let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
-        Setup { name, wallet_config, wallet_handle, pool_handle: 0, did: String::new(), verkey: String::new() }
+        Setup { name, wallet_config, wallet_handle, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey: String::new() }
     }
 
     pub fn plugged_wallet() -> Setup {
         let name = setup();
         let (wallet_handle, wallet_config) = wallet::create_and_open_plugged_wallet().unwrap();
-        Setup { name, wallet_config, wallet_handle, pool_handle: 0, did: String::new(), verkey: String::new() }
+        Setup { name, wallet_config, wallet_handle, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey: String::new() }
     }
 
     pub fn pool() -> Setup {
         let name = setup();
         let pool_handle = pool::create_and_open_pool_ledger(&name).unwrap();
-        Setup { name, wallet_config: String::new(), wallet_handle: 0, pool_handle, did: String::new(), verkey: String::new() }
+        Setup { name, wallet_config: String::new(), wallet_handle: INVALID_WALLET_HANDLE, pool_handle, did: String::new(), verkey: String::new() }
     }
 
     pub fn wallet_and_pool() -> Setup {
@@ -202,29 +206,29 @@ impl Setup {
         let name = setup();
         let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
         let verkey = crypto::create_key(wallet_handle, None).unwrap();
-        Setup { name, wallet_config, wallet_handle, pool_handle: 0, did: String::new(), verkey }
+        Setup { name, wallet_config, wallet_handle, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey }
     }
 
     pub fn payment() -> Setup {
         let name = setup();
         payments::mock_method::init();
-        Setup { name, wallet_config: String::new(), wallet_handle: 0, pool_handle: 0, did: String::new(), verkey: String::new() }
+        Setup { name, wallet_config: String::new(), wallet_handle: INVALID_WALLET_HANDLE, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey: String::new() }
     }
 
     pub fn payment_wallet() -> Setup {
         let name = setup();
         let (wallet_handle, wallet_config) = wallet::create_and_open_default_wallet(&name).unwrap();
         payments::mock_method::init();
-        Setup { name, wallet_config, wallet_handle, pool_handle: 0, did: String::new(), verkey: String::new() }
+        Setup { name, wallet_config, wallet_handle, pool_handle: INVALID_POOL_HANDLE, did: String::new(), verkey: String::new() }
     }
 }
 
 impl Drop for Setup {
     fn drop(&mut self) {
-        if self.wallet_handle != 0 {
+        if self.wallet_handle != INVALID_WALLET_HANDLE {
             wallet::close_and_delete_wallet(self.wallet_handle, &self.wallet_config).unwrap();
         }
-        if self.pool_handle != 0 {
+        if self.pool_handle != INVALID_POOL_HANDLE {
             pool::close(self.pool_handle).unwrap();
         }
         tear_down(&self.name);

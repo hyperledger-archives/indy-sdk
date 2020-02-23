@@ -332,10 +332,11 @@ def iosTesting() {
                     sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
                     sh "cp libindy/out_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
 
-                    dir('wrappers/ios/libindy-pod') {
-                        echo "iOS Test: Testing"
-                        sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
-                    }
+                    // FIXME restore Xcode testing
+//                    dir('wrappers/ios/libindy-pod') {
+//                        echo "iOS Test: Testing"
+//                        sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
+//                    }
                 }
             } finally {
                 try {
@@ -480,8 +481,15 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
 
         libindyBuildFinished[env_name] = true
 
-        echo "${env_name} Libindy Test: Test"
         testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libindy Test: Test Libindy submodules"
+
+            for (component in ["libindy/indy-api-types", "libindy/indy-utils", "libindy/indy-wallet"]) {
+                testLibindyComponent(component)
+            }
+
+            echo "${env_name} Libindy Test: Test"
+
             def features_args = full_testing ? "--features sodium_static" : "--features \"sodium_static only_high_cases\""
 
             sh """
@@ -504,6 +512,14 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
     finally {
         closePool(env_name, network_name, poolInst)
     }
+}
+
+def testLibindyComponent(directory) {
+    sh """
+        cd ${directory}
+        RUST_BACKTRACE=1 cargo test --no-run
+        RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
+    """
 }
 
 def linuxVcxBuild(file, env_name, network_name) {
@@ -541,6 +557,7 @@ def linuxVcxBuild(file, env_name, network_name) {
         testEnv.inside("--network=${network_name}") {
             sh '''
                 cd vcx/dummy-cloud-agent
+                sed -i 's/\\("protocol_type": "\\)2.0/\\11.0/' config/sample-config.json
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 
@@ -558,7 +575,7 @@ def linuxVcxBuild(file, env_name, network_name) {
                 LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info cargo run config/sample-config.json &
             '''
 
-            echo "${env_name} Libvcx Test: Run tests"
+            echo "${env_name} Libvcx Test: Run vcx demo test for protocol version 2.0"
             // TODO in Rust 1.39.0 there was a problem with test name before "--". Temporary put test name after it.
             sh '''
                 cd vcx/libvcx

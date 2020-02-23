@@ -1,6 +1,9 @@
 use actix::prelude::*;
 use failure::*;
 
+use crate::domain::a2connection::A2ConnMessage;
+use crate::domain::admin_message::{AdminQuery, ResAdminQuery};
+
 pub mod router;
 pub mod forward_agent;
 pub mod admin;
@@ -8,9 +11,6 @@ pub mod forward_agent_connection;
 pub mod agent;
 pub mod agent_connection;
 pub mod requester;
-
-use domain::a2connection::A2ConnMessage;
-use domain::admin_message::{AdminQuery, ResAdminQuery};
 
 pub struct AdminRegisterRouter(pub Recipient<HandleAdminMessage>);
 

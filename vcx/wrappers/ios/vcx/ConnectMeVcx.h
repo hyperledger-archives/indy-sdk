@@ -98,6 +98,11 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)deleteConnection:(VcxHandle)connectionHandle
           withCompletion:(void (^)(NSError *error))completion;
 
+- (void)connectionSendMessage:(VcxHandle)connectionHandle
+                  withMessage:(NSString *)message
+       withSendMessageOptions:(NSString *)sendMessageOptions
+               withCompletion:(void (^)(NSError *error, NSString *msg_id))completion;
+
 - (void)connectionSignData:(VcxHandle)connectionHandle
                    data:(NSData *)data
                 completion:(void (^)(NSError *, NSData *signature))completion;
@@ -183,6 +188,23 @@ withSelectedCredentials:(NSString *)selectedCredentials
 - (void) proofSend:(vcx_proof_handle_t)proof_handle
 withConnectionHandle:(vcx_connection_handle_t)connection_handle
     withCompletion:(void (^)(NSError *error))completion;
+
+- (void) proofReject: (vcx_proof_handle_t)proof_handle
+      withConnectionHandle:(vcx_connection_handle_t)connection_handle
+      withCompletion: (void (^)(NSError *error))completion;
+
+- (void) getProofMsg:(vcx_proof_handle_t) proofHandle
+      withCompletion:(void (^)(NSError *error, NSString *proofMsg))completion;
+
+- (void) getRejectMsg:(vcx_proof_handle_t) proofHandle
+       withCompletion:(void (^)(NSError *error, NSString *rejectMsg))completion;
+
+- (void)connectionRedirect:(vcx_connection_handle_t)redirect_connection_handle
+      withConnectionHandle:(vcx_connection_handle_t)connection_handle
+            withCompletion:(void (^)(NSError *error))completion;
+
+- (void)getRedirectDetails:(vcx_connection_handle_t)connection_handle
+      withCompletion:(void (^)(NSError *error, NSString *redirectDetails))completion;
 
 - (void) proofCreateWithRequest:(NSString *) source_id
                withProofRequest:(NSString *) proofRequest

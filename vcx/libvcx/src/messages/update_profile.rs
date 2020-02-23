@@ -9,7 +9,8 @@ use error::prelude::*;
 pub struct UpdateProfileDataBuilder {
     to_did: String,
     agent_payload: String,
-    configs: Vec<ConfigOption>
+    configs: Vec<ConfigOption>,
+    version: settings::ProtocolTypes,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -39,6 +40,7 @@ impl UpdateProfileDataBuilder {
             to_did: String::new(),
             configs: Vec::new(),
             agent_payload: String::new(),
+            version: settings::get_protocol_type()
         }
     }
 
@@ -78,6 +80,15 @@ impl UpdateProfileDataBuilder {
         Ok(self)
     }
 
+    pub fn version(&mut self, version: &Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
+        };
+        Ok(self)
+    }
+
+
     pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("UpdateProfileData::send_secure >>>");
 
@@ -93,7 +104,7 @@ impl UpdateProfileDataBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::UpdateConfigs(
@@ -116,15 +127,15 @@ impl UpdateProfileDataBuilder {
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        prepare_message_for_agency(&message, &agency_did)
+        prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<()> {
-        let mut response = parse_response_from_agency(&response)?;
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
-            A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(res)) => Ok(()),
-            A2AMessage::Version2(A2AMessageV2::UpdateConfigsResponse(res)) => Ok(()),
+            A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(_)) => Ok(()),
+            A2AMessage::Version2(A2AMessageV2::UpdateConfigsResponse(_)) => Ok(()),
             _ => Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of UpdateConfigsResponse"))
         }
     }
@@ -142,7 +153,7 @@ mod tests {
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let name = "name";
         let url = "https://random.com";
-        let msg = update_data()
+        let _msg = update_data()
             .to(to_did).unwrap()
             .name(&name).unwrap()
             .logo_url(&url).unwrap()
@@ -153,8 +164,8 @@ mod tests {
     fn test_update_data_set_values_and_post() {
         init!("false");
         let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let (_my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);

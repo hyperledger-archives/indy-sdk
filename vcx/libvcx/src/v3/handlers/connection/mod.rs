@@ -68,7 +68,7 @@ pub mod tests {
             alice.update_state(4);
             faber.update_state(4);
 
-            let mut uid: String;
+            let uid: String;
             let message = _ack();
 
             // Send Message works
@@ -93,7 +93,7 @@ pub mod tests {
                 }
             }
 
-            let res = ::messages::get_message::download_messages(None, None, Some(vec![uid.clone()])).unwrap();
+            let _res = ::messages::get_message::download_messages(None, None, Some(vec![uid.clone()])).unwrap();
 
             // Get Message by id works
             {
