@@ -262,16 +262,23 @@ pub struct GetMessages {
     pub status_codes: Vec<MessageStatusCode>,
 }
 
+/// Message type used by cloud agent owner to download messages of interest.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GetMessagesByConnections {
     #[serde(rename = "excludePayload")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exclude_payload: Option<String>,
+    /// Filter messages by their unique identifier
     #[serde(default)]
     pub uids: Vec<String>,
+    /// Filter messages by their status. The status of an message is set by agent's owner on demand.
+    /// When Aries message is received , it's given MS-104
     #[serde(rename = "statusCodes")]
     #[serde(default)]
     pub status_codes: Vec<MessageStatusCode>,
+    /// Filter pairwise relationships to check for messages according to its assigned pairwise did.
+    /// If none is provided, messages from all pairwise relationships will filtered according to
+    /// the other filters in this data structure.
     #[serde(rename = "pairwiseDIDs")]
     #[serde(default)]
     pub pairwise_dids: Vec<String>,

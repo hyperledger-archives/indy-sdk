@@ -9,6 +9,10 @@ use crate::actors::{AdminRegisterAgent, AdminRegisterAgentConnection, AdminRegis
 use crate::domain::admin_message::{AdminQuery, ResAdminQuery, ResQueryAdmin};
 use crate::utils::futures::FutureExt;
 
+/// Admin actor is aware of other existing instances such as Forward Agent, Forward Agent Connections,
+/// Agents and Agent Connections. Agent can receive requests to retrieve various information about
+/// these instances. As the name indicates, Admin interface is not supposed to be public as it's
+/// capable revealing various metadata about agency and instances in it.
 pub struct Admin {
     forward_agent: Option<Recipient<HandleAdminMessage>>,
     forward_agent_connections: HashMap<String, Recipient<HandleAdminMessage>>,

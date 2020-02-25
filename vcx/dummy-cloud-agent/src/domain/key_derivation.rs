@@ -30,6 +30,7 @@ impl FromStr for KeyDerivationFunction {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct KeyDerivationDirective {
     pub kdf: KeyDerivationFunction,
+    /// Seed for key derivation
     pub key: String,
 }
 
@@ -49,11 +50,6 @@ impl KeyDerivationDirective {
 
 #[cfg(test)]
 mod tests {
-    use serde::Serialize;
-
-    use crate::actors::ForwardA2AMsg;
-    use crate::utils::tests::*;
-
     use super::*;
 
     #[test]
