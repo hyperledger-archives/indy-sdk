@@ -801,12 +801,11 @@ pub extern fn vcx_disclosed_proof_generate_proof(command_handle: CommandHandle,
 
 /// Declines presentation request.
 /// There are two ways of following interaction:
-///     - Prover wants to propose using a different presentation - pass `proposal` parameter
+///     - Prover wants to propose using a different presentation - pass `proposal` parameter.
 ///     - Prover doesn't want to continue interaction - pass `reason` parameter.
 /// Note that only one of these parameters can be passed.
 ///
-/// Note that this function is useful in case `aries` communication method is used.
-/// In other cases it returns ActionNotSupported error.
+/// Note that proposing of different presentation is supported for `aries` protocol only.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -815,9 +814,9 @@ pub extern fn vcx_disclosed_proof_generate_proof(command_handle: CommandHandle,
 ///
 /// connection_handle: Connection handle that identifies pairwise connection
 ///
-/// reason: human-readable string that explain the reason of decline
+/// reason: (Optional) human-readable string that explain the reason of decline
 ///
-/// proposal: the proposed format of presentation request
+/// proposal: (Optional) the proposed format of presentation request
 /// (see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#presentation-preview for details)
 /// {
 ///    "attributes": [

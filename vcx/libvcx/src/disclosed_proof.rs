@@ -662,8 +662,9 @@ pub fn reject_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
             DisclosedProofs::V1(ref mut obj) => {
                 obj.reject_proof(connection_handle)
             }
-            DisclosedProofs::V3(_) => {
-                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.decline_presentation_request(connection_handle, Some(String::from("Presentation Request was rejected")), None)?;
+                Ok(error::SUCCESS.code_num)
             }
         }
     })
@@ -686,9 +687,9 @@ pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: Str
 pub fn decline_presentation_request(handle: u32, connection_handle: u32, reason: Option<String>, proposal: Option<String>) -> VcxResult<u32> {
     HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
-            DisclosedProofs::V1(_) => {
-                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
-            },
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.reject_proof(connection_handle)
+            }
             DisclosedProofs::V3(ref mut obj) => {
                 obj.decline_presentation_request(connection_handle, reason.clone(), proposal.clone())?;
                 Ok(error::SUCCESS.code_num)

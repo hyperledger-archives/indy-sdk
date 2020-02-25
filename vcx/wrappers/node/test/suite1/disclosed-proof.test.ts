@@ -209,10 +209,12 @@ describe('DisclosedProof', () => {
       const data = await dataDisclosedProofCreateWithRequest()
       const disclosedProof = await disclosedProofCreateWithRequest(data)
 
-      const error = await shouldThrow(async () =>
-        disclosedProof.declinePresentationRequest(
-          { connection: data.connection, reason: 'some reason', proposal: null } as any))
-      assert.equal(error.vcxCode, VCXCode.ACTION_NOT_SUPPORTED)
+      Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
+          TestHelper.getResultFromFuture(
+              disclosedProof.declinePresentationRequest(
+                { connection: data.connection, reason: 'some reason', proposal: null } as any))
+          );
+      });
     })
   })
 
