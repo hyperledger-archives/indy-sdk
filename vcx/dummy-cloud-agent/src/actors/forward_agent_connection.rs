@@ -6,7 +6,7 @@ use futures::*;
 use futures::future::Either;
 use serde_json;
 
-use crate::actors::{AddA2ARoute, AdminRegisterForwardAgentConnection, HandleA2AMsg, HandleAdminMessage};
+use crate::actors::{AdminRegisterForwardAgentConnection, HandleA2AMsg, HandleAdminMessage};
 use crate::actors::admin::Admin;
 use crate::actors::agent::Agent;
 use crate::actors::router::Router;
@@ -17,6 +17,8 @@ use crate::domain::invite::ForwardAgentDetail;
 use crate::domain::key_derivation::{KeyDerivationDirective, KeyDerivationFunction};
 use crate::indy::{did, pairwise, pairwise::PairwiseInfo, WalletHandle};
 use crate::utils::futures::*;
+use std::rc::Rc;
+use std::sync::RwLock;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AgentWalletInfo {
@@ -60,7 +62,7 @@ pub struct ForwardAgentConnection {
     fwac_verkey: String,
     /// Metadata about the connection and possibly Agent bootstrapped off this connection
     state: ForwardAgentConnectionState,
-    router: Addr<Router>,
+    router: Rc<RwLock<Router>>,
     admin: Option<Addr<Admin>>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
@@ -85,7 +87,7 @@ impl ForwardAgentConnection {
     pub fn create(agency_wallet_handle: WalletHandle,
                   owner_did: String,
                   owner_verkey: String,
-                  router: Addr<Router>,
+                  router: Rc<RwLock<Router>>,
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig,
                   admin: Option<Addr<Admin>>) -> BoxedFuture<(String, String), Error> {
@@ -141,11 +143,8 @@ impl ForwardAgentConnection {
 
                 let forward_agent_connection = forward_agent_connection.start();
 
-                router
-                    .send(AddA2ARoute(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(move |_| (fwac_did, fwac_verkey, forward_agent_connection, admin))
-                    .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
+                router.write().unwrap().add_a2a_route(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient());
+                future::ok((fwac_did, fwac_verkey, forward_agent_connection, admin))
             })
             .and_then(move |(fwac_did, fwac_verkey, forward_agent_connection, admin)| {
                 if let Some(admin) = admin {
@@ -177,7 +176,7 @@ impl ForwardAgentConnection {
                    owner_did: String,
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
-                   router: Addr<Router>,
+                   router: Rc<RwLock<Router>>,
                    admin: Option<Addr<Admin>>) -> BoxedFuture<(), Error> {
         debug!("ForwardAgentConnection::restore >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, forward_agent_detail, wallet_storage_config);
@@ -259,12 +258,9 @@ impl ForwardAgentConnection {
                 };
 
                 let forward_agent_connection = forward_agent_connection.start();
-
-                router
-                    .send(AddA2ARoute(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(move |_| (forward_agent_connection, fwac_did, admin))
-                    .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
+                router.write().unwrap()
+                    .add_a2a_route(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient());
+                future::ok((forward_agent_connection, fwac_did, admin))
             })
             .and_then(move |(forward_agent_connection, fwac_did, admin)| {
                 match admin {

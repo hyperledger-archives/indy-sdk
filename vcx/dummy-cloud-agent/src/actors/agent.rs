@@ -7,7 +7,7 @@ use futures::*;
 use futures::future::Either;
 use serde_json;
 
-use crate::actors::{AddA2ARoute, AdminRegisterAgent, HandleA2AMsg, HandleAdminMessage, RouteA2AMsg, RouteA2ConnMsg};
+use crate::actors::{AdminRegisterAgent, HandleA2AMsg, HandleAdminMessage, RouteA2ConnMsg};
 use crate::actors::admin::Admin;
 use crate::actors::agent_connection::{AgentConnection, AgentConnectionConfig};
 use crate::actors::router::Router;
@@ -20,8 +20,10 @@ use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, walle
 use crate::utils::futures::*;
 use crate::utils::rand;
 use crate::utils::wallet::build_wallet_credentials;
-use crate::domain::key_derivation::{KeyDerivationDirective};
+use crate::domain::key_derivation::KeyDerivationDirective;
 use crate::utils::config_env::*;
+use std::rc::Rc;
+use std::sync::RwLock;
 
 /// Represents cloud agent owned and controlled by Agency's client. Agent can receive messages
 /// on behalf of its owner. The owner can communicate with the agent to pick up received messages
@@ -44,7 +46,7 @@ pub struct Agent {
     /// Information about Agency's forward agent
     forward_agent_detail: ForwardAgentDetail,
     /// reference to message router
-    router: Addr<Router>,
+    router: Rc<RwLock<Router>>,
     /// reference to Admin actor
     admin: Option<Addr<Admin>>,
     /// Map of keys and values representing arbitrary configuration of the agent that might be
@@ -70,7 +72,7 @@ impl Agent {
     /// * `admin` - Reference to Admin actor
     pub fn create(agent_owner_did: &str,
                   agent_owner_verkey: &str,
-                  router: Addr<Router>,
+                  router: Rc<RwLock<Router>>,
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig,
                   admin: Option<Addr<Admin>>) -> BoxedFuture<(String, String, String, KeyDerivationDirective), Error> {
@@ -94,7 +96,7 @@ impl Agent {
                     .map(|kdf_directives| {
                         let wallet_credentials = build_wallet_credentials(
                             &kdf_directives,
-                            wallet_storage_config.credentials
+                            wallet_storage_config.credentials,
                         ).to_string();
                         (wallet_credentials, kdf_directives)
                     })
@@ -106,7 +108,7 @@ impl Agent {
             })
             .and_then(move |(wallet_config, wallet_credentials, kdf_directives)| {
                 wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
-                    .map( move |wallet_handle| (wallet_handle, kdf_directives))
+                    .map(move |wallet_handle| (wallet_handle, kdf_directives))
                     .map_err(|err| err.context("Can't open Agent wallet.`").into())
             })
             .and_then(|(wallet_handle, kdf_directives)| {
@@ -114,7 +116,7 @@ impl Agent {
                     .map(move |(agent_did, agent_verkey)| (wallet_handle, agent_did, agent_verkey, kdf_directives))
                     .map_err(|err| err.context("Can't get Agent did key").into())
             })
-            .and_then(move |(wallet_handle  , agent_did, agent_verkey, kdf_directives)| {
+            .and_then(move |(wallet_handle, agent_did, agent_verkey, kdf_directives)| {
                 let agent = Agent {
                     wallet_handle,
                     agent_verkey: agent_verkey.clone(),
@@ -129,11 +131,8 @@ impl Agent {
 
                 let agent = agent.start();
 
-                router
-                    .send(AddA2ARoute(agent_did.clone(), agent_verkey.clone(), agent.clone().recipient()))
-                    .from_err()
-                    .map(move |_| (wallet_id, agent_did, agent_verkey, admin, agent, kdf_directives))
-                    .map_err(|err: Error| err.context("Can't add route for Agent").into())
+                router.write().unwrap().add_a2a_route(agent_did.clone(), agent_verkey.clone(), agent.clone().recipient());
+                future::ok((wallet_id, agent_did, agent_verkey, admin, agent, kdf_directives))
             })
             .and_then(move |(wallet_id, agent_did, agent_verkey, admin, agent, kdf_directives)| {
                 match admin {
@@ -166,7 +165,7 @@ impl Agent {
                    agent_did: &str,
                    owner_did: &str,
                    owner_verkey: &str,
-                   router: Addr<Router>,
+                   router: Rc<RwLock<Router>>,
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
                    admin: Option<Addr<Admin>>) -> BoxedFuture<(), Error> {
@@ -181,7 +180,7 @@ impl Agent {
 
         let wallet_credentials = build_wallet_credentials(
             &kdf_directives,
-            wallet_storage_config.credentials
+            wallet_storage_config.credentials,
         ).to_string();
 
 
@@ -240,19 +239,16 @@ impl Agent {
 
                 let agent = agent.start();
 
-                router
-                    .send(AddA2ARoute(agent_did.clone(), agent_verkey.clone(), agent.clone().recipient()))
-                    .map(move |_| (admin, agent, agent_did))
-                    .from_err()
-                    .map_err(|err: Error| err.context("Can't add route for Agent.").into())
+                router.write().unwrap().add_a2a_route(agent_did.clone(), agent_verkey.clone(), agent.clone().recipient());
+                future::ok((admin, agent, agent_did))
             })
             .and_then(move |(admin, agent, agent_did)| {
                 match admin {
                     Some(admin) => Either::A(
                         admin.send(AdminRegisterAgent(agent_did.clone(), agent.clone().recipient()))
-                        .from_err()
-                        .map(|_| ())
-                        .map_err(|err: Error| err.context("Can't register Agent in Admin").into())),
+                            .from_err()
+                            .map(|_| ())
+                            .map_err(|err: Error| err.context("Can't register Agent in Admin").into())),
                     None => Either::B(future::ok(()))
                 }
             })
@@ -273,7 +269,7 @@ impl Agent {
                             owner_did: &str,
                             owner_verkey: &str,
                             forward_agent_detail: &ForwardAgentDetail,
-                            router: Addr<Router>,
+                            router: Rc<RwLock<Router>>,
                             admin: Option<Addr<Admin>>,
                             agent_configs: HashMap<String, String>) -> ResponseFuture<(), Error> {
         trace!("Agent::_restore_connections >> {:?}, {:?}, {:?}, {:?}",
@@ -336,28 +332,28 @@ impl Agent {
             .and_then(|(sender_vk, mut msgs), slf, _| {
                 match msgs.pop() {
                     Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) => {
-                        slf.router
-                            .send(RouteA2AMsg(msg.fwd, msg.msg))
+                        slf.router.read().unwrap()
+                            .route_a2a_msg(msg.fwd, msg.msg)
                             .from_err()
-                            .and_then(|res| res)
+                            .map(|res| res)
                             .into_actor(slf)
                             .into_box()
                     }
                     Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
                         let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
-                        slf.router
-                            .send(RouteA2AMsg(msg.fwd, msg_))
+                        slf.router.read().unwrap()
+                            .route_a2a_msg(msg.fwd, msg_)
                             .from_err()
-                            .and_then(|res| res)
+                            .map(|res| res)
                             .into_actor(slf)
                             .into_box()
                     }
                     Some(A2AMessage::Version2(A2AMessageV2::ForwardV3(msg))) => {
                         let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
-                        slf.router
-                            .send(RouteA2AMsg(msg.to, msg_))
+                        slf.router.read().unwrap()
+                            .route_a2a_msg(msg.to, msg_)
                             .from_err()
-                            .and_then(|res| res)
+                            .map(|res| res)
                             .into_actor(slf)
                             .into_box()
                     }
@@ -470,7 +466,7 @@ impl Agent {
                                           msg: GetMessagesByConnections) -> ResponseFuture<Vec<A2ConnMessage>, Error> {
         trace!("Agent::handle_get_messages_by_connections >> {:?}", msg);
 
-        let GetMessagesByConnections { exclude_payload, uids, status_codes, pairwise_dids  } = msg;
+        let GetMessagesByConnections { exclude_payload, uids, status_codes, pairwise_dids } = msg;
 
         let router = self.router.clone();
         let wallet_handle = self.wallet_handle.clone();
@@ -492,16 +488,15 @@ impl Agent {
                 let futures: Vec<_> = pairwises
                     .iter()
                     .map(move |pairwise| {
-                        router
-                            .send(RouteA2ConnMsg(pairwise.my_did.clone(), A2ConnMessage::GetMessages(msg.clone())))
+                        router.read().unwrap()
+                            .route_a2conn_msg(pairwise.my_did.clone(), A2ConnMessage::GetMessages(msg.clone()))
                             .from_err()
-                            .and_then(|res| res)
                             .into_box()
                     })
                     .collect();
 
                 future::join_all(futures)
-                    .map_err(|err| err.context("Can't get Agent Connection messages").into())
+                    // .map_err(|err| err.context("Can't get Agent Connection messages").into())
                     .into_box()
             })
             .into_box()
@@ -565,18 +560,19 @@ impl Agent {
                         .map(|uid_by_conn| (uid_by_conn, pairwise))
                     )
                     .map(move |(uid_by_conn, pairwise)|
-                        router
-                            .send(RouteA2ConnMsg(pairwise.my_did.clone(), A2ConnMessage::UpdateMessages(
-                                UpdateMessageStatus { uids: uid_by_conn.uids.clone(), status_code: status_code.clone() }
-                            )))
+
+                        router.read().unwrap()
+                            .route_a2conn_msg(pairwise.my_did.clone(),
+                                              A2ConnMessage::UpdateMessages(
+                                                  UpdateMessageStatus { uids: uid_by_conn.uids.clone(), status_code: status_code.clone() }
+                                              ))
                             .from_err()
-                            .and_then(|res| res)
                             .into_box()
                     )
                     .collect();
 
                 future::join_all(futures)
-                    .map_err(|err| err.context("Can't get Agent Connection messages").into())
+                    // .map_err(|err| err.context("Can't get Agent Connection messages").into())
             })
             .into_box()
     }
@@ -733,7 +729,7 @@ impl Agent {
                 "name" | "logoUrl" | "notificationWebhookUrl" => self.configs.insert(config_option.name, config_option.value),
                 _ => {
                     warn!("Agent was trying to set up unsupported agent configuration option {}", config_option.name.as_str());
-                    continue
+                    continue;
                 }
             };
         }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use actix::prelude::*;
-use crate::actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RemoteMsg, AdminRegisterAgentConnection, HandleAdminMessage, requester};
+use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, RemoteMsg, AdminRegisterAgentConnection, HandleAdminMessage, requester};
 use crate::actors::router::Router;
 use crate::domain::a2a::*;
 use crate::domain::a2connection::*;
@@ -25,6 +25,8 @@ use crate::domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
 use crate::indy::{crypto, did, ErrorCode, IndyError, pairwise, WalletHandle};
 use crate::utils::futures::*;
 use crate::utils::to_i8;
+use std::sync::RwLock;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -95,9 +97,9 @@ pub struct AgentConnection {
     // Connection State
     state: AgentConnectionState,
     // Address of router agent
-    router: Addr<Router>,
+    router: Rc<RwLock<Router>>,
     // Address of admin agent
-    admin: Option<Addr<Admin>>
+    admin: Option<Addr<Admin>>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -108,7 +110,7 @@ pub struct MessageNotification {
     their_pw_did: String,
     msg_status_code: MessageStatusCode,
     notification_id: String,
-    pw_did: String
+    pw_did: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -131,7 +133,7 @@ impl AgentConnection {
     /// details of this Agent Connection - for example, use this Agent Connection's 3rd party verkey
     /// to be part of invitation's routing keys.
     pub fn create(config: AgentConnectionConfig,
-                  router: Addr<Router>,
+                  router: Rc<RwLock<Router>>,
                   admin: Option<Addr<Admin>>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::create >> {:?}", config);
         future::ok(())
@@ -153,24 +155,17 @@ impl AgentConnection {
                         messages: HashMap::new(),
                     },
                     router: router.clone(),
-                    admin: admin.clone()
+                    admin: admin.clone(),
                 };
 
                 let agent_connection = agent_connection.start();
-
-                let add_route_f = router
-                    .send(AddA2ARoute(config.agent_connection_did.clone(), config.agent_connection_verkey.clone(), agent_connection.clone().recipient()))
-                    .from_err();
-
-                let add_conn_route_f = router
-                        .send(AddA2ConnRoute(config.agent_connection_did.clone(), config.agent_connection_verkey.clone(), agent_connection.clone().recipient()))
-                    .from_err();
-
+                {
+                    let mut router = router.write().unwrap();
+                    router.add_a2a_route(config.agent_connection_did.clone(), config.agent_connection_verkey.clone(), agent_connection.clone().recipient());
+                    router.add_a2conn_route(config.agent_connection_did.clone(), config.agent_connection_verkey.clone(), agent_connection.clone().recipient());
+                }
                 let agent_pairwise_did = config.agent_connection_did.clone();
-                add_route_f
-                    .join(add_conn_route_f)
-                    .map(move |_| (admin, agent_pairwise_did, agent_connection))
-                    .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
+                future::ok((admin, agent_pairwise_did, agent_connection))
             })
             .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
                 match admin {
@@ -197,7 +192,7 @@ impl AgentConnection {
                    user_pairwise_did: &str,
                    state: &str,
                    forward_agent_detail: &ForwardAgentDetail,
-                   router: Addr<Router>,
+                   router: Rc<RwLock<Router>>,
                    admin: Option<Addr<Admin>>,
                    agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
         trace!("AgentConnection::restore >> {:?}", wallet_handle);
@@ -241,25 +236,16 @@ impl AgentConnection {
                         messages: state.messages,
                     },
                     router: router.clone(),
-                    admin: admin.clone()
+                    admin: admin.clone(),
                 };
 
                 let agent_connection = agent_connection.start();
-
-                let add_route_f = router
-                    .send(AddA2ARoute(agent_pairwise_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient()))
-                    .from_err()
-                    .map_err(|err: Error| err.context("Can't add A2A route for Agent Connection.").into());
-
-                let add_conn_route_f = router
-                    .send(AddA2ConnRoute(agent_pairwise_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient()))
-                    .from_err()
-                    .map_err(|err: Error| err.context("Can't add A2AConnection route for Agent Connection.").into());
-
-                add_route_f
-                    .join(add_conn_route_f)
-                    .map(|_| (admin, agent_pairwise_did, agent_connection))
-                    .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
+                {
+                    let mut router = router.write().unwrap();
+                    router.add_a2a_route(agent_pairwise_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient());
+                    router.add_a2conn_route(agent_pairwise_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient());
+                }
+                future::ok((admin, agent_pairwise_did, agent_connection))
             })
             .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
                 match admin {
@@ -607,7 +593,7 @@ impl AgentConnection {
             Some(msg_detail.msg),
             Some(map! {"detail".to_string() => msg_detail.detail, "title".to_string()=> msg_detail.title}),
             None,
-            None
+            None,
         );
 
         if let Some(msg_id) = reply_to_msg_id.as_ref() {
@@ -727,7 +713,7 @@ impl AgentConnection {
                 let msg = A2ConnMessage::MessagesByConnection(
                     MessagesByConnection {
                         did: self.user_pairwise_did.clone(),
-                        msgs: self.get_messages(msg)
+                        msgs: self.get_messages(msg),
                     });
                 ok!(msg)
             }
@@ -736,7 +722,7 @@ impl AgentConnection {
                 let msg = A2ConnMessage::MessageStatusUpdatedByConnection(
                     UidByConnection {
                         uids,
-                        pairwise_did: self.user_pairwise_did.clone()
+                        pairwise_did: self.user_pairwise_did.clone(),
                     });
                 ok!(msg)
             }
@@ -800,7 +786,7 @@ impl AgentConnection {
                     None,
                     None,
                     None,
-                    None
+                    None,
                 );
 
                 let sender_did = slf.user_pairwise_did.clone();
@@ -813,7 +799,7 @@ impl AgentConnection {
                     None,
                     None,
                     msg_detail.thread.clone(),
-                    None
+                    None,
                 );
                 slf.state.agent_key_dlg_proof = Some(key_dlg_proof);
 
@@ -821,7 +807,7 @@ impl AgentConnection {
                     forward_agent_detail: msg_detail.sender_agency_detail.clone(),
                     agent_detail: AgentDetail {
                         did: msg_detail.sender_detail.did.clone(),
-                        verkey: msg_detail.sender_detail.verkey.clone()
+                        verkey: msg_detail.sender_detail.verkey.clone(),
                     },
                     agent_key_dlg_proof: msg_detail.sender_detail.agent_key_dlg_proof.clone(),
                 });
@@ -879,14 +865,14 @@ impl AgentConnection {
                     None,
                     None,
                     msg_detail.thread.clone(),
-                    None
+                    None,
                 );
 
                 slf.state.remote_connection_detail = Some(RemoteConnectionDetail {
                     forward_agent_detail: msg_detail.sender_agency_detail.clone(),
                     agent_detail: AgentDetail {
                         did: msg_detail.sender_detail.did.clone(),
-                        verkey: msg_detail.sender_detail.verkey.clone()
+                        verkey: msg_detail.sender_detail.verkey.clone(),
                     },
                     agent_key_dlg_proof: msg_detail.sender_detail.agent_key_dlg_proof.clone(),
                 });
@@ -955,7 +941,7 @@ impl AgentConnection {
                     None,
                     None,
                     None,
-                    None
+                    None,
                 );
 
                 let sender_did = slf.user_pairwise_did.clone();
@@ -968,7 +954,7 @@ impl AgentConnection {
                     None,
                     None,
                     msg_detail.thread.clone(),
-                    Some(msg_detail.redirect_detail.clone())
+                    Some(msg_detail.redirect_detail.clone()),
                 );
                 slf.state.agent_key_dlg_proof = Some(key_dlg_proof);
 
@@ -976,7 +962,7 @@ impl AgentConnection {
                     forward_agent_detail: msg_detail.sender_agency_detail.clone(),
                     agent_detail: AgentDetail {
                         did: msg_detail.sender_detail.did.clone(),
-                        verkey: msg_detail.sender_detail.verkey.clone()
+                        verkey: msg_detail.sender_detail.verkey.clone(),
                     },
                     agent_key_dlg_proof: msg_detail.sender_detail.agent_key_dlg_proof.clone(),
                 });
@@ -1033,14 +1019,14 @@ impl AgentConnection {
                     None,
                     None,
                     msg_detail.thread.clone(),
-                    Some(msg_detail.redirect_detail.clone())
+                    Some(msg_detail.redirect_detail.clone()),
                 );
 
                 slf.state.remote_connection_detail = Some(RemoteConnectionDetail {
                     forward_agent_detail: msg_detail.sender_agency_detail.clone(),
                     agent_detail: AgentDetail {
                         did: msg_detail.sender_detail.did.clone(),
-                        verkey: msg_detail.sender_detail.verkey.clone()
+                        verkey: msg_detail.sender_detail.verkey.clone(),
                     },
                     agent_key_dlg_proof: msg_detail.sender_detail.agent_key_dlg_proof.clone(),
                 });
@@ -1217,8 +1203,8 @@ impl AgentConnection {
     }
 
     fn store_payload_for_connection_request_redirect(&mut self,
-                                                    msg_uid: &str,
-                                                    msg_detail: ConnectionRequestRedirectMessageDetail) -> ResponseActFuture<Self, (), Error> {
+                                                     msg_uid: &str,
+                                                     msg_detail: ConnectionRequestRedirectMessageDetail) -> ResponseActFuture<Self, (), Error> {
         trace!("AgentConnection::store_payload_for_connection_request_redirect >> {:?}, {:?}",
                msg_uid, msg_detail);
 
@@ -1518,7 +1504,7 @@ impl AgentConnection {
 
     fn send_invite_redirect_message(&mut self, message: InternalMessage, reply_to: Option<String>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::send_invite_redirect_message >> {:?}, {:?}",
-              message, reply_to);
+               message, reply_to);
 
         let reply_to = ftry!(reply_to.ok_or(err_msg("Missed required field `reply_to_msg_id`.")));
 
@@ -1552,10 +1538,9 @@ impl AgentConnection {
         let router = self.router.clone();
         future::ok(())
             .and_then(move |_| {
-                router
-                    .send(RemoteMsg { endpoint, body: message })
+                router.read().unwrap()
+                    .route_to_requester(RemoteMsg { endpoint, body: message })
                     .from_err()
-                    .and_then(|res| res)
                     .map_err(|err: Error| err.context("Can't send message to Remote Endpoint.").into())
             })
             .into_box()
@@ -1597,7 +1582,7 @@ impl AgentConnection {
 
                 let payload_msg = PayloadV1 {
                     type_: PayloadTypes::build_v1(PayloadKinds::from(type_), "json"),
-                    msg: to_i8(&msg)
+                    msg: to_i8(&msg),
                 };
 
                 let message = ftry!(rmp_serde::to_vec_named(&payload_msg));
@@ -1634,7 +1619,7 @@ impl AgentConnection {
             ProtocolTypes::V1 => A2AMessage::Version1(A2AMessageV1::Forward(ForwardV1 { fwd: fwd.to_string(), msg: message })),
             ProtocolTypes::V2 => A2AMessage::Version2(A2AMessageV2::Forward(ForwardV2 {
                 fwd: fwd.to_string(),
-                msg: serde_json::from_slice(message.as_slice())?
+                msg: serde_json::from_slice(message.as_slice())?,
             }))
         };
 
@@ -1667,7 +1652,7 @@ impl AgentConnection {
                 let msg_created = MessageCreated { uid: msg.uid.clone() };
                 let msg_detail = ConnectionRequestMessageDetailResp {
                     invite_detail,
-                    url_to_invite_detail: "".to_string() // format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
+                    url_to_invite_detail: "".to_string(), // format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
                 };
 
                 vec![A2AMessage::Version1(A2AMessageV1::MessageCreated(msg_created)),
@@ -1745,7 +1730,7 @@ impl AgentConnection {
 
     fn build_invite_redirect_message(&self, message: InternalMessage, reply_to: &str) -> Result<Vec<A2AMessage>, Error> {
         trace!("AgentConnection::build_invite_redirect_message >> {:?}, {:?}",
-              message, reply_to);
+               message, reply_to);
 
         let agent_key_dlg_proof = self.state.agent_key_dlg_proof.clone()
             .ok_or(err_msg("Missed Key Delegation Proof."))?;
@@ -1835,7 +1820,7 @@ impl AgentConnection {
                         reply_to_msg_id: reply_to.map(String::from),
                         msg: serde_json::from_slice(&msg)?,
                         title,
-                        detail
+                        detail,
                     };
 
                     vec![A2AMessage::Version2(A2AMessageV2::SendRemoteMessage(msg))]
@@ -1925,7 +1910,7 @@ impl Handler<HandleAdminMessage> for AgentConnection {
 
 enum MessageHandlerRole {
     Owner,
-    Remote
+    Remote,
 }
 
 #[cfg(test)]
