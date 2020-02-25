@@ -100,7 +100,6 @@ mod tests {
             .wait()
             .expect("Failed to build key derivation directive");
         assert_eq!(derivation.kdf, KeyDerivationFunction::Raw);
-        assert_eq!(derivation.key.len(), 44);
     }
 
     #[test]
