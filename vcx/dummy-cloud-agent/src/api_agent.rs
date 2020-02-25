@@ -28,6 +28,7 @@ fn _get_endpoint_details(state: web::Data<AppData>) -> Box<dyn Future<Item=HttpR
     Box::new(f)
 }
 
+/// The entry point of any agent communication. Incoming data are passed to Forward Agent for processing
 fn _forward_message(state: web::Data<AppData>, stream: web::Payload) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     let f = stream.map_err(Error::from)
         .fold(web::BytesMut::new(), move |mut body, chunk| {

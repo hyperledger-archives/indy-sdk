@@ -36,44 +36,58 @@ struct RemoteConnectionDetail {
     agent_key_dlg_proof: KeyDlgProof,
 }
 
+/// Configuration object used when creating new agent connection
 #[derive(Clone, Debug)]
 pub struct AgentConnectionConfig {
     // Agent wallet handle
     pub wallet_handle: WalletHandle,
-    // Agent Owner DID
+    // Agent Owner DID (Owner.DID@Client:AgentConnection)
     pub owner_did: String,
-    // Agent Owner Verkey
+    // Agent Owner Verkey (Owner.VK@Client:AgentConnection)
     pub owner_verkey: String,
-    // User pairwise DID
+    // User pairwise DID with a 3rd party (Owner.DID@Client:3rdParty)
     pub user_pairwise_did: String,
-    // User pairwise DID Verkey
+    // User pairwise Verkey with a 3rd party (Owner.VK@Client:3rdParty)
     pub user_pairwise_verkey: String,
-    // Agent pairwise DID
-    pub agent_pairwise_did: String,
-    // Agent pairwise DID Verkey
-    pub agent_pairwise_verkey: String,
+    // Agent Connection's DID (AgentConnection.DID@AgentConnection:3rdParty)
+    pub agent_connection_did: String,
+    // Agent Connection's Verkey (AgentConnection.VK@AgentConnection:3rdParty)
+    pub agent_connection_verkey: String,
     // Agent configs
     pub agent_configs: HashMap<String, String>,
     // Forward Agent info
     pub forward_agent_detail: ForwardAgentDetail,
 }
 
+/// Represents routing agent between its owner and a 3rd party. If Alice is owner of this agent
+/// and wants to establish pairwise connection with Bob, Alice will provide information about
+/// her routing agent. In Aries, that's in form of including verkey of the routing agent into
+/// connection invitation. Any messages Bob would like to send to Alice he should deliver into
+/// routing agent Alice has prepared for communication with Bob. Once Bob's message arrives here,
+/// Alice, as agent's owner, can fetch her received unread messages. The messages should be
+/// encrypted E2E with Bob's and Alice's pairwise verkeys, so after Alice downloads message,
+/// she'll still have to decrypt it using Alice.PK@Alice:Bob.
+///
+/// The routing agent also support notifications. If agent's config "notificationWebhookUrl" is
+/// set, whenever a new message arrives, the agent's owner will be notified by sending HTTP(S)
+/// message containing metadata about received message. The agent's owner can therefore instead
+/// of constant polling for new messages rather download and process message right after its arrival.
 #[allow(unused)] //FIXME:
 pub struct AgentConnection {
     // Agent wallet handle
     wallet_handle: WalletHandle,
-    // Agent Owner DID
+    // Agent Owner DID (Owner.DID@Client:AgentConnection)
     owner_did: String,
-    // Agent Owner Verkey
+    // Agent Owner Verkey (Owner.VK@Client:AgentConnection)
     owner_verkey: String,
-    // User pairwise DID
+    // User pairwise DID with a 3rd party (Owner.DID@Client:3rdParty)
     user_pairwise_did: String,
-    // User pairwise Verkey
+    // User pairwise Verkey with a 3rd party (Owner.VK@Client:3rdParty)
     user_pairwise_verkey: String,
-    // User pairwise DID
-    agent_pairwise_did: String,
-    // User pairwise Verkey
-    agent_pairwise_verkey: String,
+    // Agent-Connection's DID (AgentConnection.DID@AgentConnection:3rdParty), addressable via router
+    agent_connection_did: String,
+    // Agent-Connection's Verkey (AgentConnection.VK@AgentConnection:3rdParty), addressable via router
+    agent_connection_verkey: String,
     // agent config
     agent_configs: HashMap<String, String>,
     // User Forward Agent info
@@ -112,6 +126,10 @@ struct AgentConnectionState {
 }
 
 impl AgentConnection {
+    /// Creates new pairwise agent. This is triggered by Agent's owner sending "CreateKeys" message.
+    /// The Agent Connection owner is expected to generate connection invitation accordingly to
+    /// details of this Agent Connection - for example, use this Agent Connection's 3rd party verkey
+    /// to be part of invitation's routing keys.
     pub fn create(config: AgentConnectionConfig,
                   router: Addr<Router>,
                   admin: Option<Addr<Admin>>) -> ResponseFuture<(), Error> {
@@ -124,8 +142,8 @@ impl AgentConnection {
                     owner_verkey: config.owner_verkey,
                     user_pairwise_did: config.user_pairwise_did,
                     user_pairwise_verkey: config.user_pairwise_verkey,
-                    agent_pairwise_did: config.agent_pairwise_did.clone(),
-                    agent_pairwise_verkey: config.agent_pairwise_verkey.clone(),
+                    agent_connection_did: config.agent_connection_did.clone(),
+                    agent_connection_verkey: config.agent_connection_verkey.clone(),
                     agent_configs: config.agent_configs,
                     forward_agent_detail: config.forward_agent_detail,
                     state: AgentConnectionState {
@@ -141,14 +159,14 @@ impl AgentConnection {
                 let agent_connection = agent_connection.start();
 
                 let add_route_f = router
-                    .send(AddA2ARoute(config.agent_pairwise_did.clone(), config.agent_pairwise_verkey.clone(), agent_connection.clone().recipient()))
+                    .send(AddA2ARoute(config.agent_connection_did.clone(), config.agent_connection_verkey.clone(), agent_connection.clone().recipient()))
                     .from_err();
 
                 let add_conn_route_f = router
-                    .send(AddA2ConnRoute(config.agent_pairwise_did.clone(), config.agent_pairwise_verkey.clone(), agent_connection.clone().recipient()))
+                        .send(AddA2ConnRoute(config.agent_connection_did.clone(), config.agent_connection_verkey.clone(), agent_connection.clone().recipient()))
                     .from_err();
 
-                let agent_pairwise_did = config.agent_pairwise_did.clone();
+                let agent_pairwise_did = config.agent_connection_did.clone();
                 add_route_f
                     .join(add_conn_route_f)
                     .map(move |_| (admin, agent_pairwise_did, agent_connection))
@@ -166,6 +184,12 @@ impl AgentConnection {
             .into_box()
     }
 
+    /// Recreates Agent Connection actor from information provided in arguments.
+    ///
+    /// * `owner_did` - Agent's owner's DID at ClientToAgency relationship (Owner.DID@Client:AgentConnection)
+    /// * `owner_verkey` - Agent's owner's verkey at ClientToAgency relationship (Owner.VK@Client:AgentConnection)
+    /// * `agent_pairwise_did` - Agent pairwise DID (AgentConnection.DID@AgentConnection:3rdParty)
+    /// * `user_pairwise_did` - Agent's owner generated DID to identify the relationship with 3rd party (Owner.DID@Owner:3rdParty)
     pub fn restore(wallet_handle: WalletHandle,
                    owner_did: &str,
                    owner_verkey: &str,
@@ -206,8 +230,8 @@ impl AgentConnection {
                     owner_verkey,
                     user_pairwise_did,
                     user_pairwise_verkey,
-                    agent_pairwise_did: agent_pairwise_did.clone(),
-                    agent_pairwise_verkey: agent_pairwise_verkey.clone(),
+                    agent_connection_did: agent_pairwise_did.clone(),
+                    agent_connection_verkey: agent_pairwise_verkey.clone(),
                     agent_configs,
                     forward_agent_detail,
                     state: AgentConnectionState {
@@ -256,7 +280,7 @@ impl AgentConnection {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.agent_pairwise_verkey, &msg)
+                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.agent_connection_verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
@@ -309,6 +333,7 @@ impl AgentConnection {
             .into_box()
     }
 
+    /// Used only on legacy V1 protocol_type
     fn handle_create_message(&mut self,
                              msg: CreateMessage,
                              mut tail: Vec<A2AMessage>,
@@ -361,6 +386,7 @@ impl AgentConnection {
             .into_box()
     }
 
+    /// NOTE: Used only on non-Aries didcomm
     fn handle_connection_request_message(&mut self,
                                          msg: ConnectionRequest,
                                          sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
@@ -421,6 +447,7 @@ impl AgentConnection {
             .into_box()
     }
 
+    /// NOTE: Used only on non-Aries didcomm
     fn handle_connection_request_answer_message(&mut self,
                                                 msg: ConnectionRequestAnswer,
                                                 sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
@@ -445,6 +472,7 @@ impl AgentConnection {
             .into_box()
     }
 
+    /// NOTE: Used only on non-Aries didcomm
     fn handle_create_connection_request_answer(&mut self,
                                                msg_detail: ConnectionRequestAnswerMessageDetail,
                                                reply_to_msg_id: Option<String>,
@@ -649,6 +677,10 @@ impl AgentConnection {
             .collect::<Vec<GetMessagesDetailResponse>>()
     }
 
+    /// Connection can by flagged with various states. Only update to mark an agent connection
+    /// as "Deleted" is generally allowed
+    /// TODO: We should probably state of this connection as "Deleted" but actually destroy this
+    /// actor and remove any records about this Agent Connection
     fn handle_update_connection_status(&mut self, msg: UpdateConnectionStatus) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         trace!("AgentConnection::handle_update_connection_status >> {:?}",
                msg);
@@ -734,6 +766,7 @@ impl AgentConnection {
             .map(|uids| (uids, status_code))
     }
 
+    /// NOTE: Used only on non-Aries didcomm
     fn sender_handle_create_connection_request_answer(&mut self,
                                                       msg_detail: ConnectionRequestAnswerMessageDetail,
                                                       reply_to_msg_id: String) -> ResponseActFuture<Self, (String, Vec<A2AMessage>), Error> {
@@ -821,6 +854,7 @@ impl AgentConnection {
             .into_box()
     }
 
+    /// Used only on non-Aries didcomm
     fn receipt_handle_create_connection_request_answer(&mut self,
                                                        msg_detail: ConnectionRequestAnswerMessageDetail,
                                                        reply_to_msg_id: String,
@@ -1042,6 +1076,12 @@ impl AgentConnection {
             .into_box()
     }
 
+    /// Dispatches metadata about receive message in form of HTTP POST on specified url.
+    /// Any HTTP error codes returned from the target URL are ignored. The HTTP request dispatch is
+    /// non blocking.
+    ///
+    /// * `webhook_url` - URL address where the data shall be sent
+    /// * `msg_notification` - metadata about received message
     fn send_webhook_notification(&self, webhook_url: &str, msg_notification: MessageNotification) {
         let notification_id = msg_notification.notification_id.clone();
         let ser_msg_notification = serde_json::to_string(&msg_notification).unwrap();
@@ -1075,6 +1115,8 @@ impl AgentConnection {
         }
     }
 
+    /// The heart of Aries cross-domain communication. All incoming Aries messages are coming in
+    /// through this method.
     fn handle_forward_message(&mut self, msg: ForwardV3) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         let msg_ = ftry_act!(self, {serde_json::to_vec(&msg.msg)});
 
@@ -1091,6 +1133,7 @@ impl AgentConnection {
         ok_act!(self, vec![])
     }
 
+    /// Stores a message into agent's in-memory storage.
     fn create_and_store_internal_message(&mut self,
                                          uid: Option<&str>,
                                          mtype: RemoteMessageType,
@@ -1131,6 +1174,8 @@ impl AgentConnection {
         msg
     }
 
+    /// Persists in-memory maintained state of agent connections and persists it into wallet as
+    /// pairwise metadata.
     fn persist_connection_state(&self) -> ResponseActFuture<Self, (), Error> {
         future::ok(())
             .into_actor(self)
@@ -1148,7 +1193,7 @@ impl AgentConnection {
             .into_box()
     }
 
-
+    /// NOTE: Used only on non-Aries didcomm
     fn store_payload_for_connection_request_answer(&mut self,
                                                    msg_uid: &str,
                                                    msg_detail: ConnectionRequestAnswerMessageDetail) -> ResponseActFuture<Self, (), Error> {
@@ -1531,7 +1576,7 @@ impl AgentConnection {
         let remote_agent_pairwise_detail = &remote_connection_detail.agent_key_dlg_proof;
 
         let message = A2AMessage::prepare_authcrypted(self.wallet_handle,
-                                                      &self.agent_pairwise_verkey,
+                                                      &self.agent_connection_verkey,
                                                       &remote_agent_pairwise_detail.agent_delegated_key,
                                                       &message).wait()?;
 
@@ -1557,7 +1602,7 @@ impl AgentConnection {
 
                 let message = ftry!(rmp_serde::to_vec_named(&payload_msg));
 
-                crypto::auth_crypt(self.wallet_handle, &self.agent_pairwise_verkey, &self.owner_verkey, &message)
+                crypto::auth_crypt(self.wallet_handle, &self.agent_connection_verkey, &self.owner_verkey, &message)
                     .map_err(|err| err.context("Can't encode Answer Payload.").into())
                     .into_box()
             }
@@ -1574,7 +1619,7 @@ impl AgentConnection {
                 let message = ftry!(serde_json::to_string(&payload_msg));
                 let receiver_keys = ftry!(serde_json::to_string(&vec![&self.owner_verkey]));
 
-                crypto::pack_message(self.wallet_handle, Some(&self.agent_pairwise_verkey), &receiver_keys, &message.as_bytes())
+                crypto::pack_message(self.wallet_handle, Some(&self.agent_connection_verkey), &receiver_keys, &message.as_bytes())
                     .map_err(|err| err.context("Can't encode Answer Payload.").into())
                     .into_box()
             }
@@ -1816,7 +1861,7 @@ impl AgentConnection {
 
         match recipient_vk {
             Some(recipient_vk) =>
-                A2AMessage::prepare_authcrypted(self.wallet_handle, &self.agent_pairwise_verkey, &recipient_vk, &msgs)
+                A2AMessage::prepare_authcrypted(self.wallet_handle, &self.agent_connection_verkey, &recipient_vk, &msgs)
                     .map_err(|err| err.context("Can't bundle and authcrypt message.").into())
                     .into_box(),
             None => ok!(vec![]) // do not encrypt in case remote connection data isn't set
@@ -1856,8 +1901,8 @@ impl Handler<HandleAdminMessage> for AgentConnection {
             owner_verkey: self.owner_verkey.clone(),
             user_pairwise_did: self.user_pairwise_did.clone(),
             user_pairwise_verkey: self.user_pairwise_verkey.clone(),
-            agent_pairwise_did: self.agent_pairwise_did.clone(),
-            agent_pairwise_verkey: self.agent_pairwise_verkey.clone(),
+            agent_pairwise_did: self.agent_connection_did.clone(),
+            agent_pairwise_verkey: self.agent_connection_verkey.clone(),
 
             logo: self.agent_configs.get("logoUrl").map_or_else(|| String::from("unknown"), |v| v.clone()),
             name: self.agent_configs.get("name").map_or_else(|| String::from("unknown"), |v| v.clone()),
@@ -1886,7 +1931,6 @@ enum MessageHandlerRole {
 #[cfg(test)]
 mod tests {
     use crate::actors::ForwardA2AMsg;
-    use crate::utils::tests::*;
     use crate::utils::tests::*;
     use crate::utils::tests::compose_create_general_message;
 

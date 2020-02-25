@@ -25,11 +25,7 @@ pub fn build_wallet_credentials(kdf_directive: &KeyDerivationDirective, storage_
 
 #[cfg(test)]
 mod tests {
-    use serde::Serialize;
-
-    use crate::actors::ForwardA2AMsg;
     use crate::domain::key_derivation::KeyDerivationFunction;
-    use crate::utils::tests::*;
 
     use super::*;
     use futures::Future;
