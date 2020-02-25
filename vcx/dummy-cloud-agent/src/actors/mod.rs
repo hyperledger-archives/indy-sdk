@@ -49,19 +49,6 @@ impl Message for HandleAdminMessage {
     type Result = Result<ResAdminQuery, Error>;
 }
 
-
-// Common messages
-pub struct AddA2ARoute(pub String, pub String, pub Recipient<HandleA2AMsg>);
-
-impl Message for AddA2ARoute {
-    type Result = ();
-}
-
-pub struct AddA2ConnRoute(pub String, pub String, pub Recipient<HandleA2ConnMsg>);
-
-impl Message for AddA2ConnRoute {
-    type Result = ();
-}
 #[derive(Debug)]
 pub struct GetEndpoint();
 
@@ -88,13 +75,6 @@ impl Message for ForwardA2AMsg {
 pub struct HandleA2AMsg(pub Vec<u8>);
 
 impl Message for HandleA2AMsg {
-    type Result = Result<Vec<u8>, Error>;
-}
-
-#[derive(Debug)]
-pub struct RouteA2AMsg(pub String, pub Vec<u8>);
-
-impl Message for RouteA2AMsg {
     type Result = Result<Vec<u8>, Error>;
 }
 
