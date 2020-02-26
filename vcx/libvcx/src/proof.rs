@@ -80,7 +80,7 @@ impl Proof {
         if settings::indy_mocks_enabled() { return Ok(()); }
 
         let proof: Value = serde_json::from_str(proof_json)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize libndy proof: {}", err)))?;
 
         let revealed_attrs = match proof["requested_proof"]["revealed_attrs"].as_object() {
             Some(revealed_attrs) => revealed_attrs,

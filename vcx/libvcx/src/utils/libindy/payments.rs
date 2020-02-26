@@ -842,7 +842,7 @@ pub mod tests {
         let result_from_paying = pay_a_payee(0, payment_address);
 
         assert!(result_from_paying.is_err());
-        assert_eq!(result_from_paying.err().unwrap().kind(), VcxErrorKind::LiibndyError(100)); // TODO: FIXME
+        assert_eq!(result_from_paying.err().unwrap().kind(), VcxErrorKind::LibndyError(100)); // TODO: FIXME
     }
 
     #[cfg(feature = "pool_tests")]

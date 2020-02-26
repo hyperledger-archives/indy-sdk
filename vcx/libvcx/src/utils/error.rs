@@ -36,7 +36,7 @@ pub static INVALID_ATTRIBUTES_STRUCTURE: Error = Error{code_num:1021, message: "
 pub static BIG_NUMBER_ERROR: Error = Error{code_num: 1022, message: "Could not encode string to a big integer."};
 pub static INVALID_PROOF: Error = Error{code_num: 1023, message: "Proof had invalid format"};
 pub static INVALID_GENESIS_TXN_PATH: Error = Error{code_num: 1024, message: "Must have valid genesis txn file path"};
-pub static CREATE_POOL_CONFIG_PARAMETERS: Error = Error{code_num: 1025, message: "Parameters for creating pool config are incorrect."};
+pub static POOL_LEDGER_CONNECT: Error = Error{code_num: 1025, message: "Connection to Pool Ledger."};
 pub static CREATE_POOL_CONFIG: Error = Error{code_num: 1026, message: "Formatting for Pool Config are incorrect."};
 pub static INVALID_PROOF_CREDENTIAL_DATA: Error = Error{code_num: 1027, message: "The Proof received does not have valid credentials listed."};
 pub static INDY_SUBMIT_REQUEST_ERR: Error = Error{code_num: 1028, message: "Call to indy submit request failed"};
@@ -144,7 +144,7 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_GENESIS_TXN_PATH);
         insert_c_message(&mut m, &CREATE_POOL_CONFIG);
         insert_c_message(&mut m, &INVALID_PROOF_CREDENTIAL_DATA);
-        insert_c_message(&mut m, &CREATE_POOL_CONFIG_PARAMETERS);
+        insert_c_message(&mut m, &POOL_LEDGER_CONNECT);
         insert_c_message(&mut m, &INDY_SUBMIT_REQUEST_ERR);
         insert_c_message(&mut m, &BUILD_CREDENTIAL_DEF_REQ_ERR);
         insert_c_message(&mut m, &NO_POOL_OPEN);
@@ -340,7 +340,7 @@ mod tests {
     }
     #[test]
     fn test_error_config() {
-        assert_eq!(error_message(&CREATE_POOL_CONFIG_PARAMETERS.code_num), CREATE_POOL_CONFIG_PARAMETERS.message);
+        assert_eq!(error_message(&POOL_LEDGER_CONNECT.code_num), POOL_LEDGER_CONNECT.message);
     }
     #[test]
     fn test_error_pool_config() {

@@ -130,6 +130,10 @@ pub enum VcxErrorKind {
     UnknownSchemaRejection,
 
     // Pool
+    #[fail(display = "Connection to Pool Ledger.")]
+    PoolLedgerConnect,
+    #[fail(display = "Invalid genesis transactions path.")]
+    InvalidGenesisTxnPath,
     #[fail(display = "Formatting for Pool Config are incorrect.")]
     CreatePoolConfig,
     #[fail(display = "Invalid response from ledger for paid transaction")]
@@ -203,10 +207,10 @@ pub enum VcxErrorKind {
 
     #[fail(display = "Common error {}", 0)]
     Common(u32),
-    #[fail(display = "Liibndy error {}", 0)]
-    LiibndyError(u32),
+    #[fail(display = "Libndy error {}", 0)]
+    LibndyError(u32),
     #[fail(display = "Unknown libindy error")]
-    UnknownLiibndyError,
+    UnknownLibndyError,
 }
 
 #[derive(Debug)]
@@ -341,6 +345,8 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::DuplicationWallet => error::WALLET_ALREADY_EXISTS.code_num,
             VcxErrorKind::WalletNotFound => error::WALLET_NOT_FOUND.code_num,
             VcxErrorKind::WalletRecordNotFound => error::WALLET_RECORD_NOT_FOUND.code_num,
+            VcxErrorKind::PoolLedgerConnect => error::POOL_LEDGER_CONNECT.code_num,
+            VcxErrorKind::InvalidGenesisTxnPath => error::INVALID_GENESIS_TXN_PATH.code_num,
             VcxErrorKind::CreatePoolConfig => error::CREATE_POOL_CONFIG.code_num,
             VcxErrorKind::DuplicationWalletRecord => error::DUPLICATE_WALLET_RECORD.code_num,
             VcxErrorKind::WalletAlreadyOpen => error::WALLET_ALREADY_OPEN.code_num,
@@ -368,10 +374,10 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::InvalidMessages => error::INVALID_MESSAGES.code_num,
             VcxErrorKind::MissingExportedWalletPath => error::MISSING_EXPORTED_WALLET_PATH.code_num,
             VcxErrorKind::MissingBackupKey => error::MISSING_BACKUP_KEY.code_num,
-            VcxErrorKind::UnknownLiibndyError => error::UNKNOWN_LIBINDY_ERROR.code_num,
+            VcxErrorKind::UnknownLibndyError => error::UNKNOWN_LIBINDY_ERROR.code_num,
             VcxErrorKind::ActionNotSupported => error::ACTION_NOT_SUPPORTED.code_num,
             VcxErrorKind::Common(num) => num,
-            VcxErrorKind::LiibndyError(num) => num,
+            VcxErrorKind::LibndyError(num) => num,
         }
     }
 }
@@ -398,7 +404,7 @@ pub trait VcxErrorExt {
 impl<E> VcxErrorExt for E where E: Fail
 {
     fn to_vcx<D>(self, kind: VcxErrorKind, msg: D) -> VcxError where D: fmt::Display + Send + Sync + 'static {
-        self.context(msg).context(kind).into()
+        self.context(format!("\n{}: {}", std::any::type_name::<E>(), msg)).context(kind).into()
     }
 }
 
