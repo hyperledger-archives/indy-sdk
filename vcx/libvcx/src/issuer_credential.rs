@@ -988,9 +988,7 @@ pub mod tests {
         let handle = _issuer_credential_create();
         assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
 
-        {
-            LibindyMock::set_next_result(error::TIMEOUT_LIBINDY_ERROR.code_num);
-        }
+        LibindyMock::set_next_result(error::TIMEOUT_LIBINDY_ERROR.code_num);
 
         let res = send_credential_offer(handle, connection_handle).unwrap_err();
         assert_eq!(res.kind(), VcxErrorKind::InvalidState);
@@ -1014,9 +1012,7 @@ pub mod tests {
 
         let connection_handle = build_test_connection();
 
-        {
-            LibindyMock::set_next_result(error::TIMEOUT_LIBINDY_ERROR.code_num);
-        }
+        LibindyMock::set_next_result(error::TIMEOUT_LIBINDY_ERROR.code_num);
 
         assert_eq!(credential.send_credential(connection_handle).unwrap_err().kind(), VcxErrorKind::Common(1038));
         assert_eq!(credential.msg_uid, "1234");

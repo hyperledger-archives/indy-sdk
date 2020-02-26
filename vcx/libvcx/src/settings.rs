@@ -21,13 +21,11 @@ pub static CONFIG_AGENCY_DID: &str = "agency_did";
 pub static CONFIG_AGENCY_VERKEY: &str = "agency_verkey";
 pub static CONFIG_REMOTE_TO_SDK_DID: &str = "remote_to_sdk_did";
 pub static CONFIG_REMOTE_TO_SDK_VERKEY: &str = "remote_to_sdk_verkey";
-pub static CONFIG_SDK_TO_REMOTE_DID: &str = "sdk_to_remote_did";
-// functionally not used
+pub static CONFIG_SDK_TO_REMOTE_DID: &str = "sdk_to_remote_did";// functionally not used
 pub static CONFIG_SDK_TO_REMOTE_VERKEY: &str = "sdk_to_remote_verkey";
 pub static CONFIG_SDK_TO_REMOTE_ROLE: &str = "sdk_to_remote_role";
 pub static CONFIG_INSTITUTION_DID: &str = "institution_did";
-pub static CONFIG_INSTITUTION_VERKEY: &str = "institution_verkey";
-// functionally not used
+pub static CONFIG_INSTITUTION_VERKEY: &str = "institution_verkey";// functionally not used
 pub static CONFIG_INSTITUTION_NAME: &str = "institution_name";
 pub static CONFIG_INSTITUTION_LOGO_URL: &str = "institution_logo_url";
 pub static CONFIG_WEBHOOK_URL: &str = "webhook_url";
@@ -51,8 +49,7 @@ pub static CONFIG_TXN_AUTHOR_AGREEMENT: &str = "author_agreement";
 pub static CONFIG_USE_LATEST_PROTOCOLS: &'static str = "use_latest_protocols";
 pub static CONFIG_POOL_CONFIG: &str = "pool_config";
 pub static CONFIG_DID_METHOD: &str = "did_method";
-pub static COMMUNICATION_METHOD: &str = "communication_method";
-// proprietary or aries
+pub static COMMUNICATION_METHOD: &str = "communication_method";// proprietary or aries
 pub static CONFIG_ACTORS: &str = "actors"; // inviter, invitee, issuer, holder, prover, verifier, sender, receiver
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;

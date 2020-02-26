@@ -780,7 +780,7 @@ pub extern fn vcx_wallet_export(command_handle: CommandHandle,
 
 
     spawn(move || {
-        trace!("vcx_wallet_export(command_handle: {}, path: {:?}, backup_key: ****)", command_handle, path);
+        trace!("vcx_wallet_export(command_handle: {}, path: {}, backup_key: ****)", command_handle, path);
         match export(get_wallet_handle(), &path, &backup_key) {
             Ok(()) => {
                 let return_code = error::SUCCESS.code_num;

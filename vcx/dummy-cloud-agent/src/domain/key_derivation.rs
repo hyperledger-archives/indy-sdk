@@ -51,6 +51,7 @@ impl KeyDerivationDirective {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rust_base58::base58::FromBase58;
 
     #[test]
     fn should_parse_string_as_raw_key_derivation_method() {
@@ -100,6 +101,7 @@ mod tests {
             .wait()
             .expect("Failed to build key derivation directive");
         assert_eq!(derivation.kdf, KeyDerivationFunction::Raw);
+        assert_eq!(derivation.key.from_base58().unwrap().len(), 32)
     }
 
     #[test]
