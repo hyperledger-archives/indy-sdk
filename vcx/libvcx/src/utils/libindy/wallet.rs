@@ -229,7 +229,7 @@ pub mod tests {
         settings::clear_config();
 
         // Open fails without Wallet Key Derivation set
-        assert_eq!(open_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::UnknownLiibndyError);
+        assert_eq!(open_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::UnknownLibndyError);
 
         ::settings::clear_config();
 
@@ -241,7 +241,7 @@ pub mod tests {
         ::settings::clear_config();
 
         // Delete fails
-        assert_eq!(delete_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::UnknownLiibndyError);
+        assert_eq!(delete_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::UnknownLibndyError);
 
         // Delete works
         settings::set_defaults();

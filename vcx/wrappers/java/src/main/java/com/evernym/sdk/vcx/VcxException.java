@@ -27,7 +27,7 @@ import com.evernym.sdk.vcx.utils.PostMsgFailureException;
 import com.evernym.sdk.vcx.vcx.AlreadyInitializedException;
 import com.evernym.sdk.vcx.vcx.BigNumberErrorException;
 import com.evernym.sdk.vcx.vcx.CreatePoolConfigException;
-import com.evernym.sdk.vcx.vcx.CreatePoolConfigParamsException;
+import com.evernym.sdk.vcx.vcx.PoolLedgerConnectException;
 import com.evernym.sdk.vcx.vcx.IndySubmitRequestErrorException;
 import com.evernym.sdk.vcx.vcx.InvalidAttributeStructureException;
 import com.evernym.sdk.vcx.vcx.InvalidDIDException;
@@ -209,8 +209,8 @@ public class VcxException extends Exception {
                 return new InvalidProofException();
             case INVALID_GENESIS_TXN_PATH:
                 return new InvalidGenesisTxnPathException();
-            case CREATE_POOL_CONFIG_PARAMETERS:
-                return new CreatePoolConfigParamsException();
+            case POOL_LEDGER_CONNECT:
+                return new PoolLedgerConnectException();
             case CREATE_POOL_CONFIG:
                 return new CreatePoolConfigException();
             case INVALID_PROOF_CREDENTIAL_DATA:

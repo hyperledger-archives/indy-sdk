@@ -37,7 +37,7 @@ class ErrorCode(IntEnum):
     BigNumberError = 1022,
     InvalidProof = 1023,
     InvalidGenesisTxnPath = 1024,
-    CreatePoolConfigParameters = 1025,
+    PoolLedgerConnect = 1025,
     CreatePoolConifg = 1026,
     InvalidProofCredentialData = 1027,
     IndySubmitRequestError = 1028,

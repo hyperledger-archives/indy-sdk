@@ -26,8 +26,9 @@ pub fn reset_pool_handle() { set_pool_handle(None); }
 
 pub fn set_protocol_version() -> VcxResult<()> {
     pool::set_protocol_version(settings::get_protocol_version())
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .wait()?;
+
+    Ok(())
 }
 
 pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> VcxResult<()> {
@@ -36,10 +37,16 @@ pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> VcxResult<()> {
     match pool::create_pool_ledger_config(pool_name, Some(&pool_config))
         .wait() {
         Ok(()) => Ok(()),
-        Err(x) => if x.error_code != ErrorCode::PoolLedgerConfigAlreadyExistsError {
-            Err(VcxError::from_msg(VcxErrorKind::UnknownLiibndyError, x))
-        } else {
-            Ok(())
+        Err(err) => {
+            match err.error_code.clone() {
+                ErrorCode::PoolLedgerConfigAlreadyExistsError => Ok(()),
+                ErrorCode::CommonIOError => {
+                    Err(err.to_vcx(VcxErrorKind::InvalidGenesisTxnPath, "Pool genesis file is invalid or does not exist"))
+                }
+                error_code => {
+                    Err(err.to_vcx(VcxErrorKind::LibndyError(error_code as u32), "Indy error occurred"))
+                }
+            }
         }
     }
 }
@@ -49,7 +56,29 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> VcxResult<u32>
 
     let handle = pool::open_pool_ledger(pool_name, config)
         .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .map_err(|err|
+            match err.error_code.clone() {
+                ErrorCode::PoolLedgerNotCreatedError => {
+                    err.to_vcx(VcxErrorKind::PoolLedgerConnect,
+                               format!("Pool \"{}\" does not exist.", pool_name))
+                }
+                ErrorCode::PoolLedgerTimeout => {
+                    err.to_vcx(VcxErrorKind::PoolLedgerConnect,
+                               format!("Can not connect to Pool \"{}\".", pool_name))
+                }
+                ErrorCode::PoolIncompatibleProtocolVersion => {
+                    let protocol_version = settings::get_protocol_version();
+                    err.to_vcx(VcxErrorKind::PoolLedgerConnect,
+                               format!("Pool \"{}\" is not compatible with Protocol Version \"{}\".", pool_name, protocol_version))
+                }
+                ErrorCode::CommonInvalidState => {
+                    err.to_vcx(VcxErrorKind::PoolLedgerConnect,
+                               format!("Geneses transactions are invalid."))
+                }
+                error_code => {
+                    err.to_vcx(VcxErrorKind::LibndyError(error_code as u32), "Indy error occurred")
+                }
+            })?;
 
     set_pool_handle(Some(handle));
     Ok(handle as u32)
@@ -68,14 +97,14 @@ pub fn init_pool() -> VcxResult<()> {
     trace!("opening pool {} with genesis_path: {}", pool_name, path);
 
     create_pool_ledger_config(&pool_name, &path)
-        .map_err(|err|{
-            warn!("Pool Config Creation Error: {}", err);
-            err
-        })?;
+        .map_err(|err| err.extend("Can not create Pool Ledger Config"))?;
 
     debug!("Pool Config Created Successfully");
     let pool_config: Option<String> = settings::get_config_value(settings::CONFIG_POOL_CONFIG).ok();
-    open_pool_ledger(&pool_name, pool_config.as_ref().map(String::as_str))?;
+
+    open_pool_ledger(&pool_name, pool_config.as_ref().map(String::as_str))
+        .map_err(|err| err.extend("Can not open Pool Ledger"))?;
+
     Ok(())
 }
 
@@ -84,8 +113,7 @@ pub fn close() -> VcxResult<()> {
 
     //TODO there was timeout here (before future-based Rust wrapper)
     pool::close_pool_ledger(handle)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     reset_pool_handle();
 
@@ -101,8 +129,9 @@ pub fn delete(pool_name: &str) -> VcxResult<()> {
     }
 
     pool::delete_pool_ledger(pool_name)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .wait()?;
+
+    Ok(())
 }
 
 #[cfg(test)]
