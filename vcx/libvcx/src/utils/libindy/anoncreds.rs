@@ -63,7 +63,7 @@ pub fn libindy_create_and_store_credential_def(issuer_did: &str,
 }
 
 pub fn libindy_issuer_create_credential_offer(cred_def_id: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         let rc = LibindyMock::get_result();
         if rc != 0 { return Err(VcxError::from(VcxErrorKind::InvalidState)); };
         return Ok(LIBINDY_CRED_OFFER.to_string());
@@ -86,7 +86,7 @@ pub fn libindy_issuer_create_credential(cred_offer_json: &str,
                                         cred_values_json: &str,
                                         rev_reg_id: Option<String>,
                                         tails_file: Option<String>) -> VcxResult<(String, Option<String>, Option<String>)> {
-    if settings::mock_indy_test_mode_enabled() { return Ok((::utils::constants::CREDENTIAL_JSON.to_owned(), None, None)); }
+    if settings::indy_mocks_enabled() { return Ok((::utils::constants::CREDENTIAL_JSON.to_owned(), None, None)); }
 
     let revocation = rev_reg_id.as_ref().map(String::as_str);
 
@@ -110,7 +110,7 @@ pub fn libindy_prover_create_proof(proof_req_json: &str,
                                    schemas_json: &str,
                                    credential_defs_json: &str,
                                    revoc_states_json: Option<&str>) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(::utils::constants::PROOF_JSON.to_owned()); }
+    if settings::indy_mocks_enabled() { return Ok(::utils::constants::PROOF_JSON.to_owned()); }
 
     let revoc_states_json = revoc_states_json.unwrap_or("{}");
     anoncreds::prover_create_proof(get_wallet_handle(),
@@ -201,7 +201,7 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> VcxResul
 pub fn libindy_prover_create_credential_req(prover_did: &str,
                                             credential_offer_json: &str,
                                             credential_def_json: &str) -> VcxResult<(String, String)> {
-    if settings::mock_indy_test_mode_enabled() { return Ok((::utils::constants::CREDENTIAL_REQ_STRING.to_owned(), String::new())); }
+    if settings::indy_mocks_enabled() { return Ok((::utils::constants::CREDENTIAL_REQ_STRING.to_owned(), String::new())); }
 
     let master_secret_name = settings::DEFAULT_LINK_SECRET_ALIAS;
     anoncreds::prover_create_credential_req(get_wallet_handle(),
@@ -214,7 +214,7 @@ pub fn libindy_prover_create_credential_req(prover_did: &str,
 }
 
 pub fn libindy_prover_create_revocation_state(rev_reg_def_json: &str, rev_reg_delta_json: &str, cred_rev_id: &str, tails_file: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(REV_STATE_JSON.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(REV_STATE_JSON.to_string()); }
 
     let blob_handle = blob_storage_open_reader(tails_file)?;
 
@@ -224,7 +224,7 @@ pub fn libindy_prover_create_revocation_state(rev_reg_def_json: &str, rev_reg_de
 }
 
 pub fn libindy_prover_update_revocation_state(rev_reg_def_json: &str, rev_state_json: &str, rev_reg_delta_json: &str, cred_rev_id: &str, tails_file: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(REV_STATE_JSON.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(REV_STATE_JSON.to_string()); }
 
     let blob_handle = blob_storage_open_reader(tails_file)?;
 
@@ -238,7 +238,7 @@ pub fn libindy_prover_store_credential(cred_id: Option<&str>,
                                        cred_json: &str,
                                        cred_def_json: &str,
                                        rev_reg_def_json: Option<&str>) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok("cred_id".to_string()); }
+    if settings::indy_mocks_enabled() { return Ok("cred_id".to_string()); }
 
     anoncreds::prover_store_credential(get_wallet_handle(),
                                        cred_id,
@@ -251,7 +251,7 @@ pub fn libindy_prover_store_credential(cred_id: Option<&str>,
 }
 
 pub fn libindy_prover_create_master_secret(master_secret_id: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(settings::DEFAULT_LINK_SECRET_ALIAS.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(settings::DEFAULT_LINK_SECRET_ALIAS.to_string()); }
 
     anoncreds::prover_create_master_secret(get_wallet_handle(),
                                            Some(master_secret_id))
@@ -281,7 +281,7 @@ pub fn libindy_issuer_revoke_credential(tails_file: &str, rev_reg_id: &str, cred
 
 pub fn libindy_build_revoc_reg_def_request(submitter_did: &str,
                                            rev_reg_def_json: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok("".to_string()); }
+    if settings::indy_mocks_enabled() { return Ok("".to_string()); }
 
     ledger::build_revoc_reg_def_request(submitter_did, rev_reg_def_json)
         .wait()
@@ -292,7 +292,7 @@ pub fn libindy_build_revoc_reg_entry_request(submitter_did: &str,
                                              rev_reg_id: &str,
                                              rev_def_type: &str,
                                              value: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok("".to_string()); }
+    if settings::indy_mocks_enabled() { return Ok("".to_string()); }
 
     ledger::build_revoc_reg_entry_request(submitter_did, rev_reg_id, rev_def_type, value)
         .wait()
@@ -345,7 +345,7 @@ pub fn libindy_parse_get_revoc_reg_delta_response(get_rev_reg_delta_response: &s
 }
 
 pub fn create_schema(name: &str, version: &str, data: &str) -> VcxResult<(String, String)> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         return Ok((SCHEMA_ID.to_string(), SCHEMA_JSON.to_string()));
     }
 
@@ -357,7 +357,7 @@ pub fn create_schema(name: &str, version: &str, data: &str) -> VcxResult<(String
 }
 
 pub fn build_schema_request(schema: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         return Ok(SCHEMA_TXN.to_string());
     }
 
@@ -371,7 +371,7 @@ pub fn build_schema_request(schema: &str) -> VcxResult<String> {
 }
 
 pub fn publish_schema(schema: &str) -> VcxResult<Option<PaymentTxn>> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
         let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
         return Ok(Some(PaymentTxn::from_parts(inputs, outputs, 1, false)));
@@ -387,7 +387,7 @@ pub fn publish_schema(schema: &str) -> VcxResult<Option<PaymentTxn>> {
 }
 
 pub fn get_schema_json(schema_id: &str) -> VcxResult<(String, String)> {
-    if settings::mock_indy_test_mode_enabled() { return Ok((SCHEMA_ID.to_string(), SCHEMA_JSON.to_string())); }
+    if settings::indy_mocks_enabled() { return Ok((SCHEMA_ID.to_string(), SCHEMA_JSON.to_string())); }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -401,7 +401,7 @@ pub fn generate_cred_def(issuer_did: &str,
                          tag: &str,
                          sig_type: Option<&str>,
                          support_revocation: Option<bool>) -> VcxResult<(String, String)> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string()));
     }
 
@@ -415,7 +415,7 @@ pub fn generate_cred_def(issuer_did: &str,
 }
 
 pub fn build_cred_def_request(issuer_did: &str, cred_def_json: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         return Ok(CRED_DEF_REQ.to_string());
     }
 
@@ -427,7 +427,7 @@ pub fn build_cred_def_request(issuer_did: &str, cred_def_json: &str) -> VcxResul
 }
 
 pub fn publish_cred_def(issuer_did: &str, cred_def_json: &str) -> VcxResult<Option<PaymentTxn>> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
         let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
         return Ok(Some(PaymentTxn::from_parts(inputs, outputs, 1, false)));
@@ -441,7 +441,7 @@ pub fn publish_cred_def(issuer_did: &str, cred_def_json: &str) -> VcxResult<Opti
 }
 
 pub fn get_cred_def_json(cred_def_id: &str) -> VcxResult<(String, String)> {
-    if settings::mock_indy_test_mode_enabled() { return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string())); }
+    if settings::indy_mocks_enabled() { return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string())); }
 
     let cred_def_json = libindy_get_cred_def(cred_def_id)?;
 
@@ -450,7 +450,7 @@ pub fn get_cred_def_json(cred_def_id: &str) -> VcxResult<(String, String)> {
 
 pub fn generate_rev_reg(issuer_did: &str, cred_def_id: &str, tails_file: &str, max_creds: u32)
                         -> VcxResult<(String, String, String)> {
-    if settings::mock_indy_test_mode_enabled() { return Ok((REV_REG_ID.to_string(), rev_def_json(), "".to_string())); }
+    if settings::indy_mocks_enabled() { return Ok((REV_REG_ID.to_string(), rev_def_json(), "".to_string())); }
 
     let (rev_reg_id, rev_reg_def_json, rev_reg_entry_json) =
         libindy_create_and_store_revoc_reg(issuer_did,
@@ -462,7 +462,7 @@ pub fn generate_rev_reg(issuer_did: &str, cred_def_id: &str, tails_file: &str, m
 }
 
 pub fn build_rev_reg_request(issuer_did: &str, rev_reg_def_json: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok("".to_string()); }
+    if settings::indy_mocks_enabled() { return Ok("".to_string()); }
 
     let rev_reg_def_req = libindy_build_revoc_reg_def_request(issuer_did, &rev_reg_def_json)?;
     let rev_reg_def_req = append_txn_author_agreement_to_request(&rev_reg_def_req)?;
@@ -470,7 +470,7 @@ pub fn build_rev_reg_request(issuer_did: &str, rev_reg_def_json: &str) -> VcxRes
 }
 
 pub fn publish_rev_reg_def(issuer_did: &str, rev_reg_def_json: &str) -> VcxResult<Option<PaymentTxn>> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(None); }
+    if settings::indy_mocks_enabled() { return Ok(None); }
 
     let rev_reg_def_req = build_rev_reg_request(issuer_did, &rev_reg_def_json)?;
     let (payment, _) = pay_for_txn(&rev_reg_def_req, CREATE_REV_REG_DEF_ACTION)?;
@@ -478,7 +478,7 @@ pub fn publish_rev_reg_def(issuer_did: &str, rev_reg_def_json: &str) -> VcxResul
 }
 
 pub fn get_rev_reg_def_json(rev_reg_id: &str) -> VcxResult<(String, String)> {
-    if settings::mock_indy_test_mode_enabled() { return Ok((REV_REG_ID.to_string(), rev_def_json())); }
+    if settings::indy_mocks_enabled() { return Ok((REV_REG_ID.to_string(), rev_def_json())); }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -502,7 +502,7 @@ pub fn publish_rev_reg_delta(issuer_did: &str, rev_reg_id: &str, rev_reg_entry_j
 
 pub fn get_rev_reg_delta_json(rev_reg_id: &str, from: Option<u64>, to: Option<u64>)
                               -> VcxResult<(String, String, u64)> {
-    if settings::mock_indy_test_mode_enabled() { return Ok((REV_REG_ID.to_string(), REV_REG_DELTA_JSON.to_string(), 1)); }
+    if settings::indy_mocks_enabled() { return Ok((REV_REG_ID.to_string(), REV_REG_DELTA_JSON.to_string(), 1)); }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
     let from: i64 = if let Some(_from) = from { _from as i64 } else { -1 };
@@ -514,7 +514,7 @@ pub fn get_rev_reg_delta_json(rev_reg_id: &str, from: Option<u64>, to: Option<u6
 }
 
 pub fn get_rev_reg(rev_reg_id: &str, timestamp: u64) -> VcxResult<(String, String, u64)> {
-    if settings::mock_indy_test_mode_enabled() { return Ok((REV_REG_ID.to_string(), REV_REG_JSON.to_string(), 1)); }
+    if settings::indy_mocks_enabled() { return Ok((REV_REG_ID.to_string(), REV_REG_JSON.to_string(), 1)); }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -524,7 +524,7 @@ pub fn get_rev_reg(rev_reg_id: &str, timestamp: u64) -> VcxResult<(String, Strin
 }
 
 pub fn revoke_credential(tails_file: &str, rev_reg_id: &str, cred_rev_id: &str) -> VcxResult<(Option<PaymentTxn>, String)> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
         let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
         return Ok((Some(PaymentTxn::from_parts(inputs, outputs, 1, false)), REV_REG_DELTA_JSON.to_string()));

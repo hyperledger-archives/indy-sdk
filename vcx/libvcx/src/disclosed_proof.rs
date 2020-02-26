@@ -270,7 +270,7 @@ impl DisclosedProof {
 
     fn retrieve_credentials(&self) -> VcxResult<String> {
         trace!("DisclosedProof::set_state >>>");
-        if settings::mock_indy_test_mode_enabled() { return Ok(CREDS_FROM_PROOF_REQ.to_string()); }
+        if settings::indy_mocks_enabled() { return Ok(CREDS_FROM_PROOF_REQ.to_string()); }
 
         let proof_req = self.proof_request
             .as_ref()
@@ -355,7 +355,7 @@ impl DisclosedProof {
         trace!("DisclosedProof::generate_proof >>> credentials: {}, self_attested_attrs: {}", secret!(&credentials), secret!(&self_attested_attrs));
 
         debug!("generating proof {}", self.source_id);
-        if settings::mock_indy_test_mode_enabled() { return Ok(error::SUCCESS.code_num); }
+        if settings::indy_mocks_enabled() { return Ok(error::SUCCESS.code_num); }
 
         let proof_req = self.proof_request.as_ref().ok_or(VcxError::from_msg(VcxErrorKind::CreateProof, "Cannot get proof request"))?;
 
@@ -395,7 +395,7 @@ impl DisclosedProof {
     }
 
     fn generate_proof_msg(&self) -> VcxResult<String> {
-        let proof = match settings::mock_indy_test_mode_enabled() {
+        let proof = match settings::indy_mocks_enabled() {
             false => {
                 let proof: &ProofMessage = self.proof.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
                 serde_json::to_string(&proof)
@@ -458,7 +458,7 @@ impl DisclosedProof {
     }
 
     fn generate_reject_proof_msg(&self) -> VcxResult<String> {
-        let msg = match settings::mock_indy_test_mode_enabled() {
+        let msg = match settings::indy_mocks_enabled() {
             false => {
                 let proof_reject = ProofMessage::new_reject();
                 serde_json::to_string(&proof_reject)

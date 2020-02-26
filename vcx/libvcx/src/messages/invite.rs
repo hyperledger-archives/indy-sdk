@@ -348,7 +348,7 @@ impl SendInviteBuilder {
     pub fn send_secure(&mut self) -> VcxResult<(InviteDetail, String)> {
         trace!("SendInvite::send >>>");
 
-        if settings::mock_agency_test_mode_enabled() {
+        if settings::agency_mocks_enabled() {
             match self.version {
                 settings::ProtocolTypes::V1 => AgencyMock::set_next_response(SEND_INVITE_RESPONSE.to_vec()),
                 settings::ProtocolTypes::V2 => AgencyMock::set_next_response(SEND_INVITE_V2_RESPONSE.to_vec()),
@@ -467,7 +467,7 @@ impl AcceptInviteBuilder {
     pub fn send_secure(&mut self) -> VcxResult<String> {
         trace!("AcceptInvite::send >>>");
 
-        if settings::mock_agency_test_mode_enabled() {
+        if settings::agency_mocks_enabled() {
             match self.version {
                 settings::ProtocolTypes::V1 => AgencyMock::set_next_response(ACCEPT_INVITE_RESPONSE.to_vec()),
                 settings::ProtocolTypes::V2 => AgencyMock::set_next_response(ACCEPT_INVITE_V2_RESPONSE.to_vec()),
@@ -583,7 +583,7 @@ impl RedirectConnectionBuilder {
     pub fn send_secure(&mut self) -> VcxResult<String> {
         trace!("RedirectConnection::send >>>");
 
-        if settings::mock_agency_test_mode_enabled() {
+        if settings::agency_mocks_enabled() {
             match self.version {
                 settings::ProtocolTypes::V1 => AgencyMock::set_next_response(ACCEPT_INVITE_RESPONSE.to_vec()),
                 settings::ProtocolTypes::V2 => AgencyMock::set_next_response(ACCEPT_INVITE_V2_RESPONSE.to_vec()),

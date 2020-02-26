@@ -820,10 +820,9 @@ pub mod tests {
 
         assert_eq!(get_credential_id(c_h).unwrap(), "");
 
-        {
-            AgencyMock::set_next_response(::utils::constants::CREDENTIAL_RESPONSE.to_vec());
-            AgencyMock::set_next_response(::utils::constants::UPDATE_CREDENTIAL_RESPONSE.to_vec());
-        }
+        AgencyMock::set_next_response(::utils::constants::CREDENTIAL_RESPONSE.to_vec());
+        AgencyMock::set_next_response(::utils::constants::UPDATE_CREDENTIAL_RESPONSE.to_vec());
+
         update_state(c_h, None).unwrap();
         assert_eq!(get_state(c_h).unwrap(), VcxStateType::VcxStateAccepted as u32);
 

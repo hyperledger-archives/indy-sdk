@@ -35,7 +35,7 @@ pub struct LibindyMock {
 
 impl LibindyMock {
     pub fn set_next_result(rc: u32) {
-        if settings::mock_indy_test_mode_enabled() {
+        if settings::indy_mocks_enabled() {
             LIBINDY_MOCK.lock().unwrap().results.push(rc);
         }
     }

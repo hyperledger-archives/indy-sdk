@@ -7,7 +7,7 @@ use utils::libindy::wallet::get_wallet_handle;
 use error::prelude::*;
 
 pub fn create_and_store_my_did(seed: Option<&str>, method_name: Option<&str>) -> VcxResult<(String, String)> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         return Ok((::utils::constants::DID.to_string(), ::utils::constants::VERKEY.to_string()));
     }
 
@@ -19,7 +19,7 @@ pub fn create_and_store_my_did(seed: Option<&str>, method_name: Option<&str>) ->
 }
 
 pub fn get_local_verkey(did: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         return Ok(::utils::constants::VERKEY.to_string());
     }
 

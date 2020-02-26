@@ -77,7 +77,7 @@ impl Proof {
 
 
     pub fn validate_proof_revealed_attributes(proof_json: &str) -> VcxResult<()> {
-        if settings::mock_indy_test_mode_enabled() { return Ok(()); }
+        if settings::indy_mocks_enabled() { return Ok(()); }
 
         let proof: Value = serde_json::from_str(proof_json)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
@@ -233,7 +233,7 @@ impl Proof {
     }
 
     pub fn validate_indy_proof(proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
-        if settings::mock_indy_test_mode_enabled() { return Ok(true); }
+        if settings::indy_mocks_enabled() { return Ok(true); }
 
         Proof::validate_proof_revealed_attributes(&proof_json)?;
 

@@ -131,7 +131,7 @@ impl GetMessagesBuilder {
 
         let response = httpclient::post_u8(&data)?;
 
-        if settings::mock_agency_test_mode_enabled() && response.len() == 0 {
+        if settings::agency_mocks_enabled() && response.len() == 0 {
             return Ok(Vec::new());
         }
 
@@ -157,7 +157,7 @@ impl GetMessagesBuilder {
 
         let response = httpclient::post_u8(&data)?;
 
-        if settings::mock_agency_test_mode_enabled() && response.len() == 0 {
+        if settings::agency_mocks_enabled() && response.len() == 0 {
             return Ok(Vec::new());
         }
 

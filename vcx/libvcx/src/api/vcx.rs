@@ -496,19 +496,23 @@ mod tests {
 
     fn _vcx_init_c_closure(path: &str) -> Result<(), u32> {
         let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(vcx_init(cb.command_handle,
-                            CString::new(path.to_string()).unwrap().into_raw(),
-                            Some(cb.get_callback())),
-                   error::SUCCESS.code_num);
+        let rc = vcx_init(cb.command_handle,
+                          CString::new(path.to_string()).unwrap().into_raw(),
+                          Some(cb.get_callback()));
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
         cb.receive(Some(Duration::from_secs(10)))
     }
 
     fn _vcx_init_with_config_c_closure(config: &str) -> Result<(), u32> {
         let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(vcx_init_with_config(cb.command_handle,
-                                        CString::new(config.to_string()).unwrap().into_raw(),
-                                        Some(cb.get_callback())),
-                   error::SUCCESS.code_num);
+        let rc = vcx_init_with_config(cb.command_handle,
+                                      CString::new(config.to_string()).unwrap().into_raw(),
+                                      Some(cb.get_callback()));
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
         cb.receive(Some(Duration::from_secs(10)))
     }
 
@@ -538,11 +542,8 @@ mod tests {
 
         let config = TempFile::create_with_data("test_init.json", &config);
 
-        let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(vcx_init(cb.command_handle,
-                            CString::new(config.path.clone()).unwrap().into_raw(),
-                            Some(cb.get_callback())),
-                   error::MISSING_PAYMENT_METHOD.code_num);
+        let rc = _vcx_init_c_closure(&config.path).unwrap_err();
+        assert_eq!(rc, error::MISSING_PAYMENT_METHOD.code_num);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -596,11 +597,8 @@ mod tests {
             "wallet_name": settings::DEFAULT_WALLET_NAME,
         }).to_string();
 
-        let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(vcx_init_with_config(cb.command_handle,
-                                        CString::new(content).unwrap().into_raw(),
-                                        Some(cb.get_callback())),
-                   error::MISSING_WALLET_KEY.code_num);
+        let rc = _vcx_init_with_config_c_closure(&content).unwrap_err();
+        assert_eq!(rc, error::MISSING_WALLET_KEY.code_num);
     }
 
     #[test]
@@ -635,11 +633,8 @@ mod tests {
         _vcx_init_with_config_c_closure("{}").unwrap();
 
         // Repeat call
-        let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(vcx_init_with_config(cb.command_handle,
-                                        CString::new("{}".to_string()).unwrap().into_raw(),
-                                        Some(cb.get_callback())),
-                   error::ALREADY_INITIALIZED.code_num);
+        let rc = _vcx_init_with_config_c_closure("{}").unwrap_err();
+        assert_eq!(rc, error::ALREADY_INITIALIZED.code_num);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -669,11 +664,8 @@ mod tests {
 
         let config = TempFile::create_with_data("test_init.json", &config());
 
-        let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(vcx_init(cb.command_handle,
-                            CString::new(config.path.clone()).unwrap().into_raw(),
-                            Some(cb.get_callback())),
-                   error::ALREADY_INITIALIZED.code_num);
+        let rc = _vcx_init_c_closure(&config.path).unwrap_err();
+        assert_eq!(rc, error::ALREADY_INITIALIZED.code_num);
     }
 
     #[test]
@@ -685,7 +677,7 @@ mod tests {
         wallet::delete_wallet(&wallet_name, None, None, None).unwrap();
 
         let import_config = json!({
-            settings::CONFIG_WALLET_NAME: "imported_wallet",
+            settings::CONFIG_WALLET_NAME: &wallet_name,
             settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
             settings::CONFIG_WALLET_KEY_DERIVATION: settings::DEFAULT_WALLET_KEY_DERIVATION,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
@@ -694,7 +686,7 @@ mod tests {
         import(&import_config).unwrap();
 
         let content = json!({
-            "wallet_name": "imported_wallet",
+            "wallet_name": &wallet_name,
             "wallet_key": settings::DEFAULT_WALLET_KEY,
             "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
         }).to_string();
@@ -762,11 +754,8 @@ mod tests {
     fn test_init_bad_path() {
         let _setup = SetupEmpty::init();
 
-        let cb = return_types_u32::Return_U32::new().unwrap();
-        assert_eq!(vcx_init(cb.command_handle,
-                            CString::new("").unwrap().into_raw(),
-                            Some(cb.get_callback())),
-                   error::INVALID_OPTION.code_num);
+        let rc = _vcx_init_c_closure("").unwrap_err();
+        assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 
     #[test]
@@ -1001,7 +990,7 @@ mod tests {
         // test that wallet and pool are operational
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
 
-        settings::set_defaults(); // TODO: FIXME
+        settings::set_defaults();
     }
 
     #[test]

@@ -1244,10 +1244,10 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let rc = vcx_connection_create(cb.command_handle,
+        let _rc = vcx_connection_create(cb.command_handle,
                                        CString::new("test_create").unwrap().into_raw(),
                                        Some(cb.get_callback()));
-        assert_eq!(rc, error::SUCCESS.code_num);
+
         assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
     }
 

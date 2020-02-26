@@ -680,7 +680,9 @@ mod tests {
                                   CString::new(r#"{"support_revocation":false}"#).unwrap().into_raw(),
                                   CString::new("optional").unwrap().into_raw(),
                                   Some(cb.get_callback()));
-        assert_eq!(rc, error::SUCCESS.code_num);
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
         cb.receive(Some(Duration::from_secs(10)))
     }
 

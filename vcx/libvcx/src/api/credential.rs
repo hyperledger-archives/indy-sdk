@@ -833,10 +833,14 @@ mod tests {
 
     fn _vcx_credential_create_with_offer_c_closure(offer: &str) -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_credential_create_with_offer(cb.command_handle,
-                                                    CString::new("test_create").unwrap().into_raw(),
-                                                    CString::new(offer).unwrap().into_raw(),
-                                                    Some(cb.get_callback())), error::SUCCESS.code_num);
+        let rc = vcx_credential_create_with_offer(cb.command_handle,
+                                                  CString::new("test_create").unwrap().into_raw(),
+                                                  CString::new(offer).unwrap().into_raw(),
+                                                  Some(cb.get_callback()));
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
+
         let handle = cb.receive(Some(Duration::from_secs(10)));
         handle
     }
@@ -975,7 +979,6 @@ mod tests {
         let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
 
         ::serde_json::from_str::<CredentialRequest>(&msg).unwrap();
-
     }
 
     #[test]
@@ -1015,6 +1018,9 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let handle = _vcx_credential_create_with_offer_c_closure(constants::CREDENTIAL_OFFER_JSON).unwrap();
+
+        assert_eq!(vcx_credential_release(handle + 1), error::INVALID_CREDENTIAL_HANDLE.code_num);
+
         assert_eq!(vcx_credential_release(handle), error::SUCCESS.code_num);
 
         assert_eq!(vcx_credential_release(handle), error::INVALID_CREDENTIAL_HANDLE.code_num);

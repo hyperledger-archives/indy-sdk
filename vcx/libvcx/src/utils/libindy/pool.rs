@@ -58,7 +58,7 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> VcxResult<u32>
 pub fn init_pool() -> VcxResult<()> {
     trace!("init_pool >>>");
 
-    if settings::mock_indy_test_mode_enabled() { return Ok(()); }
+    if settings::indy_mocks_enabled() { return Ok(()); }
 
     let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
         .unwrap_or(settings::DEFAULT_POOL_NAME.to_string());
@@ -95,7 +95,7 @@ pub fn close() -> VcxResult<()> {
 pub fn delete(pool_name: &str) -> VcxResult<()> {
     trace!("delete >>> pool_name: {}", pool_name);
 
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         set_pool_handle(None);
         return Ok(());
     }

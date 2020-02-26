@@ -17,7 +17,7 @@ pub struct AgencyMock {
 
 impl AgencyMock {
     pub fn set_next_response(body: Vec<u8>) {
-        if settings::mock_agency_test_mode_enabled() {
+        if settings::agency_mocks_enabled() {
             AGENCY_MOCK.lock().unwrap().responses.push(body);
         }
     }
@@ -34,7 +34,7 @@ pub fn post_u8(body_content: &Vec<u8>) -> VcxResult<Vec<u8>> {
 }
 
 pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
-    if settings::mock_agency_test_mode_enabled() {
+    if settings::agency_mocks_enabled() {
         return AgencyMock::get_response();
     }
 

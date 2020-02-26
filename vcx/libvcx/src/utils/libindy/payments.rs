@@ -88,7 +88,7 @@ pub fn build_test_address(address: &str) -> String {
 pub fn create_address(seed: Option<String>) -> VcxResult<String> {
     trace!("create_address >>> seed: {:?}", seed);
 
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         return Ok(build_test_address("J81AxU9hVHYFtJc"));
     }
 
@@ -105,7 +105,7 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
 pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
     trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
 
-    if settings::mock_indy_test_mode_enabled() {return Ok(Vec::from(message).to_owned()); }
+    if settings::indy_mocks_enabled() {return Ok(Vec::from(message).to_owned()); }
 
     payments::sign_with_address(get_wallet_handle(), address, message).wait().map_err(map_rust_indy_sdk_error)
 }
@@ -113,13 +113,13 @@ pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
 pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> VcxResult<bool> {
     trace!("sign_with_address >>> address: {:?}, message: {:?}", address, message);
 
-    if settings::mock_indy_test_mode_enabled() { return Ok(true); }
+    if settings::indy_mocks_enabled() { return Ok(true); }
 
     payments::verify_with_address(address, message, signature).wait().map_err(map_rust_indy_sdk_error)
 }
 
 pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         let utxos = json!(
             [
                 {
@@ -181,7 +181,7 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
 }
 
 pub fn list_addresses() -> VcxResult<Vec<String>> {
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         let addresses = json!([
                 build_test_address("9UFgyjuJxi1i1HD"),
                 build_test_address("zR3GN9lfbCVtHjp")
@@ -234,7 +234,7 @@ pub fn get_wallet_token_info() -> VcxResult<WalletInfo> {
 pub fn get_ledger_fees() -> VcxResult<String> {
     trace!("get_ledger_fees >>>");
 
-    if settings::mock_indy_test_mode_enabled() { return Ok(DEFAULT_FEES.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(DEFAULT_FEES.to_string()); }
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -251,7 +251,7 @@ pub fn get_ledger_fees() -> VcxResult<String> {
 
 pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, Option<&str>)) -> VcxResult<(Option<PaymentTxn>, String)> {
     debug!("pay_for_txn(req: {}, txn_action: {:?})", req, txn_action);
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         let inputs = vec!["pay:null:9UFgyjuJxi1i1HD".to_string()];
         let outputs = serde_json::from_str::<Vec<::utils::libindy::payments::Output>>(r#"[{"amount":1,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#).unwrap();
         return Ok((Some(PaymentTxn::from_parts(inputs, outputs, 1, false)), SUBMIT_SCHEMA_RESPONSE.to_string()));
@@ -317,7 +317,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
 
     let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    if settings::mock_indy_test_mode_enabled() {
+    if settings::indy_mocks_enabled() {
         let inputs = vec![build_test_address("9UFgyjuJxi1i1HD")];
 
         let outputs = vec![Output {
@@ -556,7 +556,7 @@ pub fn add_new_did(role: Option<&str>) -> (String, String) {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::devsetup::{SetupMocks, SetupDefaults, SetupLibraryWalletPool, SetupLibraryWalletPoolZeroFees};
+    use utils::devsetup::*;
 
     static ZERO_FEES: &str = r#"{"0":0, "1":0, "101":0, "10001":0, "102":0, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 

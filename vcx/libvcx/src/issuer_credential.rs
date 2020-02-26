@@ -214,7 +214,7 @@ impl IssuerCredential {
     fn generate_credential_msg(&mut self, my_pw_did: &str) -> VcxResult<String> {
         let attrs_with_encodings = self.create_attributes_encodings()?;
 
-        let data = if settings::mock_indy_test_mode_enabled() {
+        let data = if settings::indy_mocks_enabled() {
             CRED_MSG.to_string()
         } else {
             let cred = self.generate_credential(&attrs_with_encodings, my_pw_did)?;
@@ -1053,10 +1053,9 @@ pub mod tests {
 
         let mut credential = create_pending_issuer_credential();
 
-        {
-            AgencyMock::set_next_response(CREDENTIAL_REQ_RESPONSE.to_vec());
-            AgencyMock::set_next_response(UPDATE_CREDENTIAL_RESPONSE.to_vec());
-        }
+        AgencyMock::set_next_response(CREDENTIAL_REQ_RESPONSE.to_vec());
+        AgencyMock::set_next_response(UPDATE_CREDENTIAL_RESPONSE.to_vec());
+
         credential.update_state(None).unwrap();
         assert_eq!(credential.get_state(), VcxStateType::VcxStateRequestReceived as u32);
     }
@@ -1148,7 +1147,7 @@ pub mod tests {
                                                                 "CredentialNameHere".to_string(),
                                                                 r#"["name","gpa"]"#.to_string(),
                                                                 1).unwrap();
-        assert!(get_encoded_attributes(issuer_credential_handle).is_err());
+        get_encoded_attributes(issuer_credential_handle).unwrap_err();
 
         let issuer_credential_handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                                                 "IssuerCredentialName".to_string(),

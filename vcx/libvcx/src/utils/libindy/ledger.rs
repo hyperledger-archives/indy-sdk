@@ -24,7 +24,7 @@ pub fn libindy_sign_request(did: &str, request: &str) -> VcxResult<String> {
 }
 
 pub fn libindy_sign_and_submit_request(issuer_did: &str, request_json: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(r#"{"rc":"success"}"#.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(r#"{"rc":"success"}"#.to_string()); }
 
     let pool_handle = get_pool_handle()?;
     let wallet_handle = get_wallet_handle();
@@ -56,7 +56,7 @@ pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
 }
 
 pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(::utils::constants::DEFAULT_AUTHOR_AGREEMENT.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(::utils::constants::DEFAULT_AUTHOR_AGREEMENT.to_string()); }
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -327,7 +327,7 @@ pub mod auth_rule {
     pub fn get_action_auth_rule(action: (&str, &str, &str, Option<&str>, Option<&str>)) -> VcxResult<String> {
         let (txn_type, action, field, old_value, new_value) = action;
 
-        if settings::mock_indy_test_mode_enabled() { return Ok(json!({"result":{"data":[{"new_value":"0","constraint":{"need_to_be_owner":false,"sig_count":1,"metadata":{"fees":txn_type},"role":"0","constraint_id":"ROLE"},"field":"role","auth_type":"1","auth_action":"ADD"}],"identifier":"LibindyDid111111111111","auth_action":"ADD","new_value":"0","reqId":15616,"auth_type":"1","type":"121","field":"role"},"op":"REPLY"}).to_string()); }
+        if settings::indy_mocks_enabled() { return Ok(json!({"result":{"data":[{"new_value":"0","constraint":{"need_to_be_owner":false,"sig_count":1,"metadata":{"fees":txn_type},"role":"0","constraint_id":"ROLE"},"field":"role","auth_type":"1","auth_action":"ADD"}],"identifier":"LibindyDid111111111111","auth_action":"ADD","new_value":"0","reqId":15616,"auth_type":"1","type":"121","field":"role"},"op":"REPLY"}).to_string()); }
 
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -352,7 +352,7 @@ pub fn get_nym(did: &str) -> VcxResult<String> {
 }
 
 pub fn get_role(did: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(settings::DEFAULT_ROLE.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(settings::DEFAULT_ROLE.to_string()); }
 
     let get_nym_resp = get_nym(&did)?;
     let get_nym_resp: serde_json::Value = serde_json::from_str(&get_nym_resp)
@@ -388,7 +388,7 @@ pub fn libindy_get_cred_def(cred_def_id: &str) -> VcxResult<String> {
 }
 
 pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
-    if settings::mock_indy_test_mode_enabled() { return Ok(::utils::constants::REQUEST_WITH_ENDORSER.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(::utils::constants::REQUEST_WITH_ENDORSER.to_string()); }
 
     let _did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -401,7 +401,7 @@ pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
 
 pub fn endorse_transaction(transaction_json: &str) -> VcxResult<()> {
     //TODO Potentially VCX should handle case when endorser would like to pay fee
-    if settings::mock_indy_test_mode_enabled() { return Ok(()); }
+    if settings::indy_mocks_enabled() { return Ok(()); }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 

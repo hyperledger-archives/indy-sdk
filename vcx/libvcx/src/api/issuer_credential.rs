@@ -872,14 +872,17 @@ mod tests {
 
     fn _vcx_issuer_create_credential_c_closure() -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_issuer_create_credential(cb.command_handle,
-                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                ::credential_def::tests::create_cred_def_fake(),
-                                                CString::new(DEFAULT_DID).unwrap().into_raw(),
-                                                CString::new(DEFAULT_ATTR).unwrap().into_raw(),
-                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                CString::new("1").unwrap().into_raw(),
-                                                Some(cb.get_callback())), error::SUCCESS.code_num);
+        let rc = vcx_issuer_create_credential(cb.command_handle,
+                                     CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
+                                     ::credential_def::tests::create_cred_def_fake(),
+                                     CString::new(DEFAULT_DID).unwrap().into_raw(),
+                                     CString::new(DEFAULT_ATTR).unwrap().into_raw(),
+                                     CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
+                                     CString::new("1").unwrap().into_raw(),
+                                     Some(cb.get_callback()));
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
         cb.receive(Some(Duration::from_secs(10)))
     }
 
@@ -905,7 +908,6 @@ mod tests {
                                                 CString::new("1").unwrap().into_raw(),
                                                 Some(cb.get_callback())),
                    error::INVALID_OPTION.code_num);
-
         let _ = cb.receive(Some(Duration::from_secs(10))).is_err();
     }
 
@@ -1089,6 +1091,7 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let handle = _vcx_issuer_create_credential_c_closure().unwrap();
+        assert_eq!(vcx_issuer_credential_release(handle + 1), error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num);
 
         assert_eq!(vcx_issuer_credential_release(handle), error::SUCCESS.code_num);
 

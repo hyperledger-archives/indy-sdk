@@ -952,10 +952,13 @@ mod tests {
 
     fn _vcx_disclosed_proof_create_with_request_c_closure(proof_request: &str) -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
-                                                           CString::new("test_create").unwrap().into_raw(),
-                                                           CString::new(proof_request).unwrap().into_raw(),
-                                                           Some(cb.get_callback())), error::SUCCESS.code_num);
+        let rc = vcx_disclosed_proof_create_with_request(cb.command_handle,
+                                                CString::new("test_create").unwrap().into_raw(),
+                                                CString::new(proof_request).unwrap().into_raw(),
+                                                Some(cb.get_callback()));
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
         cb.receive(Some(Duration::from_secs(10)))
     }
 
@@ -981,9 +984,7 @@ mod tests {
 
         let cxn = ::connection::tests::build_test_connection();
 
-        {
-            AgencyMock::set_next_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
-        }
+        AgencyMock::set_next_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
 
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_msgid(cb.command_handle,
@@ -1000,6 +1001,7 @@ mod tests {
         let _setup = SetupMocks::init();
 
         let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        assert_eq!(vcx_disclosed_proof_release(handle + 1), error::INVALID_DISCLOSED_PROOF_HANDLE.code_num);
         assert_eq!(vcx_disclosed_proof_release(handle), error::SUCCESS.code_num);
         assert_eq!(vcx_disclosed_proof_release(handle), error::INVALID_DISCLOSED_PROOF_HANDLE.code_num);
     }
@@ -1090,9 +1092,7 @@ mod tests {
 
         let cxn = ::connection::tests::build_test_connection();
 
-        {
-            AgencyMock::set_next_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
-        }
+        AgencyMock::set_next_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_requests(cb.command_handle, cxn, Some(cb.get_callback())), error::SUCCESS.code_num as u32);
