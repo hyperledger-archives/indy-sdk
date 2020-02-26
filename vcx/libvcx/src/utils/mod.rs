@@ -46,8 +46,10 @@ pub mod threadpool;
 pub mod uuid;
 pub mod author_agreement;
 pub mod qualifier;
-pub mod plugins;
 pub mod file;
+
+#[cfg(test)]
+pub mod plugins;
 
 #[macro_use]
 pub mod logger;
