@@ -117,6 +117,8 @@ pub struct MyAgentInfo {
     pub agency_vk: String,
 }
 
+pub fn get_agent_attr(v: &Option<String>) -> VcxResult<String> { get_or_err(v, Some(VcxErrorKind::NoAgentInformation)) }
+
 impl MyAgentInfo {
     pub fn connection_handle(&self) -> VcxResult<u32> {
         self.connection_handle
@@ -151,6 +153,8 @@ impl MyAgentInfo {
         self.my_pw_vk = Some(get_pw_verkey(handle)?);
         self.their_pw_did = Some(get_their_pw_did(handle)?);
         self.their_pw_vk = Some(get_their_pw_verkey(handle)?);
+        self.pw_agent_did = Some(get_agent_did(handle)?);
+        self.pw_agent_vk = Some(get_agent_verkey(handle)?);
         self.version = get_version(handle)?;
         self.connection_handle = Some(handle);
         self.log();
@@ -1337,6 +1341,7 @@ impl From<(Connection, ActorDidExchangeState)> for ConnectionV3 {
 
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::did_doc::DidDoc;
+use utils::option_util::get_or_err;
 
 pub fn get_messages(handle: u32) -> VcxResult<HashMap<String, A2AMessage>> {
     CONNECTION_MAP.get_mut(handle, |connection| {

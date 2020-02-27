@@ -25,7 +25,7 @@ use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
 use v3::handlers::proof_presentation::prover::prover::Prover;
 
 use std::convert::TryInto;
-use connection::{get_agent_info, MyAgentInfo};
+use connection::{get_agent_info, MyAgentInfo, get_agent_attr};
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProofs>  = Default::default();
@@ -49,8 +49,13 @@ impl Default for DisclosedProof {
             proof_request: None,
             proof: None,
             link_secret_alias: settings::DEFAULT_LINK_SECRET_ALIAS.to_string(),
+            my_did: None,
+            my_vk: None,
+            their_did: None,
+            their_vk: None,
+            agent_did: None,
+            agent_vk: None,
             thread: Some(Thread::new()),
-            agent_info: None
         }
     }
 }
@@ -62,8 +67,13 @@ pub struct DisclosedProof {
     proof_request: Option<ProofRequestMessage>,
     proof: Option<ProofMessage>,
     link_secret_alias: String,
-    thread: Option<Thread>,
-    agent_info: Option<MyAgentInfo>
+    my_did: Option<String>,
+    my_vk: Option<String>,
+    their_did: Option<String>,
+    their_vk: Option<String>,
+    agent_did: Option<String>,
+    agent_vk: Option<String>,
+    thread: Option<Thread>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -406,10 +416,7 @@ impl DisclosedProof {
             .as_ref()
             .ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
 
-        let their_did = agent_info.their_pw_did
-            .as_ref()
-            .map(String::as_str)
-            .unwrap_or_default();
+        let their_did = get_agent_attr(&agent_info.their_pw_did)?;
 
         self.thread
             .as_mut()
@@ -450,7 +457,7 @@ impl DisclosedProof {
             .send_secure()
             .map_err(|err| err.extend("Could not send proof"))?;
 
-        self.agent_info = Some(agent_info);
+        apply_agent_info(self, &agent_info);
         self.state = VcxStateType::VcxStateAccepted;
         Ok(error::SUCCESS.code_num)
     }
@@ -524,6 +531,16 @@ fn handle_err(err: VcxError) -> VcxError {
     } else {
         err
     }
+}
+
+fn apply_agent_info(proof: &mut DisclosedProof, agent_info: &MyAgentInfo) -> DisclosedProof {
+    proof.my_did = agent_info.my_pw_did.clone();
+    proof.my_vk = agent_info.my_pw_vk.clone();
+    proof.their_did = agent_info.their_pw_did.clone();
+    proof.their_vk = agent_info.their_pw_vk.clone();
+    proof.agent_did = agent_info.pw_agent_did.clone();
+    proof.agent_vk = agent_info.pw_agent_vk.clone();
+    proof.to_owned()
 }
 
 pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {

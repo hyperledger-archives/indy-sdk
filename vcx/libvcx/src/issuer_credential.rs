@@ -8,6 +8,7 @@ use settings;
 use messages::{RemoteMessageType, MessageStatusCode, GeneralMessage};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
+use messages::get_message::get_ref_msg;
 use connection;
 use credential_request::CredentialRequest;
 use utils::error;
@@ -20,7 +21,7 @@ use object_cache::ObjectCache;
 use error::prelude::*;
 
 use v3::handlers::issuance::Issuer;
-use connection::{get_agent_info, MyAgentInfo};
+use connection::{get_agent_info, MyAgentInfo, get_agent_attr};
 
 lazy_static! {
     static ref ISSUER_CREDENTIAL_MAP: ObjectCache < IssuerCredentials > = Default::default();
@@ -62,7 +63,16 @@ pub struct IssuerCredential {
     rev_cred_payment_txn: Option<PaymentTxn>,
     price: u64,
     payment_address: Option<String>,
-    agent_info: MyAgentInfo,
+    #[serde(rename = "issued_did")]
+    my_did: Option<String>,
+    #[serde(rename = "issued_vk")]
+    my_vk: Option<String>,
+    #[serde(rename = "remote_did")]
+    their_did: Option<String>,
+    #[serde(rename = "remote_vk")]
+    their_vk: Option<String>,
+    agent_did: Option<String>,
+    agent_vk: Option<String>,
     thread: Option<Thread>
 }
 
@@ -171,7 +181,7 @@ impl IssuerCredential {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidConnectionHandle, format!("invalid connection handle ({})", connection_handle)));
         }
 
-        self.agent_info = get_agent_info()?.pw_info(connection_handle)?;
+        let agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
         let (payload, title) = self.generate_credential_offer_msg()?;
 
@@ -179,23 +189,24 @@ impl IssuerCredential {
 
         let response =
             messages::send_message()
-                .to(&self.agent_info.my_pw_did()?)?
-                .to_vk(&self.agent_info.my_pw_vk()?)?
+                .to(&agent_info.my_pw_did()?)?
+                .to_vk(&agent_info.my_pw_vk()?)?
                 .msg_type(&RemoteMessageType::CredOffer)?
-                .edge_agent_payload(&self.agent_info.my_pw_vk()?,
-                                    &self.agent_info.their_pw_vk()?,
+                .edge_agent_payload(&agent_info.my_pw_vk()?,
+                                    &agent_info.their_pw_vk()?,
                                     &payload,
                                     PayloadKinds::CredOffer,
                                     self.thread.clone()
                 )?
-                .agent_did(&self.agent_info.pw_agent_did()?)?
-                .agent_vk(&self.agent_info.pw_agent_vk()?)?
+                .agent_did(&agent_info.pw_agent_did()?)?
+                .agent_vk(&agent_info.pw_agent_vk()?)?
                 .set_title(&title)?
                 .set_detail(&title)?
                 .status_code(&MessageStatusCode::Accepted)?
                 .send_secure()
                 .map_err(|err| err.extend("could not send credential offer"))?;
 
+        apply_agent_info(self, &agent_info);
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
 
@@ -233,9 +244,9 @@ impl IssuerCredential {
 
         self.verify_payment()?;
 
-        self.agent_info = get_agent_info()?.pw_info(connection_handle)?;
+        let agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
-        let data = self.generate_credential_msg(&self.agent_info.my_pw_did()?)?;
+        let data = self.generate_credential_msg(&agent_info.my_pw_did()?)?;
 
         debug!("credential data: {}", secret!(&data));
 
@@ -247,22 +258,23 @@ impl IssuerCredential {
         self.thread.as_mut().map(|thread| thread.sender_order += 1);
 
         let response = messages::send_message()
-            .to(&self.agent_info.my_pw_did()?)?
-            .to_vk(&self.agent_info.my_pw_vk()?)?
+            .to(&agent_info.my_pw_did()?)?
+            .to_vk(&agent_info.my_pw_vk()?)?
             .msg_type(&RemoteMessageType::Cred)?
             .status_code(&MessageStatusCode::Accepted)?
-            .edge_agent_payload(&self.agent_info.my_pw_vk()?,
-                                &self.agent_info.their_pw_vk()?,
+            .edge_agent_payload(&agent_info.my_pw_vk()?,
+                                &agent_info.their_pw_vk()?,
                                 &data,
                                 PayloadKinds::Cred,
                                 self.thread.clone()
             )?
-            .agent_did(&self.agent_info.pw_agent_did()?)?
-            .agent_vk(&self.agent_info.pw_agent_vk()?)?
+            .agent_did(&agent_info.pw_agent_did()?)?
+            .agent_vk(&agent_info.pw_agent_vk()?)?
             .ref_msg_id(Some(cred_req_msg_id.to_string()))?
             .send_secure()
             .map_err(|err| err.extend("could not send credential offer"))?;
 
+        apply_agent_info(self, &agent_info);
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateAccepted;
 
@@ -284,25 +296,25 @@ impl IssuerCredential {
 
         if message.is_none() && (self.state != VcxStateType::VcxStateOfferSent
             || self.msg_uid.is_empty()
-            || self.agent_info.my_pw_did.is_none()) { return Ok(self.get_state()); }
+            || self.my_did.is_none()) { return Ok(self.get_state()); }
 
         let (payload, offer_uid) = match message {
             None => {
                 // Check cloud agent for pending messages
-                let (msg_id, message) = messages::get_message::get_ref_msg(&self.msg_uid,
-                                                                           &self.agent_info.my_pw_did()?,
-                                                                           &self.agent_info.my_pw_vk()?,
-                                                                           &self.agent_info.pw_agent_did()?,
-                                                                           &self.agent_info.pw_agent_vk()?)?;
+                let (msg_id, message) = get_ref_msg(&self.msg_uid,
+                                                    &get_agent_attr(&self.my_did)?,
+                                                    &get_agent_attr(&self.my_vk)?,
+                                                    &get_agent_attr(&self.agent_did)?,
+                                                    &get_agent_attr(&self.agent_vk)?)?;
 
-                let (payload, thread) = Payloads::decrypt(&self.agent_info.my_pw_vk()?, &message)
+                let (payload, thread) = Payloads::decrypt(&get_agent_attr(&self.my_vk)?, &message)
                     .map_err(|err| VcxError::from_msg(
                         VcxErrorKind::Common(err.into()),
                         "Cannot decrypt CredentialOffer payload")
                     )?;
 
                 if let Some(_) = thread {
-                    let remote_did = self.agent_info.their_pw_did()?;
+                    let remote_did = get_agent_attr(&self.their_did)?;
                     self.thread.as_mut().map(|thread| thread.increment_receiver(&remote_did));
                 }
 
@@ -360,7 +372,7 @@ impl IssuerCredential {
 
         self.cred_rev_id = cred_revoc_id.clone();
 
-        let their_pw_did = self.agent_info.their_pw_did.clone().unwrap_or_default();
+        let their_pw_did = get_agent_attr(&self.their_did)?;
 
         let cred_def_id =
             if !Qualifier::is_fully_qualified(&their_pw_did) {
@@ -386,8 +398,8 @@ impl IssuerCredential {
         let attr_map = convert_to_map(&self.credential_attributes)?;
         let libindy_offer = anoncreds::libindy_issuer_create_credential_offer(&self.cred_def_id)?;
 
-        let my_did = self.agent_info.my_pw_did.clone().unwrap_or_default();
-        let their_did = self.agent_info.their_pw_did.clone().unwrap_or_default();
+        let my_did = self.my_did.clone().unwrap_or_default();
+        let their_did = self.their_did.clone().unwrap_or_default();
 
         debug!("generate_credential_offer remote_did {}", their_did);
 
@@ -486,6 +498,15 @@ impl IssuerCredential {
     }
 }
 
+fn apply_agent_info(cred: &mut IssuerCredential, agent_info: &MyAgentInfo) -> IssuerCredential {
+    cred.my_did = agent_info.my_pw_did.clone();
+    cred.my_vk = agent_info.my_pw_vk.clone();
+    cred.their_did = agent_info.their_pw_did.clone();
+    cred.their_vk = agent_info.their_pw_vk.clone();
+    cred.agent_did = agent_info.pw_agent_did.clone();
+    cred.agent_vk = agent_info.pw_agent_vk.clone();
+    cred.to_owned()
+}
 /**
     Input: supporting two formats:
     eg:
@@ -623,11 +644,17 @@ pub fn issuer_credential_create(cred_def_handle: u32,
         tails_file,
         price,
         payment_address: None,
-        agent_info: get_agent_info()?,
         cred_def_id,
         cred_def_handle,
         thread: Some(Thread::new()),
+        my_did: None,
+        my_vk: None,
+        their_did: None,
+        their_vk: None,
+        agent_did: None,
+        agent_vk: None,
     };
+    new_issuer_credential = apply_agent_info(&mut new_issuer_credential, &get_agent_info()?);
 
     new_issuer_credential.validate_credential_offer()?;
 
@@ -838,13 +865,12 @@ pub mod tests {
     pub fn create_standard_issuer_credential(connection_handle: Option<u32>) -> IssuerCredential {
         let credential_req: CredentialRequest = serde_json::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
-        let issuer_credential = IssuerCredential {
+        let mut issuer_credential = IssuerCredential {
             source_id: "standard_credential".to_owned(),
             schema_seq_no: 32,
             msg_uid: "1234".to_owned(),
             credential_attributes: CREDENTIAL_DATA.to_owned(),
             issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
-            agent_info: default_agent_info(connection_handle),
             state: VcxStateType::VcxStateInitialized,
             credential_name: DEFAULT_CREDENTIAL_NAME.to_owned(),
             credential_request: Some(credential_req.to_owned()),
@@ -861,21 +887,26 @@ pub mod tests {
             cred_def_id: CRED_DEF_ID.to_string(),
             cred_def_handle: 0,
             thread: Some(Thread::new()),
+            my_did: None,
+            my_vk: None,
+            their_did: None,
+            their_vk: None,
+            agent_did: None,
+            agent_vk: None,
         };
-        issuer_credential
+        apply_agent_info(&mut issuer_credential, &default_agent_info(connection_handle))
     }
 
     pub fn create_pending_issuer_credential() -> IssuerCredential {
         let credential_req: CredentialRequest = serde_json::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
-        let connection_handle = ::connection::tests::build_test_connection();
-        let credential: IssuerCredential = IssuerCredential {
+        let connection_handle = Some(::connection::tests::build_test_connection());
+        let mut credential: IssuerCredential = IssuerCredential {
             source_id: "test_has_pending_credential_request".to_owned(),
             schema_seq_no: 32,
             msg_uid: "1234".to_owned(),
             credential_attributes: "nothing".to_owned(),
             issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
-            agent_info: default_agent_info(Some(connection_handle)),
             state: VcxStateType::VcxStateOfferSent,
             credential_request: Some(credential_req.to_owned()),
             credential_offer: Some(credential_offer.to_owned()),
@@ -892,8 +923,15 @@ pub mod tests {
             price: 0,
             payment_address: None,
             thread: Some(Thread::new()),
+            my_did: None,
+            my_vk: None,
+            their_did: None,
+            their_vk: None,
+            agent_did: None,
+            agent_vk: None,
         };
-        credential
+
+        apply_agent_info(&mut credential, &default_agent_info(connection_handle))
     }
 
     pub fn create_full_issuer_credential() -> (IssuerCredential, ::credential::Credential) {
@@ -925,14 +963,21 @@ pub mod tests {
             tails_file,
             price: 1,
             payment_address: None,
-            agent_info: get_agent_info().unwrap(),
             cred_def_id,
             cred_def_handle,
             thread: Some(Thread::new()),
+            my_did: None,
+            my_vk: None,
+            their_did: None,
+            their_vk: None,
+            agent_did: None,
+            agent_vk: None,
         };
 
+        issuer_credential = apply_agent_info(&mut issuer_credential, &get_agent_info().unwrap());
+
         let payment = issuer_credential.generate_payment_info().unwrap();
-        let their_did = &issuer_credential.agent_info.clone().their_pw_did.unwrap_or_default();
+        let their_did = &issuer_credential.their_did.clone().unwrap_or_default();
         let credential_offer = issuer_credential.generate_credential_offer().unwrap();
         let cred_json = json!(credential_offer);
         let mut payload = Vec::new();

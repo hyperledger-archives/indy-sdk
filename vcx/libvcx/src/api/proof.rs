@@ -701,7 +701,7 @@ mod tests {
         let dp = ::disclosed_proof::create_proof("test", &request).unwrap();
         let p = ::disclosed_proof::generate_proof_msg(dp).unwrap();
         ::proof::update_state(ph, Some(p)).unwrap();
-        assert!(::proof::get_state(ph).unwrap() == VcxStateType::VcxStateAccepted as u32);
+        assert_eq!(::proof::get_state(ph).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]

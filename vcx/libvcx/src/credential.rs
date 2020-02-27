@@ -11,6 +11,7 @@ use messages::{GeneralMessage, RemoteMessageType};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
 use messages::get_message;
+use messages::get_message::get_ref_msg;
 use messages::get_message::MessagePayload;
 use connection;
 use settings;
@@ -22,7 +23,7 @@ use error::prelude::*;
 use std::convert::TryInto;
 
 use v3::handlers::issuance::Holder;
-use connection::{get_agent_info, MyAgentInfo};
+use connection::{get_agent_info, MyAgentInfo, get_agent_attr};
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credentials>  = Default::default();
@@ -45,13 +46,18 @@ impl Default for Credential {
             state: VcxStateType::VcxStateNone,
             credential_name: None,
             credential_request: None,
-            my_agent_info: None,
             credential_offer: None,
             msg_uid: None,
             cred_id: None,
             credential: None,
             payment_info: None,
             payment_txn: None,
+            my_did: None,
+            my_vk: None,
+            their_did: None,
+            their_vk: None,
+            agent_did: None,
+            agent_vk: None,
             thread: Some(Thread::new()),
         }
     }
@@ -66,7 +72,12 @@ pub struct Credential {
     credential_offer: Option<CredentialOffer>,
     msg_uid: Option<String>,
     // the following 6 are pulled from the connection object
-    my_agent_info: Option<MyAgentInfo>,
+    agent_did: Option<String>,
+    agent_vk: Option<String>,
+    my_did: Option<String>,
+    my_vk: Option<String>,
+    their_did: Option<String>,
+    their_vk: Option<String>,
     credential: Option<String>,
     cred_id: Option<String>,
     payment_info: Option<PaymentInfo>,
@@ -164,7 +175,7 @@ impl Credential {
                 .send_secure()
                 .map_err(|err| err.extend(format!("{} could not send proof", self.source_id)))?;
 
-        self.my_agent_info = Some(my_agent.clone());
+        apply_agent_info(self, &my_agent);
         self.msg_uid = Some(response.get_msg_uid()?);
         self.state = VcxStateType::VcxStateOfferSent;
 
@@ -174,27 +185,19 @@ impl Credential {
     fn _check_msg(&mut self, message: Option<String>) -> VcxResult<()> {
         let credential = match message {
             None => {
-                let my_agent = self.my_agent_info
-                    .as_ref()
-                    .ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-
                 let msg_uid = self.msg_uid
                     .as_ref()
                     .ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
 
-                let (_, payload) = get_message::get_ref_msg(msg_uid,
-                                                            &my_agent.my_pw_did()?,
-                                                            &my_agent.my_pw_vk()?,
-                                                            &my_agent.pw_agent_did()?,
-                                                            &my_agent.pw_agent_vk()?)?;
-
-                let (credential, thread) = Payloads::decrypt(&my_agent.my_pw_vk()?, &payload)?;
+                let (_, payload) = get_ref_msg(msg_uid,
+                                               &get_agent_attr(&self.my_did)?,
+                                               &get_agent_attr(&self.my_vk)?,
+                                               &get_agent_attr(&self.agent_did)?,
+                                               &get_agent_attr(&self.agent_vk)?)?;
+                let (credential, thread) = Payloads::decrypt(&get_agent_attr(&self.my_vk)?, &payload)?;
 
                 if let Some(_) = thread {
-                    let their_did = my_agent.their_pw_did
-                        .as_ref()
-                        .map(String::as_str)
-                        .unwrap_or_default();
+                    let their_did = get_agent_attr(&self.their_vk)?;
 
                     self.thread
                         .as_mut()
@@ -359,6 +362,16 @@ fn handle_err(err: VcxError) -> VcxError {
     } else {
         err
     }
+}
+
+fn apply_agent_info(cred: &mut Credential, agent_info: &MyAgentInfo) -> Credential {
+    cred.my_did = agent_info.my_pw_did.clone();
+    cred.my_vk = agent_info.my_pw_vk.clone();
+    cred.their_did = agent_info.their_pw_did.clone();
+    cred.their_vk = agent_info.their_pw_vk.clone();
+    cred.agent_did = agent_info.pw_agent_did.clone();
+    cred.agent_vk = agent_info.pw_agent_vk.clone();
+    cred.to_owned()
 }
 
 pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u32> {
@@ -736,8 +749,7 @@ pub mod tests {
         credential.credential_offer = Some(offer);
         credential.payment_info = payment_info;
         credential.state = VcxStateType::VcxStateRequestReceived;
-        credential.my_agent_info = Some(get_agent_info().unwrap());
-        credential
+        apply_agent_info(&mut credential, &get_agent_info().unwrap())
     }
 
     fn create_credential_with_price(price: u64) -> Credential {
