@@ -505,6 +505,8 @@ impl DisclosedProof {
             .send_secure()
             .map_err(|err| err.extend("Could not send proof reject"))?;
 
+        apply_agent_info(self, &agent_info);
+
         self.state = VcxStateType::VcxStateRejected;
         return Ok(error::SUCCESS.code_num);
     }
@@ -533,14 +535,13 @@ fn handle_err(err: VcxError) -> VcxError {
     }
 }
 
-fn apply_agent_info(proof: &mut DisclosedProof, agent_info: &MyAgentInfo) -> DisclosedProof {
+fn apply_agent_info(proof: &mut DisclosedProof, agent_info: &MyAgentInfo) {
     proof.my_did = agent_info.my_pw_did.clone();
     proof.my_vk = agent_info.my_pw_vk.clone();
     proof.their_did = agent_info.their_pw_did.clone();
     proof.their_vk = agent_info.their_pw_vk.clone();
     proof.agent_did = agent_info.pw_agent_did.clone();
     proof.agent_vk = agent_info.pw_agent_vk.clone();
-    proof.to_owned()
 }
 
 pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {

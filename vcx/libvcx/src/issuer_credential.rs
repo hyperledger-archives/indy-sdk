@@ -498,14 +498,13 @@ impl IssuerCredential {
     }
 }
 
-fn apply_agent_info(cred: &mut IssuerCredential, agent_info: &MyAgentInfo) -> IssuerCredential {
+fn apply_agent_info(cred: &mut IssuerCredential, agent_info: &MyAgentInfo) {
     cred.my_did = agent_info.my_pw_did.clone();
     cred.my_vk = agent_info.my_pw_vk.clone();
     cred.their_did = agent_info.their_pw_did.clone();
     cred.their_vk = agent_info.their_pw_vk.clone();
     cred.agent_did = agent_info.pw_agent_did.clone();
     cred.agent_vk = agent_info.pw_agent_vk.clone();
-    cred.to_owned()
 }
 /**
     Input: supporting two formats:
@@ -654,7 +653,7 @@ pub fn issuer_credential_create(cred_def_handle: u32,
         agent_did: None,
         agent_vk: None,
     };
-    new_issuer_credential = apply_agent_info(&mut new_issuer_credential, &get_agent_info()?);
+    apply_agent_info(&mut new_issuer_credential, &get_agent_info()?);
 
     new_issuer_credential.validate_credential_offer()?;
 
@@ -894,7 +893,8 @@ pub mod tests {
             agent_did: None,
             agent_vk: None,
         };
-        apply_agent_info(&mut issuer_credential, &default_agent_info(connection_handle))
+        apply_agent_info(&mut issuer_credential, &default_agent_info(connection_handle));
+        issuer_credential
     }
 
     pub fn create_pending_issuer_credential() -> IssuerCredential {
@@ -931,7 +931,8 @@ pub mod tests {
             agent_vk: None,
         };
 
-        apply_agent_info(&mut credential, &default_agent_info(connection_handle))
+        apply_agent_info(&mut credential, &default_agent_info(connection_handle));
+        credential
     }
 
     pub fn create_full_issuer_credential() -> (IssuerCredential, ::credential::Credential) {
@@ -974,7 +975,7 @@ pub mod tests {
             agent_vk: None,
         };
 
-        issuer_credential = apply_agent_info(&mut issuer_credential, &get_agent_info().unwrap());
+        apply_agent_info(&mut issuer_credential, &get_agent_info().unwrap());
 
         let payment = issuer_credential.generate_payment_info().unwrap();
         let their_did = &issuer_credential.their_did.clone().unwrap_or_default();

@@ -475,14 +475,13 @@ pub fn create_proof(source_id: String,
         .or(Err(VcxError::from(VcxErrorKind::CreateProof)))
 }
 
-fn apply_agent_info(proof: &mut Proof, agent_info: &MyAgentInfo) -> Proof {
+fn apply_agent_info(proof: &mut Proof, agent_info: &MyAgentInfo) {
     proof.my_did = agent_info.my_pw_did.clone();
     proof.my_vk = agent_info.my_pw_vk.clone();
     proof.their_did = agent_info.their_pw_did.clone();
     proof.their_vk = agent_info.their_pw_vk.clone();
     proof.agent_did = agent_info.pw_agent_did.clone();
     proof.agent_vk = agent_info.pw_agent_vk.clone();
-    proof.to_owned()
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
@@ -810,7 +809,7 @@ pub mod tests {
         init!("true");
 
         let connection_h = Some(build_test_connection());
-        let mut p = Proof {
+        let mut proof = Proof {
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),
             ref_msg_id: String::new(),
@@ -832,9 +831,8 @@ pub mod tests {
             revocation_interval: RevocationInterval { from: None, to: None },
             thread: Some(Thread::new()),
         };
-        let mut proof = Box::new(
-            apply_agent_info(&mut p, &default_agent_info(connection_h))
-        );
+
+        apply_agent_info(&mut proof, &default_agent_info(connection_h));
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
         httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
@@ -1017,7 +1015,7 @@ pub mod tests {
         let proof_msg: ProofMessage = serde_json::from_str(PROOF_LIBINDY).unwrap();
         let mut proof_req_msg = ProofRequestMessage::create();
         proof_req_msg.proof_request_data = serde_json::from_str(PROOF_REQUEST).unwrap();
-        let mut proof = apply_agent_info(&mut Proof {
+        let mut proof = Proof {
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),
             ref_msg_id: String::new(),
@@ -1038,7 +1036,9 @@ pub mod tests {
             proof_request: Some(proof_req_msg),
             revocation_interval: RevocationInterval { from: None, to: None },
             thread: Some(Thread::new()),
-        }, &default_agent_info(None));
+        };
+        apply_agent_info(&mut proof,&default_agent_info(None));
+
         let rc = proof.proof_validation();
         assert!(rc.is_ok());
         assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
