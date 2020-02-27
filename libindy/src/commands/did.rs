@@ -489,7 +489,7 @@ impl DidCommandExecutor {
         self.crypto_service.validate_key(&verkey)?;
 
         if !did.is_abbreviatable() {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidState, "You can abbreviate fully-qualified did only with `sov` method"));
+            return Ok(verkey);
         }
 
         let did = &did.to_unqualified().0.from_base58()?;
