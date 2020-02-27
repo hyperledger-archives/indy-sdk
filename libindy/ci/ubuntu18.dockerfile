@@ -40,6 +40,8 @@ RUN apt-get install -y nodejs
 
 RUN apt-get install -y wget
 
+RUN apt remove -y libssl1.0.0
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
