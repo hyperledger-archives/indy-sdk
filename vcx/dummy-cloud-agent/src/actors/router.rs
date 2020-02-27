@@ -12,6 +12,16 @@ use crate::domain::a2connection::A2ConnMessage;
 use crate::domain::admin_message::ResAdminQuery;
 use crate::utils::futures::*;
 
+/// Router stores DID and Verkeys and handle all Forward messages. More info on Aries FWD messages:
+/// https://github.com/hyperledger/aries-rfcs/tree/master/concepts/0094-cross-domain-messaging
+/// When agency (its Forward Agent) receives Forward message, it's passed to Router instance to
+/// take care of it. Router is aware of DIDs and Verkeys for Forward Agent, every
+/// Forward Agent Connection, every Agent and every Agent Connection, as each of those actors
+/// has its own DID and Verkey which can be used to address them a message.
+///
+/// So when a Forward message arrives to Router, its destination. If the destination is associated
+/// with an existing entity whin the agency (some Actix actor), it's forwarded to him to handle.
+/// If the destination is unknown, an error is returned.
 pub struct Router {
     routes: HashMap<String, Recipient<HandleA2AMsg>>,
     pairwise_routes: HashMap<String, Recipient<HandleA2ConnMsg>>,
