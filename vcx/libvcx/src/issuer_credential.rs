@@ -12,10 +12,10 @@ use connection;
 use credential_request::CredentialRequest;
 use utils::error;
 use utils::libindy::{payments, anoncreds};
-use utils::constants::{CRED_MSG};
+use utils::constants::CRED_MSG;
 use utils::openssl::encode;
 use utils::libindy::payments::PaymentTxn;
-use utils::qualifier::Qualifier;
+use utils::qualifier;
 use object_cache::ObjectCache;
 use error::prelude::*;
 
@@ -71,7 +71,7 @@ pub struct IssuerCredential {
     remote_did: String,
     //their_pw_did for this relationship
     remote_vk: String,
-    thread: Option<Thread>
+    thread: Option<Thread>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -214,7 +214,7 @@ impl IssuerCredential {
     fn generate_credential_msg(&mut self, my_pw_did: &str) -> VcxResult<String> {
         let attrs_with_encodings = self.create_attributes_encodings()?;
 
-        let data = if settings::test_indy_mode_enabled() {
+        let data = if settings::indy_mocks_enabled() {
             CRED_MSG.to_string()
         } else {
             let cred = self.generate_credential(&attrs_with_encodings, my_pw_did)?;
@@ -355,7 +355,7 @@ impl IssuerCredential {
         self.cred_rev_id = cred_revoc_id.clone();
 
         let cred_def_id =
-            if !Qualifier::is_fully_qualified(&self.remote_did) {
+            if !qualifier::is_fully_qualified(&self.remote_did) {
                 anoncreds::libindy_to_unqualified(&self.cred_def_id)?
             } else {
                 self.cred_def_id.clone()
@@ -381,7 +381,7 @@ impl IssuerCredential {
 
         debug!("generate_credential_offer remote_did {:?}", self.remote_did);
         let (libindy_offer, cred_def_id) =
-            if !Qualifier::is_fully_qualified(&self.remote_did) {
+            if !qualifier::is_fully_qualified(&self.remote_did) {
                 (anoncreds::libindy_to_unqualified(&libindy_offer)?,
                  anoncreds::libindy_to_unqualified(&self.cred_def_id)?)
             } else {
@@ -584,7 +584,7 @@ pub fn issuer_credential_create(cred_def_handle: u32,
     // Initiate connection of new format -- redirect to v3 folder
     if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
         let issuer = v3::handlers::issuance::Issuer::create(cred_def_handle, &credential_data, &source_id)?;
-        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer))
+        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer));
     }
 
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
@@ -784,14 +784,17 @@ pub mod tests {
     use connection::tests::build_test_connection;
     use credential_request::CredentialRequest;
     #[allow(unused_imports)]
-    use utils::{constants:: *,
-                libindy::{ set_libindy_rc,
-        anoncreds::{ libindy_create_and_store_credential_def,
-        libindy_issuer_create_credential_offer,
-        libindy_prover_create_credential_req },
-        wallet::get_wallet_handle, wallet},
+    use utils::{constants::*,
+                libindy::{LibindyMock,
+                          anoncreds::{libindy_create_and_store_credential_def,
+                                      libindy_issuer_create_credential_offer,
+                                      libindy_prover_create_credential_req},
+                          wallet::get_wallet_handle, wallet},
                 get_temp_dir_path,
     };
+    use utils::devsetup::*;
+    use utils::httpclient::AgencyMock;
+    use credential_def::tests::create_cred_def_fake;
 
     static DEFAULT_CREDENTIAL_NAME: &str = "Credential";
     static DEFAULT_CREDENTIAL_ID: &str = "defaultCredentialId";
@@ -803,14 +806,6 @@ pub mod tests {
         "city":["SLC"],
         "address1":["101 Tela Lane"]
         }"#;
-
-    pub fn util_put_credential_def_in_issuer_wallet(_schema_seq_num: u32, _wallet_handle: i32) {
-        let issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let tag = "test_tag";
-        let config = "{support_revocation: false}";
-
-        libindy_create_and_store_credential_def(&issuer_did, SCHEMAS_JSON, tag, None, config).unwrap();
-    }
 
     pub fn create_standard_issuer_credential() -> IssuerCredential {
         let credential_req: CredentialRequest = serde_json::from_str(CREDENTIAL_REQ_STRING).unwrap();
@@ -937,72 +932,66 @@ pub mod tests {
         (issuer_credential, credential)
     }
 
+    fn _issuer_credential_create() -> u32 {
+        issuer_credential_create(create_cred_def_fake(),
+                                 "1".to_string(),
+                                 "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                 "credential_name".to_string(),
+                                 "{\"attr\":\"value\"}".to_owned(),
+                                 1).unwrap()
+    }
+
     #[test]
     fn test_issuer_credential_create_succeeds() {
-        init!("true");
-        match issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
-                                       "1".to_string(),
-                                       "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-                                       "credential_name".to_string(),
-                                       "{\"attr\":\"value\"}".to_owned(),
-                                       1) {
-            Ok(x) => assert!(x > 0),
-            Err(_) => assert_eq!(0, 1), //fail if we get here
-        }
+        let _setup = SetupMocks::init();
+
+        let handle = _issuer_credential_create();
+        assert!(handle > 0);
     }
 
     #[test]
     fn test_to_string_succeeds() {
-        init!("true");
-        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
-                                              "1".to_string(),
-                                              "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-                                              "credential_name".to_string(),
-                                              "{\"attr\":\"value\"}".to_owned(),
-                                              1).unwrap();
+        let _setup = SetupMocks::init();
+
+        let handle = _issuer_credential_create();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
     }
 
     #[test]
     fn test_send_credential_offer() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let connection_handle = build_test_connection();
 
-        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
-                                              "1".to_string(),
-                                              "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-                                              "credential_name".to_string(),
-                                              "{\"attr\":\"value\"}".to_owned(),
-                                              1).unwrap();
+        let handle = _issuer_credential_create();
 
         assert_eq!(send_credential_offer(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
         assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateOfferSent as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "ntc2ytb");
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_cred_offer() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let _issuer = create_full_issuer_credential().0.generate_credential_offer(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap()).unwrap();
     }
 
     #[test]
     fn test_retry_send_credential_offer() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let connection_handle = build_test_connection();
 
-        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
-                                              "1".to_string(),
-                                              "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-                                              "credential_name".to_string(),
-                                              "{\"attr\":\"value\"}".to_owned(),
-                                              1).unwrap();
+        let handle = _issuer_credential_create();
+        assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
 
-        set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
-        assert!(send_credential_offer(handle, connection_handle).is_err());
+        LibindyMock::set_next_result(error::TIMEOUT_LIBINDY_ERROR.code_num);
+
+        let res = send_credential_offer(handle, connection_handle).unwrap_err();
+        assert_eq!(res.kind(), VcxErrorKind::InvalidState);
         assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "");
 
@@ -1014,7 +1003,8 @@ pub mod tests {
 
     #[test]
     fn test_credential_can_be_resent_after_failure() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "QTrbV4raAcND4DWWzBmdsh");
 
         let mut credential = create_standard_issuer_credential();
@@ -1022,10 +1012,12 @@ pub mod tests {
 
         let connection_handle = build_test_connection();
 
-        set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
+        LibindyMock::set_next_result(error::TIMEOUT_LIBINDY_ERROR.code_num);
+
         assert_eq!(credential.send_credential(connection_handle).unwrap_err().kind(), VcxErrorKind::Common(1038));
         assert_eq!(credential.msg_uid, "1234");
         assert_eq!(credential.state, VcxStateType::VcxStateRequestReceived);
+
         // Retry sending the credential, use the mocked http. Show that you can retry sending the credential
         credential.send_credential(connection_handle).unwrap();
         assert_eq!(credential.msg_uid, "ntc2ytb");
@@ -1034,30 +1026,31 @@ pub mod tests {
 
     #[test]
     fn test_from_string_succeeds() {
-        init!("true");
-        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
-                                              "1".to_string(),
-                                              "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-                                              "credential_name".to_string(),
-                                              "{\"attr\":\"value\"}".to_owned(),
-                                              1, ).unwrap();
+        let _setup = SetupMocks::init();
+
+        let handle = _issuer_credential_create();
+
         let string = to_string(handle).unwrap();
+
         let value: serde_json::Value = serde_json::from_str(&string).unwrap();
         assert_eq!(value["version"], "1.0");
-        assert!(!string.is_empty());
-        assert!(release(handle).is_ok());
+
+        release(handle).unwrap();
+
         let new_handle = from_string(&string).unwrap();
+
         let new_string = to_string(new_handle).unwrap();
         assert_eq!(new_string, string);
     }
 
     #[test]
     fn test_update_state_with_pending_credential_request() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let mut credential = create_pending_issuer_credential();
 
-        ::utils::httpclient::set_next_u8_response(CREDENTIAL_REQ_RESPONSE.to_vec());
-        ::utils::httpclient::set_next_u8_response(UPDATE_CREDENTIAL_RESPONSE.to_vec());
+        AgencyMock::set_next_response(CREDENTIAL_REQ_RESPONSE.to_vec());
+        AgencyMock::set_next_response(UPDATE_CREDENTIAL_RESPONSE.to_vec());
 
         credential.update_state(None).unwrap();
         assert_eq!(credential.get_state(), VcxStateType::VcxStateRequestReceived as u32);
@@ -1065,64 +1058,47 @@ pub mod tests {
 
     #[test]
     fn test_update_state_with_message() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let mut credential = create_pending_issuer_credential();
+
         credential.update_state(Some(CREDENTIAL_REQ_RESPONSE_STR.to_string())).unwrap();
         assert_eq!(credential.get_state(), VcxStateType::VcxStateRequestReceived as u32);
     }
 
     #[test]
     fn test_update_state_with_bad_message() {
-        init!("true");
-        let mut credential = create_pending_issuer_credential();
-        let rc = credential.update_state(Some(INVITE_ACCEPTED_RESPONSE.to_string()));
-        assert_eq!(credential.get_state(), VcxStateType::VcxStateOfferSent as u32);
-        assert!(rc.is_err());
-    }
+        let _setup = SetupMocks::init();
 
-    #[test]
-    fn test_issuer_credential_changes_state_after_being_validated() {
-        init!("true");
-        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
-                                              "1".to_string(),
-                                              "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-                                              "credential_name".to_string(),
-                                              "{\"att\":\"value\"}".to_owned(),
-                                              1).unwrap();
-        let string = to_string(handle).unwrap();
-        fn get_state_from_string(s: String) -> u32 {
-            let json: serde_json::Value = serde_json::from_str(&s).unwrap();
-            if json["data"]["state"].is_number() {
-                return json["data"]["state"].as_u64().unwrap() as u32;
-            }
-            0
-        }
-        assert_eq!(get_state_from_string(string), 1);
+        let mut credential = create_pending_issuer_credential();
+
+        let err = credential.update_state(Some(INVITE_ACCEPTED_RESPONSE.to_string())).unwrap_err();
+        assert_eq!(err.kind(), VcxErrorKind::InvalidJson);
+
+        assert_eq!(credential.get_state(), VcxStateType::VcxStateOfferSent as u32);
     }
 
     #[test]
     fn basic_add_attribute_encoding() {
+        let _setup = SetupDefaults::init();
+
         // FIXME Make this a real test and add additional test for create_attributes_encodings
         let issuer_credential = create_standard_issuer_credential();
         issuer_credential.create_attributes_encodings().unwrap();
 
         let mut issuer_credential = create_standard_issuer_credential();
-        match issuer_credential.credential_attributes.pop() {
-            Some(brace) => assert_eq!(brace, '}'),
-            None => error!("Malformed credential attributes in the issuer credential test"),
-        }
-        match issuer_credential.create_attributes_encodings() {
-            Ok(_) => {
-                error!("basic_add_attribute_encoding test should raise error.");
-                assert_ne!(1, 1);
-            }
-            Err(e) => assert_eq!(e.kind(), VcxErrorKind::InvalidJson)
-        }
+        assert_eq!(issuer_credential.credential_attributes, CREDENTIAL_DATA);
+
+        issuer_credential.credential_attributes = String::from("attr");
+
+        let res = issuer_credential.create_attributes_encodings().unwrap_err();
+        assert_eq!(res.kind(), VcxErrorKind::InvalidJson);
     }
 
     #[test]
     fn test_that_test_mode_enabled_bypasses_libindy_create_credential() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
 
@@ -1134,12 +1110,13 @@ pub mod tests {
 
     #[test]
     fn test_release_all() {
-        init!("true");
-        let h1 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(), "1".to_string(), "8XFh8yBzrpJQmNyZzgoTqB".to_owned(), "credential_name".to_string(), "{\"attr\":\"value\"}".to_owned(), 1).unwrap();
-        let h2 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(), "1".to_string(), "8XFh8yBzrpJQmNyZzgoTqB".to_owned(), "credential_name".to_string(), "{\"attr\":\"value\"}".to_owned(), 1).unwrap();
-        let h3 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(), "1".to_string(), "8XFh8yBzrpJQmNyZzgoTqB".to_owned(), "credential_name".to_string(), "{\"attr\":\"value\"}".to_owned(), 1).unwrap();
-        let h4 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(), "1".to_string(), "8XFh8yBzrpJQmNyZzgoTqB".to_owned(), "credential_name".to_string(), "{\"attr\":\"value\"}".to_owned(), 1).unwrap();
-        let h5 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(), "1".to_string(), "8XFh8yBzrpJQmNyZzgoTqB".to_owned(), "credential_name".to_string(), "{\"attr\":\"value\"}".to_owned(), 1).unwrap();
+        let _setup = SetupMocks::init();
+
+        let h1 = _issuer_credential_create();
+        let h2 = _issuer_credential_create();
+        let h3 = _issuer_credential_create();
+        let h4 = _issuer_credential_create();
+        let h5 = _issuer_credential_create();
         release_all();
         assert_eq!(release(h1).unwrap_err().kind(), VcxErrorKind::InvalidIssuerCredentialHandle);
         assert_eq!(release(h2).unwrap_err().kind(), VcxErrorKind::InvalidIssuerCredentialHandle);
@@ -1150,21 +1127,24 @@ pub mod tests {
 
     #[test]
     fn test_errors() {
-        init!("false");
-        let invalid_handle = 478620;
-        assert_eq!(to_string(invalid_handle).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
-        assert_eq!(release(invalid_handle).unwrap_err().kind(), VcxErrorKind::InvalidIssuerCredentialHandle);
+        let _setup = SetupLibraryWallet::init();
+
+        assert_eq!(to_string(0).unwrap_err().kind(), VcxErrorKind::InvalidHandle);
+        assert_eq!(release(0).unwrap_err().kind(), VcxErrorKind::InvalidIssuerCredentialHandle);
     }
 
     #[test]
     fn test_encoding() {
+        let _setup = SetupMocks::init();
+
         let issuer_credential_handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                                                 "IssuerCredentialName".to_string(),
                                                                 "000000000000000000000000Issuer02".to_string(),
                                                                 "CredentialNameHere".to_string(),
                                                                 r#"["name","gpa"]"#.to_string(),
                                                                 1).unwrap();
-        assert!(self::get_encoded_attributes(issuer_credential_handle).is_err());
+        get_encoded_attributes(issuer_credential_handle).unwrap_err();
+
         let issuer_credential_handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                                                 "IssuerCredentialName".to_string(),
                                                                 "000000000000000000000000Issuer02".to_string(),
@@ -1176,18 +1156,9 @@ pub mod tests {
     }
 
     #[test]
-    fn test_payment_information() {
-        let payment_info = PaymentInfo {
-            payment_addr: "OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j".to_string(),
-            payment_required: "one-time".to_string(),
-            price: 1000,
-        };
-        let _ = serde_json::to_string(&payment_info).unwrap();
-    }
-
-    #[test]
     fn test_verify_payment() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let mut credential = create_standard_issuer_credential();
 
         // Success
@@ -1206,7 +1177,8 @@ pub mod tests {
 
     #[test]
     fn test_send_credential_with_payments() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
         credential.price = 3;
@@ -1229,10 +1201,11 @@ pub mod tests {
 
     #[test]
     fn test_revoke_credential() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let mut credential = create_standard_issuer_credential();
 
-        credential.tails_file = Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string());
+        credential.tails_file = Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string());
         credential.cred_rev_id = None;
         credential.rev_reg_id = None;
         assert_eq!(credential.revoke_cred().unwrap_err().kind(), VcxErrorKind::InvalidRevocationDetails);
@@ -1245,7 +1218,7 @@ pub mod tests {
         credential.rev_reg_id = Some(REV_REG_ID.to_string());
         assert_eq!(credential.revoke_cred().unwrap_err().kind(), VcxErrorKind::InvalidRevocationDetails);
 
-        credential.tails_file = Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string());
+        credential.tails_file = Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string());
         credential.cred_rev_id = Some(CRED_REV_ID.to_string());
         credential.rev_reg_id = Some(REV_REG_ID.to_string());
         credential.rev_cred_payment_txn = None;
@@ -1257,6 +1230,8 @@ pub mod tests {
 
     #[test]
     fn test_encode_with_several_attributes_success() {
+        let _setup = SetupDefaults::init();
+
         //        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
@@ -1299,6 +1274,8 @@ pub mod tests {
 
     #[test]
     fn test_encode_with_one_attribute_success() {
+        let _setup = SetupDefaults::init();
+
         let expected = json!({
             "address2": {
                 "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
@@ -1318,6 +1295,8 @@ pub mod tests {
 
     #[test]
     fn test_encode_with_new_format_several_attributes_success() {
+        let _setup = SetupDefaults::init();
+
         //        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
@@ -1359,6 +1338,8 @@ pub mod tests {
 
     #[test]
     fn test_encode_with_new_format_one_attribute_success() {
+        let _setup = SetupDefaults::init();
+
         let expected = json!({
             "address2": {
                 "encoded": "68086943237164982734333428280784300550565381723532936263016368251445461241953",
@@ -1378,6 +1359,8 @@ pub mod tests {
 
     #[test]
     fn test_encode_with_mixed_format_several_attributes_success() {
+        let _setup = SetupDefaults::init();
+
         //        for reference....expectation is encode_attributes returns this:
 
         let expected = json!({
@@ -1416,12 +1399,12 @@ pub mod tests {
 
         let results: Value = serde_json::from_str(&results_json).unwrap();
         assert_eq!(expected, results);
-
     }
 
     #[test]
-    fn test_encode_bad_format_returns_error()
-    {
+    fn test_encode_bad_format_returns_error() {
+        let _setup = SetupDefaults::init();
+
         static BAD_TEST_CREDENTIAL_DATA: &str =
             r#"{"format doesnt make sense"}"#;
 
@@ -1429,8 +1412,9 @@ pub mod tests {
     }
 
     #[test]
-    fn test_encode_old_format_empty_array_error()
-    {
+    fn test_encode_old_format_empty_array_error() {
+        let _setup = SetupDefaults::init();
+
         static BAD_TEST_CREDENTIAL_DATA: &str =
             r#"{"address2":[]}"#;
 
@@ -1439,10 +1423,20 @@ pub mod tests {
 
     #[test]
     fn test_encode_empty_field() {
-        let empty_field = r#"{"empty_field": ""}"#;
-        let field_encoded = encode_attributes(empty_field).unwrap();
-        let field_encoded_json: serde_json::Map<String, serde_json::Value> = serde_json::from_str(&field_encoded).unwrap();
-        assert!(field_encoded_json["empty_field"]["raw"].as_str().unwrap().is_empty());
-        assert!(!field_encoded_json["empty_field"]["encoded"].as_str().unwrap().is_empty());
+        let _setup = SetupDefaults::init();
+
+        let expected = json!({
+            "empty_field": {
+                "encoded": "102987336249554097029535212322581322789799900648198034993379397001115665086549",
+                "raw": ""
+            }
+        });
+
+        static TEST_CREDENTIAL_DATA: &str = r#"{"empty_field": ""}"#;
+
+        let results_json = encode_attributes(TEST_CREDENTIAL_DATA).unwrap();
+
+        let results: Value = serde_json::from_str(&results_json).unwrap();
+        assert_eq!(expected, results);
     }
 }

@@ -16,7 +16,7 @@ use messages::proofs::proof_request::{ProofRequestMessage, ProofRequestData, Non
 use messages::get_message::Message;
 use error::prelude::*;
 use settings;
-use utils::{httpclient, error};
+use utils::{error, constants};
 use utils::constants::{CREDS_FROM_PROOF_REQ, DEFAULT_GENERATED_PROOF, DEFAULT_REJECTED_PROOF};
 use utils::libindy::cache::{get_rev_reg_cache, set_rev_reg_cache, RevRegCache, RevState};
 use utils::libindy::anoncreds;
@@ -25,6 +25,7 @@ use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
 use v3::handlers::proof_presentation::prover::prover::Prover;
 
 use std::convert::TryInto;
+use utils::httpclient::AgencyMock;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProofs>  = Default::default();
@@ -54,7 +55,7 @@ impl Default for DisclosedProof {
             their_vk: None,
             agent_did: None,
             agent_vk: None,
-            thread: Some(Thread::new())
+            thread: Some(Thread::new()),
         }
     }
 }
@@ -72,14 +73,14 @@ pub struct DisclosedProof {
     their_vk: Option<String>,
     agent_did: Option<String>,
     agent_vk: Option<String>,
-    thread: Option<Thread>
+    thread: Option<Thread>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedCreds {
     pub self_attested_attributes: HashMap<String, String>,
     pub requested_attrs: HashMap<String, (String, bool)>,
-    pub requested_predicates: HashMap<String, String>
+    pub requested_predicates: HashMap<String, String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -92,7 +93,7 @@ pub struct CredInfo {
     pub cred_rev_id: Option<String>,
     pub revocation_interval: Option<NonRevokedInterval>,
     pub tails_file: Option<String>,
-    pub timestamp: Option<u64>
+    pub timestamp: Option<u64>,
 }
 
 pub fn credential_def_identifiers(credentials: &str, proof_req: &ProofRequestData) -> VcxResult<Vec<CredInfo>> {
@@ -160,7 +161,7 @@ pub fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Vcx
         (&cred_info.rev_reg_id, &cred_info.cred_rev_id, &cred_info.tails_file) {
             if rtn.get(&rev_reg_id).is_none() {
                 let (from, to) = if let Some(ref interval) = cred_info.revocation_interval
-                    { (interval.from, interval.to) } else { (None, None) };
+                { (interval.from, interval.to) } else { (None, None) };
 
                 //                let from = from.unwrap_or(0);
                 //                let to = to.unwrap_or(time::get_time().sec as u64);
@@ -183,7 +184,7 @@ pub fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Vcx
                         let (rev_reg_id, rev_reg_delta_json, timestamp) = get_rev_reg_delta_json(
                             &rev_reg_id,
                             from,
-                            to
+                            to,
                         )?;
 
                         let rev_state_json = anoncreds::libindy_prover_update_revocation_state(
@@ -191,14 +192,14 @@ pub fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Vcx
                             &cached_rev_state.value,
                             &rev_reg_delta_json,
                             &cred_rev_id,
-                            &tails_file
+                            &tails_file,
                         )?;
 
                         if timestamp > cached_rev_state.timestamp {
                             let new_cache = RevRegCache {
                                 rev_state: Some(RevState {
                                     timestamp,
-                                    value: rev_state_json.clone()
+                                    value: rev_state_json.clone(),
                                 })
                             };
                             set_rev_reg_cache(&rev_reg_id, &new_cache);
@@ -212,20 +213,20 @@ pub fn build_rev_states_json(credentials_identifiers: &mut Vec<CredInfo>) -> Vcx
                     let (rev_reg_id, rev_reg_delta_json, timestamp) = get_rev_reg_delta_json(
                         &rev_reg_id,
                         None,
-                        to
+                        to,
                     )?;
 
                     let rev_state_json = anoncreds::libindy_prover_create_revocation_state(
                         &rev_reg_def_json,
                         &rev_reg_delta_json,
                         &cred_rev_id,
-                        &tails_file
+                        &tails_file,
                     )?;
 
                     let new_cache = RevRegCache {
                         rev_state: Some(RevState {
                             timestamp,
-                            value: rev_state_json.clone()
+                            value: rev_state_json.clone(),
                         })
                     };
                     set_rev_reg_cache(&rev_reg_id, &new_cache);
@@ -269,7 +270,7 @@ impl DisclosedProof {
 
     fn retrieve_credentials(&self) -> VcxResult<String> {
         trace!("DisclosedProof::set_state >>>");
-        if settings::test_indy_mode_enabled() { return Ok(CREDS_FROM_PROOF_REQ.to_string()); }
+        if settings::indy_mocks_enabled() { return Ok(CREDS_FROM_PROOF_REQ.to_string()); }
 
         let proof_req = self.proof_request
             .as_ref()
@@ -354,7 +355,7 @@ impl DisclosedProof {
         trace!("DisclosedProof::generate_proof >>> credentials: {}, self_attested_attrs: {}", secret!(&credentials), secret!(&self_attested_attrs));
 
         debug!("generating proof {}", self.source_id);
-        if settings::test_indy_mode_enabled() { return Ok(error::SUCCESS.code_num); }
+        if settings::indy_mocks_enabled() { return Ok(error::SUCCESS.code_num); }
 
         let proof_req = self.proof_request.as_ref().ok_or(VcxError::from_msg(VcxErrorKind::CreateProof, "Cannot get proof request"))?;
 
@@ -394,7 +395,7 @@ impl DisclosedProof {
     }
 
     fn generate_proof_msg(&self) -> VcxResult<String> {
-        let proof = match settings::test_indy_mode_enabled() {
+        let proof = match settings::indy_mocks_enabled() {
             false => {
                 let proof: &ProofMessage = self.proof.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
                 serde_json::to_string(&proof)
@@ -457,7 +458,7 @@ impl DisclosedProof {
     }
 
     fn generate_reject_proof_msg(&self) -> VcxResult<String> {
-        let msg = match settings::test_indy_mode_enabled() {
+        let msg = match settings::indy_mocks_enabled() {
             false => {
                 let proof_reject = ProofMessage::new_reject();
                 serde_json::to_string(&proof_reject)
@@ -688,7 +689,7 @@ pub fn decline_presentation_request(handle: u32, connection_handle: u32, reason:
         match obj {
             DisclosedProofs::V1(_) => {
                 Err(VcxError::from(VcxErrorKind::ActionNotSupported))
-            },
+            }
             DisclosedProofs::V3(ref mut obj) => {
                 obj.decline_presentation_request(connection_handle, reason.clone(), proposal.clone())?;
                 Ok(error::SUCCESS.code_num)
@@ -728,7 +729,7 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
     let version = connection::get_version(connection_handle)?;
 
-    if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
+    AgencyMock::set_next_response(constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
 
     let message = messages::get_message::get_connection_messages(&my_did,
                                                                  &my_vk,
@@ -736,7 +737,7 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
                                                                  &agent_vk,
                                                                  Some(vec![msg_id.to_string()]),
                                                                  None,
-    &version)?;
+                                                                 &version)?;
 
     if message[0].msg_type == RemoteMessageType::ProofReq {
         let request = _parse_proof_req_message(&message[0], &my_vk)?;
@@ -772,7 +773,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
     let agent_vk = connection::get_agent_verkey(connection_handle)?;
     let version = connection::get_version(connection_handle)?;
 
-    if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
+    AgencyMock::set_next_response(constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
 
     let payload = messages::get_message::get_connection_messages(&my_did,
                                                                  &my_vk,
@@ -780,7 +781,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
                                                                  &agent_vk,
                                                                  None,
                                                                  None,
-    &version)?;
+                                                                 &version)?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 
@@ -837,13 +838,14 @@ mod tests {
     use super::*;
     use serde_json::Value;
     use utils::{
-        constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID,
-        ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
-        ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID, TEST_TAILS_FILE, REV_STATE_JSON },
-        get_temp_dir_path
+        constants::{ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID,
+                    ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
+                    ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID, TEST_TAILS_FILE, REV_STATE_JSON},
+        get_temp_dir_path,
     };
     #[cfg(feature = "pool_tests")]
     use time;
+    use utils::devsetup::*;
 
     fn proof_req_no_interval() -> ProofRequestData {
         let proof_req = json!({
@@ -861,77 +863,95 @@ mod tests {
         serde_json::from_str(&proof_req).unwrap()
     }
 
+    fn _get_proof_request_messages(connection_h: u32) -> String {
+        let requests = get_proof_request_messages(connection_h, None).unwrap();
+        let requests: Value = serde_json::from_str(&requests).unwrap();
+        let requests = serde_json::to_string(&requests[0]).unwrap();
+        requests
+    }
+
     #[test]
     fn test_create_proof() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         assert!(create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap() > 0);
     }
 
     #[test]
     fn test_create_fails() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         assert_eq!(create_proof("1", "{}").unwrap_err().kind(), VcxErrorKind::InvalidJson);
     }
 
     #[test]
     fn test_proof_cycle() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let connection_h = connection::tests::build_test_connection();
 
-        let requests = get_proof_request_messages(connection_h, None).unwrap();
-        let requests: Value = serde_json::from_str(&requests).unwrap();
-        let requests = serde_json::to_string(&requests[0]).unwrap();
+        let request = _get_proof_request_messages(connection_h);
 
-        let handle = create_proof("TEST_CREDENTIAL", &requests).unwrap();
+        let handle = create_proof("TEST_CREDENTIAL", &request).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(handle).unwrap());
+
         send_proof(handle, connection_h).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(handle).unwrap());
     }
 
     #[test]
     fn test_proof_reject_cycle() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let connection_h = connection::tests::build_test_connection();
 
-        let requests = get_proof_request_messages(connection_h, None).unwrap();
-        let requests: Value = serde_json::from_str(&requests).unwrap();
-        let requests = serde_json::to_string(&requests[0]).unwrap();
+        let request = _get_proof_request_messages(connection_h);
 
-        let handle = create_proof("TEST_CREDENTIAL", &requests).unwrap();
+        let handle = create_proof("TEST_CREDENTIAL", &request).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(handle).unwrap());
+
         reject_proof(handle, connection_h).unwrap();
         assert_eq!(VcxStateType::VcxStateRejected as u32, get_state(handle).unwrap());
     }
 
     #[test]
     fn get_state_test() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let proof: DisclosedProof = Default::default();
         assert_eq!(VcxStateType::VcxStateNone as u32, proof.get_state());
+
         let handle = create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(handle).unwrap())
     }
 
     #[test]
     fn to_string_test() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+
         let serialized = to_string(handle).unwrap();
         let j: Value = serde_json::from_str(&serialized).unwrap();
         assert_eq!(j["version"], "1.0");
-        from_string(&serialized).unwrap();
+
+        let handle_2 = from_string(&serialized).unwrap();
+        assert_ne!(handle, handle_2);
     }
 
     #[test]
     fn test_deserialize_fails() {
+        let _setup = SetupDefaults::init();
+
         assert_eq!(from_string("{}").unwrap_err().kind(), VcxErrorKind::InvalidJson);
     }
 
     #[test]
     fn test_deserialize_succeeds_with_self_attest_allowed() {
+        let _setup = SetupDefaults::init();
+
         let handle = create_proof("id", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+
         let serialized = to_string(handle).unwrap();
         let p = DisclosedProof::from_str(&serialized).unwrap();
         assert_eq!(p.proof_request.unwrap().proof_request_data.requested_attributes.get("attr1_referent").unwrap().self_attest_allowed, Some(true))
@@ -939,7 +959,7 @@ mod tests {
 
     #[test]
     fn test_find_schemas() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         assert_eq!(DisclosedProof::build_schemas_json(&Vec::new()).unwrap(), "{}".to_string());
 
@@ -974,7 +994,7 @@ mod tests {
 
     #[test]
     fn test_find_schemas_fails() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
 
         let credential_ids = vec![CredInfo {
             requested_attr: "1".to_string(),
@@ -992,7 +1012,8 @@ mod tests {
 
     #[test]
     fn test_find_credential_def() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cred1 = CredInfo {
             requested_attr: "height_1".to_string(),
             referent: LICENCE_CRED_ID.to_string(),
@@ -1024,7 +1045,7 @@ mod tests {
 
     #[test]
     fn test_find_credential_def_fails() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
 
         let credential_ids = vec![CredInfo {
             requested_attr: "1".to_string(),
@@ -1042,7 +1063,8 @@ mod tests {
 
     #[test]
     fn test_build_requested_credentials() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cred1 = CredInfo {
             requested_attr: "height_1".to_string(),
             referent: LICENCE_CRED_ID.to_string(),
@@ -1104,18 +1126,19 @@ mod tests {
 
     #[test]
     fn test_get_proof_request() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let connection_h = connection::tests::build_test_connection();
 
         let request = get_proof_request(connection_h, "123").unwrap();
-        assert!(request.len() > 50);
+        let _request: ProofRequestMessage = serde_json::from_str(&request).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_credentials() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let (_, _, req, _) = ::utils::libindy::anoncreds::tests::create_proof();
 
@@ -1131,7 +1154,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_credentials_emtpy() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let mut req = json!({
            "nonce":"123432421212",
@@ -1158,7 +1181,8 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_case_for_proof_req_doesnt_matter_for_retrieve_creds() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let mut req = json!({
@@ -1201,13 +1225,16 @@ mod tests {
 
     #[test]
     fn test_retrieve_credentials_fails_with_no_proof_req() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
+
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof.retrieve_credentials().unwrap_err().kind(), VcxErrorKind::NotReady);
     }
 
     #[test]
     fn test_credential_def_identifiers() {
+        let _setup = SetupDefaults::init();
+
         let cred1 = CredInfo {
             requested_attr: "height_1".to_string(),
             referent: LICENCE_CRED_ID.to_string(),
@@ -1216,7 +1243,7 @@ mod tests {
             rev_reg_id: Some(REV_REG_ID.to_string()),
             cred_rev_id: Some(CRED_REV_ID.to_string()),
             revocation_interval: Some(NonRevokedInterval { from: Some(123), to: Some(456) }),
-            tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
+            tails_file: Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()),
             timestamp: None,
         };
         let cred2 = CredInfo {
@@ -1249,7 +1276,7 @@ mod tests {
                     },
                     "interval":null
                 },
-                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string(),
+                "tails_file": get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string(),
               },
               "zip_2":{
                 "credential": {
@@ -1291,6 +1318,8 @@ mod tests {
 
     #[test]
     fn test_credential_def_identifiers_failure() {
+        let _setup = SetupDefaults::init();
+
         // selected credentials has incorrect json
         assert_eq!(credential_def_identifiers("", &proof_req_no_interval()).unwrap_err().kind(), VcxErrorKind::InvalidJson);
 
@@ -1329,7 +1358,7 @@ mod tests {
                     },
                     "interval":null
                 },
-                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string(),
+                "tails_file": get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string(),
               },
            },
            "predicates":{ }
@@ -1342,7 +1371,7 @@ mod tests {
             rev_reg_id: None,
             cred_rev_id: Some(CRED_REV_ID.to_string()),
             revocation_interval: None,
-            tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
+            tails_file: Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()),
             timestamp: None,
         }];
         assert_eq!(&credential_def_identifiers(&selected_credentials.to_string(), &proof_req_no_interval()).unwrap(), &creds);
@@ -1370,7 +1399,7 @@ mod tests {
                     },
                     "interval":null
                 },
-                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
+                "tails_file": get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()
               },
            },
            "predicates":{ }
@@ -1385,7 +1414,8 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_proof() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
         let mut proof_req = ProofRequestMessage::create();
@@ -1419,11 +1449,11 @@ mod tests {
            "attrs":{
               "address1_1": {
                 "credential": all_creds["attrs"]["address1_1"][0],
-                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
+                "tails_file": get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()
               },
               "zip_2": {
                 "credential": all_creds["attrs"]["zip_2"][0],
-                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
+                "tails_file": get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()
               },
            },
            "predicates":{ }
@@ -1440,7 +1470,8 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_self_attested_proof() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let mut proof_req = ProofRequestMessage::create();
         let indy_proof_req = json!({
            "nonce":"123432421212",
@@ -1476,7 +1507,8 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_proof_with_predicates() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
         let mut proof_req = ProofRequestMessage::create();
@@ -1512,11 +1544,11 @@ mod tests {
            "attrs":{
               "address1_1": {
                 "credential": all_creds["attrs"]["address1_1"][0],
-                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
+                "tails_file": get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()
               },
               "zip_2": {
                 "credential": all_creds["attrs"]["zip_2"][0],
-                "tails_file": get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()
+                "tails_file": get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()
               },
            },
            "predicates":{ 
@@ -1536,7 +1568,7 @@ mod tests {
 
     #[test]
     fn test_generate_reject_proof() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let proof: DisclosedProof = Default::default();
         let generated_reject = proof.generate_reject_proof_msg();
@@ -1545,7 +1577,7 @@ mod tests {
 
     #[test]
     fn test_build_rev_states_json() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let cred1 = CredInfo {
             requested_attr: "height".to_string(),
@@ -1554,7 +1586,7 @@ mod tests {
             cred_def_id: CRED_DEF_ID.to_string(),
             rev_reg_id: Some(REV_REG_ID.to_string()),
             cred_rev_id: Some(CRED_REV_ID.to_string()),
-            tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
+            tails_file: Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()),
             revocation_interval: None,
             timestamp: None,
         };
@@ -1569,7 +1601,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_empty() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         // empty vector
         assert_eq!(build_rev_states_json(Vec::new().as_mut()).unwrap(), "{}".to_string());
@@ -1582,7 +1614,7 @@ mod tests {
             cred_def_id: CRED_DEF_ID.to_string(),
             rev_reg_id: None,
             cred_rev_id: Some(CRED_REV_ID.to_string()),
-            tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
+            tails_file: Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()),
             revocation_interval: None,
             timestamp: None,
         };
@@ -1592,7 +1624,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_no_cache() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let attrs = r#"["address1","address2","city","state","zip"]"#;
         let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
@@ -1604,7 +1636,7 @@ mod tests {
             cred_def_id,
             rev_reg_id: rev_reg_id.clone(),
             cred_rev_id,
-            tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
+            tails_file: Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()),
             revocation_interval: None,
             timestamp: None,
         };
@@ -1631,7 +1663,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_cached() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let current_timestamp = time::get_time().sec as u64;
         let cached_rev_state = "{\"some\": \"json\"}".to_string();
@@ -1646,7 +1678,7 @@ mod tests {
             cred_def_id,
             rev_reg_id: rev_reg_id.clone(),
             cred_rev_id,
-            tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
+            tails_file: Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()),
             revocation_interval: None,
             timestamp: None,
         };
@@ -1655,7 +1687,7 @@ mod tests {
         let cached_data = RevRegCache {
             rev_state: Some(RevState {
                 timestamp: current_timestamp,
-                value: cached_rev_state.clone()
+                value: cached_rev_state.clone(),
             })
         };
         set_rev_reg_cache(&rev_reg_id, &cached_data);
@@ -1684,7 +1716,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_with_older_cache() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let current_timestamp = time::get_time().sec as u64;
         let cached_timestamp = current_timestamp - 100;
@@ -1700,7 +1732,7 @@ mod tests {
             cred_def_id,
             rev_reg_id: rev_reg_id.clone(),
             cred_rev_id,
-            tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
+            tails_file: Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()),
             revocation_interval: Some(NonRevokedInterval { from: Some(cached_timestamp + 1), to: None }),
             timestamp: None,
         };
@@ -1709,7 +1741,7 @@ mod tests {
         let cached_data = RevRegCache {
             rev_state: Some(RevState {
                 timestamp: cached_timestamp,
-                value: cached_rev_state.clone()
+                value: cached_rev_state.clone(),
             })
         };
         set_rev_reg_cache(&rev_reg_id, &cached_data);
@@ -1738,7 +1770,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_rev_states_json_real_with_newer_cache() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         let current_timestamp = time::get_time().sec as u64;
         let cached_timestamp = current_timestamp + 100;
@@ -1754,7 +1786,7 @@ mod tests {
             cred_def_id,
             rev_reg_id: rev_reg_id.clone(),
             cred_rev_id,
-            tails_file: Some(get_temp_dir_path(Some(TEST_TAILS_FILE)).to_str().unwrap().to_string()),
+            tails_file: Some(get_temp_dir_path(TEST_TAILS_FILE).to_str().unwrap().to_string()),
             revocation_interval: Some(NonRevokedInterval { from: None, to: Some(cached_timestamp - 1) }),
             timestamp: None,
         };
@@ -1763,7 +1795,7 @@ mod tests {
         let cached_data = RevRegCache {
             rev_state: Some(RevState {
                 timestamp: cached_timestamp,
-                value: cached_rev_state.clone()
+                value: cached_rev_state.clone(),
             })
         };
         set_rev_reg_cache(&rev_reg_id, &cached_data);
@@ -1791,6 +1823,8 @@ mod tests {
 
     #[test]
     fn test_get_credential_intervals_from_proof_req() {
+        let _setup = SetupDefaults::init();
+
         let proof_req = json!({
             "nonce": "123432421212",
             "name": "proof_req_1",

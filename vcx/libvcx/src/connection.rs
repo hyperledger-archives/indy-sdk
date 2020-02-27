@@ -16,7 +16,7 @@ use messages::get_message::{Message, MessagePayload};
 use object_cache::ObjectCache;
 use settings;
 use utils::error;
-use utils::libindy::signus::create_my_did;
+use utils::libindy::signus::create_and_store_my_did;
 use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
 use utils::json::KeyMatch;
@@ -93,7 +93,7 @@ struct Connection {
     public_did: Option<String>,
     their_public_did: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    version: Option<settings::ProtocolTypes>
+    version: Option<settings::ProtocolTypes>,
 }
 
 
@@ -214,7 +214,7 @@ impl Connection {
                 self.state = VcxStateType::VcxStateRedirected;
 
                 Ok(error::SUCCESS.code_num)
-            },
+            }
             _ => {
                 warn!("connection {} in state {} not ready to redirect", self.source_id, self.state as u32);
                 // TODO: Refactor Error
@@ -368,8 +368,7 @@ impl Connection {
                     if rc.is_err() {
                         self.force_v2_parse_acceptance_details(&message)?;
                     }
-                }
-                else if message.status_code == MessageStatusCode::Redirected && message.msg_type == RemoteMessageType::ConnReqRedirect {
+                } else if message.status_code == MessageStatusCode::Redirected && message.msg_type == RemoteMessageType::ConnReqRedirect {
                     let rc = self.process_redirect_message(&message);
                     if rc.is_err() {
                         self.force_v2_parse_redirection_details(&message)?;
@@ -656,7 +655,7 @@ pub fn create_connection(source_id: &str) -> VcxResult<u32> {
 
     let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
 
-    let (pw_did, pw_verkey) = create_my_did(None, method_name.as_ref().map(String::as_str))?;
+    let (pw_did, pw_verkey) = create_and_store_my_did(None, method_name.as_ref().map(String::as_str))?;
 
     debug!("did: {} verkey: {}, source id: {}", pw_did, pw_verkey, source_id);
 
@@ -831,6 +830,7 @@ pub fn send_generic_message(connection_handle: u32, msg: &str, msg_options: &str
         }
     })
 }
+
 pub fn update_state_with_message(handle: u32, message: Message) -> VcxResult<u32> {
     CONNECTION_MAP.get_mut(handle, |connection| {
         match connection {
@@ -883,7 +883,6 @@ impl Connection {
             }
         }
     }
-
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
@@ -1347,9 +1346,11 @@ pub mod tests {
     use messages::get_message::*;
     use utils::constants::*;
     use utils::constants::INVITE_DETAIL_STRING;
-    use utils::httpclient;
 
     use super::*;
+    use utils::devsetup::*;
+    use utils::httpclient::AgencyMock;
+    use utils::constants;
 
     pub fn build_test_connection() -> u32 {
         let handle = create_connection("alice").unwrap();
@@ -1358,37 +1359,49 @@ pub mod tests {
     }
 
     pub fn create_connected_connections() -> (u32, u32) {
+        ::utils::devsetup::set_institution();
+
         let alice = create_connection("alice").unwrap();
         let my_public_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let options = json!({"use_public_did": true}).to_string();
+
         connect(alice, Some(options)).unwrap();
         let details = get_invite_details(alice, false).unwrap();
+
         //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
-        ::utils::devsetup::tests::set_consumer();
+        ::utils::devsetup::set_consumer();
+
         let faber = create_connection_with_invite("faber", &details).unwrap();
+
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(faber));
+
         connect(faber, Some("{}".to_string())).unwrap();
         let public_did = get_their_public_did(faber).unwrap().unwrap();
         assert_eq!(my_public_did, public_did);
+
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
-        ::utils::devsetup::tests::set_institution();
-        thread::sleep(Duration::from_millis(2000));
+        ::utils::devsetup::set_institution();
+
+        thread::sleep(Duration::from_millis(500));
+
         update_state(alice, None).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(alice));
         (faber, alice)
     }
 
     #[test]
-    fn test_build_connection_failures() {
-        init!("true");
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+    fn test_build_connection_failures_with_no_wallet() {
+        let _setup = SetupDefaults::init();
+
         assert_eq!(create_connection("This Should Fail").unwrap_err().kind(), VcxErrorKind::InvalidWalletHandle);
-        assert!(create_connection_with_invite("This Should Fail", "BadDetailsFoobar").is_err());
+
+        assert_eq!(create_connection_with_invite("This Should Fail", "BadDetailsFoobar").unwrap_err().kind(), VcxErrorKind::InvalidJson);
     }
 
     #[test]
     fn test_create_connection_agency_failure() {
-        init!("indy");
+        let _setup = SetupIndyMocks::init();
+
         let handle = create_connection("invalid").unwrap();
         let rc = connect(handle, None);
         assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
@@ -1396,143 +1409,149 @@ pub mod tests {
 
     #[test]
     fn test_create_connection() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_connection("test_create_connection").unwrap();
-        assert!(handle > 0);
-        assert!(!get_pw_did(handle).unwrap().is_empty());
-        assert!(!get_pw_verkey(handle).unwrap().is_empty());
+
+        assert_eq!(get_pw_did(handle).unwrap(), constants::DID);
+        assert_eq!(get_pw_verkey(handle).unwrap(), constants::VERKEY);
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
+
         connect(handle, Some("{}".to_string())).unwrap();
-        ::utils::httpclient::set_next_u8_response(GET_MESSAGES_INVITE_ACCEPTED_RESPONSE.to_vec());
+
+        AgencyMock::set_next_response(GET_MESSAGES_INVITE_ACCEPTED_RESPONSE.to_vec());
         update_state(handle, None).unwrap();
         assert_eq!(get_state(handle), VcxStateType::VcxStateAccepted as u32);
+
+        AgencyMock::set_next_response(DELETE_CONNECTION_RESPONSE.to_vec());
         assert_eq!(delete_connection(handle).unwrap(), 0);
+
         // This errors b/c we release handle in delete connection
         assert!(release(handle).is_err());
     }
 
     #[test]
     fn test_create_drop_create() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_connection("test_create_drop_create").unwrap();
+
+        assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
         let did1 = get_pw_did(handle).unwrap();
-        assert!(release(handle).is_ok());
+
+        release(handle).unwrap();
+
         let handle2 = create_connection("test_create_drop_create").unwrap();
-        assert_ne!(handle, handle2);
+
+        assert_eq!(get_state(handle2), VcxStateType::VcxStateInitialized as u32);
         let did2 = get_pw_did(handle2).unwrap();
+
+        assert_ne!(handle, handle2);
         assert_eq!(did1, did2);
-        assert!(release(handle2).is_ok());
+
+        release(handle2).unwrap();
     }
 
     #[test]
     fn test_connection_release_fails() {
+        let _setup = SetupEmpty::init();
+
         let rc = release(1);
         assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
     }
 
     #[test]
     fn test_get_state_fails() {
+        let _setup = SetupEmpty::init();
+
         let state = get_state(1);
         assert_eq!(state, VcxStateType::VcxStateNone as u32);
     }
 
     #[test]
     fn test_get_string_fails() {
-        match to_string(0) {
-            Ok(_) => assert_eq!(1, 0), //fail if we get here
-            Err(_) => assert_eq!(0, 0),
-        };
+        let _setup = SetupEmpty::init();
+
+        let rc = to_string(0);
+        assert_eq!(rc.unwrap_err().kind(), VcxErrorKind::InvalidHandle);
     }
 
     #[test]
     fn test_get_qr_code_data() {
-        init!("true");
-        let test_name = "test_get_qr_code_data";
-        let c = Connection {
-            source_id: test_name.to_string(),
-            pw_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
-            pw_verkey: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
-            state: VcxStateType::VcxStateOfferSent,
-            uuid: String::new(),
-            endpoint: String::new(),
-            invite_detail: Some(InviteDetail::new()),
-            redirect_detail: None,
-            invite_url: None,
-            agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
-            agent_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
-            their_pw_did: String::new(),
-            their_pw_verkey: String::new(),
-            public_did: None,
-            their_public_did: None,
-            version: None
-        };
+        let _setup = SetupMocks::init();
 
-        let handle = CONNECTION_MAP.add(Connections::V1(c)).unwrap();
+        let handle = create_connection("test_get_qr_code_data").unwrap();
 
-        println!("updating state, handle: {}", handle);
-        httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
-        update_state(handle, None).unwrap();
+        connect(handle, None).unwrap();
+
         let details = get_invite_details(handle, true).unwrap();
         assert!(details.contains("\"dp\":"));
-        assert_eq!(get_invite_details(12345, true).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+
+        assert_eq!(get_invite_details(0, true).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
     }
 
     #[test]
     fn test_serialize_deserialize() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_connection("test_serialize_deserialize").unwrap();
-        assert!(handle > 0);
+
         let first_string = to_string(handle).unwrap();
-        println!("{}", first_string);
         assert!(release(handle).is_ok());
         let handle = from_string(&first_string).unwrap();
         let second_string = to_string(handle).unwrap();
-        assert!(release(handle).is_ok());
+
         assert_eq!(first_string, second_string);
 
+        assert!(release(handle).is_ok());
+
+        // Aries connection
         ::settings::set_config_value(::settings::COMMUNICATION_METHOD, "aries");
-        let handle_v2 = create_connection("test_serialize_deserialize").unwrap();
-        assert!(handle_v2 > 0);
-        let first_string = to_string(handle_v2).unwrap();
-        println!("{}", first_string);
-        assert!(release(handle_v2).is_ok());
-        let handle_v2 = from_string(&first_string).unwrap();
-        let second_string = to_string(handle_v2).unwrap();
-        assert!(release(handle_v2).is_ok());
+
+        let handle = create_connection("test_serialize_deserialize").unwrap();
+
+        let first_string = to_string(handle).unwrap();
+        assert!(release(handle).is_ok());
+        let handle = from_string(&first_string).unwrap();
+        let second_string = to_string(handle).unwrap();
+
         assert_eq!(first_string, second_string);
+
+        assert!(release(handle).is_ok());
     }
 
     #[test]
     fn test_deserialize_existing() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_connection("test_serialize_deserialize").unwrap();
-        assert!(handle > 0);
+
+        let _pw_did = get_pw_did(handle).unwrap();
         let first_string = to_string(handle).unwrap();
+
         let handle = from_string(&first_string).unwrap();
+
+        let _pw_did = get_pw_did(handle).unwrap();
         let second_string = to_string(handle).unwrap();
+
         assert_eq!(first_string, second_string);
     }
 
     #[test]
     fn test_retry_connection() {
-        init!("true");
-        let handle = create_connection("test_serialize_deserialize").unwrap();
-        assert!(handle > 0);
-        assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
-        connect(handle, Some(String::new())).unwrap();
-        connect(handle, Some(String::new())).unwrap();
-    }
+        let _setup = SetupMocks::init();
 
-    #[test]
-    fn test_bad_wallet_connection_fails() {
-        init!("true");
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert_eq!(create_connection("test_bad_wallet_connection_fails").unwrap_err().kind(), VcxErrorKind::InvalidWalletHandle);
+        let handle = create_connection("test_serialize_deserialize").unwrap();
+
+        assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
+
+        connect(handle, None).unwrap();
+        connect(handle, None).unwrap();
     }
 
     #[test]
     fn test_parse_redirect_details() {
-        init!("true");
+        let _setup = SetupMocks::init();
         let test_name = "test_parse_acceptance_details";
 
         let response = Message {
@@ -1580,17 +1599,16 @@ pub mod tests {
             decrypted_payload: None,
         };
 
-        match c.parse_redirection_details(&bad_response) {
-            Ok(_) => assert_eq!(0, 1), // we should not receive this
-            // TODO: Refactor Error
-            // TODO: Fix this test to be a correct Error Type
-            Err(e) => assert_eq!(e.kind(), VcxErrorKind::InvalidMessagePack),
-        }
+        let e = c.parse_redirection_details(&bad_response).unwrap_err();
+        // TODO: Refactor Error
+        // TODO: Fix this test to be a correct Error Type
+        assert_eq!(e.kind(), VcxErrorKind::InvalidMessagePack);
     }
 
     #[test]
     fn test_parse_acceptance_details() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let test_name = "test_parse_acceptance_details";
 
         let response = Message {
@@ -1620,7 +1638,7 @@ pub mod tests {
             their_pw_verkey: String::new(),
             public_did: None,
             their_public_did: None,
-            version: None
+            version: None,
         });
 
         CONNECTION_MAP.add(c).unwrap();
@@ -1640,71 +1658,62 @@ pub mod tests {
             decrypted_payload: None,
         };
 
-        match parse_acceptance_details(&bad_response) {
-            Ok(_) => assert_eq!(0, 1), // we should not receive this
-            // TODO: Refactor Error
-            // TODO: Fix this test to be a correct Error Type
-            Err(e) => assert_eq!(e.kind(), VcxErrorKind::InvalidMessagePack),
-        }
+        let e = parse_acceptance_details(&bad_response).unwrap_err();
+        // TODO: Refactor Error
+        // TODO: Fix this test to be a correct Error Type
+        assert_eq!(e.kind(), VcxErrorKind::InvalidMessagePack);
     }
 
     #[test]
     fn test_invite_detail_abbr() {
-        let invite_detail: Value = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
-        let abbr = abbrv_event_detail(invite_detail).unwrap();
+        let _setup = SetupEmpty::init();
 
-        let abbr_obj = abbr.as_object().unwrap();
-        assert_eq!(abbr_obj.get("sc").unwrap(), "MS-101")
-    }
-
-    #[test]
-    fn test_invite_detail_abbr2() {
         let un_abbr = json!({
-  "statusCode":"MS-102",
-  "connReqId":"yta2odh",
-  "senderDetail":{
-    "name":"ent-name",
-    "agentKeyDlgProof":{
-      "agentDID":"N2Uyi6SVsHZq1VWXuA3EMg",
-      "agentDelegatedKey":"CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
-      "signature":"/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg=="
-    },
-    "DID":"F2axeahCaZfbUYUcKefc3j",
-    "logoUrl":"ent-logo-url",
-    "verKey":"74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx"
-  },
-  "senderAgencyDetail":{
-    "DID":"BDSmVkzxRYGE4HKyMKxd1H",
-    "verKey":"6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
-    "endpoint":"52.38.32.107:80/agency/msg"
-  },
-  "targetName":"there",
-  "statusMsg":"message sent"
-});
+          "statusCode":"MS-102",
+          "connReqId":"yta2odh",
+          "senderDetail":{
+            "name":"ent-name",
+            "agentKeyDlgProof":{
+              "agentDID":"N2Uyi6SVsHZq1VWXuA3EMg",
+              "agentDelegatedKey":"CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
+              "signature":"/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg=="
+            },
+            "DID":"F2axeahCaZfbUYUcKefc3j",
+            "logoUrl":"ent-logo-url",
+            "verKey":"74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx"
+          },
+          "senderAgencyDetail":{
+            "DID":"BDSmVkzxRYGE4HKyMKxd1H",
+            "verKey":"6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
+            "endpoint":"52.38.32.107:80/agency/msg"
+          },
+          "targetName":"there",
+          "statusMsg":"message sent"
+        });
 
         let abbr = json!({
-  "sc":"MS-102",
-  "id": "yta2odh",
-  "s": {
-    "n": "ent-name",
-    "dp": {
-      "d": "N2Uyi6SVsHZq1VWXuA3EMg",
-      "k": "CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
-      "s":
-        "/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg==",
-    },
-    "d": "F2axeahCaZfbUYUcKefc3j",
-    "l": "ent-logo-url",
-    "v": "74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx",
-  },
-  "sa": {
-    "d": "BDSmVkzxRYGE4HKyMKxd1H",
-    "v": "6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
-    "e": "52.38.32.107:80/agency/msg",
-  },
-  "t": "there",
-  "sm":"message sent"
-});
+          "sc":"MS-102",
+          "id": "yta2odh",
+          "s": {
+            "n": "ent-name",
+            "dp": {
+              "d": "N2Uyi6SVsHZq1VWXuA3EMg",
+              "k": "CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
+              "s":
+                "/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg==",
+            },
+            "d": "F2axeahCaZfbUYUcKefc3j",
+            "l": "ent-logo-url",
+            "v": "74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx",
+          },
+          "sa": {
+            "d": "BDSmVkzxRYGE4HKyMKxd1H",
+            "v": "6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
+            "e": "52.38.32.107:80/agency/msg",
+          },
+          "t": "there",
+          "sm":"message sent"
+        });
         let processed = abbrv_event_detail(un_abbr.clone()).unwrap();
         assert_eq!(processed, abbr);
         let unprocessed = unabbrv_event_detail(processed).unwrap();
@@ -1713,7 +1722,8 @@ pub mod tests {
 
     #[test]
     fn test_release_all() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let h1 = create_connection("rel1").unwrap();
         let h2 = create_connection("rel2").unwrap();
         let h3 = create_connection("rel3").unwrap();
@@ -1729,24 +1739,19 @@ pub mod tests {
 
     #[test]
     fn test_create_with_valid_invite_details() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
-        let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
-        let details = serde_json::to_string(&unabbrv_details).unwrap();
+        let handle = create_connection_with_invite("alice", INVITE_DETAIL_STRING).unwrap();
+        connect(handle, None).unwrap();
 
-        let handle = create_connection_with_invite("alice", &details).unwrap();
-
-        connect(handle, Some("{}".to_string())).unwrap();
-
-        let handle_2 = create_connection_with_invite("alice", &details).unwrap();
-
-        connect(handle_2, Some("{}".to_string())).unwrap();
+        let handle_2 = create_connection_with_invite("alice", INVITE_DETAIL_STRING).unwrap();
+        connect(handle_2, None).unwrap();
     }
 
     #[test]
     fn test_process_acceptance_message() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_connection("test_process_acceptance_message").unwrap();
         let message = serde_json::from_str(INVITE_ACCEPTED_RESPONSE).unwrap();
         assert_eq!(error::SUCCESS.code_num, update_state_with_message(handle, message).unwrap());
@@ -1754,53 +1759,17 @@ pub mod tests {
 
     #[test]
     fn test_create_with_invalid_invite_details() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let bad_details = r#"{"id":"mtfjmda","s":{"d":"abc"},"l":"abc","n":"Evernym","v":"avc"},"sa":{"d":"abc","e":"abc","v":"abc"},"sc":"MS-101","sm":"message created","t":"there"}"#;
-        match create_connection_with_invite("alice", &bad_details) {
-            Ok(_) => panic!("should have failed"),
-            Err(x) => assert_eq!(x.kind(), VcxErrorKind::InvalidJson),
-        };
-    }
-
-    #[test]
-    fn test_connect_with_invalid_details() {
-        init!("true");
-        let test_name = "test_connect_with_invalid_details";
-
-        let c = Connection {
-            source_id: test_name.to_string(),
-            pw_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
-            pw_verkey: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
-            state: VcxStateType::VcxStateRequestReceived,
-            uuid: String::new(),
-            endpoint: String::new(),
-            invite_detail: None,
-            redirect_detail: None,
-            invite_url: None,
-            agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
-            agent_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
-            their_pw_did: String::new(),
-            their_pw_verkey: String::new(),
-            public_did: None,
-            their_public_did: None,
-            version: None
-        };
-
-        let handle = CONNECTION_MAP.add(Connections::V1(c)).unwrap();
-
-        assert_eq!(connect(handle, Some("{}".to_string())).unwrap_err().kind(), VcxErrorKind::GeneralConnectionError);
-
-
-        // from_string throws a ConnectionError
-        assert_eq!(from_string("").unwrap_err().kind(), VcxErrorKind::InvalidJson);
-
-
-        // release throws a connection Error
-        assert_eq!(release(1234).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
+        let err = create_connection_with_invite("alice", &bad_details).unwrap_err();
+        assert_eq!(err.kind(), VcxErrorKind::InvalidJson);
     }
 
     #[test]
     fn test_void_functions_actually_have_results() {
+        let _setup = SetupDefaults::init();
+
         assert_eq!(set_their_pw_verkey(1, "blah").unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
 
         assert_eq!(set_state(1, VcxStateType::VcxStateNone).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
@@ -1825,42 +1794,27 @@ pub mod tests {
     }
 
     #[test]
-    fn test_connection_release_returns_unit() {
-        init!("true");
-        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
-        let handle = create_connection_with_invite("alice", &details).unwrap();
-        assert_eq!(release(handle).unwrap(), ());
-    }
-    #[test]
     fn test_different_protocol_version() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
-        let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
-        let details = serde_json::to_string(&unabbrv_details).unwrap();
+        let handle = create_connection_with_invite("alice", INVITE_DETAIL_STRING).unwrap();
+        let _serialized = to_string(handle).unwrap();
 
-        let handle = create_connection_with_invite("alice", &details).unwrap();
-        let serialized = to_string(handle).unwrap();
-        println!("{}", serialized);
-        let details = r#"{"version":"2.0","id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
-                let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
-        let details = serde_json::to_string(&unabbrv_details).unwrap();
-
-        let handle = create_connection_with_invite("alice", &details).unwrap();
-        let serialized = to_string(handle).unwrap();
-        println!("{}", serialized);
+        let handle = create_connection_with_invite("alice", INVITE_DETAIL_V2_STRING).unwrap();
+        let _serialized = to_string(handle).unwrap();
     }
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_connection_redirection_real() {
-        init!("agency");
+        let _setup = SetupLibraryAgencyV1::init();
+
         //0. Create initial connection
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
         //1. Faber sends another invite
-        ::utils::devsetup::tests::set_institution(); //Faber to Alice
+        ::utils::devsetup::set_institution(); //Faber to Alice
         let alice2 = create_connection("alice2").unwrap();
         let my_public_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let options = json!({"use_public_did": true}).to_string();
@@ -1870,7 +1824,7 @@ pub mod tests {
 
         //2. Alice receives (recognizes that there is already a connection), calls different api (redirect rather than regular connect)
         //BE CONSUMER AND REDIRECT INVITE FROM INSTITUTION
-        ::utils::devsetup::tests::set_consumer();
+        ::utils::devsetup::set_consumer();
         let faber_duplicate = create_connection_with_invite("faber_duplicate", &details_for_alice2).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(faber_duplicate));
         redirect(faber_duplicate, faber).unwrap();
@@ -1879,7 +1833,7 @@ pub mod tests {
 
         //3. Faber waits for redirect state change
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
-        ::utils::devsetup::tests::set_institution();
+        ::utils::devsetup::set_institution();
         thread::sleep(Duration::from_millis(2000));
         update_state(alice2, None).unwrap();
         assert_eq!(VcxStateType::VcxStateRedirected as u32, get_state(alice2));
@@ -1902,7 +1856,5 @@ pub mod tests {
         assert_eq!(rd.their_did, to_alice_old.their_pw_did);
         assert_eq!(rd.their_verkey, to_alice_old.their_pw_verkey);
         assert_eq!(rd.their_public_did, to_alice_old.their_public_did);
-
-        teardown!("agency");
     }
 }
