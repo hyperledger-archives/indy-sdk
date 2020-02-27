@@ -220,6 +220,7 @@ lazy_static! {
         insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
         insert_c_message(&mut m, &ACTION_NOT_SUPPORTED);
         insert_c_message(&mut m, &INVALID_REDIRECT_DETAILS);
+        insert_c_message(&mut m, &NO_AGENT_INFO);
 
         m
     };
