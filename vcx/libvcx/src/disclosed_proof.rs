@@ -25,7 +25,7 @@ use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
 use v3::handlers::proof_presentation::prover::prover::Prover;
 
 use std::convert::TryInto;
-use connection::{get_agent_info, MyAgentInfo, get_agent_attr};
+use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
 
 lazy_static! {

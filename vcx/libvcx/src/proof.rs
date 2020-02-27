@@ -22,7 +22,7 @@ use utils::qualifier;
 use messages::proofs::proof_message::get_credential_info;
 
 use v3::handlers::proof_presentation::verifier::verifier::Verifier;
-use connection::{get_agent_info, MyAgentInfo, get_agent_attr};
+use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proofs> = Default::default();

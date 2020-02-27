@@ -27,7 +27,7 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
     match wallet::create_wallet(&config, &credentials)
         .wait() {
         Ok(()) => Ok(()),
-        Err(err) if err.error_code == ErrorCode::WalletAlreadyExistsError => {
+        Err(ref err) if err.error_code == ErrorCode::WalletAlreadyExistsError => {
             warn!("wallet \"{}\" already exists. skipping creation", wallet_name);
             Ok(())
         }

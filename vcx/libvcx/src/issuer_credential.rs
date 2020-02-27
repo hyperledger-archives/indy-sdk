@@ -21,7 +21,7 @@ use object_cache::ObjectCache;
 use error::prelude::*;
 
 use v3::handlers::issuance::Issuer;
-use connection::{get_agent_info, MyAgentInfo, get_agent_attr};
+use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 
 lazy_static! {
     static ref ISSUER_CREDENTIAL_MAP: ObjectCache < IssuerCredentials > = Default::default();

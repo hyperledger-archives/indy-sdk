@@ -23,7 +23,7 @@ use error::prelude::*;
 use std::convert::TryInto;
 
 use v3::handlers::issuance::Holder;
-use connection::{get_agent_info, MyAgentInfo, get_agent_attr};
+use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
 
 lazy_static! {

@@ -8,7 +8,7 @@ use messages::thread::Thread;
 use utils::{httpclient, constants};
 use utils::uuid::uuid;
 use error::prelude::*;
-use connection::get_agent_info;
+use utils::agent_info::get_agent_info;
 use utils::httpclient::AgencyMock;
 
 #[derive(Debug)]
