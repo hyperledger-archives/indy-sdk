@@ -556,3 +556,39 @@ class Connection(VcxStateful):
         their_pw_did =\
             await do_call('vcx_connection_get_their_pw_did', c_connection_handle, Connection.get_their_pw_did.cb)
         return their_pw_did.decode()
+
+    async def info(self) -> dict:
+        """
+        Get the information regarding the connection object.
+        Note: This method can be used for `aries` communication method only.
+            For other communication method it returns ActionNotSupported error.
+        :return: JSON of connection information
+        {
+            "current": {
+                "did": <str>
+                "recipientKeys": array<str>
+                "routingKeys": array<str>
+                "serviceEndpoint": <str>,
+                "protocols": array<str> -  The set of protocol supported by current side.
+            },
+            "remote: { <Option> - details about remote connection side
+                "did": <str> - DID of remote side
+                "recipientKeys": array<str> - Recipient keys
+                "routingKeys": array<str> - Routing keys
+                "serviceEndpoint": <str> - Endpoint
+                "protocols": array<str> -
+                    The set of protocol supported by side. Is filled after DiscoveryFeatures process was completed.
+             }
+        }
+        """
+        if not hasattr(Connection.info, "cb"):
+            self.logger.debug("vcx_connection_info: Creating callback")
+            Connection.info.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_connection_handle = c_uint32(self.handle)
+
+        details = await do_call('vcx_connection_info',
+                                c_connection_handle,
+                                Connection.info.cb)
+
+        return json.loads(details.decode())

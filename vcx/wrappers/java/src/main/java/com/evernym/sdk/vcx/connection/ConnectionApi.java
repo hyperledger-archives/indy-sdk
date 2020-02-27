@@ -435,4 +435,23 @@ public class ConnectionApi extends VcxJava.API {
 
         return future;
     }
+
+	private static Callback vcxConnectionInfoCB = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int commandHandle, int err, String info) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], info = [" + info + "]");
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+			if (! checkCallback(future, err)) return;
+			future.complete(info);
+		}
+	};
+
+	public static CompletableFuture<String> connectionInfo(int connectionHandle) throws VcxException {
+		logger.debug("connectionInfo() called with: connectionHandle = [" + connectionHandle + "]");
+		CompletableFuture<String> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+		int result = LibVcx.api.vcx_connection_info(commandHandle, connectionHandle, vcxConnectionInfoCB);
+		checkResult(result);
+		return future;
+	}
 }
