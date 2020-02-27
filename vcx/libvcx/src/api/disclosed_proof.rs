@@ -209,7 +209,7 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: CommandHandle,
            command_handle, proof_handle, connection_handle, source_id);
 
     spawn(move || {
-       match disclosed_proof::send_proof(proof_handle, connection_handle) {
+        match disclosed_proof::send_proof(proof_handle, connection_handle) {
             Ok(_) => {
                 trace!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}) source_id: {}",
                        command_handle, error::SUCCESS.message, source_id);
@@ -939,71 +939,85 @@ mod tests {
 
     use super::*;
     use std::ffi::CString;
-    use std::time::Duration;
     use connection;
     use api::VcxStateType;
     use utils::constants::DEFAULT_SERIALIZE_VERSION;
     use api::return_types_u32;
     use serde_json::Value;
+    use utils::devsetup::*;
+    use utils::httpclient::AgencyMock;
+    use utils::timeout::TimeoutUtils;
 
     pub const BAD_PROOF_REQUEST: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
 
+    fn _vcx_disclosed_proof_create_with_request_c_closure(proof_request: &str) -> Result<u32, u32> {
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_disclosed_proof_create_with_request(cb.command_handle,
+                                                CString::new("test_create").unwrap().into_raw(),
+                                                CString::new(proof_request).unwrap().into_raw(),
+                                                Some(cb.get_callback()));
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
+        cb.receive(TimeoutUtils::some_medium())
+    }
+
     #[test]
     fn test_vcx_proof_create_with_request_success() {
-        init!("true");
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
-                                                           CString::new("test_create").unwrap().into_raw(),
-                                                           CString::new(::utils::constants::PROOF_REQUEST_JSON).unwrap().into_raw(),
-                                                           Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        assert!(handle > 0);
     }
 
     #[test]
     fn test_vcx_proof_create_with_request() {
-        init!("true");
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_disclosed_proof_create_with_request(
-            cb.command_handle,
-            CString::new("test_create").unwrap().into_raw(),
-            CString::new(BAD_PROOF_REQUEST).unwrap().into_raw(),
-            Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::INVALID_JSON.code_num));
+        let _setup = SetupMocks::init();
+
+        let err = _vcx_disclosed_proof_create_with_request_c_closure(BAD_PROOF_REQUEST).unwrap_err();
+        assert_eq!(err, error::INVALID_JSON.code_num);
     }
 
     #[test]
     fn test_create_with_msgid() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cxn = ::connection::tests::build_test_connection();
-        ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
+
+        AgencyMock::set_next_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
+
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_msgid(cb.command_handle,
                                                          CString::new("test_create_with_msgid").unwrap().into_raw(),
                                                          cxn,
                                                          CString::new("123").unwrap().into_raw(),
                                                          Some(cb.get_callback())), error::SUCCESS.code_num);
-        let (handle, disclosed_proof) = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let (handle, disclosed_proof) = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert!(handle > 0 && disclosed_proof.is_some());
     }
 
     #[test]
     fn test_vcx_disclosed_proof_release() {
-        init!("true");
-        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
-        let unknown_handle = handle + 1;
-        let err = vcx_disclosed_proof_release(unknown_handle);
-        assert_eq!(err, error::INVALID_DISCLOSED_PROOF_HANDLE.code_num);
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        assert_eq!(vcx_disclosed_proof_release(handle + 1), error::INVALID_DISCLOSED_PROOF_HANDLE.code_num);
+        assert_eq!(vcx_disclosed_proof_release(handle), error::SUCCESS.code_num);
+        assert_eq!(vcx_disclosed_proof_release(handle), error::INVALID_DISCLOSED_PROOF_HANDLE.code_num);
     }
 
     #[test]
     fn test_vcx_disclosed_proof_serialize_and_deserialize() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(vcx_disclosed_proof_serialize(cb.command_handle,
                                                  handle,
                                                  Some(cb.get_callback())), error::SUCCESS.code_num);
-        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+        let s = cb.receive(TimeoutUtils::some_short()).unwrap().unwrap();
+
         let j: Value = serde_json::from_str(&s).unwrap();
         assert_eq!(j["version"], DEFAULT_SERIALIZE_VERSION);
 
@@ -1013,96 +1027,96 @@ mod tests {
                                                    Some(cb.get_callback())),
                    error::SUCCESS.code_num);
 
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert!(handle > 0);
     }
 
     #[test]
     fn test_generate_msg() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(vcx_disclosed_proof_get_proof_msg(cb.command_handle,
                                                      handle,
                                                      Some(cb.get_callback())), error::SUCCESS.code_num);
-        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
-        println!("{}", s);
-        assert!(s.len() > 0);
+        let _s = cb.receive(TimeoutUtils::some_short()).unwrap().unwrap();
     }
 
     #[test]
     fn test_vcx_send_proof() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(disclosed_proof::get_state(handle).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
 
         let connection_handle = connection::tests::build_test_connection();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_send_proof(cb.command_handle, handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_reject_proof_request() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(disclosed_proof::get_state(handle).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
 
         let connection_handle = connection::tests::build_test_connection();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_reject_proof(cb.command_handle, handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_get_reject_msg() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(disclosed_proof::get_state(handle).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
 
         let _connection_handle = connection::tests::build_test_connection();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_reject_msg(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_proof_get_requests() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cxn = ::connection::tests::build_test_connection();
-        ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
+
+        AgencyMock::set_next_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_requests(cb.command_handle, cxn, Some(cb.get_callback())), error::SUCCESS.code_num as u32);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_proof_get_state() {
-        init!("true");
-        let handle = disclosed_proof::create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap();
-        assert!(handle > 0);
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let state = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert_eq!(state, VcxStateType::VcxStateRequestReceived as u32);
     }
 
     #[test]
     fn test_vcx_disclosed_proof_retrieve_credentials() {
-        init!("true");
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
-                                                           CString::new("test_create").unwrap().into_raw(),
-                                                           CString::new(::utils::constants::PROOF_REQUEST_JSON).unwrap().into_raw(),
-                                                           Some(cb.get_callback())), error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_retrieve_credentials(cb.command_handle,
                                                             handle,
@@ -1113,19 +1127,16 @@ mod tests {
 
     #[test]
     fn test_vcx_disclosed_proof_generate_proof() {
-        init!("true");
-        let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
-                                                           CString::new("test_create").unwrap().into_raw(),
-                                                           CString::new(::utils::constants::PROOF_REQUEST_JSON).unwrap().into_raw(),
-                                                           Some(cb.get_callback())), error::SUCCESS.code_num);
-        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _setup = SetupMocks::init();
+
+        let handle = _vcx_disclosed_proof_create_with_request_c_closure(::utils::constants::PROOF_REQUEST_JSON).unwrap();
+
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_generate_proof(cb.command_handle,
-                                                      proof_handle,
+                                                      handle,
                                                       CString::new("{}").unwrap().into_raw(),
                                                       CString::new("{}").unwrap().into_raw(),
                                                       Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 }

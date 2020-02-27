@@ -662,41 +662,43 @@ mod tests {
     use std::ffi::CString;
     use std::ptr;
     use std::str;
-    use std::time::Duration;
-    use std::thread;
     use proof;
-    use connection;
-    use api::{ ProofStateType, return_types_u32, VcxStateType };
+    use api::{ProofStateType, return_types_u32, VcxStateType};
     use utils::constants::*;
+    use utils::devsetup::*;
+    use connection::tests::build_test_connection;
+    use utils::timeout::TimeoutUtils;
 
     static DEFAULT_PROOF_NAME: &'static str = "PROOF_NAME";
 
-    fn create_proof_util() -> (return_types_u32::Return_U32_U32, u32) {
+    fn create_proof_util() -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_proof_create(cb.command_handle,
-                                    CString::new(DEFAULT_PROOF_NAME).unwrap().into_raw(),
-                                    CString::new(REQUESTED_ATTRS).unwrap().into_raw(),
-                                    CString::new(REQUESTED_PREDICATES).unwrap().into_raw(),
+                                  CString::new(DEFAULT_PROOF_NAME).unwrap().into_raw(),
+                                  CString::new(REQUESTED_ATTRS).unwrap().into_raw(),
+                                  CString::new(REQUESTED_PREDICATES).unwrap().into_raw(),
                                   CString::new(r#"{"support_revocation":false}"#).unwrap().into_raw(),
-                                    CString::new("optional").unwrap().into_raw(),
-                                    Some(cb.get_callback()));
-        (cb, rc)
+                                  CString::new("optional").unwrap().into_raw(),
+                                  Some(cb.get_callback()));
+        if rc != error::SUCCESS.code_num {
+            return Err(rc);
+        }
+        cb.receive(TimeoutUtils::some_medium())
     }
 
     #[test]
     fn test_vcx_create_proof_success() {
-        init!("true");
-        let (cb, rc) = create_proof_util();
-        assert_eq!(rc, error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _setup = SetupMocks::init();
+
+        let handle = create_proof_util().unwrap();
+        assert!(handle > 0);
     }
 
     #[test]
     fn test_proof_no_agency() {
-        init!("true");
-        let (cb, rc) = create_proof_util();
-        assert_eq!(rc, error::SUCCESS.code_num);
-        let ph = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _setup = SetupMocks::init();
+
+        let ph = create_proof_util().unwrap();
         let request = ::proof::generate_proof_request_msg(ph).unwrap();
         let dp = ::disclosed_proof::create_proof("test", &request).unwrap();
         let p = ::disclosed_proof::generate_proof_msg(dp).unwrap();
@@ -706,7 +708,8 @@ mod tests {
 
     #[test]
     fn test_vcx_create_proof_fails() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_proof_create(cb.command_handle,
                                     ptr::null(),
@@ -720,80 +723,77 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_get_request_msg() {
-        init!("true");
-        let (cb, rc) = create_proof_util();
-        assert_eq!(rc, error::SUCCESS.code_num);
-        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _setup = SetupMocks::init();
+
+        let proof_handle = create_proof_util().unwrap();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_proof_get_request_msg(cb.command_handle, proof_handle, Some(cb.get_callback())),
-                                             error::SUCCESS.code_num);
-        let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
-        println!("{}", msg);
-        assert!(msg.len() > 0);
+                   error::SUCCESS.code_num);
+        let _msg = cb.receive(TimeoutUtils::some_medium()).unwrap().unwrap();
     }
 
     #[test]
     fn test_vcx_proof_serialize() {
-        init!("true");
-        let (cb, rc) = create_proof_util();
-        assert_eq!(rc, error::SUCCESS.code_num);
-        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _setup = SetupMocks::init();
+
+        let proof_handle = create_proof_util().unwrap();
+
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_proof_serialize(cb.command_handle,
                                        proof_handle,
                                        Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
     fn test_vcx_proof_deserialize_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_proof_deserialize(cb.command_handle,
                                          CString::new(PROOF_OFFER_SENT).unwrap().into_raw(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert!(handle > 0);
     }
 
     #[test]
     fn test_proof_update_state() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let (cb, rc) = create_proof_util();
-        assert_eq!(rc, error::SUCCESS.code_num);
-        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let proof_handle = create_proof_util().unwrap();
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_proof_update_state(cb.command_handle,
                                           proof_handle,
                                           Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let state = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert_eq!(state, VcxStateType::VcxStateInitialized as u32);
     }
 
     #[test]
     fn test_vcx_proof_send_request() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
-        let (cb, rc) = create_proof_util();
-        assert_eq!(rc, error::SUCCESS.code_num);
-        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
-        assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateInitialized as u32);
+        let proof_handle = create_proof_util().unwrap();
 
-        let connection_handle = ::connection::tests::build_test_connection();
+        assert_eq!(proof::get_state(proof_handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
+
+        let connection_handle = build_test_connection();
+
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_proof_send_request(cb.command_handle,
                                           proof_handle,
                                           connection_handle,
                                           Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
 
-        assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateOfferSent as u32);
+        assert_eq!(proof::get_state(proof_handle).unwrap(), VcxStateType::VcxStateOfferSent as u32);
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_proof_update_state_with_message(cb.command_handle,
@@ -801,58 +801,55 @@ mod tests {
                                                        CString::new(PROOF_RESPONSE_STR).unwrap().into_raw(),
                                                        Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let _state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _state = cb.receive(TimeoutUtils::some_medium()).unwrap();
 
-        assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateAccepted as u32);
+        assert_eq!(proof::get_state(proof_handle).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]
     fn test_get_proof_fails_when_not_ready_with_proof() {
-        init!("true");
-        let (cb, rc) = create_proof_util();
-        assert_eq!(rc, error::SUCCESS.code_num);
-        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
-        let connection_handle = connection::tests::build_test_connection();
-        connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB").unwrap();
+        let _setup = SetupMocks::init();
 
-        thread::sleep(Duration::from_millis(300));
+        let proof_handle = create_proof_util().unwrap();
+
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         assert_eq!(vcx_get_proof(cb.command_handle,
                                  proof_handle,
-                                 connection_handle,
+                                 0,
                                  Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let _ = cb.receive(Some(Duration::from_secs(10))).is_err();
+        let _ = cb.receive(TimeoutUtils::some_medium()).is_err();
     }
 
     #[test]
     fn test_get_proof_returns_proof_with_proof_state_invalid() {
-        init!("true");
-        let connection_handle = connection::tests::build_test_connection();
-        connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB").unwrap();
+        let _setup = SetupMocks::init();
+
         let proof_handle = proof::from_string(PROOF_WITH_INVALID_STATE).unwrap();
+
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         assert_eq!(vcx_get_proof(cb.command_handle,
                                  proof_handle,
-                                 connection_handle,
+                                 0,
                                  Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let (state, _) = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let (state, _) = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert_eq!(state, ProofStateType::ProofInvalid as u32);
+
         vcx_proof_release(proof_handle);
-        let unknown_handle = proof_handle + 1;
-        assert_eq!(vcx_proof_release(unknown_handle), error::INVALID_PROOF_HANDLE.code_num);
+        assert_eq!(vcx_proof_release(proof_handle), error::INVALID_PROOF_HANDLE.code_num);
     }
 
     #[test]
     fn test_vcx_connection_get_state() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let handle = proof::from_string(PROOF_OFFER_SENT).unwrap();
-        assert!(handle > 0);
-        let rc = vcx_proof_get_state(cb.command_handle,handle,Some(cb.get_callback()));
+
+        let rc = vcx_proof_get_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        let state = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let state = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert_eq!(state, VcxStateType::VcxStateOfferSent as u32);
     }
 }

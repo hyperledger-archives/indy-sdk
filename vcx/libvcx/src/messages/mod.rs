@@ -900,7 +900,7 @@ pub fn try_i8_bundle(data: Vec<u8>) -> VcxResult<Bundled<Vec<u8>>> {
     let bundle: Bundled<Vec<i8>> =
         rmp_serde::from_slice(&data[..])
             .map_err(|_| {
-                warn!("could not deserialize bundle with i8, will try u8");
+                trace!("could not deserialize bundle with i8, will try u8");
                 VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Could not deserialize bundle with i8")
             })?;
 
@@ -1094,9 +1094,12 @@ pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::devsetup::*;
 
     #[test]
     fn test_to_u8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<i8> = vec![-127, -89, 98, 117, 110, 100, 108, 101, 100, -111, -36, 5, -74];
 
         let buf = to_u8(&vec);
@@ -1105,6 +1108,8 @@ pub mod tests {
 
     #[test]
     fn test_to_i8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<u8> = vec![129, 167, 98, 117, 110, 100, 108, 101, 100, 145, 220, 19, 13];
         let buf = to_i8(&vec);
         println!("new bundle: {:?}", buf);
@@ -1112,6 +1117,8 @@ pub mod tests {
 
     #[test]
     fn test_general_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = GeneralMessageDetail {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),
@@ -1129,6 +1136,8 @@ pub mod tests {
 
     #[test]
     fn test_create_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = CreateMessage {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),
