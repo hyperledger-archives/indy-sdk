@@ -662,12 +662,12 @@ mod tests {
     use std::ffi::CString;
     use std::ptr;
     use std::str;
-    use std::time::Duration;
     use proof;
     use api::{ProofStateType, return_types_u32, VcxStateType};
     use utils::constants::*;
     use utils::devsetup::*;
     use connection::tests::build_test_connection;
+    use utils::timeout::TimeoutUtils;
 
     static DEFAULT_PROOF_NAME: &'static str = "PROOF_NAME";
 
@@ -683,7 +683,7 @@ mod tests {
         if rc != error::SUCCESS.code_num {
             return Err(rc);
         }
-        cb.receive(Some(Duration::from_secs(10)))
+        cb.receive(TimeoutUtils::some_medium())
     }
 
     #[test]
@@ -730,7 +730,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_proof_get_request_msg(cb.command_handle, proof_handle, Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let _msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        let _msg = cb.receive(TimeoutUtils::some_medium()).unwrap().unwrap();
     }
 
     #[test]
@@ -744,7 +744,7 @@ mod tests {
                                        proof_handle,
                                        Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -756,7 +756,7 @@ mod tests {
                                          CString::new(PROOF_OFFER_SENT).unwrap().into_raw(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert!(handle > 0);
     }
 
@@ -771,7 +771,7 @@ mod tests {
                                           proof_handle,
                                           Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let state = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert_eq!(state, VcxStateType::VcxStateInitialized as u32);
     }
 
@@ -791,7 +791,7 @@ mod tests {
                                           connection_handle,
                                           Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
 
         assert_eq!(proof::get_state(proof_handle).unwrap(), VcxStateType::VcxStateOfferSent as u32);
 
@@ -801,7 +801,7 @@ mod tests {
                                                        CString::new(PROOF_RESPONSE_STR).unwrap().into_raw(),
                                                        Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let _state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _state = cb.receive(TimeoutUtils::some_medium()).unwrap();
 
         assert_eq!(proof::get_state(proof_handle).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
@@ -818,7 +818,7 @@ mod tests {
                                  0,
                                  Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let _ = cb.receive(Some(Duration::from_secs(10))).is_err();
+        let _ = cb.receive(TimeoutUtils::some_medium()).is_err();
     }
 
     #[test]
@@ -833,7 +833,7 @@ mod tests {
                                  0,
                                  Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let (state, _) = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let (state, _) = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert_eq!(state, ProofStateType::ProofInvalid as u32);
 
         vcx_proof_release(proof_handle);
@@ -849,7 +849,7 @@ mod tests {
 
         let rc = vcx_proof_get_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        let state = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let state = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert_eq!(state, VcxStateType::VcxStateOfferSent as u32);
     }
 }

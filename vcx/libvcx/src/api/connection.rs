@@ -1232,12 +1232,12 @@ mod tests {
     use std::ptr;
     use connection::tests::build_test_connection;
     use utils::error;
-    use std::time::Duration;
     use api::{return_types_u32, VcxStateType};
     use utils::constants::{GET_MESSAGES_RESPONSE, INVITE_ACCEPTED_RESPONSE};
     use utils::error::SUCCESS;
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
+    use utils::timeout::TimeoutUtils;
 
     #[test]
     fn test_vcx_connection_create() {
@@ -1248,7 +1248,7 @@ mod tests {
                                        CString::new("test_create").unwrap().into_raw(),
                                        Some(cb.get_callback()));
 
-        assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
+        assert!(cb.receive(TimeoutUtils::some_medium()).unwrap() > 0);
     }
 
     #[test]
@@ -1278,7 +1278,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_connection_connect(cb.command_handle, handle, CString::new("{}").unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        let invite_details = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let invite_details = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert!(invite_details.is_some());
     }
 
@@ -1317,7 +1317,7 @@ mod tests {
         AgencyMock::set_next_response(GET_MESSAGES_RESPONSE.to_vec());
         let rc = vcx_connection_update_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]
@@ -1330,7 +1330,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_connection_update_state_with_message(cb.command_handle, handle, CString::new(INVITE_ACCEPTED_RESPONSE).unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]
@@ -1353,7 +1353,7 @@ mod tests {
         assert_eq!(rc, error::SUCCESS.code_num);
 
         // unwraps on the option, if none, then serializing failed and panic! ensues.
-        cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap().unwrap();
     }
 
     #[test]
@@ -1383,7 +1383,7 @@ mod tests {
                                              CString::new(string).unwrap().into_raw(),
                                              Some(cb.get_callback()));
         assert_eq!(err, SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert!(handle > 0);
     }
 
@@ -1397,12 +1397,12 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let _rc = vcx_connection_update_state(cb.command_handle, handle, Some(cb.get_callback()));
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateAccepted as u32);
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_connection_get_state(cb.command_handle, handle, Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32)
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateAccepted as u32)
     }
 
     #[test]
@@ -1413,7 +1413,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_connection_delete_connection(cb.command_handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
 
         assert_eq!(::connection::get_source_id(connection_handle).unwrap_err().kind(), VcxErrorKind::InvalidConnectionHandle);
     }
@@ -1429,7 +1429,7 @@ mod tests {
         let send_msg_options = CString::new(json!({"msg_type":"type", "msg_title": "title", "ref_msg_id":null}).to_string()).unwrap().into_raw();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_connection_send_message(cb.command_handle, connection_handle, msg, send_msg_options, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -1447,7 +1447,7 @@ mod tests {
                                             CString::new(msg).unwrap().as_ptr() as *const u8,
                                             msg_len as u32,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        let _sig = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let _sig = cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -1470,6 +1470,6 @@ mod tests {
                                                    CString::new(signature).unwrap().as_ptr() as *const u8,
                                                    signature_length as u32,
                                                    Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 }

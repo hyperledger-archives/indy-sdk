@@ -939,7 +939,6 @@ mod tests {
 
     use super::*;
     use std::ffi::CString;
-    use std::time::Duration;
     use connection;
     use api::VcxStateType;
     use utils::constants::DEFAULT_SERIALIZE_VERSION;
@@ -947,6 +946,7 @@ mod tests {
     use serde_json::Value;
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
+    use utils::timeout::TimeoutUtils;
 
     pub const BAD_PROOF_REQUEST: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
 
@@ -959,7 +959,7 @@ mod tests {
         if rc != error::SUCCESS.code_num {
             return Err(rc);
         }
-        cb.receive(Some(Duration::from_secs(10)))
+        cb.receive(TimeoutUtils::some_medium())
     }
 
     #[test]
@@ -992,7 +992,7 @@ mod tests {
                                                          cxn,
                                                          CString::new("123").unwrap().into_raw(),
                                                          Some(cb.get_callback())), error::SUCCESS.code_num);
-        let (handle, disclosed_proof) = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let (handle, disclosed_proof) = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert!(handle > 0 && disclosed_proof.is_some());
     }
 
@@ -1016,7 +1016,7 @@ mod tests {
         assert_eq!(vcx_disclosed_proof_serialize(cb.command_handle,
                                                  handle,
                                                  Some(cb.get_callback())), error::SUCCESS.code_num);
-        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+        let s = cb.receive(TimeoutUtils::some_short()).unwrap().unwrap();
 
         let j: Value = serde_json::from_str(&s).unwrap();
         assert_eq!(j["version"], DEFAULT_SERIALIZE_VERSION);
@@ -1027,7 +1027,7 @@ mod tests {
                                                    Some(cb.get_callback())),
                    error::SUCCESS.code_num);
 
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert!(handle > 0);
     }
 
@@ -1041,7 +1041,7 @@ mod tests {
         assert_eq!(vcx_disclosed_proof_get_proof_msg(cb.command_handle,
                                                      handle,
                                                      Some(cb.get_callback())), error::SUCCESS.code_num);
-        let _s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+        let _s = cb.receive(TimeoutUtils::some_short()).unwrap().unwrap();
     }
 
     #[test]
@@ -1055,7 +1055,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_send_proof(cb.command_handle, handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -1069,7 +1069,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_reject_proof(cb.command_handle, handle, connection_handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -1083,7 +1083,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_reject_msg(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -1096,7 +1096,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_requests(cb.command_handle, cxn, Some(cb.get_callback())), error::SUCCESS.code_num as u32);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -1107,7 +1107,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let state = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert_eq!(state, VcxStateType::VcxStateRequestReceived as u32);
     }
 
@@ -1137,6 +1137,6 @@ mod tests {
                                                       CString::new("{}").unwrap().into_raw(),
                                                       CString::new("{}").unwrap().into_raw(),
                                                       Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 }

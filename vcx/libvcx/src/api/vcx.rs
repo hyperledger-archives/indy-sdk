@@ -458,7 +458,6 @@ pub extern fn vcx_get_current_error(error_json_p: *mut *const c_char) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
     use std::ptr;
     use utils::{
         libindy::{
@@ -478,6 +477,7 @@ mod tests {
     use utils::libindy::wallet::get_wallet_handle;
     #[cfg(feature = "pool_tests")]
     use utils::libindy::pool::tests::delete_test_pool;
+    use utils::timeout::TimeoutUtils;
 
     #[cfg(any(feature = "agency", feature = "pool_tests"))]
     fn config() -> String {
@@ -502,7 +502,7 @@ mod tests {
         if rc != error::SUCCESS.code_num {
             return Err(rc);
         }
-        cb.receive(Some(Duration::from_secs(10)))
+        cb.receive(TimeoutUtils::some_medium())
     }
 
     fn _vcx_init_with_config_c_closure(config: &str) -> Result<(), u32> {
@@ -513,7 +513,7 @@ mod tests {
         if rc != error::SUCCESS.code_num {
             return Err(rc);
         }
-        cb.receive(Some(Duration::from_secs(10)))
+        cb.receive(TimeoutUtils::some_medium())
     }
 
     #[cfg(feature = "pool_tests")]
@@ -933,7 +933,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_ledger_author_agreement(cb.command_handle,
                                                    Some(cb.get_callback())), error::SUCCESS.code_num);
-        let agreement = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let agreement = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert_eq!(::utils::constants::DEFAULT_AUTHOR_AGREEMENT, agreement.unwrap());
     }
 

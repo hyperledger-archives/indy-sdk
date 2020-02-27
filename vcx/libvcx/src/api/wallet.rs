@@ -898,12 +898,12 @@ pub mod tests {
     use api::return_types_u32;
     use std::ptr;
     use std::ffi::CString;
-    use std::time::Duration;
     use utils::libindy::wallet::{delete_wallet, init_wallet};
     #[cfg(feature = "pool_tests")]
     use utils::libindy::payments::build_test_address;
     use utils::devsetup::*;
     use settings;
+    use utils::timeout::TimeoutUtils;
 
     #[test]
     fn test_get_token_info() {
@@ -914,7 +914,7 @@ pub mod tests {
                                              0,
                                              Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -928,7 +928,7 @@ pub mod tests {
                                           CString::new("address").unwrap().into_raw(),
                                           Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -940,7 +940,7 @@ pub mod tests {
                                                      ptr::null_mut(),
                                                      Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -957,7 +957,7 @@ pub mod tests {
                                                 msg_len as u32,
                                                 Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let res = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let res = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert_eq!(msg.as_bytes(), res.as_slice());
     }
 
@@ -980,7 +980,7 @@ pub mod tests {
                                                   sig_len as u32,
                                                   Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let res = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let res = cb.receive(TimeoutUtils::some_medium()).unwrap();
         assert!(res);
     }
 
@@ -1000,7 +1000,7 @@ pub mod tests {
         vcx_wallet_create_payment_address(cb_addr.command_handle,
                                           ptr::null_mut(),
                                           Some(cb_addr.get_callback()));
-        let addr = cb_addr.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        let addr = cb_addr.receive(TimeoutUtils::some_medium()).unwrap().unwrap();
         let addr_raw = CString::new(addr.clone()).unwrap();
 
         let res_sign = vcx_wallet_sign_with_address(cb_sign.command_handle,
@@ -1011,7 +1011,7 @@ pub mod tests {
         assert_eq!(res_sign, error::SUCCESS.code_num);
 
         let addr_raw = CString::new(addr).unwrap();
-        let sig = cb_sign.receive(Some(Duration::from_secs(10))).unwrap();
+        let sig = cb_sign.receive(TimeoutUtils::some_medium()).unwrap();
 
         let res_verify = vcx_wallet_verify_with_address(cb_verify.command_handle,
                                                       addr_raw.into_raw(),
@@ -1021,7 +1021,7 @@ pub mod tests {
                                                       sig.len() as u32,
                                                       Some(cb_verify.get_callback()));
         assert_eq!(res_verify, error::SUCCESS.code_num);
-        let valid = cb_verify.receive(Some(Duration::from_secs(10))).unwrap();
+        let valid = cb_verify.receive(TimeoutUtils::some_medium()).unwrap();
         assert!(valid);
     }
 
@@ -1041,7 +1041,7 @@ pub mod tests {
                                           recipient.as_ptr(),
                                           Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
         let new_balance = ::utils::libindy::payments::get_wallet_token_info().unwrap().get_balance();
         assert_eq!(balance - tokens, new_balance);
     }
@@ -1064,7 +1064,7 @@ pub mod tests {
                                          tags.as_ptr(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
 
         // Failure because of duplicate
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -1076,7 +1076,7 @@ pub mod tests {
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
 
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::DUPLICATE_WALLET_RECORD.code_num));
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).err(), Some(error::DUPLICATE_WALLET_RECORD.code_num));
     }
 
     #[test]
@@ -1096,7 +1096,7 @@ pub mod tests {
                                          tags.as_ptr(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -1119,7 +1119,7 @@ pub mod tests {
                                          options.as_ptr(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::WALLET_RECORD_NOT_FOUND.code_num));
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).err(), Some(error::WALLET_RECORD_NOT_FOUND.code_num));
     }
 
     #[test]
@@ -1146,7 +1146,7 @@ pub mod tests {
                                          tags.as_ptr(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_wallet_get_record(cb.command_handle,
@@ -1155,7 +1155,7 @@ pub mod tests {
                                          options.as_ptr(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -1175,7 +1175,7 @@ pub mod tests {
                                          tags.as_ptr(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
 
         // Successful deletion
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -1184,7 +1184,7 @@ pub mod tests {
                                             id.as_ptr(),
                                             Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
 
         // Fails with no record
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -1193,7 +1193,7 @@ pub mod tests {
                                             id.as_ptr(),
                                             Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(),
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).err(),
                    Some(error::WALLET_RECORD_NOT_FOUND.code_num));
     }
 
@@ -1220,7 +1220,7 @@ pub mod tests {
                                                   options.as_ptr(),
                                                   Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(),
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).err(),
                    Some(error::WALLET_RECORD_NOT_FOUND.code_num));
 
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -1230,7 +1230,7 @@ pub mod tests {
                                          tags.as_ptr(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
 
         // Assert update works
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -1240,7 +1240,7 @@ pub mod tests {
                                                   options.as_ptr(),
                                                   Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -1261,7 +1261,7 @@ pub mod tests {
                                      CString::new(export_file.path.clone()).unwrap().as_ptr(),
                                      CString::new(backup_key.clone()).unwrap().as_ptr(),
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(50))).unwrap();
+        cb.receive(TimeoutUtils::some_long()).unwrap();
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
 
@@ -1276,7 +1276,7 @@ pub mod tests {
         assert_eq!(vcx_wallet_import(cb.command_handle,
                                      CString::new(import_config).unwrap().as_ptr(),
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(50))).unwrap();
+        cb.receive(TimeoutUtils::some_long()).unwrap();
 
         delete_wallet(&wallet_name, None, None, None).unwrap();
     }

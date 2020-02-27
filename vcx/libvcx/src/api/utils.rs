@@ -567,11 +567,11 @@ pub extern fn vcx_endorse_transaction(command_handle: CommandHandle,
 mod tests {
     use super::*;
     use std::ffi::CString;
-    use std::time::Duration;
     use api::return_types_u32;
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
     use utils::constants::REGISTER_RESPONSE;
+    use utils::timeout::TimeoutUtils;
 
     static CONFIG: &'static str = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":"key"}"#;
 
@@ -583,7 +583,7 @@ mod tests {
         if rc != error::SUCCESS.code_num {
             return Err(rc);
         }
-        cb.receive(Some(Duration::from_secs(2)))
+        cb.receive(TimeoutUtils::some_short())
     }
 
     #[test]
@@ -642,7 +642,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         let _result = vcx_agent_update_info(cb.command_handle, c_json, Some(cb.get_callback()));
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -677,7 +677,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_messages_download(cb.command_handle, ptr::null_mut(), ptr::null_mut(), ptr::null_mut(), Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -693,7 +693,7 @@ mod tests {
                                               json,
                                               Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 }
 

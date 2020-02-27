@@ -818,7 +818,6 @@ mod tests {
 
     use super::*;
     use std::ffi::CString;
-    use std::time::Duration;
     use connection;
     use api::VcxStateType;
     use api::return_types_u32;
@@ -826,6 +825,7 @@ mod tests {
     use utils::constants::{DEFAULT_SERIALIZED_CREDENTIAL, DEFAULT_SERIALIZE_VERSION, FULL_CREDENTIAL_SERIALIZED};
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
+    use utils::timeout::TimeoutUtils;
 
     use ::credential::tests::BAD_CREDENTIAL_OFFER;
     use utils::constants;
@@ -841,7 +841,7 @@ mod tests {
             return Err(rc);
         }
 
-        let handle = cb.receive(Some(Duration::from_secs(10)));
+        let handle = cb.receive(TimeoutUtils::some_medium());
         handle
     }
 
@@ -871,7 +871,7 @@ mod tests {
         assert_eq!(vcx_credential_serialize(cb.command_handle,
                                             handle,
                                             Some(cb.get_callback())), error::SUCCESS.code_num);
-        let credential_json = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+        let credential_json = cb.receive(TimeoutUtils::some_short()).unwrap().unwrap();
 
         let object: Value = serde_json::from_str(&credential_json).unwrap();
         assert_eq!(object["version"], DEFAULT_SERIALIZE_VERSION);
@@ -880,7 +880,7 @@ mod tests {
         assert_eq!(vcx_credential_deserialize(cb.command_handle,
                                               CString::new(credential_json).unwrap().into_raw(),
                                               Some(cb.get_callback())), error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let handle = cb.receive(TimeoutUtils::some_short()).unwrap();
         assert!(handle > 0);
     }
 
@@ -895,7 +895,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_credential_send_request(cb.command_handle, handle, connection_handle, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -909,7 +909,7 @@ mod tests {
                                              cxn,
                                              Some(cb.get_callback())),
                    error::SUCCESS.code_num as u32);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -924,7 +924,7 @@ mod tests {
                                                     cxn,
                                                     CString::new("123").unwrap().into_raw(),
                                                     Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -935,7 +935,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credential_get_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
     }
 
     #[test]
@@ -950,11 +950,11 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credential_update_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_credential_send_request(cb.command_handle, handle, cxn, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
@@ -972,11 +972,11 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credential_update_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_credential_get_request_msg(cb.command_handle, handle, my_pw_did, their_pw_did, 0, Some(cb.get_callback())), error::SUCCESS.code_num);
-        let msg = cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        let msg = cb.receive(TimeoutUtils::some_medium()).unwrap().unwrap();
 
         ::serde_json::from_str::<CredentialRequest>(&msg).unwrap();
     }
@@ -990,7 +990,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap().unwrap();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, bad_handle, Some(cb.get_callback())), error::INVALID_CREDENTIAL_HANDLE.code_num);
@@ -999,7 +999,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
-        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::INVALID_STATE.code_num));
+        assert_eq!(cb.receive(TimeoutUtils::some_medium()).err(), Some(error::INVALID_STATE.code_num));
     }
 
     #[test]
@@ -1010,7 +1010,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         vcx_credential_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(TimeoutUtils::some_medium()).unwrap();
     }
 
     #[test]
