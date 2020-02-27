@@ -7,7 +7,24 @@ use std::env;
 use error::prelude::*;
 
 lazy_static! {
-    static ref NEXT_U8_RESPONSE: Mutex<Vec<Vec<u8>>> = Mutex::new(vec![]);
+    static ref AGENCY_MOCK: Mutex<AgencyMock> = Mutex::new(AgencyMock::default());
+}
+
+#[derive(Default)]
+pub struct AgencyMock {
+    responses: Vec<Vec<u8>>
+}
+
+impl AgencyMock {
+    pub fn set_next_response(body: Vec<u8>) {
+        if settings::agency_mocks_enabled() {
+            AGENCY_MOCK.lock().unwrap().responses.push(body);
+        }
+    }
+
+    pub fn get_response() -> VcxResult<Vec<u8>> {
+        Ok(AGENCY_MOCK.lock().unwrap().responses.pop().unwrap_or_default())
+    }
 }
 
 //Todo: change this RC to a u32
@@ -17,8 +34,8 @@ pub fn post_u8(body_content: &Vec<u8>) -> VcxResult<Vec<u8>> {
 }
 
 pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
-    if settings::test_agency_mode_enabled() {
-        return Ok(NEXT_U8_RESPONSE.lock().unwrap().pop().unwrap_or(Vec::new()));
+    if settings::agency_mocks_enabled() {
+        return AgencyMock::get_response();
     }
 
     //Setting SSL Certs location. This is needed on android platform. Or openssl will fail to verify the certs
@@ -55,10 +72,6 @@ pub fn post_message(body_content: &Vec<u8>, url: &str) -> VcxResult<Vec<u8>> {
         .or(Err(VcxError::from_msg(VcxErrorKind::PostMessageFailed, "could not read response")))?;
 
     Ok(content)
-}
-
-pub fn set_next_u8_response(body: Vec<u8>) {
-    NEXT_U8_RESPONSE.lock().unwrap().push(body);
 }
 
 fn set_ssl_cert_location() {

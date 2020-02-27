@@ -9,11 +9,12 @@ pub const SERIALIZE_VERSION: &'static str = "2.0";
 pub mod test {
     use rand;
     use rand::Rng;
-    use utils::devsetup::tests::{init_plugin, config_with_wallet_handle};
+    use utils::devsetup::config_with_wallet_handle;
     use messages::agent_utils::connect_register_provision;
     use utils::libindy::wallet::*;
     use v3::messages::a2a::A2AMessage;
     use indy_sys::WalletHandle;
+    use utils::plugins::init_plugin;
 
     pub fn source_id() -> String {
         String::from("test source id")
@@ -45,17 +46,6 @@ pub mod test {
             })
         }
 
-        pub struct TestModeSetup {}
-
-        impl TestModeSetup {
-            pub fn init() -> TestModeSetup {
-                let mut config = base_config();
-                config["enable_test_mode"] = json!("true");
-                ::settings::process_config_string(&config.to_string(), false).unwrap();
-                TestModeSetup {}
-            }
-        }
-
         pub struct AgencyModeSetup {
             pub wallet_name: String,
             pub wallet_handle: WalletHandle,
@@ -67,12 +57,12 @@ pub mod test {
 
                 let mut config = base_config();
                 config["wallet_name"] = json!(wallet_name);
-                config["enable_test_mode"] = json!("agency");
+                config["enable_test_mode"] = json!("true");
 
                 ::settings::process_config_string(&config.to_string(), false).unwrap();
 
                 ::utils::libindy::wallet::create_wallet(wallet_name, None, None, None).unwrap();
-                let config = ::utils::devsetup::tests::config_with_wallet_handle(wallet_name, &config.to_string());
+                let config = ::utils::devsetup::config_with_wallet_handle(wallet_name, &config.to_string());
 
                 ::settings::process_config_string(&config.to_string(), false).unwrap();
 
@@ -102,7 +92,7 @@ pub mod test {
 
     impl Pool {
         pub fn open() -> Pool {
-            ::utils::libindy::pool::tests::open_sandbox_pool();
+            ::utils::libindy::pool::tests::open_test_pool();
             Pool {}
         }
     }
@@ -153,44 +143,6 @@ pub mod test {
 
             let config = connect_register_provision(&config).unwrap();
 
-            let config = config_with_wallet_handle(wallet_name, &config);
-
-            Faber {
-                config,
-                wallet_name: wallet_name.to_string(),
-                schema_handle: 0,
-                cred_def_handle: 0,
-                connection_handle: 0,
-                wallet_handle: get_wallet_handle(),
-                credential_handle: 0,
-                presentation_handle: 0
-            }
-        }
-
-        pub fn setup_local() -> Faber {
-            let wallet_name = "faber_wallet";
-
-            let config = json!({
-                "agency_did":"VsKV7grR1BUE29mG2Fm2kX",
-                "agency_endpoint":"http://localhost:8080",
-                "agency_verkey":"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
-                "communication_method":"aries",
-                "genesis_path":"<CHANGE_ME>",
-                "institution_did":"V4SGRU86Z58d6TV7PBUe6f",
-                "institution_logo_url":"<CHANGE_ME>",
-                "institution_name":"<CHANGE_ME>",
-                "institution_verkey":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-                "protocol_type":"2.0",
-                "remote_to_sdk_did":"LjC6xZPeYPeL5AjuRByMDA",
-                "remote_to_sdk_verkey":"Bkd9WFmCydMCvLKL8x47qyQTN1nbyQ8rUK8JTsQRtLGE",
-                "sdk_to_remote_did":"Mi3bbeWQDVpQCmGFBqWeYa",
-                "sdk_to_remote_verkey":"CHcPnSn48wfrUhekmcFZAmx8NvhHCh72J73WToNiK9EX",
-                "wallet_key":"123",
-                "wallet_name":"faber_wallet"
-            }).to_string();
-
-            ::settings::process_config_string(&config, false).unwrap();
-            ::utils::libindy::wallet::create_wallet(wallet_name, None, None, None).unwrap();
             let config = config_with_wallet_handle(wallet_name, &config);
 
             Faber {

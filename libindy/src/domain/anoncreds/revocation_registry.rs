@@ -1,5 +1,4 @@
 use ursa::cl::RevocationRegistry as CryptoRevocationRegistry;
-use named_type::NamedType;
 
 use std::collections::HashMap;
 
@@ -12,7 +11,7 @@ pub struct RevocationRegistryV1 {
     pub value: CryptoRevocationRegistry
 }
 
-#[derive(Debug, Serialize, Deserialize, NamedType)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]
 pub enum RevocationRegistry {
     #[serde(rename = "1.0")]

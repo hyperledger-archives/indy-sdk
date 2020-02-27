@@ -24,7 +24,7 @@ pub fn libindy_sign_request(did: &str, request: &str) -> VcxResult<String> {
 }
 
 pub fn libindy_sign_and_submit_request(issuer_did: &str, request_json: &str) -> VcxResult<String> {
-    if settings::test_indy_mode_enabled() { return Ok(r#"{"rc":"success"}"#.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(r#"{"rc":"success"}"#.to_string()); }
 
     let pool_handle = get_pool_handle()?;
     let wallet_handle = get_wallet_handle();
@@ -37,45 +37,13 @@ pub fn libindy_sign_and_submit_request(issuer_did: &str, request_json: &str) -> 
 pub fn libindy_submit_request(request_json: &str) -> VcxResult<String> {
     let pool_handle = get_pool_handle()?;
 
-    //TODO there was timeout here (before future-based Rust wrapper)
     ledger::submit_request(pool_handle, request_json)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
-}
-
-pub fn libindy_build_get_txn_request(submitter_did: &str, sequence_num: i32) -> VcxResult<String> {
-    ledger::build_get_txn_request(Some(submitter_did), None, sequence_num)
         .wait()
         .map_err(map_rust_indy_sdk_error)
 }
 
 pub fn libindy_build_schema_request(submitter_did: &str, data: &str) -> VcxResult<String> {
     ledger::build_schema_request(submitter_did, data)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
-}
-
-pub fn libindy_build_get_schema_request(submitter_did: &str, schema_id: &str) -> VcxResult<String> {
-    ledger::build_get_schema_request(Some(submitter_did), schema_id)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
-}
-
-pub fn libindy_parse_get_schema_response(get_schema_response: &str) -> VcxResult<(String, String)> {
-    ledger::parse_get_schema_response(get_schema_response)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
-}
-
-pub fn libindy_parse_get_cred_def_response(get_cred_def_response: &str) -> VcxResult<(String, String)> {
-    ledger::parse_get_cred_def_response(get_cred_def_response)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
-}
-
-pub fn libindy_build_get_credential_def_txn(cred_def_id: &str) -> VcxResult<String> {
-    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
-    ledger::build_get_cred_def_request(Some(&submitter_did), cred_def_id)
         .wait()
         .map_err(map_rust_indy_sdk_error)
 }
@@ -88,9 +56,7 @@ pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
 }
 
 pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
-    trace!("libindy_get_txn_author_agreement >>>");
-
-    if settings::test_indy_mode_enabled() { return Ok(::utils::constants::DEFAULT_AUTHOR_AGREEMENT.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(::utils::constants::DEFAULT_AUTHOR_AGREEMENT.to_string()); }
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -123,7 +89,7 @@ pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
 }
 
 pub fn append_txn_author_agreement_to_request(request_json: &str) -> VcxResult<String> {
-    if let Some(author_agreement) = ::utils::author_agreement::get_txn_author_agreement().unwrap() {
+    if let Some(author_agreement) = ::utils::author_agreement::get_txn_author_agreement()? {
         ledger::append_txn_author_agreement_acceptance_to_request(request_json,
                                                                   author_agreement.text.as_ref().map(String::as_str),
                                                                   author_agreement.version.as_ref().map(String::as_str),
@@ -135,13 +101,6 @@ pub fn append_txn_author_agreement_to_request(request_json: &str) -> VcxResult<S
     } else {
         Ok(request_json.to_string())
     }
-}
-
-pub fn libindy_build_auth_rule_request(submitter_did: &str, txn_type: &str, action: &str, field: &str,
-                                       old_value: Option<&str>, new_value: Option<&str>, constraint_json: &str) -> VcxResult<String> {
-    ledger::build_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value, constraint_json)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)
 }
 
 pub fn libindy_build_auth_rules_request(submitter_did: &str, data: &str) -> VcxResult<String> {
@@ -368,7 +327,7 @@ pub mod auth_rule {
     pub fn get_action_auth_rule(action: (&str, &str, &str, Option<&str>, Option<&str>)) -> VcxResult<String> {
         let (txn_type, action, field, old_value, new_value) = action;
 
-        if settings::test_indy_mode_enabled() { return Ok(json!({"result":{"data":[{"new_value":"0","constraint":{"need_to_be_owner":false,"sig_count":1,"metadata":{"fees":txn_type},"role":"0","constraint_id":"ROLE"},"field":"role","auth_type":"1","auth_action":"ADD"}],"identifier":"LibindyDid111111111111","auth_action":"ADD","new_value":"0","reqId":15616,"auth_type":"1","type":"121","field":"role"},"op":"REPLY"}).to_string()); }
+        if settings::indy_mocks_enabled() { return Ok(json!({"result":{"data":[{"new_value":"0","constraint":{"need_to_be_owner":false,"sig_count":1,"metadata":{"fees":txn_type},"role":"0","constraint_id":"ROLE"},"field":"role","auth_type":"1","auth_action":"ADD"}],"identifier":"LibindyDid111111111111","auth_action":"ADD","new_value":"0","reqId":15616,"auth_type":"1","type":"121","field":"role"},"op":"REPLY"}).to_string()); }
 
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -393,7 +352,7 @@ pub fn get_nym(did: &str) -> VcxResult<String> {
 }
 
 pub fn get_role(did: &str) -> VcxResult<String> {
-    if settings::test_indy_mode_enabled() { return Ok(settings::DEFAULT_ROLE.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(settings::DEFAULT_ROLE.to_string()); }
 
     let get_nym_resp = get_nym(&did)?;
     let get_nym_resp: serde_json::Value = serde_json::from_str(&get_nym_resp)
@@ -429,7 +388,7 @@ pub fn libindy_get_cred_def(cred_def_id: &str) -> VcxResult<String> {
 }
 
 pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
-    if settings::test_indy_mode_enabled() { return Ok(::utils::constants::REQUEST_WITH_ENDORSER.to_string()); }
+    if settings::indy_mocks_enabled() { return Ok(::utils::constants::REQUEST_WITH_ENDORSER.to_string()); }
 
     let _did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -442,7 +401,7 @@ pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
 
 pub fn endorse_transaction(transaction_json: &str) -> VcxResult<()> {
     //TODO Potentially VCX should handle case when endorser would like to pay fee
-    if settings::test_indy_mode_enabled() { return Ok(()); }
+    if settings::indy_mocks_enabled() { return Ok(()); }
 
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
@@ -481,9 +440,12 @@ fn _verify_transaction_can_be_endorsed(transaction_json: &str, _did: &str) -> Vc
 #[cfg(test)]
 mod test {
     use super::*;
+    use utils::devsetup::*;
 
     #[test]
     fn test_verify_transaction_can_be_endorsed() {
+        let _setup = SetupDefaults::init();
+
         // success
         let transaction = r#"{"reqId":1, "identifier": "EbP4aYNeTHL6q385GuVpRV", "signature": "gkVDhwe2", "endorser": "NcYxiDXkpYi6ov5FcYDi1e"}"#;
         assert!(_verify_transaction_can_be_endorsed(transaction, "NcYxiDXkpYi6ov5FcYDi1e").is_ok());
@@ -500,7 +462,7 @@ mod test {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_endorse_transaction() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
 
         use utils::libindy::payments::add_new_did;
 

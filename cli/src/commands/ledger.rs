@@ -4963,6 +4963,46 @@ pub mod tests {
             }
             tear_down();
         }
+
+        #[test] // IS-1493 save-transaction does not quote JSON output correctly
+        pub fn load_save_transaction_works_for_rewriting() {
+            let ctx = setup();
+
+            let short_request = json!({"reqId": 111, "identifier": DID_TRUSTEE, "operation": {"type": "1"}}).to_string();
+            let long_request = json!({"reqId": 111, "identifier": DID_TRUSTEE, "operation": {"type": "1", "data": "some extra data to make it long"}}).to_string();
+
+            // Write long
+            let (_, path_str) = _path();
+            {
+                set_transaction(&ctx, Some(long_request));
+
+                let cmd = save_transaction_command::new();
+                let mut params = CommandParams::new();
+                params.insert("file", path_str.clone());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            // Write short
+            let (_, path_str) = _path();
+            {
+                set_transaction(&ctx, Some(short_request));
+
+                let cmd = save_transaction_command::new();
+                let mut params = CommandParams::new();
+                params.insert("file", path_str.clone());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            // Load transaction
+            {
+                let cmd = load_transaction_command::new();
+                let mut params = CommandParams::new();
+                params.insert("file", path_str.clone());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            tear_down();
+        }
     }
 
     mod aml {

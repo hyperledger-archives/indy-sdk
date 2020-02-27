@@ -237,15 +237,6 @@ fn insert_c_message(map: &mut HashMap<u32, CString>, error: &Error) {
 
 }
 
-// Helper function for static defining of error messages. Does limited checking that it can.
-fn _insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
-    if map.contains_key(&error.code_num) {
-        panic!("Error Code number was repeated which is not allowed! (likely a copy/paste error)")
-    }
-    map.insert(error.code_num, error.message);
-
-}
-
 #[derive(Clone, Copy)]
 pub struct Error {
     pub code_num: u32,
@@ -270,13 +261,6 @@ pub fn error_message(code_num:&u32) -> String {
     match ERROR_C_MESSAGES.get(code_num) {
         Some(msg) => msg.to_str().unwrap().to_string(),
         None => error_message(&UNKNOWN_ERROR.code_num),
-    }
-}
-
-pub fn error_string(code_num:u32) -> String {
-    match ERROR_C_MESSAGES.get(&code_num) {
-        Some(msg) => format!("{}-{}", code_num, msg.to_str().unwrap_or(UNKNOWN_ERROR.message)),
-        None => format!("{}-{}", code_num, UNKNOWN_ERROR.message),
     }
 }
 

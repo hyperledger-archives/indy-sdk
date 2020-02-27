@@ -19,7 +19,6 @@ use indy_wallet::{RecordOptions, SearchOptions, WalletService};
 use indy_api_types::{WalletHandle, PoolHandle, CommandHandle};
 use indy_utils::next_command_handle;
 use rust_base58::{FromBase58, ToBase58};
-use named_type::NamedType;
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
@@ -489,7 +488,7 @@ impl DidCommandExecutor {
         self.crypto_service.validate_key(&verkey)?;
 
         if !did.is_abbreviatable() {
-            return Err(IndyError::from_msg(IndyErrorKind::InvalidState, "You can abbreviate fully-qualified did only with `sov` method"));
+            return Ok(verkey);
         }
 
         let did = &did.to_unqualified().0.from_base58()?;
@@ -558,7 +557,7 @@ impl DidCommandExecutor {
     }
 
     fn update_dependent_entity_reference<T>(&self, wallet_handle: WalletHandle, id: &str, new_id: &str) -> IndyResult<()>
-        where T: ::serde::Serialize + ::serde::de::DeserializeOwned + NamedType {
+        where T: ::serde::Serialize + ::serde::de::DeserializeOwned + Sized {
         if let Ok(record) = self.wallet_service.get_indy_record_value::<T>(wallet_handle, id, "{}") {
             self.wallet_service.delete_indy_record::<T>(wallet_handle, id)?;
             self.wallet_service.add_indy_record::<T>(wallet_handle, new_id, &record, &HashMap::new())?;

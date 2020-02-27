@@ -2,8 +2,6 @@ use super::constants::{ATTRIB, GET_ATTR};
 use super::response::GetReplyResultV1;
 use super::super::crypto::did::ShortDidValue;
 
-use named_type::NamedType;
-
 #[derive(Serialize, PartialEq, Debug)]
 pub struct AttribOperation {
     #[serde(rename = "type")]
@@ -84,7 +82,7 @@ pub struct AttribData {
     pub endpoint: Endpoint
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, NamedType)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Endpoint {
     pub ha: String, // indy-node and indy-plenum restrict this to ip-address:port
     pub verkey: Option<String>

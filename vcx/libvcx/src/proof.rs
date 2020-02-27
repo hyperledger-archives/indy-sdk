@@ -18,7 +18,7 @@ use utils::libindy::anoncreds;
 use object_cache::ObjectCache;
 use error::prelude::*;
 use utils::openssl::encode;
-use utils::qualifier::Qualifier;
+use utils::qualifier;
 use messages::proofs::proof_message::get_credential_info;
 
 use v3::handlers::proof_presentation::verifier::verifier::Verifier;
@@ -69,7 +69,7 @@ pub struct Proof {
     agent_did: Option<String>,
     agent_vk: Option<String>,
     revocation_interval: RevocationInterval,
-    thread: Option<Thread>
+    thread: Option<Thread>,
 }
 
 impl Proof {
@@ -82,7 +82,7 @@ impl Proof {
 
 
     pub fn validate_proof_revealed_attributes(proof_json: &str) -> VcxResult<()> {
-        if settings::test_indy_mode_enabled() { return Ok(()); }
+        if settings::indy_mocks_enabled() { return Ok(()); }
 
         let proof: Value = serde_json::from_str(proof_json)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
@@ -238,7 +238,7 @@ impl Proof {
     }
 
     pub fn validate_indy_proof(proof_json: &str, proof_req_json: &str) -> VcxResult<bool> {
-        if settings::test_indy_mode_enabled() { return Ok(true); }
+        if settings::indy_mocks_enabled() { return Ok(true); }
 
         Proof::validate_proof_revealed_attributes(&proof_json)?;
 
@@ -269,7 +269,7 @@ impl Proof {
 
     fn generate_proof_request_msg(&mut self) -> VcxResult<String> {
         let their_did = self.their_did.clone().unwrap_or_default();
-        let version = if Qualifier::is_fully_qualified(&their_did) {
+        let version = if qualifier::is_fully_qualified(&their_did) {
             Some(ProofRequestVersion::V2) }
         else { None };
 
@@ -612,10 +612,11 @@ pub fn generate_nonce() -> VcxResult<String> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use connection;
-    use utils::httpclient;
     use connection::tests::build_test_connection;
-    use utils::libindy::{pool, set_libindy_rc};
+    use utils::libindy::pool;
+    use utils::devsetup::*;
+    use utils::httpclient::AgencyMock;
+    use connection;
 
     fn default_agent_info(connection_handle: Option<u32>) -> MyAgentInfo {
         if let Some(h) = connection_handle { get_agent_info().unwrap().pw_info(h).unwrap()}
@@ -673,7 +674,7 @@ pub mod tests {
 
     #[test]
     fn test_create_proof_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         create_proof("1".to_string(),
                      REQUESTED_ATTRS.to_owned(),
@@ -684,7 +685,7 @@ pub mod tests {
 
     #[test]
     fn test_revocation_details() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         // No Revocation
         create_proof("1".to_string(),
@@ -706,13 +707,16 @@ pub mod tests {
 
     #[test]
     fn test_nonce() {
+        let _setup = SetupDefaults::init();
+
         let nonce = generate_nonce().unwrap();
         assert!(BigNum::from_dec_str(&nonce).unwrap().num_bits() < 81)
     }
 
     #[test]
     fn test_to_string_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
@@ -726,7 +730,8 @@ pub mod tests {
 
     #[test]
     fn test_from_string_succeeds() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
@@ -743,7 +748,8 @@ pub mod tests {
 
     #[test]
     fn test_release_proof() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
@@ -755,7 +761,7 @@ pub mod tests {
 
     #[test]
     fn test_send_proof_request() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let connection_handle = build_test_connection();
         connection::set_agent_verkey(connection_handle, VERKEY).unwrap();
@@ -778,7 +784,7 @@ pub mod tests {
         //This test has 2 purposes:
         //1. when send_proof_request fails, Ok(c.send_proof_request(connection_handle)?) returns error instead of Ok(_)
         //2. Test that when no PW connection exists, send message fails on invalid did
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let connection_handle = build_test_connection();
         connection::set_pw_did(connection_handle, "").unwrap();
@@ -794,7 +800,8 @@ pub mod tests {
 
     #[test]
     fn test_get_proof_fails_with_no_proof() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
@@ -806,7 +813,7 @@ pub mod tests {
 
     #[test]
     fn test_update_state_with_pending_proof() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let connection_h = Some(build_test_connection());
         let mut proof = Proof {
@@ -834,8 +841,8 @@ pub mod tests {
 
         apply_agent_info(&mut proof, &default_agent_info(connection_h));
 
-        httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
+        AgencyMock::set_next_response(PROOF_RESPONSE.to_vec());
+        AgencyMock::set_next_response(UPDATE_PROOF_RESPONSE.to_vec());
 
         proof.update_state(None).unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
@@ -843,7 +850,7 @@ pub mod tests {
 
     #[test]
     fn test_update_state_with_message() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let mut proof = create_boxed_proof(None, None, None);
         proof.update_state(Some(PROOF_RESPONSE_STR.to_string())).unwrap();
@@ -852,7 +859,7 @@ pub mod tests {
 
     #[test]
     fn test_update_state_with_reject_message() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let connection_handle = build_test_connection();
         let mut proof = create_boxed_proof(Some(VcxStateType::VcxStateOfferSent),
@@ -865,14 +872,14 @@ pub mod tests {
 
     #[test]
     fn test_get_proof_returns_proof_when_proof_state_invalid() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let mut proof = create_boxed_proof(Some(VcxStateType::VcxStateOfferSent),
                                            None,
                                            Some(build_test_connection()));
 
-        httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
+        AgencyMock::set_next_response(PROOF_RESPONSE.to_vec());
+        AgencyMock::set_next_response(UPDATE_PROOF_RESPONSE.to_vec());
 
         proof.update_state(None).unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
@@ -884,18 +891,19 @@ pub mod tests {
 
     #[test]
     fn test_build_credential_defs_json_with_multiple_credentials() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cred1 = CredInfo {
             schema_id: "schema_key1".to_string(),
             cred_def_id: "cred_def_key1".to_string(),
             rev_reg_id: None,
-            timestamp: None
+            timestamp: None,
         };
         let cred2 = CredInfo {
             schema_id: "schema_key2".to_string(),
             cred_def_id: "cred_def_key2".to_string(),
             rev_reg_id: None,
-            timestamp: None
+            timestamp: None,
         };
         let credentials = vec![cred1, cred2];
         let credential_json = Proof::build_credential_defs_json(&credentials).unwrap();
@@ -907,18 +915,19 @@ pub mod tests {
 
     #[test]
     fn test_build_schemas_json_with_multiple_schemas() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cred1 = CredInfo {
             schema_id: "schema_key1".to_string(),
             cred_def_id: "cred_def_key1".to_string(),
             rev_reg_id: None,
-            timestamp: None
+            timestamp: None,
         };
         let cred2 = CredInfo {
             schema_id: "schema_key2".to_string(),
             cred_def_id: "cred_def_key2".to_string(),
             rev_reg_id: None,
-            timestamp: None
+            timestamp: None,
         };
         let credentials = vec![cred1, cred2];
         let schema_json = Proof::build_schemas_json(&credentials).unwrap();
@@ -930,18 +939,19 @@ pub mod tests {
 
     #[test]
     fn test_build_rev_reg_defs_json() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cred1 = CredInfo {
             schema_id: "schema_key1".to_string(),
             cred_def_id: "cred_def_key1".to_string(),
             rev_reg_id: Some("id1".to_string()),
-            timestamp: None
+            timestamp: None,
         };
         let cred2 = CredInfo {
             schema_id: "schema_key2".to_string(),
             cred_def_id: "cred_def_key2".to_string(),
             rev_reg_id: Some("id2".to_string()),
-            timestamp: None
+            timestamp: None,
         };
         let credentials = vec![cred1, cred2];
         let rev_reg_defs_json = Proof::build_rev_reg_defs_json(&credentials).unwrap();
@@ -953,7 +963,8 @@ pub mod tests {
 
     #[test]
     fn test_build_rev_reg_json() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let cred1 = CredInfo {
             schema_id: "schema_key1".to_string(),
             cred_def_id: "cred_def_key1".to_string(),
@@ -976,7 +987,7 @@ pub mod tests {
 
     #[test]
     fn test_get_proof() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let mut proof_msg_obj = ProofMessage::new();
         proof_msg_obj.libindy_proof = PROOF_JSON.to_string();
@@ -990,7 +1001,8 @@ pub mod tests {
 
     #[test]
     fn test_release_all() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let h1 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
         let h2 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
         let h3 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
@@ -1007,9 +1019,9 @@ pub mod tests {
     #[ignore]
     #[test]
     fn test_proof_validation_with_predicate() {
-        use utils::constants::{PROOF_LIBINDY, PROOF_REQUEST};
-        init!("false");
-        pool::tests::open_sandbox_pool();
+        let _setup = SetupLibraryWallet::init();
+
+        pool::tests::open_test_pool();
         //Generated proof from a script using libindy's python wrapper
 
         let proof_msg: ProofMessage = serde_json::from_str(PROOF_LIBINDY).unwrap();
@@ -1050,7 +1062,7 @@ pub mod tests {
     #[ignore]
     #[test]
     fn test_send_proof_request_can_be_retried() {
-        init!("true");
+        let _setup = SetupLibraryWallet::init();
 
         let connection_handle = build_test_connection();
         connection::set_agent_verkey(connection_handle, VERKEY).unwrap();
@@ -1062,7 +1074,6 @@ pub mod tests {
                                   REQUESTED_PREDICATES.to_owned(),
                                   r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
-        set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
         assert_eq!(send_proof_request(handle, connection_handle).unwrap_err().kind(), VcxErrorKind::TimeoutLibindy);
         assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
         assert_eq!(get_proof_uuid(handle).unwrap(), "");
@@ -1075,14 +1086,14 @@ pub mod tests {
 
     #[test]
     fn test_get_proof_request_status_can_be_retried() {
-        init!("true");
+        let _setup = SetupMocks::init();
 
         let _new_handle = 1;
 
         let mut proof = create_boxed_proof(None, None, Some(build_test_connection()));
 
-        httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
+        AgencyMock::set_next_response(PROOF_RESPONSE.to_vec());
+        AgencyMock::set_next_response(UPDATE_PROOF_RESPONSE.to_vec());
         //httpclient::set_next_u8_response(GET_PROOF_OR_CREDENTIAL_RESPONSE.to_vec());
 
         proof.get_proof_request_status(None).unwrap();
@@ -1091,8 +1102,8 @@ pub mod tests {
 
         // Changing the state and proof state to show that validation happens again
         // and resets the values to received and Invalid
-        httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
+        AgencyMock::set_next_response(PROOF_RESPONSE.to_vec());
+        AgencyMock::set_next_response(UPDATE_PROOF_RESPONSE.to_vec());
         proof.state = VcxStateType::VcxStateOfferSent;
         proof.proof_state = ProofStateType::ProofUndefined;
         proof.get_proof_request_status(None).unwrap();
@@ -1103,7 +1114,7 @@ pub mod tests {
 
     #[test]
     fn test_proof_errors() {
-        init!("false");
+        let _setup = SetupLibraryWallet::init();
 
         let mut proof = create_boxed_proof(None, None, None);
 
@@ -1133,11 +1144,11 @@ pub mod tests {
         assert_eq!(proof_good.get_proof_request_status(None).unwrap_err().kind(), VcxErrorKind::PostMessageFailed);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_proof_verification() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let (_, _, proof_req, proof) = ::utils::libindy::anoncreds::tests::create_proof();
 
         let mut proof_req_obj = ProofRequestMessage::create();
@@ -1156,11 +1167,11 @@ pub mod tests {
         assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_self_attested_proof_verification() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let (proof_req, proof) = ::utils::libindy::anoncreds::tests::create_self_attested_proof();
 
         let mut proof_req_obj = ProofRequestMessage::create();
@@ -1179,11 +1190,11 @@ pub mod tests {
         assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_proof_verification_restrictions() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let proof_req = json!({
            "nonce":"123432421212",
            "name":"proof_req_1",
@@ -1231,7 +1242,8 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_proof_validate_attribute() {
-        init!("ledger");
+        let _setup = SetupLibraryWalletPoolZeroFees::init();
+
         let (_, _, proof_req, proof_json) = ::utils::libindy::anoncreds::tests::create_proof();
 
         let mut proof_req_obj = ProofRequestMessage::create();

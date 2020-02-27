@@ -19,11 +19,6 @@ extern crate rmp_serde;
 #[macro_use]
 extern crate lazy_static;
 
-extern crate named_type;
-
-#[macro_use]
-extern crate named_type_derive;
-
 extern crate ursa;
 extern crate rlp;
 extern crate time;
