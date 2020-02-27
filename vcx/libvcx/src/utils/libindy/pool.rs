@@ -4,7 +4,6 @@ use indy::{pool, ErrorCode};
 use std::sync::RwLock;
 
 use settings;
-use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use error::prelude::*;
 
 lazy_static! {
@@ -43,8 +42,8 @@ pub fn create_pool_ledger_config(pool_name: &str, path: &str) -> VcxResult<()> {
                 ErrorCode::CommonIOError => {
                     Err(err.to_vcx(VcxErrorKind::InvalidGenesisTxnPath, "Pool genesis file is invalid or does not exist"))
                 }
-                error_code => {
-                    Err(err.to_vcx(VcxErrorKind::LibndyError(error_code as u32), "Indy error occurred"))
+                _ => {
+                    Err(err.to_vcx(VcxErrorKind::CreatePoolConfig, "Indy error occurred"))
                 }
             }
         }
@@ -112,8 +111,7 @@ pub fn close() -> VcxResult<()> {
     let handle = get_pool_handle()?;
 
     //TODO there was timeout here (before future-based Rust wrapper)
-    pool::close_pool_ledger(handle)
-        .wait()?;
+    pool::close_pool_ledger(handle).wait()?;
 
     reset_pool_handle();
 
@@ -128,8 +126,7 @@ pub fn delete(pool_name: &str) -> VcxResult<()> {
         return Ok(());
     }
 
-    pool::delete_pool_ledger(pool_name)
-        .wait()?;
+    pool::delete_pool_ledger(pool_name).wait()?;
 
     Ok(())
 }

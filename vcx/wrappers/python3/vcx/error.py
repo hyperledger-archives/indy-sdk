@@ -87,7 +87,7 @@ class ErrorCode(IntEnum):
     DuplicateWalletRecord = 1072,
     WalletRecordNotFound = 1073,
     IOError = 1074,
-    InvalidWalletStorageParam = 1075,
+    WalletAccessFailed = 1075,
     MissingWalletName = 1076,
     MissingExportedWalletPath = 1077,
     MissingBackupKey = 1078,

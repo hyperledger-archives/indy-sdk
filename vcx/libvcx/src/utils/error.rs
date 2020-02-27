@@ -86,7 +86,7 @@ pub static NO_PAYMENT_INFORMATION: Error = Error { code_num: 1071, message: "No 
 pub static DUPLICATE_WALLET_RECORD: Error = Error{ code_num: 1072, message: "Record already exists in the wallet"};
 pub static WALLET_RECORD_NOT_FOUND: Error = Error{ code_num: 1073, message: "Wallet record not found"};
 pub static IOERROR: Error = Error { code_num: 1074, message: "IO Error, possibly creating a backup wallet"};
-pub static INVALID_WALLET_STORAGE_PARAMETER: Error = Error { code_num: 1075, message: "Wallet Storage Parameter Either Malformed or Missing"};
+pub static WALLET_ACCESS_FAILED: Error = Error { code_num: 1075, message: "Attempt to open wallet with invalid credentials"};
 pub static MISSING_WALLET_NAME: Error = Error { code_num: 1076, message: "Missing wallet name in config"};
 pub static MISSING_EXPORTED_WALLET_PATH: Error = Error { code_num: 1077, message: "Missing exported wallet path in config"};
 pub static MISSING_BACKUP_KEY: Error = Error { code_num: 1078, message: "Missing exported backup key in config"};
@@ -188,7 +188,7 @@ lazy_static! {
         insert_c_message(&mut m, &DUPLICATE_WALLET_RECORD);
         insert_c_message(&mut m, &WALLET_RECORD_NOT_FOUND);
         insert_c_message(&mut m, &IOERROR);
-        insert_c_message(&mut m, &INVALID_WALLET_STORAGE_PARAMETER);
+        insert_c_message(&mut m, &WALLET_ACCESS_FAILED);
         insert_c_message(&mut m, &OBJECT_CACHE_ERROR);
         insert_c_message(&mut m, &NO_PAYMENT_INFORMATION);
         insert_c_message(&mut m, &INDY_DUPLICATE_WALLET_RECORD);
