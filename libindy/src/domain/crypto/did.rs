@@ -1,5 +1,3 @@
-use named_type::NamedType;
-
 use regex::Regex;
 use rust_base58::FromBase58;
 
@@ -45,14 +43,14 @@ impl Validatable for MyDidInfo {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TheirDidInfo {
     pub did: DidValue,
-    pub verkey: Option<String>
+    pub verkey: Option<String>,
 }
 
 impl TheirDidInfo {
     pub fn new(did: DidValue, verkey: Option<String>) -> TheirDidInfo {
         TheirDidInfo {
             did,
-            verkey
+            verkey,
         }
     }
 }
@@ -64,17 +62,17 @@ impl Validatable for TheirDidInfo {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, NamedType)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Did {
     pub did: DidValue,
-    pub verkey: String
+    pub verkey: String,
 }
 
 impl Did {
     pub fn new(did: DidValue, verkey: String) -> Did {
         Did {
             did,
-            verkey
+            verkey,
         }
     }
 }
@@ -153,37 +151,37 @@ impl Validatable for ShortDidValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, NamedType)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DidMetadata {
     pub value: String
 }
 
-#[derive(Serialize, Clone, Debug, NamedType)]
+#[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct DidWithMeta {
     pub did: DidValue,
     pub verkey: String,
     pub temp_verkey: Option<String>,
-    pub metadata: Option<String>
+    pub metadata: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, NamedType)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TheirDid {
     pub did: DidValue,
-    pub verkey: String
+    pub verkey: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, NamedType)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TemporaryDid {
     pub did: DidValue,
-    pub verkey: String
+    pub verkey: String,
 }
 
 impl From<TemporaryDid> for Did {
     fn from(temp_did: TemporaryDid) -> Self {
         Did {
             did: temp_did.did,
-            verkey: temp_did.verkey
+            verkey: temp_did.verkey,
         }
     }
 }
