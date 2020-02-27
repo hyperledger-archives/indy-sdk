@@ -1,5 +1,5 @@
 #[macro_use]
-pub mod ccallback;
+mod ccallback;
 
 #[macro_use]
 pub mod cstring;
@@ -8,6 +8,7 @@ pub mod cstring;
 pub mod version_constants;
 
 #[macro_use]
+#[cfg(test)]
 pub mod devsetup;
 
 #[cfg(debug_assertions)]
@@ -22,6 +23,18 @@ macro_rules! secret {
     ($val:expr) => {{ "_" }};
 }
 
+macro_rules! map (
+    { $($key:expr => $value:expr),+ } => {
+        {
+            let mut m = ::std::collections::HashMap::new();
+            $(
+                m.insert($key, $value);
+            )+
+            m
+        }
+     };
+);
+
 pub mod error;
 pub mod httpclient;
 pub mod constants;
@@ -33,24 +46,19 @@ pub mod threadpool;
 pub mod uuid;
 pub mod author_agreement;
 pub mod qualifier;
+pub mod file;
 
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::path::PathBuf;
-use std::env;
-
-lazy_static! {
-    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = AtomicUsize::new(1);
-}
-// allows all threads to atomically get a unique command handle
-pub fn generate_command_handle() -> i32 {
-    (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
-}
-
-pub fn get_temp_dir_path(filename: Option<&str>) -> PathBuf {
-    let mut path = env::temp_dir();
-    path.push(filename.unwrap_or(""));
-    path
-}
+#[cfg(test)]
+pub mod plugins;
 
 #[macro_use]
 pub mod logger;
+
+use std::path::PathBuf;
+use std::env;
+
+pub fn get_temp_dir_path(filename: &str) -> PathBuf {
+    let mut path = env::temp_dir();
+    path.push(filename);
+    path
+}

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use named_type::NamedType;
 use ursa::cl::{
     CredentialSignature,
     RevocationRegistry,
@@ -14,7 +13,7 @@ use super::credential_definition::CredentialDefinitionId;
 use super::revocation_registry_definition::RevocationRegistryId;
 use super::schema::SchemaId;
 
-#[derive(Debug, Deserialize, Serialize, NamedType)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Credential {
     pub schema_id: SchemaId,
     pub cred_def_id: CredentialDefinitionId,

@@ -5,7 +5,6 @@ use super::credential_definition::CredentialDefinitionId;
 use super::super::crypto::did::DidValue;
 
 use std::collections::{HashMap, HashSet};
-use named_type::NamedType;
 
 use indy_api_types::validation::Validatable;
 use crate::utils::qualifier;
@@ -78,7 +77,7 @@ pub struct RevocationRegistryDefinitionV1 {
     pub value: RevocationRegistryDefinitionValue
 }
 
-#[derive(Debug, Serialize, Deserialize, NamedType)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]
 pub enum RevocationRegistryDefinition {
     #[serde(rename = "1.0")]
@@ -118,12 +117,12 @@ pub fn rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs: RevocationRegistryD
         .collect()
 }
 
-#[derive(Debug, Serialize, Deserialize, NamedType)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RevocationRegistryDefinitionPrivate {
     pub value: RevocationKeyPrivate
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, NamedType)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RevocationRegistryInfo {
     pub id: RevocationRegistryId,
     pub curr_id: u32,

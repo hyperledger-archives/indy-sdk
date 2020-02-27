@@ -290,9 +290,9 @@ impl VerifierSM {
 pub mod test {
     use super::*;
 
+    use utils::devsetup::SetupAriesMocks;
     use v3::handlers::connection::tests::mock_connection;
     use v3::test::source_id;
-    use v3::test::setup::TestModeSetup;
     use v3::messages::proof_presentation::presentation_request::tests::_presentation_request;
     use v3::messages::proof_presentation::presentation_request::tests::_presentation_request_data;
     use v3::messages::proof_presentation::presentation::tests::_presentation;
@@ -321,7 +321,7 @@ pub mod test {
 
         #[test]
         fn test_verifier_new() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier_sm = _verifier_sm();
 
@@ -335,7 +335,7 @@ pub mod test {
 
         #[test]
         fn test_verifier_init() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier_sm = _verifier_sm();
             assert_match!(VerifierState::Initiated(_), verifier_sm.state);
@@ -343,7 +343,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_send_presentation_request_message_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -353,7 +353,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_other_messages_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
 
@@ -366,7 +366,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_verify_presentation_message_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -390,7 +390,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_presentation_proposal_message_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -402,7 +402,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_presentation_reject_message_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -414,7 +414,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_other_messages_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -425,7 +425,7 @@ pub mod test {
 
         #[test]
         fn test_prover_handle_messages_from_presentation_finished_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let mut verifier_sm = _verifier_sm();
             verifier_sm = verifier_sm.step(VerifierMessages::SendPresentationRequest(mock_connection())).unwrap();
@@ -444,7 +444,7 @@ pub mod test {
 
         #[test]
         fn test_verifier_find_message_to_handle_from_initiated_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier = _verifier_sm();
 
@@ -464,7 +464,7 @@ pub mod test {
 
         #[test]
         fn test_verifier_find_message_to_handle_from_presentation_request_sent_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier = _verifier_sm().to_presentation_request_sent_state();
 
@@ -531,7 +531,7 @@ pub mod test {
 
         #[test]
         fn test_verifier_find_message_to_handle_from_finished_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             let verifier = _verifier_sm().to_finished_state();
 
@@ -555,7 +555,7 @@ pub mod test {
 
         #[test]
         fn test_get_state() {
-            let _setup = TestModeSetup::init();
+            let _setup = SetupAriesMocks::init();
 
             assert_eq!(VcxStateType::VcxStateInitialized as u32, _verifier_sm().state());
             assert_eq!(VcxStateType::VcxStateOfferSent as u32, _verifier_sm().to_presentation_request_sent_state().state());

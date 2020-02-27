@@ -3,7 +3,6 @@ use super::DELIMITER;
 use super::super::crypto::did::DidValue;
 
 use std::collections::{HashMap, HashSet};
-use named_type::NamedType;
 
 use indy_api_types::validation::Validatable;
 use crate::utils::qualifier;
@@ -21,7 +20,7 @@ pub struct SchemaV1 {
     pub seq_no: Option<u32>,
 }
 
-#[derive(Debug, Serialize, Deserialize, NamedType)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]
 pub enum Schema {
     #[serde(rename = "1.0")]

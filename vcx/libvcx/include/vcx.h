@@ -190,6 +190,43 @@ vcx_error_t vcx_connection_invite_details(vcx_command_handle_t command_handle,
                                        vcx_bool_t abbreviated,
                                        void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
 
+/// Get the information about the connection state.
+///
+/// Note: This method can be used for `aries` communication method only.
+///     For other communication method it returns ActionNotSupported error.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: was provided during creation. Used to identify connection object
+///
+/// cb: Callback that provides the json string of connection information
+///
+/// # Example
+/// info ->
+///      {
+///         "current": {
+///             "did": <str>
+///             "recipientKeys": array<str>
+///             "routingKeys": array<str>
+///             "serviceEndpoint": <str>,
+///             "protocols": array<str> -  The set of protocol supported by current side.
+///         },
+///         "remote: { <Option> - details about remote connection side
+///             "did": <str> - DID of remote side
+///             "recipientKeys": array<str> - Recipient keys
+///             "routingKeys": array<str> - Routing keys
+///             "serviceEndpoint": <str> - Endpoint
+///             "protocols": array<str> - The set of protocol supported by side. Is filled after DiscoveryFeatures process was completed.
+///          }
+///    }
+///
+/// #Returns
+/// Error code as a u32
+vcx_error_t vcx_connection_info(vcx_command_handle_t command_handle,
+                                vcx_connection_handle_t connection_handle,
+                                void (*cb)(vcx_command_handle_t, vcx_error_t, const char*));
+
 // Releases the connection object by de-allocating memory
 //
 // #Params
