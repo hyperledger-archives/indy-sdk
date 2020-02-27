@@ -395,6 +395,18 @@ fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     Ok(())
 }
 
+pub fn update_agent_webhook(webhook_url: &str) -> VcxResult<()> {
+    let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
+
+    ::messages::update_data()
+        .to(&to_did[..])?
+        .webhook_url(&Some(String::from(webhook_url)))?
+        .send_secure()
+        .map_err(|err| err.extend("Cannot update webhook"))?;
+
+    Ok(())
+}
+
 fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<A2AMessage>> {
     let data = prepare_message_for_agency(message, &did, &settings::get_protocol_type())?;
 
