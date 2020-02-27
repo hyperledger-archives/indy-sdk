@@ -308,6 +308,18 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
     error::SUCCESS.code_num
 }
 
+/// Update agency webhook url setting
+///
+/// #Params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// notification_webhook_url: URL to which the notifications should be sent
+///
+/// cb: Callback that provides error code of the result
+///
+/// #Returns
+/// Error code as u32
 #[no_mangle]
 pub extern fn vcx_update_webhook_url(command_handle: CommandHandle,
                                      notification_webhook_url: *const c_char,
