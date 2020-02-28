@@ -211,6 +211,8 @@ pub enum VcxErrorKind {
     LibndyError(u32),
     #[fail(display = "Unknown libindy error")]
     UnknownLibndyError,
+    #[fail(display = "No Agent pairwise information")]
+    NoAgentInformation,
 }
 
 #[derive(Debug)]
@@ -378,6 +380,7 @@ impl From<VcxErrorKind> for u32 {
             VcxErrorKind::ActionNotSupported => error::ACTION_NOT_SUPPORTED.code_num,
             VcxErrorKind::Common(num) => num,
             VcxErrorKind::LibndyError(num) => num,
+            VcxErrorKind::NoAgentInformation => error::NO_AGENT_INFO.code_num,
         }
     }
 }

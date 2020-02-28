@@ -62,6 +62,7 @@ import com.evernym.sdk.vcx.wallet.WalletItemAlreadyExistsException;
 import com.evernym.sdk.vcx.wallet.WalletItemNotFoundException;
 import com.evernym.sdk.vcx.wallet.WalletCreationException;
 import com.evernym.sdk.vcx.wallet.WalletAccessFailedException;
+import com.evernym.sdk.vcx.NoAgentInfoException;
 
 import com.sun.jna.ptr.PointerByReference;
 import org.json.JSONObject;
@@ -287,6 +288,8 @@ public class VcxException extends Exception {
                 return new WalletCreationException();
             case WALLET_ACCESS_FAILED:
                 return new WalletAccessFailedException();
+            case NO_AGENT_INFO:
+                return new NoAgentInfoException();
             case UNIDENTIFIED_ERROR_CODE:
                 String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
                 return new VcxException(message, sdkErrorCode);

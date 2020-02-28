@@ -1010,7 +1010,7 @@ mod tests {
         let init_res = _vcx_init_minimal_c_closure(&config);
         assert_eq!(init_res, error::SUCCESS.code_num);
 
-        let cred_handle = ::issuer_credential::from_string(::utils::constants::DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
+        let cred_handle = ::issuer_credential::from_string(&::api::issuer_credential::tests::issuer_credential_state_accepted()).unwrap();
         let connection_handle = ::connection::from_string(::utils::constants::DEFAULT_CONNECTION).unwrap();
         let my_pw_did = ::connection::get_pw_did(connection_handle).unwrap();
         let their_pw_did = ::connection::get_their_pw_did(connection_handle).unwrap();

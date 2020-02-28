@@ -113,6 +113,8 @@ pub static UNKNOWN_ATTACHMENT_ENCODING: Error = Error { code_num: 1101, message:
 pub static UNKNOWN_MIME_TYPE: Error = Error { code_num: 1102, message: "Unknown mime type"};
 pub static ACTION_NOT_SUPPORTED: Error = Error { code_num: 1103, message: "Action is not supported"};
 pub static INVALID_REDIRECT_DETAILS: Error = Error{code_num: 1104, message: "Invalid redirect details structure"};
+/* EC 1105 is reserved for proprietary forks of libVCX */
+pub static NO_AGENT_INFO: Error = Error{code_num: 1106, message: "Agent pairwise information not found"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -218,6 +220,7 @@ lazy_static! {
         insert_c_message(&mut m, &UNKNOWN_MIME_TYPE);
         insert_c_message(&mut m, &ACTION_NOT_SUPPORTED);
         insert_c_message(&mut m, &INVALID_REDIRECT_DETAILS);
+        insert_c_message(&mut m, &NO_AGENT_INFO);
 
         m
     };
