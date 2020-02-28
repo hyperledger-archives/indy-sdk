@@ -67,6 +67,10 @@ impl ProtocolRegistry {
             None => self.protocols.clone()
         }
     }
+
+    pub fn protocols(&self) -> Vec<ProtocolDescriptor>{
+        self.protocols.clone()
+    }
 }
 
 #[cfg(test)]

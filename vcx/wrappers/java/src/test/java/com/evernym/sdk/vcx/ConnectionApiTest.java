@@ -264,4 +264,13 @@ class ConnectionApiTest {
         Awaitility.await().until(featureGetRedirectDetails::isDone);
         assert(featureGetRedirectDetails.get().contains("DID"));
     }
+
+	@Test
+	@DisplayName("connection info")
+	void connectionInfo() {
+		Assertions.assertThrows(ExecutionException.class, () -> {
+			Integer connectionHandle = _createConnection();
+			TestHelper.getResultFromFuture(ConnectionApi.connectionInfo(connectionHandle));
+		});
+	}
 }

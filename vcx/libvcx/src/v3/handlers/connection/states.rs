@@ -612,10 +612,14 @@ impl DidExchangeSM {
         }
     }
 
-    pub fn get_protocols(&self) -> Option<&Vec<ProtocolDescriptor>> {
+    pub fn get_protocols(&self) -> Vec<ProtocolDescriptor> {
+        ProtocolRegistry::init().protocols()
+    }
+
+    pub fn get_remote_protocols(&self) -> Option<Vec<ProtocolDescriptor>> {
         match self.state {
             ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref state)) |
-            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref state)) => state.protocols.as_ref(),
+            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref state)) => state.protocols.clone(),
             _ => None
         }
     }
@@ -889,12 +893,12 @@ pub mod test {
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
                 // Disclose
-                assert!(did_exchange_sm.get_protocols().is_none());
+                assert!(did_exchange_sm.get_remote_protocols().is_none());
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::DiscloseReceived(_disclose())).unwrap();
                 assert_match!(ActorDidExchangeState::Inviter(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
-                assert!(did_exchange_sm.get_protocols().is_some());
+                assert!(did_exchange_sm.get_remote_protocols().is_some());
 
                 // ignore
                 // Ack
@@ -1311,12 +1315,12 @@ pub mod test {
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
                 // Disclose
-                assert!(did_exchange_sm.get_protocols().is_none());
+                assert!(did_exchange_sm.get_remote_protocols().is_none());
 
                 did_exchange_sm = did_exchange_sm.step(DidExchangeMessages::DiscloseReceived(_disclose())).unwrap();
                 assert_match!(ActorDidExchangeState::Invitee(DidExchangeState::Completed(_)), did_exchange_sm.state);
 
-                assert!(did_exchange_sm.get_protocols().is_some());
+                assert!(did_exchange_sm.get_remote_protocols().is_some());
 
                 // ignore
                 // Ack
