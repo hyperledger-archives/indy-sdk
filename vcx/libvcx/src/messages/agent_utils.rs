@@ -4,6 +4,7 @@ use messages::message_type::MessageTypes;
 use utils::{error, httpclient, constants};
 use utils::libindy::{wallet, anoncreds};
 use utils::libindy::signus::create_and_store_my_did;
+use utils::option_util::get_or_default;
 use error::prelude::*;
 use utils::httpclient::AgencyMock;
 
@@ -118,7 +119,7 @@ pub struct Config {
     #[serde(default)]
     protocol_type: settings::ProtocolTypes,
     agency_url: String,
-    agency_did: String,
+    pub agency_did: String,
     agency_verkey: String,
     wallet_name: Option<String>,
     wallet_key: String,
@@ -138,15 +139,8 @@ pub struct Config {
     use_latest_protocols: Option<String>,
 }
 
-
-pub fn connect_register_provision(config: &str) -> VcxResult<String> {
-    trace!("connect_register_provision >>> config: {:?}", config);
-
-    trace!("***Registering with agency");
-    let my_config: Config = ::serde_json::from_str(&config)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidConfiguration, format!("Cannot parse config: {}", err)))?;
-
-    let wallet_name = my_config.wallet_name.unwrap_or(settings::DEFAULT_WALLET_NAME.to_string());
+pub fn set_config_values(my_config: &Config) {
+    let wallet_name = get_or_default(&my_config.wallet_name, settings::DEFAULT_WALLET_NAME);
 
     settings::set_config_value(settings::CONFIG_PROTOCOL_TYPE, &my_config.protocol_type.to_string());
     settings::set_config_value(settings::CONFIG_AGENCY_ENDPOINT, &my_config.agency_url);
@@ -156,61 +150,59 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
     settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &my_config.agency_verkey);
     settings::set_config_value(settings::CONFIG_WALLET_KEY, &my_config.wallet_key);
 
-    if let Some(key_derivation) = &my_config.wallet_key_derivation {
-        settings::set_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, key_derivation);
-    }
-    if let Some(wallet_type) = &my_config.wallet_type {
-        settings::set_config_value(settings::CONFIG_WALLET_TYPE, wallet_type);
-    }
-    if let Some(_storage_config) = &my_config.storage_config {
-        settings::set_config_value(settings::CONFIG_WALLET_STORAGE_CONFIG, _storage_config);
-    }
-    if let Some(_storage_credentials) = &my_config.storage_credentials {
-        settings::set_config_value(settings::CONFIG_WALLET_STORAGE_CREDS, _storage_credentials);
-    }
-    if let Some(pool_config) = &my_config.pool_config {
-        settings::set_config_value(settings::CONFIG_POOL_CONFIG, pool_config);
-    }
-    if let Some(did_method) = &my_config.did_method {
-        settings::set_config_value(settings::CONFIG_DID_METHOD, did_method);
-    }
-    if let Some(communication_method) = &my_config.communication_method {
-        settings::set_config_value(settings::COMMUNICATION_METHOD, communication_method);
-    }
-    if let Some(webhook_url) = &my_config.webhook_url {
-        settings::set_config_value(settings::CONFIG_WEBHOOK_URL, webhook_url);
-    }
+    settings::set_opt_config_value(settings::CONFIG_WALLET_KEY_DERIVATION, &my_config.wallet_key_derivation);
+    settings::set_opt_config_value(settings::CONFIG_WALLET_TYPE, &my_config.wallet_type);
+    settings::set_opt_config_value(settings::CONFIG_WALLET_STORAGE_CONFIG, &my_config.storage_config);
+    settings::set_opt_config_value(settings::CONFIG_WALLET_STORAGE_CREDS, &my_config.storage_credentials);
+    settings::set_opt_config_value(settings::CONFIG_POOL_CONFIG, &my_config.pool_config);
+    settings::set_opt_config_value(settings::CONFIG_DID_METHOD, &my_config.did_method);
+    settings::set_opt_config_value(settings::COMMUNICATION_METHOD, &my_config.communication_method);
+    settings::set_opt_config_value(settings::CONFIG_WEBHOOK_URL, &my_config.webhook_url);
+}
 
-    wallet::init_wallet(&wallet_name, my_config.wallet_type.as_ref().map(String::as_str),
-                        my_config.storage_config.as_ref().map(String::as_str),
-                        my_config.storage_credentials.as_ref().map(String::as_str))?;
+fn _create_issuer_keys(my_did: &str, my_vk: &str, my_config: &Config) -> VcxResult<(String, String)> {
+    if my_config.enterprise_seed == my_config.agent_seed {
+        Ok((my_did.to_string(), my_vk.to_string()))
+    } else {
+        create_and_store_my_did(
+            my_config.enterprise_seed.as_ref().map(String::as_str),
+            my_config.did_method.as_ref().map(String::as_str),
+        )
+    }
+}
+
+pub fn configure_wallet(my_config: &Config) -> VcxResult<(String, String, String)> {
+    let wallet_name = get_or_default(&my_config.wallet_name, settings::DEFAULT_WALLET_NAME);
+
+    wallet::init_wallet(
+        &wallet_name,
+        my_config.wallet_type.as_ref().map(String::as_str),
+        my_config.storage_config.as_ref().map(String::as_str),
+        my_config.storage_credentials.as_ref().map(String::as_str),
+    )?;
     trace!("initialized wallet");
 
-    anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS).ok(); // If MS is already in wallet then just continue
+    // If MS is already in wallet then just continue
+    anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS).ok();
 
-    let name = my_config.name.unwrap_or(String::from("<CHANGE_ME>"));
-    let logo = my_config.logo.unwrap_or(String::from("<CHANGE_ME>"));
-    let path = my_config.path.unwrap_or(String::from("<CHANGE_ME>"));
-
-    let method_name = my_config.did_method.as_ref().map(String::as_str);
-
-    let (my_did, my_vk) = create_and_store_my_did(my_config.agent_seed.as_ref().map(String::as_str), method_name)?;
-
-    let (issuer_did, issuer_vk) = if my_config.enterprise_seed != my_config.agent_seed {
-        create_and_store_my_did(my_config.enterprise_seed.as_ref().map(String::as_str), method_name)?
-    } else {
-        (my_did.clone(), my_vk.clone())
-    };
+    let (my_did, my_vk) = create_and_store_my_did(
+        my_config.agent_seed.as_ref().map(String::as_str),
+        my_config.did_method.as_ref().map(String::as_str),
+    )?;
 
     settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
     settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
 
-    trace!("Connecting to Agency");
+    Ok((my_did, my_vk, wallet_name))
+}
 
-    let (agent_did, agent_vk) = match my_config.protocol_type {
-        settings::ProtocolTypes::V1 => onboarding_v1(&my_did, &my_vk, &my_config.agency_did)?,
-        settings::ProtocolTypes::V2 => onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
-    };
+pub fn get_final_config(my_did: &str,
+                        my_vk: &str,
+                        agent_did: &str,
+                        agent_vk: &str,
+                        wallet_name: &str,
+                        my_config: &Config) -> VcxResult<String> {
+    let (issuer_did, issuer_vk) = _create_issuer_keys(my_did, my_vk, my_config)?;
 
     let mut final_config = json!({
         "wallet_key": &my_config.wallet_key,
@@ -224,11 +216,12 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
         "institution_verkey": issuer_vk,
         "remote_to_sdk_did": agent_did,
         "remote_to_sdk_verkey": agent_vk,
-        "institution_name": name,
-        "institution_logo_url": logo,
-        "genesis_path": path,
+        "institution_name": get_or_default(&my_config.name, "<CHANGE_ME>"),
+        "institution_logo_url": get_or_default(&my_config.logo, "<CHANGE_ME>"),
+        "genesis_path": get_or_default(&my_config.path, "<CHANGE_ME>"),
         "protocol_type": &my_config.protocol_type,
     });
+
     if let Some(key_derivation) = &my_config.wallet_key_derivation {
         final_config["wallet_key_derivation"] = json!(key_derivation);
     }
@@ -254,9 +247,41 @@ pub fn connect_register_provision(config: &str) -> VcxResult<String> {
         final_config["use_latest_protocols"] = json!(_use_latest_protocols);
     }
 
+    Ok(final_config.to_string())
+}
+
+pub fn parse_config(config: &str) -> VcxResult<Config> {
+    let my_config: Config = ::serde_json::from_str(&config)
+        .map_err(|err|
+            VcxError::from_msg(
+                VcxErrorKind::InvalidConfiguration,
+                format!("Cannot parse config: {}", err),
+            )
+        )?;
+    Ok(my_config)
+}
+
+pub fn connect_register_provision(config: &str) -> VcxResult<String> {
+    trace!("connect_register_provision >>> config: {:?}", config);
+    let my_config = parse_config(config)?;
+
+    trace!("***Configuring Library");
+    set_config_values(&my_config);
+
+    trace!("***Configuring Wallet");
+    let (my_did, my_vk, wallet_name) = configure_wallet(&my_config)?;
+
+    trace!("Connecting to Agency");
+    let (agent_did, agent_vk) = match my_config.protocol_type {
+        settings::ProtocolTypes::V1 => onboarding_v1(&my_did, &my_vk, &my_config.agency_did)?,
+        settings::ProtocolTypes::V2 => onboarding_v2(&my_did, &my_vk, &my_config.agency_did)?,
+    };
+
+    let config = get_final_config(&my_did, &my_vk, &agent_did, &agent_vk, &wallet_name, &my_config)?;
+
     wallet::close_wallet()?;
 
-    Ok(final_config.to_string())
+    Ok(config)
 }
 
 fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
@@ -310,8 +335,7 @@ fn onboarding_v1(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
     Ok((response.from_did, response.from_vk))
 }
 
-// it will be changed next
-fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
+pub fn connect_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
     /* STEP 1 - CONNECT */
     let message = A2AMessage::Version2(
         A2AMessageV2::Connect(Connect::build(my_did, my_vk))
@@ -321,11 +345,22 @@ fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(Stri
 
     let ConnectResponse { from_vk: agency_pw_vk, from_did: agency_pw_did, .. } =
         match response.remove(0) {
-            A2AMessage::Version2(A2AMessageV2::ConnectResponse(resp)) => resp,
-            _ => return Err(VcxError::from_msg(VcxErrorKind::InvalidHttpResponse, "Message does not match any variant of ConnectResponse"))
+            A2AMessage::Version2(A2AMessageV2::ConnectResponse(resp)) =>
+                resp,
+            _ => return
+                Err(VcxError::from_msg(
+                    VcxErrorKind::InvalidHttpResponse,
+                    "Message does not match any variant of ConnectResponse")
+                )
         };
 
     settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agency_pw_vk);
+    Ok((agency_pw_did, agency_pw_vk))
+}
+
+// it will be changed next
+fn onboarding_v2(my_did: &str, my_vk: &str, agency_did: &str) -> VcxResult<(String, String)> {
+    let (agency_pw_did, _) = connect_v2(my_did, my_vk, agency_did)?;
 
     /* STEP 2 - REGISTER */
     let message = A2AMessage::Version2(
@@ -395,7 +430,7 @@ fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
     Ok(())
 }
 
-fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<A2AMessage>> {
+pub fn send_message_to_agency(message: &A2AMessage, did: &str) -> VcxResult<Vec<A2AMessage>> {
     let data = prepare_message_for_agency(message, &did, &settings::get_protocol_type())?;
 
     let response = httpclient::post_u8(&data)

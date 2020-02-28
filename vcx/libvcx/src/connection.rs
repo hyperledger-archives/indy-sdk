@@ -25,6 +25,7 @@ use v3::handlers::connection::connection::Connection as ConnectionV3;
 use v3::handlers::connection::states::ActorDidExchangeState;
 use v3::handlers::connection::agent::AgentInfo;
 use v3::messages::connection::invite::Invitation as InvitationV3;
+use settings::ProtocolTypes;
 
 lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connections> = Default::default();
@@ -95,7 +96,6 @@ struct Connection {
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<settings::ProtocolTypes>,
 }
-
 
 impl Connection {
     fn _connect_send_invite(&mut self, options: &ConnectionOptions) -> VcxResult<u32> {
@@ -1242,7 +1242,6 @@ impl From<(Connection, ActorDidExchangeState)> for ConnectionV3 {
 
 use v3::messages::a2a::{A2AMessage, MessageId};
 use v3::messages::connection::did_doc::DidDoc;
-use settings::ProtocolTypes;
 
 pub fn get_messages(handle: u32) -> VcxResult<HashMap<String, A2AMessage>> {
     CONNECTION_MAP.get_mut(handle, |connection| {

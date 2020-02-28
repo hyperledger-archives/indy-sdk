@@ -11,6 +11,7 @@ use messages::{GeneralMessage, RemoteMessageType};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
 use messages::get_message;
+use messages::get_message::get_ref_msg;
 use messages::get_message::MessagePayload;
 use connection;
 use settings;
@@ -22,6 +23,7 @@ use error::prelude::*;
 use std::convert::TryInto;
 
 use v3::handlers::issuance::Holder;
+use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
 
 lazy_static! {
@@ -45,18 +47,18 @@ impl Default for Credential {
             state: VcxStateType::VcxStateNone,
             credential_name: None,
             credential_request: None,
-            agent_did: None,
-            agent_vk: None,
-            my_did: None,
-            my_vk: None,
-            their_did: None,
-            their_vk: None,
             credential_offer: None,
             msg_uid: None,
             cred_id: None,
             credential: None,
             payment_info: None,
             payment_txn: None,
+            my_did: None,
+            my_vk: None,
+            their_did: None,
+            their_vk: None,
+            agent_did: None,
+            agent_vk: None,
             thread: Some(Thread::new()),
         }
     }
@@ -144,49 +146,37 @@ impl Credential {
     fn send_request(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("Credential::send_request >>> connection_handle: {}", connection_handle);
 
-        self.my_did = Some(connection::get_pw_did(connection_handle)?);
-        self.my_vk = Some(connection::get_pw_verkey(connection_handle)?);
-        self.agent_did = Some(connection::get_agent_did(connection_handle)?);
-        self.agent_vk = Some(connection::get_agent_verkey(connection_handle)?);
-        self.their_did = Some(connection::get_their_pw_did(connection_handle)?);
-        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle)?);
-
-        let my_did = connection::get_pw_did(connection_handle)?;
-        let their_did = connection::get_their_pw_did(connection_handle)?;
+        let my_agent = get_agent_info()?.pw_info(connection_handle)?;
 
         debug!("sending credential request {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
 
-        let cred_req_json = self.generate_request_msg(&my_did, &their_did)?;
-
-        debug!("verifier_did: {:?} -- verifier_vk: {:?} -- agent_did: {:?} -- agent_vk: {:?} -- remote_vk: {:?}",
-               self.my_did,
-               self.agent_did,
-               self.agent_vk,
-               self.their_vk,
-               self.my_vk);
-
-        let local_their_vk = self.their_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-        let local_agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-        let local_agent_vk = self.agent_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-        let local_my_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-        let local_my_vk = self.my_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
+        let cred_req_json = self.generate_request_msg(&my_agent.my_pw_did()?, &my_agent.their_pw_did()?)?;
 
         // if test mode, just get this.
-        let offer_msg_id = self.credential_offer.as_ref().and_then(|offer| offer.msg_ref_id.clone())
+        let offer_msg_id = self.credential_offer
+            .as_ref()
+            .and_then(|offer| offer.msg_ref_id.clone())
             .ok_or(VcxError::from(VcxErrorKind::CreateCredentialRequest))?;
 
         let response =
             messages::send_message()
-                .to(local_my_did)?
-                .to_vk(local_my_vk)?
+                .to(&my_agent.my_pw_did()?)?
+                .to_vk(&my_agent.my_pw_vk()?)?
                 .msg_type(&RemoteMessageType::CredReq)?
-                .agent_did(local_agent_did)?
-                .agent_vk(local_agent_vk)?
-                .edge_agent_payload(&local_my_vk, &local_their_vk, &cred_req_json, PayloadKinds::CredReq, self.thread.clone())?
+                .agent_did(&my_agent.pw_agent_did()?)?
+                .agent_vk(&my_agent.pw_agent_vk()?)?
+                .edge_agent_payload(
+                    &my_agent.my_pw_vk()?,
+                    &my_agent.their_pw_vk()?,
+                    &cred_req_json,
+                    PayloadKinds::CredReq,
+                    self.thread.clone()
+                )?
                 .ref_msg_id(Some(offer_msg_id.to_string()))?
                 .send_secure()
                 .map_err(|err| err.extend(format!("{} could not send proof", self.source_id)))?;
 
+        apply_agent_info(self, &my_agent);
         self.msg_uid = Some(response.get_msg_uid()?);
         self.state = VcxStateType::VcxStateOfferSent;
 
@@ -196,19 +186,23 @@ impl Credential {
     fn _check_msg(&mut self, message: Option<String>) -> VcxResult<()> {
         let credential = match message {
             None => {
-                let agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-                let agent_vk = self.agent_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-                let my_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-                let my_vk = self.my_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
-                let msg_uid = self.msg_uid.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
+                let msg_uid = self.msg_uid
+                    .as_ref()
+                    .ok_or(VcxError::from(VcxErrorKind::InvalidCredentialHandle))?;
 
-                let (_, payload) = get_message::get_ref_msg(msg_uid, my_did, my_vk, agent_did, agent_vk)?;
-
-                let (credential, thread) = Payloads::decrypt(&my_vk, &payload)?;
+                let (_, payload) = get_ref_msg(msg_uid,
+                                               &get_agent_attr(&self.my_did)?,
+                                               &get_agent_attr(&self.my_vk)?,
+                                               &get_agent_attr(&self.agent_did)?,
+                                               &get_agent_attr(&self.agent_vk)?)?;
+                let (credential, thread) = Payloads::decrypt(&get_agent_attr(&self.my_vk)?, &payload)?;
 
                 if let Some(_) = thread {
-                    let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
-                    self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
+                    let their_did = get_agent_attr(&self.their_vk)?;
+
+                    self.thread
+                        .as_mut()
+                        .map(|thread| thread.increment_receiver(&their_did));
                 };
                 credential
             }
@@ -371,6 +365,15 @@ fn handle_err(err: VcxError) -> VcxError {
     }
 }
 
+fn apply_agent_info(cred: &mut Credential, agent_info: &MyAgentInfo) {
+    cred.my_did = agent_info.my_pw_did.clone();
+    cred.my_vk = agent_info.my_pw_vk.clone();
+    cred.their_did = agent_info.their_pw_did.clone();
+    cred.their_vk = agent_info.their_pw_vk.clone();
+    cred.agent_did = agent_info.pw_agent_did.clone();
+    cred.agent_vk = agent_info.pw_agent_vk.clone();
+}
+
 pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u32> {
     trace!("credential_create_with_offer >>> source_id: {}, offer: {}", source_id, secret!(&offer));
 
@@ -528,34 +531,35 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResu
             });
     }
 
-    let my_did = connection::get_pw_did(connection_handle)?;
-    let my_vk = connection::get_pw_verkey(connection_handle)?;
-    let agent_did = connection::get_agent_did(connection_handle)?;
-    let agent_vk = connection::get_agent_verkey(connection_handle)?;
-    let version = connection::get_version(connection_handle)?;
+    let my_agent = get_agent_info()?.pw_info(connection_handle)?;
 
     AgencyMock::set_next_response(constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
 
-    let message = get_message::get_connection_messages(&my_did,
-                                                       &my_vk,
-                                                       &agent_did,
-                                                       &agent_vk,
+    let message = get_message::get_connection_messages(&my_agent.my_pw_did()?,
+                                                       &my_agent.my_pw_vk()?,
+                                                       &my_agent.pw_agent_did()?,
+                                                       &my_agent.pw_agent_vk()?,
                                                        Some(vec![msg_id.to_string()]),
                                                        None,
-                                                       &version)
+                                                       &my_agent.version()?)
         .map_err(|err| err.extend("Cannot get messages"))?;
 
     if message[0].msg_type != RemoteMessageType::CredOffer {
         return Err(VcxError::from_msg(VcxErrorKind::InvalidMessages, "Invalid message type"));
     }
 
-    let payload = message.get(0).and_then(|msg| msg.payload.as_ref())
+    let payload = message
+        .get(0)
+        .and_then(|msg| msg.payload.as_ref())
         .ok_or(VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Payload not found"))?;
 
-    let payload = _set_cred_offer_ref_message(&payload, &my_vk, &message[0].uid)?;
+    let payload = _set_cred_offer_ref_message(&payload, &my_agent.my_pw_vk()?, &message[0].uid)?;
 
     serde_json::to_string_pretty(&payload)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessages, format!("Cannot serialize credential offer: {}", err)))
+        .map_err(|err|
+            VcxError::from_msg(VcxErrorKind::InvalidMessages,
+                               format!("Cannot serialize credential offer: {}", err)
+            ))
 }
 
 pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String> {
@@ -578,21 +582,17 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
     }
 
     debug!("checking agent for credential offers from connection {}", connection::get_source_id(connection_handle).unwrap_or_default());
-    let my_did = connection::get_pw_did(connection_handle)?;
-    let my_vk = connection::get_pw_verkey(connection_handle)?;
-    let agent_did = connection::get_agent_did(connection_handle)?;
-    let agent_vk = connection::get_agent_verkey(connection_handle)?;
-    let version = connection::get_version(connection_handle)?;
+    let my_agent = get_agent_info()?.pw_info(connection_handle)?;
 
     AgencyMock::set_next_response(constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
 
-    let payload = get_message::get_connection_messages(&my_did,
-                                                       &my_vk,
-                                                       &agent_did,
-                                                       &agent_vk,
+    let payload = get_message::get_connection_messages(&my_agent.my_pw_did()?,
+                                                       &my_agent.my_pw_vk()?,
+                                                       &my_agent.pw_agent_did()?,
+                                                       &my_agent.pw_agent_vk()?,
                                                        None,
                                                        None,
-                                                       &version)
+                                                       &my_agent.version()?)
         .map_err(|err| err.extend("Cannot get messages"))?;
 
     let mut messages = Vec::new();
@@ -602,7 +602,7 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
             let payload = msg.payload
                 .ok_or(VcxError::from(VcxErrorKind::InvalidMessages))?;
 
-            let payload = _set_cred_offer_ref_message(&payload, &my_vk, &msg.uid)?;
+            let payload = _set_cred_offer_ref_message(&payload, &my_agent.my_pw_vk()?, &msg.uid)?;
 
             messages.push(payload);
         }
@@ -741,7 +741,7 @@ pub mod tests {
         credential.credential_offer = Some(offer);
         credential.payment_info = payment_info;
         credential.state = VcxStateType::VcxStateRequestReceived;
-        credential.my_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap());
+        apply_agent_info(&mut credential, &get_agent_info().unwrap());
         credential
     }
 
