@@ -801,8 +801,7 @@ vcx_error_t vcx_disclosed_proof_generate_proof(vcx_command_handle_t command_hand
 ///     - Prover doesn't want to continue interaction - pass `reason` parameter.
 /// Note that only one of these parameters can be passed.
 ///
-/// Note that this function is useful in case `aries` communication method is used.
-/// In other cases it returns ActionNotSupported error.
+/// Note that proposing of different presentation is supported for `aries` protocol only.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
