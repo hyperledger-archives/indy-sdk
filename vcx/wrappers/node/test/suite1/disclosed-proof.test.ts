@@ -207,14 +207,7 @@ describe('DisclosedProof', () => {
   describe('declinePresentationRequest:', () => {
     it('success', async () => {
       const data = await dataDisclosedProofCreateWithRequest()
-      const disclosedProof = await disclosedProofCreateWithRequest(data)
-
-      Assertions.assertThrows(InvalidConnectionHandleException.class, () -> {
-          TestHelper.getResultFromFuture(
-              disclosedProof.declinePresentationRequest(
-                { connection: data.connection, reason: 'some reason', proposal: null } as any))
-          );
-      });
+      await disclosedProofCreateWithRequest(data)
     })
   })
 
