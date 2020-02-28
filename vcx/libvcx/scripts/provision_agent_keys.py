@@ -4,7 +4,6 @@ import json
 import argparse
 import asyncio
 import time
-import os
 import urllib.request
 import sys
 from ctypes import *

@@ -112,7 +112,7 @@ public class ConnectionApi extends VcxJava.API {
 	public static CompletableFuture<Integer> vcxCreateConnectionWithInvite(String invitationId, String inviteDetails) throws VcxException {
 		ParamGuard.notNullOrWhiteSpace(invitationId, "invitationId");
 		ParamGuard.notNullOrWhiteSpace(inviteDetails, "inviteDetails");
-		logger.debug("vcxCreateConnectionWithInvite() called with: invitationId = [" + invitationId + "], inviteDetails = [" + inviteDetails + "]");
+		logger.debug("vcxCreateConnectionWithInvite() called with: invitationId = [" + invitationId + "], inviteDetails = [****]");
 		CompletableFuture<Integer> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 
@@ -166,6 +166,60 @@ public class ConnectionApi extends VcxJava.API {
 		checkResult(result);
 		return future;
 	}
+
+	private static Callback vcxConnectionRedirectCB = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int commandHandle, int err) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+			CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+			if (!checkCallback(future, err)) return;
+			future.complete(0);
+		}
+	};
+
+	public static CompletableFuture<Integer> vcxConnectionRedirect(int connectionHandle, int redirectConnectionHandle) throws VcxException {
+		ParamGuard.notNull(connectionHandle, "connectionHandle");
+		ParamGuard.notNull(redirectConnectionHandle, "redirectConnectionHandle");
+		logger.debug("vcxConnectionRedirect() called with: connectionHandle = [" + connectionHandle + "], redirectConnectionHandle = [" + redirectConnectionHandle + "]");
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_redirect(
+				commandHandle,
+				connectionHandle,
+				redirectConnectionHandle,
+				vcxConnectionRedirectCB
+		);
+		checkResult(result);
+		return future;
+	}
+
+	private static Callback vcxConnectionGetRedirectDetailsCB = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int commandHandle, int err, String redirectDetails) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], redirectDetails = [****]");
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+			if (!checkCallback(future, err)) return;
+			String result = redirectDetails;
+			future.complete(result);
+		}
+	};
+
+	public static CompletableFuture<String> vcxConnectionGetRedirectDetails(int connectionHandle) throws VcxException {
+		ParamGuard.notNull(connectionHandle, "connectionHandle");
+		logger.debug("vcxConnectionGetRedirectDetails() called with: connectionHandle = [" + connectionHandle + "]");
+		CompletableFuture<String> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+
+		int result = LibVcx.api.vcx_connection_get_redirect_details(
+				commandHandle,
+				connectionHandle,
+				vcxConnectionGetRedirectDetailsCB
+		);
+		checkResult(result);
+		return future;
+	}
+
 
 	private static Callback vcxConnectionSerializeCB = new Callback() {
 		@SuppressWarnings({"unused", "unchecked"})
@@ -335,6 +389,69 @@ public class ConnectionApi extends VcxJava.API {
 		int result = LibVcx.api.vcx_connection_send_discovery_features(commandHandle, connectionHandle, query, comment, voidCb);
 		checkResult(result);
 
+		return future;
+	}
+
+    private static Callback vcxConnectionGetPwDidCB = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, String pwDid) {
+
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+            if (! checkCallback(future, err)) return;
+
+            future.complete(pwDid);
+        }
+    };
+
+    public static CompletableFuture<String> connectionGetPwDid(int connectionHandle) throws VcxException {
+
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+        int result = LibVcx.api.vcx_connection_get_pw_did(commandHandle, connectionHandle, vcxConnectionGetPwDidCB);
+        checkResult(result);
+
+        return future;
+    }
+
+    private static Callback vcxConnectionGetTheirPwDidCB = new Callback() {
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int xcommand_handle, int err, String theirPwDid) {
+
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+            if (! checkCallback(future, err)) return;
+
+            future.complete(theirPwDid);
+        }
+    };
+
+    public static CompletableFuture<String> connectionGetTheirPwDid(int connectionHandle) throws VcxException {
+
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+        int result = LibVcx.api.vcx_connection_get_pw_did(commandHandle, connectionHandle, vcxConnectionGetTheirPwDidCB);
+        checkResult(result);
+
+        return future;
+    }
+
+	private static Callback vcxConnectionInfoCB = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int commandHandle, int err, String info) {
+			logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], info = [" + info + "]");
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+			if (! checkCallback(future, err)) return;
+			future.complete(info);
+		}
+	};
+
+	public static CompletableFuture<String> connectionInfo(int connectionHandle) throws VcxException {
+		logger.debug("connectionInfo() called with: connectionHandle = [" + connectionHandle + "]");
+		CompletableFuture<String> future = new CompletableFuture<>();
+		int commandHandle = addFuture(future);
+		int result = LibVcx.api.vcx_connection_info(commandHandle, connectionHandle, vcxConnectionInfoCB);
+		checkResult(result);
 		return future;
 	}
 }

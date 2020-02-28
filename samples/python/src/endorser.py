@@ -2,7 +2,7 @@ import time
 import json
 import logging
 
-from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION
+from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION, ensure_previous_request_applied
 
 
 logger = logging.getLogger(__name__)
@@ -108,11 +108,10 @@ async def demo():
     assert resp['op'] == 'REPLY'
     assert resp['result']['txn']['metadata']['endorser'] == endorser['did']
 
-    time.sleep(1)
-
     # Author checks that Schema was added
     author['get_schema_req'] = await ledger.build_get_schema_request(author['did'], author['schema_id'])
-    response = await ledger.submit_request(target_pool['pool'], author['get_schema_req'])
+    response = await ensure_previous_request_applied(target_pool['pool'], author['get_schema_req'],
+                                                     lambda response: response['result']['data'] is not None)
     response = json.loads(response)
     assert response['op'] == 'REPLY'
 

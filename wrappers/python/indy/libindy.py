@@ -1,5 +1,5 @@
-from logging import ERROR, WARNING, INFO, DEBUG, CRITICAL
 import logging
+from logging import ERROR, WARNING, INFO, DEBUG, CRITICAL
 from typing import Optional
 import asyncio
 import itertools

@@ -14,7 +14,6 @@ use ursa::cl::{
 };
 
 use std::collections::HashMap;
-use named_type::NamedType;
 
 pub const CL_SIGNATURE_TYPE: &str = "CL";
 
@@ -63,14 +62,14 @@ pub struct CredentialDefinitionV1 {
     pub value: CredentialDefinitionData
 }
 
-#[derive(Debug, Serialize, Deserialize, NamedType)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]
 pub enum CredentialDefinition {
     #[serde(rename = "1.0")]
     CredentialDefinitionV1(CredentialDefinitionV1)
 }
 
-#[derive(Debug, Serialize, Deserialize, NamedType)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TemporaryCredentialDefinition {
     pub cred_def: CredentialDefinition,
     pub cred_def_priv_key: CredentialDefinitionPrivateKey,
@@ -110,12 +109,12 @@ pub fn cred_defs_map_to_cred_defs_v1_map(cred_defs: CredentialDefinitions) -> Ha
         .collect()
 }
 
-#[derive(Debug, Serialize, Deserialize, NamedType)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialDefinitionPrivateKey {
     pub value: CredentialPrivateKey
 }
 
-#[derive(Debug, Serialize, Deserialize, NamedType)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialDefinitionCorrectnessProof {
     pub value: CredentialKeyCorrectnessProof
 }

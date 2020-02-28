@@ -223,7 +223,6 @@ impl PostgresWallet {
                 return ErrorCode::WalletNotFoundError;
             }
         };
-
         // get a handle (to use to identify wallet for subsequent calls)
         let xhandle = SequenceUtils::get_next_id();
 
@@ -1100,7 +1099,7 @@ mod tests {
         assert_eq!(err, ErrorCode::Success);
 
         // update metadata to some new metadata
-        let metadata2 = _metadata2();
+        let metadata2 = _metadata2_cstring();
         let err = PostgresWallet::set_storage_metadata(handle, metadata2.as_ptr());
         assert_eq!(err, ErrorCode::Success);
 
@@ -1731,7 +1730,7 @@ mod tests {
 
     fn _cleanup() {
         let ten_millis = std::time::Duration::from_millis(1);
-        let now = time::now();
+        let _now = time::now();
         thread::sleep(ten_millis);
 
         let id = _wallet_id();
@@ -1763,6 +1762,9 @@ mod tests {
                 if scheme == "MultiWalletSingleTable" {
                     return _wallet_config_multi();
                 }
+                if scheme == "MultiWalletSingleTableSharedPool" {
+                    return _wallet_config_multi_with_shared_pool();
+                }
             },
             Err(_) => ()
         };
@@ -1776,7 +1778,17 @@ mod tests {
     fn _wallet_config_multi() -> Option<CString> {
         let config = Some(json!({
             "url": "localhost:5432".to_owned(),
-            "wallet_scheme": "MultiWalletSingleTable".to_owned()
+            "wallet_scheme": "MultiWalletSingleTable".to_owned(),
+            "database_name": "multi_wallet_db".to_owned()
+        }).to_string());
+        config.map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap()
+    }
+
+    fn _wallet_config_multi_with_shared_pool() -> Option<CString> {
+        let config = Some(json!({
+            "url": "localhost:5432".to_owned(),
+            "wallet_scheme": "MultiWalletSingleTableSharedPool".to_owned()
         }).to_string());
         config.map(CString::new)
             .map_or(Ok(None), |r| r.map(Some)).unwrap()
@@ -1811,7 +1823,7 @@ mod tests {
         CString::new(foo).unwrap()
     }
 
-    fn _metadata2() -> Vec<i8> {
+    fn _metadata2() -> Vec<u8> {
         return vec![
             2, 3, 4, 5, 6, 7, 8, 9,
             2, 3, 4, 5, 6, 7, 8, 9,
@@ -1822,6 +1834,11 @@ mod tests {
             2, 3, 4, 5, 6, 7, 8, 9,
             2, 3, 4, 5, 6, 7, 8, 9
         ];
+    }
+
+    fn _metadata2_cstring() -> CString {
+        let foo = _metadata2();
+        CString::new(foo).unwrap()
     }
 
     fn _type(i: u8) -> CString {

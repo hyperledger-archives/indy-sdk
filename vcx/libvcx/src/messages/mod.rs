@@ -21,7 +21,8 @@ use self::update_connection::{DeleteConnectionBuilder, UpdateConnection, UpdateC
 use self::update_profile::{UpdateProfileDataBuilder, UpdateConfigs, UpdateConfigsResponse};
 use self::invite::{
     SendInviteBuilder, ConnectionRequest, SendInviteMessageDetails, SendInviteMessageDetailsResponse, ConnectionRequestResponse,
-    AcceptInviteBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
+    RedirectConnectionMessageDetails, ConnectionRequestRedirect, ConnectionRequestRedirectResponse,
+    AcceptInviteBuilder, RedirectConnectionBuilder, ConnectionRequestAnswer, AcceptInviteMessageDetails, ConnectionRequestAnswerResponse
 };
 use self::get_message::{GetMessagesBuilder, GetMessages, GetMessagesResponse, MessagesByConnections};
 use self::send_message::SendMessageBuilder;
@@ -33,6 +34,7 @@ use error::prelude::*;
 
 use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::Value;
+use settings::ProtocolTypes;
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -241,6 +243,9 @@ pub enum A2AMessageV2 {
     ConnectionRequestAnswer(ConnectionRequestAnswer),
     ConnectionRequestAnswerResponse(ConnectionRequestAnswerResponse),
 
+    ConnectionRequestRedirect(ConnectionRequestRedirect),
+    ConnectionRequestRedirectResponse(ConnectionRequestRedirectResponse),
+
     UpdateConnection(UpdateConnection),
     UpdateConnectionResponse(UpdateConnectionResponse),
     UpdateMessageStatusByConnections(UpdateMessageStatusByConnections),
@@ -339,9 +344,29 @@ impl<'de> Deserialize<'de> for A2AMessageV2 {
                     .map(A2AMessageV2::ConnectionRequestAnswer)
                     .map_err(de::Error::custom)
             }
+            "ACCEPT_CONN_REQ" => {
+                ConnectionRequestAnswer::deserialize(value)
+                    .map(A2AMessageV2::ConnectionRequestAnswer)
+                    .map_err(de::Error::custom)
+            }
             "CONN_REQUEST_ANSWER_RESP" => {
                 ConnectionRequestAnswerResponse::deserialize(value)
                     .map(A2AMessageV2::ConnectionRequestAnswerResponse)
+                    .map_err(de::Error::custom)
+            }
+            "ACCEPT_CONN_REQ_RESP" => {
+                ConnectionRequestAnswerResponse::deserialize(value)
+                    .map(A2AMessageV2::ConnectionRequestAnswerResponse)
+                    .map_err(de::Error::custom)
+            }
+            "REDIRECT_CONN_REQ" => {
+                ConnectionRequestRedirect::deserialize(value)
+                    .map(A2AMessageV2::ConnectionRequestRedirect)
+                    .map_err(de::Error::custom)
+            }
+            "CONN_REQ_REDIRECTED" => {
+                ConnectionRequestRedirectResponse::deserialize(value)
+                    .map(A2AMessageV2::ConnectionRequestRedirectResponse)
                     .map_err(de::Error::custom)
             }
             "SEND_REMOTE_MSG" => {
@@ -453,8 +478,8 @@ pub struct ForwardV2 {
 }
 
 impl Forward {
-    fn new(fwd: String, msg: Vec<u8>) -> VcxResult<A2AMessage> {
-        match settings::get_protocol_type() {
+    fn new(fwd: String, msg: Vec<u8>, version: ProtocolTypes) -> VcxResult<A2AMessage> {
+        match version {
             settings::ProtocolTypes::V1 => {
                 Ok(A2AMessage::Version1(A2AMessageV1::Forward(
                     Forward {
@@ -479,6 +504,7 @@ impl Forward {
         }
     }
 }
+
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct CreateMessage {
@@ -527,6 +553,7 @@ pub struct MessageSent {
 #[derive(Debug, Deserialize, Serialize)]
 pub enum MessageDetail {
     ConnectionRequestAnswer(AcceptInviteMessageDetails),
+    ConnectionRequestRedirect(RedirectConnectionMessageDetails),
     ConnectionRequest(SendInviteMessageDetails),
     ConnectionRequestResp(SendInviteMessageDetailsResponse),
     General(GeneralMessageDetail),
@@ -568,6 +595,7 @@ pub enum RemoteMessageType {
     Other(String),
     ConnReq,
     ConnReqAnswer,
+    ConnReqRedirect,
     CredOffer,
     CredReq,
     Cred,
@@ -580,6 +608,7 @@ impl Serialize for RemoteMessageType {
         let value = match self {
             RemoteMessageType::ConnReq => "connReq",
             RemoteMessageType::ConnReqAnswer => "connReqAnswer",
+            RemoteMessageType::ConnReqRedirect => "connReqRedirect",
             RemoteMessageType::CredOffer => "credOffer",
             RemoteMessageType::CredReq => "credReq",
             RemoteMessageType::Cred => "cred",
@@ -596,7 +625,8 @@ impl<'de> Deserialize<'de> for RemoteMessageType {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
         match value.as_str() {
             Some("connReq") => Ok(RemoteMessageType::ConnReq),
-            Some("connReqAnswer") => Ok(RemoteMessageType::ConnReqAnswer),
+            Some("connReqAnswer") | Some("CONN_REQ_ACCEPTED") => Ok(RemoteMessageType::ConnReqAnswer),
+            Some("connReqRedirect") | Some("CONN_REQ_REDIRECTED") | Some("connReqRedirected")  => Ok(RemoteMessageType::ConnReqRedirect),
             Some("credOffer") => Ok(RemoteMessageType::CredOffer),
             Some("credReq") => Ok(RemoteMessageType::CredReq),
             Some("cred") => Ok(RemoteMessageType::Cred),
@@ -616,6 +646,7 @@ pub enum MessageStatusCode {
     Accepted,
     Rejected,
     Reviewed,
+    Redirected,
 }
 
 impl MessageStatusCode {
@@ -624,6 +655,7 @@ impl MessageStatusCode {
             MessageStatusCode::Created => "message created",
             MessageStatusCode::Sent => "message sent",
             MessageStatusCode::Received => "message received",
+            MessageStatusCode::Redirected => "message redirected",
             MessageStatusCode::Accepted => "message accepted",
             MessageStatusCode::Rejected => "message rejected",
             MessageStatusCode::Reviewed => "message reviewed",
@@ -640,6 +672,7 @@ impl std::string::ToString for MessageStatusCode {
             MessageStatusCode::Accepted => "MS-104",
             MessageStatusCode::Rejected => "MS-105",
             MessageStatusCode::Reviewed => "MS-106",
+            MessageStatusCode::Redirected => "MS-107",
         }.to_string()
     }
 }
@@ -661,6 +694,7 @@ impl<'de> Deserialize<'de> for MessageStatusCode {
             Some("MS-104") => Ok(MessageStatusCode::Accepted),
             Some("MS-105") => Ok(MessageStatusCode::Rejected),
             Some("MS-106") => Ok(MessageStatusCode::Reviewed),
+            Some("MS-107") => Ok(MessageStatusCode::Redirected),
             _ => Err(de::Error::custom("Unexpected message type."))
         }
     }
@@ -693,6 +727,7 @@ pub enum A2AMessageKinds {
     ComMethodUpdated,
     ConnectionRequest,
     ConnectionRequestAnswer,
+    ConnectionRequestRedirect,
     SendRemoteMessage,
     SendRemoteMessageResponse,
 }
@@ -719,6 +754,7 @@ impl A2AMessageKinds {
             A2AMessageKinds::UpdateConnectionStatus => MessageFamilies::Pairwise,
             A2AMessageKinds::ConnectionRequest => MessageFamilies::Pairwise,
             A2AMessageKinds::ConnectionRequestAnswer => MessageFamilies::Pairwise,
+            A2AMessageKinds::ConnectionRequestRedirect => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateMessageStatusByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::MessageStatusUpdatedByConnections => MessageFamilies::Pairwise,
             A2AMessageKinds::UpdateConfigs => MessageFamilies::Configs,
@@ -752,7 +788,8 @@ impl A2AMessageKinds {
             A2AMessageKinds::Messages => "MSGS".to_string(),
             A2AMessageKinds::UpdateConnectionStatus => "UPDATE_CONN_STATUS".to_string(),
             A2AMessageKinds::ConnectionRequest => "CONN_REQUEST".to_string(),
-            A2AMessageKinds::ConnectionRequestAnswer => "CONN_REQUEST_ANSWER".to_string(),
+            A2AMessageKinds::ConnectionRequestAnswer => "ACCEPT_CONN_REQ".to_string(),
+            A2AMessageKinds::ConnectionRequestRedirect => "REDIRECT_CONN_REQ".to_string(),
             A2AMessageKinds::UpdateConfigs => "UPDATE_CONFIGS".to_string(),
             A2AMessageKinds::ConfigsUpdated => "CONFIGS_UPDATED".to_string(),
             A2AMessageKinds::UpdateComMethod => "UPDATE_COM_METHOD".to_string(),
@@ -763,8 +800,8 @@ impl A2AMessageKinds {
     }
 }
 
-pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u8>> {
-    match settings::get_protocol_type() {
+pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
+    match version {
         settings::ProtocolTypes::V1 => bundle_for_agency_v1(message, &agency_did),
         settings::ProtocolTypes::V2 => pack_for_agency_v2(message, agency_did)
     }
@@ -781,7 +818,7 @@ fn bundle_for_agency_v1(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec
 
     let message = crypto::prep_msg(&my_vk, &agent_vk, &message[..])?;
 
-    prepare_forward_message(message, agency_did)
+    prepare_forward_message(message, agency_did, ProtocolTypes::V1)
 }
 
 fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u8>> {
@@ -796,11 +833,11 @@ fn pack_for_agency_v2(message: &A2AMessage, agency_did: &str) -> VcxResult<Vec<u
 
     let message = crypto::pack_message(Some(&my_vk), &receiver_keys, message.as_bytes())?;
 
-    prepare_forward_message(message, agency_did)
+    prepare_forward_message(message, agency_did, ProtocolTypes::V2)
 }
 
-fn parse_response_from_agency(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage>> {
-    match settings::get_protocol_type() {
+fn parse_response_from_agency(response: &Vec<u8>, version: &ProtocolTypes) -> VcxResult<Vec<A2AMessage>> {
+    match version {
         settings::ProtocolTypes::V1 => parse_response_from_agency_v1(response),
         settings::ProtocolTypes::V2 => parse_response_from_agency_v2(response)
     }
@@ -817,16 +854,20 @@ fn parse_response_from_agency_v1(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage
         .collect::<VcxResult<Vec<A2AMessage>>>()
 }
 
-fn parse_response_from_agency_v2(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage>> {
+pub fn parse_message_from_response(response: &Vec<u8>) -> VcxResult<String> {
     let unpacked_msg = crypto::unpack_message(&response[..])?;
 
     let message: Value = ::serde_json::from_slice(unpacked_msg.as_slice())
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err)))?;
 
-    let message = message["message"].as_str()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field on response"))?;
+    Ok(message["message"].as_str()
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot find `message` field on response"))?.to_string())
+}
 
-    let message: A2AMessage = serde_json::from_str(message)
+fn parse_response_from_agency_v2(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage>> {
+    let message = parse_message_from_response(response)?;
+
+    let message: A2AMessage = serde_json::from_str(&message)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))?;
 
     Ok(vec![message])
@@ -859,7 +900,7 @@ pub fn try_i8_bundle(data: Vec<u8>) -> VcxResult<Bundled<Vec<u8>>> {
     let bundle: Bundled<Vec<i8>> =
         rmp_serde::from_slice(&data[..])
             .map_err(|_| {
-                warn!("could not deserialize bundle with i8, will try u8");
+                trace!("could not deserialize bundle with i8, will try u8");
                 VcxError::from_msg(VcxErrorKind::InvalidMessagePack, "Could not deserialize bundle with i8")
             })?;
 
@@ -889,10 +930,10 @@ pub fn bundle_from_u8(data: Vec<u8>) -> VcxResult<Bundled<Vec<u8>>> {
         })
 }
 
-fn prepare_forward_message(message: Vec<u8>, did: &str) -> VcxResult<Vec<u8>> {
+fn prepare_forward_message(message: Vec<u8>, did: &str, version: ProtocolTypes) -> VcxResult<Vec<u8>> {
     let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY)?;
 
-    let message = Forward::new(did.to_string(), message)?;
+    let message = Forward::new(did.to_string(), message, version)?;
 
     match message {
         A2AMessage::Version1(A2AMessageV1::Forward(msg)) => prepare_forward_message_for_agency_v1(&msg, &agency_vk),
@@ -918,8 +959,8 @@ fn prepare_forward_message_for_agency_v2(message: &ForwardV2, agency_vk: &str) -
     crypto::pack_message(None, &receiver_keys, message.as_bytes())
 }
 
-pub fn prepare_message_for_agent(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> VcxResult<Vec<u8>> {
-    match settings::get_protocol_type() {
+pub fn prepare_message_for_agent(messages: Vec<A2AMessage>, pw_vk: &str, agent_did: &str, agent_vk: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
+    match version {
         settings::ProtocolTypes::V1 => prepare_message_for_agent_v1(messages, pw_vk, agent_did, agent_vk),
         settings::ProtocolTypes::V2 => prepare_message_for_agent_v2(messages, pw_vk, agent_did, agent_vk)
     }
@@ -937,7 +978,7 @@ fn prepare_message_for_agent_v1(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
     let message = crypto::prep_msg(&pw_vk, agent_vk, &message[..])?;
 
     /* forward to did */
-    let message = Forward::new(agent_did.to_owned(), message)?;
+    let message = Forward::new(agent_did.to_owned(), message, ProtocolTypes::V1)?;
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
@@ -957,7 +998,7 @@ fn prepare_message_for_agent_v2(messages: Vec<A2AMessage>, pw_vk: &str, agent_di
     let message = crypto::pack_message(Some(pw_vk), &receiver_keys, message.as_bytes())?;
 
     /* forward to did */
-    let message = Forward::new(agent_did.to_owned(), message)?;
+    let message = Forward::new(agent_did.to_owned(), message, ProtocolTypes::V2)?;
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
@@ -1040,6 +1081,8 @@ pub fn delete_connection() -> DeleteConnectionBuilder { DeleteConnectionBuilder:
 
 pub fn accept_invite() -> AcceptInviteBuilder { AcceptInviteBuilder::create() }
 
+pub fn redirect_connection() -> RedirectConnectionBuilder { RedirectConnectionBuilder::create() }
+
 pub fn update_data() -> UpdateProfileDataBuilder { UpdateProfileDataBuilder::create() }
 
 pub fn get_messages() -> GetMessagesBuilder { GetMessagesBuilder::create() }
@@ -1051,9 +1094,12 @@ pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::devsetup::*;
 
     #[test]
     fn test_to_u8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<i8> = vec![-127, -89, 98, 117, 110, 100, 108, 101, 100, -111, -36, 5, -74];
 
         let buf = to_u8(&vec);
@@ -1062,6 +1108,8 @@ pub mod tests {
 
     #[test]
     fn test_to_i8() {
+        let _setup = SetupDefaults::init();
+
         let vec: Vec<u8> = vec![129, 167, 98, 117, 110, 100, 108, 101, 100, 145, 220, 19, 13];
         let buf = to_i8(&vec);
         println!("new bundle: {:?}", buf);
@@ -1069,6 +1117,8 @@ pub mod tests {
 
     #[test]
     fn test_general_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = GeneralMessageDetail {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),
@@ -1086,6 +1136,8 @@ pub mod tests {
 
     #[test]
     fn test_create_message_null_parameters() {
+        let _setup = SetupDefaults::init();
+
         let details = CreateMessage {
             msg_type: MessageTypeV1 {
                 name: "Name".to_string(),

@@ -21,7 +21,7 @@ class CredentialDef(VcxStateful):
 
 
     def __init__(self, source_id: str, name: str, schema_id: str, transaction: Optional[str] = None):
-        VcxBase.__init__(self, source_id)
+        VcxStateful.__init__(self, source_id)
         self._source_id = source_id
         self._schema_id = schema_id
         self._name = name

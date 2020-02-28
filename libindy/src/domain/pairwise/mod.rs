@@ -1,7 +1,6 @@
-use named_type::NamedType;
 use super::crypto::did::DidValue;
 
-#[derive(Serialize, Deserialize, NamedType)]
+#[derive(Serialize, Deserialize)]
 pub struct Pairwise {
     pub my_did: DidValue,
     pub their_did: DidValue,

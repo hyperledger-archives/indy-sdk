@@ -10,6 +10,8 @@ class State(IntEnum):
     Unfulfilled = 5,
     Expired = 6,
     Revoked = 7,
+    Redirected = 8,
+    Rejected = 9,
 
 
 class ProofState(IntEnum):

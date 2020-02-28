@@ -89,6 +89,11 @@ public class VcxApi extends VcxJava.API {
         return result;
     }
 
+    public static String vcxVersion() throws VcxException {
+        logger.debug("vcxVersion()");
+        return LibVcx.api.vcx_version();
+    }
+
     public static String vcxErrorCMessage(int errorCode) {
         logger.debug("vcxErrorCMessage() called with: errorCode = [" + errorCode + "]");
         return LibVcx.api.vcx_error_c_message(errorCode);
