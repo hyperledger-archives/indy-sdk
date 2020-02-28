@@ -1337,6 +1337,15 @@ pub fn send_discovery_features(connection_handle: u32, query: Option<String>, co
     })
 }
 
+pub fn get_connection_info(handle: u32) -> VcxResult<String> {
+    CONNECTION_MAP.get(handle, |cxn| {
+        match cxn {
+            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
+            Connections::V3(ref connection) => connection.get_connection_info()
+        }
+    })
+}
+
 #[cfg(test)]
 pub mod tests {
     use std::thread;

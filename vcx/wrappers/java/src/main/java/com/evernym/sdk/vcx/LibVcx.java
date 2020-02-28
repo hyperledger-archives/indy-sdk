@@ -169,6 +169,10 @@ public abstract class LibVcx {
          */
         public int vcx_connection_send_discovery_features(int command_handle, int connection_handle, String query, String comment, Callback cb);
 
+        /**
+         * Get the information about the connection state.
+         */
+        public int vcx_connection_info(int command_handle, int connection_handle, Callback cb);
 
         /**
          * credential issuer object
