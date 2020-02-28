@@ -300,6 +300,22 @@ pub fn get_protocol_version() -> usize {
     }
 }
 
+pub fn get_opt_config_value(key: &str) -> Option<String> {
+    trace!("get_opt_config_value >>> key: {}", key);
+    match SETTINGS.read() {
+        Ok(x) => x,
+        Err(_) => return None
+    }
+        .get(key)
+        .map(|v| v.to_string())
+}
+
+pub fn set_opt_config_value(key: &str, value: &Option<String>) {
+    if let Some(v) = value {
+       set_config_value(key, v.as_str())
+    }
+}
+
 pub fn get_wallet_config(wallet_name: &str, wallet_type: Option<&str>, _storage_config: Option<&str>) -> String { // TODO: _storage_config must be used
     let mut config = json!({
         "id": wallet_name,
