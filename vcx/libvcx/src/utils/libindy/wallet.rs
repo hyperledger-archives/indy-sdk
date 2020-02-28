@@ -2,7 +2,6 @@ use futures::Future;
 use indy::{wallet, ErrorCode};
 
 use settings;
-use utils::libindy::error_codes::map_rust_indy_sdk_error;
 
 use error::prelude::*;
 use indy::{WalletHandle, INVALID_WALLET_HANDLE};
@@ -27,13 +26,17 @@ pub fn create_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
     match wallet::create_wallet(&config, &credentials)
         .wait() {
         Ok(()) => Ok(()),
-        Err(ref err) if err.error_code == ErrorCode::WalletAlreadyExistsError => {
-            warn!("wallet \"{}\" already exists. skipping creation", wallet_name);
-            Ok(())
-        }
         Err(err) => {
-            warn!("could not create wallet {}: {:?}", wallet_name, err.message);
-            Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("could not create wallet {}: {:?}", wallet_name, err.message)))
+            match err.error_code.clone() {
+                ErrorCode::WalletAlreadyExistsError => {
+                    warn!("wallet \"{}\" already exists. skipping creation", wallet_name);
+                    Ok(())
+                }
+                _ => {
+                    warn!("could not create wallet {}: {:?}", wallet_name, err.message);
+                    Err(VcxError::from_msg(VcxErrorKind::WalletCreate, format!("could not create wallet {}: {:?}", wallet_name, err.message)))
+                }
+            }
         }
     }
 }
@@ -49,7 +52,24 @@ pub fn open_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_config:
 
     let handle = wallet::open_wallet(&config, &credentials)
         .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .map_err(|err|
+            match err.error_code.clone() {
+                ErrorCode::WalletAlreadyOpenedError => {
+                    err.to_vcx(VcxErrorKind::WalletAlreadyOpen,
+                               format!("Wallet \"{}\" already opened.", wallet_name))
+                }
+                ErrorCode::WalletAccessFailed => {
+                    err.to_vcx(VcxErrorKind::WalletAccessFailed,
+                               format!("Can not open wallet \"{}\". Invalid key has been provided.", wallet_name))
+                }
+                ErrorCode::WalletNotFoundError => {
+                    err.to_vcx(VcxErrorKind::WalletNotFound,
+                               format!("Wallet \"{}\" not found or unavailable", wallet_name))
+                }
+                error_code => {
+                    err.to_vcx(VcxErrorKind::LibndyError(error_code as u32), "Indy error occurred")
+                }
+            })?;
 
     set_wallet_handle(handle);
 
@@ -74,8 +94,7 @@ pub fn close_wallet() -> VcxResult<()> {
     }
 
     wallet::close_wallet(get_wallet_handle())
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     reset_wallet_handle();
     Ok(())
@@ -91,7 +110,22 @@ pub fn delete_wallet(wallet_name: &str, wallet_type: Option<&str>, storage_confi
 
     wallet::delete_wallet(&config, &credentials)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(|err|
+            match err.error_code.clone() {
+                ErrorCode::WalletAccessFailed => {
+                    err.to_vcx(VcxErrorKind::WalletAccessFailed,
+                               format!("Can not open wallet \"{}\". Invalid key has been provided.", wallet_name))
+                }
+                ErrorCode::WalletNotFoundError => {
+                    err.to_vcx(VcxErrorKind::WalletNotFound,
+                               format!("Wallet \"{}\" not found or unavailable", wallet_name))
+                }
+                error_code => {
+                    err.to_vcx(VcxErrorKind::LibndyError(error_code as u32), "Indy error occurred")
+                }
+            })?;
+
+    Ok(())
 }
 
 pub fn add_record(xtype: &str, id: &str, value: &str, tags: Option<&str>) -> VcxResult<()> {
@@ -101,7 +135,7 @@ pub fn add_record(xtype: &str, id: &str, value: &str, tags: Option<&str>) -> Vcx
 
     wallet::add_wallet_record(get_wallet_handle(), xtype, id, value, tags)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn get_record(xtype: &str, id: &str, options: &str) -> VcxResult<String> {
@@ -113,7 +147,7 @@ pub fn get_record(xtype: &str, id: &str, options: &str) -> VcxResult<String> {
 
     wallet::get_wallet_record(get_wallet_handle(), xtype, id, options)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn delete_record(xtype: &str, id: &str) -> VcxResult<()> {
@@ -123,7 +157,7 @@ pub fn delete_record(xtype: &str, id: &str) -> VcxResult<()> {
 
     wallet::delete_wallet_record(get_wallet_handle(), xtype, id)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 
@@ -134,7 +168,7 @@ pub fn update_record_value(xtype: &str, id: &str, value: &str) -> VcxResult<()> 
 
     wallet::update_wallet_record_value(get_wallet_handle(), xtype, id, value)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn export(wallet_handle: WalletHandle, path: &str, backup_key: &str) -> VcxResult<()> {
@@ -143,7 +177,7 @@ pub fn export(wallet_handle: WalletHandle, path: &str, backup_key: &str) -> VcxR
     let export_config = json!({ "key": backup_key, "path": &path}).to_string();
     wallet::export_wallet(wallet_handle, &export_config)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn import(config: &str) -> VcxResult<()> {
@@ -161,7 +195,7 @@ pub fn import(config: &str) -> VcxResult<()> {
     let exported_wallet_path = config[settings::CONFIG_EXPORTED_WALLET_PATH].as_str()
         .ok_or(VcxError::from(VcxErrorKind::MissingExportedWalletPath))?;
 
-    let backup_key =  config[settings::CONFIG_WALLET_BACKUP_KEY].as_str()
+    let backup_key = config[settings::CONFIG_WALLET_BACKUP_KEY].as_str()
         .ok_or(VcxError::from(VcxErrorKind::MissingBackupKey))?;
 
     let config = settings::get_wallet_config(&name, None, None);
@@ -170,7 +204,7 @@ pub fn import(config: &str) -> VcxResult<()> {
 
     wallet::import_wallet(&config, &credentials, &import_config)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 #[cfg(test)]
@@ -229,7 +263,7 @@ pub mod tests {
         settings::clear_config();
 
         // Open fails without Wallet Key Derivation set
-        assert_eq!(open_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::UnknownLiibndyError);
+        assert_eq!(open_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::WalletAccessFailed);
 
         ::settings::clear_config();
 
@@ -241,7 +275,7 @@ pub mod tests {
         ::settings::clear_config();
 
         // Delete fails
-        assert_eq!(delete_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::UnknownLiibndyError);
+        assert_eq!(delete_wallet(wallet_n, None, None, None).unwrap_err().kind(), VcxErrorKind::WalletAccessFailed);
 
         // Delete works
         settings::set_defaults();
