@@ -416,14 +416,6 @@ pub mod tests {
         assert!(payment.amount > 0);
     }
 
-    #[test]
-    fn test_get_credential_def_by_send_request_fails() {
-        settings::clear_config();
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert!(::utils::libindy::anoncreds::get_cred_def_json(CRED_DEF_ID).is_err());
-    }
-
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_credential_def() {

@@ -226,9 +226,6 @@ pub fn export(wallet_handle: WalletHandle, path: &str, backup_key: &str) -> VcxR
 pub fn import(config: &str) -> VcxResult<()> {
     trace!("import >>> config {}", config);
 
-    let config: serde_json::Value = serde_json::from_str(config)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot parse config: {}", err)))?;
-
     let restore_config = RestoreWalletConfigs::from_str(config)?;
 
     let config = settings::get_wallet_config(&restore_config.wallet_name, None, None);
@@ -317,10 +314,9 @@ pub mod tests {
 
     #[test]
     fn test_wallet_import_export_with_different_wallet_key() {
-        settings::set_defaults();
-        teardown!("false");
+        let _setup = SetupDefaults::init();
 
-        let export_path = export_test_wallet();
+        let (export_path, wallet_name) = export_test_wallet();
 
         let xtype = "type1";
         let id = "id1";
@@ -330,19 +326,18 @@ pub mod tests {
         ::api::vcx::vcx_shutdown(true);
 
         let import_config = json!({
-            settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
+            settings::CONFIG_WALLET_NAME: wallet_name.as_str(),
             settings::CONFIG_WALLET_KEY: "new key",
-            settings::CONFIG_EXPORTED_WALLET_PATH: export_path,
+            settings::CONFIG_EXPORTED_WALLET_PATH: export_path.path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
-        open_wallet(&settings::DEFAULT_WALLET_NAME, None, None, None).unwrap();
+        open_wallet(&wallet_name, None, None, None).unwrap();
 
         // If wallet was successfully imported, there will be an error trying to add this duplicate record
         assert_eq!(add_record(xtype, id, value, None).unwrap_err().kind(), VcxErrorKind::DuplicationWalletRecord);
-        thread::sleep(Duration::from_secs(1));
-        ::api::vcx::vcx_shutdown(true);
-        delete_import_wallet_path(export_path);
+
+        delete_wallet(&wallet_name, None, None, None).unwrap();
     }
 
     #[test]
