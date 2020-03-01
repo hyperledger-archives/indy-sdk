@@ -377,7 +377,7 @@ pub mod tests {
 
         // Missing wallet_key
         let res = import(&config.to_string()).unwrap_err();
-        assert_eq!(res.kind(), VcxErrorKind::MissingWalletKey);
+        assert_eq!(res.kind(), VcxErrorKind::InvalidJson);
         config[settings::CONFIG_WALLET_KEY] = serde_json::to_value("wallet_key1").unwrap();
 
         // Missing wallet name
