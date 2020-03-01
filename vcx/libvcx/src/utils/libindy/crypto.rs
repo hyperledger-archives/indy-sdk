@@ -3,7 +3,6 @@ use futures::Future;
 use indy::crypto;
 
 use utils::libindy::LibindyMock;
-use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use settings;
 use error::prelude::*;
 
@@ -16,7 +15,7 @@ pub fn prep_msg(sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> VcxResult<Ve
 
     crypto::auth_crypt(::utils::libindy::wallet::get_wallet_handle(), sender_vk, recipient_vk, msg)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> VcxResult<Vec<u8>> {
@@ -24,7 +23,7 @@ pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> VcxResult<Vec<u8>> 
 
     crypto::anon_crypt(recipient_vk, msg)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn parse_msg(recipient_vk: &str, msg: &[u8]) -> VcxResult<(String, Vec<u8>)> {
@@ -32,7 +31,7 @@ pub fn parse_msg(recipient_vk: &str, msg: &[u8]) -> VcxResult<(String, Vec<u8>)>
 
     crypto::auth_decrypt(::utils::libindy::wallet::get_wallet_handle(), recipient_vk, msg)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn parse_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> VcxResult<Vec<u8>> {
@@ -40,7 +39,7 @@ pub fn parse_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> VcxResult<Vec<u8>>
 
     crypto::anon_decrypt(::utils::libindy::wallet::get_wallet_handle(), recipient_vk, msg)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn sign(my_vk: &str, msg: &[u8]) -> VcxResult<Vec<u8>> {
@@ -48,7 +47,7 @@ pub fn sign(my_vk: &str, msg: &[u8]) -> VcxResult<Vec<u8>> {
 
     crypto::sign(::utils::libindy::wallet::get_wallet_handle(), my_vk, msg)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn verify(vk: &str, msg: &[u8], signature: &[u8]) -> VcxResult<bool> {
@@ -56,7 +55,7 @@ pub fn verify(vk: &str, msg: &[u8], signature: &[u8]) -> VcxResult<bool> {
 
     crypto::verify(vk, msg, signature)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn pack_message(sender_vk: Option<&str>, receiver_keys: &str, msg: &[u8]) -> VcxResult<Vec<u8>> {
@@ -64,7 +63,7 @@ pub fn pack_message(sender_vk: Option<&str>, receiver_keys: &str, msg: &[u8]) ->
 
     crypto::pack_message(::utils::libindy::wallet::get_wallet_handle(), msg, receiver_keys, sender_vk)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn unpack_message(msg: &[u8]) -> VcxResult<Vec<u8>> {
@@ -72,7 +71,7 @@ pub fn unpack_message(msg: &[u8]) -> VcxResult<Vec<u8>> {
 
     crypto::unpack_message(::utils::libindy::wallet::get_wallet_handle(), msg)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn create_key(seed: Option<&str>) -> VcxResult<String> {
@@ -80,5 +79,5 @@ pub fn create_key(seed: Option<&str>) -> VcxResult<String> {
 
     crypto::create_key(::utils::libindy::wallet::get_wallet_handle(), Some(&key_json))
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }

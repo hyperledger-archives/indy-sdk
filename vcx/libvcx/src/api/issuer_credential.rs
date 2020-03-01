@@ -792,7 +792,7 @@ pub extern fn vcx_issuer_revoke_credential(command_handle: CommandHandle,
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate serde_json;
 
     use super::*;
@@ -811,7 +811,7 @@ mod tests {
     static DEFAULT_DID: &str = "8XFh8yBzrpJQmNyZzgoTqB";
     static DEFAULT_ATTR: &str = "{\"attr\":\"value\"}";
 
-    fn issuer_credential_state_accepted() -> String {
+    pub fn issuer_credential_state_accepted() -> String {
         json!({
             "version": "1.0",
             "data": {
@@ -860,12 +860,17 @@ mod tests {
                 "cred_def_id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:1766",
                 "price":0,
                 "ref_msg_id":"null",
-                "agent_did":"FhrSrYtQcw3p9xwf7NYemf",
-                "agent_vk":"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                "issued_did":"8XFh8yBzrpJQmNyZzgoTqB",
-                "issued_vk":"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                "remote_did":"FhrSrYtQcw3p9xwf7NYemf",
-                "remote_vk":"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE"
+                 "agent_info":{
+                    "connection_handle":0,
+                    "my_pw_did":"8XFh8yBzrpJQmNyZzgoTqB",
+                    "my_pw_vk":"8XFh8yBzrpJQmNyZzgoTqB",
+                    "their_pw_did":"8XFh8yBzrpJQmNyZzgoTqB",
+                    "their_pw_vk":"8XFh8yBzrpJQmNyZzgoTqB",
+                    "agent_did":"8XFh8yBzrpJQmNyZzgoTqB",
+                    "agent_vk":"8XFh8yBzrpJQmNyZzgoTqB",
+                    "agency_did":"8XFh8yBzrpJQmNyZzgoTqB",
+                    "agency_vk":"8XFh8yBzrpJQmNyZzgoTqB"
+                 },
             }
         }).to_string()
     }
@@ -938,7 +943,6 @@ mod tests {
     #[test]
     fn test_vcx_issuer_send_credential_offer() {
         let _setup = SetupMocks::init();
-
         let connection_handle = ::connection::tests::build_test_connection();
 
         let handle = _vcx_issuer_create_credential_c_closure().unwrap();
@@ -1059,9 +1063,7 @@ mod tests {
     #[test]
     fn test_get_payment_txn() {
         let _setup = SetupMocks::init();
-
-        let credential = issuer_credential::tests::create_standard_issuer_credential();
-
+        let credential = issuer_credential::tests::create_standard_issuer_credential(None);
         let s = credential.to_string().unwrap();
         let handle = issuer_credential::from_string(&s).unwrap();
 

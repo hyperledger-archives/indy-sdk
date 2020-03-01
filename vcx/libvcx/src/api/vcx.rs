@@ -600,7 +600,8 @@ mod tests {
         // Write invalid genesis.txn
         let _genesis_transactions = TempFile::create_with_data(::utils::constants::GENESIS_PATH, "{}");
 
-        _vcx_init_with_config_c_closure(&config()).unwrap_err();
+        let err = _vcx_init_with_config_c_closure(&config()).unwrap_err();
+        assert_eq!(err, error::POOL_LEDGER_CONNECT.code_num);
 
         assert_eq!(get_pool_handle().unwrap_err().kind(), VcxErrorKind::NoPoolOpen);
         assert_eq!(get_wallet_handle(), INVALID_WALLET_HANDLE);
@@ -1047,7 +1048,7 @@ mod tests {
         let init_res = _vcx_init_minimal_c_closure(&config);
         assert_eq!(init_res, error::SUCCESS.code_num);
 
-        let cred_handle = ::issuer_credential::from_string(::utils::constants::DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
+        let cred_handle = ::issuer_credential::from_string(&::api::issuer_credential::tests::issuer_credential_state_accepted()).unwrap();
         let connection_handle = ::connection::from_string(::utils::constants::DEFAULT_CONNECTION).unwrap();
         let my_pw_did = ::connection::get_pw_did(connection_handle).unwrap();
         let their_pw_did = ::connection::get_their_pw_did(connection_handle).unwrap();
@@ -1083,5 +1084,21 @@ mod tests {
         ::connection::connect(connection_handle, None).unwrap_err();
 
         settings::set_defaults();
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_init_fails_with_not_found_pool_genesis_file() {
+        let _setup = SetupWallet::init();
+
+        let content = json!({
+            "genesis_path": "invalid/txn/path",
+            "wallet_name": settings::DEFAULT_WALLET_NAME,
+            "wallet_key": settings::DEFAULT_WALLET_KEY,
+            "wallet_key_derivation": settings::DEFAULT_WALLET_KEY_DERIVATION,
+        }).to_string();
+
+        let rc = _vcx_init_with_config_c_closure(&content).unwrap_err();
+        assert_eq!(rc, error::INVALID_GENESIS_TXN_PATH.code_num);
     }
 }

@@ -7,7 +7,6 @@ use std::collections::HashMap;
 
 use utils::libindy::wallet::get_wallet_handle;
 use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request, append_txn_author_agreement_to_request, auth_rule};
-use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use utils::constants::{SUBMIT_SCHEMA_RESPONSE, CREATE_TRANSFER_ACTION};
 use settings;
 use error::prelude::*;
@@ -99,7 +98,7 @@ pub fn create_address(seed: Option<String>) -> VcxResult<String> {
 
     payments::create_payment_address(get_wallet_handle(), settings::get_payment_method().as_str(), &config)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
@@ -107,7 +106,7 @@ pub fn sign_with_address(address: &str, message: &[u8]) -> VcxResult<Vec<u8>> {
 
     if settings::indy_mocks_enabled() {return Ok(Vec::from(message).to_owned()); }
 
-    payments::sign_with_address(get_wallet_handle(), address, message).wait().map_err(map_rust_indy_sdk_error)
+    payments::sign_with_address(get_wallet_handle(), address, message).wait().map_err(VcxError::from)
 }
 
 pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> VcxResult<bool> {
@@ -115,7 +114,7 @@ pub fn verify_with_address(address: &str, message: &[u8], signature: &[u8]) -> V
 
     if settings::indy_mocks_enabled() { return Ok(true); }
 
-    payments::verify_with_address(address, message, signature).wait().map_err(map_rust_indy_sdk_error)
+    payments::verify_with_address(address, message, signature).wait().map_err(VcxError::from)
 }
 
 pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
@@ -145,14 +144,12 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle(), Some(&did), address, None)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     let response = libindy_sign_and_submit_request(&did, &txn)?;
 
     let (response, next) = payments::parse_get_payment_sources_with_from_response(settings::get_payment_method().as_str(), &response)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     let mut utxo: Vec<UTXO> = ::serde_json::from_str(&response.clone())
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payment sources response: {}", err)))?;
@@ -160,14 +157,12 @@ pub fn get_address_info(address: &str) -> VcxResult<AddressInfo> {
 
     while next_seqno.is_some() {
         let (txn, _) = payments::build_get_payment_sources_with_from_request(get_wallet_handle(), Some(&did), address, next_seqno)
-            .wait()
-            .map_err(map_rust_indy_sdk_error)?;
+            .wait()?;
 
         let response = libindy_sign_and_submit_request(&did, &txn)?;
 
         let (response, next) = payments::parse_get_payment_sources_with_from_response(settings::get_payment_method().as_str(), &response)
-            .wait()
-            .map_err(map_rust_indy_sdk_error)?;
+            .wait()?;
         let mut res: Vec<UTXO> = ::serde_json::from_str(&response)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payment sources response: {}", err)))?;
         next_seqno = next;
@@ -190,8 +185,7 @@ pub fn list_addresses() -> VcxResult<Vec<String>> {
     }
 
     let addresses = payments::list_payment_addresses(get_wallet_handle())
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     ::serde_json::from_str(&addresses)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize a list of payment addresses: {}", err)))
@@ -239,14 +233,13 @@ pub fn get_ledger_fees() -> VcxResult<String> {
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let txn = payments::build_get_txn_fees_req(get_wallet_handle(), Some(&did), settings::get_payment_method().as_str())
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     let response = libindy_sign_and_submit_request(&did, &txn)?;
 
     payments::parse_get_txn_fees_response(settings::get_payment_method().as_str(), &response)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn pay_for_txn(req: &str, txn_action: (&str, &str, &str, Option<&str>, Option<&str>)) -> VcxResult<(Option<PaymentTxn>, String)> {
@@ -295,8 +288,7 @@ fn _submit_fees_request(req: &str, inputs: &Vec<String>, outputs: &Vec<Output>) 
                                    &inputs,
                                    &outputs,
                                    None)
-            .wait()
-            .map_err(map_rust_indy_sdk_error)?;
+            .wait()?;
 
     let response = libindy_submit_request(&req)?;
 
@@ -339,16 +331,14 @@ pub fn pay_a_payee(price: u64, address: &str) -> VcxResult<(PaymentTxn, String)>
                                                               meta.taa_digest.as_ref().map(String::as_str),
                                                               &meta.acceptance_mechanism_type,
                                                               meta.time_of_acceptance)
-                .wait()
-                .map_err(map_rust_indy_sdk_error)?)
+                .wait()?)
         }
         None => None
     };
 
     let (request, _payment_method) =
         payments::build_payment_req(get_wallet_handle(), Some(&my_did), &inputs_json, &outputs_json, extra.as_ref().map(String::as_str))
-            .wait()
-            .map_err(map_rust_indy_sdk_error)?;
+            .wait()?;
 
     let result = libindy_submit_request(&request)?;
     let payment = PaymentTxn::from_parts(input, outputs, price, false);
@@ -363,8 +353,7 @@ pub struct RequestInfo {
 
 fn get_request_info(get_auth_rule_resp_json: &str, requester_info_json: &str, fees_json: &str) -> VcxResult<RequestInfo> {
     let req_info = payments::get_request_info(get_auth_rule_resp_json, requester_info_json, fees_json)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     ::serde_json::from_str(&req_info)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, err))
@@ -517,8 +506,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
 
     if let Some(fees_) = fees {
         let txn = payments::build_set_txn_fees_req(get_wallet_handle(), Some(&did_1), settings::get_payment_method().as_str(), fees_)
-            .wait()
-            .map_err(map_rust_indy_sdk_error)?;
+            .wait()?;
 
         let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &txn).unwrap();
         let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
@@ -842,7 +830,7 @@ pub mod tests {
         let result_from_paying = pay_a_payee(0, payment_address);
 
         assert!(result_from_paying.is_err());
-        assert_eq!(result_from_paying.err().unwrap().kind(), VcxErrorKind::LiibndyError(100)); // TODO: FIXME
+        assert_eq!(result_from_paying.err().unwrap().kind(), VcxErrorKind::LibndyError(100)); // TODO: FIXME
     }
 
     #[cfg(feature = "pool_tests")]

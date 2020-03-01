@@ -703,7 +703,7 @@ mod tests {
         let dp = ::disclosed_proof::create_proof("test", &request).unwrap();
         let p = ::disclosed_proof::generate_proof_msg(dp).unwrap();
         ::proof::update_state(ph, Some(p)).unwrap();
-        assert!(::proof::get_state(ph).unwrap() == VcxStateType::VcxStateAccepted as u32);
+        assert_eq!(::proof::get_state(ph).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]
@@ -753,7 +753,7 @@ mod tests {
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_proof_deserialize(cb.command_handle,
-                                         CString::new(PROOF_OFFER_SENT).unwrap().into_raw(),
+                                         CString::new(PROOF_WITH_INVALID_STATE).unwrap().into_raw(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         let handle = cb.receive(TimeoutUtils::some_medium()).unwrap();
