@@ -64,7 +64,7 @@ pub fn get_credential_info(proof: &str) -> VcxResult<Vec<CredInfo>> {
     let mut rtn = Vec::new();
 
     let credentials: Value = serde_json::from_str(&proof)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize liibndy proof: {}", err)))?;
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize libndy proof: {}", err)))?;
 
     if let Value::Array(ref identifiers) = credentials["identifiers"] {
         for identifier in identifiers {

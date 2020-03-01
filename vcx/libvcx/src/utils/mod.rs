@@ -47,6 +47,8 @@ pub mod uuid;
 pub mod author_agreement;
 pub mod qualifier;
 pub mod file;
+pub mod option_util;
+pub mod agent_info;
 
 #[cfg(test)]
 pub mod plugins;

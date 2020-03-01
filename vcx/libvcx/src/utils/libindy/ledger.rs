@@ -8,19 +8,18 @@ use indy::cache;
 use settings;
 use utils::libindy::pool::get_pool_handle;
 use utils::libindy::wallet::get_wallet_handle;
-use utils::libindy::error_codes::map_rust_indy_sdk_error;
 use error::prelude::*;
 
 pub fn multisign_request(did: &str, request: &str) -> VcxResult<String> {
     ledger::multi_sign_request(get_wallet_handle(), did, request)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn libindy_sign_request(did: &str, request: &str) -> VcxResult<String> {
     ledger::sign_request(get_wallet_handle(), did, request)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn libindy_sign_and_submit_request(issuer_did: &str, request_json: &str) -> VcxResult<String> {
@@ -31,7 +30,7 @@ pub fn libindy_sign_and_submit_request(issuer_did: &str, request_json: &str) -> 
 
     ledger::sign_and_submit_request(pool_handle, wallet_handle, issuer_did, request_json)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn libindy_submit_request(request_json: &str) -> VcxResult<String> {
@@ -39,20 +38,20 @@ pub fn libindy_submit_request(request_json: &str) -> VcxResult<String> {
 
     ledger::submit_request(pool_handle, request_json)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn libindy_build_schema_request(submitter_did: &str, data: &str) -> VcxResult<String> {
     ledger::build_schema_request(submitter_did, data)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
                                                credential_def_json: &str) -> VcxResult<String> {
     ledger::build_cred_def_request(submitter_did, credential_def_json)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
@@ -61,8 +60,7 @@ pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let get_author_agreement_request = ledger::build_get_txn_author_agreement_request(Some(&did), None)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     let get_author_agreement_response = libindy_submit_request(&get_author_agreement_request)?;
 
@@ -73,8 +71,7 @@ pub fn libindy_get_txn_author_agreement() -> VcxResult<String> {
         .map_or(json!({}), |data| json!(data));
 
     let get_acceptance_mechanism_request = ledger::build_get_acceptance_mechanisms_request(Some(&did), None, None)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     let get_acceptance_mechanism_response = libindy_submit_request(&get_acceptance_mechanism_request)?;
 
@@ -97,7 +94,7 @@ pub fn append_txn_author_agreement_to_request(request_json: &str) -> VcxResult<S
                                                                   &author_agreement.acceptance_mechanism_type,
                                                                   author_agreement.time_of_acceptance)
             .wait()
-            .map_err(map_rust_indy_sdk_error)
+            .map_err(VcxError::from)
     } else {
         Ok(request_json.to_string())
     }
@@ -106,20 +103,20 @@ pub fn append_txn_author_agreement_to_request(request_json: &str) -> VcxResult<S
 pub fn libindy_build_auth_rules_request(submitter_did: &str, data: &str) -> VcxResult<String> {
     ledger::build_auth_rules_request(submitter_did, data)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn libindy_build_get_auth_rule_request(submitter_did: Option<&str>, txn_type: Option<&str>, action: Option<&str>, field: Option<&str>,
                                            old_value: Option<&str>, new_value: Option<&str>) -> VcxResult<String> {
     ledger::build_get_auth_rule_request(submitter_did, txn_type, action, field, old_value, new_value)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn libindy_build_get_nym_request(submitter_did: Option<&str>, did: &str) -> VcxResult<String> {
     ledger::build_get_nym_request(submitter_did, did)
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub mod auth_rule {
@@ -280,8 +277,7 @@ pub mod auth_rule {
         let auth_rules_request = libindy_build_auth_rules_request(submitter_did, &data)?;
 
         let response = ledger::sign_and_submit_request(get_pool_handle()?, get_wallet_handle(), submitter_did, &auth_rules_request)
-            .wait()
-            .map_err(map_rust_indy_sdk_error)?;
+            .wait()?;
 
         let response: serde_json::Value = ::serde_json::from_str(&response)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidLedgerResponse, format!("{:?}", err)))?;
@@ -374,7 +370,7 @@ pub fn libindy_get_schema(submitter_did: &str, schema_id: &str) -> VcxResult<Str
 
     cache::get_schema(pool_handle, wallet_handle, submitter_did, schema_id, "{}")
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn libindy_get_cred_def(cred_def_id: &str) -> VcxResult<String> {
@@ -384,7 +380,7 @@ pub fn libindy_get_cred_def(cred_def_id: &str) -> VcxResult<String> {
 
     cache::get_cred_def(pool_handle, wallet_handle, &submitter_did, cred_def_id, "{}")
         .wait()
-        .map_err(map_rust_indy_sdk_error)
+        .map_err(VcxError::from)
 }
 
 pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
@@ -393,8 +389,7 @@ pub fn set_endorser(request: &str, endorser: &str) -> VcxResult<String> {
     let _did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let request = ledger::append_request_endorser(request, endorser)
-        .wait()
-        .map_err(map_rust_indy_sdk_error)?;
+        .wait()?;
 
     multisign_request(&_did, &request)
 }

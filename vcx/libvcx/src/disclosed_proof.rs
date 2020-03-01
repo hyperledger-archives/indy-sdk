@@ -25,6 +25,7 @@ use utils::libindy::anoncreds::{get_rev_reg_def_json, get_rev_reg_delta_json};
 use v3::handlers::proof_presentation::prover::prover::Prover;
 
 use std::convert::TryInto;
+use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
 
 lazy_static! {
@@ -45,12 +46,12 @@ impl Default for DisclosedProof {
     {
         DisclosedProof {
             source_id: String::new(),
-            my_did: None,
-            my_vk: None,
             state: VcxStateType::VcxStateNone,
             proof_request: None,
             proof: None,
             link_secret_alias: settings::DEFAULT_LINK_SECRET_ALIAS.to_string(),
+            my_did: None,
+            my_vk: None,
             their_did: None,
             their_vk: None,
             agent_did: None,
@@ -63,12 +64,12 @@ impl Default for DisclosedProof {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DisclosedProof {
     source_id: String,
-    my_did: Option<String>,
-    my_vk: Option<String>,
     state: VcxStateType,
     proof_request: Option<ProofRequestMessage>,
     proof: Option<ProofMessage>,
     link_secret_alias: String,
+    my_did: Option<String>,
+    my_vk: Option<String>,
     their_did: Option<String>,
     their_vk: Option<String>,
     agent_did: Option<String>,
@@ -407,52 +408,57 @@ impl DisclosedProof {
         Ok(proof)
     }
 
+    fn _prep_proof_reference(&mut self, agent_info: &MyAgentInfo) -> VcxResult<String> {
+        let proof_req = self.proof_request
+            .as_ref()
+            .ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+
+        let ref_msg_uid = proof_req.msg_ref_id
+            .as_ref()
+            .ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
+
+        let their_did = get_agent_attr(&agent_info.their_pw_did)?;
+
+        self.thread
+            .as_mut()
+            .map(|thread| thread.increment_receiver(&their_did));
+
+        Ok(ref_msg_uid.to_string())
+    }
+
     fn send_proof(&mut self, connection_handle: u32) -> VcxResult<u32> {
         trace!("DisclosedProof::send_proof >>> connection_handle: {}", connection_handle);
 
-        debug!("sending proof {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
-        // There feels like there's a much more rusty way to do the below.
-        self.my_did = Some(connection::get_pw_did(connection_handle)?);
-        self.my_vk = Some(connection::get_pw_verkey(connection_handle)?);
-        self.agent_did = Some(connection::get_agent_did(connection_handle)?);
-        self.agent_vk = Some(connection::get_agent_verkey(connection_handle)?);
-        self.their_did = Some(connection::get_their_pw_did(connection_handle)?);
-        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle)?);
+        debug!("sending proof {} via connection: {}",
+               self.source_id, connection::get_source_id(connection_handle).unwrap_or_default()
+        );
 
-        debug!("verifier_did: {:?} -- verifier_vk: {:?} -- agent_did: {:?} -- agent_vk: {:?} -- remote_vk: {:?}",
-               self.my_did,
-               self.agent_did,
-               self.agent_vk,
-               self.their_vk,
-               self.my_vk);
+        let agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
-        self.their_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_their_vk = self.their_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_agent_vk = self.agent_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_my_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_my_vk = self.my_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-
-        let proof_req = self.proof_request.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
-        let ref_msg_uid = proof_req.msg_ref_id.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
-
-        let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
-        self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
+        let ref_msg_uid = self._prep_proof_reference(&agent_info)?;
 
         let proof = self.generate_proof_msg()?;
 
         messages::send_message()
-            .to(local_my_did)?
-            .to_vk(local_my_vk)?
+            .to(&agent_info.my_pw_did()?)?
+            .to_vk(&agent_info.my_pw_vk()?)?
             .msg_type(&RemoteMessageType::Proof)?
-            .agent_did(local_agent_did)?
-            .agent_vk(local_agent_vk)?
-            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof, PayloadKinds::Proof, self.thread.clone())
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Cannot encrypt payload: {}", err)))?
-            .ref_msg_id(Some(ref_msg_uid.to_string()))?
+            .agent_did(&agent_info.pw_agent_did()?)?
+            .agent_vk(&agent_info.pw_agent_vk()?)?
+            .edge_agent_payload(&agent_info.my_pw_vk()?,
+                                &agent_info.their_pw_vk()?,
+                                &proof,
+                                PayloadKinds::Proof,
+                                self.thread.clone())
+            .map_err(|err| VcxError::from_msg(
+                VcxErrorKind::GeneralConnectionError,
+                format!("Cannot encrypt payload: {}", err)
+            ))?
+            .ref_msg_id(Some(ref_msg_uid))?
             .send_secure()
             .map_err(|err| err.extend("Could not send proof"))?;
 
+        apply_agent_info(self, &agent_info);
         self.state = VcxStateType::VcxStateAccepted;
         Ok(error::SUCCESS.code_num)
     }
@@ -475,46 +481,32 @@ impl DisclosedProof {
 
         debug!("rejecting proof {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         // There feels like there's a much more rusty way to do the below.
-        self.my_did = Some(connection::get_pw_did(connection_handle)?);
-        self.my_vk = Some(connection::get_pw_verkey(connection_handle)?);
-        self.agent_did = Some(connection::get_agent_did(connection_handle)?);
-        self.agent_vk = Some(connection::get_agent_verkey(connection_handle)?);
-        self.their_did = Some(connection::get_their_pw_did(connection_handle)?);
-        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle)?);
+        let agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
-        debug!("verifier_did: {:?} -- verifier_vk: {:?} -- agent_did: {:?} -- agent_vk: {:?} -- remote_vk: {:?}",
-               self.my_did,
-               self.agent_did,
-               self.agent_vk,
-               self.their_vk,
-               self.my_vk);
-
-        self.their_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_their_vk = self.their_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_agent_did = self.agent_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_agent_vk = self.agent_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_my_did = self.my_did.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-        let local_my_vk = self.my_vk.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidConnectionHandle))?;
-
-        let proof_req = self.proof_request.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
-        let ref_msg_uid = proof_req.msg_ref_id.as_ref().ok_or(VcxError::from(VcxErrorKind::CreateProof))?;
-
-        let their_did = self.their_did.as_ref().map(String::as_str).unwrap_or("");
-        self.thread.as_mut().map(|thread| thread.increment_receiver(&their_did));
+        let ref_msg_uid = self._prep_proof_reference(&agent_info)?;
 
         let proof_reject = self.generate_reject_proof_msg()?;
 
         messages::send_message()
-            .to(local_my_did)?
-            .to_vk(local_my_vk)?
+            .to(&agent_info.my_pw_did()?)?
+            .to_vk(&agent_info.my_pw_vk()?)?
             .msg_type(&RemoteMessageType::Proof)?
-            .agent_did(local_agent_did)?
-            .agent_vk(local_agent_vk)?
-            .edge_agent_payload(&local_my_vk, &local_their_vk, &proof_reject, PayloadKinds::Proof, self.thread.clone())
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::GeneralConnectionError, format!("Cannot encrypt payload: {}", err)))?
-            .ref_msg_id(Some(ref_msg_uid.to_string()))?
+            .agent_did(&agent_info.agency_did)?
+            .agent_vk(&agent_info.pw_agent_vk()?)?
+            .edge_agent_payload(&agent_info.my_pw_vk()?,
+                                &agent_info.their_pw_vk()?,
+                                &proof_reject,
+                                PayloadKinds::Proof,
+                                self.thread.clone())
+            .map_err(|err| VcxError::from_msg(
+                VcxErrorKind::GeneralConnectionError,
+                format!("Cannot encrypt payload: {}", err)
+            ))?
+            .ref_msg_id(Some(ref_msg_uid))?
             .send_secure()
             .map_err(|err| err.extend("Could not send proof reject"))?;
+
+        apply_agent_info(self, &agent_info);
 
         self.state = VcxStateType::VcxStateRejected;
         return Ok(error::SUCCESS.code_num);
@@ -542,6 +534,15 @@ fn handle_err(err: VcxError) -> VcxError {
     } else {
         err
     }
+}
+
+fn apply_agent_info(proof: &mut DisclosedProof, agent_info: &MyAgentInfo) {
+    proof.my_did = agent_info.my_pw_did.clone();
+    proof.my_vk = agent_info.my_pw_vk.clone();
+    proof.their_did = agent_info.their_pw_did.clone();
+    proof.their_vk = agent_info.their_pw_vk.clone();
+    proof.agent_did = agent_info.pw_agent_did.clone();
+    proof.agent_vk = agent_info.pw_agent_vk.clone();
 }
 
 pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
@@ -663,8 +664,9 @@ pub fn reject_proof(handle: u32, connection_handle: u32) -> VcxResult<u32> {
             DisclosedProofs::V1(ref mut obj) => {
                 obj.reject_proof(connection_handle)
             }
-            DisclosedProofs::V3(_) => {
-                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            DisclosedProofs::V3(ref mut obj) => {
+                obj.decline_presentation_request(connection_handle, Some(String::from("Presentation Request was rejected")), None)?;
+                Ok(error::SUCCESS.code_num)
             }
         }
     })
@@ -687,8 +689,8 @@ pub fn generate_proof(handle: u32, credentials: String, self_attested_attrs: Str
 pub fn decline_presentation_request(handle: u32, connection_handle: u32, reason: Option<String>, proposal: Option<String>) -> VcxResult<u32> {
     HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
-            DisclosedProofs::V1(_) => {
-                Err(VcxError::from(VcxErrorKind::ActionNotSupported))
+            DisclosedProofs::V1(ref mut obj) => {
+                obj.reject_proof(connection_handle)
             }
             DisclosedProofs::V3(ref mut obj) => {
                 obj.decline_presentation_request(connection_handle, reason.clone(), proposal.clone())?;
@@ -723,24 +725,20 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<Stri
 
     trace!("get_proof_request >>> connection_handle: {}, msg_id: {}", connection_handle, msg_id);
 
-    let my_did = connection::get_pw_did(connection_handle)?;
-    let my_vk = connection::get_pw_verkey(connection_handle)?;
-    let agent_did = connection::get_agent_did(connection_handle)?;
-    let agent_vk = connection::get_agent_verkey(connection_handle)?;
-    let version = connection::get_version(connection_handle)?;
+    let agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
     AgencyMock::set_next_response(constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
 
-    let message = messages::get_message::get_connection_messages(&my_did,
-                                                                 &my_vk,
-                                                                 &agent_did,
-                                                                 &agent_vk,
+    let message = messages::get_message::get_connection_messages(&agent_info.my_pw_did()?,
+                                                                 &agent_info.my_pw_vk()?,
+                                                                 &agent_info.pw_agent_did()?,
+                                                                 &agent_info.pw_agent_vk()?,
                                                                  Some(vec![msg_id.to_string()]),
                                                                  None,
-                                                                 &version)?;
+                                                                 &agent_info.version()?)?;
 
     if message[0].msg_type == RemoteMessageType::ProofReq {
-        let request = _parse_proof_req_message(&message[0], &my_vk)?;
+        let request = _parse_proof_req_message(&message[0], &agent_info.my_pw_vk()?)?;
 
         serde_json::to_string_pretty(&request)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize message: {}", err)))
@@ -767,35 +765,33 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
 
     trace!("get_proof_request_messages >>> connection_handle: {}, match_name: {:?}", connection_handle, match_name);
 
-    let my_did = connection::get_pw_did(connection_handle)?;
-    let my_vk = connection::get_pw_verkey(connection_handle)?;
-    let agent_did = connection::get_agent_did(connection_handle)?;
-    let agent_vk = connection::get_agent_verkey(connection_handle)?;
-    let version = connection::get_version(connection_handle)?;
+    let agent_info = get_agent_info()?.pw_info(connection_handle)?;
 
     AgencyMock::set_next_response(constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
 
-    let payload = messages::get_message::get_connection_messages(&my_did,
-                                                                 &my_vk,
-                                                                 &agent_did,
-                                                                 &agent_vk,
+    let payload = messages::get_message::get_connection_messages(&agent_info.my_pw_did()?,
+                                                                 &agent_info.my_pw_vk()?,
+                                                                 &agent_info.pw_agent_did()?,
+                                                                 &agent_info.pw_agent_vk()?,
                                                                  None,
                                                                  None,
-                                                                 &version)?;
+                                                                 &agent_info.version()?)?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 
     for msg in payload {
-        if msg.sender_did.eq(&my_did) { continue; }
+        if msg.sender_did.eq(&agent_info.my_pw_did()?) { continue; }
 
         if msg.msg_type == RemoteMessageType::ProofReq {
-            let req = _parse_proof_req_message(&msg, &my_vk)?;
+            let req = _parse_proof_req_message(&msg, &agent_info.my_pw_vk()?)?;
             messages.push(req);
         }
     }
 
     serde_json::to_string_pretty(&messages)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)))
+        .map_err(|err| VcxError::from_msg(
+            VcxErrorKind::InvalidJson, format!("Cannot serialize proof request: {}", err)
+        ))
 }
 
 fn _parse_proof_req_message(message: &Message, my_vk: &str) -> VcxResult<ProofRequestMessage> {
