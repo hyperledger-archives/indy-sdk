@@ -318,6 +318,8 @@ pub mod tests {
 
         let (export_path, wallet_name) = export_test_wallet();
 
+        delete_wallet(&wallet_name, None, None, None).unwrap();
+
         let xtype = "type1";
         let id = "id1";
         let value = "value1";
