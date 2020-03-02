@@ -123,7 +123,7 @@ async def test_import_wallet_failures(vcx_init_test_mode, cleanup):
     config = {'wallet_name': '', 'exported_wallet_path': '', 'backup_key': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
-    assert ErrorCode.MissingWalletKey == e.value.error_code
+    assert ErrorCode.InvalidJson == e.value.error_code
     cleanup(True)
 
     config = {'wallet_name': '', 'wallet_key': '', 'backup_key': ''}
