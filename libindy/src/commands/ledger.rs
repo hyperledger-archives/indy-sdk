@@ -26,7 +26,7 @@ use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::pool::{
     parse_response_metadata,
-    PoolService
+    PoolService,
 };
 use crate::utils::crypto::signature_serializer::serialize_signature;
 
@@ -214,8 +214,8 @@ pub enum LedgerCommand {
         DidValue, // submitter did
         Option<String>, // text
         String, // version
-        Option<u64>,   // ratification date
-        Option<u64>,   // retirement date
+        Option<u64>, // ratification date
+        Option<u64>, // retirement date
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildDisableAllTxnAuthorAgreementsRequest(
         DidValue, // submitter did
@@ -556,13 +556,22 @@ impl LedgerCommandExecutor {
     }
 
     async fn submit_action<'a>(&'a self,
-                     handle: PoolHandle,
-                     request_json: &'a str,
-                     nodes: Option<&'a str>,
-                     timeout: Option<i32>) -> IndyResult<String> {
+                               handle: PoolHandle,
+                               request_json: &'a str,
+                               nodes: Option<&'a str>,
+                               timeout: Option<i32>) -> IndyResult<String> {
         debug!("submit_action >>> handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", handle, request_json, nodes, timeout);
 
         self.ledger_service.validate_action(request_json)?;
+
+
+        let nodes: Option<Vec<String>> = match nodes {
+            Some(nodes_) => Some(serde_json::from_str(nodes_)
+                .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidStructure, format!("Can not deserialize the list of nodes: {}", err)))?),
+            None => None
+        };
+
+        let timeout = timeout.map(|timeout| timeout as i64);
 
         self.pool_service.send_action(handle, request_json, nodes, timeout).await
     }
@@ -693,7 +702,7 @@ impl LedgerCommandExecutor {
     }
 
     fn parse_get_nym_response(&self,
-                             get_nym_response: &str) -> IndyResult<String> {
+                              get_nym_response: &str) -> IndyResult<String> {
         debug!("parse_get_nym_response >>> get_nym_response: {:?}", get_nym_response);
 
         let res = self.ledger_service.parse_get_nym_response(get_nym_response)?;
@@ -1188,5 +1197,5 @@ impl LedgerCommandExecutor {
 
 enum SignatureType {
     Single,
-    Multi
+    Multi,
 }

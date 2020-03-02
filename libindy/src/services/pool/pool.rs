@@ -1,3 +1,4 @@
+/*
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::VecDeque;
@@ -570,7 +571,7 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
 
             let poll_res = zmq::poll(&mut poll_items, ::std::cmp::max(timeout, 0))
                 .map_err(map_err_err!())
-                .map_err(|_| unimplemented!() /* FIXME */).unwrap();
+                .map_err(|_| unimplemented!() *//* FIXME *//*).unwrap();
             //            trace!("poll_res: {:?}", poll_res);
             if poll_res == 0 {
                 self.events.push_back(PoolEvent::Timeout(req_id, alias)); // TODO check duplicate ?
@@ -1407,3 +1408,4 @@ mod tests {
         }
     }
 }
+*/

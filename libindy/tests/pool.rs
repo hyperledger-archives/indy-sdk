@@ -12,6 +12,7 @@ use crate::utils::{environment, pool};
 #[cfg(not(feature="only_high_cases"))]
 use crate::utils::constants::*;
 use crate::utils::Setup;
+use crate::utils::types::ResponseType;
 
 mod high_cases {
     use super::*;
@@ -301,7 +302,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
             let res = pool::open_pool_ledger(&setup.name, Some(pool_config.as_str()));
-            assert_code!(ErrorCode::CommonInvalidState, res);
+            assert_code!(ErrorCode::CommonInvalidStructure, res); // TODO: changed error
         }
 
         #[test]
@@ -314,7 +315,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
             let res = pool::open_pool_ledger(&setup.name, None);
-            assert_code!(ErrorCode::CommonInvalidState, res);
+            assert_code!(ErrorCode::CommonInvalidStructure, res); // TODO: changed error
         }
 
         #[test]
@@ -344,7 +345,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
             let res = pool::open_pool_ledger(&setup.name, None);
-            assert_code!(ErrorCode::PoolIncompatibleProtocolVersion, res);
+            assert_code!(ErrorCode::CommonInvalidStructure, res); // TODO: changed error: PoolIncompatibleProtocolVersion
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
@@ -415,8 +416,8 @@ mod medium_cases {
 
             pool::close(pool_handle).unwrap();
 
-            let res = submit_fut.wait();
-            assert_code!(ErrorCode::PoolLedgerTerminated, res);
+            let response = submit_fut.wait().unwrap();
+            pool::check_response_type(&response, ResponseType::REPLY);
 
             /* Now any request to API can failed, if pool::close works incorrect in case of pending requests.
                For example try to delete the pool. */

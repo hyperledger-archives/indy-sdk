@@ -1,3 +1,4 @@
+/*
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -61,10 +62,10 @@ enum RequestState<T: Networker> {
     Finish(FinishState),
 }
 
-/*
+*//*
  The Generator is used for multi-signature verification.
  It must be the same as on the Ledger side otherwise signatures verification will fail.
-*/
+*//*
 pub const DEFAULT_GENERATOR: &str = "3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX";
 
 impl<T: Networker> RequestSM<T> {
@@ -117,7 +118,7 @@ struct StartState<T: Networker> {
 }
 
 struct ConsensusState<T: Networker> {
-    denied_nodes: HashSet<String> /* FIXME should be map, may be merged with replies */,
+    denied_nodes: HashSet<String> *//* FIXME should be map, may be merged with replies *//*,
     replies: HashMap<HashableValue, HashSet<String>>,
     timeout_nodes: HashSet<String>,
     networker: Rc<RefCell<T>>,
@@ -138,7 +139,7 @@ struct CatchupSingleState<T: Networker> {
 }
 
 struct SingleState<T: Networker> {
-    denied_nodes: HashSet<String> /* FIXME should be map, may be merged with replies */,
+    denied_nodes: HashSet<String> *//* FIXME should be map, may be merged with replies *//*,
     replies: HashMap<HashableValue, HashSet<NodeResponse>>,
     timeout_nodes: HashSet<String>,
     networker: Rc<RefCell<T>>,
@@ -1771,3 +1772,4 @@ pub mod tests {
         }
     }
 }
+*/

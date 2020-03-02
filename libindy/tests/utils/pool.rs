@@ -1,4 +1,3 @@
-extern crate byteorder;
 extern crate futures;
 extern crate rmp_serde;
 

@@ -1,3 +1,4 @@
+/*
 use std::{fs, io};
 use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
@@ -402,4 +403,4 @@ mod tests {
 
         test::cleanup_storage("pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version");
     }
-}
+}*/
