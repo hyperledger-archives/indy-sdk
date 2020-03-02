@@ -2,12 +2,9 @@ extern crate zeroize;
 
 use self::zeroize::Zeroize;
 
-use named_type::NamedType;
-
-
 #[derive(Derivative)]
 #[derivative(Debug)]
-#[derive(Serialize, Deserialize, Clone, NamedType)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Key {
     pub verkey: String,
     #[cfg(not(test))]
@@ -44,7 +41,7 @@ pub struct KeyInfo {
     pub crypto_type: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, NamedType)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct KeyMetadata {
     pub value: String
 }

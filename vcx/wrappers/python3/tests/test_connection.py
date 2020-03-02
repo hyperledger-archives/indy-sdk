@@ -199,3 +199,12 @@ async def test_send_discovery_features():
     with pytest.raises(VcxError) as e:
         await connection.send_discovery_features()
     assert ErrorCode.ActionNotSupported == e.value.error_code
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_connection_info():
+    connection = await Connection.create(source_id)
+    with pytest.raises(VcxError) as e:
+        await connection.info()
+    assert ErrorCode.ActionNotSupported == e.value.error_code

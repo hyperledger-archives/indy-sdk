@@ -12,7 +12,6 @@ indy-api-types = { path = "../indy-api-types"}
 indy-utils = { path = "../indy-utils"}
 libc = "*"
 log = "0.4.8"
-named_type = "0.2.1"
 owning_ref = "0.4"
 rmp-serde = "0.13.7"
 rusqlite = "0.20" # Make sure rusqlite for android is also bumped with this. Rusqlite for android is at the bottom of this document.

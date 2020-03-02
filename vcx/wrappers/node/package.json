@@ -48,6 +48,7 @@
         "demo:faber:verify": "node demo/faber-verify-signature.js",
         "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",
         "lint": "./node_modules/.bin/tslint --type-check -c ./tslint.json -p ./tsconfig.json && ./node_modules/.bin/tslint --type-check -c ./test/tslint.json -p ./test/tsconfig.json",
+        "jslint:fix": "standard --fix",
         "lint:demo": "standard demo/*",
         "doc-gen": "./node_modules/.bin/typedoc --out doc --excludePrivate --excludeProtected --ignoreCompilerErrors src",
         "test": "export TS_NODE_PROJECT=\"./test/tsconfig.json\" export NODE_ENV='test' && export RUST_LOG=\"info\" && export RUST_BACKTRACE=full && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/**/*.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite2/**/*.test.ts",

@@ -105,23 +105,29 @@ impl<T> ObjectCache<T> {
 #[cfg(test)]
 mod tests {
     use object_cache::ObjectCache;
+    use utils::devsetup::SetupDefaults;
 
     #[test]
     fn create_test() {
+        let _setup = SetupDefaults::init();
+
         let _c: ObjectCache<u32> = Default::default();
     }
 
     #[test]
     fn get_closure() {
+        let _setup = SetupDefaults::init();
+
         let test: ObjectCache<u32> = Default::default();
         let handle = test.add(2222).unwrap();
         let rtn = test.get(handle, |obj| Ok(obj.clone()));
         assert_eq!(2222, rtn.unwrap())
     }
 
-
     #[test]
     fn to_string_test() {
+        let _setup = SetupDefaults::init();
+
         let test: ObjectCache<u32> = Default::default();
         let handle = test.add(2222).unwrap();
         let string: String = test.get(handle, |_| {
@@ -133,6 +139,8 @@ mod tests {
 
     #[test]
     fn mut_object_test() {
+        let _setup = SetupDefaults::init();
+
         let test: ObjectCache<String> = Default::default();
         let handle = test.add(String::from("TEST")).unwrap();
 

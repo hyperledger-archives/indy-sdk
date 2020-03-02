@@ -50,6 +50,7 @@ pub fn get_txn_author_agreement() -> VcxResult<Option<TxnAuthorAgreementAcceptan
 #[cfg(test)]
 mod tests {
     use super::*;
+    use utils::devsetup::SetupDefaults;
 
     const TEXT: &str = "indy agreement";
     const VERSION: &str = "1.0.0";
@@ -58,7 +59,7 @@ mod tests {
 
     #[test]
     fn set_txn_author_agreement_works() {
-        settings::clear_config();
+        let _setup = SetupDefaults::init();
 
         assert!(settings::get_config_value(settings::CONFIG_TXN_AUTHOR_AGREEMENT).is_err());
 
@@ -69,13 +70,11 @@ mod tests {
                                  TIME_OF_ACCEPTANCE).unwrap();
 
         assert!(settings::get_config_value(settings::CONFIG_TXN_AUTHOR_AGREEMENT).is_ok());
-
-        settings::clear_config();
     }
 
     #[test]
     fn get_txn_author_agreement_works() {
-        settings::clear_config();
+        let _setup = SetupDefaults::init();
 
         set_txn_author_agreement(Some(TEXT.to_string()),
                                  Some(VERSION.to_string()),
@@ -94,16 +93,12 @@ mod tests {
         };
 
         assert_eq!(expected_meta, meta);
-
-        settings::clear_config();
     }
 
     #[test]
     fn get_txn_author_agreement_works_for_not_set() {
-        settings::clear_config();
+        let _setup = SetupDefaults::init();
 
         assert!(get_txn_author_agreement().unwrap().is_none());
-
-        settings::clear_config();
     }
 }

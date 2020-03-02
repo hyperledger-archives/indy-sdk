@@ -80,111 +80,93 @@ pub fn set_rev_reg_cache(rev_reg_id: &str, cache: &RevRegCache) {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::devsetup::SetupLibraryWallet;
 
-    struct Init;
-
-    impl Init {
-        fn new() -> Self {
-            init!("false");
-            Init
-        }
-    }
-
-    impl Drop for Init {
-        fn drop(&mut self) {
-            teardown!("false")
-        }
+    fn _rev_reg_id() -> &'static str {
+        "test-id"
     }
 
     #[test]
     fn test_get_credential_cache_returns_default_when_not_exists_in_wallet() {
-        let _init = Init::new();
+        let _setup = SetupLibraryWallet::init();
 
-        let result = get_rev_reg_cache("test-id");
+        let result = get_rev_reg_cache(_rev_reg_id());
         assert_eq!(result, RevRegCache::default());
     }
 
     #[test]
     fn test_get_credential_cache_returns_default_when_invalid_data_in_the_wallet() {
-        let _init = Init::new();
+        let _setup = SetupLibraryWallet::init();
 
-        let rev_reg_id = "test-id";
+        add_record(CACHE_TYPE, _rev_reg_id(), "some invalid json", None).unwrap();
 
-        add_record(CACHE_TYPE, rev_reg_id, "some invalid json", None).unwrap();
-
-        let result = get_rev_reg_cache(rev_reg_id);
+        let result = get_rev_reg_cache(_rev_reg_id());
         assert_eq!(result, RevRegCache::default());
     }
 
     #[test]
     fn test_credential_cache_set_than_get_works() {
-        let _init = Init::new();
-
-        let rev_reg_id = "test-id";
+        let _setup = SetupLibraryWallet::init();
 
         let data = RevRegCache {
             rev_state: Some(RevState {
                 timestamp: 1000,
-                value: "{\"key\": \"value1\"}".to_string(),
+                value: r#"{"key": "value1"}"#.to_string(),
             })
         };
 
-        set_rev_reg_cache(rev_reg_id, &data);
+        set_rev_reg_cache(_rev_reg_id(), &data);
 
-        let result = get_rev_reg_cache(rev_reg_id);
+        let result = get_rev_reg_cache(_rev_reg_id());
 
         assert_eq!(result, data);
     }
 
     #[test]
     fn test_credential_cache_set_than_double_get_works() {
-        let _init = Init::new();
-
-        let rev_reg_id = "test-id";
+        let _setup = SetupLibraryWallet::init();
 
         let data = RevRegCache {
             rev_state: Some(RevState {
                 timestamp: 1000,
-                value: "{\"key\": \"value1\"}".to_string(),
+                value: r#"{"key": "value1"}"#.to_string(),
             })
         };
 
-        set_rev_reg_cache(rev_reg_id, &data);
+        set_rev_reg_cache(_rev_reg_id(), &data);
 
-        let result = get_rev_reg_cache(rev_reg_id);
+        let result = get_rev_reg_cache(_rev_reg_id());
         assert_eq!(result, data);
 
-        let result = get_rev_reg_cache(rev_reg_id);
+        let result = get_rev_reg_cache(_rev_reg_id());
         assert_eq!(result, data);
     }
 
     #[test]
     fn test_credential_cache_overwrite_works() {
-        let _init = Init::new();
-
-        let rev_reg_id = "test-id";
+        let _setup = SetupLibraryWallet::init();
 
         let data1 = RevRegCache {
             rev_state: Some(RevState {
                 timestamp: 1000,
-                value: "{\"key\": \"value1\"}".to_string(),
+                value: r#"{"key": "value1"}"#.to_string(),
             })
         };
 
         let data2 = RevRegCache {
             rev_state: Some(RevState {
                 timestamp: 2000,
-                value: "{\"key\": \"value2\"}".to_string(),
+                value: r#"{"key": "value2"}"#.to_string(),
             })
         };
 
-        set_rev_reg_cache(rev_reg_id, &data1);
-        let result = get_rev_reg_cache(rev_reg_id);
+        set_rev_reg_cache(_rev_reg_id(), &data1);
+        let result = get_rev_reg_cache(_rev_reg_id());
         assert_eq!(result, data1);
 
         // overwrite
-        set_rev_reg_cache(rev_reg_id, &data2);
-        let result = get_rev_reg_cache(rev_reg_id);
+        set_rev_reg_cache(_rev_reg_id(), &data2);
+        let result = get_rev_reg_cache(_rev_reg_id());
         assert_eq!(result, data2);
     }
 

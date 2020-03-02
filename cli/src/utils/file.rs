@@ -42,13 +42,15 @@ pub fn write_file<P: AsRef<Path>>(file: P, content: &str) -> Result<(), String> 
 
     let mut file = OpenOptions::new()
         .write(true)
+        .truncate(true)
         .create(true)
         .open(path)
         .map_err(error_err!())
         .map_err(|err| format!("Can't open the file: {}", err))?;
 
-    file
-        .write_all(content.as_bytes())
-        .map_err(error_err!())
+    file.write_all(content.as_bytes())
+        .map_err(|err| format!("Can't write content: \"{}\" to the file: {}", content, err))?;
+
+    file.flush()
         .map_err(|err| format!("Can't write content: \"{}\" to the file: {}", content, err))
 }
