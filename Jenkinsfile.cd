@@ -1731,7 +1731,7 @@ def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, env_n
             sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p $folder/debs $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
         }
 
-        sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"_\"$rcFullVersion\"-${package_type}_amd64.deb"
 
         def extraFlags = resetCache ? "" : "--no-reset-cache"
 
