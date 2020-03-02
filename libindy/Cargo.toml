@@ -80,3 +80,14 @@ dirs = "2.0.2"
 [[bench]]
 name = "wallet"
 harness = false
+
+[package.metadata.deb]
+provides = "libindy (= 1.14.3)"
+
+[package.metadata.deb.variants.xenial]
+name = "libindy"
+depends = "libzmq5, libsodium18, libssl1.0.0"
+
+[package.metadata.deb.variants.bionic]
+name = "libindy"
+depends = "libzmq5, libsodium23, libssl1.1"
