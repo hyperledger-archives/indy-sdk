@@ -44,6 +44,7 @@ assets = [
     ["target/release/indy-cli", "usr/bin/", "755"]
 ]
 maintainer-scripts = "./debian"
+changelog = "./debian/changelog"
 
 [package.metadata.deb.variants.indy-cli-xenial]
 name = "indy-cli"

@@ -1348,6 +1348,7 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
 
             if (env.BRANCH_NAME == 'rc') {
                 stash includes: "$directory/debs/*", name: outStashName
+                sh "rm -rf $directory/debs"
             }
         }
     }

@@ -81,6 +81,7 @@ assets = [
     ["include/vcx.h", "usr/share/libvcx/", "644"]
 ]
 maintainer-scripts = "./debian"
+changelog = "./debian/changelog"
 
 [package.metadata.deb.variants.libvcx-xenial]
 name = "libvcx"

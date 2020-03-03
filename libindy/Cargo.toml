@@ -94,6 +94,7 @@ at #indy-sdk to discuss."""
 section = "devel"
 priority = "optional"
 maintainer-scripts = "./debian"
+changelog = "./debian/changelog"
 
 [package.metadata.deb.variants.libindy-xenial]
 provides = "libindy (= 1.14.3)"

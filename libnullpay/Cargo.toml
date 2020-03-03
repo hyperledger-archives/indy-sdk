@@ -42,6 +42,7 @@ assets = [
     ["target/release/libnullpay.so", "usr/lib/", "644"]
 ]
 maintainer-scripts = "./debian"
+changelog = "./debian/changelog"
 
 [package.metadata.deb.variants.libnullpay-xenial]
 name = "libnullpay"
