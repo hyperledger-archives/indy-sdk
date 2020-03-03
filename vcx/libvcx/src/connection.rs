@@ -705,7 +705,31 @@ pub fn create_connection_with_invite(source_id: &str, details: &str) -> VcxResul
         }
     };
 
-    let new_handle = create_connection(source_id)?;
+    let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
+
+    let (pw_did, pw_verkey) = create_and_store_my_did(None, method_name.as_ref().map(String::as_str))?;
+
+    let c = Connection {
+        source_id: source_id.to_string(),
+        pw_did,
+        pw_verkey,
+        state: VcxStateType::VcxStateInitialized,
+        uuid: String::new(),
+        endpoint: String::new(),
+        invite_detail: None,
+        redirect_detail: None,
+        invite_url: None,
+        agent_did: String::new(),
+        agent_vk: String::new(),
+        their_pw_did: String::new(),
+        their_pw_verkey: String::new(),
+        public_did: None,
+        their_public_did: None,
+        version: Some(settings::get_connecting_protocol_version()),
+    };
+
+    let new_handle = CONNECTION_MAP.add(Connections::V1(c))
+        .or(Err(VcxError::from(VcxErrorKind::CreateConnection)))?;
 
     set_invite_details(new_handle, &invite_details)?;
     set_their_pw_did(new_handle, invite_details.sender_detail.did.as_str())?;
@@ -1806,9 +1830,25 @@ pub mod tests {
         let _setup = SetupMocks::init();
 
         let handle = create_connection_with_invite("alice", INVITE_DETAIL_STRING).unwrap();
+
+        CONNECTION_MAP.get_mut(handle, |connection| {
+            match connection {
+                Connections::V1(_) => Ok(()),
+                Connections::V3(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be V1")),
+            }
+        }).unwrap();
+
         let _serialized = to_string(handle).unwrap();
 
-        let handle = create_connection_with_invite("alice", INVITE_DETAIL_V2_STRING).unwrap();
+        let handle = create_connection_with_invite("alice", INVITE_DETAIL_V3_STRING).unwrap();
+
+        CONNECTION_MAP.get_mut(handle, |connection| {
+            match connection {
+                Connections::V1(_) => Err(VcxError::from_msg(VcxErrorKind::InvalidState, "It is suppose to be V3")),
+                Connections::V3(_) => Ok(()),
+            }
+        }).unwrap();
+
         let _serialized = to_string(handle).unwrap();
     }
 
