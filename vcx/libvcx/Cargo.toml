@@ -64,20 +64,32 @@ serde_json = "1.0"
 serde_derive = "1.0"
 
 [package.metadata.deb]
-maintainer = "Evernym, Inc."
-copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.14.3)"
+depends = "libindy (= 1.14.3)"
 extended-description = """\
-This is Evernym's SDK for managing Verifiable Credential eXchange against an Indy network. For specific instructions on building see the README in the corresponding github repo https://github.com/evernym/sdk"""
-section = "admin"
-revision = "338ad01"
+This is the official SDK for Hyperledger Indy, which provides a\
+  distributed-ledger-based foundation for self-sovereign identity.\
+  The major artifact of the SDK is a c-callable library; there are\
+  also convenience wrappers for various programming languages.\
+  All bugs, stories, and backlog for this project are managed through\
+  Hyperledger's Jira in project IS (note that regular Indy tickets are\
+  in the INDY project instead...). Also, join us on Jira's Rocket.Chat\
+  at #indy-sdk to discuss."""
+section = "devel"
 priority = "optional"
 assets = [
-    ["target/debug/libvcx.so.*", "usr/lib/", "644"],
-    ["include/vcx.h", "usr/share/libvcx/", "644"],
-    ["scripts/provision_agent_keys.py", "usr/share/libvcx/", "655"]
+    ["target/release/libvcx.so", "usr/lib/", "644"],
+    ["include/vcx.h", "usr/share/libvcx/", "644"]
 ]
-maintainer-scripts = "./scripts"
+maintainer-scripts = "./debian"
+changelog = "./debian/changelog"
+
+[package.metadata.deb.variants.libvcx-xenial]
+name = "libvcx"
+provides = "libvcx (= 0.7.0)"
+
+[package.metadata.deb.variants.libvcx-bionic]
+name = "libvcx"
+provides = "libvcx (= 0.7.0)"
 
 [profile.release]
 debug = true
