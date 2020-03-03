@@ -1347,10 +1347,11 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
             sh "cd $directory && ./deb-build-and-upload.sh $packageName $package_version $env.BRANCH_NAME $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key $package_type $extraFlags"
 
             if (env.BRANCH_NAME == 'rc') {
-                stash includes: "$directory/debs/*", name: outStashName
-                sh "rm -rf $directory/debs"
+                stash includes: "$directory/target/release/*", name: outStashName
             }
         }
+        sh "rm -rf $directory/debs/"
+        sh "rm -rf $directory/target/"
     }
 }
 
@@ -1720,27 +1721,25 @@ def publishLibvcxDebRCtoStable(testEnv, env_name) {
     publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", env_name, true)
 }
 
-def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, env_name, resetCache = false) {
+def publishDebRCtoStable(testEnv, packageName, directory, version, stashName, env_name, resetCache = false) {
     testEnv.inside {
+        sh "mkdir -p $directory/sovrin-packaging/"
+        sh "cp sovrin-packaging/*.py $directory/sovrin-packaging"
+        sh "cp ci/deb-build-and-upload.sh $directory && chmod -R 755 $directory/*.sh"
+
         def rcFullVersion = "${version}~${env.BUILD_NUMBER}"
         def package_type = ubuntuPakageTypes[env_name]
 
         unstash name: "${stashName}${env_name}"
 
-        if (packageName != "libindy") {
-            def libindyVersion = getSrcVersion("libindy")
-            sh "fpm -s deb -t deb --version $rcFullVersion --no-auto-depends --depends 'libindy = $libindyVersion' -f -p $folder/debs $folder/debs/\"$packageName\"_\"$rcFullVersion\"-${package_type}_amd64.deb"
-        }
-
-        sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"_\"$rcFullVersion\"-${package_type}_amd64.deb"
-
         def extraFlags = resetCache ? "" : "--no-reset-cache"
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-            path = sh(returnStdout: true, script: 'pwd').trim()
-
-            sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --distro=${package_type} --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key $extraFlags"
+            sh "cd $directory && ./deb-build-and-upload.sh $packageName $version stable $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key $package_type $extraFlags"
         }
+
+        sh "rm -rf $directory/debs/"
+        sh "rm -rf $directory/target/"
     }
 }
 
