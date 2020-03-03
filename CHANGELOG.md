@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.14.3 - 2020-02-28
+* LibVCX:
+    * Removed `connection_handle` from functions to get protocol messages.
+    * Added ability to accept a duplicate connection by redirecting to the already existing one instead of forming a duplicate connection. 
+    * Added a new function `vcx_disclosed_proof_decline_presentation_request` to explicitly reject a presentation request.
+    * Added a new function `vcx_connection_info` to get information about connection.
+* Bugfixes
+    * Fix proof verification in case of credential attribute encoded value contains leading zeros (IS-1491).
+    * others minor bugfixes
+
 ## 1.14.2 - 2020-01-31
 * LibVCX Aries support:
     * Implemented Basic Message RFC (IS-1189)
