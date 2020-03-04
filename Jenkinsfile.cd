@@ -310,8 +310,7 @@ def linuxLibindyBuild(file, env_name, network_name, full_testing) {
                 cargo build --release --features "fatal_warnings sodium_static"
             '''
 
-            stash includes: 'libindy/target/release/libindy.so', name: "LibindyBuildResult${env_name}"
-            stash includes: 'libindy/target/release/libindy.a', name: "LibindyDevBuildResult${env_name}"
+            stash includes: 'libindy/target/release/libindy.so,libindy/target/release/libindy.a', name: "LibindyBuildResult${env_name}"
         }
 
         sh "cp libindy/target/release/libindy.so wrappers/java/lib"
@@ -1290,7 +1289,7 @@ def libindyDevDebPublishing(testEnv, version, env_name) {
 
     setLibindyDependencyVersion("libindy/Cargo.toml")
 
-    debPublishing(testEnv, "libindy", "libindy-dev", version, "LibindyDevBuildResult${env_name}", "libindyDevDebs${env_name}", env_name)
+    debPublishing(testEnv, "libindy", "libindy-dev", version, "LibindyBuildResult${env_name}", "libindyDevDebs${env_name}", env_name)
 }
 
 def libindyCliDebPublishing(testEnv, version, env_name) {
