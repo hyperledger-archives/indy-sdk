@@ -74,6 +74,8 @@ export interface IProofCreateData {
   sourceId: string,
   //  Describes requested attribute
   attrs: IProofAttr[],
+  // Describres requested predicates
+  preds: IProofPredicate[],
   // Name of the proof request
   name: string,
   // Revocation interval
@@ -191,7 +193,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
         commandHandle,
         proof.sourceId,
         JSON.stringify(createDataRest.attrs),
-        JSON.stringify([]),
+        JSON.stringify(createDataRest.preds),
         JSON.stringify(createDataRest.revocationInterval),
         createDataRest.name,
         cb
