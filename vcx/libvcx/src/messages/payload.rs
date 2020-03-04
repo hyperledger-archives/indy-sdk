@@ -93,8 +93,20 @@ impl Payloads {
     pub fn decrypt(my_vk: &str, payload: &MessagePayload) -> VcxResult<(String, Option<Thread>)> {
         match payload {
             MessagePayload::V1(payload) => {
-                let payload = Payloads::decrypt_payload_v1(my_vk, payload)?;
-                Ok((payload.msg, None))
+                if let Ok(payload) = Payloads::decrypt_payload_v1(my_vk, payload) {
+                    Ok((payload.msg, None))
+                } else {
+                    let vec = to_u8(payload);
+                    let json: Value = serde_json::from_slice(&vec[..])
+                        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize MessagePayload: {}", err)))?;
+
+                    let payload = match Payloads::decrypt_payload_v12(&my_vk, &json)?.msg {
+                        serde_json::Value::String(_str) => _str,
+                        value => value.to_string()
+                    };
+
+                    Ok((payload, None))
+                }
             }
             MessagePayload::V2(payload) => {
                 let payload = Payloads::decrypt_payload_v2(my_vk, payload)?;
