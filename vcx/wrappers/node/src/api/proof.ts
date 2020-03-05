@@ -83,8 +83,10 @@ export interface IProofCreateData {
 }
 
 export interface IProofConstructorData {
-  //  Describes requested attribute
+  //  Describes requested attributes
   attrs: IProofAttr[],
+  //  Describes requested predicates
+  preds: IProofPredicate[],
   // Name of the proof request
   name: string,
 }
@@ -98,6 +100,7 @@ export interface IProofData {
   source_id: string
   handle: number
   requested_attrs: string
+  requested_predicates: string
   prover_did: string
   state: StateType
   name: string
@@ -223,10 +226,12 @@ export class Proof extends VCXBaseWithState<IProofData> {
  */
   public static async deserialize (proofData: ISerializedData<IProofData>) {
     try {
-      const { data: { requested_attrs, name } } = proofData
+      const { data: { requested_attrs, requested_predicates, name } } = proofData
       const attrs = JSON.parse(requested_attrs)
+      const preds = JSON.parse(requested_predicates)
       const constructorParams: IProofConstructorData = {
         attrs,
+        preds,
         name
       }
       const proof = await super._deserialize(Proof, proofData, constructorParams)
@@ -243,12 +248,14 @@ export class Proof extends VCXBaseWithState<IProofData> {
   protected _serializeFn = rustAPI().vcx_proof_serialize
   protected _deserializeFn = rustAPI().vcx_proof_deserialize
   private _requestedAttributes: IProofAttr[]
+  private _requestedPredicates: IProofPredicate[]
   private _name: string
   private _proofState: ProofState | null = null
 
-  constructor (sourceId: string, { attrs, name }: IProofConstructorData) {
+  constructor (sourceId: string, { attrs, preds, name }: IProofConstructorData) {
     super(sourceId)
     this._requestedAttributes = attrs
+    this._requestedPredicates = preds
     this._name = name
   }
 
@@ -422,6 +429,10 @@ export class Proof extends VCXBaseWithState<IProofData> {
    */
   get requestedAttributes () {
     return this._requestedAttributes
+  }
+
+  get requestedPredicates () {
+    return this._requestedPredicates
   }
 
   /**
