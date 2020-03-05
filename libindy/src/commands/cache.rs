@@ -2,16 +2,16 @@ use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use indy_api_types::domain::wallet::Tags;
-use crate::domain::anoncreds::schema::SchemaId;
-use crate::domain::anoncreds::credential_definition::CredentialDefinitionId;
+use indy_vdr::ledger::identifiers::schema::SchemaId;
+use indy_vdr::ledger::identifiers::cred_def::CredentialDefinitionId;
 use indy_api_types::errors::prelude::*;
 use indy_wallet::{WalletService, WalletRecord};
 use indy_api_types::{WalletHandle, PoolHandle};
 use crate::domain::cache::{GetCacheOptions, PurgeOptions};
-use crate::domain::crypto::did::DidValue;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::pool::PoolService;
+use indy_vdr::common::did::DidValue;
 
 const CRED_DEF_CACHE: &str = "cred_def_cache";
 const SCHEMA_CACHE: &str = "schema_cache";
@@ -113,13 +113,14 @@ impl CacheCommandExecutor {
             return Err(IndyError::from(IndyErrorKind::LedgerItemNotFound));
         }
 
+        self.crypto_service.validate_opt_did(Some(submitter_did))?;
+
         let ledger_response = {
-            let request_json = { self.crypto_service.validate_opt_did(Some(submitter_did))?;
+            let prepared_request = self.ledger_service
+                .request_builder()?
+                .build_get_schema_request(Some(submitter_did), id)?;
 
-                self.ledger_service.build_get_schema_request(Some(submitter_did), id)?
-            };
-
-            let pool_response = self.pool_service.send_tx(pool_handle, &request_json).await?;
+            let pool_response = self.pool_service.send_request(pool_handle, prepared_request).await?;
 
             self.ledger_service.parse_get_schema_response(&pool_response, id.get_method().as_ref().map(String::as_str))
         };
@@ -182,9 +183,12 @@ impl CacheCommandExecutor {
 
     async fn ledger_get_cred_def_and_parse<'a>(&'a self, pool_handle: i32, submitter_did: Option<&'a DidValue>, id: &'a CredentialDefinitionId) -> IndyResult<(String, String)> {
         self.crypto_service.validate_opt_did(submitter_did)?;
-        let request_json = self.ledger_service.build_get_cred_def_request(submitter_did, id)?;
 
-        let pool_response = self.pool_service.send_tx(pool_handle, &request_json).await?;
+        let prepared_request = self.ledger_service
+            .request_builder()?
+            .build_get_cred_def_request(submitter_did, id)?;
+
+        let pool_response = self.pool_service.send_request(pool_handle, prepared_request).await?;
 
         self.ledger_service.parse_get_cred_def_response(&pool_response, id.get_method().as_ref().map(String::as_str))
     }

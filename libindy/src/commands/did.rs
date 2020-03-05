@@ -6,9 +6,9 @@ use serde_json;
 use crate::commands::BoxedCallbackStringStringSend;
 use crate::domain::crypto::did::{Did, DidValue, DidMetadata, DidWithMeta, MyDidInfo, TemporaryDid, TheirDid, TheirDidInfo, DidMethod};
 use crate::domain::crypto::key::KeyInfo;
-use crate::domain::ledger::attrib::{AttribData, Endpoint, GetAttrReplyResult};
-use crate::domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
-use crate::domain::ledger::response::Reply;
+use crate::services::ledger::parsers::attrib::{AttribData, Endpoint, GetAttrReplyResult};
+use crate::services::ledger::parsers::nym::{GetNymReplyResult, GetNymResultDataV0};
+use crate::services::ledger::parsers::response::Reply;
 use crate::domain::pairwise::Pairwise;
 use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
@@ -309,10 +309,10 @@ impl DidCommandExecutor {
     }
 
     async fn key_for_did(&self,
-                   pool_handle: PoolHandle,
-                   wallet_handle: WalletHandle,
-                   did: DidValue,
-                   cb: Box<dyn Fn(IndyResult<String>) + Send>) {
+                         pool_handle: PoolHandle,
+                         wallet_handle: WalletHandle,
+                         did: DidValue,
+                         cb: Box<dyn Fn(IndyResult<String>) + Send>) {
         debug!("key_for_did >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
 
         try_cb!(self.crypto_service.validate_did(&did), cb);
@@ -390,10 +390,10 @@ impl DidCommandExecutor {
     }
 
     async fn get_endpoint_for_did(&self,
-                            wallet_handle: WalletHandle,
-                            pool_handle: PoolHandle,
-                            did: DidValue,
-                            cb: Box<dyn Fn(IndyResult<(String, Option<String>)>) + Send>) {
+                                  wallet_handle: WalletHandle,
+                                  pool_handle: PoolHandle,
+                                  did: DidValue,
+                                  cb: Box<dyn Fn(IndyResult<(String, Option<String>)>) + Send>) {
         debug!("get_endpoint_for_did >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
 
         try_cb!(self.crypto_service.validate_did(&did), cb);
@@ -531,9 +531,9 @@ impl DidCommandExecutor {
     }
 
     fn get_nym_ack_process_and_store_their_did(&self,
-                   wallet_handle: WalletHandle,
-                   did: DidValue,
-                   get_nym_reply_result: IndyResult<String>) -> IndyResult<TheirDid> {
+                                               wallet_handle: WalletHandle,
+                                               did: DidValue,
+                                               get_nym_reply_result: IndyResult<String>) -> IndyResult<TheirDid> {
         trace!("get_nym_ack_process_and_store_their_did >>> wallet_handle: {:?}, get_nym_reply_result: {:?}", wallet_handle, get_nym_reply_result);
 
         let get_nym_reply = get_nym_reply_result?;
@@ -590,26 +590,28 @@ impl DidCommandExecutor {
     }
 
     async fn _fetch_their_did_from_ledger(&self,
-                                    wallet_handle: WalletHandle, pool_handle: PoolHandle,
-                                    did: &DidValue) -> IndyResult<TheirDid> {
+                                          wallet_handle: WalletHandle, pool_handle: PoolHandle,
+                                          did: &DidValue) -> IndyResult<TheirDid> {
         // TODO we need passing of my_did as identifier
-        // TODO: FIXME: Remove this unwrap by sending GetNymAck with the error.
-        let get_nym_request = self.ledger_service.build_get_nym_request(None, did).unwrap();
-        let did = did.clone();
+        let get_nym_request = self.ledger_service
+            .request_builder()?
+            .build_get_nym_request(None, &did)?;
 
-        let get_nym_reply_result = self.pool_service.send_tx(pool_handle, &get_nym_request).await;
+        let get_nym_reply_result = self.pool_service.send_request(pool_handle, get_nym_request).await;
 
-        self.get_nym_ack_process_and_store_their_did(wallet_handle, did, get_nym_reply_result)
+        self.get_nym_ack_process_and_store_their_did(wallet_handle, did.to_owned(), get_nym_reply_result)
     }
 
     async fn _fetch_attrib_from_ledger(&self,
-                                 wallet_handle: WalletHandle, pool_handle: PoolHandle,
-                                 did: &DidValue) -> IndyResult<Endpoint> {
+                                       wallet_handle: WalletHandle, pool_handle: PoolHandle,
+                                       did: &DidValue) -> IndyResult<Endpoint> {
         // TODO we need passing of my_did as identifier
-        // TODO: FIXME: Remove this unwrap by sending GetAttribAck with the error.
-        let get_attrib_request = self.ledger_service.build_get_attrib_request(None, did, Some("endpoint"), None, None).unwrap();
+        let get_attrib_request =
+            self.ledger_service
+                .request_builder()?
+                .build_get_attrib_request(None, &did, Some(String::from("endpoint")), None, None).unwrap();
 
-        let get_attrib_reply_result = self.pool_service.send_tx(pool_handle, &get_attrib_request).await;
+        let get_attrib_reply_result = self.pool_service.send_request(pool_handle, get_attrib_request).await;
 
         self._get_attrib_ack_process_store_endpoint_to_wallet(wallet_handle, get_attrib_reply_result)
     }

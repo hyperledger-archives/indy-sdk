@@ -4,6 +4,8 @@ use super::schema::SchemaId;
 use super::credential_definition::CredentialDefinitionId;
 
 use indy_api_types::validation::Validatable;
+use indy_vdr::utils::validation::Validatable as VdrValidatable;
+use indy_vdr::config::VdrResultExt;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialOffer {
@@ -30,8 +32,8 @@ impl CredentialOffer {
 
 impl Validatable for CredentialOffer {
     fn validate(&self) -> Result<(), String> {
-        self.schema_id.validate()?;
-        self.cred_def_id.validate()?;
+        self.schema_id.validate().map_err_string()?;
+        self.cred_def_id.validate().map_err_string()?;
         Ok(())
     }
 }

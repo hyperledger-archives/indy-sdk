@@ -1,12 +1,6 @@
-use ursa::cl::RevocationRegistryDelta as RegistryDelta;
-
 use indy_api_types::validation::Validatable;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RevocationRegistryDeltaV1 {
-    pub value: RegistryDelta
-}
+pub use indy_vdr::ledger::requests::rev_reg::{RevocationRegistryDeltaV1};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]

@@ -14,10 +14,10 @@ use crate::api::payments::*;
 use indy_api_types::errors::prelude::*;
 use indy_utils::ctypes;
 
-use crate::domain::ledger::auth_rule::{Constraint, RoleConstraint, CombinationConstraint};
 use crate::domain::crypto::did::DidValue;
 use std::sync::{Arc, Mutex};
 use futures::channel::oneshot;
+use indy_vdr::ledger::requests::auth_rule::{Constraint, RoleConstraint, CombinationConstraint};
 
 pub struct PaymentsService {
     methods: RefCell<HashMap<String, PaymentsMethod>>

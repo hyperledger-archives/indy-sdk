@@ -9,6 +9,8 @@ use super::super::crypto::did::DidValue;
 use super::credential_definition::CredentialDefinitionId;
 
 use indy_api_types::validation::Validatable;
+use indy_vdr::utils::validation::Validatable as VdrValidatable;
+use indy_vdr::config::VdrResultExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialRequest {
@@ -40,8 +42,8 @@ impl CredentialRequest {
 
 impl Validatable for CredentialRequest {
     fn validate(&self) -> Result<(), String> {
-        self.cred_def_id.validate()?;
-        self.prover_did.validate()?;
+        self.cred_def_id.validate().map_err_string()?;
+        self.prover_did.validate().map_err_string()?;
         Ok(())
     }
 }

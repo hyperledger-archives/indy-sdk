@@ -1,10 +1,10 @@
 use std::rc::Rc;
 
-use crate::domain::ledger::request::ProtocolVersion;
 use crate::domain::pool::{PoolConfig, PoolOpenConfig};
 use indy_api_types::errors::prelude::*;
 use crate::services::pool::PoolService;
 use indy_api_types::PoolHandle;
+use crate::services::ledger::LedgerService;
 
 pub enum PoolCommand {
     Create(
@@ -32,12 +32,14 @@ pub enum PoolCommand {
 
 pub struct PoolCommandExecutor {
     pool_service: Rc<PoolService>,
+    ledger_service: Rc<LedgerService>,
 }
 
 impl PoolCommandExecutor {
-    pub fn new(pool_service: Rc<PoolService>) -> PoolCommandExecutor {
+    pub fn new(pool_service: Rc<PoolService>, ledger_service: Rc<LedgerService>) -> PoolCommandExecutor {
         PoolCommandExecutor {
             pool_service,
+            ledger_service,
         }
     }
 
@@ -53,7 +55,7 @@ impl PoolCommandExecutor {
             }
             PoolCommand::Open(name, config, cb) => {
                 debug!(target: "pool_command_executor", "Open command received");
-                self.open(name, config, cb).await;
+                cb(self.open(name, config).await);
             }
             PoolCommand::List(cb) => {
                 debug!(target: "pool_command_executor", "List command received");
@@ -94,13 +96,15 @@ impl PoolCommandExecutor {
         Ok(())
     }
 
-    async fn open(&self, name: String, config: Option<PoolOpenConfig>, cb: Box<dyn Fn(IndyResult<PoolHandle>) + Send>) {
+    async fn open(&self, name: String, config: Option<PoolOpenConfig>) -> IndyResult<PoolHandle> {
         debug!("open >>> name: {:?}, config: {:?}", name, config);
 
-        let result = self.pool_service.open(name, config).await;
-        cb(result);
+        let protocol_version = self.ledger_service.get_protocol_version()?;
+
+        let result = self.pool_service.open(name, config, protocol_version).await?;
 
         debug!("open <<<");
+        Ok(result)
     }
 
     fn list(&self) -> IndyResult<String> {
@@ -138,14 +142,10 @@ impl PoolCommandExecutor {
     fn set_protocol_version(&self, version: usize) -> IndyResult<()> {
         debug!("set_protocol_version >>> version: {:?}", version);
 
-        if version != 1 && version != 2 {
-            return Err(err_msg(IndyErrorKind::PoolIncompatibleProtocolVersion, format!("Unsupported Protocol version: {}", version)));
-        }
-
-        ProtocolVersion::set(version);
+        let result = self.ledger_service.set_protocol_version(version)?;
 
         debug!("set_protocol_version <<<");
 
-        Ok(())
+        Ok(result)
     }
 }

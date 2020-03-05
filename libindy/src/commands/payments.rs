@@ -7,16 +7,16 @@ use hex;
 
 use serde_json;
 
+use indy_wallet::{RecordOptions, WalletService};
+use indy_api_types::WalletHandle;
 use indy_api_types::errors::prelude::*;
 use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::payments::{PaymentsMethodCBs, PaymentsService, RequesterInfo, Fees};
-use indy_wallet::{RecordOptions, WalletService};
-use indy_api_types::WalletHandle;
-use crate::domain::ledger::auth_rule::AuthRule;
 use crate::domain::crypto::did::DidValue;
 
 use crate::commands::BoxedCallbackStringStringSend;
+use indy_vdr::ledger::requests::auth_rule::AuthRule;
 
 pub enum PaymentsCommand {
     RegisterMethod(

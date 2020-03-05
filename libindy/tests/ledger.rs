@@ -12,13 +12,10 @@ use crate::utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use crate::utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use crate::utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
 use crate::utils::domain::anoncreds::schema::SchemaV1;
-#[cfg(not(feature="only_high_cases"))]
-use crate::utils::domain::crypto::did::DidValue;
-use crate::utils::domain::ledger::constants;
-use crate::utils::domain::ledger::nym::NymData;
-use crate::utils::domain::ledger::request::DEFAULT_LIBIDY_DID;
 use crate::utils::Setup;
 use crate::utils::types::*;
+use indy_vdr::ledger::constants;
+use indy_vdr::common::did::{DEFAULT_LIBINDY_DID, DidValue};
 
 use self::indy::ErrorCode;
 use self::rand::distributions::Alphanumeric;
@@ -797,7 +794,6 @@ mod high_cases {
 
             let get_validator_info_request = ledger::build_get_validator_info_request(&setup.did).unwrap();
             let get_validator_info_response = ledger::sign_and_submit_request(setup.pool_handle, setup.wallet_handle, &setup.did, &get_validator_info_request).unwrap();
-
             let get_validator_info_response: HashMap<String, String> = serde_json::from_str(&get_validator_info_response).unwrap();
             for value in get_validator_info_response.values() {
                 serde_json::from_str::<Reply<GetValidatorInfoResult>>(value).unwrap();
@@ -3927,7 +3923,7 @@ fn check_request_operation(request: &str, expected_operation: serde_json::Value)
 
 fn check_default_identifier(request: &str) {
     let request: serde_json::Value = serde_json::from_str(request).unwrap();
-    assert_eq!(request["identifier"].as_str().unwrap(), DEFAULT_LIBIDY_DID);
+    assert_eq!(request["identifier"].as_str().unwrap(), DEFAULT_LIBINDY_DID.0);
 }
 
 fn ensure_did_first_version(did: &str) {

@@ -2,7 +2,6 @@
 #[macro_use]
 extern crate futures;
 
-extern crate byteorder;
 extern crate failure;
 
 #[macro_use]

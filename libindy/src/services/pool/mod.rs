@@ -13,18 +13,15 @@ use serde_json;
 use serde::de::DeserializeOwned;
 
 use crate::api::ledger::{CustomFree, CustomTransactionParser};
-use crate::domain::{
-    pool::{
-        PoolConfig,
-        PoolOpenConfig,
-    },
-    ledger::response::{
-        Message,
-        Reply,
-        ResponseMetadata,
-    },
+use crate::domain::pool::{
+    PoolConfig,
+    PoolOpenConfig,
 };
-use crate::domain::ledger::request::ProtocolVersion;
+use crate::services::ledger::parsers::response::{
+    Message,
+    Reply,
+    ResponseMetadata,
+};
 
 use indy_api_types::errors::*;
 use crate::utils::environment;
@@ -34,10 +31,10 @@ use indy_utils::next_pool_handle;
 use indy_vdr::pool::{SharedPool, PoolBuilder, PoolTransactions, helpers::perform_refresh, Pool, RequestResult};
 use indy_vdr::pool::helpers::format_full_reply;
 use indy_vdr::pool::handlers::{handle_full_request, handle_consensus_request};
-use indy_vdr::ledger::RequestBuilder;
-use indy_vdr::config::{PoolConfig as VdrPoolOpenConfig, ProtocolVersion as VdrProtocolVersion};
-use failure::_core::convert::TryInto;
+use indy_vdr::ledger::PreparedRequest;
+use indy_vdr::config::{PoolConfig as VdrPoolOpenConfig, ProtocolVersion};
 use std::path::PathBuf;
+use indy_vdr::ledger::constants::{POOL_RESTART, GET_VALIDATOR_INFO};
 
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
@@ -50,7 +47,6 @@ pub struct PoolService {
 struct PoolDescriptor {
     name: String,
     pool: SharedPool,
-    request_builder: RequestBuilder,
 }
 
 // TODO: CACHING TRANSACTIONS
@@ -136,27 +132,26 @@ impl PoolService {
             .to_indy(IndyErrorKind::IOError, "Can't delete pool config directory")
     }
 
-    pub async fn open(&self, name: String, config: Option<PoolOpenConfig>) -> IndyResult<PoolHandle> {
+    pub async fn open(&self, name: String, config: Option<PoolOpenConfig>, protocol_version: ProtocolVersion) -> IndyResult<PoolHandle> {
         if self.open_pools.try_borrow()?.values()
             .find(|pool| pool.name.eq(&name)).is_some() {
             return Err(err_msg(IndyErrorKind::InvalidPoolHandle, "Pool with the same name is already opened"));
         }
 
-        let config = config.unwrap_or_default();
+        let mut config = VdrPoolOpenConfig::from(config.unwrap_or_default());
+        config.protocol_version = protocol_version;
 
         let transactions = Self::_gen_pool_transactions(&name)?;
 
         let pool: SharedPool =
-            PoolBuilder::from_config(config.try_into()?)
+            PoolBuilder::from_config(config)
                 .transactions(transactions)?
                 .into_shared()?;
 
         let pool = self._refresh_pool(&pool).await?;
 
-        let request_builder = pool.get_request_builder();
-
         let pool_handle: PoolHandle = next_pool_handle();
-        let pool_descriptor = PoolDescriptor { name, pool, request_builder };
+        let pool_descriptor = PoolDescriptor { name, pool };
 
         self.open_pools.try_borrow_mut()?.insert(pool_handle, pool_descriptor);
 
@@ -164,30 +159,41 @@ impl PoolService {
     }
 
     pub async fn send_tx(&self, handle: PoolHandle, msg: &str) -> IndyResult<String> {
+        let prepared_request: PreparedRequest = PreparedRequest::from_request_json(msg)?;
+
+        if prepared_request.txn_type == POOL_RESTART.to_string() || prepared_request.txn_type == GET_VALIDATOR_INFO.to_string() {
+            return self._send_action(handle, prepared_request, None, None).await;
+        }
+
+        self.send_request(handle, prepared_request).await
+    }
+
+    pub async fn send_request(&self, handle: PoolHandle, prepared_request: PreparedRequest) -> IndyResult<String> {
         let (request_result, _timing) = {
             let borrowed_pools = self.open_pools.try_borrow()?;
 
             let pool = borrowed_pools.get(&handle)
                 .ok_or(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", handle)))?;
 
-            let (request_params, _) =
-                pool.request_builder
-                    .build_custom_request_from_str(msg, None, (None, None))?;
-
             let request = pool.pool
-                .create_request(request_params.req_id.to_string(),
-                                request_params.req_json.to_string()).await?;
+                .create_request(prepared_request.req_id.to_string(),
+                                prepared_request.req_json.to_string()).await?;
 
             handle_consensus_request(request,
-                                     request_params.sp_key,
-                                     request_params.sp_timestamps,
-                                     request_params.is_read_request)
+                                     prepared_request.sp_key,
+                                     prepared_request.sp_timestamps,
+                                     prepared_request.is_read_request)
         }.await?;
 
         _get_response(request_result)
     }
 
     pub async fn send_action(&self, handle: PoolHandle, msg: &str, node_aliases: Option<Vec<String>>, timeout: Option<i64>) -> IndyResult<String> {
+        let prepared_request: PreparedRequest = PreparedRequest::from_request_json(msg)?;
+        self._send_action(handle, prepared_request, node_aliases, timeout).await
+    }
+
+    async fn _send_action(&self, handle: PoolHandle, prepared_request: PreparedRequest, node_aliases: Option<Vec<String>>, timeout: Option<i64>) -> IndyResult<String> {
         let (request_result, _timing) = {
             let borrowed_pools = self.open_pools.try_borrow()?;
 
@@ -201,13 +207,9 @@ impl PoolService {
                 }
             }
 
-            let (request_params, _) =
-                pool.request_builder
-                    .build_custom_request_from_str(msg, None, (None, None))?;
-
             let request = pool.pool
-                .create_request(request_params.req_id.to_string(),
-                                request_params.req_json.to_string()).await?;
+                .create_request(prepared_request.req_id.to_string(),
+                                prepared_request.req_json.to_string()).await?;
 
             handle_full_request(request,
                                 node_aliases,
@@ -379,19 +381,17 @@ fn _get_response(request_result: RequestResult<String>) -> IndyResult<String> {
     }
 }
 
-impl TryInto<VdrPoolOpenConfig> for PoolOpenConfig {
-    type Error = IndyError;
-
-    fn try_into(self) -> Result<VdrPoolOpenConfig, Self::Error> {
-        Ok(VdrPoolOpenConfig {
-            protocol_version: VdrProtocolVersion::from_id(ProtocolVersion::get() as u64)?,
+impl From<PoolOpenConfig> for VdrPoolOpenConfig {
+    fn from(pool_config: PoolOpenConfig) -> Self {
+        VdrPoolOpenConfig {
+            protocol_version: ProtocolVersion::default(),
             freshness_threshold: get_freshness_threshold(),
-            ack_timeout: self.timeout,
-            reply_timeout: self.extended_timeout,
-            conn_request_limit: self.conn_limit,
-            conn_active_timeout: self.conn_active_timeout,
-            request_read_nodes: self.number_read_nodes as usize,
-        })
+            ack_timeout: pool_config.timeout,
+            reply_timeout: pool_config.extended_timeout,
+            conn_request_limit: pool_config.conn_limit,
+            conn_active_timeout: pool_config.conn_active_timeout,
+            request_read_nodes: pool_config.number_read_nodes as usize,
+        }
     }
 }
 

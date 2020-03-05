@@ -1,15 +1,9 @@
-use ursa::cl::RevocationRegistry as CryptoRevocationRegistry;
-
 use std::collections::HashMap;
 
 use indy_api_types::validation::Validatable;
 
 use super::revocation_registry_definition::RevocationRegistryId;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RevocationRegistryV1 {
-    pub value: CryptoRevocationRegistry
-}
+pub use indy_vdr::ledger::requests::rev_reg::RevocationRegistryV1;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]

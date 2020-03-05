@@ -45,7 +45,6 @@ rmp-serde = "0.13.7"
 time = "0.1.42"
 threadpool = "1.7.1"
 lazy_static = "1.3"
-byteorder = "1.3.2"
 log-panics = "2.0.0"
 zeroize = "1.1.0"
 regex = "1.2.1"
@@ -53,7 +52,6 @@ indy-api-types = { path = "./indy-api-types"}
 indy-utils = { path = "./indy-utils"}
 indy-wallet = { path = "./indy-wallet"}
 futures = "0.3.1"
-indy-vdr = { git = "https://github.com/hyperledger/indy-vdr" }
 
 [dependencies.uuid]
 version = "0.7.4"
@@ -66,6 +64,11 @@ optional = true
 default-features = false
 features = ["cl_native"]
 
+[dependencies.indy-vdr]
+git = "https://github.com/hyperledger/indy-vdr"
+default-features = false
+features = ["ffi", "log", "zmq_dynamic"]
+
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.5"
 
@@ -76,6 +79,7 @@ indy-sys = { path = "../wrappers/rust/indy-sys" }
 sodiumoxide = {version = "0.0.16"}
 openssl = "0.10"
 dirs = "2.0.2"
+byteorder = "1.3.2"
 
 [[bench]]
 name = "wallet"
