@@ -4,11 +4,6 @@ use log_derive::logfn;
 
 use ursa::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 
-use crate::domain::anoncreds::schema::Schema;
-use crate::domain::anoncreds::credential_definition::CredentialDefinition;
-use crate::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
-use crate::domain::anoncreds::revocation_registry::RevocationRegistry;
-use crate::domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
 use crate::services::ledger::parsers::rev_reg_def::GetRevocRegDefReplyResult;
 use crate::services::ledger::parsers::nym::{GetNymReplyResult, GetNymResultDataV0, NymData};
 use crate::services::ledger::parsers::response::{Message, Reply};
@@ -21,17 +16,17 @@ use indy_api_types::errors::prelude::*;
 
 use indy_vdr::ledger::{RequestBuilder, TxnAuthrAgrmtAcceptanceData};
 use indy_vdr::common::did::DidValue;
-use indy_vdr::ledger::requests::schema::{SchemaV1, GetSchemaOperation};
-use indy_vdr::ledger::requests::cred_def::{CredentialDefinitionV1, GetCredDefOperation};
-use indy_vdr::ledger::requests::rev_reg_def::{RevocationRegistryDefinitionV1, GetRevRegDefOperation};
-use indy_vdr::ledger::requests::rev_reg::{RevocationRegistryDeltaV1, GetRevRegOperation, GetRevRegDeltaOperation};
+use indy_vdr::ledger::requests::schema::{Schema, GetSchemaOperation, SchemaV1};
+use indy_vdr::ledger::requests::cred_def::{CredentialDefinition, GetCredDefOperation, CredentialDefinitionV1};
+use indy_vdr::ledger::requests::rev_reg_def::{RevocationRegistryDefinition, GetRevRegDefOperation, RegistryType};
+use indy_vdr::ledger::requests::rev_reg::{RevocationRegistryDelta, GetRevRegOperation, GetRevRegDeltaOperation, RevocationRegistryDeltaV1, RevocationRegistry};
 use indy_vdr::ledger::requests::node::NodeOperationData;
 use indy_vdr::ledger::requests::auth_rule::{Constraint, AuthRules, AuthRule, GetAuthRuleResult};
 use indy_vdr::ledger::requests::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
 use indy_vdr::ledger::requests::pool::Schedule;
 use indy_vdr::ledger::identifiers::schema::SchemaId;
 use indy_vdr::ledger::identifiers::cred_def::CredentialDefinitionId;
-use indy_vdr::ledger::identifiers::rev_reg_def::RevocationRegistryId;
+use indy_vdr::ledger::identifiers::rev_reg::RevocationRegistryId;
 use indy_vdr::config::ProtocolVersion;
 use std::cell::RefCell;
 use indy_vdr::ledger::requests::{RequestType, Request};
@@ -159,7 +154,7 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_schema_request(&self, identifier: &DidValue, schema: SchemaV1) -> IndyResult<String> {
+    pub fn build_schema_request(&self, identifier: &DidValue, schema: Schema) -> IndyResult<String> {
         build_result!(self, build_schema_request, identifier,
                                                   schema)
     }
@@ -171,7 +166,7 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_cred_def_request(&self, identifier: &DidValue, cred_def: CredentialDefinitionV1) -> IndyResult<String> {
+    pub fn build_cred_def_request(&self, identifier: &DidValue, cred_def: CredentialDefinition) -> IndyResult<String> {
         build_result!(self, build_cred_def_request, identifier,
                                                     cred_def)
     }
@@ -242,7 +237,7 @@ impl LedgerService {
     }
 
     #[logfn(Info)]
-    pub fn build_revoc_reg_def_request(&self, identifier: &DidValue, rev_reg_def: RevocationRegistryDefinitionV1) -> IndyResult<String> {
+    pub fn build_revoc_reg_def_request(&self, identifier: &DidValue, rev_reg_def: RevocationRegistryDefinition) -> IndyResult<String> {
         build_result!(self, build_revoc_reg_def_request, identifier,
                                                          rev_reg_def)
     }
@@ -255,10 +250,13 @@ impl LedgerService {
 
     #[logfn(Info)]
     pub fn build_revoc_reg_entry_request(&self, identifier: &DidValue, revoc_reg_def_id: &RevocationRegistryId,
-                                         revoc_def_type: &str, rev_reg_entry: RevocationRegistryDeltaV1) -> IndyResult<String> {
+                                         revoc_def_type: &str, rev_reg_entry: RevocationRegistryDelta) -> IndyResult<String> {
+        let revoc_def_type = serde_json::from_str::<RegistryType>(&format!(r#""{}""#, revoc_def_type))
+            .to_indy(IndyErrorKind::InvalidStructure, format!("Invalid Revocation Definition Type type: {}", revoc_def_type))?;
+
         build_result!(self, build_revoc_reg_entry_request, identifier,
                                                            revoc_reg_def_id,
-                                                           revoc_def_type,
+                                                           &revoc_def_type,
                                                            rev_reg_entry)
     }
 
@@ -531,6 +529,7 @@ mod tests {
     use indy_vdr::ledger::requests::auth_rule::*;
 
     use super::*;
+    use indy_vdr::ledger::requests::schema::SchemaV1;
 
     const IDENTIFIER: &str = "NcYxiDXkpYi6ov5FcYDi1e";
     const DEST: &str = "VsKV7grR1BUE29mG2Fm2kX";
@@ -663,13 +662,13 @@ mod tests {
         let mut attr_names: AttributeNames = AttributeNames::new();
         attr_names.0.insert("male".to_string());
 
-        let data = SchemaV1 {
+        let data = Schema::SchemaV1(SchemaV1 {
             id: SchemaId::new(&identifier(), "name", "1.0"),
             name: "name".to_string(),
             version: "1.0".to_string(),
             attr_names,
             seq_no: None,
-        };
+        });
 
         let expected_result = json!({
             "type": SCHEMA,

@@ -21,17 +21,17 @@ use crate::utils::crypto::signature_serializer::serialize_signature;
 
 use crate::domain::crypto::did::Did;
 use crate::domain::crypto::key::Key;
-use indy_vdr::ledger::requests::cred_def::CredentialDefinitionV1;
-use indy_vdr::ledger::requests::rev_reg_def::RevocationRegistryDefinitionV1;
-use indy_vdr::ledger::requests::schema::SchemaV1;
-use indy_vdr::ledger::requests::rev_reg::RevocationRegistryDeltaV1;
+use indy_vdr::ledger::requests::cred_def::CredentialDefinition;
+use indy_vdr::ledger::requests::rev_reg_def::RevocationRegistryDefinition;
+use indy_vdr::ledger::requests::schema::Schema;
+use indy_vdr::ledger::requests::rev_reg::RevocationRegistryDelta;
 use indy_vdr::ledger::requests::node::NodeOperationData;
 use indy_vdr::ledger::requests::auth_rule::{Constraint, AuthRules};
 use indy_vdr::ledger::requests::author_agreement::{GetTxnAuthorAgreementData, AcceptanceMechanisms};
 use indy_vdr::ledger::requests::pool::Schedule;
 use indy_vdr::ledger::identifiers::schema::SchemaId;
 use indy_vdr::ledger::identifiers::cred_def::CredentialDefinitionId;
-use indy_vdr::ledger::identifiers::rev_reg_def::RevocationRegistryId;
+use indy_vdr::ledger::identifiers::rev_reg::RevocationRegistryId;
 use indy_vdr::common::did::DidValue;
 
 pub enum LedgerCommand {
@@ -95,7 +95,7 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildSchemaRequest(
         DidValue, // submitter did
-        SchemaV1, // data
+        Schema, // data
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetSchemaRequest(
         Option<DidValue>, // submitter did
@@ -106,7 +106,7 @@ pub enum LedgerCommand {
         BoxedCallbackStringStringSend),
     BuildCredDefRequest(
         DidValue, // submitter did
-        CredentialDefinitionV1, // data
+        CredentialDefinition, // data
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetCredDefRequest(
         Option<DidValue>, // submitter did
@@ -153,7 +153,7 @@ pub enum LedgerCommand {
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildRevocRegDefRequest(
         DidValue, // submitter did
-        RevocationRegistryDefinitionV1, // data
+        RevocationRegistryDefinition, // data
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetRevocRegDefRequest(
         Option<DidValue>, // submitter did
@@ -166,7 +166,7 @@ pub enum LedgerCommand {
         DidValue, // submitter did
         RevocationRegistryId, // revocation registry definition id
         String, // revocation registry definition type
-        RevocationRegistryDeltaV1, // value
+        RevocationRegistryDelta, // value
         Box<dyn Fn(IndyResult<String>) + Send>),
     BuildGetRevocRegRequest(
         Option<DidValue>, // submitter did
@@ -712,7 +712,7 @@ impl LedgerCommandExecutor {
 
     fn build_schema_request(&self,
                             submitter_did: &DidValue,
-                            schema: SchemaV1) -> IndyResult<String> {
+                            schema: Schema) -> IndyResult<String> {
         debug!("build_schema_request >>> submitter_did: {:?}, schema: {:?}", submitter_did, schema);
 
         self.crypto_service.validate_did(submitter_did)?;
@@ -751,7 +751,7 @@ impl LedgerCommandExecutor {
 
     fn build_cred_def_request(&self,
                               submitter_did: &DidValue,
-                              cred_def: CredentialDefinitionV1) -> IndyResult<String> {
+                              cred_def: CredentialDefinition) -> IndyResult<String> {
         debug!("build_cred_def_request >>> submitter_did: {:?}, cred_def: {:?}",
                submitter_did, cred_def);
 
@@ -891,7 +891,7 @@ impl LedgerCommandExecutor {
 
     fn build_revoc_reg_def_request(&self,
                                    submitter_did: &DidValue,
-                                   data: RevocationRegistryDefinitionV1) -> IndyResult<String> {
+                                   data: RevocationRegistryDefinition) -> IndyResult<String> {
         debug!("build_revoc_reg_def_request >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
         self.crypto_service.validate_did(submitter_did)?;
@@ -932,7 +932,7 @@ impl LedgerCommandExecutor {
                                      submitter_did: &DidValue,
                                      revoc_reg_def_id: &RevocationRegistryId,
                                      revoc_def_type: &str,
-                                     value: RevocationRegistryDeltaV1) -> IndyResult<String> {
+                                     value: RevocationRegistryDelta) -> IndyResult<String> {
         debug!("build_revoc_reg_entry_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, revoc_def_type: {:?}, value: {:?}",
                submitter_did, revoc_reg_def_id, revoc_def_type, value);
 

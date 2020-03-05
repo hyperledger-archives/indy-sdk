@@ -2,7 +2,7 @@ use ursa::cl::RevocationRegistry;
 
 use super::response::GetReplyResultV1;
 use indy_vdr::ledger::requests::rev_reg::{RevocationRegistryV1};
-use indy_vdr::ledger::identifiers::rev_reg_def::RevocationRegistryId;
+use indy_vdr::ledger::identifiers::rev_reg::RevocationRegistryId;
 
 use std::collections::HashSet;
 

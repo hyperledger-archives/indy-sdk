@@ -237,6 +237,7 @@ impl PoolService {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn get_sp_parser(txn_type: &str) -> Option<(CustomTransactionParser, CustomFree)> {
         let parsers = REGISTERED_SP_PARSERS.lock().unwrap(); // FIXME: Can we avoid unwrap here?
         parsers.get(txn_type).map(Clone::clone)

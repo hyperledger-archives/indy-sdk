@@ -1,12 +1,10 @@
 use indy_api_types::validation::Validatable;
-use indy_vdr::config::VdrResultExt;
 
 use ursa::cl::{
     CredentialPrivateKey,
     CredentialKeyCorrectnessProof
 };
-use indy_vdr::utils::validation::Validatable as VdrValidatable;
-pub use indy_vdr::ledger::requests::cred_def::{SignatureType, CredentialDefinitionV1, CredentialDefinitionData};
+pub use indy_vdr::ledger::requests::cred_def::{CredentialDefinition, SignatureType, CredentialDefinitionV1, CredentialDefinitionData};
 pub use indy_vdr::ledger::identifiers::cred_def::CredentialDefinitionId;
 
 use std::collections::HashMap;
@@ -26,41 +24,10 @@ impl Default for CredentialDefinitionConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "ver")]
-pub enum CredentialDefinition {
-    #[serde(rename = "1.0")]
-    CredentialDefinitionV1(CredentialDefinitionV1)
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct TemporaryCredentialDefinition {
     pub cred_def: CredentialDefinition,
     pub cred_def_priv_key: CredentialDefinitionPrivateKey,
     pub cred_def_correctness_proof: CredentialDefinitionCorrectnessProof
-}
-
-impl CredentialDefinition {
-    pub fn to_unqualified(self) -> CredentialDefinition {
-        match self {
-            CredentialDefinition::CredentialDefinitionV1(cred_def) => {
-                CredentialDefinition::CredentialDefinitionV1(CredentialDefinitionV1 {
-                    id: cred_def.id.to_unqualified(),
-                    schema_id: cred_def.schema_id.to_unqualified(),
-                    signature_type: cred_def.signature_type,
-                    tag: cred_def.tag,
-                    value: cred_def.value,
-                })
-            }
-        }
-    }
-}
-
-impl From<CredentialDefinition> for CredentialDefinitionV1 {
-    fn from(cred_def: CredentialDefinition) -> Self {
-        match cred_def {
-            CredentialDefinition::CredentialDefinitionV1(cred_def) => cred_def
-        }
-    }
 }
 
 pub type CredentialDefinitions = HashMap<CredentialDefinitionId, CredentialDefinition>;
@@ -82,18 +49,6 @@ pub struct CredentialDefinitionCorrectnessProof {
     pub value: CredentialKeyCorrectnessProof
 }
 
-impl Validatable for CredentialDefinition {
-    fn validate(&self) -> Result<(), String> {
-        match self {
-            CredentialDefinition::CredentialDefinitionV1(cred_def) => {
-                cred_def.id.validate().map_err_string()?;
-                cred_def.schema_id.validate().map_err_string()?;
-                Ok(())
-            }
-        }
-    }
-}
-
 impl Validatable for CredentialDefinitionConfig {}
 
 #[cfg(test)]
@@ -101,6 +56,7 @@ mod tests {
     use super::*;
     use indy_vdr::common::did::DidValue;
     use indy_vdr::ledger::identifiers::schema::SchemaId;
+    use indy_vdr::utils::validation::Validatable;
 
     fn _did() -> DidValue {
         DidValue("NcYxiDXkpYi6ov5FcYDi1e".to_string())

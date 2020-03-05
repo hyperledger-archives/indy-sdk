@@ -178,7 +178,7 @@ mod high_cases {
 
             let request = ledger::sign_request(setup.wallet_handle, &did, REQUEST).unwrap();
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
-            assert_eq!(request["signature"].as_str().unwrap(), "65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW");
+            assert_eq!(request["signature"].as_str().unwrap(), "HkKtfyrGgpUfReE9LagmKUUb9qLX8UCtmxhMBqoAjn4U1tBiwgxsgiRLKozgc5yCDui8iDGC3ochb2ZHsJcjxih");
         }
 
         #[test]
@@ -187,7 +187,7 @@ mod high_cases {
 
             let request = ledger::sign_request(setup.wallet_handle, &setup.did, REQUEST).unwrap();
             let request: serde_json::Value = serde_json::from_str(&request).unwrap();
-            assert_eq!(request["signature"].as_str().unwrap(), "65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW");
+            assert_eq!(request["signature"].as_str().unwrap(), "HkKtfyrGgpUfReE9LagmKUUb9qLX8UCtmxhMBqoAjn4U1tBiwgxsgiRLKozgc5yCDui8iDGC3ochb2ZHsJcjxih");
         }
 
         #[test]
@@ -215,8 +215,8 @@ mod high_cases {
             let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
             let signatures = msg["signatures"].as_object().unwrap();
 
-            assert_eq!(signatures[DID_TRUSTEE], r#"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"#);
-            assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
+            assert_eq!(signatures[DID_TRUSTEE], r#"HkKtfyrGgpUfReE9LagmKUUb9qLX8UCtmxhMBqoAjn4U1tBiwgxsgiRLKozgc5yCDui8iDGC3ochb2ZHsJcjxih"#);
+            assert_eq!(signatures[DID_MY1], r#"61QZ5o84ry6YpQr8n4VTqrHNHjwdN7FFSxHjBFkoxKZJbQDf1o2T2XyNeYmq7ZgZYXbNb3awffzuoHtNqtMikQdU"#);
         }
 
         #[test]
@@ -235,8 +235,8 @@ mod high_cases {
             let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
             let signatures = msg["signatures"].as_object().unwrap();
 
-            assert_eq!(signatures[DID_TRUSTEE], r#"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"#);
-            assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
+            assert_eq!(signatures[DID_TRUSTEE], r#"HkKtfyrGgpUfReE9LagmKUUb9qLX8UCtmxhMBqoAjn4U1tBiwgxsgiRLKozgc5yCDui8iDGC3ochb2ZHsJcjxih"#);
+            assert_eq!(signatures[DID_MY1], r#"61QZ5o84ry6YpQr8n4VTqrHNHjwdN7FFSxHjBFkoxKZJbQDf1o2T2XyNeYmq7ZgZYXbNb3awffzuoHtNqtMikQdU"#);
         }
 
         #[test]
@@ -3130,7 +3130,7 @@ mod medium_cases {
             let signatures = msg["signatures"].as_object().unwrap();
 
             assert_eq!(1, signatures.len());
-            assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
+            assert_eq!(signatures[DID_MY1], r#"61QZ5o84ry6YpQr8n4VTqrHNHjwdN7FFSxHjBFkoxKZJbQDf1o2T2XyNeYmq7ZgZYXbNb3awffzuoHtNqtMikQdU"#);
         }
     }
 

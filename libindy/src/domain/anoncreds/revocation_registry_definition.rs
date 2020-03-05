@@ -4,46 +4,21 @@ use std::collections::{HashMap, HashSet};
 
 use indy_api_types::validation::Validatable;
 
-pub use indy_vdr::ledger::requests::rev_reg_def::{CL_ACCUM, IssuanceType, RegistryType, RevocationRegistryDefinitionValue, RevocationRegistryDefinitionValuePublicKeys, RevocationRegistryDefinitionV1};
-pub use indy_vdr::ledger::identifiers::rev_reg_def::RevocationRegistryId;
-use indy_vdr::utils::validation::Validatable as VdrValidatable;
-use indy_vdr::config::VdrResultExt;
+pub use indy_vdr::ledger::requests::rev_reg_def::{
+    CL_ACCUM,
+    IssuanceType,
+    RegistryType,
+    RevocationRegistryDefinitionValue,
+    RevocationRegistryDefinitionValuePublicKeys,
+    RevocationRegistryDefinitionV1,
+    RevocationRegistryDefinition,
+};
+pub use indy_vdr::ledger::identifiers::rev_reg::RevocationRegistryId;
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct RevocationRegistryConfig {
     pub issuance_type: Option<IssuanceType>,
     pub max_cred_num: Option<u32>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "ver")]
-pub enum RevocationRegistryDefinition {
-    #[serde(rename = "1.0")]
-    RevocationRegistryDefinitionV1(RevocationRegistryDefinitionV1)
-}
-
-impl RevocationRegistryDefinition {
-    pub fn to_unqualified(self) -> RevocationRegistryDefinition {
-        match self {
-            RevocationRegistryDefinition::RevocationRegistryDefinitionV1(rev_ref_def) => {
-                RevocationRegistryDefinition::RevocationRegistryDefinitionV1(RevocationRegistryDefinitionV1 {
-                    id: rev_ref_def.id.to_unqualified(),
-                    revoc_def_type: rev_ref_def.revoc_def_type,
-                    tag: rev_ref_def.tag,
-                    cred_def_id: rev_ref_def.cred_def_id.to_unqualified(),
-                    value: rev_ref_def.value,
-                })
-            }
-        }
-    }
-}
-
-impl From<RevocationRegistryDefinition> for RevocationRegistryDefinitionV1 {
-    fn from(rev_reg_def: RevocationRegistryDefinition) -> Self {
-        match rev_reg_def {
-            RevocationRegistryDefinition::RevocationRegistryDefinitionV1(rev_reg_def) => rev_reg_def
-        }
-    }
 }
 
 pub type RevocationRegistryDefinitions = HashMap<RevocationRegistryId, RevocationRegistryDefinition>;
@@ -78,22 +53,12 @@ impl Validatable for RevocationRegistryConfig {
     }
 }
 
-impl Validatable for RevocationRegistryDefinition {
-    fn validate(&self) -> Result<(), String> {
-        match self {
-            RevocationRegistryDefinition::RevocationRegistryDefinitionV1(revoc_reg_def) => {
-                revoc_reg_def.id.validate().map_err_string()?;
-            }
-        }
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use indy_vdr::common::did::DidValue;
     use indy_vdr::ledger::identifiers::cred_def::CredentialDefinitionId;
+    use indy_vdr::utils::validation::Validatable;
 
     fn _did() -> DidValue {
         DidValue("NcYxiDXkpYi6ov5FcYDi1e".to_string())

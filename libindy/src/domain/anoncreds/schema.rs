@@ -1,42 +1,7 @@
 use std::collections::HashMap;
 
-use indy_api_types::validation::Validatable;
-
-pub use indy_vdr::ledger::requests::schema::{SchemaV1, MAX_ATTRIBUTES_COUNT, AttributeNames};
+pub use indy_vdr::ledger::requests::schema::{Schema, SchemaV1, MAX_ATTRIBUTES_COUNT, AttributeNames};
 pub use indy_vdr::ledger::identifiers::schema::SchemaId;
-use indy_vdr::utils::validation::Validatable as VdrValidatable;
-use indy_vdr::config::VdrResultExt;
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "ver")]
-pub enum Schema {
-    #[serde(rename = "1.0")]
-    SchemaV1(SchemaV1)
-}
-
-impl Schema {
-    pub fn to_unqualified(self) -> Schema {
-        match self {
-            Schema::SchemaV1(schema) => {
-                Schema::SchemaV1(SchemaV1 {
-                    id: schema.id.to_unqualified(),
-                    name: schema.name,
-                    version: schema.version,
-                    attr_names: schema.attr_names,
-                    seq_no: schema.seq_no,
-                })
-            }
-        }
-    }
-}
-
-impl From<Schema> for SchemaV1 {
-    fn from(schema: Schema) -> Self {
-        match schema {
-            Schema::SchemaV1(schema) => schema
-        }
-    }
-}
 
 pub type Schemas = HashMap<SchemaId, Schema>;
 
@@ -44,21 +9,11 @@ pub fn schemas_map_to_schemas_v1_map(schemas: Schemas) -> HashMap<SchemaId, Sche
     schemas.into_iter().map(|(schema_id, schema)| { (schema_id, SchemaV1::from(schema)) }).collect()
 }
 
-impl Validatable for Schema {
-    fn validate(&self) -> Result<(), String> {
-        match self {
-            Schema::SchemaV1(schema) => {
-                schema.validate().map_err_string()?;
-                Ok(())
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use indy_vdr::common::did::DidValue;
+    use indy_vdr::utils::validation::Validatable;
 
     fn _did() -> DidValue {
         DidValue("NcYxiDXkpYi6ov5FcYDi1e".to_string())
