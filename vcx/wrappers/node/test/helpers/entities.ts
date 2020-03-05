@@ -267,6 +267,9 @@ export const dataProofCreate = (): IProofCreateData => ({
     { name: 'attr1' },
     { name: 'attr2' }
   ],
+  preds: [
+    { attr_name: 'pred1', p_type: 'GE', value: 123 },
+  ],
   name: 'Proof',
   revocationInterval: {
     from: undefined,
@@ -282,6 +285,7 @@ export const proofCreate = async (data = dataProofCreate()) => {
   assert.equal(proof.name, data.name)
   assert.equal(proof.proofState, null)
   assert.deepEqual(proof.requestedAttributes, data.attrs)
+  assert.deepEqual(proof.requestedPredicates, data.preds)
   return proof
 }
 
