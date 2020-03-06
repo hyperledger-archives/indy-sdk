@@ -374,30 +374,7 @@ fn apply_agent_info(cred: &mut Credential, agent_info: &MyAgentInfo) {
     cred.agent_vk = agent_info.pw_agent_vk.clone();
 }
 
-pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u32> {
-    trace!("credential_create_with_offer >>> source_id: {}, offer: {}", source_id, secret!(&offer));
-
-    let offer_message = ::serde_json::from_str::<Vec<::serde_json::Value>>(offer)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Message: {:?}", err)))?
-        .pop()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?;
-
-    // Setup Aries protocol to use -- redirect to v3 folder
-    if settings::is_aries_protocol_set() {
-        let cred_offer: CredentialOffer =
-            ::serde_json::from_value(offer_message)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
-
-        let holder = Holder::create(cred_offer.try_into()?, source_id)?;
-        return HANDLE_MAP.add(Credentials::V3(holder));
-    }
-
-    // Received offer of aries format -- redirect to v3 folder
-    if let Ok(cred_offer) = serde_json::from_value::<::v3::messages::issuance::credential_offer::CredentialOffer>(offer_message) {
-        let holder = Holder::create(cred_offer, source_id)?;
-        return HANDLE_MAP.add(Credentials::V3(holder));
-    }
-
+fn create_credential_v1(source_id: &str, offer: &str) -> VcxResult<Credentials> {
     let mut new_credential = _credential_create(source_id);
 
     let (offer, payment_info) = parse_json_offer(offer)?;
@@ -407,7 +384,62 @@ pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u
     new_credential.state = VcxStateType::VcxStateRequestReceived;
 
     debug!("inserting credential {} into handle map", source_id);
-    HANDLE_MAP.add(Credentials::V1(new_credential))
+    Ok(Credentials::V1(new_credential))
+}
+
+fn create_credential_v3(source_id: &str, offer: &str) -> VcxResult<Option<Credentials>> {
+    trace!("create_credential_v3 >>> source_id: {}, offer: {}", source_id, secret!(&offer));
+
+    let offer_message = ::serde_json::from_str::<Vec<::serde_json::Value>>(offer)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Message: {:?}", err)))?
+        .pop()
+        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?;
+
+    // Received offer of aries format
+    if let Ok(cred_offer) = serde_json::from_value::<::v3::messages::issuance::credential_offer::CredentialOffer>(offer_message.clone()) {
+        let holder = Holder::create(cred_offer, source_id)?;
+        return Ok(Some(Credentials::V3(holder)));
+    }
+
+    // Aries protocol is set. Try to convert proprietary offer to Aries
+    if settings::is_aries_protocol_set() {
+        let cred_offer: CredentialOffer =
+            ::serde_json::from_value(offer_message)
+                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+
+        let holder = Holder::create(cred_offer.try_into()?, source_id)?;
+        return Ok(Some(Credentials::V3(holder)));
+    }
+
+    Ok(None)
+}
+
+pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u32> {
+    trace!("credential_create_with_offer >>> source_id: {}, offer: {}", source_id, secret!(&offer));
+
+    let credential =
+        match create_credential_v3(source_id, &offer)? {
+            Some(credential) => credential,
+            None => create_credential_v1(source_id, offer)?
+        };
+
+    debug!("inserting credential {} into handle map", source_id);
+    HANDLE_MAP.add(credential)
+}
+
+pub fn credential_create_with_msgid(source_id: &str, connection_handle: u32, msg_id: &str) -> VcxResult<(u32, String)> {
+    let credential_offer = get_credential_offer_msg(connection_handle, &msg_id)?;
+
+    let credential = if connection::is_v3_connection(connection_handle)? {
+        create_credential_v3(source_id, &credential_offer)?
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConnectionHandle, format!("Connection can not be used for Proprietary Issuance protocol")))?
+    } else {
+        create_credential_v1(source_id, &credential_offer)?
+    };
+
+    debug!("inserting credential {} into handle map", source_id);
+    let handle = HANDLE_MAP.add(credential)?;
+    Ok((handle, credential_offer))
 }
 
 fn _credential_create(source_id: &str) -> Credential {

@@ -152,24 +152,16 @@ pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: CommandHandl
            command_handle, source_id, connection_handle, msg_id);
 
     spawn(move || {
-        match disclosed_proof::get_proof_request(connection_handle, &msg_id) {
-            Ok(request) => {
-                match disclosed_proof::create_proof(&source_id, &request) {
-                    Ok(handle) => {
-                        trace!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {}, proof_req: {}) source_id: {}",
-                               command_handle, error::SUCCESS.message, handle, request, source_id);
-                        let msg = CStringUtils::string_to_cstring(request);
-                        cb(command_handle, error::SUCCESS.code_num, handle, msg.as_ptr())
-                    }
-                    Err(e) => {
-                        warn!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {}, proof_req: {}) source_id: {}",
-                              command_handle, e, 0, request, source_id);
-                        let msg = CStringUtils::string_to_cstring(request);
-                        cb(command_handle, e.into(), 0, msg.as_ptr());
-                    }
-                };
+        match disclosed_proof::create_proof_with_msgid(&source_id, connection_handle, &msg_id) {
+            Ok((handle, request)) => {
+                trace!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {}, proof_req: {}) source_id: {}",
+                       command_handle, error::SUCCESS.message, handle, request, source_id);
+                let msg = CStringUtils::string_to_cstring(request);
+                cb(command_handle, error::SUCCESS.code_num, handle, msg.as_ptr())
             }
-            Err(e) => cb(command_handle, e.into(), 0, ptr::null()),
+            Err(e) => {
+                cb(command_handle, e.into(), 0,  ptr::null());
+            }
         };
 
         Ok(())

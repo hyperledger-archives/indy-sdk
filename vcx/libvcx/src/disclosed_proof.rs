@@ -545,11 +545,13 @@ fn apply_agent_info(proof: &mut DisclosedProof, agent_info: &MyAgentInfo) {
     proof.agent_vk = agent_info.pw_agent_vk.clone();
 }
 
-pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
+fn create_proof_v3(source_id: &str, proof_req: &str) -> VcxResult<Option<DisclosedProofs>> {
+    trace!("create_proof_v3 >>> source_id: {}, proof_req: {}", source_id, proof_req);
+
     // Received request of new format -- redirect to v3 folder
     if let Ok(presentation_request) = serde_json::from_str::<::v3::messages::proof_presentation::presentation_request::PresentationRequest>(proof_req) {
-        let new_proof = Prover::create(source_id, presentation_request)?;
-        return HANDLE_MAP.add(DisclosedProofs::V3(new_proof));
+        let proof = Prover::create(source_id, presentation_request)?;
+        return Ok(Some(DisclosedProofs::V3(proof)));
     }
 
     // Setup Aries protocol to use -- redirect to v3 folder
@@ -557,23 +559,56 @@ pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
         let proof_request_message: ProofRequestMessage = serde_json::from_str(proof_req)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize PresentationRequest: {}", err)))?;
 
-        let new_proof = Prover::create(source_id, proof_request_message.try_into()?)?;
-        return HANDLE_MAP.add(DisclosedProofs::V3(new_proof));
+        let proof = Prover::create(source_id, proof_request_message.try_into()?)?;
+        return Ok(Some(DisclosedProofs::V3(proof)));
     }
 
+    Ok(None)
+}
+
+fn create_proof_v1(source_id: &str, proof_req: &str) -> VcxResult<DisclosedProofs> {
+    trace!("create_proof_v1 >>> source_id: {}, proof_req: {}", source_id, proof_req);
+
+    let mut proof: DisclosedProof = Default::default();
+
+    proof.set_source_id(source_id);
+    proof.set_proof_request(serde_json::from_str(proof_req)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize proof request: {}", err)))?);
+
+    proof.set_state(VcxStateType::VcxStateRequestReceived);
+
+    Ok(DisclosedProofs::V1(proof))
+}
+
+pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
     trace!("create_proof >>> source_id: {}, proof_req: {}", source_id, proof_req);
 
     debug!("creating disclosed proof with id: {}", source_id);
 
-    let mut new_proof: DisclosedProof = Default::default();
+    let proof =
+        match create_proof_v3(source_id, &proof_req)? {
+            Some(proof) => proof,
+            None => create_proof_v1(source_id, proof_req)?
+        };
 
-    new_proof.set_source_id(source_id);
-    new_proof.set_proof_request(serde_json::from_str(proof_req)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize proof request: {}", err)))?);
+    debug!("inserting proof {} into handle map", source_id);
 
-    new_proof.set_state(VcxStateType::VcxStateRequestReceived);
+    HANDLE_MAP.add(proof)
+}
 
-    HANDLE_MAP.add(DisclosedProofs::V1(new_proof))
+pub fn create_proof_with_msgid(source_id: &str, connection_handle: u32, msg_id: &str) -> VcxResult<(u32, String)> {
+    let proof_request = get_proof_request(connection_handle, &msg_id)?;
+
+    let proof = if connection::is_v3_connection(connection_handle)? {
+        create_proof_v3(source_id, &proof_request)?
+            .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConnectionHandle, format!("Connection can not be used for Proprietary Issuance protocol")))?
+    } else {
+        create_proof_v1(source_id, &proof_request)?
+    };
+
+    debug!("inserting disclosed proof {} into handle map", source_id);
+    let handle = HANDLE_MAP.add(proof)?;
+    Ok((handle, proof_request))
 }
 
 pub fn get_state(handle: u32) -> VcxResult<u32> {
