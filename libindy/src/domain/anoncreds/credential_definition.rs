@@ -35,9 +35,14 @@ pub type CredentialDefinitions = HashMap<CredentialDefinitionId, CredentialDefin
 pub fn cred_defs_map_to_cred_defs_v1_map(cred_defs: CredentialDefinitions) -> HashMap<CredentialDefinitionId, CredentialDefinitionV1> {
     cred_defs
         .into_iter()
-        .map(|(cred_def_id, cred_def)| (cred_def_id, CredentialDefinitionV1::from(cred_def)))
-        .collect()
+        .map(|(cred_def_id, cred_def)|
+            match cred_def {
+                CredentialDefinition::CredentialDefinitionV1(cred_def) => (cred_def_id, cred_def)
+            }
+        ).collect()
 }
+
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialDefinitionPrivateKey {

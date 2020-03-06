@@ -26,8 +26,11 @@ pub type RevocationRegistryDefinitions = HashMap<RevocationRegistryId, Revocatio
 pub fn rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs: RevocationRegistryDefinitions) -> HashMap<RevocationRegistryId, RevocationRegistryDefinitionV1> {
     rev_reg_defs
         .into_iter()
-        .map(|(rev_reg_id, rev_reg_def)| (rev_reg_id, RevocationRegistryDefinitionV1::from(rev_reg_def)))
-        .collect()
+        .map(|(rev_reg_id, rev_reg_def)|
+            match rev_reg_def {
+                RevocationRegistryDefinition::RevocationRegistryDefinitionV1(rev_reg_def) => (rev_reg_id, rev_reg_def)
+            }
+        ).collect()
 }
 
 #[derive(Debug, Serialize, Deserialize)]

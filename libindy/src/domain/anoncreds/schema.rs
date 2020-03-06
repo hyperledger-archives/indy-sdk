@@ -6,7 +6,13 @@ pub use indy_vdr::ledger::identifiers::schema::SchemaId;
 pub type Schemas = HashMap<SchemaId, Schema>;
 
 pub fn schemas_map_to_schemas_v1_map(schemas: Schemas) -> HashMap<SchemaId, SchemaV1> {
-    schemas.into_iter().map(|(schema_id, schema)| { (schema_id, SchemaV1::from(schema)) }).collect()
+    schemas
+        .into_iter()
+        .map(|(schema_id, schema)|
+            match schema {
+                Schema::SchemaV1(schema) => (schema_id, schema)
+            }
+        ).collect()
 }
 
 #[cfg(test)]
