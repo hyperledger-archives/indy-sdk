@@ -492,8 +492,8 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
     PROOF_MAP.get_mut(handle, |obj| {
         match obj {
             Proofs::V1(ref mut obj) => {
-                obj.update_state(message.clone())?;
-                Ok(obj.get_state())
+                obj.update_state(message.clone())
+                    .or_else(|_| Ok(obj.get_state()))
             }
             Proofs::V3(ref mut obj) => {
                 obj.update_state(message.as_ref().map(String::as_str))?;
