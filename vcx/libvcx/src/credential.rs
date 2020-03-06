@@ -383,7 +383,7 @@ pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u
         .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?;
 
     // Setup Aries protocol to use -- redirect to v3 folder
-    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+    if settings::is_aries_protocol_set() {
         let cred_offer: CredentialOffer =
             ::serde_json::from_value(offer_message)
                 .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
@@ -392,7 +392,7 @@ pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u
         return HANDLE_MAP.add(Credentials::V3(holder));
     }
 
-    // Received offer of new format -- redirect to v3 folder
+    // Received offer of aries format -- redirect to v3 folder
     if let Ok(cred_offer) = serde_json::from_value::<::v3::messages::issuance::credential_offer::CredentialOffer>(offer_message) {
         let holder = Holder::create(cred_offer, source_id)?;
         return HANDLE_MAP.add(Credentials::V3(holder));

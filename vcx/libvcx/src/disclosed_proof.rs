@@ -553,7 +553,7 @@ pub fn create_proof(source_id: &str, proof_req: &str) -> VcxResult<u32> {
     }
 
     // Setup Aries protocol to use -- redirect to v3 folder
-    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+    if settings::is_aries_protocol_set() {
         let proof_request_message: ProofRequestMessage = serde_json::from_str(proof_req)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize PresentationRequest: {}", err)))?;
 

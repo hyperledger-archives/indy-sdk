@@ -613,7 +613,7 @@ pub fn issuer_credential_create(cred_def_handle: u32,
            cred_def_handle, source_id, issuer_did, credential_name, secret!(&credential_data), price);
 
     // Initiate connection of new format -- redirect to v3 folder
-    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+    if settings::is_aries_protocol_set() {
         let issuer = v3::handlers::issuance::Issuer::create(cred_def_handle, &credential_data, &source_id)?;
         return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer));
     }

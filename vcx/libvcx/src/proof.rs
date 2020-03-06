@@ -428,7 +428,7 @@ pub fn create_proof(source_id: String,
                     revocation_details: String,
                     name: String) -> VcxResult<u32> {
     // Initiate proof of new format -- redirect to v3 folder
-    if settings::ARIES_COMMUNICATION_METHOD.to_string() == settings::get_communication_method().unwrap_or_default() {
+    if settings::is_aries_protocol_set() {
         let verifier = Verifier::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
         return PROOF_MAP.add(Proofs::V3(verifier))
             .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
