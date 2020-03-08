@@ -1,36 +1,49 @@
 use serde_json;
 use serde_json::Value;
+use std::convert::TryInto;
 
-use v3;
+use error::prelude::*;
 use object_cache::ObjectCache;
 use api::VcxStateType;
 use issuer_credential::{CredentialOffer, CredentialMessage, PaymentInfo};
 use credential_request::CredentialRequest;
-use messages;
-use messages::{GeneralMessage, RemoteMessageType};
-use messages::payload::{Payloads, PayloadKinds};
-use messages::thread::Thread;
-use messages::get_message;
-use messages::get_message::get_ref_msg;
-use messages::get_message::MessagePayload;
+use messages::{
+    self,
+    GeneralMessage,
+    RemoteMessageType,
+    payload::{
+        Payloads,
+        PayloadKinds,
+    },
+    thread::Thread,
+    get_message::{
+        get_ref_msg,
+        get_connection_messages,
+        MessagePayload,
+    },
+};
 use connection;
-use settings;
-use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
-use utils::libindy::anoncreds;
+use utils::libindy::anoncreds::{
+    libindy_prover_create_credential_req,
+    libindy_prover_store_credential,
+    get_cred_def_json,
+};
 use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 use utils::{error, constants};
-use error::prelude::*;
-use std::convert::TryInto;
 
-use v3::handlers::issuance::Holder;
 use utils::agent_info::{get_agent_info, MyAgentInfo, get_agent_attr};
 use utils::httpclient::AgencyMock;
+
+use v3::{
+    messages::issuance::credential_offer::CredentialOffer as CredentialOfferV3,
+    handlers::issuance::Holder
+};
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credentials>  = Default::default();
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version", content = "data")]
 enum Credentials {
     #[serde(rename = "1.0")]
@@ -114,7 +127,7 @@ impl Credential {
     }
 
     pub fn create_credential_request(cred_def_id: &str, prover_did: &str, cred_offer: &str) -> VcxResult<(String, String, String, String)> {
-        let (cred_def_id, cred_def_json) = anoncreds::get_cred_def_json(&cred_def_id)?;
+        let (cred_def_id, cred_def_json) = get_cred_def_json(&cred_def_id)?;
 
         /*
                 debug!("storing credential offer: {}", secret!(&credential_offer));
@@ -170,7 +183,7 @@ impl Credential {
                     &my_agent.their_pw_vk()?,
                     &cred_req_json,
                     PayloadKinds::CredReq,
-                    self.thread.clone()
+                    self.thread.clone(),
                 )?
                 .ref_msg_id(Some(offer_msg_id.to_string()))?
                 .send_secure()
@@ -215,7 +228,7 @@ impl Credential {
         let cred_req: &CredentialRequest = self.credential_request.as_ref()
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidCredential, "Cannot find CredentialRequest"))?;
 
-        let (_, cred_def_json) = anoncreds::get_cred_def_json(&cred_req.cred_def_id)
+        let (_, cred_def_json) = get_cred_def_json(&cred_req.cred_def_id)
             .map_err(|err| err.extend("Cannot get credential definition"))?;
 
         self.credential = Some(credential);
@@ -383,7 +396,6 @@ fn create_credential_v1(source_id: &str, offer: &str) -> VcxResult<Credentials> 
     new_credential.payment_info = payment_info;
     new_credential.state = VcxStateType::VcxStateRequestReceived;
 
-    debug!("inserting credential {} into handle map", source_id);
     Ok(Credentials::V1(new_credential))
 }
 
@@ -396,20 +408,20 @@ fn create_credential_v3(source_id: &str, offer: &str) -> VcxResult<Option<Creden
         .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?;
 
     // Received offer of aries format
-    if let Ok(cred_offer) = serde_json::from_value::<::v3::messages::issuance::credential_offer::CredentialOffer>(offer_message.clone()) {
+    if let Ok(cred_offer) = serde_json::from_value::<CredentialOfferV3>(offer_message.clone()) {
         let holder = Holder::create(cred_offer, source_id)?;
         return Ok(Some(Credentials::V3(holder)));
     }
 
-    // Aries protocol is set. Try to convert proprietary offer to Aries
-    if settings::is_aries_protocol_set() {
-        let cred_offer: CredentialOffer =
-            ::serde_json::from_value(offer_message)
-                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
-
-        let holder = Holder::create(cred_offer.try_into()?, source_id)?;
-        return Ok(Some(Credentials::V3(holder)));
-    }
+//    // Aries protocol is set. Try to convert proprietary offer to Aries
+//    if settings::is_aries_protocol_set() {
+//        let cred_offer: CredentialOffer =
+//            ::serde_json::from_value(offer_message)
+//                .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidOption, format!("Cannot deserialize Message: {:?}", err)))?;
+//
+//        let holder = Holder::create(cred_offer.try_into()?, source_id)?;
+//        return Ok(Some(Credentials::V3(holder)));
+//    }
 
     Ok(None)
 }
@@ -423,8 +435,10 @@ pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u
             None => create_credential_v1(source_id, offer)?
         };
 
+    let handle = HANDLE_MAP.add(credential)?;
+
     debug!("inserting credential {} into handle map", source_id);
-    HANDLE_MAP.add(credential)
+    Ok(handle)
 }
 
 pub fn credential_create_with_msgid(source_id: &str, connection_handle: u32, msg_id: &str) -> VcxResult<(u32, String)> {
@@ -437,8 +451,10 @@ pub fn credential_create_with_msgid(source_id: &str, connection_handle: u32, msg
         create_credential_v1(source_id, &credential_offer)?
     };
 
-    debug!("inserting credential {} into handle map", source_id);
     let handle = HANDLE_MAP.add(credential)?;
+
+    debug!("inserting credential {} into handle map", source_id);
+
     Ok((handle, credential_offer))
 }
 
@@ -468,11 +484,13 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
 }
 
 pub fn get_credential(handle: u32) -> VcxResult<String> {
-    HANDLE_MAP.get(handle, |obj| {
-        match obj {
-            Credentials::V1(ref obj) => obj.get_credential(),
-            Credentials::V3(ref obj) => {
-                let (cred_id, credential) = obj.get_credential()?;
+    HANDLE_MAP.get(handle, |credential| {
+        match credential {
+            Credentials::V1(ref credential) => {
+                credential.get_credential()
+            }
+            Credentials::V3(ref credential) => {
+                let (cred_id, credential) = credential.get_credential()?;
                 let credential: CredentialMessage = credential.try_into()?;
 
                 let mut json = serde_json::Map::new();
@@ -527,9 +545,9 @@ pub fn generate_credential_request_msg(handle: u32, my_pw_did: &str, their_pw_di
     HANDLE_MAP.get_mut(handle, |obj| {
         match obj {
             Credentials::V1(ref mut obj) => {
-                let req = obj.generate_request_msg(my_pw_did, their_pw_did);
+                let req = obj.generate_request_msg(my_pw_did, their_pw_did)?;
                 obj.set_state(VcxStateType::VcxStateOfferSent);
-                req
+                Ok(req)
             }
             Credentials::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidCredentialHandle)) // TODO: implement
         }
@@ -537,16 +555,30 @@ pub fn generate_credential_request_msg(handle: u32, my_pw_did: &str, their_pw_di
 }
 
 pub fn send_credential_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    HANDLE_MAP.get_mut(handle, |obj| {
-        match obj {
+    HANDLE_MAP.get_mut(handle, |credential| {
+        let new_credential = match credential {
             Credentials::V1(ref mut obj) => {
-                obj.send_request(connection_handle)
+                // if Aries connection is established --> Convert CredentialV1 object to Aries credential
+                if ::connection::is_v3_connection(connection_handle)? {
+                    let credential_offer = obj.credential_offer.clone()
+                        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidState, "Can not get CredentialOffer of Credential object in Pending state"))?;
+
+                    let mut holder = Holder::create(credential_offer.try_into()?, obj.get_source_id())?;
+                    holder.send_request(connection_handle)?;
+
+                    Credentials::V3(holder)
+                } else {
+                    obj.send_request(connection_handle)?;
+                    Credentials::V1(obj.clone())
+                }
             }
             Credentials::V3(ref mut obj) => {
                 obj.send_request(connection_handle)?;
-                Ok(error::SUCCESS.code_num)
+                Credentials::V3(obj.clone())
             }
-        }
+        };
+        *credential = new_credential;
+        Ok(error::SUCCESS.code_num)
     }).map_err(handle_err)
 }
 
@@ -554,7 +586,7 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResu
     trace!("get_credential_offer_msg >>> connection_handle: {}, msg_id: {}", connection_handle, msg_id);
 
     if connection::is_v3_connection(connection_handle)? {
-        let credential_offer = v3::handlers::issuance::Holder::get_credential_offer_message(connection_handle, msg_id)?;
+        let credential_offer = Holder::get_credential_offer_message(connection_handle, msg_id)?;
         let credential_offer: CredentialOffer = credential_offer.try_into()?;
 
         return serde_json::to_string(&vec![credential_offer]).
@@ -567,13 +599,13 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResu
 
     AgencyMock::set_next_response(constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
 
-    let message = get_message::get_connection_messages(&my_agent.my_pw_did()?,
-                                                       &my_agent.my_pw_vk()?,
-                                                       &my_agent.pw_agent_did()?,
-                                                       &my_agent.pw_agent_vk()?,
-                                                       Some(vec![msg_id.to_string()]),
-                                                       None,
-                                                       &my_agent.version()?)
+    let message = get_connection_messages(&my_agent.my_pw_did()?,
+                                          &my_agent.my_pw_vk()?,
+                                          &my_agent.pw_agent_did()?,
+                                          &my_agent.pw_agent_vk()?,
+                                          Some(vec![msg_id.to_string()]),
+                                          None,
+                                          &my_agent.version()?)
         .map_err(|err| err.extend("Cannot get messages"))?;
 
     if message[0].msg_type != RemoteMessageType::CredOffer {
@@ -590,7 +622,7 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResu
     serde_json::to_string_pretty(&payload)
         .map_err(|err|
             VcxError::from_msg(VcxErrorKind::InvalidMessages,
-                               format!("Cannot serialize credential offer: {}", err)
+                               format!("Cannot serialize credential offer: {}", err),
             ))
 }
 
@@ -598,7 +630,7 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
     trace!("Credential::get_credential_offer_messages >>> connection_handle: {}", connection_handle);
 
     if connection::is_v3_connection(connection_handle)? {
-        let credential_offers = v3::handlers::issuance::Holder::get_credential_offer_messages(connection_handle)?;
+        let credential_offers = Holder::get_credential_offer_messages(connection_handle)?;
         let msgs: Vec<Vec<::serde_json::Value>> = credential_offers
             .into_iter()
             .map(|credential_offer| credential_offer.try_into())
@@ -618,13 +650,13 @@ pub fn get_credential_offer_messages(connection_handle: u32) -> VcxResult<String
 
     AgencyMock::set_next_response(constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
 
-    let payload = get_message::get_connection_messages(&my_agent.my_pw_did()?,
-                                                       &my_agent.my_pw_vk()?,
-                                                       &my_agent.pw_agent_did()?,
-                                                       &my_agent.pw_agent_vk()?,
-                                                       None,
-                                                       None,
-                                                       &my_agent.version()?)
+    let payload = get_connection_messages(&my_agent.my_pw_did()?,
+                                          &my_agent.my_pw_vk()?,
+                                          &my_agent.pw_agent_did()?,
+                                          &my_agent.pw_agent_vk()?,
+                                          None,
+                                          None,
+                                          &my_agent.version()?)
         .map_err(|err| err.extend("Cannot get messages"))?;
 
     let mut messages = Vec::new();

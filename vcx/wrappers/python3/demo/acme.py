@@ -30,9 +30,9 @@ provisionConfig = {
     'wallet_name': 'faber_wallet',
     'wallet_key': '123',
     'payment_method': 'null',
-    'enterprise_seed': '000000000000000000000000Trustee1',
     'protocol_type': '2.0',
-    'use_latest_protocols': 'True'
+    'use_latest_protocols': 'True',
+    'communication_method': 'aries'
 }
 
 
@@ -48,18 +48,10 @@ async def main():
     config['institution_logo_url'] = 'http://robohash.org/234'
     config['genesis_path'] = 'docker.txn'
     config['use_latest_protocols'] = 'True'
+    config['communication_method'] = 'aries'
 
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
-
-    print("#3 Create a new schema on the ledger")
-    version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))
-    schema = await Schema.create('schema_uuid', 'degree schema', version, ['email', 'first_name', 'last_name'], 0)
-    schema_id = await schema.get_schema_id()
-
-    print("#4 Create a new credential definition on the ledger")
-    cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0)
-    cred_def_handle = cred_def.handle
 
     print("#5 Create a connection to alice and print out the invite details")
     connection_to_alice = await Connection.create('alice')
@@ -82,58 +74,22 @@ async def main():
     while True:
         answer = input(
             "Would you like to do? \n "
-            "1 - issue credential \n "
-            "2 - ask for proof request \n "
+            "1 - ask for proof request \n "
             "else finish \n") \
             .lower().strip()
         if answer == '1':
-            await issue_credential(connection_to_alice, cred_def_handle)
-        elif answer == '2':
-            await ask_for_proof(connection_to_alice, config['institution_did'])
+            await ask_for_proof(connection_to_alice)
         else:
             break
 
     print("Finished")
 
 
-async def issue_credential(connection_to_alice, cred_def_handle):
-    schema_attrs = {
-        'email': 'test',
-        'first_name': 'DemoName',
-        'last_name': 'DemoLastName',
-    }
-
-    print("#12 Create an IssuerCredential object using the schema and credential definition")
-    credential = await IssuerCredential.create('alice_degree', schema_attrs, cred_def_handle, 'cred', '0')
-
-    print("#13 Issue credential offer to alice")
-    await credential.send_offer(connection_to_alice)
-    await credential.update_state()
-
-    print("#14 Poll agency and wait for alice to send a credential request")
-    credential_state = await credential.get_state()
-    while credential_state != State.RequestReceived:
-        sleep(2)
-        await credential.update_state()
-        credential_state = await credential.get_state()
-
-    print("#17 Issue credential to alice")
-    await credential.send_credential(connection_to_alice)
-
-    print("#18 Wait for alice to accept credential")
-    await credential.update_state()
-    credential_state = await credential.get_state()
-    while credential_state != State.Accepted:
-        sleep(2)
-        await credential.update_state()
-        credential_state = await credential.get_state()
-
-
-async def ask_for_proof(connection_to_alice, institution_did):
+async def ask_for_proof(connection_to_alice):
     proof_attrs = [
-        {'name': 'email', 'restrictions': [{'issuer_did': institution_did}]},
-        {'name': 'first_name', 'restrictions': [{'issuer_did': institution_did}]},
-        {'name': 'last_name', 'restrictions': [{'issuer_did': institution_did}]}
+        {'name': 'email'},
+        {'name': 'first_name'},
+        {'name': 'last_name'}
     ]
 
     print("#19 Create a Proof object")
