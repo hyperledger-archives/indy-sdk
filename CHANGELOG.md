@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.14.4 - 2020-03-10
+* Bugfixes
+
 ## 1.14.3 - 2020-03-04
 * LibVCX:
     * Removed `connection_handle` from functions to get protocol messages.
@@ -25,11 +28,11 @@
     * Added support of the additional format of `rev_states_json` which is used for proof creation. Both `rev_reg_def_id` and `credential_id` can be used as map keys. 
     `credential_id` must be used in case of proving that two credentials matching the same `rev_reg_def_id` are not revoked at the same timestamp (IS-1447).
     * others minor bugfixes
-UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.3 or local build from the stable tag.
+UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.4 or local build from the stable tag.
 
 ## 1.14.1 - 2019-12-30
 * Bugfixes
-UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.3 or local build from the stable tag.
+UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.4 or local build from the stable tag.
 
 ## 1.14.0 - 2019-12-27
 * LibVCX Aries support:
@@ -47,7 +50,7 @@ UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrec
 * Bugfixes
     * Added validation for `nonce` field in the proof request message. Now it must be a decimal number only represented as a string. It is highly recommended to use `indy_generate_nonce` function to generate a correct nonce.
     * others minor bugfixes
-UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.3 or local build from the stable tag.
+UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.4 or local build from the stable tag.
 
 
 ## 1.13.0 - 2019-12-03
@@ -59,7 +62,7 @@ UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrec
 * Added "names" parameter to Proof Request Revealed Attributes (IS-1381)
 * Bugfixes:
     * Fixed bool representation in Java wrapper (IS-1368)
-UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.3 or local build from the stable tag.
+UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.4 or local build from the stable tag.
 
 ## 1.12.0 - 2019-10-08
 * Minimal *EXPERIMENTAL* support of Fully-Qualified identifiers:
@@ -84,7 +87,7 @@ UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrec
     * Fixed `attr::{}::value` and `attr::{}::marker` WQL tags (IS-1363)
     * Fixed `attr::{}::value` verification (IS-1380, thanks @nrempel for reporting the vulnerability)
     * others minor bugfixes
-UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.3 or local build from the stable tag.
+UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.4 or local build from the stable tag.
 
 ## 1.11.1 - 2019-08-30
 * Supported endorsing of transactions in Indy-CLI and Libvcx.
@@ -107,7 +110,7 @@ UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrec
     * Updated CI pipeline to run tests.
     * Updated CD pipeline to build and to publish artifacts.
 * Bugfixes
-UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.3 or local build from the stable tag.
+UPD (2020-03-03): deb artifacts for Ubuntu 18.04 at repo.sovrin.org are incorrect. Please use version 1.14.4 or local build from the stable tag.
 
 ## 1.11.0 - 2019-08-2
 * Updated `indy_append_txn_author_agreement_acceptance_to_request` Libindy function to discard the time portion of `acceptance time` on appending TAA metadata into request. 

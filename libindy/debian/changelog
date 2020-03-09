@@ -1,6 +1,9 @@
-libindy (1.14.3) unstable; urgency=medium
+libindy (1.14.4) unstable; urgency=medium
 
 [ Hyperledger ]
+
+## 1.14.4
+* Bugfixes
 
 ## 1.14.3
 * Bugfixes
