@@ -1,9 +1,9 @@
-# LibVCX migration guide from 0.6.x to 0.7.0
+# LibVCX migration guide from 0.6.x to 0.7.0 and 0.7.1
 
 ## A Developer Guide for LibVCX migration
 
 This document is written for developers using LibVCX to provide necessary information and
-to simplify their transition to LibVCX 0.6 from LibVCX 0.7.x.
+to simplify their transition to LibVCX 0.7.x from LibVCX 0.6.x.
 
 * [API](#api)
     * [Message Getters](#message-getters)

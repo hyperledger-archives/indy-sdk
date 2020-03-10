@@ -24,7 +24,7 @@ version you can check migration guides history:
     * [Ledger API](#ledger-api)
 * [Libindy 1.14.0 to 1.14.1 migration](#libindy-1140-to-1141-migration-guide)
 * [Libindy 1.14.1 to 1.14.2 migration](#libindy-1141-to-1142-migration-guide)
-* [Libindy 1.14.2 to 1.14.3 migration](#libindy-1142-to-1143-migration-guide)
+* [Libindy 1.14.2 to 1.14.4 migration](#libindy-1142-to-1144-migration-guide)
 
 ## Libindy 1.13 to 1.14 migration
 
@@ -121,6 +121,6 @@ Both `rev_reg_def_id` and `credential_id` can be used as map keys.
 
 * others minor bugfixes
 
-## Libindy 1.14.2 to 1.14.3 migration Guide
+## Libindy 1.14.2 to 1.14.4 migration Guide
 
-The Libindy 1.14.3 release contains fixes that don't affect API functions. 
+The Libindy 1.14.4 release contains fixes that don't affect API functions. 
