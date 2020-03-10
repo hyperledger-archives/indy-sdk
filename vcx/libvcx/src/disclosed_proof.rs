@@ -588,15 +588,6 @@ fn create_proof_v3(source_id: &str, proof_req: &str) -> VcxResult<Option<Disclos
         return Ok(Some(DisclosedProofs::V3(proof)));
     }
 
-//    // Setup Aries protocol to use -- redirect to v3 folder
-//    if settings::is_aries_protocol_set() {
-//        let proof_request_message: ProofRequestMessage = serde_json::from_str(proof_req)
-//            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize PresentationRequest: {}", err)))?;
-//
-//        let proof = Prover::create(source_id, proof_request_message.try_into()?)?;
-//        return Ok(Some(DisclosedProofs::V3(proof)));
-//    }
-
     Ok(None)
 }
 
@@ -859,12 +850,10 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 //TODO one function with credential
-pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
+fn get_proof_request(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
     if connection::is_v3_connection(connection_handle)? {
         let presentation_request = Prover::get_presentation_request(connection_handle, msg_id)?;
-        let proof_request: ProofRequestMessage = presentation_request.try_into()?;
-
-        return serde_json::to_string_pretty(&proof_request)
+        return serde_json::to_string_pretty(&presentation_request)
             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot serialize message: {}", err)));
     }
 

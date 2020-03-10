@@ -431,13 +431,19 @@ fn create_credential_v1(source_id: &str, offer: &str) -> VcxResult<Credentials> 
 fn create_credential_v3(source_id: &str, offer: &str) -> VcxResult<Option<Credentials>> {
     trace!("create_credential_v3 >>> source_id: {}, offer: {}", source_id, secret!(&offer));
 
-    let offer_message = ::serde_json::from_str::<Vec<::serde_json::Value>>(offer)
-        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Message: {:?}", err)))?
-        .pop()
-        .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?;
+    let offer_message = ::serde_json::from_str::<serde_json::Value>(offer)
+        .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize Message: {:?}", err)))?;
+
+    let offer_message = match offer_message {
+        serde_json::Value::Array(mut offer) => { // legacy offer format
+            offer.pop()
+                .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?
+        },
+        offer => offer //aries offer format
+    };
 
     // Received offer of aries format
-    if let Ok(cred_offer) = serde_json::from_value::<CredentialOfferV3>(offer_message.clone()) {
+    if let Ok(cred_offer) = serde_json::from_value::<CredentialOfferV3>(offer_message) {
         let holder = Holder::create(cred_offer, source_id)?;
         return Ok(Some(Credentials::V3(holder)));
     }
@@ -465,19 +471,19 @@ pub fn credential_create_with_offer(source_id: &str, offer: &str) -> VcxResult<u
 pub fn credential_create_with_msgid(source_id: &str, connection_handle: u32, msg_id: &str) -> VcxResult<(u32, String)> {
     trace!("credential_create_with_msgid >>> source_id: {}, connection_handle: {}, msg_id: {}", source_id, connection_handle, secret!(&msg_id));
 
-    let credential_offer = get_credential_offer_msg(connection_handle, &msg_id)?;
+    let offer = get_credential_offer_msg(connection_handle, &msg_id)?;
 
     let credential = if connection::is_v3_connection(connection_handle)? {
-        create_credential_v3(source_id, &credential_offer)?
+        create_credential_v3(source_id, &offer)?
             .ok_or(VcxError::from_msg(VcxErrorKind::InvalidConnectionHandle, format!("Connection can not be used for Proprietary Issuance protocol")))?
     } else {
-        create_credential_v1(source_id, &credential_offer)?
+        create_credential_v1(source_id, &offer)?
     };
 
     let handle = HANDLE_MAP.add(credential)?;
 
     debug!("inserting credential {} into handle map", source_id);
-    Ok((handle, credential_offer))
+    Ok((handle, offer))
 }
 
 pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
@@ -621,14 +627,13 @@ pub fn send_credential_request(handle: u32, connection_handle: u32) -> VcxResult
     }).map_err(handle_err)
 }
 
-pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
+fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> VcxResult<String> {
     trace!("get_credential_offer_msg >>> connection_handle: {}, msg_id: {}", connection_handle, msg_id);
 
     if connection::is_v3_connection(connection_handle)? {
         let credential_offer = Holder::get_credential_offer_message(connection_handle, msg_id)?;
-        let credential_offer: CredentialOffer = credential_offer.try_into()?;
 
-        return serde_json::to_string(&vec![credential_offer]).
+        return serde_json::to_string(&credential_offer).
             map_err(|err| {
                 VcxError::from_msg(VcxErrorKind::InvalidState, format!("Cannot serialize Offers: {:?}", err))
             });
