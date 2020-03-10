@@ -1,8 +1,9 @@
 # Changelog
 
 ## 1.14.4 - 2020-03-10
-* Bugfixes
-
+* Correction for `Fix proof verification in case of credential attribute encoded value contains leading zeros` (IS-1491).
+  Indy 1.14.3 changes "0" to "" which leads to proof rejection. 
+    
 ## 1.14.3 - 2020-03-04
 * LibVCX:
     * Removed `connection_handle` from functions to get protocol messages.
