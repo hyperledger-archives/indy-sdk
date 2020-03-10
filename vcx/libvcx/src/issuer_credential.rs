@@ -1140,7 +1140,7 @@ pub mod tests {
         let string = to_string(handle).unwrap();
 
         let value: serde_json::Value = serde_json::from_str(&string).unwrap();
-        assert_eq!(value["version"], "1.0");
+        assert_eq!(value["version"], PENDING_OBJECT_SERIALIZE_VERSION);
 
         release(handle).unwrap();
 
