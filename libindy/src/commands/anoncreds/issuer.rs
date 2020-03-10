@@ -58,6 +58,7 @@ use indy_wallet::{RecordOptions, WalletService};
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
 use indy_api_types::{WalletHandle, CommandHandle};
 use indy_utils::next_command_handle;
+use indy_vdr::utils::qualifier::Qualifiable;
 
 pub enum IssuerCommand {
     CreateSchema(
@@ -348,7 +349,7 @@ impl IssuerCommandExecutor {
                 return Err(IndyError::from_msg(IndyErrorKind::InvalidStructure, "You can't use unqualified Did with fully qualified Schema"));
             }
             (Some(prefix_), None) => {
-                schema.id = schema.id.qualify(&prefix_);
+                schema.id = schema.id.to_qualified(&prefix_)?;
             }
             _ => {}
         };
@@ -689,7 +690,7 @@ impl IssuerCommandExecutor {
                wallet_handle, secret!(&cred_offer), secret!(&cred_request), secret!(&cred_values), rev_reg_id, blob_storage_reader_handle);
 
         let cred_def_id = match cred_offer.method_name {
-            Some(ref method_name) => cred_offer.cred_def_id.qualify(method_name),
+            Some(ref method_name) => cred_offer.cred_def_id.to_qualified(method_name)?,
             None => cred_offer.cred_def_id.clone()
         };
 

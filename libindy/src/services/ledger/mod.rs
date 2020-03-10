@@ -33,6 +33,7 @@ use indy_vdr::ledger::requests::{RequestType, Request};
 use indy_vdr::ledger::requests::nym::GetNymOperation;
 use indy_vdr::ledger::requests::constants::{GET_VALIDATOR_INFO, POOL_RESTART};
 use indy_vdr::pool::LedgerType;
+use indy_vdr::utils::qualifier::Qualifiable;
 
 pub mod parsers;
 
@@ -293,7 +294,7 @@ impl LedgerService {
                     version: res.txn.data.schema_version,
                     attr_names: res.txn.data.value.attr_names.into(),
                     id: match method_name {
-                        Some(method) => res.txn.data.id.qualify(method),
+                        Some(method) => res.txn.data.id.to_qualified(method)?,
                         None => res.txn.data.id
                     },
                     seq_no: Some(res.txn_metadata.seq_no),
@@ -326,7 +327,7 @@ impl LedgerService {
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
                 id: match method_name {
-                    Some(method) => res.txn.data.id.qualify(method),
+                    Some(method) => res.txn.data.id.to_qualified(method)?,
                     None => res.txn.data.id
                 },
                 schema_id: res.txn.data.schema_ref,

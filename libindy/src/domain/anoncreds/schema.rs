@@ -47,6 +47,7 @@ mod tests {
 
     mod to_unqualified {
         use super::*;
+        use indy_vdr::utils::qualifier::Qualifiable;
 
         #[test]
         fn test_schema_id_unqualify_for_id_as_seq_no() {
@@ -79,13 +80,13 @@ mod tests {
 
         #[test]
         fn test_schema_id_parts_for_id_as_unqualified() {
-            let (did, _, _) = _schema_id_unqualified().parts().unwrap();
+            let (_, did, _, _) = _schema_id_unqualified().parts().unwrap();
             assert_eq!(_did(), did);
         }
 
         #[test]
         fn test_schema_id_parts_for_id_as_qualified() {
-            let (did, _, _) = _schema_id_qualified().parts().unwrap();
+            let (_, did, _, _) = _schema_id_qualified().parts().unwrap();
             assert_eq!(_did_qualified(), did);
         }
 

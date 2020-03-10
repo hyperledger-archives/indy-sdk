@@ -93,6 +93,7 @@ mod tests {
 
     mod to_unqualified {
         use super::*;
+        use indy_vdr::utils::qualifier::Qualifiable;
 
         #[test]
         fn test_rev_reg_id_parts_for_id_as_unqualified() {

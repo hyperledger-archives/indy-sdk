@@ -113,6 +113,7 @@ mod tests {
 
     mod to_unqualified {
         use super::*;
+        use indy_vdr::utils::qualifier::Qualifiable;
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified() {
@@ -150,7 +151,7 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_unqualified().parts().unwrap();
+            let (_, did, signature_type, schema_id, tag) = _cred_def_id_unqualified().parts().unwrap();
             assert_eq!(_did(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_unqualified(), schema_id);
@@ -159,7 +160,7 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_without_tag() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_unqualified_without_tag().parts().unwrap();
+            let (_, did, signature_type, schema_id, tag) = _cred_def_id_unqualified_without_tag().parts().unwrap();
             assert_eq!(_did(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_unqualified(), schema_id);
@@ -168,7 +169,7 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_with_schema_as_seq() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_unqualified_with_schema_as_seq_no().parts().unwrap();
+            let (_, did, signature_type, schema_id, tag) = _cred_def_id_unqualified_with_schema_as_seq_no().parts().unwrap();
             assert_eq!(_did(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_seq_no(), schema_id);
@@ -177,7 +178,7 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_unqualified_with_schema_as_seq_without_tag() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_unqualified_with_schema_as_seq_no_without_tag().parts().unwrap();
+            let (_, did, signature_type, schema_id, tag) = _cred_def_id_unqualified_with_schema_as_seq_no_without_tag().parts().unwrap();
             assert_eq!(_did(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_seq_no(), schema_id);
@@ -186,7 +187,7 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_qualified() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_qualified().parts().unwrap();
+            let (_, did, signature_type, schema_id, tag) = _cred_def_id_qualified().parts().unwrap();
             assert_eq!(_did_qualified(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_qualified(), schema_id);
@@ -195,7 +196,7 @@ mod tests {
 
         #[test]
         fn test_cred_def_id_parts_for_id_as_qualified_with_schema_as_seq() {
-            let (did, signature_type, schema_id, tag) = _cred_def_id_qualified_with_schema_as_seq_no().parts().unwrap();
+            let (_, did, signature_type, schema_id, tag) = _cred_def_id_qualified_with_schema_as_seq_no().parts().unwrap();
             assert_eq!(_did_qualified(), did);
             assert_eq!(_signature_type(), signature_type);
             assert_eq!(_schema_id_seq_no(), schema_id);

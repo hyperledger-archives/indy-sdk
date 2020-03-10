@@ -13,7 +13,7 @@ use super::credential_definition::CredentialDefinitionId;
 use super::revocation_registry_definition::RevocationRegistryId;
 use super::schema::SchemaId;
 use indy_vdr::utils::validation::Validatable as VdrValidatable;
-use indy_vdr::config::VdrResultExt;
+use indy_vdr::common::error::VdrResultExt;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Credential {

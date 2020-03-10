@@ -14,6 +14,7 @@ use super::credential_definition::CredentialDefinitionId;
 use super::revocation_registry_definition::RevocationRegistryId;
 use super::schema::SchemaId;
 use indy_vdr::utils::qualifier;
+use indy_vdr::utils::qualifier::Qualifiable;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequestPayload {

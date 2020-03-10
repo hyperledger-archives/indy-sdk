@@ -10,7 +10,8 @@ use super::credential_definition::CredentialDefinitionId;
 
 use indy_api_types::validation::Validatable;
 use indy_vdr::utils::validation::Validatable as VdrValidatable;
-use indy_vdr::config::VdrResultExt;
+use indy_vdr::common::error::VdrResultExt;
+use indy_vdr::utils::qualifier::Qualifiable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialRequest {

@@ -12,6 +12,7 @@ use crate::services::crypto::CryptoService;
 use crate::services::ledger::LedgerService;
 use crate::services::pool::PoolService;
 use indy_vdr::common::did::DidValue;
+use indy_vdr::utils::qualifier::Qualifiable;
 
 const CRED_DEF_CACHE: &str = "cred_def_cache";
 const SCHEMA_CACHE: &str = "schema_cache";
@@ -122,7 +123,7 @@ impl CacheCommandExecutor {
 
             let pool_response = self.pool_service.send_request(pool_handle, prepared_request).await?;
 
-            self.ledger_service.parse_get_schema_response(&pool_response, id.get_method().as_ref().map(String::as_str))
+            self.ledger_service.parse_get_schema_response(&pool_response, id.get_method())
         };
 
         let (schema_id, schema_json) = ledger_response?;
@@ -190,7 +191,7 @@ impl CacheCommandExecutor {
 
         let pool_response = self.pool_service.send_request(pool_handle, prepared_request).await?;
 
-        self.ledger_service.parse_get_cred_def_response(&pool_response, id.get_method().as_ref().map(String::as_str))
+        self.ledger_service.parse_get_cred_def_response(&pool_response, id.get_method())
     }
 
     fn get_record_from_cache(&self, wallet_handle: WalletHandle, id: &str, options: &GetCacheOptions, which_cache: &str) -> Result<Option<WalletRecord>, IndyError> {

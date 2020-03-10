@@ -32,6 +32,7 @@ features = ["logger"]
 [dependencies.indy-vdr]
 version = "0.1.0"
 git = "https://github.com/hyperledger/indy-vdr"
+rev = "8f04e1f"
 default-features = false
 optional = true
 

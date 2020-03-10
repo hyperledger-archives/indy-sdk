@@ -15,6 +15,8 @@ use ursa::errors::{UrsaCryptoError, UrsaCryptoErrorKind};
 
 #[cfg(feature = "casting_errors")]
 use indy_vdr::common::error::{VdrError, VdrErrorKind};
+#[cfg(feature = "casting_errors")]
+use indy_vdr::utils::validation::ValidationError;
 
 use libc::c_char;
 
@@ -540,5 +542,12 @@ impl From<VdrError> for IndyError {
             VdrErrorKind::PoolRequestFailed(failure) => IndyError::from_msg(IndyErrorKind::InvalidTransaction, failure.to_string()),
             VdrErrorKind::PoolTimeout => IndyError::from_msg(IndyErrorKind::PoolTimeout, err.to_string()),
         }
+    }
+}
+
+#[cfg(feature = "casting_errors")]
+impl From<ValidationError> for IndyError {
+    fn from(err: ValidationError) -> Self {
+        IndyError::from_msg(IndyErrorKind::InvalidStructure, err.to_string())
     }
 }

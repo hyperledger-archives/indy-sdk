@@ -17,6 +17,7 @@ use crate::services::pool::PoolService;
 use indy_wallet::{RecordOptions, SearchOptions, WalletService};
 use indy_api_types::{WalletHandle, PoolHandle};
 use rust_base58::{FromBase58, ToBase58};
+use indy_vdr::utils::qualifier::Qualifiable;
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
@@ -547,12 +548,12 @@ impl DidCommandExecutor {
                     let gen_nym_result_data: GetNymResultDataV0 = serde_json::from_str(data)
                         .to_indy(IndyErrorKind::InvalidState, "Invalid GetNymResultData json")?;
 
-                    TheirDidInfo::new(gen_nym_result_data.dest.qualify(did.get_method()), gen_nym_result_data.verkey)
+                    TheirDidInfo::new(gen_nym_result_data.dest.qualify(did.get_method().map(String::from)), gen_nym_result_data.verkey)
                 } else {
                     return Err(err_msg(IndyErrorKind::WalletItemNotFound, "Their DID isn't found on the ledger")); //TODO FIXME use separate error
                 }
             }
-            GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(res.txn.data.did.qualify(did.get_method()), res.txn.data.verkey)
+            GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(res.txn.data.did.qualify(did.get_method().map(String::from)), res.txn.data.verkey)
         };
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;

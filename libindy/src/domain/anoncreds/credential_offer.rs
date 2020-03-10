@@ -5,7 +5,8 @@ use super::credential_definition::CredentialDefinitionId;
 
 use indy_api_types::validation::Validatable;
 use indy_vdr::utils::validation::Validatable as VdrValidatable;
-use indy_vdr::config::VdrResultExt;
+use indy_vdr::common::error::VdrResultExt;
+use indy_vdr::utils::qualifier::Qualifiable;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialOffer {
@@ -19,7 +20,7 @@ pub struct CredentialOffer {
 
 impl CredentialOffer {
     pub fn to_unqualified(self) -> CredentialOffer {
-        let method_name= if self.cred_def_id.is_fully_qualified(){ self.cred_def_id.get_method()} else { None };
+        let method_name= if self.cred_def_id.is_fully_qualified(){ self.cred_def_id.get_method().map(String::from)} else { None };
         CredentialOffer {
             method_name,
             schema_id: self.schema_id.to_unqualified(),

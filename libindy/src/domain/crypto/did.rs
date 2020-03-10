@@ -1,7 +1,7 @@
 use indy_api_types::validation::Validatable;
 pub use indy_vdr::utils::validation::Validatable as VdrValidatable;
 pub use indy_vdr::common::did::{DidValue, ShortDidValue, DidMethod};
-use indy_vdr::config::VdrResultExt;
+use indy_vdr::common::error::VdrResultExt;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MyDidInfo {
