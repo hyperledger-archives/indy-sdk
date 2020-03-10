@@ -427,12 +427,12 @@ pub fn create_proof(source_id: String,
                     requested_predicates: String,
                     revocation_details: String,
                     name: String) -> VcxResult<u32> {
-    // Initiate proof of new format -- redirect to v3 folder
-    if settings::is_aries_protocol_set() {
-        let verifier = Verifier::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
-        return PROOF_MAP.add(Proofs::V3(verifier))
-            .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
-    }
+//    // Initiate proof of new format -- redirect to v3 folder
+//    if settings::is_aries_protocol_set() {
+//        let verifier = Verifier::create(source_id, requested_attrs, requested_predicates, revocation_details, name)?;
+//        return PROOF_MAP.add(Proofs::V3(verifier))
+//            .or(Err(VcxError::from(VcxErrorKind::CreateProof)));
+//    }
 
     trace!("create_proof >>> source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {}", source_id, requested_attrs, requested_predicates, name);
 
@@ -493,7 +493,7 @@ pub fn update_state(handle: u32, message: Option<String>) -> VcxResult<u32> {
         match obj {
             Proofs::V1(ref mut obj) => {
                 obj.update_state(message.clone())
-                    .or_else(|_| Ok(obj.get_state()))
+                    .or_else(|_|Ok(obj.get_state()))
             }
             Proofs::V3(ref mut obj) => {
                 obj.update_state(message.as_ref().map(String::as_str))?;
@@ -562,16 +562,35 @@ pub fn generate_proof_request_msg(handle: u32) -> VcxResult<String> {
 }
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    PROOF_MAP.get_mut(handle, |obj| {
-        match obj {
+    PROOF_MAP.get_mut(handle, |proof| {
+        let new_proof = match proof {
             Proofs::V1(ref mut obj) => {
-                obj.send_proof_request(connection_handle)
+                // if Aries connection is established --> Convert ProofsV1 object to Aries proof
+                if ::connection::is_v3_connection(connection_handle)? {
+
+                    let revocation_details = serde_json::to_string(&obj.revocation_interval)
+                        .map_err(|err|VcxError::from_msg(VcxErrorKind::InvalidState, format!("Can not serialize RevocationDetails: {:?}", err)))?;
+
+                    let mut verifier = Verifier::create(obj.source_id.to_string(),
+                                                     obj.requested_attrs.to_string(),
+                                                     obj.requested_predicates.to_string(),
+                                                     revocation_details,
+                                                     obj.name.to_string())?;
+                    verifier.send_presentation_request(connection_handle)?;
+
+                    Proofs::V3(verifier)
+                } else {
+                    obj.send_proof_request(connection_handle)?;
+                    Proofs::V1(obj.clone())
+                }
             }
             Proofs::V3(ref mut obj) => {
                 obj.send_presentation_request(connection_handle)?;
-                Ok(error::SUCCESS.code_num)
+                Proofs::V3(obj.clone())
             }
-        }
+        };
+        *proof = new_proof;
+        Ok(error::SUCCESS.code_num)
     })
 }
 

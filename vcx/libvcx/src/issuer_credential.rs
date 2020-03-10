@@ -2,7 +2,6 @@ use serde_json;
 
 use std::collections::HashMap;
 use api::VcxStateType;
-use v3;
 use messages;
 use settings;
 use messages::{RemoteMessageType, MessageStatusCode, GeneralMessage};
@@ -73,7 +72,7 @@ pub struct IssuerCredential {
     their_vk: Option<String>,
     agent_did: Option<String>,
     agent_vk: Option<String>,
-    thread: Option<Thread>
+    thread: Option<Thread>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -196,7 +195,7 @@ impl IssuerCredential {
                                     &agent_info.their_pw_vk()?,
                                     &payload,
                                     PayloadKinds::CredOffer,
-                                    self.thread.clone()
+                                    self.thread.clone(),
                 )?
                 .agent_did(&agent_info.pw_agent_did()?)?
                 .agent_vk(&agent_info.pw_agent_vk()?)?
@@ -266,7 +265,7 @@ impl IssuerCredential {
                                 &agent_info.their_pw_vk()?,
                                 &data,
                                 PayloadKinds::Cred,
-                                self.thread.clone()
+                                self.thread.clone(),
             )?
             .agent_did(&agent_info.pw_agent_did()?)?
             .agent_vk(&agent_info.pw_agent_vk()?)?
@@ -326,7 +325,7 @@ impl IssuerCredential {
         let mut cred_req: CredentialRequest = serde_json::from_str(&payload)
             .map_err(|err| VcxError::from_msg(
                 VcxErrorKind::InvalidJson,
-                format!("Cannot deserialize CredentialRequest: {}", err)
+                format!("Cannot deserialize CredentialRequest: {}", err),
             ))?;
 
         cred_req.msg_ref_id = offer_uid;
@@ -506,6 +505,7 @@ fn apply_agent_info(cred: &mut IssuerCredential, agent_info: &MyAgentInfo) {
     cred.agent_did = agent_info.pw_agent_did.clone();
     cred.agent_vk = agent_info.pw_agent_vk.clone();
 }
+
 /**
     Input: supporting two formats:
     eg:
@@ -612,11 +612,11 @@ pub fn issuer_credential_create(cred_def_handle: u32,
     trace!("issuer_credential_create >>> cred_def_handle: {}, source_id: {}, issuer_did: {}, credential_name: {}, credential_data: {}, price: {}",
            cred_def_handle, source_id, issuer_did, credential_name, secret!(&credential_data), price);
 
-    // Initiate connection of new format -- redirect to v3 folder
-    if settings::is_aries_protocol_set() {
-        let issuer = v3::handlers::issuance::Issuer::create(cred_def_handle, &credential_data, &source_id)?;
-        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer));
-    }
+//    // Initiate connection of new format -- redirect to v3 folder
+//    if settings::is_aries_protocol_set() {
+//        let issuer = v3::handlers::issuance::Issuer::create(cred_def_handle, &credential_data, &source_id)?;
+//        return ISSUER_CREDENTIAL_MAP.add(IssuerCredentials::V3(issuer));
+//    }
 
     let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
     let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle)?;
@@ -737,16 +737,27 @@ pub fn generate_credential_offer_msg(handle: u32) -> VcxResult<(String, String)>
 }
 
 pub fn send_credential_offer(handle: u32, connection_handle: u32) -> VcxResult<u32> {
-    ISSUER_CREDENTIAL_MAP.get_mut(handle, |obj| {
-        match obj {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle, |credential| {
+        let new_credential = match credential {
             IssuerCredentials::V1(ref mut obj) => {
-                obj.send_credential_offer(connection_handle)
+                // if Aries connection is established --> Convert IssuerCredentialV1 object to Aries credential
+                if ::connection::is_v3_connection(connection_handle)? {
+                    let mut issuer = Issuer::create(obj.cred_def_handle, &obj.credential_attributes, &obj.source_id)?;
+                    issuer.send_credential_offer(connection_handle)?;
+
+                    IssuerCredentials::V3(issuer)
+                } else {
+                    obj.send_credential_offer(connection_handle)?;
+                    IssuerCredentials::V1(obj.clone())
+                }
             }
             IssuerCredentials::V3(ref mut obj) => {
                 obj.send_credential_offer(connection_handle)?;
-                Ok(error::SUCCESS.code_num)
+                IssuerCredentials::V3(obj.clone())
             }
-        }
+        };
+        *credential = new_credential;
+        Ok(error::SUCCESS.code_num)
     })
 }
 
@@ -849,7 +860,7 @@ pub mod tests {
 
     fn default_agent_info(connection_handle: Option<u32>) -> MyAgentInfo {
         MyAgentInfo {
-            my_pw_did: Some("8XFh8yBzrpJQmNyZzgoTqB".to_string(),),
+            my_pw_did: Some("8XFh8yBzrpJQmNyZzgoTqB".to_string()),
             my_pw_vk: Some(VERKEY.to_string()),
             their_pw_did: Some(DID.to_string()),
             their_pw_vk: Some(VERKEY.to_string()),
@@ -860,7 +871,7 @@ pub mod tests {
             agency_did: DID.to_string(),
             agency_vk: VERKEY.to_string(),
             version: None,
-            connection_handle
+            connection_handle,
         }
     }
 

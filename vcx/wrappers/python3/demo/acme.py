@@ -27,12 +27,12 @@ provisionConfig = {
     'agency_url': 'http://localhost:8080',
     'agency_did': 'VsKV7grR1BUE29mG2Fm2kX',
     'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
-    'wallet_name': 'faber_wallet',
+    'wallet_name': 'acme_wallet',
     'wallet_key': '123',
     'payment_method': 'null',
     'protocol_type': '2.0',
     'use_latest_protocols': 'True',
-    'communication_method': 'aries'
+    'communication_method': 'aries',
 }
 
 
@@ -48,7 +48,6 @@ async def main():
     config['institution_logo_url'] = 'http://robohash.org/234'
     config['genesis_path'] = 'docker.txn'
     config['use_latest_protocols'] = 'True'
-    config['communication_method'] = 'aries'
 
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
