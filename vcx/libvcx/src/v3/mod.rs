@@ -240,7 +240,7 @@ pub mod test {
 
         pub fn connection_info(&self) -> ::serde_json::Value {
             self.activate();
-            let details = ::connection::get_invite_details(self.connection_handle, false).unwrap();
+            let details = ::connection::get_connection_info(self.connection_handle).unwrap();
             ::serde_json::from_str(&details).unwrap()
         }
 
@@ -426,7 +426,7 @@ pub mod test {
             }
 
             ::disclosed_proof::generate_proof(self.presentation_handle, use_credentials.to_string(), String::from("{}")).unwrap();
-            assert_eq!(1, ::disclosed_proof::get_state(self.presentation_handle).unwrap());
+            assert_eq!(3, ::disclosed_proof::get_state(self.presentation_handle).unwrap());
 
             ::disclosed_proof::send_proof(self.presentation_handle, self.connection_handle).unwrap();
             assert_eq!(2, ::disclosed_proof::get_state(self.presentation_handle).unwrap());
@@ -558,6 +558,9 @@ pub mod test {
         let message = faber.update_state_with_message(4);
         assert_match!(A2AMessage::PingResponse(_), message);
 
+        let faber_connection_info = faber.connection_info();
+        assert!(faber_connection_info["their"]["protocols"].as_array().is_none());
+
         // Discovery Features
         faber.discovery_features();
 
@@ -568,7 +571,7 @@ pub mod test {
         assert_match!(A2AMessage::Disclose(_), message);
 
         let faber_connection_info = faber.connection_info();
-        assert!(faber_connection_info["protocols"].as_array().unwrap().len() > 0);
+        assert!(faber_connection_info["their"]["protocols"].as_array().unwrap().len() > 0);
     }
 }
 

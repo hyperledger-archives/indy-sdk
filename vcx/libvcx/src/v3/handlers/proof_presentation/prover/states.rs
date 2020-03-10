@@ -364,9 +364,9 @@ impl ProverSM {
 
     pub fn state(&self) -> u32 {
         match self.state {
-            ProverState::Initiated(_) => VcxStateType::VcxStateInitialized as u32,
-            ProverState::PresentationPrepared(_) => VcxStateType::VcxStateInitialized as u32,
-            ProverState::PresentationPreparationFailed(_) => VcxStateType::VcxStateInitialized as u32,
+            ProverState::Initiated(_) => VcxStateType::VcxStateRequestReceived as u32,
+            ProverState::PresentationPrepared(_) => VcxStateType::VcxStateRequestReceived as u32,
+            ProverState::PresentationPreparationFailed(_) => VcxStateType::VcxStateRequestReceived as u32,
             ProverState::PresentationSent(_) => VcxStateType::VcxStateOfferSent as u32, // TODO: maybe VcxStateType::VcxStateAccepted
             ProverState::Finished(ref status) => {
                 match status.status {
@@ -835,8 +835,8 @@ pub mod test {
         fn test_get_state() {
             let _setup = SetupAriesMocks::init();
 
-            assert_eq!(VcxStateType::VcxStateInitialized as u32, _prover_sm().state());
-            assert_eq!(VcxStateType::VcxStateInitialized as u32, _prover_sm().to_presentation_prepared_state().state());
+            assert_eq!(VcxStateType::VcxStateRequestReceived as u32, _prover_sm().state());
+            assert_eq!(VcxStateType::VcxStateRequestReceived as u32, _prover_sm().to_presentation_prepared_state().state());
             assert_eq!(VcxStateType::VcxStateOfferSent as u32, _prover_sm().to_presentation_sent_state().state());
             assert_eq!(VcxStateType::VcxStateAccepted as u32, _prover_sm().to_finished_state().state());
         }

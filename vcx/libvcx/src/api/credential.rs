@@ -813,7 +813,7 @@ mod tests {
     use api::VcxStateType;
     use api::return_types_u32;
     use serde_json::Value;
-    use utils::constants::{DEFAULT_SERIALIZED_CREDENTIAL, DEFAULT_SERIALIZE_VERSION, FULL_CREDENTIAL_SERIALIZED};
+    use utils::constants::{DEFAULT_SERIALIZED_CREDENTIAL, FULL_CREDENTIAL_SERIALIZED, PENDING_OBJECT_SERIALIZE_VERSION};
     use utils::devsetup::*;
     use utils::httpclient::AgencyMock;
     use utils::timeout::TimeoutUtils;
@@ -865,7 +865,7 @@ mod tests {
         let credential_json = cb.receive(TimeoutUtils::some_short()).unwrap().unwrap();
 
         let object: Value = serde_json::from_str(&credential_json).unwrap();
-        assert_eq!(object["version"], DEFAULT_SERIALIZE_VERSION);
+        assert_eq!(object["version"], PENDING_OBJECT_SERIALIZE_VERSION);
 
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credential_deserialize(cb.command_handle,
