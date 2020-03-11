@@ -24,7 +24,8 @@ provisionConfig = {
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
     'protocol_type': '2.0',
-    'communication_method': 'aries'
+    'communication_method': 'aries',
+    'use_latest_protocols': 'True'
 }
 
 
@@ -39,6 +40,8 @@ async def main():
     config['institution_name'] = 'alice'
     config['institution_logo_url'] = 'http://robohash.org/456'
     config['genesis_path'] = 'docker.txn'
+    config['use_latest_protocols'] = 'True'
+    config['communication_method'] = 'aries'
 
     config = json.dumps(config)
 
@@ -47,30 +50,33 @@ async def main():
     print("#8 Initialize libvcx with new configuration")
     await vcx_init_with_config(config)
 
-    print("#9 Input faber.py invitation details")
-    details = input('invite details: ')
-
-    print("#10 Convert to valid json and string and create a connection to faber")
-    jdetails = json.loads(details)
-    connection_to_faber = await Connection.create_with_details('faber', json.dumps(jdetails))
-    await connection_to_faber.connect('{"use_public_did": true}')
-    connection_state = await connection_to_faber.update_state()
-    while connection_state != State.Accepted:
-        sleep(2)
-        await connection_to_faber.update_state()
-        connection_state = await connection_to_faber.get_state()
-
-    print("Connection is established")
+    connection_to_faber = None
 
     while True:
         answer = input(
             "Would you like to do? \n "
+            "0 - establish connection \n "
             "1 - check for credential offer \n "
             "2 - check for proof request \n "
             "3 - pass vc_auth_oidc-challenge \n "
             "else finish \n") \
             .lower().strip()
-        if answer == '1':
+        if answer == '0':
+            print("#9 Input faber.py invitation details")
+            details = input('invite details: ')
+
+            print("#10 Convert to valid json and string and create a connection to faber")
+            jdetails = json.loads(details)
+            connection_to_faber = await Connection.create_with_details('faber', json.dumps(jdetails))
+            await connection_to_faber.connect('{"use_public_did": true}')
+            connection_state = await connection_to_faber.update_state()
+            while connection_state != State.Accepted:
+                sleep(2)
+                await connection_to_faber.update_state()
+                connection_state = await connection_to_faber.get_state()
+
+            print("Connection is established")
+        elif answer == '1':
             print("Check agency for a credential offer")
             offers = await Credential.get_offers(connection_to_faber)
             await accept_offer(connection_to_faber, offers)
