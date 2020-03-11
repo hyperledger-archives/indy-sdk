@@ -7,7 +7,7 @@ use serde_json::Value;
 use api::VcxStateType;
 use error::prelude::*;
 use messages;
-use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, to_u8, SerializableObjectWithState};
+use messages::{GeneralMessage, MessageStatusCode, RemoteMessageType, SerializableObjectWithState};
 use messages::invite::{InviteDetail, RedirectDetail, SenderDetail, Payload as ConnectionPayload, AcceptanceDetails, RedirectionDetails};
 use messages::payload::{Payloads, PayloadKinds};
 use messages::thread::Thread;
@@ -110,6 +110,7 @@ impl Connection {
                 .agent_vk(&self.agent_vk)?
                 .public_did(self.public_did.as_ref().map(String::as_str))?
                 .thread(&Thread::new())?
+                .version(&Some(::settings::get_protocol_type()))?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot send invite"))?;
 
@@ -373,6 +374,8 @@ impl Connection {
                     if rc.is_err() {
                         self.force_v2_parse_redirection_details(&message)?;
                     }
+                } else {
+                    warn!("Unexpected message: {:?}", message);
                 }
             }
         };
@@ -465,6 +468,15 @@ pub fn get_pw_did(handle: u32) -> VcxResult<String> {
         match connection {
             Connections::V1(ref connection) => Ok(connection.get_pw_did().to_string()),
             Connections::V3(ref connection) => Ok(connection.agent_info().pw_did.to_string())
+        }
+    }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
+}
+
+pub fn get_ver_str(handle: u32) -> VcxResult<Option<String>> {
+    CONNECTION_MAP.get(handle, |connection| {
+        match connection {
+            Connections::V1(ref connection) => Ok(connection.get_version().as_ref().map(ProtocolTypes::to_string)),
+            Connections::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle))
         }
     }).or(Err(VcxError::from(VcxErrorKind::InvalidConnectionHandle)))
 }
@@ -802,7 +814,7 @@ impl Connection {
 
         match payload {
             MessagePayload::V1(payload) => {
-                let vec = to_u8(payload);
+                let vec = messages::to_u8(payload);
                 let json: Value = serde_json::from_slice(&vec[..])
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;
 
@@ -866,7 +878,7 @@ impl Connection {
 
         match payload {
             MessagePayload::V1(payload) => {
-                let vec = to_u8(payload);
+                let vec = messages::to_u8(payload);
                 let json: Value = serde_json::from_slice(&vec[..])
                     .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize SenderDetails: {}", err)))?;
 
