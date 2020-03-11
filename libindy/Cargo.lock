@@ -689,7 +689,7 @@ version = "0.1.0"
 dependencies = [
  "failure 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "indy-vdr 0.1.0 (git+https://github.com/hyperledger/indy-vdr?rev=8f04e1f)",
+ "indy-vdr 0.1.0 (git+https://github.com/hyperledger/indy-vdr?rev=6f17a27)",
  "libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssl 0.10.28 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -736,7 +736,7 @@ dependencies = [
 [[package]]
 name = "indy-vdr"
 version = "0.1.0"
-source = "git+https://github.com/hyperledger/indy-vdr?rev=8f04e1f#8f04e1f6b796143e5da29002deb47ef5ac5afbee"
+source = "git+https://github.com/hyperledger/indy-vdr?rev=6f17a27#6f17a27209aaa56d1746501c63966da9f10a0171"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bs58 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -829,7 +829,7 @@ dependencies = [
  "indy-api-types 0.1.0",
  "indy-sys 1.14.2",
  "indy-utils 0.1.0",
- "indy-vdr 0.1.0 (git+https://github.com/hyperledger/indy-vdr?rev=8f04e1f)",
+ "indy-vdr 0.1.0 (git+https://github.com/hyperledger/indy-vdr?rev=6f17a27)",
  "indy-wallet 0.1.0",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1941,7 +1941,7 @@ dependencies = [
 "checksum hex 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
 "checksum humantime 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "df004cfca50ef23c36850aaaa59ad52cc70d0e90243c3c7737a4dd32dc7a3c4f"
 "checksum ident_case 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
-"checksum indy-vdr 0.1.0 (git+https://github.com/hyperledger/indy-vdr?rev=8f04e1f)" = "<none>"
+"checksum indy-vdr 0.1.0 (git+https://github.com/hyperledger/indy-vdr?rev=6f17a27)" = "<none>"
 "checksum int_traits 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b33c9a5c599d67d051c4dc25eb1b6b4ef715d1763c20c85c688717a1734f204e"
 "checksum itertools 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
 "checksum itoa 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "b8b7a7c0c47db5545ed3fef7468ee7bb5b74691498139e4b3f6a20685dc6dd8e"
