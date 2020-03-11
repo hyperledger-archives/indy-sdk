@@ -184,7 +184,8 @@ impl GetMessagesBuilder {
                                            self.status_codes.clone(),
                                            self.pairwise_dids.clone()))
                 ),
-            settings::ProtocolTypes::V2 =>
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
                         GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
@@ -245,7 +246,8 @@ impl GeneralMessage for GetMessagesBuilder {
                                            self.status_codes.clone(),
                                            self.pairwise_dids.clone()))
                 ),
-            settings::ProtocolTypes::V2 =>
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
                         GetMessages::build(A2AMessageKinds::GetMessages,

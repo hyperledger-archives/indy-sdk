@@ -81,7 +81,8 @@ impl CreateKeyBuilder {
         if settings::agency_mocks_enabled() {
             match self.version {
                 settings::ProtocolTypes::V1 => AgencyMock::set_next_response(constants::CREATE_KEYS_RESPONSE.to_vec()),
-                settings::ProtocolTypes::V2 => AgencyMock::set_next_response(constants::CREATE_KEYS_V2_RESPONSE.to_vec()),
+                settings::ProtocolTypes::V2 |
+                settings::ProtocolTypes::V3 => AgencyMock::set_next_response(constants::CREATE_KEYS_V2_RESPONSE.to_vec()),
             }
         }
 
@@ -98,7 +99,8 @@ impl CreateKeyBuilder {
                 A2AMessage::Version1(
                     A2AMessageV1::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
                 ),
-            settings::ProtocolTypes::V2 =>
+            settings::ProtocolTypes::V2 |
+            settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
                 )

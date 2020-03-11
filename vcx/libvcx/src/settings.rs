@@ -360,6 +360,11 @@ pub fn get_communication_method() -> VcxResult<String> {
     get_config_value(COMMUNICATION_METHOD)
 }
 
+pub fn is_aries_protocol_set() -> bool {
+    get_protocol_type() == ProtocolTypes::V2 && ARIES_COMMUNICATION_METHOD == get_communication_method().unwrap_or_default() ||
+        get_protocol_type() == ProtocolTypes::V3
+}
+
 pub fn get_actors() -> Vec<Actors> {
     get_config_value(CONFIG_ACTORS)
         .and_then(|actors|
@@ -390,6 +395,8 @@ pub enum ProtocolTypes {
     V1,
     #[serde(rename = "2.0")]
     V2,
+    #[serde(rename = "3.0")]
+    V3,
 }
 
 impl Default for ProtocolTypes {
@@ -403,6 +410,7 @@ impl From<String> for ProtocolTypes {
         match type_.as_str() {
             "1.0" => ProtocolTypes::V1,
             "2.0" => ProtocolTypes::V2,
+            "3.0" => ProtocolTypes::V3,
             type_ @ _ => {
                 error!("Unknown protocol type: {:?}. Use default", type_);
                 ProtocolTypes::default()
@@ -416,12 +424,14 @@ impl ::std::string::ToString for ProtocolTypes {
         match self {
             ProtocolTypes::V1 => "1.0".to_string(),
             ProtocolTypes::V2 => "2.0".to_string(),
+            ProtocolTypes::V3 => "3.0".to_string(),
         }
     }
 }
 
 pub fn get_protocol_type() -> ProtocolTypes {
-    ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE).unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()))
+    ProtocolTypes::from(get_config_value(CONFIG_PROTOCOL_TYPE)
+        .unwrap_or(DEFAULT_PROTOCOL_TYPE.to_string()))
 }
 
 pub fn clear_config() {

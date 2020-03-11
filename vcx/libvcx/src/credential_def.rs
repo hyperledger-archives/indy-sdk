@@ -364,6 +364,7 @@ pub mod tests {
 
     pub fn prepare_create_cred_def_data(revoc: bool) -> (u32, String, String, serde_json::Value) {
         let schema_handle = ::schema::tests::create_schema_real();
+        sleep(Duration::from_secs(2));
         let schema_id = ::schema::get_schema_id(schema_handle).unwrap();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let revocation_details = revocation_details(revoc);
