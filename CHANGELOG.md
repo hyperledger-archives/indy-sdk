@@ -3,6 +3,7 @@
 ## 1.14.4 - 2020-03-10
 * Correction for `Fix proof verification in case of credential attribute encoded value contains leading zeros` (IS-1491).
   Indy 1.14.3 changes "0" to "" which leads to proof rejection. 
+* LibVCX: Fixed compatibility between proprietary (`protocol_version`: `2.0`) and aries communication protocols (`protocol_version`: `3.0`).
     
 ## 1.14.3 - 2020-03-04
 * LibVCX:
