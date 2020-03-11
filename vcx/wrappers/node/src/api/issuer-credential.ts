@@ -199,6 +199,8 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
             return IssuerCredential.getParams(credentialData)
           case "2.0":
             return { attr: {}, credDefHandle: -1, credentialName: "", price: "0" }
+          case "3.0":
+            return IssuerCredential.getParams(credentialData)
           default:
             throw Error(`Unsupported version provided in serialized credential data: ${JSON.stringify(credentialData.version)}`)
         }

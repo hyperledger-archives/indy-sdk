@@ -233,6 +233,8 @@ export class Proof extends VCXBaseWithState<IProofData> {
             return Proof.getParams(proofData)
           case "2.0":
             return { attrs: [{ name: "" }], name: "" }
+          case "3.0":
+            return Proof.getParams(proofData)
           default:
             throw Error(`Unsupported version provided in serialized proof data: ${JSON.stringify(proofData.version)}`)
         }
