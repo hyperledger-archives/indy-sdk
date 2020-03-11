@@ -463,19 +463,19 @@ pub mod test {
 
     fn _credentials() -> String {
         json!({
-"attrs":{
-"attribute_0":{
-"credential":{
-"cred_info":{
-"attrs":{"name": "alice"},
-"cred_def_id": "V4SGRU86Z58d6TV7PBUe6f:3:CL:419:tag",
-"referent": "a1991de8-8317-43fd-98b3-63bac40b9e8b",
-"schema_id": "V4SGRU86Z58d6TV7PBUe6f:2:QcimrRShWQniqlHUtIDddYP0n:1.0"
-}
-}
-}
-}
-}).to_string()
+            "attrs":{
+            "attribute_0":{
+                "credential":{
+                    "cred_info":{
+                        "attrs":{"name": "alice"},
+                        "cred_def_id": "V4SGRU86Z58d6TV7PBUe6f:3:CL:419:tag",
+                        "referent": "a1991de8-8317-43fd-98b3-63bac40b9e8b",
+                        "schema_id": "V4SGRU86Z58d6TV7PBUe6f:2:QcimrRShWQniqlHUtIDddYP0n:1.0"
+                        }
+                    }
+                }
+            }
+        }).to_string()
     }
 
     fn _self_attested() -> String {
@@ -718,15 +718,15 @@ pub mod test {
 
             let prover = _prover_sm();
 
-// No messages
+            // No messages
             {
                 let messages = map!(
-"key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
-"key_2".to_string() => A2AMessage::Presentation(_presentation()),
-"key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-"key_4".to_string() => A2AMessage::PresentationAck(_ack()),
-"key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
-);
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation()),
+                    "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
+                    "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
 
                 assert!(prover.find_message_to_handle(messages).is_none());
             }
@@ -738,15 +738,15 @@ pub mod test {
 
             let prover = _prover_sm().to_presentation_prepared_state();
 
-// No messages
+            // No messages
             {
                 let messages = map!(
-"key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
-"key_2".to_string() => A2AMessage::Presentation(_presentation()),
-"key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-"key_4".to_string() => A2AMessage::PresentationAck(_ack()),
-"key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
-);
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation()),
+                    "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
+                    "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
 
                 assert!(prover.find_message_to_handle(messages).is_none());
             }
@@ -758,50 +758,50 @@ pub mod test {
 
             let prover = _prover_sm().to_presentation_sent_state();
 
-// Ack
+            // Ack
             {
                 let messages = map!(
-"key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
-"key_2".to_string() => A2AMessage::Presentation(_presentation()),
-"key_3".to_string() => A2AMessage::PresentationAck(_ack())
-);
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation()),
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack())
+                );
 
                 let (uid, message) = prover.find_message_to_handle(messages).unwrap();
                 assert_eq!("key_3", uid);
                 assert_match!(A2AMessage::PresentationAck(_), message);
             }
 
-// Problem Report
+            // Problem Report
             {
                 let messages = map!(
-"key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
-"key_2".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-"key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
-);
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_3".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
 
                 let (uid, message) = prover.find_message_to_handle(messages).unwrap();
                 assert_eq!("key_3", uid);
                 assert_match!(A2AMessage::CommonProblemReport(_), message);
             }
 
-// No messages for different Thread ID
+            // No messages for different Thread ID
             {
                 let messages = map!(
-"key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id("")),
-"key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id("")),
-"key_3".to_string() => A2AMessage::PresentationAck(_ack().set_thread_id("")),
-"key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
-);
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal().set_thread_id("")),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation().set_thread_id("")),
+                    "key_3".to_string() => A2AMessage::PresentationAck(_ack().set_thread_id("")),
+                    "key_4".to_string() => A2AMessage::CommonProblemReport(_problem_report().set_thread_id(""))
+                );
 
                 assert!(prover.find_message_to_handle(messages).is_none());
             }
 
-// No messages
+            // No messages
             {
                 let messages = map!(
-"key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
-"key_2".to_string() => A2AMessage::PresentationRequest(_presentation_request())
-);
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::PresentationRequest(_presentation_request())
+                );
 
                 assert!(prover.find_message_to_handle(messages).is_none());
             }
@@ -813,15 +813,15 @@ pub mod test {
 
             let prover = _prover_sm().to_finished_state();
 
-// No messages
+            // No messages
             {
                 let messages = map!(
-"key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
-"key_2".to_string() => A2AMessage::Presentation(_presentation()),
-"key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
-"key_4".to_string() => A2AMessage::PresentationAck(_ack()),
-"key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
-);
+                    "key_1".to_string() => A2AMessage::PresentationProposal(_presentation_proposal()),
+                    "key_2".to_string() => A2AMessage::Presentation(_presentation()),
+                    "key_3".to_string() => A2AMessage::PresentationRequest(_presentation_request()),
+                    "key_4".to_string() => A2AMessage::PresentationAck(_ack()),
+                    "key_5".to_string() => A2AMessage::CommonProblemReport(_problem_report())
+                );
 
                 assert!(prover.find_message_to_handle(messages).is_none());
             }
