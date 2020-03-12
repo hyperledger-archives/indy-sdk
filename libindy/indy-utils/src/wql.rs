@@ -154,6 +154,12 @@ impl Query {
     }
 }
 
+impl Default for Query {
+    fn default() -> Self {
+        Query::And(Vec::new())
+    }
+}
+
 impl string::ToString for Query {
     fn to_string(&self) -> String {
         self.to_value().to_string()
