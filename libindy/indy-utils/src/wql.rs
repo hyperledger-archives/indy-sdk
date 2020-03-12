@@ -80,13 +80,17 @@ impl Query {
                 suboperators.remove(0).optimise()
             }
             Query::And(suboperators) => {
-                let suboperators: Vec<Query> =
+                let mut suboperators: Vec<Query> =
                     suboperators
                         .into_iter()
                         .flat_map(|operator| operator.optimise())
                         .collect();
 
-                Query::And(suboperators).optimise()
+                match suboperators.len() {
+                    0 => None,
+                    1 => Some(suboperators.remove(0)),
+                    _ => Some(Query::And(suboperators)),
+                }
             }
             Query::Or(suboperators) if suboperators.len() == 0 => {
                 None
@@ -95,13 +99,17 @@ impl Query {
                 suboperators.remove(0).optimise()
             }
             Query::Or(suboperators) => {
-                let suboperators: Vec<Query> =
+                let mut suboperators: Vec<Query> =
                     suboperators
                         .into_iter()
                         .flat_map(|operator| operator.optimise())
                         .collect();
 
-                Query::Or(suboperators).optimise()
+                match suboperators.len() {
+                    0 => None,
+                    1 => Some(suboperators.remove(0)),
+                    _ => Some(Query::Or(suboperators)),
+                }
             }
             Query::In(key, mut targets) if targets.len() == 1 => {
                 Some(Query::Eq(key, targets.remove(0)))
