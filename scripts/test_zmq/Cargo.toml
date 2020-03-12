@@ -1,0 +1,18 @@
+[package]
+name = "check_zmq"
+version = "1.0.0"
+authors = ["Hyperledger Indy Contributors <hyperledger-indy@lists.hyperledger.org>"]
+edition = "2018"
+
+description = "This is tool for checking zmq connection"
+license = "MIT/Apache-2.0"
+
+[dependencies]
+ansi_term = "0.11"
+zmq = "0.9.2"
+base64 = {version = "0.10.1"}
+rust-base58 = "0.0.4"
+failure = "0.1.6"
+serde = "1.0.97"
+indy-utils = { path = "../../libindy/indy-utils"}
+indy-api-types = { path = "../../libindy/indy-api-types"}
