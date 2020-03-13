@@ -27,10 +27,6 @@ fn main() {
         }
     }
     else {
-        // println!("cargo:rustc-link-lib=static=crypto");
-        // println!("cargo:rustc-link-lib=static=ssl");
-        // println!("cargo:rustc-link-lib=static=sodium");
-        // println!("cargo:rustc-link-lib=static=zmq");
         println!("cargo:rustc-link-lib=static=zmq");
         println!("cargo:rustc-link-lib=static=sodium");
         println!("cargo:rustc-link-lib=stdc++");
