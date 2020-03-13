@@ -459,12 +459,11 @@ class DisclosedProof(VcxStateful):
         """
         Declines presentation request.
         There are two ways of following interaction:
-            - Prover wants to propose using a different presentation - pass `proposal` parameter
-            - Prover doesn't want to continue interaction - pass `reason` parameter.
+           - Prover wants to propose using a different presentation - pass `proposal` parameter.
+           - Prover doesn't want to continue interaction - pass `reason` parameter.
         Note that only one of these parameters can be passed.
 
-        Note that this function is useful in case `aries` communication method is used.
-        In other cases it returns ActionNotSupported error.
+        Note that proposing of different presentation is supported for `aries` protocol only.
 
         :param connection: Connection
         :param reason: human-readable string that explain the reason of decline
