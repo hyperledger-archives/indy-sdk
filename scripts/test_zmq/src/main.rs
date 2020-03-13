@@ -69,7 +69,7 @@ fn main() {
     match _connect_to_validator(&dest, &zmq_ip, &zmq_port) {
         Err(why) => panic!("{:?}", why),
         Ok(sock) => match _send_test_msg(&sock, timeout, tries_count) {
-            Ok(reply) => {
+            Ok(_reply) => {
                 println!("ZMQ CONNECTION IS POSSIBLE!!!");
             },
             Err(err) => {
@@ -85,7 +85,7 @@ fn _send_test_msg(sock: &zmq::Socket, timeout: i64, tries_count: i32) -> Result<
     match sock.send(&msg, 0) {
         Ok(()) => {
             println!("Successfully sent message: {}", msg.to_string());
-            for i in 0..tries_count {
+            for _i in 0..tries_count {
                 match _wait_for_response(&sock, timeout) {
                     Ok(reply) => {
                         println!("Got reply from validator");
@@ -129,7 +129,7 @@ fn _wait_for_response(sock: &zmq::Socket, timeout: i64) -> Result<String, String
 
 fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Result<zmq::Socket, String> {
     let zmq_context = zmq::Context::new();
-    let mut zmq_sock = zmq_context.socket(zmq::SocketType::DEALER).unwrap();
+    let zmq_sock = zmq_context.socket(zmq::SocketType::DEALER).unwrap();
     let key_pair = zmq::CurveKeyPair::new().expect("FIXME");
     let zaddr = std::format!("tcp://{}:{}", address, port);
     let node_verkey = dest
@@ -153,7 +153,7 @@ fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Resu
         .unwrap()
         .as_bytes())
         .unwrap();
-    zmq_sock.set_linger(0);
+    zmq_sock.set_linger(0).unwrap();
     println!("Trying to connect to {}", zaddr);
     match zmq_sock.connect(&zaddr) {
         Ok(()) => {
