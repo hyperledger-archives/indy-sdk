@@ -1,17 +1,19 @@
 extern crate ansi_term;
 extern crate rust_base58;
+extern crate ursa;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+
 use std::env;
 use zmq;
 use base64;
-use indy_utils::crypto::ed25519_sign;
-use self::rust_base58::FromBase58;
-use failure::Context;
-extern crate indy_api_types;
-use indy_api_types::errors::prelude::*;
-use serde::{de, Deserialize, Serialize};
-use std::thread;
-use std::time::Duration;
-use zmq::Error;
+use rust_base58::FromBase58;
+
+use ursa::{
+    keys::PublicKey,
+    signatures::ed25519::Ed25519Sha512,
+};
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -102,8 +104,6 @@ fn _send_test_msg(sock: &zmq::Socket, timeout: i64, tries_count: i32) -> Result<
             return Err(std::format!("{:?}", err))
         },
     }
-
-    Ok("".to_string())
 }
 
 fn _wait_for_response(sock: &zmq::Socket, timeout: i64) -> Result<String, String> {
@@ -135,12 +135,11 @@ fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Resu
     let node_verkey = dest
         .as_str()
         .from_base58()
-        .map_err(Context::new)
-        .to_indy(IndyErrorKind::InvalidStructure, "Error while transform to base58").unwrap();
+        .map_err(|err| format!("Error while transform to base58: {:?}", err)).unwrap();
 
-    let node_verkey = ed25519_sign::PublicKey::from_slice(&node_verkey)
-        .and_then(|vk| ed25519_sign::vk_to_curve25519(&vk))
-        .to_indy(IndyErrorKind::InvalidStructure, "Error while transform to curve25519").unwrap();
+    let node_verkey = Ed25519Sha512::ver_key_to_key_exchange(&PublicKey(node_verkey))
+        .map_err(|err| format!("Cannot convert key to curve25519 key: {}", err)).unwrap();
+
     let public_key = node_verkey[..].to_vec();
     zmq_sock.set_identity(base64::encode(&key_pair.public_key)
         .as_bytes())
@@ -150,7 +149,7 @@ fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Resu
     zmq_sock.set_curve_publickey(&key_pair.public_key)
         .unwrap();
     zmq_sock.set_curve_serverkey(zmq::z85_encode(public_key.as_slice())
-        .to_indy(IndyErrorKind::InvalidStructure, "Can't encode server key as z85")
+        .map_err(|err| format!("Can't encode server key as z85: {:?}", err))
         .unwrap()
         .as_bytes())
         .unwrap();
