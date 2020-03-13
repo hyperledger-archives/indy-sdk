@@ -13,6 +13,11 @@ zmq = "0.9.2"
 base64 = {version = "0.10.1"}
 rust-base58 = "0.0.4"
 failure = "0.1.6"
-serde = "1.0.97"
-indy-utils = { path = "../../libindy/indy-utils"}
-indy-api-types = { path = "../../libindy/indy-api-types"}
+serde = "1.0.99"
+serde_derive = "1.0.99"
+serde_json = "1.0.40"
+
+[dependencies.ursa]
+version = "0.3.2"
+default-features = false
+features = ["ed25519", "x25519"]
