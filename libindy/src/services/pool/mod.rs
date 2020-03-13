@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::Write;
 use std::sync::Mutex;
+use std::ffi::{CString, CStr};
 
 use serde_json;
 use serde::de::DeserializeOwned;
@@ -25,7 +26,7 @@ use crate::services::ledger::parsers::response::{
 
 use indy_api_types::errors::*;
 use crate::utils::environment;
-use indy_api_types::PoolHandle;
+use indy_api_types::{PoolHandle, ErrorCode};
 use indy_utils::next_pool_handle;
 
 use indy_vdr::pool::{SharedPool, PoolBuilder, PoolTransactions, helpers::perform_refresh, Pool, RequestResult};
@@ -35,6 +36,9 @@ use indy_vdr::ledger::PreparedRequest;
 use indy_vdr::config::{PoolConfig as VdrPoolOpenConfig, ProtocolVersion};
 use std::path::PathBuf;
 use indy_vdr::ledger::constants::{POOL_RESTART, GET_VALIDATOR_INFO};
+use indy_vdr::state_proof::types::ParsedSP;
+use indy_vdr::state_proof::constants::REQUESTS_FOR_STATE_PROOFS;
+
 
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
@@ -179,10 +183,17 @@ impl PoolService {
                 .create_request(prepared_request.req_id.to_string(),
                                 prepared_request.req_json.to_string()).await?;
 
+            let custom_state_proofs_parser: Option<Box<dyn Fn(&str, &str) -> Option<Vec<ParsedSP>>>> =
+                if REGISTERED_SP_PARSERS.lock().unwrap().contains_key(&prepared_request.txn_type) {
+                    Some(Box::new(Self::custom_state_proofs_parser))
+                } else { None };
+
             handle_consensus_request(request,
                                      prepared_request.sp_key,
                                      prepared_request.sp_timestamps,
-                                     prepared_request.is_read_request)
+                                     prepared_request.is_read_request,
+                                     custom_state_proofs_parser,
+            )
         }.await?;
 
         _get_response(request_result)
@@ -223,10 +234,10 @@ impl PoolService {
 
     pub fn register_sp_parser(txn_type: &str,
                               parser: CustomTransactionParser, free: CustomFree) -> IndyResult<()> {
-//        if events::REQUESTS_FOR_STATE_PROOFS.contains(&txn_type) {
-//            return Err(err_msg(IndyErrorKind::InvalidStructure,
-//                               format!("Try to override StateProof parser for default TXN_TYPE {}", txn_type)));
-//        }
+        if REQUESTS_FOR_STATE_PROOFS.contains(&txn_type) {
+            return Err(err_msg(IndyErrorKind::InvalidStructure,
+                               format!("Try to override StateProof parser for default TXN_TYPE {}", txn_type)));
+        }
 
         REGISTERED_SP_PARSERS.lock()
             .map(|mut map| {
@@ -237,7 +248,6 @@ impl PoolService {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn get_sp_parser(txn_type: &str) -> Option<(CustomTransactionParser, CustomFree)> {
         let parsers = REGISTERED_SP_PARSERS.lock().unwrap(); // FIXME: Can we avoid unwrap here?
         parsers.get(txn_type).map(Clone::clone)
@@ -310,6 +320,50 @@ impl PoolService {
         let transactions = PoolTransactions::from_file_path(&pool_txns_path)
             .map_err(|err| IndyError::from_msg(IndyErrorKind::PoolNotCreated, err.to_string()))?;
         Ok(transactions)
+    }
+
+    fn custom_state_proofs_parser(txn_type: &str, reply_from_node: &str) -> Option<Vec<ParsedSP>> {
+        trace!("PoolService::custom_state_proofs_parser: txn_type {:?}, reply_from_node {:?}",
+               txn_type, reply_from_node);
+
+        match Self::get_sp_parser(txn_type) {
+            Some((parser, free)) => {
+                let reply_from_node = CString::new(reply_from_node).unwrap();
+
+                let mut parsed_c_str = ::std::ptr::null();
+
+                let err = parser(reply_from_node.as_ptr(), &mut parsed_c_str);
+                if err != ErrorCode::Success {
+                    debug!("PoolService::custom_state_proofs_parser: <<< parser: plugin return err {:?}", err);
+                    return None;
+                }
+
+                let c_str = if parsed_c_str.is_null() {
+                    return None;
+                } else {
+                    Some(unsafe { CStr::from_ptr(parsed_c_str) })
+                };
+
+                let parsed_sps = c_str
+                    .and_then(|c_str| c_str.to_str().ok())
+                    .and_then(|c_str|
+                        serde_json::from_str::<Vec<ParsedSP>>(c_str)
+                            .map_err(|err|
+                                debug!("PoolService::custom_state_proofs_parser: <<< can't parse plugin response {}", err))
+                            .ok());
+
+                let err = free(parsed_c_str);
+                if err != ErrorCode::Success {
+                    debug!("PoolService::custom_state_proofs_parser: <<< free: plugin return err {:?}", err);
+                    return None;
+                }
+
+                trace!("PoolService::custom_state_proofs_parser: plugin res {:?}", parsed_sps);
+
+                parsed_sps
+            }
+            None => None
+        }
     }
 }
 
