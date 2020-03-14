@@ -1,69 +1,85 @@
-extern crate ansi_term;
 extern crate rust_base58;
 extern crate ursa;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
+extern crate clap;
 
-use std::env;
 use zmq;
 use base64;
 use rust_base58::FromBase58;
+use clap::{Arg, App};
 
 use ursa::{
     keys::PublicKey,
     signatures::ed25519::Ed25519Sha512,
 };
 
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct LedgerStatus {
-    pub txnSeqNo: usize,
-    pub merkleRoot: String,
-    pub ledgerId: u8,
-    pub ppSeqNo: Option<u32>,
-    pub viewNo: Option<u32>,
-    pub protocolVersion: Option<usize>,
-}
-
 
 fn main() {
 
-    let mut args = env::args();
-    args.next();
+    let dest: String;
+    let zmq_ip: String;
+    let zmq_port: String;
+    let timeout: i64;
+    let tries_count: i32;
 
-    let mut dest: String = "".to_string();
-    let mut zmq_ip: String = "".to_string();
-    let mut zmq_port: String = "".to_string();
-    let mut timeout: i64 = 15;
-    let mut tries_count: i32 = 3;
-
-    if args.len() == 0 {
-        _print_help();
-        return;
+    let args = App::new("Tool For checking ZeroMQ connection to validator node")
+        .version("1.0.0")
+        .arg(Arg::with_name("dest")
+            .required(true)
+            .long("dest")
+            .empty_values(false)
+            .value_name("Target NYM")
+            .help("Target NYM")
+            .index(1))
+        .arg(Arg::with_name("zmq_ip")
+            .required(true)
+            .long("zmq_ip")
+            .empty_values(false)
+            .value_name("zmq ip")
+            .help("IP address of validator node which used for client's connections")
+            .index(2))
+        .arg(Arg::with_name("zmq_port")
+            .required(true)
+            .long("zmq_port")
+            .empty_values(false)
+            .value_name("zmq port")
+            .help("Port number of validator node which used for client's connections")
+            .index(3))
+        .arg(Arg::with_name("timeout")
+            .long("timeout")
+            .short("t")
+            .empty_values(false)
+            .value_name("seconds")
+            .default_value("15")
+            .help("Timeout in seconds for waiting reply from server"))
+        .arg(Arg::with_name("tries-count")
+            .long("tries-count")
+            .short("c")
+            .empty_values(false)
+            .value_name("int")
+            .default_value("3")
+            .help("Timeout in seconds for waiting reply from server"))
+        .get_matches();
+    dest = args.value_of("dest").unwrap().to_string();
+    zmq_ip = args.value_of("zmq_ip").unwrap().to_string();
+    zmq_port = args.value_of("zmq_port").unwrap().to_string();
+    match args.value_of("timeout").unwrap().to_string().parse::<i64>() {
+        Ok(_t) => {
+            timeout = _t
+        }
+        Err(_err) => {
+            println!("Error was caused while parsing input value to integer. \
+            Please check input value for '--timeout' parameter");
+            return;
+        }
     }
-    while let Some(arg) = args.next() {
-        match arg.as_str() {
-            "-h" | "--help" => return _print_help(),
-            "--dest" => {
-                dest = args.next().unwrap_or_default();
-            }
-            "--zmq_ip" => {
-                zmq_ip = args.next().unwrap_or_default();
-            }
-            "--zmq_port" => {
-                zmq_port = args.next().unwrap_or_default();
-            }
-            "--timeout" => {
-                timeout = args.next().unwrap_or_default().parse::<i64>().unwrap();
-            }
-            "--tries-count" => {
-                tries_count = args.next().unwrap_or_default().parse::<i32>().unwrap();
-            }
-            _ => {
-                println!("Unknown option {}", arg);
-                return _print_help();
-            }
+    match args.value_of("tries-count").unwrap().to_string().parse::<i32>(){
+        Ok(_tc) => {
+            tries_count = _tc
+        }
+        Err(_err) => {
+            println!("Error was caused while parsing input value to integer. \
+            Please check input value for '--tries-count' parameter");
+            return;
         }
     }
     match _connect_to_validator(&dest, &zmq_ip, &zmq_port) {
@@ -129,31 +145,40 @@ fn _wait_for_response(sock: &zmq::Socket, timeout: i64) -> Result<String, String
 
 fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Result<zmq::Socket, String> {
     let zmq_context = zmq::Context::new();
-    let zmq_sock = zmq_context.socket(zmq::SocketType::DEALER).unwrap();
+    let zmq_sock = zmq_context.socket(zmq::SocketType::DEALER)
+        .map_err(|_| format!("Error while creating a socket instance [Internal Error]"))
+        .unwrap();
     let key_pair = zmq::CurveKeyPair::new().expect("FIXME");
     let zaddr = std::format!("tcp://{}:{}", address, port);
     let node_verkey = dest
         .as_str()
         .from_base58()
-        .map_err(|err| format!("Error while transform to base58: {:?}", err)).unwrap();
+        .map_err(|err| format!("Error while transform to base58: {:?} [Internal Error]", err))
+        .unwrap();
 
     let node_verkey = Ed25519Sha512::ver_key_to_key_exchange(&PublicKey(node_verkey))
-        .map_err(|err| format!("Cannot convert key to curve25519 key: {}", err)).unwrap();
+        .map_err(|err| format!("Cannot convert key to curve25519 key: {:?} [Internal Error]", err))
+        .unwrap();
 
     let public_key = node_verkey[..].to_vec();
     zmq_sock.set_identity(base64::encode(&key_pair.public_key)
         .as_bytes())
+        .map_err(|_| format!("Error while setting identity for ZMQ socket [Internal Error]"))
         .unwrap();
     zmq_sock.set_curve_secretkey(&key_pair.secret_key)
+        .map_err(|_| format!("Error while setting secret key for ZMQ socket [Internal Error]"))
         .unwrap();
     zmq_sock.set_curve_publickey(&key_pair.public_key)
+        .map_err(|_| format!("Error while setting public key for ZMQ socket [Internal Error]"))
         .unwrap();
     zmq_sock.set_curve_serverkey(zmq::z85_encode(public_key.as_slice())
         .map_err(|err| format!("Can't encode server key as z85: {:?}", err))
         .unwrap()
         .as_bytes())
         .unwrap();
-    zmq_sock.set_linger(0).unwrap();
+    zmq_sock.set_linger(0)
+        .map_err(|_| format!("Error while setting LINGER option for ZMQ socket [Internal Error]"))
+        .unwrap();
     println!("Trying to connect to {}", zaddr);
     match zmq_sock.connect(&zaddr) {
         Ok(()) => {
@@ -166,28 +191,6 @@ fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Resu
         },
     }
 }
-
-
-fn _print_args(dest: String, zmq_ip: String, zmq_port: String ) {
-    println!("Dest is: {}", dest);
-    println!("ZMQ address {}", zmq_ip);
-    println!("ZMQ port {}", zmq_port);
-}
-
-fn _print_help() {
-    println!("Check zmq connection");
-    println!();
-    println!("Parameters:");
-    println!();
-    println!("--dest <target_nym>");
-    println!("--zmq_ip <ip address>");
-    println!("--zmq_port <port for zmq connections>");
-    println!("Optional parameters:");
-    println!("--timeout <timeout in seconds>  Timeout for each response waiting from server (default: 15 seconds)");
-    println!("--tries-count <count>   Count of tries for waiting response from server (default: 3)");
-    println!();
-}
-
 
 fn _print_recom(dest: String, zmq_ip: String, zmq_port: String){
     println!("Looks like ZMQ connection to {}:{} IS NOT POSSIBLE!!!", zmq_ip, zmq_port);
