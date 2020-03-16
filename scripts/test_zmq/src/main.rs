@@ -15,9 +15,6 @@ use ursa::{
 
 fn main() {
 
-    let dest: String;
-    let zmq_ip: String;
-    let zmq_port: String;
     let timeout: i64;
     let tries_count: i32;
 
@@ -59,9 +56,9 @@ fn main() {
             .default_value("3")
             .help("Timeout in seconds for waiting reply from server"))
         .get_matches();
-    dest = args.value_of("dest").unwrap().to_string();
-    zmq_ip = args.value_of("zmq_ip").unwrap().to_string();
-    zmq_port = args.value_of("zmq_port").unwrap().to_string();
+    let dest = args.value_of("dest").unwrap().to_string();
+    let zmq_ip = args.value_of("zmq_ip").unwrap().to_string();
+    let zmq_port = args.value_of("zmq_port").unwrap().to_string();
     match args.value_of("timeout").unwrap().to_string().parse::<i64>() {
         Ok(_t) => {
             timeout = _t
@@ -163,22 +160,18 @@ fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Resu
     let public_key = node_verkey[..].to_vec();
     zmq_sock.set_identity(base64::encode(&key_pair.public_key)
         .as_bytes())
-        .map_err(|_| format!("Error while setting identity for ZMQ socket [Internal Error]"))
-        .unwrap();
+        .expect("Error while setting identity for ZMQ socket [Internal Error]");
     zmq_sock.set_curve_secretkey(&key_pair.secret_key)
-        .map_err(|_| format!("Error while setting secret key for ZMQ socket [Internal Error]"))
-        .unwrap();
+        .expect("Error while setting secret key for ZMQ socket [Internal Error]");
     zmq_sock.set_curve_publickey(&key_pair.public_key)
-        .map_err(|_| format!("Error while setting public key for ZMQ socket [Internal Error]"))
-        .unwrap();
+        .expect("Error while setting public key for ZMQ socket [Internal Error]");
     zmq_sock.set_curve_serverkey(zmq::z85_encode(public_key.as_slice())
         .map_err(|err| format!("Can't encode server key as z85: {:?}", err))
         .unwrap()
         .as_bytes())
         .unwrap();
     zmq_sock.set_linger(0)
-        .map_err(|_| format!("Error while setting LINGER option for ZMQ socket [Internal Error]"))
-        .unwrap();
+        .expect("Error while setting LINGER option for ZMQ socket [Internal Error]");
     println!("Trying to connect to {}", zaddr);
     match zmq_sock.connect(&zaddr) {
         Ok(()) => {
