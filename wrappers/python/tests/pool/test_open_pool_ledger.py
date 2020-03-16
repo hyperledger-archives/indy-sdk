@@ -22,7 +22,7 @@ async def test_open_pool_ledger_works_for_incompatible_protocol_version(pool_led
                                                                         protocol_version):
     await pool.set_protocol_version(1)
 
-    with pytest.raises(error.PoolIncompatibleProtocolVersion):
+    with pytest.raises(error.CommonInvalidStructure):
         await pool.open_pool_ledger(pool_name, None)
 
     await pool.set_protocol_version(protocol_version)

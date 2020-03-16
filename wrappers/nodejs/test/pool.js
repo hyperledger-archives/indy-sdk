@@ -22,7 +22,7 @@ test('pool', async function (t) {
   await indy.setProtocolVersion(1)
 
   err = await t.throwsAsync(indy.openPoolLedger(pool.name, null))
-  t.is(err.indyName, 'PoolIncompatibleProtocolVersion')
+  t.is(err.indyName, 'CommonInvalidStructure')
 
   await indy.setProtocolVersion(2)
 
