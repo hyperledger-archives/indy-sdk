@@ -141,7 +141,7 @@ impl CommandExecutor {
                     match cmd {
                         Some(Command::Anoncreds(cmd)) => {
                             debug!("AnoncredsCommand command received");
-                            anoncreds_command_executor.execute(cmd);
+                            anoncreds_command_executor.execute(cmd).await;
                         }
                         Some(Command::BlobStorage(cmd)) => {
                             debug!("BlobStorageCommand command received");
