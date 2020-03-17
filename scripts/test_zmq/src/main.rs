@@ -12,6 +12,7 @@ use ursa::{
     signatures::ed25519::Ed25519Sha512,
 };
 
+const EXPECTED_PK_LENGTH : usize = 32;
 
 fn main() {
 
@@ -94,7 +95,7 @@ fn main() {
 }
 
 fn _send_test_msg(sock: &zmq::Socket, timeout: i64, tries_count: i32) -> Result<String, String> {
-    let msg = "{ \"op\": \"LEDGER_STATUS\", \"txnSeqNo\": 0, \"merkleRoot\": null, \"ledgerId\": 0, \"ppSeqNo\": null, \"viewNo\": null, \"protocolVersion\": 2}";
+    let msg = r#"{ "op": "LEDGER_STATUS", "txnSeqNo": 0, "merkleRoot": null, "ledgerId": 0, "ppSeqNo": null, "viewNo": null, "protocolVersion": 2}"#;
     match sock.send(&msg, 0) {
         Ok(()) => {
             println!("Successfully sent message: {}", msg.to_string());
@@ -119,25 +120,17 @@ fn _send_test_msg(sock: &zmq::Socket, timeout: i64, tries_count: i32) -> Result<
     }
 }
 
-fn _wait_for_response(sock: &zmq::Socket, timeout: i64) -> Result<String, String> {
+fn _wait_for_response(sock: &zmq::Socket, timeout: i64) -> Result<String, ()> {
     let mut pool_items = [sock.as_poll_item(zmq::POLLIN)];
     println!("Waiting for {} seconds for getting reply from server", timeout);
-    zmq::poll(&mut pool_items, timeout * 1000).unwrap();
+    zmq::poll(&mut pool_items, timeout * 1000).expect("Error while polling ZMQ socket [Internal Error]");
     if pool_items[0].is_readable() {
         match sock.recv_string(0) {
-            Ok(in_result) => match in_result {
-                Ok(rep) => {
-                    return Ok(rep);
-                },
-                Err(err) => {
-                    println!("Error {:?} was occurred", err);
-                    return Err(std::format!("{:?}", err))
-                }
-            }
-            Err(err) => return Err(std::format!("{:?}", err)),
+            Ok(Ok(rep)) => return Ok(rep),
+            _ => return Err(())
         };
     }
-    Err("".to_string())
+    Err(())
 }
 
 fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Result<zmq::Socket, String> {
@@ -146,13 +139,17 @@ fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Resu
         .map_err(|_| format!("Error while creating a socket instance [Internal Error]"))
         .unwrap();
     let key_pair = zmq::CurveKeyPair::new().expect("FIXME");
-    let zaddr = std::format!("tcp://{}:{}", address, port);
+    let zaddr = format!("tcp://{}:{}", address, port);
     let node_verkey = dest
         .as_str()
         .from_base58()
         .map_err(|err| format!("Error while transform to base58: {:?} [Internal Error]", err))
         .unwrap();
 
+    if node_verkey.len() != EXPECTED_PK_LENGTH {
+        return Err(format!("Public key which is got from dest {} \
+        has wrong length (expected length of Public Key is 32)", dest))
+    }
     let node_verkey = Ed25519Sha512::ver_key_to_key_exchange(&PublicKey(node_verkey))
         .map_err(|err| format!("Cannot convert key to curve25519 key: {:?} [Internal Error]", err))
         .unwrap();
@@ -166,8 +163,7 @@ fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Resu
     zmq_sock.set_curve_publickey(&key_pair.public_key)
         .expect("Error while setting public key for ZMQ socket [Internal Error]");
     zmq_sock.set_curve_serverkey(zmq::z85_encode(public_key.as_slice())
-        .map_err(|err| format!("Can't encode server key as z85: {:?}", err))
-        .unwrap()
+        .map_err(|err| format!("Can't encode server key as z85: {:?}", err))?
         .as_bytes())
         .unwrap();
     zmq_sock.set_linger(0)
@@ -180,7 +176,7 @@ fn _connect_to_validator(dest: &String, address: &String, port: &String) -> Resu
         },
         Err(err) => {
             println!("{}", err);
-            return Err(std::format!("{:?}", err))
+            return Err(format!("{:?}", err))
         },
     }
 }
