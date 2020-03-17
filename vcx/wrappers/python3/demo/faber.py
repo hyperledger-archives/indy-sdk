@@ -71,6 +71,7 @@ async def main():
             "Would you like to do? \n "
             "1 - issue credential \n "
             "2 - ask for proof \n "
+            "3 - test-suite-connection-stub \n "
             "else finish \n") \
             .lower().strip()
         if answer == '1':
@@ -79,6 +80,9 @@ async def main():
         elif answer == '2':
             print("#2 Ask for proof")
             await ask_for_proof(connection_to_alice, config['institution_did'])
+        elif answer == '3':
+            print("#2 Setup Connection stub")
+            connection_to_alice = await setup_test_connection()
         else:
             break
 
@@ -118,10 +122,10 @@ async def setup_test_connection():
     connection_info = await connection_to_alice.info()
 
     print('Connection info:')
-    print('DID: ' + connection_info['current']['did'])
-    print('Recipient Keys: ' + str(connection_info['current']['recipientKeys']))
-    print('Routing Keys: ' + str(connection_info['current']['routingKeys']))
-    print('Endpoint: ' + connection_info['current']['serviceEndpoint'])
+    print('DID: ' + connection_info['my']['did'])
+    print('Recipient Keys: ' + str(connection_info['my']['recipientKeys']))
+    print('Routing Keys: ' + str(connection_info['my']['routingKeys']))
+    print('Endpoint: ' + connection_info['my']['serviceEndpoint'])
     print()
 
     print("Connection is established")

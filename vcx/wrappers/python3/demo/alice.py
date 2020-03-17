@@ -71,6 +71,7 @@ async def main():
             "4 - accept credential offer \n "
             "5 - create proof \n "
             "6 - pass vc_auth_oidc-challenge \n "
+            "7 - test-suite-connection-stub \n "
             "else finish \n") \
             .lower().strip()
         if answer == '1':
@@ -95,6 +96,9 @@ async def main():
             print("#6 Pass vc_auth_oidc-challenge")
             request = await handle_challenge()
             await create_proof(None, request)
+        elif answer == '7':
+            print("#2 Setup Connection stub")
+            connection_to_faber = await setup_test_connection()
         else:
             break
 
@@ -130,10 +134,10 @@ async def setup_test_connection():
     connection_info = await connection_to_faber.info()
 
     print('Connection info:')
-    print('DID: ' + connection_info['current']['did'])
-    print('Recipient Keys: ' + str(connection_info['current']['recipientKeys']))
-    print('Routing Keys: ' + str(connection_info['current']['routingKeys']))
-    print('Endpoint: ' + connection_info['current']['serviceEndpoint'])
+    print('DID: ' + connection_info['my']['did'])
+    print('Recipient Keys: ' + str(connection_info['my']['recipientKeys']))
+    print('Routing Keys: ' + str(connection_info['my']['routingKeys']))
+    print('Endpoint: ' + connection_info['my']['serviceEndpoint'])
     print()
 
     return connection_to_faber
