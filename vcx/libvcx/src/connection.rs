@@ -307,7 +307,7 @@ impl Connection {
         let (for_did, for_verkey) = messages::create_keys()
             .for_did(&self.pw_did)?
             .for_verkey(&self.pw_verkey)?
-            .version(&self.version.clone())?
+            .version(&Some(settings::get_protocol_type()))?
             .send_secure()
             .map_err(|err| err.extend("Cannot create pairwise keys"))?;
 
@@ -424,7 +424,7 @@ impl Connection {
     }
 }
 
-pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str, protocol_type: ProtocolTypes) -> VcxResult<(String, String)> {
+pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str) -> VcxResult<(String, String)> {
     /*
         Create User Pairwise Agent in old way.
         Send Messages corresponding to V2 Protocol version to avoid code changes on Agency side.
@@ -434,7 +434,7 @@ pub fn create_agent_keys(source_id: &str, pw_did: &str, pw_verkey: &str, protoco
     let (agent_did, agent_verkey) = messages::create_keys()
         .for_did(pw_did)?
         .for_verkey(pw_verkey)?
-        .version(&Some(protocol_type))?
+        .version(&Some(settings::get_protocol_type()))?
         .send_secure()
         .map_err(|err| err.extend("Cannot create pairwise keys"))?;
 
