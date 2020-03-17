@@ -204,8 +204,7 @@ mod close_pool {
 
         indy::pool::close_pool_ledger(pool_handle).wait().unwrap();
 
-        let res = _request_future.wait();
-        assert_eq!(res.unwrap_err().error_code, ErrorCode::PoolLedgerTerminated);
+        let _response = submit_fut.wait().unwrap();
     }
 
 }

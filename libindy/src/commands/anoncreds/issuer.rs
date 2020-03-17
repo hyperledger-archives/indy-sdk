@@ -351,6 +351,8 @@ impl IssuerCommandExecutor {
             self._issuer_generate_credential_definition_keys(&&schema.attr_names, support_revocation).await?;
 
         cred_def.value = credential_definition_value;
+        
+        let cred_def = CredentialDefinition::CredentialDefinitionV1(cred_def);
 
         let cred_def_priv_key = CredentialDefinitionPrivateKey {
             value: cred_priv_key
@@ -364,7 +366,7 @@ impl IssuerCommandExecutor {
             .map_err(|err| IndyError::from_msg(IndyErrorKind::InvalidState, format!("Cannot serialize CredentialDefinition: {}", err)))?;
 
         let temp_cred_def = TemporaryCredentialDefinition {
-            cred_def: CredentialDefinition::CredentialDefinitionV1(cred_def),
+            cred_def,
             cred_def_priv_key,
             cred_def_correctness_proof,
         };
