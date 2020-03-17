@@ -29,11 +29,10 @@ provisionConfig = {
     'agency_verkey': 'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
     'wallet_name': 'faber_wallet',
     'wallet_key': '123',
-    'payment_method': 'null',
+    '2payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
-    'protocol_type': '2.0',
+    'protocol_type': '3.0',
     'communication_method': 'aries',
-    'use_latest_protocols': True,
 }
 
 
@@ -49,9 +48,8 @@ async def main():
     config['institution_logo_url'] = 'http://robohash.org/234'
     config['genesis_path'] = 'docker.txn'
     config['payment_method'] = 'null'
-    config['protocol_type'] = '2.0'
+    config['protocol_type'] = '3.0'
     config['communication_method'] = 'aries'
-    config['use_latest_protocols'] = 'true'
 
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
@@ -76,6 +74,7 @@ async def main():
             "Would you like to do? \n "
             "1 - issue credential \n "
             "2 - ask for proof \n "
+            "3 - test-suite-connection-stub \n "
             "else finish \n") \
             .lower().strip()
         if answer == '1':
@@ -84,6 +83,9 @@ async def main():
         elif answer == '2':
             print("#2 Ask for proof")
             await ask_for_proof(connection_to_alice, config['institution_did'])
+        elif answer == '3':
+            print("#2 Setup Connection stub")
+            connection_to_alice = await setup_test_connection()
         else:
             break
 
@@ -123,10 +125,10 @@ async def setup_test_connection():
     connection_info = await connection_to_alice.info()
 
     print('Connection info:')
-    print('DID: ' + connection_info['current']['did'])
-    print('Recipient Keys: ' + str(connection_info['current']['recipientKeys']))
-    print('Routing Keys: ' + str(connection_info['current']['routingKeys']))
-    print('Endpoint: ' + connection_info['current']['serviceEndpoint'])
+    print('DID: ' + connection_info['my']['did'])
+    print('Recipient Keys: ' + str(connection_info['my']['recipientKeys']))
+    print('Routing Keys: ' + str(connection_info['my']['routingKeys']))
+    print('Endpoint: ' + connection_info['my']['serviceEndpoint'])
     print()
 
     print("Connection is established")
@@ -140,6 +142,7 @@ async def issue_credential(connection_to_alice):
     schema = await Schema.create('schema_uuid', 'degree schema', version, ['name', 'age'], 0)
     schema_id = await schema.get_schema_id()
     print("SchemaId: " + schema_id)
+    sleep(5)
 
     print("#4 Create a new credential definition on the ledger")
     cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0)
@@ -178,12 +181,10 @@ async def issue_credential(connection_to_alice):
 
 
 async def ask_for_proof(connection_to_alice, institution_did):
-    proof_attrs = [
-        {'name': 'name', 'restrictions': [{'issuer_did': institution_did}]},
-    ]
+    requested_attr = json.loads(input("Enter requested attribute").strip())
 
     print("#19 Create a Proof object")
-    proof = await Proof.create('proof_uuid', 'proof_from_alice', proof_attrs, {})
+    proof = await Proof.create('proof_uuid', 'proof_from_alice', [requested_attr], {})
 
     print("#20 Request proof of degree from alice")
     await proof.request_proof(connection_to_alice)

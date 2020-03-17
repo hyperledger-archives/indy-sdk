@@ -678,9 +678,6 @@ pub fn get_connection_info(handle: u32) -> VcxResult<String> {
     })
 }
 
-pub fn create_connection(source_id: &str) -> VcxResult<u32> {
-    trace!("create_connection >>> source_id: {}", source_id);
-
 fn create_connection_v1(source_id: &str) -> VcxResult<Connection> {
     let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
 
@@ -1356,15 +1353,6 @@ pub fn send_discovery_features(connection_handle: u32, query: Option<String>, co
         match connection {
             Connections::V1(_) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
             Connections::V3(ref mut connection) => connection.send_discovery_features(query.clone(), comment.clone())
-        }
-    })
-}
-
-pub fn get_connection_info(handle: u32) -> VcxResult<String> {
-    CONNECTION_MAP.get(handle, |cxn| {
-        match cxn {
-            Connections::V1(_) => Err(VcxError::from(VcxErrorKind::ActionNotSupported)),
-            Connections::V3(ref connection) => connection.get_connection_info()
         }
     })
 }
