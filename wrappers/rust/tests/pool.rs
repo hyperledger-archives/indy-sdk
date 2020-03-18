@@ -200,7 +200,7 @@ mod close_pool {
 
         let get_nym_req = indy::ledger::build_get_nym_request(Some(DID_1), DID_1).wait().unwrap();
         
-        let _request_future = indy::ledger::submit_request(pool_handle, &get_nym_req);
+        let submit_fut = indy::ledger::submit_request(pool_handle, &get_nym_req);
 
         indy::pool::close_pool_ledger(pool_handle).wait().unwrap();
 

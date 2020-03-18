@@ -43,10 +43,8 @@ pub fn drop_cache(pool_name: &str) -> IndyResult<()> {
         warn!("Cache is invalid -- dropping it!");
         fs::remove_file(p)
             .to_indy(IndyErrorKind::IOError, "Can't drop pool ledger cache file")?;
-        Ok(())
-    } else {
-        Err(err_msg(IndyErrorKind::InvalidState, "Can't recover to genesis -- no txns stored. Possible problems in genesis txns."))
     }
+    Ok(())
 }
 
 fn _from_cache(file_name: &PathBuf) -> IndyResult<PoolTransactions> {
