@@ -34,11 +34,11 @@ use indy_vdr::pool::helpers::format_full_reply;
 use indy_vdr::pool::handlers::{handle_full_request, handle_consensus_request};
 use indy_vdr::ledger::PreparedRequest;
 use indy_vdr::config::{PoolConfig as VdrPoolOpenConfig, ProtocolVersion};
-use std::path::PathBuf;
 use indy_vdr::ledger::constants::{POOL_RESTART, GET_VALIDATOR_INFO};
 use indy_vdr::state_proof::types::ParsedSP;
 use indy_vdr::state_proof::constants::REQUESTS_FOR_STATE_PROOFS;
 
+mod pool_transactions;
 
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
@@ -145,14 +145,11 @@ impl PoolService {
         let mut config = VdrPoolOpenConfig::from(config.unwrap_or_default());
         config.protocol_version = protocol_version;
 
-        let transactions = Self::_gen_pool_transactions(&name)?;
+        let transactions = pool_transactions::create(&name)?;
 
-        let pool: SharedPool =
-            PoolBuilder::from_config(config)
-                .transactions(transactions)?
-                .into_shared()?;
+        let mut pool = self._build_pool(&config, transactions)?;
 
-        let pool = self._refresh_pool(&pool).await?;
+        self._refresh_pool(&mut pool, &name).await?;
 
         let pool_handle: PoolHandle = next_pool_handle();
         let pool_descriptor = PoolDescriptor { name, pool };
@@ -265,10 +262,10 @@ impl PoolService {
     pub async fn refresh(&self, handle: PoolHandle) -> IndyResult<()> {
         let mut borrowed_pools = self.open_pools.try_borrow_mut()?;
 
-        let mut pool = borrowed_pools.get_mut(&handle)
+        let pool = borrowed_pools.get_mut(&handle)
             .ok_or(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", handle)))?;
 
-        pool.pool = self._refresh_pool(&pool.pool).await?;
+        self._refresh_pool(&mut pool.pool, &pool.name).await?;
 
         Ok(())
     }
@@ -290,36 +287,43 @@ impl PoolService {
         Ok(pool)
     }
 
-    async fn _refresh_pool(&self, pool: &SharedPool) -> IndyResult<SharedPool> {
-        let (new_transactions, _timing) = perform_refresh(pool).await?;
+    async fn _refresh_pool(&self, pool: &mut SharedPool, pool_name: &str) -> IndyResult<()> {
+        let (new_transactions, _timing) =
+            match perform_refresh(pool).await {
+                Ok((new_transactions, _timing)) => (new_transactions, _timing),
+                Err(_) => {
+                    pool_transactions::drop_cache(pool_name)?;
 
-        let config = pool.get_config().to_owned();
+                    let transactions = pool_transactions::create(pool_name)?;
+
+                    *pool = self._build_pool(pool.get_config(), transactions)?;
+
+                    perform_refresh(pool).await?
+                }
+            };
 
         let mut transactions = pool.get_transactions()?;
 
         if let Some(new_transaction_) = new_transactions {
             transactions.extend_from_slice(&new_transaction_);
+
+            let new_pool_transactions = PoolTransactions::from_transactions_json(new_transaction_)?;
+
+            pool_transactions::dump_new_txns(pool_name, new_pool_transactions.iter())?;
         }
 
-        let pool = PoolBuilder::from_config(config)
-            .transactions(PoolTransactions::from_transactions_json(transactions)?)?
-            .into_shared()?;
+        let transactions = PoolTransactions::from_transactions_json(transactions)?;
 
-        Ok(pool)
+        *pool = self._build_pool(pool.get_config(), transactions)?;
+
+        Ok(())
     }
 
-    fn _get_pool_transactions_path(name: &str) -> PathBuf {
-        let mut pool_txns_path = environment::pool_path(&name);
-        pool_txns_path.push(name);
-        pool_txns_path.set_extension("txn");
-        pool_txns_path
-    }
-
-    fn _gen_pool_transactions(name: &str) -> IndyResult<PoolTransactions> {
-        let pool_txns_path = Self::_get_pool_transactions_path(name);
-        let transactions = PoolTransactions::from_file_path(&pool_txns_path)
-            .map_err(|err| IndyError::from_msg(IndyErrorKind::PoolNotCreated, err.to_string()))?;
-        Ok(transactions)
+    fn _build_pool(&self, config: &VdrPoolOpenConfig, transactions: PoolTransactions) -> IndyResult<SharedPool> {
+        PoolBuilder::from_config(config.to_owned())
+            .transactions(transactions)?
+            .into_shared()
+            .map_err(IndyError::from)
     }
 
     fn custom_state_proofs_parser(txn_type: &str, reply_from_node: &str) -> Option<Vec<ParsedSP>> {

@@ -41,6 +41,8 @@ extern crate zeroize;
 
 extern crate regex;
 
+extern crate byteorder;
+
 extern crate indy_api_types;
 
 #[macro_use]
