@@ -1,4 +1,6 @@
 use std::convert::Into;
+use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
 use failure::{err_msg, Error, Fail};
@@ -15,10 +17,8 @@ use crate::domain::admin_message::{ResAdminQuery, ResQueryForwardAgent};
 use crate::domain::config::{ForwardAgentConfig, WalletStorageConfig};
 use crate::domain::invite::ForwardAgentDetail;
 use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
-use crate::utils::futures::*;
 use crate::utils::config_env::get_app_env_config;
-use std::rc::Rc;
-use std::sync::{RwLock, Arc};
+use crate::utils::futures::*;
 
 /// When the agency is initially started, single instance of forward agent is created. Forward agent
 /// is somewhat like agency representative. It has its own DID and Verkey based on configuration

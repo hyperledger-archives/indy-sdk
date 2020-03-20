@@ -1,22 +1,22 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::sync::RwLock;
 
 use actix::prelude::*;
 use failure::{err_msg, Error};
+use failure::Fail;
+use futures::*;
 use futures::*;
 use futures::future::Either;
-use futures::*;
-use failure::{Fail};
 
 use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage, RemoteMsg, RouteA2ConnMsg};
 use crate::actors::admin::Admin;
 use crate::actors::requester::Requester;
 use crate::domain::a2connection::A2ConnMessage;
 use crate::domain::admin_message::ResAdminQuery;
-use crate::utils::futures::*;
-use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
 use crate::domain::config::WalletStorageConfig;
-use std::rc::Rc;
-use std::sync::RwLock;
+use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
+use crate::utils::futures::*;
 
 /// Router stores DID and Verkeys and handle all Forward messages. More info on Aries FWD messages:
 /// https://github.com/hyperledger/aries-rfcs/tree/master/concepts/0094-cross-domain-messaging
@@ -52,19 +52,6 @@ impl Router {
             .into_box()
     }
 
-
-    // fn register_fwac(&mut self, owner_did: String, entity_did: String, entity_verkey: String) {
-    //     trace!("Router::register_fwac >> {}, {}", did, verkey);
-    //     future::ok(())
-    //         .and_then(move |_| {
-    //             pairwise::create_pairwise(self.wallet_handle, &user_pairwise_did, &agent_connection_did, Some("{}"))
-    //                 .map_err(|err| err.context("Can't store agent pairwise connection.").into())
-    //                 .map(|_| (user_pairwise_did, agent_connection_did, agent_connection_verkey))
-    //                 .into_actor(slf)
-    //         })
-    //         .into_box()
-    // }
-
     pub fn add_a2a_route(&mut self, did: String, verkey: String, handler: Recipient<HandleA2AMsg>) {
         trace!("Router::handle_add_route >> {}, {}", did, verkey);
         self.routes.insert(did, handler.clone());
@@ -77,10 +64,6 @@ impl Router {
         self.pairwise_routes.insert(verkey, handler);
     }
 
-    // fn _try_restore_route(&mut self, did: &str) -> Recipient<HandleA2AMsg> {
-    //
-    // }
-
     pub fn route_a2a_msg(&self, did: String, msg: Vec<u8>) -> ResponseFuture<Vec<u8>, Error> {
         trace!("Router::route_a2a_msg >> {:?}, {:?}", did, msg);
 
@@ -91,9 +74,7 @@ impl Router {
                 .and_then(|res| res)
                 .into_box()
         } else {
-            // _try_restore_route(&did)
             panic!("Cant resolve route") // todo: We should not panic but handle this
-
         }
     }
 
