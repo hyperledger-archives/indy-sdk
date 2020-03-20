@@ -1,3 +1,5 @@
+use std::sync::{Arc, RwLock};
+
 use actix::prelude::*;
 use actix_web::*;
 use actix_web::web::Data;
@@ -10,10 +12,10 @@ use crate::domain::config::{AppConfig, ServerConfig};
 
 pub struct AppData {
     pub forward_agent: Addr<ForwardAgent>,
-    pub admin_agent: Option<Addr<Admin>>,
+    pub admin_agent: Option<Arc<RwLock<Admin>>>,
 }
 
-pub fn start_app_server(server_config: ServerConfig, app_config: AppConfig, forward_agent: Addr<ForwardAgent>, admin_agent: Option<Addr<Admin>>) {
+pub fn start_app_server(server_config: ServerConfig, app_config: AppConfig, forward_agent: Addr<ForwardAgent>, admin_agent: Option<Arc<RwLock<Admin>>>) {
     info!("Creating HttpServer with config: {:?}", server_config);
     let mut server = HttpServer::new(move || {
         info!("Starting App with config: {:?}", app_config);

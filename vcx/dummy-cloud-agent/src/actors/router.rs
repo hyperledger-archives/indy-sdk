@@ -7,7 +7,7 @@ use futures::future::Either;
 use futures::*;
 use failure::{Fail};
 
-use crate::actors::{AdminRegisterRouter, HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage, RemoteMsg, RouteA2ConnMsg};
+use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage, RemoteMsg, RouteA2ConnMsg};
 use crate::actors::admin::Admin;
 use crate::actors::requester::Requester;
 use crate::domain::a2connection::A2ConnMessage;
