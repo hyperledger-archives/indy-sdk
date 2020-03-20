@@ -1,19 +1,19 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
 use failure::{err_msg, Error};
 use futures::Future;
 use futures::future::ok;
 
-use crate::actors::{HandleAdminMessage};
-use crate::domain::admin_message::{ResAdminQuery, ResQueryAdmin, AdminQuery, GetDetailAgentConnParams, GetDetailAgentParams};
-use crate::utils::futures::FutureExt;
-use std::rc::Rc;
-use std::sync::{RwLock, Arc};
-use crate::actors::forward_agent::ForwardAgent;
-use crate::actors::forward_agent_connection::ForwardAgentConnection;
+use crate::actors::HandleAdminMessage;
 use crate::actors::agent::Agent;
 use crate::actors::agent_connection::AgentConnection;
+use crate::actors::forward_agent::ForwardAgent;
+use crate::actors::forward_agent_connection::ForwardAgentConnection;
+use crate::domain::admin_message::{AdminQuery, GetDetailAgentConnParams, GetDetailAgentParams, ResAdminQuery, ResQueryAdmin};
+use crate::utils::futures::FutureExt;
 
 /// Admin actor is much like Router aware of existing instances such as Forward Agent, Forward Agent Connections,
 /// Agents and Agent Connections. Agent can receive requests to retrieve various information about
