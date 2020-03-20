@@ -154,7 +154,7 @@ pub mod test {
                 connection_handle: 0,
                 wallet_handle: get_wallet_handle(),
                 credential_handle: 0,
-                presentation_handle: 0
+                presentation_handle: 0,
             }
         }
 
@@ -591,6 +591,10 @@ pub mod test {
         let faber_connection_info = faber.connection_info();
         assert!(faber_connection_info["their"]["protocols"].as_array().unwrap().len() > 0);
 
+        /*
+         Create with message id flow
+        */
+
         // Credential issuance
         faber.offer_credential();
 
@@ -615,6 +619,146 @@ pub mod test {
             let message = alice.download_message();
             let (presentation_handle, _presentation_request) = ::disclosed_proof::create_proof_with_msgid("test", alice.connection_handle, &message.uid).unwrap();
             alice.presentation_handle = presentation_handle;
+
+            let credentials = alice.get_credentials_for_presentation();
+
+            ::disclosed_proof::generate_proof(alice.presentation_handle, credentials.to_string(), String::from("{}")).unwrap();
+            assert_eq!(3, ::disclosed_proof::get_state(alice.presentation_handle).unwrap());
+
+            ::disclosed_proof::send_proof(alice.presentation_handle, alice.connection_handle).unwrap();
+            assert_eq!(2, ::disclosed_proof::get_state(alice.presentation_handle).unwrap());
+        }
+
+        faber.verify_presentation();
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn aries_demo_create_with_message_id_flow() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Publish Schema and Credential Definition
+        faber.create_schema();
+
+        ::std::thread::sleep(::std::time::Duration::from_secs(2));
+
+        faber.create_credential_definition();
+
+        // Connection
+        let invite = faber.create_invite();
+        alice.accept_invite(&invite);
+
+        faber.update_state_with_message(3);
+        alice.update_state_with_message(4);
+        faber.update_state_with_message(4);
+
+        /*
+         Create with message id flow
+        */
+
+        // Credential issuance
+        faber.offer_credential();
+
+        // Alice creates Credential object with message id
+        {
+            let message = alice.download_message();
+            let (credential_handle, _credential_offer) = ::credential::credential_create_with_msgid("test", alice.connection_handle, &message.uid).unwrap();
+            alice.credential_handle = credential_handle;
+
+            ::credential::send_credential_request(alice.credential_handle, alice.connection_handle).unwrap();
+            assert_eq!(2, ::credential::get_state(alice.credential_handle).unwrap());
+        }
+
+        faber.send_credential();
+        alice.accept_credential();
+
+        // Credential Presentation
+        faber.request_presentation();
+
+        // Alice creates Presentation object with message id
+        {
+            let message = alice.download_message();
+            let (presentation_handle, _presentation_request) = ::disclosed_proof::create_proof_with_msgid("test", alice.connection_handle, &message.uid).unwrap();
+            alice.presentation_handle = presentation_handle;
+
+            let credentials = alice.get_credentials_for_presentation();
+
+            ::disclosed_proof::generate_proof(alice.presentation_handle, credentials.to_string(), String::from("{}")).unwrap();
+            assert_eq!(3, ::disclosed_proof::get_state(alice.presentation_handle).unwrap());
+
+            ::disclosed_proof::send_proof(alice.presentation_handle, alice.connection_handle).unwrap();
+            assert_eq!(2, ::disclosed_proof::get_state(alice.presentation_handle).unwrap());
+        }
+
+        faber.verify_presentation();
+    }
+
+    #[cfg(feature = "aries")]
+    #[test]
+    fn aries_demo_download_message_flow() {
+        PaymentPlugin::load();
+        let _pool = Pool::open();
+
+        let mut faber = Faber::setup();
+        let mut alice = Alice::setup();
+
+        // Publish Schema and Credential Definition
+        faber.create_schema();
+
+        ::std::thread::sleep(::std::time::Duration::from_secs(2));
+
+        faber.create_credential_definition();
+
+        // Connection
+        let invite = faber.create_invite();
+        alice.accept_invite(&invite);
+
+        faber.update_state_with_message(3);
+        alice.update_state_with_message(4);
+        faber.update_state_with_message(4);
+
+        /*
+         Create with message flow
+        */
+
+        // Credential issuance
+        faber.offer_credential();
+
+        // Alice creates Credential object with Offer
+        {
+            let message = alice.download_message();
+
+            let msg: serde_json::Value = ::serde_json::from_str(&message.decrypted_payload.unwrap()).unwrap();
+            let offer = msg["@msg"].as_str().unwrap();
+
+            alice.credential_handle = ::credential::credential_create_with_offer("test", &offer).unwrap();
+
+            ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
+
+            ::credential::send_credential_request(alice.credential_handle, alice.connection_handle).unwrap();
+            assert_eq!(2, ::credential::get_state(alice.credential_handle).unwrap());
+        }
+
+        faber.send_credential();
+        alice.accept_credential();
+
+        // Credential Presentation
+        faber.request_presentation();
+
+        // Alice creates Presentation object with Proof Request
+        {
+            let message = alice.download_message();
+
+            let msg: serde_json::Value = ::serde_json::from_str(&message.decrypted_payload.unwrap()).unwrap();
+            let request = msg["@msg"].as_str().unwrap();
+
+            alice.presentation_handle = ::disclosed_proof::create_proof("test", &request).unwrap();
+
+            ::connection::update_message_status(alice.connection_handle, message.uid).unwrap();
 
             let credentials = alice.get_credentials_for_presentation();
 
