@@ -128,19 +128,17 @@ mod tests {
         let legacy_or_qualified_did_regex = Regex::new("^[a-z0-9]+:([a-z0-9]+):(.*)$|[a-zA-Z0-9]{21,}").unwrap();
 
         run_admin_test(|(e_wallet_handle, _, _, _, _, _, admin)| {
-            admin
-                .send(HandleAdminMessage(AdminQuery::GetActorOverview))
+            admin.read().unwrap()
+                .get_actor_overview()
                 .from_err()
                 .map(move |res| {
-                    if let Ok(ResAdminQuery::Admin(details)) = res {
+                    if let ResAdminQuery::Admin(details) = res {
                         assert_eq!(details.forward_agent_connections.len(), 1);
                         assert!(legacy_or_qualified_did_regex.is_match(&details.forward_agent_connections[0]));
                         assert_eq!(details.agents.len(), 1);
                         assert!(legacy_or_qualified_did_regex.is_match(&details.agents[0]));
                         assert_eq!(details.agent_connections.len(), 1);
                         assert!(legacy_or_qualified_did_regex.is_match(&details.agent_connections[0]));
-                    } else {
-                        panic!("Response was expected to be AdminQuery::GetActorOverview variant, but got {:?}", res);
                     }
                     e_wallet_handle
                 })
@@ -153,22 +151,23 @@ mod tests {
         let verkey_regex = Regex::new("[a-zA-Z0-9]{42,46}").unwrap();
 
         run_admin_test(|(e_wallet_handle, _, _, _, _, _, admin)| {
-            admin.clone()
-                .send(HandleAdminMessage(AdminQuery::GetActorOverview))
+            let admin1 = admin.clone();
+            admin.read().unwrap()
+                .get_actor_overview()
                 .from_err()
                 .map(move |res| {
-                    if let Ok(ResAdminQuery::Admin(details)) = res {
+                    if let ResAdminQuery::Admin(details) = res {
                         details.agents[0].to_owned()
                     } else {
                         panic!("Response was expected to be ResAdminQuery::Admin variant.");
                     }
                 })
                 .and_then(move |agent_did| {
-                    admin
-                        .send(HandleAdminMessage(AdminQuery::GetDetailAgent(GetDetailAgentParams { agent_did: agent_did.clone() })))
+                    admin1.read().unwrap()
+                        .get_detail_agent(agent_did.clone())
                         .from_err()
                         .map(move |res| {
-                            if let Ok(ResAdminQuery::Agent(res_query_agent)) = res {
+                            if let ResAdminQuery::Agent(res_query_agent) = res {
                                 assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent.owner_did));
                                 assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent.did));
                                 assert!(verkey_regex.is_match(&res_query_agent.owner_verkey));
@@ -193,22 +192,23 @@ mod tests {
         let verkey_regex = Regex::new("[a-zA-Z0-9]{42,46}").unwrap();
 
         run_admin_test(|(e_wallet_handle, _, _, _, _, _, admin)| {
-            admin.clone()
-                .send(HandleAdminMessage(AdminQuery::GetActorOverview))
+            let admin1 = admin.clone();
+            admin.read().unwrap()
+                .get_actor_overview()
                 .from_err()
                 .map(move |res| {
-                    if let Ok(ResAdminQuery::Admin(details)) = res {
+                    if let ResAdminQuery::Admin(details) = res {
                         details.agent_connections[0].to_owned()
                     } else {
                         panic!("Response was expected to be ResAdminQuery::Admin variant.");
                     }
                 })
                 .and_then(move |agent_did| {
-                    admin
-                        .send(HandleAdminMessage(AdminQuery::GetDetailAgentConnection(GetDetailAgentConnParams { agent_pairwise_did: agent_did.clone() })))
+                    admin1.read().unwrap()
+                        .get_detail_agent_connection(agent_did)
                         .from_err()
                         .map(move |res| {
-                            if let Ok(ResAdminQuery::AgentConn(res_query_agent_conn)) = res {
+                            if let ResAdminQuery::AgentConn(res_query_agent_conn) = res {
                                 assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent_conn.owner_did));
                                 assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent_conn.user_pairwise_did));
                                 assert!(legacy_or_qualified_did_regex.is_match(&res_query_agent_conn.agent_pairwise_did));

@@ -146,6 +146,10 @@ impl ForwardAgentConnection {
 
                 router.write().unwrap()
                     .add_a2a_route(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient());
+                if let Some(admin) = admin {
+                    admin.write().unwrap()
+                        .register_forward_agent_connection(fwac_did.clone(), forward_agent_connection.clone())
+                };
                 future::ok((fwac_did, fwac_verkey))
             })
             .into_box()
@@ -252,6 +256,10 @@ impl ForwardAgentConnection {
                 let forward_agent_connection = forward_agent_connection.start();
                 router.write().unwrap()
                     .add_a2a_route(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient());
+                if let Some(admin) = admin {
+                    admin.write().unwrap()
+                        .register_forward_agent_connection(fwac_did.clone(), forward_agent_connection.clone())
+                };
                 future::ok(())
             })
             .into_box()
