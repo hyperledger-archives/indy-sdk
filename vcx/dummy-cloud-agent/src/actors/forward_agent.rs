@@ -6,7 +6,7 @@ use futures::*;
 use futures::future::{Either, ok};
 use serde_json;
 
-use crate::actors::{AdminRegisterForwardAgent, Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, HandleAdminMessage};
+use crate::actors::{Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, HandleAdminMessage};
 use crate::actors::admin::Admin;
 use crate::actors::forward_agent_connection::ForwardAgentConnection;
 use crate::actors::router::Router;
@@ -18,7 +18,7 @@ use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, walle
 use crate::utils::futures::*;
 use crate::utils::config_env::get_app_env_config;
 use std::rc::Rc;
-use std::sync::RwLock;
+use std::sync::{RwLock, Arc};
 
 /// When the agency is initially started, single instance of forward agent is created. Forward agent
 /// is somewhat like agency representative. It has its own DID and Verkey based on configuration
@@ -38,7 +38,7 @@ pub struct ForwardAgent {
     forward_agent_detail: ForwardAgentDetail,
     /// Configuration data to access wallet storage used across Agency
     wallet_storage_config: WalletStorageConfig,
-    admin: Option<Addr<Admin>>,
+    admin: Option<Arc<RwLock<Admin>>>,
 }
 
 impl ForwardAgent {
@@ -47,7 +47,7 @@ impl ForwardAgent {
     /// created, they will be restored.
     pub fn create_or_restore(config: ForwardAgentConfig,
                              wallet_storage_config: WalletStorageConfig,
-                             admin: Option<Addr<Admin>>) -> ResponseFuture<Addr<ForwardAgent>, Error> {
+                             admin: Option<Arc<RwLock<Admin>>>) -> ResponseFuture<Addr<ForwardAgent>, Error> {
         debug!("ForwardAgent::create_or_restore >> {:?} {:?}", config, wallet_storage_config);
         future::ok(())
             .and_then(move |_| {
@@ -109,10 +109,10 @@ impl ForwardAgent {
             })
             .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config)| {
                 Router::new(wallet_handle.clone())
-                    .map(move |router| (wallet_handle, did, verkey, endpoint, wallet_storage_config, router, admin))
+                    .map(move |router| (wallet_handle, did, verkey, endpoint, wallet_storage_config, router))
                     .map_err(|err| err.context("Can't create Router.").into())
             })
-            .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config, router, admin)| {
+            .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config, router)| {
                 // Resolve information about existing connections from the wallet
                 // and start Forward Agent Connection actor for each exists connection
 
@@ -153,21 +153,10 @@ impl ForwardAgent {
 
                 router.write().unwrap()
                     .add_a2a_route(did.clone(), verkey.clone(), forward_agent.clone().recipient());
-                // {
-                //     let mut router = router.write().unwrap();
-                //     router.add_a2a_route(did.clone(), verkey.clone(), forward_agent.clone().recipient());
-                // }
-                future::ok((forward_agent, admin))
-            })
-            .and_then(move |(forward_agent, admin)| {
                 if let Some(admin) = admin {
-                    Either::A(admin.send(AdminRegisterForwardAgent(forward_agent.clone().recipient()))
-                        .from_err()
-                        .map(move |_| forward_agent)
-                        .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into()))
-                } else {
-                    Either::B(ok(forward_agent))
-                }
+                    admin.write().unwrap().register_forward_agent(forward_agent.clone())
+                };
+                future::ok((forward_agent))
             })
             .into_box()
     }
@@ -176,7 +165,7 @@ impl ForwardAgent {
                             forward_agent_detail: ForwardAgentDetail,
                             wallet_storage_config: WalletStorageConfig,
                             router: Rc<RwLock<Router>>,
-                            admin: Option<Addr<Admin>>) -> ResponseFuture<(), Error> {
+                            admin: Option<Arc<RwLock<Admin>>>) -> ResponseFuture<(), Error> {
         debug!("ForwardAgent::_restore_connections >> {:?}", wallet_handle);
 
         future::ok(())

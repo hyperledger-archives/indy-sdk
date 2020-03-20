@@ -1,16 +1,8 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
-use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, RemoteMsg, AdminRegisterAgentConnection, HandleAdminMessage, requester};
-use crate::actors::router::Router;
-use crate::domain::a2a::*;
-use crate::domain::a2connection::*;
-use crate::domain::status::{ConnectionStatus, MessageStatusCode};
-use crate::domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail, AgentDetail, RedirectDetail};
-use crate::domain::internal_message::InternalMessage;
-use crate::domain::key_deligation_proof::KeyDlgProof;
-use crate::domain::payload::{PayloadV1, PayloadV2, PayloadTypes, PayloadKinds, Thread};
-use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
 use base64;
 use failure::{err_msg, Error, Fail};
 use futures::*;
@@ -20,13 +12,21 @@ use rmp_serde;
 use serde_json;
 use uuid::Uuid;
 
+use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage, RemoteMsg, requester};
 use crate::actors::admin::Admin;
+use crate::actors::router::Router;
+use crate::domain::a2a::*;
+use crate::domain::a2connection::*;
 use crate::domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
+use crate::domain::internal_message::InternalMessage;
+use crate::domain::invite::{AgentDetail, ForwardAgentDetail, InviteDetail, RedirectDetail, SenderDetail};
+use crate::domain::key_deligation_proof::KeyDlgProof;
+use crate::domain::payload::{PayloadKinds, PayloadTypes, PayloadV1, PayloadV2, Thread};
+use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
+use crate::domain::status::{ConnectionStatus, MessageStatusCode};
 use crate::indy::{crypto, did, ErrorCode, IndyError, pairwise, WalletHandle};
 use crate::utils::futures::*;
 use crate::utils::to_i8;
-use std::sync::RwLock;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -99,7 +99,7 @@ pub struct AgentConnection {
     // Address of router agent
     router: Rc<RwLock<Router>>,
     // Address of admin agent
-    admin: Option<Addr<Admin>>,
+    admin: Option<Arc<RwLock<Admin>>>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -134,7 +134,7 @@ impl AgentConnection {
     /// to be part of invitation's routing keys.
     pub fn create(config: AgentConnectionConfig,
                   router: Rc<RwLock<Router>>,
-                  admin: Option<Addr<Admin>>) -> ResponseFuture<(), Error> {
+                  admin: Option<Arc<RwLock<Admin>>>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::create >> {:?}", config);
         future::ok(())
             .and_then(move |_| {
@@ -165,16 +165,11 @@ impl AgentConnection {
                     router.add_a2conn_route(config.agent_connection_did.clone(), config.agent_connection_verkey.clone(), agent_connection.clone().recipient());
                 }
                 let agent_pairwise_did = config.agent_connection_did.clone();
-                future::ok((admin, agent_pairwise_did, agent_connection))
-            })
-            .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
-                match admin {
-                    Some(admin) => Either::A(admin.send(AdminRegisterAgentConnection(agent_pairwise_did, agent_connection.clone().recipient()))
-                        .from_err()
-                        .map(|_| ())
-                        .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())),
-                    None => Either::B(future::ok(()))
-                }
+                if let Some(admin) = admin {
+                    admin.write().unwrap()
+                        .register_agent_connection(agent_pairwise_did, agent_connection.clone())
+                };
+                future::ok(())
             })
             .into_box()
     }
@@ -193,7 +188,7 @@ impl AgentConnection {
                    state: &str,
                    forward_agent_detail: &ForwardAgentDetail,
                    router: Rc<RwLock<Router>>,
-                   admin: Option<Addr<Admin>>,
+                   admin: Option<Arc<RwLock<Admin>>>,
                    agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
         trace!("AgentConnection::restore >> {:?}", wallet_handle);
 
@@ -245,16 +240,11 @@ impl AgentConnection {
                     router.add_a2a_route(agent_pairwise_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient());
                     router.add_a2conn_route(agent_pairwise_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient());
                 }
-                future::ok((admin, agent_pairwise_did, agent_connection))
-            })
-            .and_then(move |(admin, agent_pairwise_did, agent_connection)| {
-                match admin {
-                    Some(admin) => Either::A(admin.send(AdminRegisterAgentConnection(agent_pairwise_did.clone(), agent_connection.clone().recipient()))
-                        .from_err()
-                        .map(|_| ())
-                        .map_err(|err: Error| err.context("Can't register Agent Connection in Admin").into())),
-                    None => Either::B(future::ok(()))
-                }
+                if let Some(admin) = admin {
+                    admin.write().unwrap()
+                        .register_agent_connection(agent_pairwise_did, agent_connection.clone())
+                };
+                future::ok(())
             })
             .into_box()
     }

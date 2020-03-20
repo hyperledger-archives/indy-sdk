@@ -12,36 +12,6 @@ pub mod agent;
 pub mod agent_connection;
 pub mod requester;
 
-pub struct AdminRegisterRouter(pub Recipient<HandleAdminMessage>);
-
-impl Message for AdminRegisterRouter {
-    type Result = Result<(), Error>;
-}
-
-pub struct AdminRegisterForwardAgent(pub Recipient<HandleAdminMessage>);
-
-impl Message for AdminRegisterForwardAgent {
-    type Result = Result<(), Error>;
-}
-
-pub struct AdminRegisterForwardAgentConnection(pub String, pub Recipient<HandleAdminMessage>);
-
-impl Message for AdminRegisterForwardAgentConnection {
-    type Result = Result<(), Error>;
-}
-
-pub struct AdminRegisterAgent(pub String, pub Recipient<HandleAdminMessage>);
-
-impl Message for AdminRegisterAgent {
-    type Result = Result<(), Error>;
-}
-
-pub struct AdminRegisterAgentConnection(pub String, pub Recipient<HandleAdminMessage>);
-
-impl Message for AdminRegisterAgentConnection {
-    type Result = Result<(), Error>;
-}
-
 #[derive(Debug, Clone)]
 pub struct HandleAdminMessage(pub AdminQuery);
 

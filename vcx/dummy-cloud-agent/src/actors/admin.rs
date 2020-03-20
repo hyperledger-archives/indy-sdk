@@ -5,23 +5,29 @@ use failure::{err_msg, Error};
 use futures::Future;
 use futures::future::ok;
 
-use crate::actors::{AdminRegisterAgent, AdminRegisterAgentConnection, AdminRegisterForwardAgent, AdminRegisterForwardAgentConnection, AdminRegisterRouter, HandleAdminMessage};
-use crate::domain::admin_message::{AdminQuery, ResAdminQuery, ResQueryAdmin};
+use crate::actors::{HandleAdminMessage};
+use crate::domain::admin_message::{ResAdminQuery, ResQueryAdmin, AdminQuery, GetDetailAgentConnParams, GetDetailAgentParams};
 use crate::utils::futures::FutureExt;
+use std::rc::Rc;
+use std::sync::{RwLock, Arc};
+use crate::actors::forward_agent::ForwardAgent;
+use crate::actors::forward_agent_connection::ForwardAgentConnection;
+use crate::actors::agent::Agent;
+use crate::actors::agent_connection::AgentConnection;
 
-/// Admin actor is aware of other existing instances such as Forward Agent, Forward Agent Connections,
+/// Admin actor is much like Router aware of existing instances such as Forward Agent, Forward Agent Connections,
 /// Agents and Agent Connections. Agent can receive requests to retrieve various information about
 /// these instances. As the name indicates, Admin interface is not supposed to be public as it's
 /// capable revealing various metadata about agency and instances in it.
 pub struct Admin {
-    forward_agent: Option<Recipient<HandleAdminMessage>>,
-    forward_agent_connections: HashMap<String, Recipient<HandleAdminMessage>>,
-    agents: HashMap<String, Recipient<HandleAdminMessage>>,
-    agent_connections: HashMap<String, Recipient<HandleAdminMessage>>,
+    forward_agent: Option<Addr<ForwardAgent>>,
+    forward_agent_connections: HashMap<String, Addr<ForwardAgentConnection>>,
+    agents: HashMap<String, Addr<Agent>>,
+    agent_connections: HashMap<String, Addr<AgentConnection>>,
 }
 
 impl Admin {
-    pub fn create() -> Addr<Admin> {
+    pub fn create() -> Arc<RwLock<Admin>> {
         trace!("Admin::create >>");
         let admin = Admin {
             forward_agent: None,
@@ -29,132 +35,82 @@ impl Admin {
             agents: HashMap::new(),
             agent_connections: HashMap::new(),
         };
-        admin.start()
+        Arc::new(RwLock::new(admin))
     }
 
-    pub fn handle_admin_message(&self, admin_msg: &AdminQuery)
-                                -> Box<dyn Future<Item=ResAdminQuery, Error=Error>> {
-        match admin_msg {
-            AdminQuery::GetDetailForwardAgents => {
-                if let Some(addr) = self.forward_agent.as_ref() {
-                    addr
-                        .send(HandleAdminMessage(admin_msg.clone()))
-                        .from_err()
-                        .and_then(|res| res)
-                        .into_box()
-                } else {
-                    err!(err_msg("Forward agent is not registered in Admin."))
-                }
-            }
-            AdminQuery::GetDetailAgent(query) => {
-                let agent = self.agents.get(&query.agent_did);
-                match agent {
-                    Some(agent) => {
-                        agent
-                            .send(HandleAdminMessage(admin_msg.clone()))
-                            .from_err()
-                            .and_then(|res| res)
-                            .into_box()
-                    }
-                    None => err!(err_msg("Agent not found."))
-                }
-            }
-            AdminQuery::GetDetailAgentConnection(query) => {
-                let agent_connection = self.agent_connections.get(&query.agent_pairwise_did);
-                trace!("resolveding agent connectioon {:?}", query.agent_pairwise_did);
-//                err!(err_msg("resolveding agent connectioon"))
-                match agent_connection {
-                    Some(agent_connection) => {
-                        agent_connection
-                            .send(HandleAdminMessage(admin_msg.clone()))
-                            .from_err()
-                            .and_then(|res| res)
-                            .into_box()
-                    }
-                    None => err!(err_msg("Agent connection not found."))
-                }
-            }
-            AdminQuery::GetDetailForwardAgentConnection => {
-                err!(err_msg("GetDetailForwardAgentConnection not implemented"))
-            }
-            AdminQuery::GetDetailRouter => {
-                err!(err_msg("GetDetailRouter not implemented"))
-            }
-            AdminQuery::GetActorOverview => {
-                let forward_agent_connections = self.forward_agent_connections.iter().map(|(did, _address)| did.clone()).collect::<Vec<_>>().clone();
-                let agents = self.agents.iter().map(|(did, _address)| did.clone()).collect::<Vec<_>>().clone();
-                let agent_connections = self.agent_connections.iter().map(|(did, _address)| did.clone()).collect::<Vec<_>>().clone();
-                ok(ResAdminQuery::Admin(
-                    ResQueryAdmin {
-                        forward_agent_connections,
-                        agents,
-                        agent_connections,
-                    })
-                ).into_box()
-            }
+    pub fn register_forward_agent(&mut self, fwa: Addr<ForwardAgent>) {
+        trace!("Admin::register_forward_agent >>");
+        self.forward_agent = Some(fwa);
+    }
+
+    pub fn register_forward_agent_connection(&mut self, did: String, fwac: Addr<ForwardAgentConnection>) {
+        trace!("Admin::register_forward_agent_connection >>");
+        self.forward_agent_connections.insert(did, fwac);
+    }
+
+    pub fn register_agent(&mut self, did: String, agent: Addr<Agent>){
+        trace!("Admin::register_agent >>");
+        self.agents.insert(did, agent);
+    }
+
+    pub fn register_agent_connection(&mut self, did: String, aconn: Addr<AgentConnection>){
+        trace!("Admin::register_agent_connection>>");
+        self.agent_connections.insert(did, aconn);
+    }
+
+    pub fn get_actor_overview(&self) -> Box<dyn Future<Item=ResAdminQuery, Error=Error>> {
+        let forward_agent_connections = self.forward_agent_connections.iter().map(|(did, _address)| did.clone()).collect::<Vec<_>>().clone();
+        let agents = self.agents.iter().map(|(did, _address)| did.clone()).collect::<Vec<_>>().clone();
+        let agent_connections = self.agent_connections.iter().map(|(did, _address)| did.clone()).collect::<Vec<_>>().clone();
+        ok(ResAdminQuery::Admin(
+            ResQueryAdmin {
+                forward_agent_connections,
+                agents,
+                agent_connections,
+            })
+        ).into_box()
+    }
+
+    pub fn get_detail_forward_agents(&self) -> Box<dyn Future<Item=ResAdminQuery, Error=Error>> {
+        if let Some(addr) = self.forward_agent.as_ref() {
+            addr
+                .send(HandleAdminMessage(AdminQuery::GetDetailForwardAgents))
+                .from_err()
+                .and_then(|res| res)
+                .into_box()
+        } else {
+            err!(err_msg("Forward agent is not registered in Admin."))
         }
     }
-}
 
-impl Actor for Admin {
-    type Context = Context<Self>;
-}
-
-impl Handler<HandleAdminMessage> for Admin {
-    type Result = Box<dyn Future<Item=ResAdminQuery, Error=Error>>;
-
-    fn handle(&mut self, msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
-        trace!("Admin Handler<HandleAdminMessage>::handle");
-        self.handle_admin_message(&msg.0)
+    pub fn get_detail_agent(&self, agent_did: String) -> Box<dyn Future<Item=ResAdminQuery, Error=Error>> {
+        let agent = self.agents.get(&agent_did);
+        let admin_query = AdminQuery::GetDetailAgent(GetDetailAgentParams { agent_did });
+        match agent {
+            Some(agent) => {
+                agent
+                    .send(HandleAdminMessage(admin_query))
+                    .from_err()
+                    .and_then(|res| res)
+                    .into_box()
+            }
+            None => err!(err_msg("Agent not found."))
+        }
     }
-}
 
-impl Handler<AdminRegisterForwardAgentConnection> for Admin {
-    type Result = Result<(), Error>;
-
-    fn handle(&mut self, _msg: AdminRegisterForwardAgentConnection, _cnxt: &mut Self::Context) -> Self::Result {
-        trace!("Admin Handler<AdminRegisterForwardAgentConnection>::handle >>");
-        self.forward_agent_connections.insert(_msg.0, _msg.1);
-        Ok(())
-    }
-}
-
-impl Handler<AdminRegisterAgent> for Admin {
-    type Result = Result<(), Error>;
-
-    fn handle(&mut self, _msg: AdminRegisterAgent, _cnxt: &mut Self::Context) -> Self::Result {
-        trace!("Admin Handler<AdminRegisterAgent>::handle >>");
-        self.agents.insert(_msg.0, _msg.1);
-        Ok(())
-    }
-}
-
-impl Handler<AdminRegisterAgentConnection> for Admin {
-    type Result = Result<(), Error>;
-
-    fn handle(&mut self, _msg: AdminRegisterAgentConnection, _cnxt: &mut Self::Context) -> Self::Result {
-        trace!("Admin Handler<AdminRegisterAgentConnection>::handle >>");
-        self.agent_connections.insert(_msg.0, _msg.1);
-        Ok(())
-    }
-}
-
-impl Handler<AdminRegisterForwardAgent> for Admin {
-    type Result = Result<(), Error>;
-
-    fn handle(&mut self, _msg: AdminRegisterForwardAgent, _cnxt: &mut Self::Context) -> Self::Result {
-        trace!("Admin Handler<AdminRegisterForwardAgent>::handle >>", );
-        self.forward_agent = Some(_msg.0);
-        Ok(())
-    }
-}
-
-impl Handler<AdminRegisterRouter> for Admin {
-    type Result = Result<(), Error>;
-
-    fn handle(&mut self, _msg: AdminRegisterRouter, _cnxt: &mut Self::Context) -> Self::Result {
-        trace!("Admin Handler<AdminRegisterRouter>::handle >>", );
-        Ok(())
+    pub fn get_detail_agent_connection(&self, agent_pairwise_did: String) -> Box<dyn Future<Item=ResAdminQuery, Error=Error>> {
+        let agent_connection = self.agent_connections.get(&agent_pairwise_did);
+        let admin_query = AdminQuery::GetDetailAgentConnection(GetDetailAgentConnParams { agent_pairwise_did });
+        match agent_connection {
+            Some(agent_connection) => {
+                agent_connection
+                    .send(HandleAdminMessage(admin_query))
+                    .from_err()
+                    .and_then(|res| res)
+                    .into_box()
+            }
+            None => err!(err_msg("Agent connection not found."))
+        }
     }
 }
 
