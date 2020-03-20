@@ -345,7 +345,7 @@ impl Message {
             A2AMessage::CredentialOffer(offer) => {
                 let cred_offer: CredentialOffer = offer.try_into()?;
 
-                (PayloadKinds::CredOffer, json!(&cred_offer).to_string())
+                (PayloadKinds::CredOffer, json!(vec![cred_offer]).to_string())
             }
             A2AMessage::Credential(credential) => {
                 let credential: CredentialMessage = credential.try_into()?;
