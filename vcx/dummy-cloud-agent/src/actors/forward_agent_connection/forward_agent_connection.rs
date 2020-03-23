@@ -10,7 +10,7 @@ use serde_json;
 
 use crate::actors::{HandleA2AMsg, HandleAdminMessage};
 use crate::actors::admin::Admin;
-use crate::actors::agent::Agent;
+use crate::actors::agent::agent::Agent;
 use crate::actors::router::Router;
 use crate::domain::a2a::*;
 use crate::domain::admin_message::ResAdminQuery;
@@ -54,19 +54,19 @@ fn convert_from_legacy_agent_to_agent_wallet(agent: (String, String, String)) ->
 
 /// Represents pairwise connection between the agency and its client
 pub struct ForwardAgentConnection {
-    wallet_handle: WalletHandle,
+    pub(super) wallet_handle: WalletHandle,
     /// The DID of the owner of this connection (Owner.DID@Client:FWAC)
-    owner_did: String,
+    pub(super) owner_did: String,
     /// The verkey of the owner of this connection (Owner.VK@Client:FWAC)
-    owner_verkey: String,
+    pub(super) owner_verkey: String,
     /// Forward Agent Connection VKey (FWAC.VK@FWAC:Owner) (FWAC stands for "Forward Agent Connection"), addressable via router
-    fwac_verkey: String,
+    pub(super) fwac_verkey: String,
     /// Metadata about the connection and possibly Agent bootstrapped off this connection
-    state: ForwardAgentConnectionState,
-    router: Rc<RwLock<Router>>,
-    admin: Option<Arc<RwLock<Admin>>>,
-    forward_agent_detail: ForwardAgentDetail,
-    wallet_storage_config: WalletStorageConfig,
+    pub(super) state: ForwardAgentConnectionState,
+    pub(super) router: Rc<RwLock<Router>>,
+    pub(super) admin: Option<Arc<RwLock<Admin>>>,
+    pub(super) forward_agent_detail: ForwardAgentDetail,
+    pub(super) wallet_storage_config: WalletStorageConfig,
 }
 
 impl ForwardAgentConnection {
@@ -261,206 +261,6 @@ impl ForwardAgentConnection {
                         .register_forward_agent_connection(fwac_did.clone(), forward_agent_connection.clone())
                 };
                 future::ok(())
-            })
-            .into_box()
-    }
-
-    /// Handles encrypted message which has been addressed for this actor, presumably coming from
-    /// the peer of this pairwise relationship represented by this forward agency connection.
-    ///
-    /// # Arguments
-    ///
-    /// * `msg` - Authccrypted data addressed for this actor, forwarded by Router actor
-    ///
-    fn _handle_a2a_msg(&mut self,
-                       msg: Vec<u8>) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgentConnection::_handle_a2a_msg >> {:?}", msg);
-
-        future::ok(())
-            .into_actor(self)
-            .and_then(move |_, slf, _| {
-                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.fwac_verkey, &msg)
-                    .map_err(|err| err.context("Can't unbundle a2a message.").into())
-                    .into_actor(slf)
-            })
-            .and_then(move |(sender_vk, mut msgs), slf, _| {
-                if slf.owner_verkey != sender_vk {
-                    return err_act!(slf, err_msg("Inconsistent sender and connection pairwise verkeys"));
-                };
-
-                match msgs.pop() {
-                    Some(A2AMessage::Version1(msg)) => slf._handle_a2a_msg_v1(msg),
-                    Some(A2AMessage::Version2(msg)) => slf._handle_a2a_msg_v2(msg),
-                    _ => err_act!(slf, err_msg("Unsupported message"))
-                }
-            })
-            .into_box()
-    }
-
-    /// Handles messages types used for creating agent in Agency.
-    /// See method onboarding_v1 in VCX library.
-    fn _handle_a2a_msg_v1(&mut self,
-                          msg: A2AMessageV1) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgentConnection::_handle_a2a_msg_v1 >> {:?}", msg);
-
-        match msg {
-            A2AMessageV1::SignUp(msg) => {
-                self._sign_up_v1(msg)
-            }
-            A2AMessageV1::CreateAgent(msg) => {
-                self._create_agent_v1(msg)
-            }
-            _ => err_act!(self, err_msg("Unsupported message"))
-        }
-    }
-
-    /// Handles messages types used for creating agent in Agency.
-    /// See method onboarding_v2 in VCX library.
-    fn _handle_a2a_msg_v2(&mut self,
-                          msg: A2AMessageV2) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgentConnection::_handle_a2a_msg_v2 >> {:?}", msg);
-
-        match msg {
-            A2AMessageV2::SignUp(msg) => {
-                self._sign_up_v2(msg)
-            }
-            A2AMessageV2::CreateAgent(msg) => {
-                self._create_agent_v2(msg)
-            }
-            _ => err_act!(self, err_msg("Unsupported message"))
-        }
-    }
-
-    fn _sign_up_v1(&mut self, msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgentConnection::_sign_up_v1 >> {:?}", msg);
-
-        self._sign_up()
-            .and_then(|_, slf, _| {
-                let msgs = vec![A2AMessage::Version1(A2AMessageV1::SignedUp(SignedUp {}))];
-
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.fwac_verkey, &slf.owner_verkey, &msgs)
-                    .map_err(|err| err.context("Can't bundle and authcrypt signed up message.").into())
-                    .into_actor(slf)
-            })
-            .into_box()
-    }
-
-    fn _sign_up_v2(&mut self, msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgentConnection::_sign_up_v2 >> {:?}", msg);
-
-        self._sign_up()
-            .and_then(|_, slf, _| {
-                let msg = A2AMessageV2::SignedUp(SignedUp {});
-
-                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.fwac_verkey), &slf.owner_verkey, &msg)
-                    .map_err(|err| err.context("Can't pack signed up message.").into())
-                    .into_actor(slf)
-            })
-            .into_box()
-    }
-
-    /// Agency client needs send "SignUp" to sing himself up before he can create his Agent
-    fn _sign_up(&mut self) -> ResponseActFuture<Self, (), Error> {
-        trace!("ForwardAgentConnection::_sign_up >>");
-
-        if self.state.is_signed_up {
-            return err_act!(self, err_msg("Already signed up"));
-        };
-
-        self.state.is_signed_up = true;
-
-        future::ok(())
-            .into_actor(self)
-            .and_then(|_, slf, _| {
-                let metadata = ftry_act!(slf, {
-                    serde_json::to_string(&slf.state)
-                        .map_err(|err| err.context("Can't serialize connection state."))
-                });
-
-                pairwise::set_pairwise_metadata(slf.wallet_handle, &slf.owner_did, &metadata)
-                    .map_err(|err| err.context("Can't store connection pairwise.").into())
-                    .into_actor(slf)
-                    .into_box()
-            })
-            .into_box()
-    }
-
-    fn _create_agent_v1(&mut self, msg: CreateAgent) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgentConnection::_create_agent_v1 >> {:?}", msg);
-
-        self._create_agent()
-            .and_then(|(did, verkey), slf, _| {
-                let msgs = vec![A2AMessage::Version1(A2AMessageV1::AgentCreated(AgentCreated {
-                    with_pairwise_did: did,
-                    with_pairwise_did_verkey: verkey,
-                }))];
-
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.fwac_verkey, &slf.owner_verkey, &msgs)
-                    .map_err(|err| err.context("Can't bundle and authcrypt agent created message.").into())
-                    .into_actor(slf)
-            })
-            .into_box()
-    }
-
-    fn _create_agent_v2(&mut self, msg: CreateAgent) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgentConnection::_create_agent_v2 >> {:?}", msg);
-
-        self._create_agent()
-            .and_then(|(agent_did, agent_verkey), slf, _| {
-                let msg = A2AMessageV2::AgentCreated(AgentCreated {
-                    with_pairwise_did: agent_did,
-                    with_pairwise_did_verkey: agent_verkey,
-                });
-
-                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.fwac_verkey), &slf.owner_verkey, &msg)
-                    .map_err(|err| err.context("Can't pack agent created message.").into())
-                    .into_actor(slf)
-            })
-            .into_box()
-    }
-
-    /// Creates agent for peer of pairwise relationship represented by this Forward Agent Connection
-    fn _create_agent(&mut self) -> ResponseActFuture<Self, (String, String), Error> {
-        trace!("ForwardAgentConnection::_create_agent >> ");
-
-        if !self.state.is_signed_up {
-            return err_act!(self, err_msg("Sign up is required."));
-        };
-
-        if self.state.agent.is_some() || self.state.agent_v2.is_some() {
-            return err_act!(self, err_msg("Agent already created."));
-        };
-
-        future::ok(())
-            .into_actor(self)
-            .and_then(|_, slf, _| {
-                Agent::create(&slf.owner_did,
-                              &slf.owner_verkey,
-                              slf.router.clone(),
-                              slf.forward_agent_detail.clone(),
-                              slf.wallet_storage_config.clone(),
-                              slf.admin.clone(),
-                )
-                    .into_actor(slf)
-                    .into_box()
-            })
-            .and_then(|(wallet_id, agent_did, agent_verkey, kdf_directive), slf, _| {
-                slf.state.agent_v2 = Some(AgentWalletInfo {
-                    wallet_id,
-                    agent_did: agent_did.clone(),
-                    kdf_directive,
-                });
-
-                let metadata = ftry_act!(slf, {
-                    serde_json::to_string(&slf.state)
-                        .map_err(|err| err.context("Can't serialize agent reference."))
-                });
-
-                pairwise::set_pairwise_metadata(slf.wallet_handle, &slf.owner_did, &metadata)
-                    .map(move |_| (agent_did, agent_verkey))
-                    .map_err(|err| err.context("Can't store connection pairwise.").into())
-                    .into_actor(slf)
-                    .into_box()
             })
             .into_box()
     }

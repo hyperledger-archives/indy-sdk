@@ -65,7 +65,7 @@ impl Message for RouteA2ConnMsg {
 #[derive(Debug, Serialize)]
 pub struct RemoteMsg {
     pub endpoint: String,
-    pub body: Vec<u8>
+    pub body: Vec<u8>,
 }
 
 impl Message for RemoteMsg {

@@ -7,11 +7,11 @@ use failure::{err_msg, Error};
 use futures::Future;
 use futures::future::ok;
 
+use crate::actors::agent::agent::Agent;
+use crate::actors::agent_connection::agent_connection::AgentConnection;
+use crate::actors::forward_agent::forward_agent::ForwardAgent;
+use crate::actors::forward_agent_connection::forward_agent_connection::ForwardAgentConnection;
 use crate::actors::HandleAdminMessage;
-use crate::actors::agent::Agent;
-use crate::actors::agent_connection::AgentConnection;
-use crate::actors::forward_agent::ForwardAgent;
-use crate::actors::forward_agent_connection::ForwardAgentConnection;
 use crate::domain::admin_message::{AdminQuery, GetDetailAgentConnParams, GetDetailAgentParams, ResAdminQuery, ResQueryAdmin};
 use crate::utils::futures::FutureExt;
 
@@ -48,12 +48,12 @@ impl Admin {
         self.forward_agent_connections.insert(did, fwac);
     }
 
-    pub fn register_agent(&mut self, did: String, agent: Addr<Agent>){
+    pub fn register_agent(&mut self, did: String, agent: Addr<Agent>) {
         trace!("Admin::register_agent >>");
         self.agents.insert(did, agent);
     }
 
-    pub fn register_agent_connection(&mut self, did: String, aconn: Addr<AgentConnection>){
+    pub fn register_agent_connection(&mut self, did: String, aconn: Addr<AgentConnection>) {
         trace!("Admin::register_agent_connection>>");
         self.agent_connections.insert(did, aconn);
     }

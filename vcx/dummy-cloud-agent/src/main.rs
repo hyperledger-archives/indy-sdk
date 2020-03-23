@@ -3,6 +3,11 @@
 
 #[cfg(test)]
 extern crate dirs;
+extern crate envconfig;
+#[macro_use]
+extern crate envconfig_derive;
+#[macro_use]
+extern crate failure;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
@@ -14,11 +19,6 @@ extern crate serde_derive;
 extern crate serde_json;
 #[cfg(test)]
 extern crate tokio_core;
-#[macro_use]
-extern crate envconfig_derive;
-extern crate envconfig;
-#[macro_use]
-extern crate failure;
 
 use std::env;
 use std::fs::File;
@@ -27,14 +27,14 @@ use actix::prelude::*;
 use failure::*;
 
 use actors::admin::Admin;
-use actors::forward_agent::ForwardAgent;
 use indy::wallet_plugin::{finish_loading_postgres, load_storage_library, serialize_storage_plugin_configuration};
 
+use crate::actors::forward_agent::forward_agent::ForwardAgent;
 use crate::app::start_app_server;
 use crate::app_admin::start_app_admin_server;
 use crate::domain::config::{Config, WalletStorageConfig};
 use crate::domain::protocol_type::ProtocolType;
-use crate::utils::config_env::{get_app_env_config};
+use crate::utils::config_env::get_app_env_config;
 
 #[macro_use]
 pub(crate) mod utils;
@@ -82,7 +82,7 @@ fn _init_wallet(wallet_storage_config: &WalletStorageConfig) -> Result<(), Strin
                                                          &wallet_storage_config.credentials,
                                                          &wallet_storage_config.plugin_library_path,
                                                          &wallet_storage_config.plugin_init_function)?;
-            let lib= load_storage_library(&plugin_library_path_serialized, &plugin_init_function_serialized)?;
+            let lib = load_storage_library(&plugin_library_path_serialized, &plugin_init_function_serialized)?;
             if wallet_type == "postgres_storage" {
                 finish_loading_postgres(lib, &storage_config_serialized, &storage_credentials_serialized)?;
             }
@@ -147,7 +147,7 @@ fn _start(config_path: &str) {
                 let admin = Admin::create();
                 start_app_admin_server(server_admin_config, admin.clone());
                 Some(admin)
-            },
+            }
             _ => None
         };
         ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config, admin.clone())

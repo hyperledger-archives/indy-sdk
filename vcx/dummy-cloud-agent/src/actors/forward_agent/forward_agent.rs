@@ -10,7 +10,7 @@ use serde_json;
 
 use crate::actors::{Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, HandleAdminMessage};
 use crate::actors::admin::Admin;
-use crate::actors::forward_agent_connection::ForwardAgentConnection;
+use crate::actors::forward_agent_connection::forward_agent_connection::ForwardAgentConnection;
 use crate::actors::router::Router;
 use crate::domain::a2a::*;
 use crate::domain::admin_message::{ResAdminQuery, ResQueryForwardAgent};
@@ -27,18 +27,18 @@ use crate::utils::futures::*;
 /// Forward agent is entity capable bootstrap personal agents within the agency.
 pub struct ForwardAgent {
     /// handle to Forward Agent's wallet
-    wallet_handle: WalletHandle,
+    pub(super) wallet_handle: WalletHandle,
     /// Agency DID, addressable via router
-    did: String,
+    pub(super) did: String,
     /// Agency Verkey, addressable via router
-    verkey: String,
+    pub(super) verkey: String,
     /// Reference to router actor
-    router: Rc<RwLock<Router>>,
+    pub(super) router: Rc<RwLock<Router>>,
     /// Agency DID, Agency Verkey and Agency endpoint
-    forward_agent_detail: ForwardAgentDetail,
+    pub(super) forward_agent_detail: ForwardAgentDetail,
     /// Configuration data to access wallet storage used across Agency
-    wallet_storage_config: WalletStorageConfig,
-    admin: Option<Arc<RwLock<Admin>>>,
+    pub(super) wallet_storage_config: WalletStorageConfig,
+    pub(super) admin: Option<Arc<RwLock<Admin>>>,
 }
 
 impl ForwardAgent {
@@ -203,173 +203,6 @@ impl ForwardAgent {
                 future::join_all(futures)
                     .map(|_| ())
                     .map_err(|err| err.context("Can't restore Forward Agent connections").into())
-            })
-            .into_box()
-    }
-
-    fn _get_endpoint(&self) -> (String, String) {
-        trace!("ForwardAgent::_get_endpoint >>");
-        (self.did.clone(), self.verkey.clone())
-    }
-
-    /// Returns list of pairwise DIDs representing connections established with Agency
-    fn _get_forward_agent_details(&self) -> (String, Vec<String>, WalletHandle) {
-        trace!("ForwardAgent::_get_forward_agent_details >>");
-        let endpoint = self.forward_agent_detail.endpoint.clone();
-        let wallet_handle = self.wallet_handle.clone();
-        let pairwise_list_string = pairwise::list_pairwise(wallet_handle).wait().expect("Couldn't resolve pairwise list");
-        let pairwise_list = serde_json::from_str::<Vec<String>>(&pairwise_list_string)
-            .expect("Couldn't pair list of pairwises");
-        (endpoint, pairwise_list, wallet_handle)
-    }
-
-    /// Handles forward messages. The assumption is that the received message is
-    /// anoncrypted (using Agency's verkey) forward message.
-    /// After decrypting its passed to router which takes care of delivering it to intended recipient.
-    ///
-    /// * `msg` - Incoming anoncrypted forward message
-    fn _forward_a2a_msg(&mut self,
-                        msg: Vec<u8>) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgent::_forward_a2a_msg >> {:?}", msg);
-
-        future::ok(())
-            .into_actor(self)
-            .and_then(move |_, slf, _| {
-                A2AMessage::parse_anoncrypted(slf.wallet_handle, &slf.verkey, &msg)
-                    .map_err(|err| err.context("Can't unbundle message.").into())
-                    .into_actor(slf)
-            })
-            .and_then(move |mut msgs, slf, _| {
-                let send_to_router = |fwd: String, msg: Vec<u8>| {
-                    slf.router.read().unwrap()
-                        .route_a2a_msg(fwd, msg)
-                        .from_err()
-                        .map(|res| res)
-                        .into_actor(slf)
-                        .into_box()
-                };
-
-
-                match msgs.pop() {
-                    Some(A2AMessage::Version1(A2AMessageV1::Forward(msg))) => {
-                        send_to_router(msg.fwd, msg.msg)
-                    }
-                    Some(A2AMessage::Version2(A2AMessageV2::Forward(msg))) => {
-                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
-                        send_to_router(msg.fwd, msg_)
-                    }
-                    Some(A2AMessage::Version2(A2AMessageV2::ForwardV3(msg))) => {
-                        let msg_ = ftry_act!(slf, serde_json::to_vec(&msg.msg));
-                        send_to_router(msg.to, msg_)
-                    }
-                    _ => err_act!(slf, err_msg("Unsupported message"))
-                }
-            })
-            .into_box()
-    }
-
-    /// Handles messages other than forward messages. The only other message types the Forward Agent
-    /// is capable of handdling is "Connect" message, which translates into request to create
-    /// pairwise relationship with a new uknown client. That is represented by creating
-    /// a new Forward Agent Connection
-    fn _handle_a2a_msg(&mut self,
-                       msg: Vec<u8>) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgent::_handle_a2a_msg >> {:?}", msg);
-
-        future::ok(())
-            .into_actor(self)
-            .and_then(move |_, slf, _| {
-                A2AMessage::parse_authcrypted(slf.wallet_handle, &slf.verkey, &msg)
-                    .map_err(|err| err.context("Can't unbundle message.").into())
-                    .into_actor(slf)
-            })
-            .and_then(move |(sender_vk, mut msgs), slf, _| {
-                match msgs.pop() {
-                    Some(A2AMessage::Version1(A2AMessageV1::Connect(msg))) => {
-                        slf._connect_v1(sender_vk, msg)
-                    }
-                    Some(A2AMessage::Version2(A2AMessageV2::Connect(msg))) => {
-                        slf._connect_v2(sender_vk, msg)
-                    }
-                    _ => err_act!(slf, err_msg("Unsupported message"))
-                }
-            })
-            .into_box()
-    }
-
-    fn _connect_v1(&mut self,
-                   sender_vk: String,
-                   msg: Connect) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgent::_connect_v1 >> {:?}, {:?}", sender_vk, msg);
-
-        let Connect { from_did: their_did, from_did_verkey: their_verkey } = msg;
-
-        self._connect(sender_vk.clone(), their_did.clone(), their_verkey.clone())
-            .and_then(move |(my_did, my_verkey), slf, _| {
-                let msgs = vec![A2AMessage::Version1(A2AMessageV1::Connected(Connected {
-                    with_pairwise_did: my_did,
-                    with_pairwise_did_verkey: my_verkey,
-                }))];
-
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.verkey, &their_verkey, &msgs)
-                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
-                    .into_actor(slf)
-            })
-            .into_box()
-    }
-
-    fn _connect_v2(&mut self,
-                   sender_vk: String,
-                   msg: Connect) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgent::_connect_v2 >> {:?}, {:?}", sender_vk, msg);
-
-        let Connect { from_did: their_did, from_did_verkey: their_verkey, .. } = msg;
-
-        self._connect(sender_vk.clone(), their_did.clone(), their_verkey.clone())
-            .and_then(move |(my_did, my_verkey), slf, _| {
-                let msg = A2AMessageV2::Connected(Connected {
-                    with_pairwise_did: my_did,
-                    with_pairwise_did_verkey: my_verkey,
-                });
-
-                A2AMessage::pack_v2(slf.wallet_handle, Some(&slf.verkey), &their_verkey, &msg)
-                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
-                    .into_actor(slf)
-            })
-            .into_box()
-    }
-
-    /// Creates new pairwise connection between previously unknown client and Agency.
-    ///
-    /// Returns
-    ///
-    /// # Arguments
-    ///
-    /// * `sender_vk` - Verkey of this Connect message sender. Must be same as their_did
-    /// * `their_did` - Client DID at ClientToAgency relationship ( Owner.DID@Client:Agency )
-    /// * `their_verkey` - Client VKey at ClientToAgency relationship ( Client.Verkey@Client:Agency )
-    fn _connect(&mut self,
-                sender_vk: String,
-                their_did: String,
-                their_verkey: String) -> ResponseActFuture<Self, (String, String), Error> {
-        trace!("ForwardAgent::_connect >> {:?}, {:?}, {:?}", sender_vk, their_did, their_verkey);
-
-        if their_verkey != sender_vk {
-            return err_act!(self, err_msg("Inconsistent sender and connection verkeys"));
-        };
-
-        future::ok(())
-            .into_actor(self)
-            .and_then(move |_, slf, _| {
-                ForwardAgentConnection::create(slf.wallet_handle,
-                                               their_did.clone(),
-                                               their_verkey.clone(),
-                                               slf.router.clone(),
-                                               slf.forward_agent_detail.clone(),
-                                               slf.wallet_storage_config.clone(),
-                                               slf.admin.clone())
-                    .map_err(|err| err.context("Can't create Forward Agent Connection.").into())
-                    .into_actor(slf)
             })
             .into_box()
     }

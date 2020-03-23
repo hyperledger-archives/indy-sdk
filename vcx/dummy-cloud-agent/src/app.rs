@@ -7,8 +7,8 @@ use bytes::Bytes;
 
 use crate::actors::{ForwardA2AMsg, GetEndpoint};
 use crate::actors::admin::Admin;
-use crate::actors::forward_agent::ForwardAgent;
 use crate::domain::config::{AppConfig, ServerConfig};
+use crate::actors::forward_agent::forward_agent::ForwardAgent;
 
 pub struct AppData {
     pub forward_agent: Addr<ForwardAgent>,

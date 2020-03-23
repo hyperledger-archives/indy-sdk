@@ -45,7 +45,7 @@ impl Router {
                     pairwise_routes: HashMap::new(),
                     requester
                 };
-                future::ok( Rc::new(RwLock::new(router)))
+                future::ok(Rc::new(RwLock::new(router)))
             })
             .into_box()
     }
