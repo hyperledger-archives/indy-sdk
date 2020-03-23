@@ -110,7 +110,7 @@ impl Connection {
                 .agent_vk(&self.agent_vk)?
                 .public_did(self.public_did.as_ref().map(String::as_str))?
                 .thread(&Thread::new())?
-                .version(&Some(::settings::get_protocol_type()))?
+                .version(&self.version)?
                 .send_secure()
                 .map_err(|err| err.extend("Cannot send invite"))?;
 
@@ -307,7 +307,7 @@ impl Connection {
         let (for_did, for_verkey) = messages::create_keys()
             .for_did(&self.pw_did)?
             .for_verkey(&self.pw_verkey)?
-            .version(&Some(settings::get_protocol_type()))?
+            .version(&self.version)?
             .send_secure()
             .map_err(|err| err.extend("Cannot create pairwise keys"))?;
 
