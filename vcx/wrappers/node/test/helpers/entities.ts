@@ -268,7 +268,7 @@ export const dataProofCreate = (): IProofCreateData => ({
     { name: 'attr2' }
   ],
   preds: [
-    { attr_name: 'pred1', p_type: 'GE', value: 123 },
+    { name: 'pred1', p_type: 'GE', p_value: 123},
   ],
   name: 'Proof',
   revocationInterval: {
