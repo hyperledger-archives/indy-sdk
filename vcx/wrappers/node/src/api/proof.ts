@@ -156,10 +156,10 @@ export enum ProofState {
 }
 
 export interface IProofPredicate {
-  attr_name: string,
+  name: string,
   p_type: string,
-  value: number,
-  restrictions?: IFilter[],
+  p_value: number,
+  restrictions?: IFilter[]
 }
 
 export interface IRevocationInterval {
