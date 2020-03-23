@@ -17,16 +17,6 @@ pub struct CreateKey {
     for_verkey: String,
 }
 
-impl CreateKey {
-    fn build(for_did: &str, for_verkey: &str) -> CreateKey {
-        CreateKey {
-            msg_type: MessageTypes::build(A2AMessageKinds::CreateKey),
-            for_did: for_did.to_string(),
-            for_verkey: for_verkey.to_string(),
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateKeyResponse {
     #[serde(rename = "@type")]
@@ -97,13 +87,21 @@ impl CreateKeyBuilder {
         let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
-                    A2AMessageV1::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
+                    A2AMessageV1::CreateKey(CreateKey {
+                        msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::CreateKey)),
+                        for_did: self.for_did.to_string(),
+                        for_verkey: self.for_verkey.to_string()
+                    })
                 ),
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
-                    A2AMessageV2::CreateKey(CreateKey::build(&self.for_did, &self.for_verkey))
-                )
+                    A2AMessageV2::CreateKey(CreateKey {
+                        msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::CreateKey)),
+                        for_did: self.for_did.to_string(),
+                        for_verkey: self.for_verkey.to_string()
+                    })
+                ),
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
