@@ -323,7 +323,6 @@ pub mod tests {
         let xtype = "type1";
         let id = "id1";
         let value = "value1";
-        let options = "{}";
 
         ::api::vcx::vcx_shutdown(true);
 

@@ -367,8 +367,6 @@ pub mod tests {
             id: _id(),
             public_key: vec![
                 Ed25519PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
-                Ed25519PublicKey { id: "2".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
-                Ed25519PublicKey { id: "3".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
             ],
             authentication: vec![
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
@@ -376,7 +374,7 @@ pub mod tests {
             service: vec![Service {
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_reference_1()],
-                routing_keys: vec![_key_reference_2(), _key_reference_3()],
+                routing_keys: vec![_key_2(), _key_3()],
                 ..Default::default()
             }],
         }
