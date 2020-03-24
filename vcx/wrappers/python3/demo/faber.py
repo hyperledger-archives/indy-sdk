@@ -84,12 +84,24 @@ async def main():
             "Would you like to do? \n "
             "1 - issue credential \n "
             "2 - ask for proof request \n "
+            "3 - send ping \n "
+            "4 - update connection state \n "
             "else finish \n") \
             .lower().strip()
         if answer == '1':
             await issue_credential(connection_to_alice, cred_def_handle)
         elif answer == '2':
             await ask_for_proof(connection_to_alice, config['institution_did'])
+        elif answer == '3':
+            await connection_to_alice.send_ping(None)
+            connection_state = await connection_to_alice.get_state()
+            while connection_state != State.Accepted:
+                sleep(5)
+                await connection_to_alice.update_state()
+                connection_state = await connection_to_alice.get_state()
+                print("State: " + str(connection_state))
+        elif answer == '4':
+            await connection_to_alice.update_state()
         else:
             break
 

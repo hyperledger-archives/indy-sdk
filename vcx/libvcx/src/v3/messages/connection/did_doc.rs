@@ -121,22 +121,22 @@ impl DidDoc {
             .iter()
             .for_each(|key| {
                 // Note: comment lines 123 - 134 and append key instead key_reference to be compatible with Streetcred
-                id += 1;
-
-                let key_id = id.to_string();
-                let key_reference = DidDoc::_build_key_reference(&self.id, &key_id);
-
-                self.public_key.push(
-                    Ed25519PublicKey {
-                        id: key_id,
-                        type_: String::from(KEY_TYPE),
-                        controller: self.id.clone(),
-                        public_key_base_58: key.clone(),
-                    });
+//                id += 1;
+//
+//                let key_id = id.to_string();
+//                let key_reference = DidDoc::_build_key_reference(&self.id, &key_id);
+//
+//                self.public_key.push(
+//                    Ed25519PublicKey {
+//                        id: key_id,
+//                        type_: String::from(KEY_TYPE),
+//                        controller: self.id.clone(),
+//                        public_key_base_58: key.clone(),
+//                    });
 
                 self.service.get_mut(0)
                     .map(|service| {
-                        service.routing_keys.push(key_reference);
+                        service.routing_keys.push(key.to_string());
                         service
                     });
             });
@@ -147,9 +147,9 @@ impl DidDoc {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)));
         }
 
-        if self.id.is_empty() {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"));
-        }
+//        if self.id.is_empty() {
+//            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"));
+//        }
 
         for service in self.service.iter() {
             Url::parse(&service.service_endpoint)
