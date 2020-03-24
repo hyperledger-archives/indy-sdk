@@ -1,24 +1,10 @@
 use std::convert::Into;
-use std::rc::Rc;
-use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
 use failure::{err_msg, Error, Fail};
-use futures::*;
-use futures::future::Either;
-use serde_json;
 
-use crate::actors::{HandleA2AMsg, HandleAdminMessage};
-use crate::actors::admin::Admin;
-use crate::actors::agent::agent::Agent;
-use crate::actors::forward_agent_connection::forward_agent_connection::{AgentWalletInfo, ForwardAgentConnection, ForwardAgentConnectionState};
-use crate::actors::router::Router;
+use crate::actors::forward_agent_connection::forward_agent_connection::{ForwardAgentConnection};
 use crate::domain::a2a::*;
-use crate::domain::admin_message::ResAdminQuery;
-use crate::domain::config::WalletStorageConfig;
-use crate::domain::invite::ForwardAgentDetail;
-use crate::domain::key_derivation::{KeyDerivationDirective, KeyDerivationFunction};
-use crate::indy::{did, pairwise, pairwise::PairwiseInfo, WalletHandle};
 use crate::utils::futures::*;
 
 impl ForwardAgentConnection {

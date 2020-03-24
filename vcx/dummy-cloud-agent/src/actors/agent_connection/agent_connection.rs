@@ -3,30 +3,21 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
-use base64;
-use failure::{err_msg, Error, Fail};
+use failure::{Error, Fail};
 use futures::*;
-use futures::future::Either;
-use futures::future::ok;
-use rmp_serde;
 use serde_json;
-use uuid::Uuid;
 
-use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage, RemoteMsg, requester};
+use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage};
 use crate::actors::admin::Admin;
 use crate::actors::router::Router;
-use crate::domain::a2a::*;
 use crate::domain::a2connection::*;
 use crate::domain::admin_message::{ResAdminQuery, ResQueryAgentConn};
 use crate::domain::internal_message::InternalMessage;
-use crate::domain::invite::{AgentDetail, ForwardAgentDetail, InviteDetail, RedirectDetail, SenderDetail};
+use crate::domain::invite::{AgentDetail, ForwardAgentDetail};
 use crate::domain::key_deligation_proof::KeyDlgProof;
-use crate::domain::payload::{PayloadKinds, PayloadTypes, PayloadV1, PayloadV2, Thread};
-use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
-use crate::domain::status::{ConnectionStatus, MessageStatusCode};
-use crate::indy::{crypto, did, ErrorCode, IndyError, pairwise, WalletHandle};
+use crate::domain::status::ConnectionStatus;
+use crate::indy::{did, WalletHandle};
 use crate::utils::futures::*;
-use crate::utils::to_i8;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(super) struct RemoteConnectionDetail {

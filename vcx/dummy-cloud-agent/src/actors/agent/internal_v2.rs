@@ -1,30 +1,12 @@
-use std::collections::HashMap;
 use std::convert::Into;
-use std::rc::Rc;
-use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
 use failure::{err_msg, Error, Fail};
-use futures::*;
-use futures::future::Either;
-use serde_json;
 
-use crate::actors::{HandleA2AMsg, HandleAdminMessage, RouteA2ConnMsg};
-use crate::actors::admin::Admin;
 use crate::actors::agent::agent::Agent;
-use crate::actors::agent::internal_v1::*;
-use crate::actors::router::Router;
 use crate::domain::a2a::*;
 use crate::domain::a2connection::*;
-use crate::domain::admin_message::{ResAdminQuery, ResQueryAgent};
-use crate::domain::config::WalletStorageConfig;
-use crate::domain::invite::ForwardAgentDetail;
-use crate::domain::key_derivation::KeyDerivationDirective;
-use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
-use crate::utils::config_env::*;
 use crate::utils::futures::*;
-use crate::utils::rand;
-use crate::utils::wallet::build_wallet_credentials;
 
 impl Agent {
     pub(super) fn handle_agent_msg_v2(&mut self,

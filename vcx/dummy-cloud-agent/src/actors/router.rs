@@ -4,18 +4,12 @@ use std::sync::RwLock;
 
 use actix::prelude::*;
 use failure::{err_msg, Error};
-use failure::Fail;
 use futures::*;
-use futures::*;
-use futures::future::Either;
 
-use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, HandleAdminMessage, RemoteMsg, RouteA2ConnMsg};
-use crate::actors::admin::Admin;
+use crate::actors::{HandleA2AMsg, HandleA2ConnMsg, RemoteMsg};
 use crate::actors::requester::Requester;
 use crate::domain::a2connection::A2ConnMessage;
-use crate::domain::admin_message::ResAdminQuery;
-use crate::domain::config::WalletStorageConfig;
-use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
+use crate::indy::WalletHandle;
 use crate::utils::futures::*;
 
 /// Router stores DID and Verkeys and handle all Forward messages. More info on Aries FWD messages:

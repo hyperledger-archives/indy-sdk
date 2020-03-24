@@ -3,10 +3,7 @@ use actix_web::*;
 use actix_web::web::Data;
 
 use crate::actors::admin::Admin;
-use crate::actors::HandleAdminMessage;
-use crate::domain::admin_message::{AdminQuery, GetDetailAgentConnParams, GetDetailAgentParams};
 use crate::domain::config::ServerAdminConfig;
-use std::rc::Rc;
 use std::sync::{RwLock, Arc};
 
 pub struct AdminAppData {

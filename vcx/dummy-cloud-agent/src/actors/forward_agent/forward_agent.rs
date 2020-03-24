@@ -3,16 +3,15 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
-use failure::{err_msg, Error, Fail};
+use failure::{Error, Fail};
 use futures::*;
-use futures::future::{Either, ok};
+use futures::future::Either;
 use serde_json;
 
 use crate::actors::{Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, HandleAdminMessage};
 use crate::actors::admin::Admin;
 use crate::actors::forward_agent_connection::forward_agent_connection::ForwardAgentConnection;
 use crate::actors::router::Router;
-use crate::domain::a2a::*;
 use crate::domain::admin_message::{ResAdminQuery, ResQueryForwardAgent};
 use crate::domain::config::{ForwardAgentConfig, WalletStorageConfig};
 use crate::domain::invite::ForwardAgentDetail;
@@ -156,7 +155,7 @@ impl ForwardAgent {
                 if let Some(admin) = admin {
                     admin.write().unwrap().register_forward_agent(forward_agent.clone())
                 };
-                future::ok((forward_agent))
+                future::ok(forward_agent)
             })
             .into_box()
     }

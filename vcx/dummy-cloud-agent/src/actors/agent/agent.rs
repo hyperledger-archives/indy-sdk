@@ -4,22 +4,19 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
-use failure::{err_msg, Error, Fail};
+use failure::{Error, Fail};
 use futures::*;
-use futures::future::Either;
 use serde_json;
 
-use crate::actors::{HandleA2AMsg, HandleAdminMessage, RouteA2ConnMsg};
+use crate::actors::{HandleA2AMsg, HandleAdminMessage};
 use crate::actors::admin::Admin;
-use crate::actors::agent_connection::agent_connection::{AgentConnection, AgentConnectionConfig};
+use crate::actors::agent_connection::agent_connection::AgentConnection;
 use crate::actors::router::Router;
-use crate::domain::a2a::*;
-use crate::domain::a2connection::*;
 use crate::domain::admin_message::{ResAdminQuery, ResQueryAgent};
 use crate::domain::config::WalletStorageConfig;
 use crate::domain::invite::ForwardAgentDetail;
 use crate::domain::key_derivation::KeyDerivationDirective;
-use crate::indy::{did, ErrorCode, IndyError, pairwise, pairwise::Pairwise, wallet, WalletHandle};
+use crate::indy::{did, ErrorCode, IndyError, wallet, WalletHandle};
 use crate::utils::config_env::*;
 use crate::utils::futures::*;
 use crate::utils::rand;
