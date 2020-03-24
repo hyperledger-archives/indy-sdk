@@ -45,10 +45,3 @@ Added a new function `vcx_disclosed_proof_decline_presentation_request` to expli
 There are two rejecting options:
 - Prover wants to propose using a different presentation - pass `proposal` parameter
 - Prover doesn't want to continue interaction - pass `reason` parameter.
-
-#### Protocols compatibility
-Supported `protocol_version`: `3.0` which actually is an alternative to combination of settings: `protocol_version`: `3.0` and `communication_method`: `aries`.
-
-Added a new enum variant `Pending` for IssuerCredentials/Credentials/Proofs/DisclosedProofs objects.
-Initially create `Pending` objects and convert them to V1/V3 after receiving the connection handle.
-`Pending` objects have `3.0` versions during serialization.

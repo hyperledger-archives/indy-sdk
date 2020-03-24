@@ -220,12 +220,12 @@ impl Connection {
         Ok(())
     }
 
-    pub fn add_pending_messages(&mut self, messages: HashMap<MessageId, String>) -> VcxResult<()> {
+    pub fn add_pending_messages(&self, messages: HashMap<MessageId, String>) -> VcxResult<()> {
         trace!("Connection::add_pending_messages >>> messages: {:?}", messages);
-        Ok(self.connection_sm.add_pending_messages(messages))
+        self.connection_sm.add_pending_messages(messages)
     }
 
-    pub fn remove_pending_message(&mut self, id: MessageId) -> VcxResult<()> {
+    pub fn remove_pending_message(&self, id: MessageId) -> VcxResult<()> {
         trace!("Connection::remove_pending_message >>> id: {:?}", id);
         self.connection_sm.remove_pending_message(id)
     }
