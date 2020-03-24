@@ -12,7 +12,7 @@ pub struct WalletRecord {
     #[serde(rename = "type")]
     record_type: Option<String>,
     pub value: Option<String>,
-    tags: Option<String>
+    tags: Option<String>,
 }
 
 impl WalletRecord {
@@ -34,7 +34,7 @@ pub struct RestoreWalletConfigs {
     pub exported_wallet_path: String,
     pub backup_key: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub key_derivation: Option<String>
+    pub key_derivation: Option<String>,
 }
 
 impl RestoreWalletConfigs {
