@@ -26,19 +26,6 @@ pub struct GetMessages {
     pairwise_dids: Option<Vec<String>>,
 }
 
-impl GetMessages {
-    fn build(kind: A2AMessageKinds, exclude_payload: Option<String>, uids: Option<Vec<String>>,
-             status_codes: Option<Vec<MessageStatusCode>>, pairwise_dids: Option<Vec<String>>) -> GetMessages {
-        GetMessages {
-            msg_type: MessageTypes::build(kind),
-            exclude_payload,
-            uids,
-            status_codes,
-            pairwise_dids,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetMessagesResponse {
@@ -178,23 +165,28 @@ impl GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessagesByConnections,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessagesByConnections)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
-
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
@@ -240,21 +232,27 @@ impl GeneralMessage for GetMessagesBuilder {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV1(MessageTypes::build_v1(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
             settings::ProtocolTypes::V2 |
             settings::ProtocolTypes::V3 =>
                 A2AMessage::Version2(
                     A2AMessageV2::GetMessages(
-                        GetMessages::build(A2AMessageKinds::GetMessages,
-                                           self.exclude_payload.clone(),
-                                           self.uids.clone(),
-                                           self.status_codes.clone(),
-                                           self.pairwise_dids.clone()))
+                        GetMessages {
+                            msg_type: MessageTypes::MessageTypeV2(MessageTypes::build_v2(A2AMessageKinds::GetMessages)),
+                            exclude_payload: self.exclude_payload.clone(),
+                            uids: self.uids.clone(),
+                            status_codes: self.status_codes.clone(),
+                            pairwise_dids: self.pairwise_dids.clone(),
+                        }
+                    )
                 ),
         };
 

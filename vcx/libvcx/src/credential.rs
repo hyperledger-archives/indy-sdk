@@ -314,7 +314,7 @@ impl Credential {
 
         let credential_offer = self.credential_offer.as_ref().ok_or(VcxError::from(VcxErrorKind::InvalidState))?;
         let credential_offer_json = serde_json::to_value(credential_offer)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize CredentilOffer: {}", err)))?;
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidCredential, format!("Cannot deserialize CredentialOffer: {}", err)))?;
 
         Ok(self.to_cred_offer_string(credential_offer_json))
     }
@@ -439,7 +439,7 @@ fn create_credential_v3(source_id: &str, offer: &str) -> VcxResult<Option<Creden
         serde_json::Value::Array(mut offer) => { // legacy offer format
             offer.pop()
                 .ok_or(VcxError::from_msg(VcxErrorKind::InvalidJson, "Cannot get Credential Offer"))?
-        },
+        }
         offer => offer //aries offer format
     };
 
@@ -551,7 +551,15 @@ pub fn get_credential_offer(handle: u32) -> VcxResult<String> {
                 debug!("getting credential offer {}", obj.source_id);
                 obj.get_credential_offer()
             }
-            Credentials::V3(_) => Err(VcxError::from(VcxErrorKind::InvalidCredentialHandle)) // TODO: implement
+            Credentials::V3(ref obj) => {
+                let cred_offer = obj.get_credential_offer()?;
+                let cred_offer: CredentialOffer = cred_offer.try_into()?;
+
+                let cred_offer = json!({
+                    "credential_offer": cred_offer
+                });
+                return Ok(cred_offer.to_string());
+            }
         }
     })
 }

@@ -118,6 +118,10 @@ impl Holder {
         self.holder_sm.get_source_id()
     }
 
+    pub fn get_credential_offer(&self) -> VcxResult<CredentialOffer> {
+        self.holder_sm.get_credential_offer()
+    }
+
     pub fn get_credential(&self) -> VcxResult<(String, Credential)> {
         self.holder_sm.get_credential()
     }
