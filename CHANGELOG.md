@@ -1,10 +1,12 @@
 # Changelog
 
-## 1.14.4 - 2020-03-10
+## 1.15.0 - 2020-03-25
 * Correction for `Fix proof verification in case of credential attribute encoded value contains leading zeros` (IS-1491).
   Indy 1.14.3 changes "0" to "" which leads to proof rejection. 
-* LibVCX: Fixed compatibility between proprietary (`protocol_version`: `2.0`) and aries communication protocols (`protocol_version`: `3.0`).
-    
+* LibVCX: Supported `protocol_version`: `3.0` which actually is an alternative to combination of settings: `protocol_version`: `2.0` and `communication_method`: `aries`.
+* LibVCX: Fixed compatibility between proprietary (`protocol_version`: `2.0`/`1.0`) and aries communication protocols (`protocol_version`: `3.0`).
+* Bugfixes
+
 ## 1.14.3 - 2020-03-04
 * LibVCX:
     * Removed `connection_handle` from functions to get protocol messages.
