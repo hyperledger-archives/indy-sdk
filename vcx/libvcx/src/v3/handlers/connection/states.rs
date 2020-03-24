@@ -19,6 +19,7 @@ use v3::messages::a2a::protocol_registry::ProtocolRegistry;
 use std::collections::HashMap;
 
 use error::prelude::*;
+use v3::utils::pending_message::PendingMessage;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DidExchangeSM {
@@ -89,7 +90,6 @@ pub struct RespondedState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteState {
     did_doc: DidDoc,
-    pending_messages: HashMap<MessageId, String>,
     protocols: Option<Vec<ProtocolDescriptor>>,
 }
 
@@ -131,7 +131,7 @@ impl From<(RequestedState, ProblemReport)> for NullState {
 impl From<(RequestedState, Response)> for CompleteState {
     fn from((_state, response): (RequestedState, Response)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RequestedState to RespondedState");
-        CompleteState { did_doc: response.connection.did_doc, pending_messages: HashMap::new(), protocols: None }
+        CompleteState { did_doc: response.connection.did_doc, protocols: None }
     }
 }
 
@@ -145,28 +145,28 @@ impl From<(RespondedState, ProblemReport)> for NullState {
 impl From<(RespondedState, Ack)> for CompleteState {
     fn from((state, _ack): (RespondedState, Ack)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new(), protocols: None }
+        CompleteState { did_doc: state.did_doc, protocols: None }
     }
 }
 
 impl From<(RespondedState, Ping)> for CompleteState {
     fn from((state, _ping): (RespondedState, Ping)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new(), protocols: None }
+        CompleteState { did_doc: state.did_doc, protocols: None }
     }
 }
 
 impl From<(RespondedState, PingResponse)> for CompleteState {
     fn from((state, _ping_response): (RespondedState, PingResponse)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from RespondedState to CompleteState");
-        CompleteState { did_doc: state.did_doc, pending_messages: HashMap::new(), protocols: None }
+        CompleteState { did_doc: state.did_doc, protocols: None }
     }
 }
 
 impl From<(CompleteState, Vec<ProtocolDescriptor>)> for CompleteState {
     fn from((state, protocols): (CompleteState, Vec<ProtocolDescriptor>)) -> CompleteState {
         trace!("DidExchangeStateSM: transit state from CompleteState to CompleteState");
-        CompleteState { did_doc: state.did_doc, pending_messages: state.pending_messages, protocols: Some(protocols) }
+        CompleteState { did_doc: state.did_doc, protocols: Some(protocols) }
     }
 }
 
@@ -673,22 +673,25 @@ impl DidExchangeSM {
         }
     }
 
-    pub fn add_pending_messages(&mut self, messages: HashMap<MessageId, String>) {
+    pub fn add_pending_messages(&self, messages: HashMap<MessageId, String>) -> VcxResult<()> {
         match self.state {
-            ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref mut state)) |
-            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref mut state)) => {
-                state.pending_messages.extend(messages)
+            ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref _state)) |
+            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref _state)) => {
+                for (key, value) in messages {
+                    PendingMessage::add(&key.0, &value).ok();
+                }
             }
             _ => {}
         };
+        Ok(())
     }
 
-    pub fn remove_pending_message(&mut self, id: MessageId) -> VcxResult<()> {
+    pub fn remove_pending_message(&self, id: MessageId) -> VcxResult<()> {
         match self.state {
-            ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref mut state)) |
-            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref mut state)) => {
-                if let Some(uid) = state.pending_messages.remove(&id) {
-                    return self.agent_info.update_message_status(uid);
+            ActorDidExchangeState::Inviter(DidExchangeState::Completed(ref _state)) |
+            ActorDidExchangeState::Invitee(DidExchangeState::Completed(ref _state)) => {
+                if let Some(uid_) = PendingMessage::get(&id.0) {
+                    self.agent_info.update_message_status(uid_.to_string()).ok();
                 }
             }
             _ => {}
