@@ -24,7 +24,6 @@ version you can check migration guides history:
     * [Ledger API](#ledger-api)
 * [Libindy 1.14.0 to 1.14.1 migration](#libindy-1140-to-1141-migration-guide)
 * [Libindy 1.14.1 to 1.14.2 migration](#libindy-1141-to-1142-migration-guide)
-* [Libindy 1.14.2 to 1.14.4 migration](#libindy-1142-to-1144-migration-guide)
 
 ## Libindy 1.13 to 1.14 migration
 
@@ -120,7 +119,3 @@ Both `rev_reg_def_id` and `credential_id` can be used as map keys.
 `credential_id` must be used in case of proving that two credentials matching the same `rev_reg_id` are not revoked at the same timestamp (IS-1447).
 
 * others minor bugfixes
-
-## Libindy 1.14.2 to 1.14.4 migration Guide
-
-The Libindy 1.14.4 release contains fixes that don't affect API functions. 
