@@ -1,5 +1,5 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
-use v3::messages::attachment::{Attachments, AttachmentEncoding};
+use v3::messages::attachment::{Attachments, AttachmentId};
 use v3::messages::ack::PleaseAck;
 use messages::thread::Thread;
 use messages::proofs::proof_message::ProofMessage;
@@ -33,7 +33,7 @@ impl Presentation {
     }
 
     pub fn set_presentations_attach(mut self, presentations: String) -> VcxResult<Presentation> {
-        self.presentations_attach.add_json_attachment(::serde_json::Value::String(presentations), AttachmentEncoding::Base64)?;
+        self.presentations_attach.add_base64_encoded_json_attachment(AttachmentId::Presentation,::serde_json::Value::String(presentations))?;
         Ok(self)
     }
 }
@@ -79,7 +79,7 @@ pub mod tests {
 
     pub fn _presentation() -> Presentation {
         let mut attachment = Attachments::new();
-        attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
+        attachment.add_base64_encoded_json_attachment(AttachmentId::Presentation,_attachment()).unwrap();
 
         Presentation {
             id: MessageId::id(),
