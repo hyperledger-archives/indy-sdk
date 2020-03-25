@@ -129,10 +129,12 @@ class CredentialApiTest {
     void getRequestMsg() throws VcxException, ExecutionException, InterruptedException {
         int credential = TestHelper._createCredential();
         int connection = TestHelper._createConnection();
+        String myPwDid = TestHelper.getResultFromFuture(ConnectionApi.connectionGetPwDid(connection));
+        String theirPwDid = TestHelper.getResultFromFuture(ConnectionApi.connectionGetTheirPwDid(connection));
         String payload= "{ 'connection_type': 'SMS', 'phone':'7202200000' }";
         TestHelper.getResultFromFuture(ConnectionApi.vcxConnectionConnect(connection,TestHelper.convertToValidJson(payload)));
         assertNotSame(0, credential);
-        String message = TestHelper.getResultFromFuture(CredentialApi.credentialGetRequestMsg(credential, connection, 0));
+        String message = TestHelper.getResultFromFuture(CredentialApi.credentialGetRequestMsg(credential, myPwDid, theirPwDid, 0));
         assertTrue(message.length() > 0);
     }
 

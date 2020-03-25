@@ -266,18 +266,15 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
    * ```
    * connection = await connectionCreateConnect()
    * issuerCredential = await issuerCredentialCreate()
-   * await issuerCredential.sendOffer(connection)
-   * await issuerCredential.updateState()
-   * assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
-   * await issuerCredential.sendCredential(connection)
+   * await issuerCredential.getCredentialOfferMsg()
    * ```
    *
    */
-  public async getCredentialOfferMsg (connection: Connection): Promise<string> {
+  public async getCredentialOfferMsg (): Promise<string> {
     try {
       return await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_issuer_get_credential_offer_msg(0, this.handle, connection.handle, cb)
+            const rc = rustAPI().vcx_issuer_get_credential_offer_msg(0, this.handle, cb)
             if (rc) {
               reject(rc)
             }
@@ -349,15 +346,15 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
    * await issuerCredential.sendOffer(connection)
    * await issuerCredential.updateState()
    * assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
-   * await issuerCredential.sendCredential(connection)
+   * await issuerCredential.getCredentialMsg()
    * ```
    *
    */
-  public async getCredentialMsg (connection: Connection): Promise<string> {
+  public async getCredentialMsg (myPwDid: string): Promise<string> {
     try {
       return await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_issuer_get_credential_msg(0, this.handle, connection.handle, cb)
+            const rc = rustAPI().vcx_issuer_get_credential_msg(0, this.handle, myPwDid, cb)
             if (rc) {
               reject(rc)
             }

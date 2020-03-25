@@ -12,16 +12,17 @@ use std::collections::HashMap;
 
 use connection::create_agent_keys;
 use utils::httpclient;
-use utils::libindy::signus::create_my_did;
+use utils::libindy::signus::create_and_store_my_did;
 use settings;
 use error::prelude::*;
+use settings::ProtocolTypes;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentInfo {
     pub pw_did: String,
     pub pw_vk: String,
     pub agent_did: String,
-    pub agent_vk: String
+    pub agent_vk: String,
 }
 
 impl Default for AgentInfo {
@@ -40,13 +41,13 @@ impl AgentInfo {
         trace!("Agent::create_agent >>>");
 
         let method_name = settings::get_config_value(settings::CONFIG_DID_METHOD).ok();
-        let (pw_did, pw_vk) = create_my_did(None, method_name.as_ref().map(String::as_str))?;
+        let (pw_did, pw_vk) = create_and_store_my_did(None, method_name.as_ref().map(String::as_str))?;
 
         /*
             Create User Pairwise Agent in old way.
             Send Messages corresponding to V2 Protocol to avoid code changes on Agency side.
         */
-        let (agent_did, agent_vk) = create_agent_keys("", &pw_did, &pw_vk)?;
+        let (agent_did, agent_vk) = create_agent_keys("", &pw_did, &pw_vk, ProtocolTypes::V2)?;
 
         Ok(AgentInfo { pw_did, pw_vk, agent_did, agent_vk })
     }
@@ -70,7 +71,7 @@ impl AgentInfo {
 
         let messages_to_update = vec![UIDsByConn {
             pairwise_did: self.pw_did.clone(),
-            uids: vec![uid]
+            uids: vec![uid],
         }];
 
         update_messages_status(MessageStatusCode::Reviewed, messages_to_update)
@@ -84,7 +85,8 @@ impl AgentInfo {
                                                &self.agent_did,
                                                &self.agent_vk,
                                                None,
-                                               Some(vec![MessageStatusCode::Received]))?;
+                                               Some(vec![MessageStatusCode::Received]),
+                                               &Some(ProtocolTypes::V2))?;
 
 
         let mut a2a_messages: HashMap<String, A2AMessage> = HashMap::new();
@@ -104,7 +106,8 @@ impl AgentInfo {
                                                    &self.agent_did,
                                                    &self.agent_vk,
                                                    Some(vec![msg_id.to_string()]),
-                                                   None)?;
+                                                   None,
+                                                   &Some(ProtocolTypes::V2))?;
 
         let message =
             messages

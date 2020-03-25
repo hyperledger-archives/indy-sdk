@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.ExecutionException;
 
 import static com.evernym.sdk.vcx.TestHelper._createConnection;
+import static com.evernym.sdk.vcx.TestHelper._createConnectionWithInvite;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 class ConnectionApiTest {
@@ -145,7 +146,7 @@ class ConnectionApiTest {
 	}
 
 	@Test
-	@DisplayName("initialise a connction")
+	@DisplayName("initialise a connection")
 	void initialiseConnection() throws VcxException, ExecutionException, InterruptedException {
 		Integer connectionHandle = _createConnection();
 		CompletableFuture<Integer> futureUpdateState = ConnectionApi.vcxConnectionUpdateState(connectionHandle);
@@ -230,6 +231,46 @@ class ConnectionApiTest {
 		Assertions.assertThrows(ExecutionException.class, () -> {
 			Integer connectionHandle = _createConnection();
 			TestHelper.getResultFromFuture(ConnectionApi.connectionSendDiscoveryFeatures(connectionHandle, null, null));
+		});
+	}
+    @Test
+    @DisplayName("test redirect")
+    void redirectConnection() throws VcxException, ExecutionException, InterruptedException {
+        int redirectConnectionHandle = _createConnection();
+        String inviteDetails = "{'statusCode':'MS-101','connReqId':'NjcwOWU','senderDetail':{'name':'ent-name','agentKeyDlgProof':{'agentDID':'U5LXs4U7P9msh647kToezy','agentDelegatedKey':'FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq','signature':'gkVDhwe2/FEtFqJYBm2wbEvqGlBwAGGaC19Oebj/3ZtZ/KpZs7K2JFMgTqTb29xTTAad04AjfNa76931eRa6BA=='},'DID':'WRUzXXuFVTYkT8CjSZpFvT','logoUrl':'ent-logo-url','verKey':'ESE6MnqAyjRigduPG454vfLvKhMbmaZjy9vqxCnSKQnp'},'senderAgencyDetail':{'DID':'BDSmVkzxRYGE4HKyMKxd1H','verKey':'HsaWDKnJtgoBsyqG2zKa5xRvKZzZHhkiCDH7eU3iqRsv','endpoint':'localhost:9001/agency/msg'},'targetName':'there','statusMsg':'message created'}";
+        int connectionHandle = _createConnectionWithInvite(TestHelper.convertToValidJson(inviteDetails));
+        CompletableFuture<Integer> redirectInvitation = ConnectionApi.vcxConnectionRedirect(connectionHandle, redirectConnectionHandle);
+        Awaitility.await().until(redirectInvitation::isDone);
+        CompletableFuture<Integer> futureGetState = ConnectionApi.connectionGetState(connectionHandle);
+        Awaitility.await().until(futureGetState::isDone);
+        int state = futureGetState.get();
+        assert(state == 8);
+    }
+
+    @Test
+    @DisplayName("test update state with redirection msg and get redirect details")
+    void updateStateWithRedirectDetails() throws VcxException, ExecutionException, InterruptedException {
+        String payload= "{ 'connection_type': 'QR' }";
+        int connectionHandle = _createConnection();
+        CompletableFuture<String> acceptInvitation = ConnectionApi.vcxConnectionConnect(connectionHandle, TestHelper.convertToValidJson(payload));
+        Awaitility.await().until(acceptInvitation::isDone);
+        String message = "{ \"statusCode\": \"MS-107\", \"payload\": [-110, -109, -81, 99, 111, 110, 110, 82, 101, 113, 82, 101, 100, 105, 114, 101, 99, 116, -93, 49, 46, 48, -84, 105, 110, 100, 121, 46, 109, 115, 103, 112, 97, 99, 107, -36, 0, -24, -48, -111, -48, -105, -48, -74, 57, 54, 106, 111, 119, 113, 111, 84, 68, 68, 104, 87, 102, 81, 100, 105, 72, 49, 117, 83, 109, 77, -48, -39, 44, 66, 105, 118, 78, 52, 116, 114, 53, 78, 88, 107, 69, 103, 119, 66, 56, 81, 115, 66, 51, 109, 109, 109, 122, 118, 53, 102, 119, 122, 54, 85, 121, 53, 121, 112, 122, 90, 77, 102, 115, 74, 56, 68, 122, -48, -64, -48, -74, 56, 88, 70, 104, 56, 121, 66, 122, 114, 112, 74, 81, 109, 78, 121, 90, 122, 103, 111, 84, 113, 66, -48, -39, 44, 69, 107, 86, 84, 97, 55, 83, 67, 74, 53, 83, 110, 116, 112, 89, 121, 88, 55, 67, 83, 98, 50, 112, 99, 66, 104, 105, 86, 71, 84, 57, 107, 87, 83, 97, 103, 65, 56, 97, 57, 84, 54, 57, 65, -48, -64, -48, -39, 88, 77, 100, 115, 99, 66, 85, 47, 99, 89, 75, 72, 49, 113, 69, 82, 66, 56, 80, 74, 65, 43, 48, 51, 112, 121, 65, 80, 65, 102, 84, 113, 73, 80, 74, 102, 52, 84, 120, 102, 83, 98, 115, 110, 81, 86, 66, 68, 84, 115, 67, 100, 119, 122, 75, 114, 52, 54, 120, 87, 116, 80, 43, 78, 65, 68, 73, 57, 88, 68, 71, 55, 50, 50, 103, 113, 86, 80, 77, 104, 117, 76, 90, 103, 89, 67, 103, 61, 61], \"senderDID\": \"NsQ1rvm6TrsHx1TB4xEh55\", \"uid\": \"owm5yta\", \"type\": \"connReqRedirect\", \"deliveryDetails\": [] }";
+        CompletableFuture<Integer> futureUpdateState = ConnectionApi.vcxConnectionUpdateStateWithMessage(connectionHandle, message);
+        Awaitility.await().until(futureUpdateState::isDone);
+        int updateStateResult = futureUpdateState.get();
+        assert(updateStateResult == 8);
+
+        CompletableFuture<String> featureGetRedirectDetails = ConnectionApi.vcxConnectionGetRedirectDetails(connectionHandle);
+        Awaitility.await().until(featureGetRedirectDetails::isDone);
+        assert(featureGetRedirectDetails.get().contains("DID"));
+    }
+
+	@Test
+	@DisplayName("connection info")
+	void connectionInfo() {
+		Assertions.assertThrows(ExecutionException.class, () -> {
+			Integer connectionHandle = _createConnection();
+			TestHelper.getResultFromFuture(ConnectionApi.connectionInfo(connectionHandle));
 		});
 	}
 }

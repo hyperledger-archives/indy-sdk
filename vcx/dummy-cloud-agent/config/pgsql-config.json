@@ -39,5 +39,5 @@
   "indy_runtime": {
     "crypto_thread_pool_size": 4
   },
-  "protocol_type": "1.0"
+  "protocol_type": "2.0"
 }

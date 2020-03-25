@@ -37,7 +37,7 @@ class ErrorCode(IntEnum):
     BigNumberError = 1022,
     InvalidProof = 1023,
     InvalidGenesisTxnPath = 1024,
-    CreatePoolConfigParameters = 1025,
+    PoolLedgerConnect = 1025,
     CreatePoolConifg = 1026,
     InvalidProofCredentialData = 1027,
     IndySubmitRequestError = 1028,
@@ -87,7 +87,7 @@ class ErrorCode(IntEnum):
     DuplicateWalletRecord = 1072,
     WalletRecordNotFound = 1073,
     IOError = 1074,
-    InvalidWalletStorageParam = 1075,
+    WalletAccessFailed = 1075,
     MissingWalletName = 1076,
     MissingExportedWalletPath = 1077,
     MissingBackupKey = 1078,
@@ -112,7 +112,9 @@ class ErrorCode(IntEnum):
     InvalidAttachmentEncoding = 1100,
     UnknownAttachmentEncoding = 1101,
     UnknownMimeType = 1102,
-    ActionNotSupported = 1103
+    ActionNotSupported = 1103,
+    InvalidRedirectDetails = 1104,
+    NoAgentInfo = 1106
 
 
 class VcxError(Exception):

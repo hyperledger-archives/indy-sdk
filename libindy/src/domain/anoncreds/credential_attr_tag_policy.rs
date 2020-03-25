@@ -3,9 +3,7 @@ use std::collections::HashSet;
 use serde::ser::{Serialize, Serializer, SerializeSeq};
 use serde::de::{Deserializer, Deserialize};
 
-use named_type::NamedType;
-
-#[derive(Debug, NamedType)]
+#[derive(Debug)]
 pub struct CredentialAttrTagPolicy {
     pub taggable: HashSet<String>
 }

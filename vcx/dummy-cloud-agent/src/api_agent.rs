@@ -7,7 +7,7 @@ use crate::app::AppData;
 
 const MAX_PAYLOAD_SIZE: usize = 105_906_176;
 
-pub fn generate_api_agent_configuration(api_prefix: &String) -> Box<FnOnce(&mut web::ServiceConfig)>{
+pub fn generate_api_agent_configuration(api_prefix: &String) -> Box<dyn FnOnce(&mut web::ServiceConfig)>{
     let prefix = api_prefix.clone();
     Box::new( move |cfg: &mut web::ServiceConfig| {
         cfg.service(
@@ -17,7 +17,7 @@ pub fn generate_api_agent_configuration(api_prefix: &String) -> Box<FnOnce(&mut 
     })
 }
 
-fn _get_endpoint_details(state: web::Data<AppData>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+fn _get_endpoint_details(state: web::Data<AppData>) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     let f = state.forward_agent
         .send(GetEndpoint {})
         .from_err()
@@ -28,7 +28,8 @@ fn _get_endpoint_details(state: web::Data<AppData>) -> Box<Future<Item=HttpRespo
     Box::new(f)
 }
 
-fn _forward_message(state: web::Data<AppData>, stream: web::Payload) -> Box<Future<Item=HttpResponse, Error=Error>> {
+/// The entry point of any agent communication. Incoming data are passed to Forward Agent for processing
+fn _forward_message(state: web::Data<AppData>, stream: web::Payload) -> Box<dyn Future<Item=HttpResponse, Error=Error>> {
     let f = stream.map_err(Error::from)
         .fold(web::BytesMut::new(), move |mut body, chunk| {
             // limit max size of in-memory payload

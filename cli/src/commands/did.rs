@@ -453,8 +453,8 @@ pub mod qualify_command {
 
     command!(CommandMetadata::build("qualify", "Update DID stored in the wallet to make fully qualified, or to do other DID maintenance.")
                 .add_main_param_with_dynamic_completion("did", "Did stored in wallet", DynamicCompletionType::Did)
-                .add_main_param("method", "Method to apply to the DID.")
-                .add_example("did qualify did=VsKV7grR1BUE29mG2Fm2kX prefix=did:peer")
+                .add_required_param("method", "Method to apply to the DID.")
+                .add_example("did qualify VsKV7grR1BUE29mG2Fm2kX method=did:peer")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {

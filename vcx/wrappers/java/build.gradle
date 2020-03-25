@@ -3,6 +3,10 @@ import java.text.SimpleDateFormat
 apply plugin: 'java'
 group = 'com.evernym.sdk'
 
+wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+}
+
 repositories {
 
     maven { url "https://repo.maven.apache.org/maven2" }
@@ -68,7 +72,7 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
     implementation 'net.sourceforge.streamsupport:android-retrofuture:1.6.2'
     implementation group: 'net.sourceforge.streamsupport', name: 'android-retrostreams', version: '1.6.2'
-    implementation group: 'org.json', name: 'json', version: '20160810'
+    implementation group: 'org.json', name: 'json', version: '20180130'
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.1.0'
     testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'

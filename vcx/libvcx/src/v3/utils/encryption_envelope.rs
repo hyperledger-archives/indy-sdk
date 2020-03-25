@@ -14,7 +14,7 @@ impl EncryptionEnvelope {
                   did_doc: &DidDoc) -> VcxResult<EncryptionEnvelope> {
         trace!("EncryptionEnvelope::create >>> message: {:?}, pw_verkey: {:?}, did_doc: {:?}", message, pw_verkey, did_doc);
 
-        if ::settings::test_indy_mode_enabled() { return Ok(EncryptionEnvelope(vec![])); }
+        if ::settings::indy_mocks_enabled() { return Ok(EncryptionEnvelope(vec![])); }
 
         EncryptionEnvelope::encrypt_for_pairwise(message, pw_verkey, did_doc)
             .and_then(|message| EncryptionEnvelope::wrap_into_forward_messages(message, did_doc))
@@ -117,8 +117,8 @@ pub mod tests {
     fn test_encryption_envelope_works_for_routing_keys() {
         _setup();
         let setup = test_setup::key();
-        let key_1 = create_key().unwrap();
-        let key_2 = create_key().unwrap();
+        let key_1 = create_key(None).unwrap();
+        let key_2 = create_key(None).unwrap();
 
         let mut did_doc = DidDoc::default();
         did_doc.set_service_endpoint(_service_endpoint());

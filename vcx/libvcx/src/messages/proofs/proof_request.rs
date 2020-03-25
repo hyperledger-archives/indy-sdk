@@ -6,7 +6,7 @@ use std::vec::Vec;
 use messages::validation;
 use error::prelude::*;
 use utils::libindy::anoncreds;
-use utils::qualifier::Qualifier;
+use utils::qualifier;
 use v3::messages::connection::service::Service;
 
 static PROOF_REQUEST: &str = "PROOF_REQUEST";
@@ -42,7 +42,9 @@ pub struct AttrInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restrictions: Option<Restrictions>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub non_revoked: Option<NonRevokedInterval>,
+    pub self_attest_allowed: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub non_revoked: Option<NonRevokedInterval>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -375,7 +377,7 @@ impl ProofRequestData {
     }
 
     pub fn set_format_version_for_did(mut self, my_did: &str, remote_did: &str) -> VcxResult<ProofRequestData> {
-        if Qualifier::is_fully_qualified(&my_did) && Qualifier::is_fully_qualified(&remote_did) {
+        if qualifier::is_fully_qualified(&my_did) && qualifier::is_fully_qualified(&remote_did) {
             self.ver = Some(ProofRequestVersion::V2)
         } else {
             let proof_request_json = serde_json::to_string(&self)
@@ -425,9 +427,12 @@ mod tests {
     use super::*;
     use messages::proof_request;
     use utils::constants::{REQUESTED_ATTRS, REQUESTED_PREDICATES};
+    use utils::devsetup::SetupDefaults;
 
     #[test]
     fn test_create_proof_request_data() {
+        let _setup = SetupDefaults::init();
+
         let request = proof_request();
         let proof_data = ProofRequestData {
             nonce: String::new(),
@@ -443,6 +448,8 @@ mod tests {
 
     #[test]
     fn test_proof_request_msg() {
+        let _setup = SetupDefaults::init();
+
         //proof data
         let data_name = "Test";
         let nonce = "123432421212";
@@ -478,6 +485,8 @@ mod tests {
 
     #[test]
     fn test_requested_attrs_constructed_correctly() {
+        let _setup = SetupDefaults::init();
+
         let mut check_req_attrs: HashMap<String, AttrInfo> = HashMap::new();
         let attr_info1: AttrInfo = serde_json::from_str(r#"{ "name":"age", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }"#).unwrap();
         let attr_info2: AttrInfo = serde_json::from_str(r#"{ "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }"#).unwrap();
@@ -491,6 +500,8 @@ mod tests {
 
     #[test]
     fn test_requested_predicates_constructed_correctly() {
+        let _setup = SetupDefaults::init();
+
         let mut check_predicates: HashMap<String, PredicateInfo> = HashMap::new();
         let attr_info1: PredicateInfo = serde_json::from_str(r#"{ "name":"age","p_type":"GE","p_value":22, "restrictions":[ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }"#).unwrap();
         check_predicates.insert("age".to_string(), attr_info1);
@@ -501,6 +512,8 @@ mod tests {
 
     #[test]
     fn test_requested_attrs_constructed_correctly_for_names() {
+        let _setup = SetupDefaults::init();
+
         let attr_info = json!({ "names":["name", "age", "email"], "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11" } ] });
         let attr_info_2 = json!({ "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11" } ] });
 
@@ -517,6 +530,8 @@ mod tests {
 
     #[test]
     fn test_requested_attrs_constructed_correctly_for_name_and_names_passed_together() {
+        let _setup = SetupDefaults::init();
+
         let attr_info = json!({ "name":"name", "names":["name", "age", "email"], "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11" } ] });
 
         let requested_attrs = json!([ attr_info ]).to_string();
@@ -527,6 +542,8 @@ mod tests {
 
     #[test]
     fn test_indy_proof_req_parses_correctly() {
+        let _setup = SetupDefaults::init();
+
         let _proof_req: ProofRequestData = serde_json::from_str(::utils::constants::INDY_PROOF_REQ_JSON).unwrap();
     }
 }

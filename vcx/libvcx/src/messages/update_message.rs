@@ -1,8 +1,9 @@
 use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
-use utils::httpclient;
+use utils::{httpclient, constants};
 use error::prelude::*;
+use utils::httpclient::AgencyMock;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -32,7 +33,8 @@ pub struct UIDsByConn {
 
 struct UpdateMessageStatusByConnectionsBuilder {
     status_code: Option<MessageStatusCode>,
-    uids_by_conns: Vec<UIDsByConn>
+    uids_by_conns: Vec<UIDsByConn>,
+    version: settings::ProtocolTypes,
 }
 
 impl UpdateMessageStatusByConnectionsBuilder {
@@ -42,6 +44,7 @@ impl UpdateMessageStatusByConnectionsBuilder {
         UpdateMessageStatusByConnectionsBuilder {
             status_code: None,
             uids_by_conns: Vec::new(),
+            version: settings::get_protocol_type()
         }
     }
 
@@ -57,12 +60,19 @@ impl UpdateMessageStatusByConnectionsBuilder {
         Ok(self)
     }
 
+    #[allow(dead_code)]
+    pub fn version(&mut self, version: &Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
+        };
+        Ok(self)
+    }
+
     pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("UpdateMessages::send >>>");
 
-        if settings::test_agency_mode_enabled() {
-            ::utils::httpclient::set_next_u8_response(::utils::constants::UPDATE_MESSAGES_RESPONSE.to_vec());
-        }
+        AgencyMock::set_next_response(constants::UPDATE_MESSAGES_RESPONSE.to_vec());
 
         let data = self.prepare_request()?;
 
@@ -72,7 +82,7 @@ impl UpdateMessageStatusByConnectionsBuilder {
     }
 
     fn prepare_request(&mut self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::UpdateMessageStatusByConnections(
@@ -96,13 +106,13 @@ impl UpdateMessageStatusByConnectionsBuilder {
         };
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
-        prepare_message_for_agency(&message, &agency_did)
+        prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: &Vec<u8>) -> VcxResult<()> {
         trace!("parse_create_keys_response >>>");
 
-        let mut response = parse_response_from_agency(response)?;
+        let mut response = parse_response_from_agency(response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateMessageStatusByConnectionsResponse(_)) => Ok(()),
@@ -136,11 +146,14 @@ pub fn update_messages(status_code: MessageStatusCode, uids_by_conns: Vec<UIDsBy
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use utils::devsetup::*;
+    #[cfg(any(feature = "agency", feature = "pool_tests"))]
+    use std::thread;
+    #[cfg(any(feature = "agency", feature = "pool_tests"))]
+    use std::time::Duration;
     #[test]
     fn test_parse_parse_update_messages_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        let _setup = SetupMocks::init();
 
         UpdateMessageStatusByConnectionsBuilder::create().parse_response(&::utils::constants::UPDATE_MESSAGES_RESPONSE.to_vec()).unwrap();
     }
@@ -149,10 +162,8 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_update_agency_messages() {
-        use super::*;
-        use std::thread;
-        use std::time::Duration;
-        init!("agency");
+        let _setup = SetupLibraryAgencyV1::init();
+
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (_faber, alice) = ::connection::tests::create_connected_connections();
 
@@ -169,7 +180,7 @@ mod tests {
         ::issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER GET MESSAGES
-        ::utils::devsetup::tests::set_consumer();
+        ::utils::devsetup::set_consumer();
         let pending = ::messages::get_message::download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
         assert!(pending.len() > 0);
         let did = pending[0].pairwise_did.clone();
@@ -178,7 +189,5 @@ mod tests {
         update_agency_messages("MS-106", &message).unwrap();
         let updated = ::messages::get_message::download_messages(None, Some(vec!["MS-106".to_string()]), None).unwrap();
         assert_eq!(pending[0].msgs[0].uid, updated[0].msgs[0].uid);
-
-        teardown!("agency");
     }
 }

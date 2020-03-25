@@ -4,12 +4,14 @@ use messages::message_type::MessageTypes;
 use utils::httpclient;
 use utils::constants::*;
 use error::prelude::*;
+use utils::httpclient::AgencyMock;
 
 #[derive(Debug)]
 pub struct UpdateProfileDataBuilder {
     to_did: String,
     agent_payload: String,
-    configs: Vec<ConfigOption>
+    configs: Vec<ConfigOption>,
+    version: settings::ProtocolTypes,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -39,6 +41,7 @@ impl UpdateProfileDataBuilder {
             to_did: String::new(),
             configs: Vec::new(),
             agent_payload: String::new(),
+            version: settings::get_protocol_type()
         }
     }
 
@@ -78,12 +81,19 @@ impl UpdateProfileDataBuilder {
         Ok(self)
     }
 
+    pub fn version(&mut self, version: &Option<settings::ProtocolTypes>) -> VcxResult<&mut Self> {
+        self.version = match version {
+            Some(version) => version.clone(),
+            None => settings::get_protocol_type()
+        };
+        Ok(self)
+    }
+
+
     pub fn send_secure(&mut self) -> VcxResult<()> {
         trace!("UpdateProfileData::send_secure >>>");
 
-        if settings::test_agency_mode_enabled() {
-            return self.parse_response(UPDATE_PROFILE_RESPONSE.to_vec());
-        }
+        AgencyMock::set_next_response(UPDATE_PROFILE_RESPONSE.to_vec());
 
         let data = self.prepare_request()?;
 
@@ -93,7 +103,7 @@ impl UpdateProfileDataBuilder {
     }
 
     fn prepare_request(&self) -> VcxResult<Vec<u8>> {
-        let message = match settings::get_protocol_type() {
+        let message = match self.version {
             settings::ProtocolTypes::V1 =>
                 A2AMessage::Version1(
                     A2AMessageV1::UpdateConfigs(
@@ -116,11 +126,11 @@ impl UpdateProfileDataBuilder {
 
         let agency_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-        prepare_message_for_agency(&message, &agency_did)
+        prepare_message_for_agency(&message, &agency_did, &self.version)
     }
 
     fn parse_response(&self, response: Vec<u8>) -> VcxResult<()> {
-        let mut response = parse_response_from_agency(&response)?;
+        let mut response = parse_response_from_agency(&response, &self.version)?;
 
         match response.remove(0) {
             A2AMessage::Version1(A2AMessageV1::UpdateConfigsResponse(_)) => Ok(()),
@@ -135,10 +145,12 @@ mod tests {
     use super::*;
     use messages::update_data;
     use utils::libindy::signus::create_and_store_my_did;
+    use utils::devsetup::*;
 
     #[test]
     fn test_update_data_post() {
-        init!("true");
+        let _setup = SetupMocks::init();
+
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let name = "name";
         let url = "https://random.com";
@@ -151,10 +163,11 @@ mod tests {
 
     #[test]
     fn test_update_data_set_values_and_post() {
-        init!("false");
-        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
-        let (_my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
-        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
+        let _setup = SetupLibraryWallet::init();
+
+        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED), None).unwrap();
+        let (_my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED), None).unwrap();
+        let (_agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED), None).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -170,7 +183,8 @@ mod tests {
 
     #[test]
     fn test_parse_update_profile_response() {
-        init!("indy");
+        let _setup = SetupIndyMocks::init();
+
         UpdateProfileDataBuilder::create().parse_response(UPDATE_PROFILE_RESPONSE.to_vec()).unwrap();
     }
 }
