@@ -329,6 +329,8 @@ mod tests {
     use crate::utils::to_i8;
 
     use super::*;
+    use crate::domain::a2a::{RemoteMessageType, MessageDetailPayload, GetMessagesDetailResponse, ConfigOption};
+    use crate::domain::a2connection::MessagesByConnection;
 
     #[test]
     fn agent_create_key_works() {

@@ -118,7 +118,6 @@ impl Admin {
 mod tests {
     use regex::Regex;
 
-    use crate::domain::admin_message::{GetDetailAgentConnParams, GetDetailAgentParams};
     use crate::utils::tests::*;
 
     use super::*;

@@ -296,6 +296,9 @@ mod tests {
     use crate::utils::tests::compose_create_general_message;
 
     use super::*;
+    use crate::domain::a2a::{GetMessagesDetailResponse, RemoteMessageType, MessageDetailPayload};
+    use crate::domain::status::MessageStatusCode;
+    use crate::utils::to_i8;
 
     #[test]
     fn agent_create_connection_request_works() {
