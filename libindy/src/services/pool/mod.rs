@@ -29,7 +29,7 @@ use crate::utils::environment;
 use indy_api_types::{PoolHandle, ErrorCode};
 use indy_utils::next_pool_handle;
 
-use indy_vdr::pool::{SharedPool, PoolBuilder, PoolTransactions, helpers::perform_refresh, Pool, RequestResult};
+use indy_vdr::pool::{LocalPool, PoolBuilder, PoolTransactions, helpers::perform_refresh, Pool, RequestResult};
 use indy_vdr::pool::helpers::format_full_reply;
 use indy_vdr::pool::handlers::{handle_full_request, handle_consensus_request};
 use indy_vdr::ledger::PreparedRequest;
@@ -50,10 +50,8 @@ pub struct PoolService {
 
 struct PoolDescriptor {
     name: String,
-    pool: SharedPool,
+    pool: LocalPool,
 }
-
-// TODO: CACHING TRANSACTIONS
 
 impl PoolService {
     pub fn new() -> PoolService {
@@ -63,7 +61,6 @@ impl PoolService {
     }
 
     pub fn create(&self, name: &str, config: Option<PoolConfig>) -> IndyResult<()> {
-        //TODO: initialize all state machines
         trace!("PoolService::create {} with config {:?}", name, config);
 
         let mut path = environment::pool_path(name);
@@ -149,7 +146,7 @@ impl PoolService {
 
         let mut pool = self._build_pool(&config, transactions)?;
 
-        self._refresh_pool(&mut pool, &name).await?;
+        pool = self._refresh_pool(&pool, &name).await?;
 
         let pool_handle: PoolHandle = next_pool_handle();
         let pool_descriptor = PoolDescriptor { name, pool };
@@ -262,10 +259,10 @@ impl PoolService {
     pub async fn refresh(&self, handle: PoolHandle) -> IndyResult<()> {
         let mut borrowed_pools = self.open_pools.try_borrow_mut()?;
 
-        let pool = borrowed_pools.get_mut(&handle)
+        let mut pool = borrowed_pools.get_mut(&handle)
             .ok_or(err_msg(IndyErrorKind::InvalidPoolHandle, format!("No pool with requested handle {:?}", handle)))?;
 
-        self._refresh_pool(&mut pool.pool, &pool.name).await?;
+        pool.pool = self._refresh_pool(&pool.pool, &pool.name).await?;
 
         Ok(())
     }
@@ -287,42 +284,54 @@ impl PoolService {
         Ok(pool)
     }
 
-    async fn _refresh_pool(&self, pool: &mut SharedPool, pool_name: &str) -> IndyResult<()> {
-        let (new_transactions, _timing) =
-            match perform_refresh(pool).await {
-                Ok((new_transactions, _timing)) => (new_transactions, _timing),
-                Err(_) => {
-                    pool_transactions::drop_cache(pool_name)?;
+    async fn _refresh_pool(&self, pool: &LocalPool, pool_name: &str) -> IndyResult<LocalPool> {
+        let config = pool.get_config().to_owned();
 
-                    let transactions = pool_transactions::create(pool_name)?;
+        let transactions = match perform_refresh(pool).await {
+            Ok((new_transactions, _timing)) => {
+                let mut transactions = pool.get_transactions()?;
 
-                    *pool = self._build_pool(pool.get_config(), transactions)?;
+                // Drop new transactions to file
+                if let Some(new_transaction_) = new_transactions {
+                    transactions.extend_from_slice(&new_transaction_);
 
-                    perform_refresh(pool).await?
+                    pool_transactions::dump_new_txns(pool_name,
+                                                     PoolTransactions::from_transactions_json(&new_transaction_)?.iter())?;
                 }
-            };
 
-        let mut transactions = pool.get_transactions()?;
+                transactions
+            }
+            Err(_) => {
+                // Drop cache and try again
+                pool_transactions::drop_cache(pool_name)?;
 
-        if let Some(new_transaction_) = new_transactions {
-            transactions.extend_from_slice(&new_transaction_);
+                let transactions = pool_transactions::create(pool_name)?;
+                let pool = self._build_pool(&config, transactions)?;
 
-            let new_pool_transactions = PoolTransactions::from_transactions_json(new_transaction_)?;
+                let (new_transactions, _timing) = perform_refresh(&pool).await?;
 
-            pool_transactions::dump_new_txns(pool_name, new_pool_transactions.iter())?;
-        }
+                let mut transactions = pool.get_transactions()?;
+
+                // Add new transactions to genesis and drop to file
+                if let Some(new_transaction_) = new_transactions.as_ref() {
+                    transactions.extend_from_slice(&new_transaction_);
+
+                    pool_transactions::dump_new_txns(pool_name,
+                                                     PoolTransactions::from_transactions_json(&transactions)?.iter())?;
+                }
+
+                transactions
+            }
+        };
 
         let transactions = PoolTransactions::from_transactions_json(transactions)?;
-
-        *pool = self._build_pool(pool.get_config(), transactions)?;
-
-        Ok(())
+        self._build_pool(&config, transactions)
     }
 
-    fn _build_pool(&self, config: &VdrPoolOpenConfig, transactions: PoolTransactions) -> IndyResult<SharedPool> {
+    fn _build_pool(&self, config: &VdrPoolOpenConfig, transactions: PoolTransactions) -> IndyResult<LocalPool> {
         PoolBuilder::from_config(config.to_owned())
             .transactions(transactions)?
-            .into_shared()
+            .into_local()
             .map_err(IndyError::from)
     }
 

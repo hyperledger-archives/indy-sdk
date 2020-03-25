@@ -118,7 +118,6 @@ fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> IndyResult<()> {
     let p_genesis = get_pool_stored_path_base(pool_name, false, pool_name, POOL_EXT);
 
     if !p_genesis.exists() {
-        trace!("here");
         return Err(err_msg(IndyErrorKind::PoolNotCreated, format!("Pool is not created for name: {:?}", pool_name)));
     }
 
