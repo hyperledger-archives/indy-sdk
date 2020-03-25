@@ -10,11 +10,11 @@ use serde_json;
 use uuid::Uuid;
 
 use crate::actors::{RemoteMsg, requester};
-use crate::actors::agent_connection::agent_connection::{AgentConnection, MessageHandlerRole, RemoteConnectionDetail};
+use crate::actors::agent_connection::agent_connection::{AgentConnection, MessageHandlerRole};
 use crate::domain::a2a::*;
 use crate::domain::a2connection::*;
 use crate::domain::internal_message::InternalMessage;
-use crate::domain::invite::{AgentDetail, InviteDetail, RedirectDetail, SenderDetail};
+use crate::domain::invite::{InviteDetail, RedirectDetail, SenderDetail};
 use crate::domain::key_deligation_proof::KeyDlgProof;
 use crate::domain::payload::{PayloadKinds, PayloadTypes, PayloadV1, PayloadV2, Thread};
 use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
@@ -555,9 +555,9 @@ impl AgentConnection {
     }
 
     pub(super) fn send_message_if_needed(&mut self,
-                              send_msg: bool,
-                              uid: &str,
-                              reply_to_msg_id: Option<String>) -> ResponseFuture<Vec<A2AMessage>, Error> {
+                                         send_msg: bool,
+                                         uid: &str,
+                                         reply_to_msg_id: Option<String>) -> ResponseFuture<Vec<A2AMessage>, Error> {
         trace!("AgentConnection::send_message_if_needed >> {:?}, {:?}, {:?}", send_msg, uid, reply_to_msg_id);
 
         if !send_msg {

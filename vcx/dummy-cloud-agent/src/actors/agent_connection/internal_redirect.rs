@@ -1,35 +1,23 @@
-use std::collections::HashMap;
-
 use actix::prelude::*;
-use base64;
-use failure::{err_msg, Error, Fail};
+use failure::{err_msg, Error};
 use futures::*;
-use futures::future::ok;
-use rmp_serde;
-use serde_json;
-use uuid::Uuid;
 
-use crate::actors::{RemoteMsg, requester};
 use crate::actors::agent_connection::agent_connection::{AgentConnection, MessageHandlerRole, RemoteConnectionDetail};
 use crate::domain::a2a::*;
-use crate::domain::a2connection::*;
 use crate::domain::internal_message::InternalMessage;
-use crate::domain::invite::{AgentDetail, InviteDetail, RedirectDetail, SenderDetail};
-use crate::domain::key_deligation_proof::KeyDlgProof;
-use crate::domain::payload::{PayloadKinds, PayloadTypes, PayloadV1, PayloadV2, Thread};
+use crate::domain::invite::{AgentDetail, SenderDetail};
+use crate::domain::payload::Thread;
 use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
-use crate::domain::status::{ConnectionStatus, MessageStatusCode};
-use crate::indy::{crypto, did, ErrorCode, IndyError, pairwise};
+use crate::domain::status::MessageStatusCode;
 use crate::utils::futures::*;
-use crate::utils::to_i8;
 
+/// Implementation of methods related to connection redirect feature
 impl AgentConnection {
-
     pub(super) fn handle_create_connection_request_redirect(&mut self,
-                                                 msg_detail: ConnectionRequestRedirectMessageDetail,
-                                                 reply_to_msg_id: Option<String>,
-                                                 msg_uid: Option<String>,
-                                                 sender_verkey: String) -> ResponseActFuture<Self, (String, Vec<A2AMessage>), Error> {
+                                                            msg_detail: ConnectionRequestRedirectMessageDetail,
+                                                            reply_to_msg_id: Option<String>,
+                                                            msg_uid: Option<String>,
+                                                            sender_verkey: String) -> ResponseActFuture<Self, (String, Vec<A2AMessage>), Error> {
         trace!("AgentConnection::handle_create_connection_request_redirect >> {:?}, {:?}, {:?}, {:?}",
                msg_detail, reply_to_msg_id, msg_uid, sender_verkey);
 

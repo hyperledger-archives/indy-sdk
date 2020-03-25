@@ -1,28 +1,13 @@
-use std::collections::HashMap;
-
 use actix::prelude::*;
-use base64;
 use failure::{err_msg, Error, Fail};
-use futures::*;
-use futures::future::ok;
-use rmp_serde;
 use serde_json;
-use uuid::Uuid;
 
-use crate::actors::{RemoteMsg, requester};
-use crate::actors::agent_connection::agent_connection::{AgentConnection, MessageHandlerRole, RemoteConnectionDetail};
+use crate::actors::agent_connection::agent_connection::AgentConnection;
 use crate::domain::a2a::*;
-use crate::domain::a2connection::*;
-use crate::domain::internal_message::InternalMessage;
-use crate::domain::invite::{AgentDetail, InviteDetail, RedirectDetail, SenderDetail};
-use crate::domain::key_deligation_proof::KeyDlgProof;
-use crate::domain::payload::{PayloadKinds, PayloadTypes, PayloadV1, PayloadV2, Thread};
-use crate::domain::protocol_type::{ProtocolType, ProtocolTypes};
-use crate::domain::status::{ConnectionStatus, MessageStatusCode};
-use crate::indy::{crypto, did, ErrorCode, IndyError, pairwise};
+use crate::domain::status::MessageStatusCode;
 use crate::utils::futures::*;
-use crate::utils::to_i8;
 
+/// Implementation of methods exclusively related to usage of VCX in Aries mode
 impl AgentConnection {
     /// The heart of Aries cross-domain communication. All incoming Aries messages are coming in
     /// through this method.

@@ -292,13 +292,13 @@ pub(super) enum MessageHandlerRole {
 #[cfg(test)]
 mod tests {
     use crate::actors::ForwardA2AMsg;
+    use crate::domain::a2a::{GetMessagesDetailResponse, MessageDetailPayload, RemoteMessageType};
+    use crate::domain::status::MessageStatusCode;
     use crate::utils::tests::*;
     use crate::utils::tests::compose_create_general_message;
+    use crate::utils::to_i8;
 
     use super::*;
-    use crate::domain::a2a::{GetMessagesDetailResponse, RemoteMessageType, MessageDetailPayload};
-    use crate::domain::status::MessageStatusCode;
-    use crate::utils::to_i8;
 
     #[test]
     fn agent_create_connection_request_works() {
