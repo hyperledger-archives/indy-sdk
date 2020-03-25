@@ -22,6 +22,15 @@ use crate::utils::futures::*;
 use crate::utils::rand;
 use crate::utils::wallet::build_wallet_credentials;
 
+/// Storage
+/// - Agent has his own wallet, this contains
+/// agent_did + metadata = agent configs (webhookurl, logourl, name)
+
+/// by agent_connections in wallet:
+/// their_did: [  {did: user_pairwise_did, verkey: user_pairwise_verkey}, ... ]
+/// my_did: [ {did: <generated>, vkey: <generated>} ]
+/// pairwise [ {their_did, my_did, metadata: <serialized AgentConnectionState>} ]
+
 /// Represents cloud agent owned and controlled by Agency's client. Agent can receive messages
 /// on behalf of its owner. The owner can communicate with the agent to pick up received messages
 /// or forward his messages to other destinations.
@@ -67,14 +76,32 @@ impl Agent {
     /// * `forward_agent_detail` - Information about this agency's Forward Agent
     /// * `wallet_storage_config` - Configuration data to access wallet storage used across Agency
     /// * `admin` - Reference to Admin actor
-    pub fn create(agent_owner_did: &str,
-                  agent_owner_verkey: &str,
-                  router: Rc<RwLock<Router>>,
-                  forward_agent_detail: ForwardAgentDetail,
-                  wallet_storage_config: WalletStorageConfig,
-                  admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(String, String, String, KeyDerivationDirective), Error> {
-        debug!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
-               agent_owner_did, agent_owner_verkey, forward_agent_detail, wallet_storage_config);
+    pub fn create_record_load_actor(agent_owner_did: String,
+                                    agent_owner_verkey: String,
+                                    router: Rc<RwLock<Router>>,
+                                    forward_agent_detail: ForwardAgentDetail,
+                                    wallet_storage_config: WalletStorageConfig,
+                                    admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(String, String, String, KeyDerivationDirective), Error> {
+        Self::create_record(&agent_owner_did.clone(), wallet_storage_config.clone())
+            .and_then(move |(wallet_id, agent_did, agent_verkey, kdf_directives)| {
+                Self::load_actor(&wallet_id,
+                                 &kdf_directives,
+                                 &agent_did.clone(),
+                                 &agent_owner_did.clone(),
+                                 &agent_owner_verkey.clone(),
+                                 router,
+                                 forward_agent_detail,
+                                 wallet_storage_config,
+                                 admin)
+                    .map(move |_| (wallet_id, agent_did, agent_verkey, kdf_directives))
+            })
+            .into_box()
+    }
+
+    pub fn create_record(agent_owner_did: &str,
+                         wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(String, String, String, KeyDerivationDirective), Error> {
+        debug!("Agent::create >> {:?}, {:?}",
+               agent_owner_did, wallet_storage_config);
 
         let wallet_id = format!("dummy_{}_{}", agent_owner_did, rand::rand_string(10));
         let wallet_config = json!({
@@ -82,9 +109,6 @@ impl Agent {
                     "storage_type": wallet_storage_config.xtype,
                     "storage_config": wallet_storage_config.config,
                  }).to_string();
-
-        let agent_owner_did = agent_owner_did.to_string();
-        let agent_owner_verkey = agent_owner_verkey.to_string();
 
         future::ok(())
             .and_then(|_| {
@@ -114,32 +138,14 @@ impl Agent {
                     .map_err(|err| err.context("Can't get Agent did key").into())
             })
             .and_then(move |(wallet_handle, agent_did, agent_verkey, kdf_directives)| {
-                let agent = Agent {
-                    wallet_handle,
-                    agent_verkey: agent_verkey.clone(),
-                    agent_did: agent_did.clone(),
-                    owner_did: agent_owner_did,
-                    owner_verkey: agent_owner_verkey,
-                    router: router.clone(),
-                    admin: admin.clone(),
-                    forward_agent_detail,
-                    configs: HashMap::new(),
-                };
-
-                let agent = agent.start();
-
-                router.write().unwrap()
-                    .add_a2a_route(agent_did.clone(), agent_verkey.clone(), agent.clone().recipient());
-                if let Some(admin) = admin {
-                    admin.write().unwrap()
-                        .register_agent(agent_did.clone(), agent.clone())
-                };
-                future::ok((wallet_id, agent_did, agent_verkey, kdf_directives))
+                wallet::close_wallet(wallet_handle)
+                    .map(move |_| (wallet_id, agent_did, agent_verkey, kdf_directives))
+                    .map_err(|err| err.context("Can't close Agent wallet.`").into())
             })
             .into_box()
     }
 
-    /// Restores previously created agent (create its actor representation)
+    /// Loads agent record into memory as actor
     ///
     /// # Arguments
     ///
@@ -152,15 +158,15 @@ impl Agent {
     /// * `forward_agent_detail` - Information about Agency's forward agent
     /// * `wallet_storage_c onfig` - Configuration data to access wallet storage used across Agency
     /// * `admin` - Reference to Admin actor
-    pub fn restore(wallet_id: &str,
-                   kdf_directives: &KeyDerivationDirective,
-                   agent_did: &str,
-                   owner_did: &str,
-                   owner_verkey: &str,
-                   router: Rc<RwLock<Router>>,
-                   forward_agent_detail: ForwardAgentDetail,
-                   wallet_storage_config: WalletStorageConfig,
-                   admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(), Error> {
+    pub fn load_actor(wallet_id: &str,
+                      kdf_directives: &KeyDerivationDirective,
+                      agent_did: &str,
+                      owner_did: &str,
+                      owner_verkey: &str,
+                      router: Rc<RwLock<Router>>,
+                      forward_agent_detail: ForwardAgentDetail,
+                      wallet_storage_config: WalletStorageConfig,
+                      admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(), Error> {
         debug!("Agent::restore >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
                wallet_id, agent_did, owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
@@ -207,13 +213,13 @@ impl Agent {
                 debug!("Agent restore. Agent configs to be loaded: {:?}", metadata);
                 let configs: HashMap<String, String> = serde_json::from_str(&metadata).expect("Can't restore Agent config.");
 
-                Agent::_restore_connections(wallet_handle,
-                                            &owner_did,
-                                            &owner_verkey,
-                                            &forward_agent_detail,
-                                            router.clone(),
-                                            admin.clone(),
-                                            configs.clone())
+                Agent::_load_connections(wallet_handle,
+                                         &owner_did,
+                                         &owner_verkey,
+                                         &forward_agent_detail,
+                                         router.clone(),
+                                         admin.clone(),
+                                         configs.clone())
                     .map(move |_| (wallet_handle, agent_did, agent_verkey, owner_did, owner_verkey, forward_agent_detail, router, admin, configs))
             })
             .and_then(move |(wallet_handle, agent_did, agent_verkey, owner_did, owner_verkey, forward_agent_detail, router, admin, configs)| {
@@ -252,13 +258,13 @@ impl Agent {
     /// * `router` - Reference to Router actor
     /// * `admin` - Reference to Admin actor
     /// * `wallet_storage_config` - Configuration data to access wallet storage used across Agency
-    fn _restore_connections(wallet_handle: WalletHandle,
-                            owner_did: &str,
-                            owner_verkey: &str,
-                            forward_agent_detail: &ForwardAgentDetail,
-                            router: Rc<RwLock<Router>>,
-                            admin: Option<Arc<RwLock<Admin>>>,
-                            agent_configs: HashMap<String, String>) -> ResponseFuture<(), Error> {
+    fn _load_connections(wallet_handle: WalletHandle,
+                         owner_did: &str,
+                         owner_verkey: &str,
+                         forward_agent_detail: &ForwardAgentDetail,
+                         router: Rc<RwLock<Router>>,
+                         admin: Option<Arc<RwLock<Admin>>>,
+                         agent_configs: HashMap<String, String>) -> ResponseFuture<(), Error> {
         trace!("Agent::_restore_connections >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, owner_verkey, forward_agent_detail);
 
@@ -272,16 +278,16 @@ impl Agent {
                 let futures: Vec<_> = pairwise_list
                     .iter()
                     .map(move |pairwise| {
-                        AgentConnection::restore(wallet_handle,
-                                                 &owner_did,
-                                                 &owner_verkey,
-                                                 &pairwise.my_did,
-                                                 &pairwise.their_did,
-                                                 &pairwise.metadata,
-                                                 &forward_agent_detail,
-                                                 router.clone(),
-                                                 admin.clone(),
-                                                 agent_configs.clone())
+                        AgentConnection::load_actor(wallet_handle,
+                                                    &owner_did,
+                                                    &owner_verkey,
+                                                    &pairwise.my_did,
+                                                    &pairwise.their_did,
+                                                    &pairwise.metadata,
+                                                    &forward_agent_detail,
+                                                    router.clone(),
+                                                    admin.clone(),
+                                                    agent_configs.clone())
                     })
                     .collect();
 

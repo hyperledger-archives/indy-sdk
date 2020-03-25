@@ -82,15 +82,38 @@ impl ForwardAgentConnection {
     /// * `wallet_storage_config` - Configuration data to access wallet storage used across Agency
     /// * `admin` - Reference to Admin actor
     ///
-    pub fn create(agency_wallet_handle: WalletHandle,
-                  owner_did: String,
-                  owner_verkey: String,
-                  router: Rc<RwLock<Router>>,
-                  forward_agent_detail: ForwardAgentDetail,
-                  wallet_storage_config: WalletStorageConfig,
-                  admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(String, String), Error> {
+    pub fn create_record_load_actor(agency_wallet_handle: WalletHandle,
+                                    owner_did: String,
+                                    owner_verkey: String,
+                                    router: Rc<RwLock<Router>>,
+                                    forward_agent_detail: ForwardAgentDetail,
+                                    wallet_storage_config: WalletStorageConfig,
+                                    admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(String, String), Error> {
         debug!("ForwardAgentConnection::create >> {:?}, {:?}, {:?}, {:?}, {:?}",
                agency_wallet_handle, owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
+
+        Self::create_record(agency_wallet_handle.clone(),
+                            owner_did.clone(),
+                            owner_verkey,
+                            wallet_storage_config.clone())
+            .and_then(move |(fwac_did, fwac_verkey)| {
+                Self::load_actor(agency_wallet_handle,
+                                 owner_did,
+                                 forward_agent_detail,
+                                 wallet_storage_config,
+                                 router,
+                                 admin)
+                    .map(|_| (fwac_did, fwac_verkey))
+            })
+            .into_box()
+    }
+
+    fn create_record(agency_wallet_handle: WalletHandle,
+                     owner_did: String,
+                     owner_verkey: String,
+                     wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(String, String), Error> {
+        debug!("ForwardAgentConnection::create >> {:?}, {:?}, {:?}, {:?}",
+               agency_wallet_handle, owner_did, owner_verkey, wallet_storage_config);
 
         future::ok(())
             .and_then(move |_| {
@@ -122,32 +145,9 @@ impl ForwardAgentConnection {
                 ).to_string();
 
                 pairwise::create_pairwise(agency_wallet_handle, &owner_did, &fwac_did, Some(&metadata))
-                    .map(|_| (fwac_did, fwac_verkey, owner_did, owner_verkey, state))
+                    .map(|_| (fwac_did, fwac_verkey))
                     .map_err(|err| err.context("Can't store Forward Agent Connection pairwise.").into())
                     .into_box()
-            })
-            .and_then(move |(fwac_did, fwac_verkey, owner_did, owner_verkey, state)| {
-                let forward_agent_connection = ForwardAgentConnection {
-                    wallet_handle: agency_wallet_handle,
-                    owner_did,
-                    owner_verkey,
-                    fwac_verkey: fwac_verkey.clone(),
-                    state,
-                    router: router.clone(),
-                    admin: admin.clone(),
-                    forward_agent_detail,
-                    wallet_storage_config,
-                };
-
-                let forward_agent_connection = forward_agent_connection.start();
-
-                router.write().unwrap()
-                    .add_a2a_route(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient());
-                if let Some(admin) = admin {
-                    admin.write().unwrap()
-                        .register_forward_agent_connection(fwac_did.clone(), forward_agent_connection.clone())
-                };
-                future::ok((fwac_did, fwac_verkey))
             })
             .into_box()
     }
@@ -165,12 +165,12 @@ impl ForwardAgentConnection {
     /// * `router` - Reference to Router actor
     /// * `admin` - Reference to Admin actor
     ///
-    pub fn restore(wallet_handle: WalletHandle,
-                   owner_did: String,
-                   forward_agent_detail: ForwardAgentDetail,
-                   wallet_storage_config: WalletStorageConfig,
-                   router: Rc<RwLock<Router>>,
-                   admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(), Error> {
+    pub fn load_actor(wallet_handle: WalletHandle,
+                      owner_did: String,
+                      forward_agent_detail: ForwardAgentDetail,
+                      wallet_storage_config: WalletStorageConfig,
+                      router: Rc<RwLock<Router>>,
+                      admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(), Error> {
         debug!("ForwardAgentConnection::restore >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, forward_agent_detail, wallet_storage_config);
 
@@ -217,15 +217,15 @@ impl ForwardAgentConnection {
                     };
                     {
                         if let Some(agent_v2) = agent_v2 {
-                            Agent::restore(&agent_v2.wallet_id,
-                                           &agent_v2.kdf_directive,
-                                           &agent_v2.agent_did,
-                                           &owner_did,
-                                           &owner_verkey,
-                                           router.clone(),
-                                           forward_agent_detail.clone(),
-                                           wallet_storage_config.clone(),
-                                           admin.clone())
+                            Agent::load_actor(&agent_v2.wallet_id,
+                                              &agent_v2.kdf_directive,
+                                              &agent_v2.agent_did,
+                                              &owner_did,
+                                              &owner_verkey,
+                                              router.clone(),
+                                              forward_agent_detail.clone(),
+                                              wallet_storage_config.clone(),
+                                              admin.clone())
                                 .into_box()
                         } else {
                             ok!(())

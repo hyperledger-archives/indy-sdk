@@ -124,13 +124,13 @@ impl ForwardAgent {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                ForwardAgentConnection::create(slf.wallet_handle,
-                                               their_did.clone(),
-                                               their_verkey.clone(),
-                                               slf.router.clone(),
-                                               slf.forward_agent_detail.clone(),
-                                               slf.wallet_storage_config.clone(),
-                                               slf.admin.clone())
+                ForwardAgentConnection::create_record_load_actor(slf.wallet_handle,
+                                                                 their_did.clone(),
+                                                                 their_verkey.clone(),
+                                                                 slf.router.clone(),
+                                                                 slf.forward_agent_detail.clone(),
+                                                                 slf.wallet_storage_config.clone(),
+                                                                 slf.admin.clone())
                     .map_err(|err| err.context("Can't create Forward Agent Connection.").into())
                     .into_actor(slf)
             })

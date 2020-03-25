@@ -6,7 +6,7 @@ use futures::*;
 use serde_json;
 
 use crate::actors::agent::agent::Agent;
-use crate::actors::agent_connection::agent_connection::{AgentConnection, AgentConnectionConfig};
+use crate::actors::agent_connection::agent_connection::AgentConnection;
 use crate::domain::a2a::*;
 use crate::domain::a2connection::*;
 use crate::indy::{did, pairwise, pairwise::Pairwise, WalletHandle};
@@ -219,51 +219,21 @@ impl Agent {
         let user_pairwise_did = for_did.to_string();
         let user_pairwise_verkey = for_did_verkey.to_string();
 
-        let their_did_info = json!({
-            "did": for_did,
-            "verkey": for_did_verkey,
-        }).to_string();
-
         future::ok(())
             .into_actor(self)
-            .and_then(move |_, slf, _|
-                slf.check_no_pairwise_exists(&user_pairwise_did)
-                    .map(|_| user_pairwise_did)
-                    .into_actor(slf)
-            )
-            .and_then(move |user_pairwise_did, slf, _|
-                did::store_their_did(slf.wallet_handle, &their_did_info)
-                    .map_err(|err| err.context("Can't store their DID for Forward Agent Connection pairwise.").into())
-                    .map(|_| user_pairwise_did)
-                    .into_actor(slf)
-            )
-            .and_then(|user_pairwise_did, slf, _| {
-                did::create_and_store_my_did(slf.wallet_handle, "{}")
-                    .map_err(|err| err.context("Can't create DID for agent pairwise connection.").into())
-                    .map(|(agent_connection_did, agent_connection_verkey)| (user_pairwise_did, agent_connection_did, agent_connection_verkey))
-                    .into_actor(slf)
-            })
-            .and_then(|(user_pairwise_did, agent_connection_did, agent_connection_verkey), slf, _| {
-                pairwise::create_pairwise(slf.wallet_handle, &user_pairwise_did, &agent_connection_did, Some("{}"))
-                    .map_err(|err| err.context("Can't store agent pairwise connection.").into())
-                    .map(|_| (user_pairwise_did, agent_connection_did, agent_connection_verkey))
-                    .into_actor(slf)
-            })
-            .and_then(move |(user_pairwise_did, agent_connection_did, agent_connection_verkey), slf, _| {
-                let config = AgentConnectionConfig {
-                    wallet_handle: slf.wallet_handle,
-                    owner_did: slf.owner_did.to_string(),
-                    owner_verkey: slf.owner_verkey.to_string(),
+            .and_then(move |_, slf, _| {
+                AgentConnection::create_record_load_actor(
+                    slf.wallet_handle,
+                    slf.owner_did.to_string(),
+                    slf.owner_verkey.to_string(),
                     user_pairwise_did,
                     user_pairwise_verkey,
-                    agent_connection_did: agent_connection_did.clone(),
-                    agent_connection_verkey: agent_connection_verkey.clone(),
-                    agent_configs: slf.configs.clone(),
-                    forward_agent_detail: slf.forward_agent_detail.clone(),
-                };
-
-                AgentConnection::create(config, slf.router.clone(), slf.admin.clone())
-                    .map(|_| (agent_connection_did, agent_connection_verkey))
+                    slf.configs.clone(),
+                    slf.forward_agent_detail.clone(),
+                    slf.router.clone(),
+                    slf.admin.clone(),
+                )
+                    .map(|(agent_connection_did, agent_connection_verkey)| (agent_connection_did, agent_connection_verkey))
                     .into_actor(slf)
             })
             .into_box()
@@ -310,20 +280,6 @@ impl Agent {
                     .map_err(|err| err.context("Can't store config data as DID metadata.").into())
                     .into_actor(slf)
             })
-            .into_box()
-    }
-
-    fn check_no_pairwise_exists(&mut self,
-                                did: &str) -> ResponseFuture<(), Error> {
-        pairwise::is_pairwise_exists(self.wallet_handle, did)
-            .map_err(|err| err.context("Can't check if agent pairwise connection exists.").into())
-            .and_then(|is_exist|
-                if is_exist {
-                    err!(err_msg("Agent pairwise connection already exists.")).into()
-                } else {
-                    future::ok(()).into_box()
-                }
-            )
             .into_box()
     }
 }

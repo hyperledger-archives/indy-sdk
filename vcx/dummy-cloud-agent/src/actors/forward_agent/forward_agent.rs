@@ -191,12 +191,12 @@ impl ForwardAgent {
                     .iter()
                     .map(move |pairwise| {
                         debug!("Restorin forward agent connection {:?}", pairwise);
-                        ForwardAgentConnection::restore(wallet_handle,
-                                                        pairwise.their_did.clone(),
-                                                        forward_agent_detail.clone(),
-                                                        wallet_storage_config.clone(),
-                                                        router.clone(),
-                                                        admin.clone())
+                        ForwardAgentConnection::load_actor(wallet_handle,
+                                                           pairwise.their_did.clone(),
+                                                           forward_agent_detail.clone(),
+                                                           wallet_storage_config.clone(),
+                                                           router.clone(),
+                                                           admin.clone())
                     })
                     .collect();
                 future::join_all(futures)

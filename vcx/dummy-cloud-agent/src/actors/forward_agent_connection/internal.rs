@@ -99,12 +99,12 @@ impl ForwardAgentConnection {
         future::ok(())
             .into_actor(self)
             .and_then(|_, slf, _| {
-                Agent::create(&slf.owner_did,
-                              &slf.owner_verkey,
-                              slf.router.clone(),
-                              slf.forward_agent_detail.clone(),
-                              slf.wallet_storage_config.clone(),
-                              slf.admin.clone(),
+                Agent::create_record_load_actor(slf.owner_did.clone(),
+                                                slf.owner_verkey.clone(),
+                                                slf.router.clone(),
+                                                slf.forward_agent_detail.clone(),
+                                                slf.wallet_storage_config.clone(),
+                                                slf.admin.clone(),
                 )
                     .into_actor(slf)
                     .into_box()

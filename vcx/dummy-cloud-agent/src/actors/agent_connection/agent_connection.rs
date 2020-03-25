@@ -16,7 +16,7 @@ use crate::domain::internal_message::InternalMessage;
 use crate::domain::invite::{AgentDetail, ForwardAgentDetail};
 use crate::domain::key_deligation_proof::KeyDlgProof;
 use crate::domain::status::ConnectionStatus;
-use crate::indy::{did, WalletHandle};
+use crate::indy::{did, pairwise, pairwise::Pairwise, WalletHandle};
 use crate::utils::futures::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -27,29 +27,6 @@ pub(super) struct RemoteConnectionDetail {
     pub(super) agent_detail: AgentDetail,
     // Remote Agent Key Delegation Proof
     pub(super) agent_key_dlg_proof: KeyDlgProof,
-}
-
-/// Configuration object used when creating new agent connection
-#[derive(Clone, Debug)]
-pub struct AgentConnectionConfig {
-    // Agent wallet handle
-    pub wallet_handle: WalletHandle,
-    // Agent Owner DID (Owner.DID@Client:AgentConnection)
-    pub owner_did: String,
-    // Agent Owner Verkey (Owner.VK@Client:AgentConnection)
-    pub owner_verkey: String,
-    // User pairwise DID with a 3rd party (Owner.DID@Client:3rdParty)
-    pub user_pairwise_did: String,
-    // User pairwise Verkey with a 3rd party (Owner.VK@Client:3rdParty)
-    pub user_pairwise_verkey: String,
-    // Agent Connection's DID (AgentConnection.DID@AgentConnection:3rdParty)
-    pub agent_connection_did: String,
-    // Agent Connection's Verkey (AgentConnection.VK@AgentConnection:3rdParty)
-    pub agent_connection_verkey: String,
-    // Agent configs
-    pub agent_configs: HashMap<String, String>,
-    // Forward Agent info
-    pub forward_agent_detail: ForwardAgentDetail,
 }
 
 /// Represents routing agent between its owner and a 3rd party. If Alice is owner of this agent
@@ -112,44 +89,69 @@ impl AgentConnection {
     /// The Agent Connection owner is expected to generate connection invitation accordingly to
     /// details of this Agent Connection - for example, use this Agent Connection's 3rd party verkey
     /// to be part of invitation's routing keys.
-    pub fn create(config: AgentConnectionConfig,
-                  router: Rc<RwLock<Router>>,
-                  admin: Option<Arc<RwLock<Admin>>>) -> ResponseFuture<(), Error> {
-        trace!("AgentConnection::create >> {:?}", config);
-        future::ok(())
-            .and_then(move |_| {
-                let agent_connection = AgentConnection {
-                    wallet_handle: config.wallet_handle,
-                    owner_did: config.owner_did,
-                    owner_verkey: config.owner_verkey,
-                    user_pairwise_did: config.user_pairwise_did,
-                    user_pairwise_verkey: config.user_pairwise_verkey,
-                    agent_connection_did: config.agent_connection_did.clone(),
-                    agent_connection_verkey: config.agent_connection_verkey.clone(),
-                    agent_configs: config.agent_configs,
-                    forward_agent_detail: config.forward_agent_detail,
-                    state: AgentConnectionState {
-                        agent_key_dlg_proof: None,
-                        remote_connection_detail: None,
-                        connection_status: ConnectionStatus::NotConnected,
-                        messages: HashMap::new(),
-                    },
-                    router: router.clone(),
-                    admin: admin.clone(),
-                };
+    pub fn create_record_load_actor(agent_wallet_handle: WalletHandle,  // agent wallet
+                                    owner_did: String, // Agent Owner DID (Owner.DID@Client:AgentConnection)
+                                    owner_verkey: String, // Agent Owner Verkey (Owner.VK@Client:AgentConnection)
+                                    user_pairwise_did: String, // User pairwise DID with a 3rd party (Owner.DID@Client:3rdParty)
+                                    user_pairwise_verkey: String, // User pairwise DID with a 3rd party (Owner.DID@Client:3rdParty)
+                                    agent_configs: HashMap<String, String>, // Agent configs
+                                    forward_agent_detail: ForwardAgentDetail,
+                                    router: Rc<RwLock<Router>>,
+                                    admin: Option<Arc<RwLock<Admin>>>) -> ResponseFuture<(String, String), Error> {
+        trace!("AgentConnection::create >> {:?}", agent_configs);
+        Self::create_record(
+            user_pairwise_did.clone(),
+            user_pairwise_verkey,
+            agent_wallet_handle.clone(),
+        )
+            .and_then(move |(agent_connection_did, agent_connection_verkey, ac_state)| {
+                Self::load_actor(agent_wallet_handle,
+                                 &owner_did,
+                                 &owner_verkey,
+                                 &agent_connection_did,
+                                 &user_pairwise_did,
+                                 &ac_state,
+                                 &forward_agent_detail,
+                                 router,
+                                 admin,
+                                 agent_configs)
+                    .map(move |_| (agent_connection_did, agent_connection_verkey))
+            })
+            .into_box()
+    }
 
-                let agent_connection = agent_connection.start();
-                {
-                    let mut router = router.write().unwrap();
-                    router.add_a2a_route(config.agent_connection_did.clone(), config.agent_connection_verkey.clone(), agent_connection.clone().recipient());
-                    router.add_a2conn_route(config.agent_connection_did.clone(), config.agent_connection_verkey.clone(), agent_connection.clone().recipient());
-                }
-                let agent_pairwise_did = config.agent_connection_did.clone();
-                if let Some(admin) = admin {
-                    admin.write().unwrap()
-                        .register_agent_connection(agent_pairwise_did, agent_connection.clone())
-                };
-                future::ok(())
+    pub fn create_record(user_pairwise_did: String, user_pairwise_verkey: String, agent_wallet_handle: WalletHandle) -> ResponseFuture<(String, String, String), Error> {
+        future::ok(())
+            .and_then(move |_|
+                pairwise::is_pairwise_exists(agent_wallet_handle, &user_pairwise_did)
+                    .map_err(|err| err.context("Can't check if agent pairwise connection exists.").into())
+                    .map(move |_| (user_pairwise_did, agent_wallet_handle))
+            )
+            .and_then(move |(user_pairwise_did, agent_wallet_handle)|
+                did::store_their_did(agent_wallet_handle, &json!({
+                            "did": user_pairwise_did,
+                            "verkey": user_pairwise_verkey
+                        }).to_string(),
+                )
+                    .map_err(|err| err.context("Can't store their DID for Forward Agent Connection pairwise.").into())
+                    .map(move |_| (user_pairwise_did, agent_wallet_handle))
+            )
+            .and_then(|(user_pairwise_did, agent_wallet_handle)| {
+                did::create_and_store_my_did(agent_wallet_handle, "{}")
+                    .map_err(|err| err.context("Can't create DID for agent pairwise connection.").into())
+                    .map(move |(agent_connection_did, agent_connection_verkey)| (user_pairwise_did, agent_connection_did, agent_connection_verkey, agent_wallet_handle))
+            })
+            .and_then(|(user_pairwise_did, agent_connection_did, agent_connection_verkey, agent_wallet_handle)| {
+                // serialize this thing and put it into metadata here
+                let ac_state = serde_json::to_string(&AgentConnectionState {
+                    agent_key_dlg_proof: None,
+                    remote_connection_detail: None,
+                    connection_status: ConnectionStatus::NotConnected,
+                    messages: HashMap::new(),
+                }).expect("Failed to serialize initial agent_connection state.");
+                pairwise::create_pairwise(agent_wallet_handle, &user_pairwise_did, &agent_connection_did, Some(&ac_state))
+                    .map_err(|err| err.context("Can't store agent pairwise connection.").into())
+                    .map(|_| (agent_connection_did, agent_connection_verkey, ac_state))
             })
             .into_box()
     }
@@ -160,21 +162,21 @@ impl AgentConnection {
     /// * `owner_verkey` - Agent's owner's verkey at ClientToAgency relationship (Owner.VK@Client:AgentConnection)
     /// * `agent_pairwise_did` - Agent pairwise DID (AgentConnection.DID@AgentConnection:3rdParty)
     /// * `user_pairwise_did` - Agent's owner generated DID to identify the relationship with 3rd party (Owner.DID@Owner:3rdParty)
-    pub fn restore(wallet_handle: WalletHandle,
-                   owner_did: &str,
-                   owner_verkey: &str,
-                   agent_pairwise_did: &str,
-                   user_pairwise_did: &str,
-                   state: &str,
-                   forward_agent_detail: &ForwardAgentDetail,
-                   router: Rc<RwLock<Router>>,
-                   admin: Option<Arc<RwLock<Admin>>>,
-                   agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
+    pub fn load_actor(wallet_handle: WalletHandle,
+                      owner_did: &str,
+                      owner_verkey: &str,
+                      agent_connection_did: &str,
+                      user_pairwise_did: &str,
+                      state: &str,
+                      forward_agent_detail: &ForwardAgentDetail,
+                      router: Rc<RwLock<Router>>,
+                      admin: Option<Arc<RwLock<Admin>>>,
+                      agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
         trace!("AgentConnection::restore >> {:?}", wallet_handle);
 
         let owner_did = owner_did.to_string();
         let owner_verkey = owner_verkey.to_string();
-        let agent_pairwise_did = agent_pairwise_did.to_string();
+        let agent_connection_did = agent_connection_did.to_string();
         let user_pairwise_did = user_pairwise_did.to_string();
         let state = state.to_string();
         let forward_agent_detail = forward_agent_detail.clone();
@@ -183,7 +185,7 @@ impl AgentConnection {
             .and_then(move |_| {
                 let state = serde_json::from_str::<AgentConnectionState>(&state).unwrap();
 
-                let agent_pairwise_did_fut = did::key_for_local_did(wallet_handle, &agent_pairwise_did)
+                let agent_pairwise_did_fut = did::key_for_local_did(wallet_handle, &agent_connection_did)
                     .map_err(|err| err.context("Can't get Agent Connection verkey").into());
 
                 let user_pairwise_fut = did::key_for_local_did(wallet_handle, &user_pairwise_did)
@@ -191,16 +193,16 @@ impl AgentConnection {
 
                 agent_pairwise_did_fut
                     .join(user_pairwise_fut)
-                    .map(|(agent_pairwise_verkey, user_pairwise_verkey)| (agent_pairwise_did, agent_pairwise_verkey, user_pairwise_did, user_pairwise_verkey, state))
+                    .map(|(agent_pairwise_verkey, user_pairwise_verkey)| (agent_connection_did, agent_pairwise_verkey, user_pairwise_did, user_pairwise_verkey, state))
             })
-            .and_then(move |(agent_pairwise_did, agent_pairwise_verkey, user_pairwise_did, user_pairwise_verkey, state)| {
+            .and_then(move |(agent_connection_did, agent_pairwise_verkey, user_pairwise_did, user_pairwise_verkey, state)| {
                 let agent_connection = AgentConnection {
                     wallet_handle,
                     owner_did,
                     owner_verkey,
                     user_pairwise_did,
                     user_pairwise_verkey,
-                    agent_connection_did: agent_pairwise_did.clone(),
+                    agent_connection_did: agent_connection_did.clone(),
                     agent_connection_verkey: agent_pairwise_verkey.clone(),
                     agent_configs,
                     forward_agent_detail,
@@ -217,12 +219,12 @@ impl AgentConnection {
                 let agent_connection = agent_connection.start();
                 {
                     let mut router = router.write().unwrap();
-                    router.add_a2a_route(agent_pairwise_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient());
-                    router.add_a2conn_route(agent_pairwise_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient());
+                    router.add_a2a_route(agent_connection_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient());
+                    router.add_a2conn_route(agent_connection_did.clone(), agent_pairwise_verkey.clone(), agent_connection.clone().recipient());
                 }
                 if let Some(admin) = admin {
                     admin.write().unwrap()
-                        .register_agent_connection(agent_pairwise_did, agent_connection.clone())
+                        .register_agent_connection(agent_connection_did, agent_connection.clone())
                 };
                 future::ok(())
             })
