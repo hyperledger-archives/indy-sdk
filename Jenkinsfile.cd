@@ -1037,7 +1037,7 @@ def linuxPublishing(file, env_name, build_wrappers) {
                 libindyVersion = getSrcVersion("libindy")
 
                 echo "Publish ${env_name} files: Build docker image"
-                testEnv = buildTestEnv(file, env_name)
+                def testEnv = buildTestEnv(file, env_name)
 
                 libindyDebPublishing(testEnv, libindyVersion, env_name)
                 libindyDevDebPublishing(testEnv, libindyVersion, env_name)
