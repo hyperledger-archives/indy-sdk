@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
-import org.hyperledger.indy.sdk.InvalidStructureException;
 
 public class OpenPoolTest extends IndyIntegrationTest {
 
@@ -47,7 +46,7 @@ public class OpenPoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenPoolWorksForIncompatibleProtocolVersion() throws Exception {
-		thrown.expectCause(isA(InvalidStructureException.class));
+		thrown.expectCause(isA(PoolIncompatibleProtocolVersionException.class));
 
 		Pool.setProtocolVersion(1).get();
 

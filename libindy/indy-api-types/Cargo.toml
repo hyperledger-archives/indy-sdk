@@ -32,7 +32,7 @@ features = ["logger"]
 [dependencies.indy-vdr]
 version = "0.1.0"
 git = "https://github.com/hyperledger/indy-vdr"
-rev = "f433017"
+rev = "be922a6"
 optional = true
 default-features = false
 features = ["ffi", "log", "zmq_dynamic"]

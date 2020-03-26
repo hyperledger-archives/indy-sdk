@@ -345,7 +345,7 @@ mod medium_cases {
             pool::create_pool_ledger_config(&setup.name, Some(pool_config.as_str())).unwrap();
 
             let res = pool::open_pool_ledger(&setup.name, None);
-            assert_code!(ErrorCode::CommonInvalidStructure, res); // TODO: changed error: PoolIncompatibleProtocolVersion
+            assert_code!(ErrorCode::PoolIncompatibleProtocolVersion, res);
 
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 

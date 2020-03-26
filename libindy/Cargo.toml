@@ -68,7 +68,7 @@ features = ["cl_native"]
 
 [dependencies.indy-vdr]
 git = "https://github.com/hyperledger/indy-vdr"
-rev = "f433017"
+rev = "be922a6"
 default-features = false
 features = ["ffi", "log", "zmq_dynamic"]
 

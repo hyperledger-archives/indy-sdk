@@ -538,6 +538,7 @@ impl From<VdrError> for IndyError {
             VdrErrorKind::Resource => IndyError::from_msg(IndyErrorKind::InvalidState, err.to_string()),
             VdrErrorKind::Unavailable => IndyError::from_msg(IndyErrorKind::PoolTerminated, err.to_string()),
             VdrErrorKind::Unexpected => IndyError::from_msg(IndyErrorKind::InvalidState, err.to_string()),
+            VdrErrorKind::Incompatible => IndyError::from_msg(IndyErrorKind::PoolIncompatibleProtocolVersion, err.to_string()),
             VdrErrorKind::PoolNoConsensus => IndyError::from_msg(IndyErrorKind::NoConsensus, err.to_string()),
             VdrErrorKind::PoolRequestFailed(failure) => IndyError::from_msg(IndyErrorKind::InvalidTransaction, failure.to_string()),
             VdrErrorKind::PoolTimeout => IndyError::from_msg(IndyErrorKind::PoolTimeout, err.to_string()),
