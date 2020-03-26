@@ -330,7 +330,7 @@ pub mod tests {
 
         let import_config = json!({
             settings::CONFIG_WALLET_NAME: wallet_name.as_str(),
-            settings::CONFIG_WALLET_KEY: "new key",
+            settings::CONFIG_WALLET_KEY: "7dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZZ",
             settings::CONFIG_EXPORTED_WALLET_PATH: export_path.path,
             settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
