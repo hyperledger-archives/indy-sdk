@@ -236,6 +236,7 @@ impl IssuerCredential {
         }
 
         let agent_info = get_agent_info()?.pw_info(connection_handle)?;
+        apply_agent_info(self, &agent_info);
 
         let (payload, title) = self.generate_credential_offer_msg()?;
 
@@ -260,7 +261,6 @@ impl IssuerCredential {
                 .send_secure()
                 .map_err(|err| err.extend("could not send credential offer"))?;
 
-        apply_agent_info(self, &agent_info);
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateOfferSent;
 
@@ -299,6 +299,7 @@ impl IssuerCredential {
         self.verify_payment()?;
 
         let agent_info = get_agent_info()?.pw_info(connection_handle)?;
+        apply_agent_info(self, &agent_info);
 
         let data = self.generate_credential_msg(&agent_info.my_pw_did()?)?;
 
@@ -328,7 +329,6 @@ impl IssuerCredential {
             .send_secure()
             .map_err(|err| err.extend("could not send credential offer"))?;
 
-        apply_agent_info(self, &agent_info);
         self.msg_uid = response.get_msg_uid()?;
         self.state = VcxStateType::VcxStateAccepted;
 
