@@ -18,6 +18,7 @@ use crate::domain::key_deligation_proof::KeyDlgProof;
 use crate::domain::status::ConnectionStatus;
 use crate::indy::{did, pairwise, pairwise::Pairwise, WalletHandle};
 use crate::utils::futures::*;
+use crate::actors::agent::agent::Agent;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(super) struct RemoteConnectionDetail {
@@ -46,6 +47,8 @@ pub(super) struct RemoteConnectionDetail {
 pub struct AgentConnection {
     // Agent wallet handle
     pub(super) wallet_handle: WalletHandle,
+    // DID of agent owning this connection (Agent.DID@Agent:Owner)
+    pub(super) agent_did: String,
     // Agent Owner DID (Owner.DID@Client:AgentConnection)
     pub(super) owner_did: String,
     // Agent Owner Verkey (Owner.VK@Client:AgentConnection)
@@ -58,8 +61,6 @@ pub struct AgentConnection {
     pub(super) agent_connection_did: String,
     // Agent-Connection's Verkey (AgentConnection.VK@AgentConnection:3rdParty), addressable via router
     pub(super) agent_connection_verkey: String,
-    // agent config
-    pub(super) agent_configs: HashMap<String, String>,
     // User Forward Agent info
     pub(super) forward_agent_detail: ForwardAgentDetail,
     // Connection State
@@ -90,15 +91,14 @@ impl AgentConnection {
     /// details of this Agent Connection - for example, use this Agent Connection's 3rd party verkey
     /// to be part of invitation's routing keys.
     pub fn create_record_load_actor(agent_wallet_handle: WalletHandle,  // agent wallet
+                                    agent_did: String,
                                     owner_did: String, // Agent Owner DID (Owner.DID@Client:AgentConnection)
                                     owner_verkey: String, // Agent Owner Verkey (Owner.VK@Client:AgentConnection)
                                     user_pairwise_did: String, // User pairwise DID with a 3rd party (Owner.DID@Client:3rdParty)
                                     user_pairwise_verkey: String, // User pairwise DID with a 3rd party (Owner.DID@Client:3rdParty)
-                                    agent_configs: HashMap<String, String>, // Agent configs
                                     forward_agent_detail: ForwardAgentDetail,
                                     router: Rc<RwLock<Router>>,
                                     admin: Option<Arc<RwLock<Admin>>>) -> ResponseFuture<(String, String), Error> {
-        trace!("AgentConnection::create >> {:?}", agent_configs);
         Self::create_record(
             user_pairwise_did.clone(),
             user_pairwise_verkey,
@@ -106,6 +106,7 @@ impl AgentConnection {
         )
             .and_then(move |(agent_connection_did, agent_connection_verkey, ac_state)| {
                 Self::load_actor(agent_wallet_handle,
+                                 &agent_did,
                                  &owner_did,
                                  &owner_verkey,
                                  &agent_connection_did,
@@ -113,8 +114,7 @@ impl AgentConnection {
                                  &ac_state,
                                  &forward_agent_detail,
                                  router,
-                                 admin,
-                                 agent_configs)
+                                 admin)
                     .map(move |_| (agent_connection_did, agent_connection_verkey))
             })
             .into_box()
@@ -163,6 +163,7 @@ impl AgentConnection {
     /// * `agent_pairwise_did` - Agent pairwise DID (AgentConnection.DID@AgentConnection:3rdParty)
     /// * `user_pairwise_did` - Agent's owner generated DID to identify the relationship with 3rd party (Owner.DID@Owner:3rdParty)
     pub fn load_actor(wallet_handle: WalletHandle,
+                      agent_did: &str,
                       owner_did: &str,
                       owner_verkey: &str,
                       agent_connection_did: &str,
@@ -170,10 +171,10 @@ impl AgentConnection {
                       state: &str,
                       forward_agent_detail: &ForwardAgentDetail,
                       router: Rc<RwLock<Router>>,
-                      admin: Option<Arc<RwLock<Admin>>>,
-                      agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
+                      admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(), Error> {
         trace!("AgentConnection::restore >> {:?}", wallet_handle);
 
+        let agent_did = agent_did.to_string();
         let owner_did = owner_did.to_string();
         let owner_verkey = owner_verkey.to_string();
         let agent_connection_did = agent_connection_did.to_string();
@@ -198,13 +199,13 @@ impl AgentConnection {
             .and_then(move |(agent_connection_did, agent_pairwise_verkey, user_pairwise_did, user_pairwise_verkey, state)| {
                 let agent_connection = AgentConnection {
                     wallet_handle,
+                    agent_did,
                     owner_did,
                     owner_verkey,
                     user_pairwise_did,
                     user_pairwise_verkey,
                     agent_connection_did: agent_connection_did.clone(),
                     agent_connection_verkey: agent_pairwise_verkey.clone(),
-                    agent_configs,
                     forward_agent_detail,
                     state: AgentConnectionState {
                         agent_key_dlg_proof: state.agent_key_dlg_proof,
@@ -259,6 +260,8 @@ impl Handler<HandleAdminMessage> for AgentConnection {
 
     fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
         trace!("Agent Connection Handler<HandleAdminMessage>::handle >>");
+        let agent_configs = Agent::load_configs(self.wallet_handle, self.agent_did.clone())
+            .wait().expect("Failed to long configs"); // TODO: Remove wait here!!!!!!!!!!!!!!!!!!!!!!!!
         let res = ResQueryAgentConn {
             owner_did: self.owner_did.clone(),
             owner_verkey: self.owner_verkey.clone(),
@@ -267,9 +270,9 @@ impl Handler<HandleAdminMessage> for AgentConnection {
             agent_pairwise_did: self.agent_connection_did.clone(),
             agent_pairwise_verkey: self.agent_connection_verkey.clone(),
 
-            logo: self.agent_configs.get("logoUrl").map_or_else(|| String::from("unknown"), |v| v.clone()),
-            name: self.agent_configs.get("name").map_or_else(|| String::from("unknown"), |v| v.clone()),
-            agent_configs: self.agent_configs.iter().map(|(key, value)| (key.clone(), value.clone())).collect(),
+            logo: agent_configs.get("logoUrl").map_or_else(|| String::from("unknown"), |v| v.clone()),
+            name: agent_configs.get("name").map_or_else(|| String::from("unknown"), |v| v.clone()),
+            agent_configs: agent_configs.iter().map(|(key, value)| (key.clone(), value.clone())).collect(),
 
             remote_agent_detail_did: self.state.remote_connection_detail
                 .as_ref().map_or_else(|| "unknown".into(), |r| r.agent_detail.did.clone()),

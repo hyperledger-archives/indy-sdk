@@ -54,10 +54,7 @@ pub struct Agent {
     /// reference to message router
     pub(super) router: Rc<RwLock<Router>>,
     /// reference to Admin actor
-    pub(super) admin: Option<Arc<RwLock<Admin>>>,
-    /// Map of keys and values representing arbitrary configuration of the agent that might be
-    /// set by the agent's owner
-    pub(super) configs: HashMap<String, String>,
+    pub(super) admin: Option<Arc<RwLock<Admin>>>
 }
 
 impl Agent {
@@ -198,22 +195,15 @@ impl Agent {
                     .map_err(|err| err.context("Can't get Agent did verkey.").into())
             })
             .and_then(move |(wallet_handle, agent_did, agent_verkey)| {
-                did::get_did_metadata(wallet_handle, &agent_did)
-                    .then(|res| match res {
-                        Err(IndyError { error_code: ErrorCode::WalletItemNotFound, .. }) => Ok("{}".to_string()),
-                        r => r
-                    })
-                    .map(move |metadata| (wallet_handle, agent_did, agent_verkey, metadata))
-                    .map_err(|err| err.context("Can't get Agent DID Metadata.").into())
+                Self::load_configs(wallet_handle, agent_did.clone())
+                    .map(move |configs| (wallet_handle, agent_did, agent_verkey, configs))
             })
-            .and_then(move |(wallet_handle, agent_did, agent_verkey, metadata)| {
+            .and_then(move |(wallet_handle, agent_did, agent_verkey, configs)| {
                 // Resolve information about existing connections from the wallet
                 // and start Agent Connection actor for each exists connection
 
-                debug!("Agent restore. Agent configs to be loaded: {:?}", metadata);
-                let configs: HashMap<String, String> = serde_json::from_str(&metadata).expect("Can't restore Agent config.");
-
                 Agent::_load_connections(wallet_handle,
+                                         &agent_did,
                                          &owner_did,
                                          &owner_verkey,
                                          &forward_agent_detail,
@@ -231,8 +221,7 @@ impl Agent {
                     owner_verkey,
                     router: router.clone(),
                     admin: admin.clone(),
-                    forward_agent_detail,
-                    configs,
+                    forward_agent_detail
                 };
 
                 let agent = agent.start();
@@ -259,6 +248,7 @@ impl Agent {
     /// * `admin` - Reference to Admin actor
     /// * `wallet_storage_config` - Configuration data to access wallet storage used across Agency
     fn _load_connections(wallet_handle: WalletHandle,
+                         agent_did: &str,
                          owner_did: &str,
                          owner_verkey: &str,
                          forward_agent_detail: &ForwardAgentDetail,
@@ -268,6 +258,7 @@ impl Agent {
         trace!("Agent::_restore_connections >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, owner_verkey, forward_agent_detail);
 
+        let agent_did = agent_did.to_string();
         let owner_did = owner_did.to_string();
         let owner_verkey = owner_verkey.to_string();
         let forward_agent_detail = forward_agent_detail.clone();
@@ -279,6 +270,7 @@ impl Agent {
                     .iter()
                     .map(move |pairwise| {
                         AgentConnection::load_actor(wallet_handle,
+                                                    &agent_did,
                                                     &owner_did,
                                                     &owner_verkey,
                                                     &pairwise.my_did,
@@ -286,8 +278,7 @@ impl Agent {
                                                     &pairwise.metadata,
                                                     &forward_agent_detail,
                                                     router.clone(),
-                                                    admin.clone(),
-                                                    agent_configs.clone())
+                                                    admin.clone())
                     })
                     .collect();
 
@@ -313,30 +304,42 @@ impl Handler<HandleA2AMsg> for Agent {
 }
 
 impl Handler<HandleAdminMessage> for Agent {
-    type Result = Result<ResAdminQuery, Error>;
+    type Result = ResponseActFuture<Self, ResAdminQuery, Error>;
 
     fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
         trace!("Agent Handler<HandleAdminMessage>::handle >>");
-        Ok(ResAdminQuery::Agent(ResQueryAgent {
-            owner_did: self.owner_did.clone(),
-            owner_verkey: self.owner_verkey.clone(),
-            did: self.agent_did.clone(),
-            verkey: self.agent_verkey.clone(),
-            configs: self.configs.iter().map(|(key, value)| (key.clone(), value.clone())).collect(),
-        }))
+        future::ok(())
+            .into_actor(self)
+            .and_then( |_, slf, _| {
+                let owner_did = slf.owner_did.clone();
+                let owner_verkey = slf.owner_verkey.clone();
+                let did = slf.agent_did.clone();
+                let verkey = slf.agent_verkey.clone();
+                Self::load_configs(slf.wallet_handle.clone(), slf.agent_did.clone())
+                    .map( |configs| {
+                        ResAdminQuery::Agent(ResQueryAgent {
+                            owner_did,
+                            owner_verkey,
+                            did,
+                            verkey,
+                            configs: configs.iter().map(|(key, value)| (key.clone(), value.clone())).collect()
+                        })
+                    }).into_actor(slf)
+            })
+            .into_box()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::actors::ForwardA2AMsg;
+    use crate::domain::a2a::{ConfigOption, GetMessagesDetailResponse, MessageDetailPayload, RemoteMessageType};
+    use crate::domain::a2connection::MessagesByConnection;
     use crate::domain::status::MessageStatusCode;
     use crate::utils::tests::*;
     use crate::utils::to_i8;
 
     use super::*;
-    use crate::domain::a2a::{RemoteMessageType, MessageDetailPayload, GetMessagesDetailResponse, ConfigOption};
-    use crate::domain::a2connection::MessagesByConnection;
 
     #[test]
     fn agent_create_key_works() {

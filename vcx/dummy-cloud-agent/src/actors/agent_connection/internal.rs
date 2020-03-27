@@ -22,17 +22,7 @@ use crate::domain::status::{ConnectionStatus, MessageStatusCode};
 use crate::indy::{crypto, did, ErrorCode, IndyError, pairwise};
 use crate::utils::futures::*;
 use crate::utils::to_i8;
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct MessageNotification {
-    msg_uid: String,
-    msg_type: RemoteMessageType,
-    their_pw_did: String,
-    msg_status_code: MessageStatusCode,
-    notification_id: String,
-    pw_did: String,
-}
+use crate::actors::agent::agent::Agent;
 
 impl AgentConnection {
     pub(super) fn handle_a2a_msg(&mut self,
@@ -285,42 +275,11 @@ impl AgentConnection {
             .map(|uids| (uids, status_code))
     }
 
-    /// Dispatches metadata about receive message in form of HTTP POST on specified url.
-    /// Any HTTP error codes returned from the target URL are ignored. The HTTP request dispatch is
-    /// non blocking.
-    ///
-    /// * `webhook_url` - URL address where the data shall be sent
-    /// * `msg_notification` - metadata about received message
-    fn send_webhook_notification(&self, webhook_url: &str, msg_notification: MessageNotification) {
-        let notification_id = msg_notification.notification_id.clone();
-        let ser_msg_notification = serde_json::to_string(&msg_notification).unwrap();
-        debug!("Sending webhook notification {} to {} data", notification_id, webhook_url);
-        let send_notification = requester::REQWEST_CLIENT
-            .post(webhook_url)
-            .header("Accepts", "application/json")
-            .header("Content-type", "application/json")
-            .body(ser_msg_notification)
-            .send()
-            .map_err(move |error| {
-                error!("Problem sending webhook notification. NotificationId {} {:?}",
-                       notification_id, error);
-            })
-            .and_then(move |res| {
-                if let Err(res_err) = res.error_for_status_ref() {
-                    error!("Error code returned from webhook url. NotificationId {} {:?}",
-                           msg_notification.notification_id, res_err);
-                };
-                ok(())
-            });
-
-        Arbiter::spawn_fn(move || { send_notification });
-    }
-
-    fn get_webhook_for_message(&self, sender_did: &str, status_code: MessageStatusCode) -> Option<&String> {
+    fn should_send_notification(&self, sender_did: &str, status_code: MessageStatusCode) -> bool {
         match status_code {
-            MessageStatusCode::Received => self.agent_configs.get("notificationWebhookUrl"),
-            MessageStatusCode::Accepted if (sender_did != self.user_pairwise_did) => self.agent_configs.get("notificationWebhookUrl"),
-            _ => None
+            MessageStatusCode::Received => true,
+            MessageStatusCode::Accepted if (sender_did != self.user_pairwise_did) => true,
+            _ => false
         }
     }
 
@@ -348,19 +307,9 @@ impl AgentConnection {
                                        thread,
                                        redirect_detail);
         self.state.messages.insert(msg.uid.to_string(), msg.clone());
-        match self.get_webhook_for_message(&msg.sender_did, msg.status_code.clone()) {
-            Some(webhook_url) => {
-                let msg_notification = MessageNotification {
-                    msg_uid: msg.uid.clone(),
-                    msg_type: msg._type.clone(),
-                    their_pw_did: msg.sender_did.clone(),
-                    msg_status_code: msg.status_code.clone(),
-                    pw_did: self.user_pairwise_did.clone(),
-                    notification_id: Uuid::new_v4().to_string(),
-                };
-                self.send_webhook_notification(webhook_url, msg_notification)
-            }
-            None => ()
+        if self.should_send_notification(&msg.sender_did, msg.status_code.clone()) {
+            let f = self.try_send_notification(msg.clone());
+            Arbiter::spawn_fn(move || { f });
         }
         msg
     }
@@ -723,51 +672,60 @@ impl AgentConnection {
         Ok(vec![message])
     }
 
-    pub(super) fn build_invite_message(&self, msg: &InternalMessage, msg_detail: &ConnectionRequestMessageDetail) -> Vec<A2AMessage> {
+    pub(super) fn build_invite_message(&self, msg: InternalMessage, msg_detail: ConnectionRequestMessageDetail) -> ResponseFuture<Vec<A2AMessage>, Error> {
         trace!("AgentConnection::build_invite_message >> {:?}, {:?}",
                msg, msg_detail);
 
-        let invite_detail = InviteDetail {
-            conn_req_id: msg.uid.clone(),
-            target_name: Some(String::new()),
-            sender_agency_detail: self.forward_agent_detail.clone(),
-            sender_detail: SenderDetail {
-                did: self.user_pairwise_did.clone(),
-                verkey: self.user_pairwise_verkey.clone(),
-                agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
-                name: self.agent_configs.get("name").cloned(),
-                logo_url: self.agent_configs.get("logoUrl").cloned(),
-                public_did: Some(self.owner_did.clone()),
-            },
-            status_code: msg.status_code.clone(),
-            status_msg: msg.status_code.message().to_string(),
-            thread_id: msg_detail.thread_id.clone(),
-        };
+        let forward_agent_detail =  self.forward_agent_detail.clone();
+        let user_pairwise_did = self.user_pairwise_did.clone();
+        let user_pairwise_verkey = self.user_pairwise_verkey.clone();
+        let public_did = Some(self.owner_did.clone());
 
-        match ProtocolType::get() {
-            ProtocolTypes::V1 => {
-                let msg_created = MessageCreated { uid: msg.uid.clone() };
-                let msg_detail = ConnectionRequestMessageDetailResp {
-                    invite_detail,
-                    url_to_invite_detail: "".to_string(), // format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
+        self.load_name_logo()
+            .map(move |(name, logo_url)| {
+                let invite_detail = InviteDetail {
+                    conn_req_id: msg.uid.clone(),
+                    target_name: Some(String::new()),
+                    sender_agency_detail: forward_agent_detail,
+                    sender_detail: SenderDetail {
+                        did: user_pairwise_did,
+                        verkey: user_pairwise_verkey,
+                        agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
+                        name,
+                        logo_url,
+                        public_did,
+                    },
+                    status_code: msg.status_code.clone(),
+                    status_msg: msg.status_code.message().to_string(),
+                    thread_id: msg_detail.thread_id.clone(),
                 };
 
-                vec![A2AMessage::Version1(A2AMessageV1::MessageCreated(msg_created)),
-                     A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestResp(msg_detail)))]
-            }
-            ProtocolTypes::V2 => {
-                let message = ConnectionRequestResponse {
-                    id: msg.uid.clone(),
-                    invite_detail,
-                    url_to_invite_detail: "".to_string(),
-                    // format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
-                    sent: true,
-                    // TODO: FIXME set positive after sending
-                };
+                match ProtocolType::get() {
+                    ProtocolTypes::V1 => {
+                        let msg_created = MessageCreated { uid: msg.uid.clone() };
+                        let msg_detail = ConnectionRequestMessageDetailResp {
+                            invite_detail,
+                            url_to_invite_detail: "".to_string(), // format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
+                        };
 
-                vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestResponse(message))]
-            }
-        }
+                        vec![A2AMessage::Version1(A2AMessageV1::MessageCreated(msg_created)),
+                             A2AMessage::Version1(A2AMessageV1::MessageDetail(MessageDetail::ConnectionRequestResp(msg_detail)))]
+                    }
+                    ProtocolTypes::V2 => {
+                        let message = ConnectionRequestResponse {
+                            id: msg.uid.clone(),
+                            invite_detail,
+                            url_to_invite_detail: "".to_string(),
+                            // format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
+                            sent: true,
+                            // TODO: FIXME set positive after sending
+                        };
+
+                        vec![A2AMessage::Version2(A2AMessageV2::ConnectionRequestResponse(message))]
+                    }
+                }
+            })
+            .into_box()
     }
 
     fn build_invite_answer_message(&self, message: &InternalMessage, reply_to: &str) -> Result<Vec<A2AMessage>, Error> {
@@ -889,5 +847,21 @@ impl AgentConnection {
                     .into_box(),
             None => ok!(vec![]) // do not encrypt in case remote connection data isn't set
         }
+    }
+
+    fn load_name_logo(&self) -> ResponseFuture<(Option<String>, Option<String>), Error> {
+        let wallet_handle = self.wallet_handle.clone();
+        let agent_did = self.agent_did.clone();
+        Agent::load_config(self.wallet_handle.clone(), agent_did.clone(), "name".into())
+            .and_then(move |name| {
+                Agent::load_config(wallet_handle, agent_did, "logoUrl".into())
+                    .map(move |logoUrl| (name, logoUrl))
+            })
+            .into_box()
+    }
+
+    pub(super) fn load_config(&self, key: &str) -> ResponseFuture<Option<String>, Error> {
+        Agent::load_config(self.wallet_handle, self.agent_did.clone(), key.into())
+            .into_box()
     }
 }

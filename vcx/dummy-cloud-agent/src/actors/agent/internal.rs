@@ -224,11 +224,11 @@ impl Agent {
             .and_then(move |_, slf, _| {
                 AgentConnection::create_record_load_actor(
                     slf.wallet_handle,
+                    slf.agent_did.to_string(),
                     slf.owner_did.to_string(),
                     slf.owner_verkey.to_string(),
                     user_pairwise_did,
                     user_pairwise_verkey,
-                    slf.configs.clone(),
                     slf.forward_agent_detail.clone(),
                     slf.router.clone(),
                     slf.admin.clone(),
@@ -240,46 +240,27 @@ impl Agent {
     }
 
     pub(super) fn handle_update_configs(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, (), Error> {
-        for config_option in msg.configs {
-            match config_option.name.as_str() {
-                "name" | "logoUrl" | "notificationWebhookUrl" => self.configs.insert(config_option.name, config_option.value),
-                _ => {
-                    warn!("Agent was trying to set up unsupported agent configuration option {}", config_option.name.as_str());
-                    continue;
-                }
-            };
-        }
-
-        let config_metadata = ftry_act!(self, serde_json::to_string(&self.configs));
-
-        future::ok(())
+        Self::insert_configs(self.wallet_handle, self.agent_did.clone(), msg.configs)
             .into_actor(self)
-            .and_then(move |_, slf, _| {
-                did::set_did_metadata(slf.wallet_handle, &slf.agent_did, config_metadata.to_string().as_str())
-                    .map_err(|err| err.context("Can't store config data as DID metadata.").into())
-                    .into_actor(slf)
-            })
             .into_box()
     }
 
     pub(super) fn handle_get_configs(&mut self, msg: GetConfigs) -> Vec<ConfigOption> {
-        self.configs.iter()
-            .filter(|(k, _)| msg.configs.contains(k))
-            .map(|(k, v)| ConfigOption { name: k.clone(), value: v.clone() })
-            .collect()
+        Self::load_configs(self.wallet_handle, self.agent_did.clone())
+            .map(|configs| {
+                configs.into_iter()
+                    .filter(|(k, _)| msg.configs.contains(k))
+                    .map(|(k, v)| ConfigOption { name: k.clone(), value: v.clone() })
+                    .collect()
+            })
+            .wait().expect("") // TODO instead of waiting return actor future here
+            // .into_actor(self)
+            // .into_box()
     }
 
     pub(super) fn handle_remove_configs(&mut self, msg: RemoveConfigs) -> ResponseActFuture<Self, (), Error> {
-        self.configs.retain(|k, _| !msg.configs.contains(k));
-        let config_metadata = ftry_act!(self, serde_json::to_string(&self.configs));
-
-        future::ok(())
+        Self::remove_configs(self.wallet_handle, self.agent_did.clone(), msg.configs)
             .into_actor(self)
-            .and_then(move |_, slf, _| {
-                did::set_did_metadata(slf.wallet_handle, &slf.agent_did, config_metadata.to_string().as_str())
-                    .map_err(|err| err.context("Can't store config data as DID metadata.").into())
-                    .into_actor(slf)
-            })
             .into_box()
     }
 }

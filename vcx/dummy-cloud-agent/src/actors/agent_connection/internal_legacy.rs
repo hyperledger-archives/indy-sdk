@@ -217,9 +217,12 @@ impl AgentConnection {
 
                 (msg, msg_detail)
             })
-            .map(move |(msg, msg_detail), slf, _| {
-                let messages = slf.build_invite_message(&msg, &msg_detail);
-                (msg.uid, messages)
+            .and_then(move |(msg, msg_detail), slf, _| {
+                slf.build_invite_message(msg.clone(), msg_detail)
+                    .map(|messages| {
+                        (msg.uid, messages)
+                    })
+                    .into_actor(slf)
             })
             .into_box()
     }
