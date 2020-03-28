@@ -307,22 +307,8 @@ impl Message {
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
             let decrypted_payload = match payload {
-                MessagePayload::V1(payload) => {
-                    if let Ok(payload) = Payloads::decrypt_payload_v1(&vk, &payload) {
-                        Ok(Payloads::PayloadV1(payload))
-                    } else {
-                        serde_json::from_slice::<serde_json::Value>(&to_u8(payload)[..])
-                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize MessagePayload: {}", err)))
-                            .and_then(|json| Payloads::decrypt_payload_v12(&vk, &json))
-                            .map(|json| match json.msg {
-                                serde_json::Value::String(_str) => _str,
-                                value => value.to_string()
-                            })
-                            .map(|payload|
-                                Payloads::PayloadV1(PayloadV1 { type_: PayloadTypes::build_v1(PayloadKinds::Other("aries".to_string()), "json"), msg: payload })
-                            )
-                    }
-                }
+                MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
+                    .map(Payloads::PayloadV1),
                 MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
                     .map(Payloads::PayloadV2)
             };

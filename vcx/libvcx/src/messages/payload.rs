@@ -126,7 +126,7 @@ impl Payloads {
 
         let mut my_payload: PayloadV2 = serde_json::from_str(&message)
             .map_err(|err| {
-                error!("could not deserialize bundle with i8 or u8: {}", err);
+                error!("could not deserialize PayloadV2: {}", err);
                 VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
             })?;
 
@@ -151,7 +151,7 @@ impl Payloads {
 
         let my_payload: PayloadV12 = serde_json::from_str(&message)
             .map_err(|err| {
-                error!("could not deserialize bundle with i8 or u8: {}", err);
+                error!("could not deserialize PayloadV12: {}", err);
                 VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize payload: {}", err))
             })?;
 
