@@ -787,6 +787,26 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 if !parsed_data["reqSignature"].is_null() {
                     value["reqSignature"] = parsed_data["reqSignature"].clone();
                 }
+
+                // Adjust attrib transaction to match stored state
+                if value["txn"]["type"].as_str() == Some(constants::ATTRIB) {
+                    if let Some(raw) = value["txn"]["data"]["raw"].as_str() {
+                        if raw.is_empty() {
+                            value["txn"]["data"]["raw"] = SJsonValue::from("");
+                        } else {
+
+                            value["txn"]["data"]["raw"] =
+                                SJsonValue::from(hex::encode(openssl_hash(raw.as_bytes()).map_err(|err| err.to_string())?));
+                        }
+                    } else if let Some(enc) = value["txn"]["data"]["enc"].as_str() {
+                        if enc.is_empty() {
+                            value["txn"]["data"]["enc"] = SJsonValue::from("");
+                        } else {
+                            value["txn"]["data"]["enc"] =
+                                SJsonValue::from(hex::encode(openssl_hash(enc.as_bytes()).map_err(|err| err.to_string())?));
+                        }
+                    }
+                }
             }
             constants::GET_NYM => {
                 value["identifier"] = parsed_data["identifier"].clone();
@@ -794,7 +814,7 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<&str>, parse
                 value["verkey"] = parsed_data["verkey"].clone();
             }
             constants::GET_ATTR => {
-                value["val"] = SJsonValue::String(hex::encode(openssl_hash(data.as_bytes()).unwrap()));
+                value["val"] = SJsonValue::String(hex::encode(openssl_hash(data.as_bytes()).map_err(|err| err.to_string())?));
             }
             constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG | constants::GET_TXN_AUTHR_AGRMT_AML => {
                 value["val"] = parsed_data.clone();
