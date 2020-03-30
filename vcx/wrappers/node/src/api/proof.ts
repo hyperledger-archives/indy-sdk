@@ -135,18 +135,38 @@ export enum PredicateTypes {
  */
 export interface IProofAttr {
   // Requested attribute restrictions
-  restrictions?: IFilter[],
+  restrictions?: IFilter[] | IFilter,
   // Requested attribute name
-  name: string,
+  name?: string,
+  // Requested attribute names. Can be used to specify several attributes that have to match a single credential.
+  // NOTE: should either be "name" or "names", not both and not none of them.
+  names?: string[],
 }
 
+/**
+* @description This represents the set of restrictions applying to credentials.
+*     The list of allowed fields:
+*         "schema_id": <credential schema id>,
+*         "schema_issuer_did": <credential schema issuer did>,
+*         "schema_name": <credential schema name>,
+*         "schema_version": <credential schema version>,
+*         "issuer_did": <credential issuer did>,
+*         "cred_def_id": <credential definition id>,
+*         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+*         // the following tags can be used for every attribute in credential.
+*         "attr::<attribute name>::marker": "1", - to filter based on existence of a specific attribute
+*         "attr::<attribute name>::value": <attribute raw value>, - to filter based on value of a specific attribute
+* Furthermore they can be combine into complex queries using Indy wql: indy-sdk/docs/design/011-wallet-query-language/README.md
+*
+* @interface
+*/
 export interface IFilter {
-  schemaId?: string,
-  schemaIssuerDid?: string,
-  schemaName: string,
-  schemaVersion: string,
-  issuerDid?: string,
-  credDefId?: string,
+  schema_id?: string,
+  schema_issuer_did?: string,
+  schema_name?: string,
+  schema_version?: string,
+  issuer_did?: string,
+  cred_def_id?: string,
 }
 
 export enum ProofState {
@@ -159,7 +179,7 @@ export interface IProofPredicate {
   name: string,
   p_type: string,
   p_value: number,
-  restrictions?: IFilter[]
+  restrictions?: IFilter[],
 }
 
 export interface IRevocationInterval {
@@ -178,8 +198,8 @@ export class Proof extends VCXBaseWithState<IProofData> {
    * ```
    * data = {
    *   attrs: [
-   *     { name: 'attr1' },
-   *     { name: 'attr2' },
+   *     { name: 'attr1', restrictions: [{ 'issuer_did': 'NcYxiDXkpYi6ov5FcYDi1i' }] },
+   *     { name: 'attr2', restrictions: { 'schema_id': 'id' } },
    *     { names: ['attr3', 'attr4'] }],
    *   name: 'Proof',
    *   sourceId: 'testProofSourceId',
