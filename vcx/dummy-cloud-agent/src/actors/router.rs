@@ -31,12 +31,11 @@ use crate::utils::futures::*;
 pub struct Router {
     routes: HashMap<String, Recipient<HandleA2AMsg>>,
     pairwise_routes: HashMap<String, Recipient<HandleA2ConnMsg>>,
-    requester: Addr<Requester>,
-    fw_agent_wallet_handle: WalletHandle
+    requester: Addr<Requester>
 }
 
 impl Router {
-    pub fn new(fw_agent_wallet_handle: WalletHandle) -> ResponseFuture<Rc<RwLock<Router>>, Error> {
+    pub fn new() -> ResponseFuture<Rc<RwLock<Router>>, Error> {
         trace!("Router::new >>");
         future::ok(())
             .and_then(move |_| {
@@ -44,8 +43,7 @@ impl Router {
                 let router = Router {
                     routes: HashMap::new(),
                     pairwise_routes: HashMap::new(),
-                    requester,
-                    fw_agent_wallet_handle
+                    requester
                 };
                 future::ok( Rc::new(RwLock::new(router)))
             })
