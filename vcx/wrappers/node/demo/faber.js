@@ -65,7 +65,7 @@ async function runFaber (options) {
   const version = `${getRandomInt(1, 101)}.${getRandomInt(1, 101)}.${getRandomInt(1, 101)}`
   const schemaData = {
     data: {
-      attrNames: ['name', 'date', 'degree'],
+      attrNames: ['name', 'last_name', 'sex', 'date', 'degree'],
       name: 'FaberVcx',
       version
     },
@@ -118,6 +118,8 @@ async function runFaber (options) {
 
   const schemaAttrs = {
     name: 'alice',
+    last_name: 'clark',
+    sex: 'female',
     date: '05-2018',
     degree: 'maths'
   }
@@ -157,9 +159,18 @@ async function runFaber (options) {
   }
 
   const proofAttributes = [
-    { name: 'name', restrictions: [{ issuer_did: agentProvision.institution_did }] },
-    { name: 'date', restrictions: [{ issuer_did: agentProvision.institution_did }] },
-    { name: 'degree', restrictions: [{ issuer_did: agentProvision.institution_did }] }
+    {
+        names: ['name', 'last_name', 'sex'],
+        restrictions: [{ 'issuer_did': agentProvision.institution_did }]
+    },
+    {
+        name: 'date',
+        restrictions: { 'issuer_did': agentProvision.institution_did }
+    },
+    {
+        name: 'degree',
+        restrictions: { 'attr::degree::value': 'maths' }
+    }
   ]
 
   logger.info('#19 Create a Proof object')
