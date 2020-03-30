@@ -1,5 +1,5 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
-use v3::messages::attachment::{Attachments, AttachmentEncoding};
+use v3::messages::attachment::{Attachments, AttachmentId};
 use v3::messages::ack::PleaseAck;
 use error::{VcxError, VcxResult, VcxErrorKind};
 use messages::thread::Thread;
@@ -33,7 +33,7 @@ impl Credential {
     }
 
     pub fn set_credential(mut self, credential: String) -> VcxResult<Credential> {
-        self.credentials_attach.add_json_attachment(::serde_json::Value::String(credential), AttachmentEncoding::Base64)?;
+        self.credentials_attach.add_base64_encoded_json_attachment(AttachmentId::Credential, ::serde_json::Value::String(credential))?;
         Ok(self)
     }
 }
@@ -94,7 +94,7 @@ pub mod tests {
 
     pub fn _credential() -> Credential {
         let mut attachment = Attachments::new();
-        attachment.add_json_attachment(_attachment(), AttachmentEncoding::Base64).unwrap();
+        attachment.add_base64_encoded_json_attachment(AttachmentId::Credential, _attachment()).unwrap();
 
         Credential {
             id: MessageId::id(),
