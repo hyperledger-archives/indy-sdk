@@ -1,5 +1,5 @@
 use v3::messages::a2a::{MessageId, A2AMessage};
-use v3::messages::attachment::{Attachments, AttachmentEncoding};
+use v3::messages::attachment::{Attachments, AttachmentId};
 use v3::messages::connection::service::Service;
 use error::prelude::*;
 use std::convert::TryInto;
@@ -35,7 +35,7 @@ impl PresentationRequest {
     }
 
     pub fn set_request_presentations_attach(mut self, request_presentations: &PresentationRequestData) -> VcxResult<PresentationRequest> {
-        self.request_presentations_attach.add_json_attachment(json!(request_presentations), AttachmentEncoding::Base64)?;
+        self.request_presentations_attach.add_base64_encoded_json_attachment(AttachmentId::PresentationRequest, json!(request_presentations))?;
         Ok(self)
     }
 
@@ -99,7 +99,7 @@ pub mod tests {
 
     fn _attachment() -> Attachments {
         let mut attachment = Attachments::new();
-        attachment.add_json_attachment(json!(_presentation_request_data()), AttachmentEncoding::Base64).unwrap();
+        attachment.add_base64_encoded_json_attachment(AttachmentId::PresentationRequest,json!(_presentation_request_data())).unwrap();
         attachment
     }
 
