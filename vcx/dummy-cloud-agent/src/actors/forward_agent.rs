@@ -108,7 +108,7 @@ impl ForwardAgent {
                     .map_err(|err| err.context("Can't get Forward Agent did key").into())
             })
             .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config)| {
-                Router::new(wallet_handle.clone())
+                Router::new()
                     .map(move |router| (wallet_handle, did, verkey, endpoint, wallet_storage_config, router))
                     .map_err(|err| err.context("Can't create Router.").into())
             })
