@@ -265,7 +265,8 @@ export const issuerCredentialCreate = async (_data = dataIssuerCredentialCreate(
 export const dataProofCreate = (): IProofCreateData => ({
   attrs: [
     { name: 'attr1' },
-    { name: 'attr2' }
+    { name: 'attr2' },
+    { names: ['attr3', 'attr4'] }
   ],
   name: 'Proof',
   revocationInterval: {
