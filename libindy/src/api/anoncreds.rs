@@ -1687,7 +1687,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 ///         "<predicate_referent>": <wql query>,
 ///     }
 /// where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
-///     The list of allowed fields:
+///     The list of allowed keys that can be combine into complex queries.
 ///         "schema_id": <credential schema id>,
 ///         "schema_issuer_did": <credential schema issuer did>,
 ///         "schema_name": <credential schema name>,
@@ -1695,6 +1695,9 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: CommandH
 ///         "issuer_did": <credential issuer did>,
 ///         "cred_def_id": <credential definition id>,
 ///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+///         // the following keys can be used for every `attribute name` in credential.
+///         "attr::<attribute name>::marker": "1", - to filter based on existence of a specific attribute
+///         "attr::<attribute name>::value": <attribute raw value>, - to filter based on value of a specific attribute
 ///
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1956,7 +1959,7 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///         "to": Optional<int>, // timestamp of interval ending
 ///     }
 /// where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
-///     The list of allowed fields:
+///     The list of allowed keys that can be combine into complex queries.
 ///         "schema_id": <credential schema id>,
 ///         "schema_issuer_did": <credential schema issuer did>,
 ///         "schema_name": <credential schema name>,
@@ -1964,6 +1967,9 @@ pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle
 ///         "issuer_did": <credential issuer did>,
 ///         "cred_def_id": <credential definition id>,
 ///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
+///         // the following keys can be used for every `attribute name` in credential.
+///         "attr::<attribute name>::marker": "1", - to filter based on existence of a specific attribute
+///         "attr::<attribute name>::value": <attribute raw value>, - to filter based on value of a specific attribute
 ///
 /// #Returns
 /// Proof json
@@ -2185,7 +2191,7 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 ///         "to": Optional<int>, // timestamp of interval ending
 ///     }
 /// where wql query: indy-sdk/docs/design/011-wallet-query-language/README.md
-///     The list of allowed fields:
+///     The list of allowed keys that can be combine into complex queries.
 ///         "schema_id": <credential schema id>,
 ///         "schema_issuer_did": <credential schema issuer did>,
 ///         "schema_name": <credential schema name>,
@@ -2193,7 +2199,10 @@ pub extern fn indy_prover_create_proof(command_handle: CommandHandle,
 ///         "issuer_did": <credential issuer did>,
 ///         "cred_def_id": <credential definition id>,
 ///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
-///
+///         // the following keys can be used for every `attribute name` in credential.
+///         "attr::<attribute name>::marker": "1", - to filter based on existence of a specific attribute
+///         "attr::<attribute name>::value": <attribute raw value>, - to filter based on value of a specific attribute
+/// 
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
