@@ -22,13 +22,13 @@ pub struct Issuer {
 }
 
 impl Issuer {
-    pub fn create(cred_def_handle: u32, credential_data: &str, source_id: &str) -> VcxResult<Issuer> {
+    pub fn create(cred_def_handle: u32, credential_data: &str, source_id: &str, credential_name: &str) -> VcxResult<Issuer> {
         trace!("Issuer::issuer_create_credential >>> cred_def_handle: {:?}, credential_data: {:?}, source_id: {:?}", cred_def_handle, credential_data, source_id);
 
         let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle)?;
         let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle)?;
         let tails_file = ::credential_def::get_tails_file(cred_def_handle)?;
-        let issuer_sm = IssuerSM::new(&cred_def_id, credential_data, rev_reg_id, tails_file, source_id);
+        let issuer_sm = IssuerSM::new(&cred_def_id, credential_data, rev_reg_id, tails_file, source_id, credential_name);
         Ok(Issuer { issuer_sm })
     }
 
