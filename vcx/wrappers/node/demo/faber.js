@@ -65,7 +65,7 @@ async function runFaber (options) {
   const version = `${getRandomInt(1, 101)}.${getRandomInt(1, 101)}.${getRandomInt(1, 101)}`
   const schemaData = {
     data: {
-      attrNames: ['name', 'date', 'degree', 'age'],
+      attrNames: ['name', 'last_name', 'sex', 'date', 'degree', 'age'],
       name: 'FaberVcx',
       version
     },
@@ -118,6 +118,8 @@ async function runFaber (options) {
 
   const schemaAttrs = {
     name: 'alice',
+    last_name: 'clark',
+    sex: 'female',
     date: '05-2018',
     degree: 'maths',
     age: '25'
@@ -158,9 +160,18 @@ async function runFaber (options) {
   }
 
   const proofAttributes = [
-    { name: 'name', restrictions: [{ issuer_did: agentProvision.institution_did }] },
-    { name: 'date', restrictions: [{ issuer_did: agentProvision.institution_did }] },
-    { name: 'degree', restrictions: [{ issuer_did: agentProvision.institution_did }] }
+    {
+        names: ['name', 'last_name', 'sex'],
+        restrictions: [{ 'issuer_did': agentProvision.institution_did }]
+    },
+    {
+        name: 'date',
+        restrictions: { 'issuer_did': agentProvision.institution_did }
+    },
+    {
+        name: 'degree',
+        restrictions: { 'attr::degree::value': 'maths' }
+    }
   ]
 
   const proofPredicates = [
