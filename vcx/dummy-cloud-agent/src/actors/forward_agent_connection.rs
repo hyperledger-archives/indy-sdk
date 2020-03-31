@@ -1,4 +1,6 @@
 use std::convert::Into;
+use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
 use failure::{err_msg, Error, Fail};
@@ -6,7 +8,7 @@ use futures::*;
 use futures::future::Either;
 use serde_json;
 
-use crate::actors::{AddA2ARoute, AdminRegisterForwardAgentConnection, HandleA2AMsg, HandleAdminMessage};
+use crate::actors::{HandleA2AMsg, HandleAdminMessage};
 use crate::actors::admin::Admin;
 use crate::actors::agent::Agent;
 use crate::actors::router::Router;
@@ -32,7 +34,8 @@ pub struct AgentWalletInfo {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ForwardAgentConnectionState {
     pub is_signed_up: bool,
-    pub agent: Option<(String, String, String)>, //  agent's (wallet_id, wallet_key, agent_did)
+    pub agent: Option<(String, String, String)>,
+    //  agent's (wallet_id, wallet_key, agent_did)
     pub agent_v2: Option<AgentWalletInfo>,
 }
 
@@ -60,8 +63,8 @@ pub struct ForwardAgentConnection {
     fwac_verkey: String,
     /// Metadata about the connection and possibly Agent bootstrapped off this connection
     state: ForwardAgentConnectionState,
-    router: Addr<Router>,
-    admin: Option<Addr<Admin>>,
+    router: Rc<RwLock<Router>>,
+    admin: Option<Arc<RwLock<Admin>>>,
     forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
 }
@@ -85,10 +88,10 @@ impl ForwardAgentConnection {
     pub fn create(agency_wallet_handle: WalletHandle,
                   owner_did: String,
                   owner_verkey: String,
-                  router: Addr<Router>,
+                  router: Rc<RwLock<Router>>,
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig,
-                  admin: Option<Addr<Admin>>) -> BoxedFuture<(String, String), Error> {
+                  admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(String, String), Error> {
         debug!("ForwardAgentConnection::create >> {:?}, {:?}, {:?}, {:?}, {:?}",
                agency_wallet_handle, owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
 
@@ -141,21 +144,13 @@ impl ForwardAgentConnection {
 
                 let forward_agent_connection = forward_agent_connection.start();
 
-                router
-                    .send(AddA2ARoute(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(move |_| (fwac_did, fwac_verkey, forward_agent_connection, admin))
-                    .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
-            })
-            .and_then(move |(fwac_did, fwac_verkey, forward_agent_connection, admin)| {
+                router.write().unwrap()
+                    .add_a2a_route(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient());
                 if let Some(admin) = admin {
-                    Either::A(admin.send(AdminRegisterForwardAgentConnection(fwac_did.clone(), forward_agent_connection.clone().recipient()))
-                        .from_err()
-                        .map(move |_| (fwac_did, fwac_verkey))
-                        .map_err(|err: Error| err.context("Can't register Forward Agent in Admin").into()))
-                } else {
-                    Either::B(future::ok( (fwac_did, fwac_verkey)))
-                }
+                    admin.write().unwrap()
+                        .register_forward_agent_connection(fwac_did.clone(), forward_agent_connection.clone())
+                };
+                future::ok((fwac_did, fwac_verkey))
             })
             .into_box()
     }
@@ -177,8 +172,8 @@ impl ForwardAgentConnection {
                    owner_did: String,
                    forward_agent_detail: ForwardAgentDetail,
                    wallet_storage_config: WalletStorageConfig,
-                   router: Addr<Router>,
-                   admin: Option<Addr<Admin>>) -> BoxedFuture<(), Error> {
+                   router: Rc<RwLock<Router>>,
+                   admin: Option<Arc<RwLock<Admin>>>) -> BoxedFuture<(), Error> {
         debug!("ForwardAgentConnection::restore >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, forward_agent_detail, wallet_storage_config);
 
@@ -259,23 +254,13 @@ impl ForwardAgentConnection {
                 };
 
                 let forward_agent_connection = forward_agent_connection.start();
-
-                router
-                    .send(AddA2ARoute(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient()))
-                    .from_err()
-                    .map(move |_| (forward_agent_connection, fwac_did, admin))
-                    .map_err(|err: Error| err.context("Can't add route for Forward Agent Connection").into())
-            })
-            .and_then(move |(forward_agent_connection, fwac_did, admin)| {
-                match admin {
-                    Some(admin) => {
-                        Either::A(admin.send(AdminRegisterForwardAgentConnection(fwac_did.clone(), forward_agent_connection.clone().recipient()))
-                            .from_err()
-                            .map(|_| ())
-                            .map_err(|err: Error| err.context("Can't register Forward Agent Connection in Admin").into()))
-                    },
-                    None => Either::B(future::ok(()))
-                }
+                router.write().unwrap()
+                    .add_a2a_route(fwac_did.clone(), fwac_verkey.clone(), forward_agent_connection.clone().recipient());
+                if let Some(admin) = admin {
+                    admin.write().unwrap()
+                        .register_forward_agent_connection(fwac_did.clone(), forward_agent_connection.clone())
+                };
+                future::ok(())
             })
             .into_box()
     }
@@ -494,14 +479,6 @@ impl Handler<HandleA2AMsg> for ForwardAgentConnection {
     }
 }
 
-impl Handler<HandleAdminMessage> for ForwardAgentConnection {
-    type Result = Result<ResAdminQuery, Error>;
-
-    fn handle(&mut self, _msg: HandleAdminMessage, _cnxt: &mut Self::Context) -> Self::Result {
-        trace!("Forward Agent Connection Handler<HandleAdminMessage>::handle >>", );
-        Ok(ResAdminQuery::ForwardAgentConn)
-    }
-}
 
 #[cfg(test)]
 mod tests {
