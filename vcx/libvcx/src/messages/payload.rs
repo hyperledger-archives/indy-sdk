@@ -25,7 +25,7 @@ pub struct PayloadV1 {
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct PayloadV12 {
     #[serde(rename = "@type")]
-    type_: PayloadTypeV2,
+    pub type_: PayloadTypeV2,
     #[serde(rename = "@msg")]
     pub msg: Value
 }

@@ -2,7 +2,7 @@ use settings;
 use messages::*;
 use messages::message_type::MessageTypes;
 use messages::MessageStatusCode;
-use messages::payload::{Payloads, PayloadTypes, PayloadKinds, PayloadV1};
+use messages::payload::{Payloads, PayloadTypes, PayloadKinds, PayloadV1, PayloadV2};
 use utils::{httpclient, constants};
 use error::prelude::*;
 use settings::ProtocolTypes;
@@ -307,8 +307,32 @@ impl Message {
         let mut new_message = self.clone();
         if let Some(ref payload) = self.payload {
             let decrypted_payload = match payload {
-                MessagePayload::V1(payload) => Payloads::decrypt_payload_v1(&vk, &payload)
-                    .map(Payloads::PayloadV1),
+                MessagePayload::V1(payload) => {
+                    if let Ok(payload) = Payloads::decrypt_payload_v1(&vk, &payload) {
+                        Ok(Payloads::PayloadV1(payload))
+                    } else {
+                        serde_json::from_slice::<serde_json::Value>(&to_u8(payload)[..])
+                            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize MessagePayload: {}", err)))
+                            .and_then(|json| Payloads::decrypt_payload_v12(&vk, &json))
+                            .map(|json| {
+                                (
+                                    json.type_,
+                                    match json.msg {
+                                        serde_json::Value::String(_str) => _str,
+                                        value => value.to_string()
+                                    }
+                                )
+                            })
+                            .map(|(type_, payload)|
+                                Payloads::PayloadV2(PayloadV2 {
+                                    type_,
+                                    id: ::utils::uuid::uuid(),
+                                    msg: payload,
+                                    thread: Default::default(),
+                                })
+                            )
+                    }
+                }
                 MessagePayload::V2(payload) => Payloads::decrypt_payload_v2(&vk, &payload)
                     .map(Payloads::PayloadV2)
             };
