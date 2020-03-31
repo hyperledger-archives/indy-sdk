@@ -311,6 +311,7 @@ impl Message {
                     if let Ok(payload) = Payloads::decrypt_payload_v1(&vk, &payload) {
                         Ok(Payloads::PayloadV1(payload))
                     } else {
+                        warn!("fallback to Payloads::decrypt_payload_v12 in Message:decrypt for MessagePayload::V1");
                         serde_json::from_slice::<serde_json::Value>(&to_u8(payload)[..])
                             .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidMessagePack, format!("Cannot deserialize MessagePayload: {}", err)))
                             .and_then(|json| Payloads::decrypt_payload_v12(&vk, &json))
