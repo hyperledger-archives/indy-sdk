@@ -47,8 +47,8 @@ impl Payloads {
     // this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
     // Possibly this function moves out of this file.
     // On second thought, this should stick as a ConnectionError.
-    pub fn encrypt(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds, thread: Option<Thread>) -> VcxResult<Vec<u8>> {
-        match ProtocolTypes::from(get_protocol_type()) {
+    pub fn encrypt(my_vk: &str, their_vk: &str, data: &str, msg_type: PayloadKinds, thread: Option<Thread>, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
+        match version {
             ProtocolTypes::V1 => {
                 let payload = PayloadV1 {
                     type_: PayloadTypes::build_v1(msg_type, "json"),

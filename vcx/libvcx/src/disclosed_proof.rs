@@ -480,11 +480,13 @@ impl DisclosedProof {
             .msg_type(&RemoteMessageType::Proof)?
             .agent_did(&agent_info.pw_agent_did()?)?
             .agent_vk(&agent_info.pw_agent_vk()?)?
+            .version(agent_info.version.clone())?
             .edge_agent_payload(&agent_info.my_pw_vk()?,
                                 &agent_info.their_pw_vk()?,
                                 &proof,
                                 PayloadKinds::Proof,
-                                self.thread.clone())
+                                self.thread.clone()
+            )
             .map_err(|err| VcxError::from_msg(
                 VcxErrorKind::GeneralConnectionError,
                 format!("Cannot encrypt payload: {}", err),
@@ -528,6 +530,7 @@ impl DisclosedProof {
             .msg_type(&RemoteMessageType::Proof)?
             .agent_did(&agent_info.agency_did)?
             .agent_vk(&agent_info.pw_agent_vk()?)?
+            .version(agent_info.version.clone())?
             .edge_agent_payload(&agent_info.my_pw_vk()?,
                                 &agent_info.their_pw_vk()?,
                                 &proof_reject,

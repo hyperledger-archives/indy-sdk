@@ -247,6 +247,7 @@ impl IssuerCredential {
                 .to(&agent_info.my_pw_did()?)?
                 .to_vk(&agent_info.my_pw_vk()?)?
                 .msg_type(&RemoteMessageType::CredOffer)?
+                .version(agent_info.version.clone())?
                 .edge_agent_payload(&agent_info.my_pw_vk()?,
                                     &agent_info.their_pw_vk()?,
                                     &payload,
@@ -317,6 +318,7 @@ impl IssuerCredential {
             .to_vk(&agent_info.my_pw_vk()?)?
             .msg_type(&RemoteMessageType::Cred)?
             .status_code(&MessageStatusCode::Accepted)?
+            .version(agent_info.version.clone())?
             .edge_agent_payload(&agent_info.my_pw_vk()?,
                                 &agent_info.their_pw_vk()?,
                                 &data,
