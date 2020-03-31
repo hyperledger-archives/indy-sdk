@@ -9,9 +9,7 @@ pub enum AdminQuery {
     GetActorOverview,
     GetDetailForwardAgents,
     GetDetailAgent(GetDetailAgentParams),
-    GetDetailForwardAgentConnection,
     GetDetailAgentConnection(GetDetailAgentConnParams),
-    GetDetailRouter,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -28,8 +26,6 @@ pub struct GetDetailAgentConnParams {
 pub enum ResAdminQuery {
     Admin(ResQueryAdmin),
     ForwardAgent(ResQueryForwardAgent),
-    Router,
-    ForwardAgentConn,
     Agent(ResQueryAgent),
     AgentConn(ResQueryAgentConn),
 }
