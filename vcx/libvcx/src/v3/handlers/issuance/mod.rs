@@ -46,6 +46,11 @@ impl Issuer {
         Ok(self.issuer_sm.get_source_id())
     }
 
+    pub fn revoke_credential(&self) -> VcxResult<()> {
+        println!("REVOKING CREDENTIAL FOR ARIES!");
+        self.issuer_sm.revoke()
+    }
+
     pub fn update_status(&mut self, msg: Option<String>) -> VcxResult<()> {
         match msg {
             Some(msg) => {
