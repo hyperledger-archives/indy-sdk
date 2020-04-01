@@ -85,6 +85,8 @@ pub struct RequestReceivedState {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CredentialSentState {
     pub connection_handle: u32,
+    pub rev_reg_id: Option<String>,
+    pub tails_file: Option<String>,
     pub thread_id: String
 }
 
@@ -92,6 +94,9 @@ pub struct CredentialSentState {
 pub struct FinishedState {
     pub cred_id: Option<String>,
     pub thread_id: String,
+    pub cred_rev_id: Option<String>,
+    pub rev_reg_id: Option<String>,
+    pub tails_file: Option<String>,
     pub status: Status
 }
 
@@ -115,6 +120,9 @@ impl From<InitialState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: String::new(),
+            cred_rev_id: None,
+            rev_reg_id: None,
+            tails_file: None,
             status: Status::Undefined,
         }
     }
@@ -140,6 +148,8 @@ impl From<(RequestReceivedState, MessageId)> for CredentialSentState {
         trace!("SM is now in CredentialSent state");
         CredentialSentState {
             connection_handle: state.connection_handle,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
             thread_id: state.thread_id,
         }
     }
@@ -151,6 +161,9 @@ impl From<OfferSentState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
+            cred_rev_id: None,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
             status: Status::Undefined,
         }
     }
@@ -162,17 +175,23 @@ impl From<(OfferSentState, ProblemReport)> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
+            cred_rev_id: None,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
             status: Status::Failed(err),
         }
     }
 }
 
-impl From<RequestReceivedState> for FinishedState {
-    fn from(state: RequestReceivedState) -> Self {
+impl From<(RequestReceivedState, Option<String>)> for FinishedState {
+    fn from((state, cred_rev_id): (RequestReceivedState, Option<String>)) -> Self {
         trace!("SM is now in Finished state");
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
+            cred_rev_id: cred_rev_id,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
             status: Status::Success,
         }
     }
@@ -184,6 +203,9 @@ impl From<(RequestReceivedState, ProblemReport)> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
+            cred_rev_id: None,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
             status: Status::Failed(err),
         }
     }
@@ -195,6 +217,9 @@ impl From<CredentialSentState> for FinishedState {
         FinishedState {
             cred_id: None,
             thread_id: state.thread_id,
+            cred_rev_id: None,
+            rev_reg_id: state.rev_reg_id,
+            tails_file: state.tails_file,
             status: Status::Success,
         }
     }
@@ -243,6 +268,7 @@ pub struct FinishedHolderState {
     pub cred_id: Option<String>,
     pub credential: Option<Credential>,
     pub status: Status,
+    pub rev_reg_def_json: Option<String>
 }
 
 impl From<(OfferReceivedState, String, String, u32)> for RequestSentState {
@@ -256,13 +282,14 @@ impl From<(OfferReceivedState, String, String, u32)> for RequestSentState {
     }
 }
 
-impl From<(RequestSentState, String, Credential)> for FinishedHolderState {
-    fn from((_, cred_id, credential): (RequestSentState, String, Credential)) -> Self {
+impl From<(RequestSentState, String, Credential, Option<String>)> for FinishedHolderState {
+    fn from((_, cred_id, credential, rev_reg_def_json): (RequestSentState, String, Credential, Option<String>)) -> Self {
         trace!("SM is now in Finished state");
         FinishedHolderState {
             cred_id: Some(cred_id),
             credential: Some(credential),
             status: Status::Success,
+            rev_reg_def_json: rev_reg_def_json
         }
     }
 }
@@ -274,6 +301,7 @@ impl From<(RequestSentState, ProblemReport)> for FinishedHolderState {
             cred_id: None,
             credential: None,
             status: Status::Failed(problem_report),
+            rev_reg_def_json: None
         }
     }
 }
@@ -285,6 +313,7 @@ impl From<(OfferReceivedState, ProblemReport)> for FinishedHolderState {
             cred_id: None,
             credential: None,
             status: Status::Failed(problem_report),
+            rev_reg_def_json: None
         }
     }
 }
