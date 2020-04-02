@@ -802,6 +802,7 @@ impl A2AMessageKinds {
 }
 
 pub fn prepare_message_for_agency(message: &A2AMessage, agency_did: &str, version: &ProtocolTypes) -> VcxResult<Vec<u8>> {
+    debug!("AgencyComm Outbound: {}", ::serde_json::to_string(&message).unwrap_or("Failed to serialize outgoing message".into()));
     match version {
         settings::ProtocolTypes::V1 => bundle_for_agency_v1(message, &agency_did),
         settings::ProtocolTypes::V2 |
@@ -850,11 +851,15 @@ fn parse_response_from_agency_v1(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage
     let verkey = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY)?;
     let (_, data) = crypto::parse_msg(&verkey, &response)?;
     let bundle: Bundled<Vec<u8>> = bundle_from_u8(data)?;
-    bundle.bundled
+    let messages = bundle.bundled
         .iter()
-        .map(|msg| rmp_serde::from_slice(msg)
-            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err))))
-        .collect::<VcxResult<Vec<A2AMessage>>>()
+        .map(|msg| {
+            debug!("AgencyComm Inbound V1:\n{}",  std::str::from_utf8(msg.as_slice()).unwrap_or("Agency response contained non-utf8 characters."));
+            rmp_serde::from_slice(msg)
+            .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize response: {}", err)))
+        })
+        .collect::<VcxResult<Vec<A2AMessage>>>();
+    messages
 }
 
 pub fn parse_message_from_response(response: &Vec<u8>) -> VcxResult<String> {
@@ -870,9 +875,9 @@ pub fn parse_message_from_response(response: &Vec<u8>) -> VcxResult<String> {
 fn parse_response_from_agency_v2(response: &Vec<u8>) -> VcxResult<Vec<A2AMessage>> {
     let message = parse_message_from_response(response)?;
 
+    debug!("AgencyComm Inbound V2: {}", message);
     let message: A2AMessage = serde_json::from_str(&message)
         .map_err(|err| VcxError::from_msg(VcxErrorKind::InvalidJson, format!("Cannot deserialize A2A message: {}", err)))?;
-
     Ok(vec![message])
 }
 
