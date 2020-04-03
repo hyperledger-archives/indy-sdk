@@ -121,22 +121,22 @@ impl DidDoc {
             .iter()
             .for_each(|key| {
                 // Note: comment lines 123 - 134 and append key instead key_reference to be compatible with Streetcred
-                id += 1;
-
-                let key_id = id.to_string();
-                let key_reference = DidDoc::_build_key_reference(&self.id, &key_id);
-
-                self.public_key.push(
-                    Ed25519PublicKey {
-                        id: key_id,
-                        type_: String::from(KEY_TYPE),
-                        controller: self.id.clone(),
-                        public_key_base_58: key.clone(),
-                    });
+//                id += 1;
+//
+//                let key_id = id.to_string();
+//                let key_reference = DidDoc::_build_key_reference(&self.id, &key_id);
+//
+//                self.public_key.push(
+//                    Ed25519PublicKey {
+//                        id: key_id,
+//                        type_: String::from(KEY_TYPE),
+//                        controller: self.id.clone(),
+//                        public_key_base_58: key.clone(),
+//                    });
 
                 self.service.get_mut(0)
                     .map(|service| {
-                        service.routing_keys.push(key_reference);
+                        service.routing_keys.push(key.to_string());
                         service
                     });
             });
@@ -147,9 +147,9 @@ impl DidDoc {
             return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, format!("DIDDoc validation failed: Unsupported @context value: {:?}", self.context)));
         }
 
-        if self.id.is_empty() {
-            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"));
-        }
+//        if self.id.is_empty() {
+//            return Err(VcxError::from_msg(VcxErrorKind::InvalidJson, "DIDDoc validation failed: id is empty"));
+//        }
 
         for service in self.service.iter() {
             Url::parse(&service.service_endpoint)
@@ -367,8 +367,6 @@ pub mod tests {
             id: _id(),
             public_key: vec![
                 Ed25519PublicKey { id: "1".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_1() },
-                Ed25519PublicKey { id: "2".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_2() },
-                Ed25519PublicKey { id: "3".to_string(), type_: KEY_TYPE.to_string(), controller: _id(), public_key_base_58: _key_3() }
             ],
             authentication: vec![
                 Authentication { type_: KEY_AUTHENTICATION_TYPE.to_string(), public_key: _key_reference_1() }
@@ -376,7 +374,7 @@ pub mod tests {
             service: vec![Service {
                 service_endpoint: _service_endpoint(),
                 recipient_keys: vec![_key_reference_1()],
-                routing_keys: vec![_key_reference_2(), _key_reference_3()],
+                routing_keys: vec![_key_2(), _key_3()],
                 ..Default::default()
             }],
         }

@@ -2,7 +2,6 @@ use std::str::from_utf8;
 use serde_json;
 
 use error::{VcxResult, VcxError, VcxErrorKind};
-use v3::messages::a2a::MessageId;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Attachments(pub Vec<Attachment>);
@@ -20,10 +19,14 @@ impl Attachments {
         self.0.push(attachment);
     }
 
-    pub fn add_json_attachment(&mut self, json: serde_json::Value, encoding: AttachmentEncoding) -> VcxResult<()> {
-        let json: Json = Json::new(json, encoding)?;
+    pub fn add_json_attachment(&mut self, id: AttachmentId, json: serde_json::Value, encoding: AttachmentEncoding) -> VcxResult<()> {
+        let json: Json = Json::new(id, json, encoding)?;
         self.add(Attachment::JSON(json));
         Ok(())
+    }
+
+    pub fn add_base64_encoded_json_attachment(&mut self, id: AttachmentId, json: serde_json::Value) -> VcxResult<()> {
+        self.add_json_attachment(id, json, AttachmentEncoding::Base64)
     }
 
     pub fn content(&self) -> VcxResult<String> {
@@ -39,18 +42,32 @@ impl Attachments {
 pub enum Attachment {
     #[serde(rename = "application/json")]
     JSON(Json),
-    Blank
+    Blank,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Json {
     #[serde(rename = "@id")]
-    id: MessageId,
-    data: AttachmentData
+    id: AttachmentId,
+    data: AttachmentData,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum AttachmentId {
+    #[serde(rename = "libindy-cred-offer-0")]
+    CredentialOffer,
+    #[serde(rename = "libindy-cred-request-0")]
+    CredentialRequest,
+    #[serde(rename = "libindy-cred-0")]
+    Credential,
+    #[serde(rename = "libindy-request-presentation-0")]
+    PresentationRequest,
+    #[serde(rename = "libindy-presentation-0")]
+    Presentation
 }
 
 impl Json {
-    pub fn new(json: serde_json::Value, encoding: AttachmentEncoding) -> VcxResult<Json> {
+    pub fn new(id: AttachmentId, json: serde_json::Value, encoding: AttachmentEncoding) -> VcxResult<Json> {
         let data: AttachmentData = match encoding {
             AttachmentEncoding::Base64 => {
                 AttachmentData::Base64(
@@ -68,8 +85,8 @@ impl Json {
             }
         };
         Ok(Json {
-            id: MessageId::new(),
-            data
+            id,
+            data,
         })
     }
 
@@ -112,7 +129,7 @@ pub mod tests {
 
     #[test]
     fn test_create_json_attachment_works() {
-        let json_attachment: Json = Json::new(_json(), AttachmentEncoding::Base64).unwrap();
+        let json_attachment: Json = Json::new(AttachmentId::Credential, _json(), AttachmentEncoding::Base64).unwrap();
         assert_eq!(vec![123, 34, 102, 105, 101, 108, 100, 34, 58, 34, 118, 97, 108, 117, 101, 34, 125], json_attachment.data.get_bytes().unwrap());
         assert_eq!(_json().to_string(), json_attachment.get_data().unwrap());
     }
@@ -123,7 +140,7 @@ pub mod tests {
             let mut attachments = Attachments::new();
             assert_eq!(0, attachments.0.len());
 
-            let json: Json = Json::new(_json(), AttachmentEncoding::Base64).unwrap();
+            let json: Json = Json::new(AttachmentId::Credential, _json(), AttachmentEncoding::Base64).unwrap();
             attachments.add(Attachment::JSON(json));
             assert_eq!(1, attachments.0.len());
 
@@ -132,7 +149,7 @@ pub mod tests {
 
         {
             let mut attachments = Attachments::new();
-            attachments.add_json_attachment(_json(), AttachmentEncoding::Base64).unwrap();
+            attachments.add_json_attachment(AttachmentId::Credential, _json(), AttachmentEncoding::Base64).unwrap();
             assert_eq!(_json().to_string(), attachments.content().unwrap());
         }
     }
