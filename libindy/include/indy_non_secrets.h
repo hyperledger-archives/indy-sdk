@@ -155,7 +155,7 @@ extern "C" {
     ///  {
     ///    retrieveType: (optional, false by default) Retrieve record type,
     ///    retrieveValue: (optional, true by default) Retrieve record value,
-    ///    retrieveTags: (optional, true by default) Retrieve record tags
+    ///    retrieveTags: (optional, false by default) Retrieve record tags
     ///  }
     /// #Returns
     /// wallet record json:
