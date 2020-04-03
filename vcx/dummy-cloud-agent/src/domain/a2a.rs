@@ -528,18 +528,24 @@ pub struct RemoveConfigs {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConfigsRemoved {}
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ComMethodType {
+    A2A,
+    Webhook
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ComMethod {
-    id: String,
+    pub id: String,
     #[serde(rename = "type")]
-    e_type: i32,
-    value: String,
+    pub e_type: ComMethodType,
+    pub value: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateComMethod {
     #[serde(rename = "comMethod")]
-    com_method: ComMethod,
+    pub com_method: ComMethod,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

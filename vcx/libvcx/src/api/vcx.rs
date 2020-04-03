@@ -324,7 +324,7 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 pub extern fn vcx_update_webhook_url(command_handle: CommandHandle,
                                      notification_webhook_url: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: CommandHandle, err: u32)>) -> u32 {
-    info!("vcx_update_webhook >>>");
+    info!("vcx_update_webhook {:?} >>>", notification_webhook_url);
 
     check_useful_c_str!(notification_webhook_url, VcxErrorKind::InvalidOption);
     check_useful_c_callback!(cb, VcxErrorKind::InvalidOption);
