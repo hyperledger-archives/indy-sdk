@@ -97,6 +97,12 @@ pub struct UpdateComMethod {
     com_method: ComMethod,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ComMethodType {
+    A2A,
+    Webhook
+}
+
 impl UpdateComMethod {
     fn build(com_method: ComMethod) -> UpdateComMethod {
         UpdateComMethod {
@@ -110,7 +116,7 @@ impl UpdateComMethod {
 pub struct ComMethod {
     id: String,
     #[serde(rename = "type")]
-    e_type: i32,
+    e_type: ComMethodType,
     value: String,
 }
 
@@ -399,7 +405,7 @@ pub fn update_agent_info(id: &str, value: &str) -> VcxResult<()> {
 
     let com_method = ComMethod {
         id: id.to_string(),
-        e_type: 1,
+        e_type: ComMethodType::A2A,
         value: value.to_string(),
     };
 
@@ -433,13 +439,19 @@ fn update_agent_info_v2(to_did: &str, com_method: ComMethod) -> VcxResult<()> {
 }
 
 pub fn update_agent_webhook(webhook_url: &str) -> VcxResult<()> {
+    trace!("update_agent_webhook >>> webhook_url: {:?}", webhook_url);
+
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
 
-    ::messages::update_data()
-        .to(&to_did[..])?
-        .webhook_url(&Some(String::from(webhook_url)))?
-        .send_secure()
-        .map_err(|err| err.extend("Cannot update webhook"))?;
+    let com_method: ComMethod = ComMethod {
+        id: String::from("123"),
+        e_type: ComMethodType::Webhook,
+        value: String::from(webhook_url)
+    };
+    let message = A2AMessage::Version1(
+        A2AMessageV1::UpdateComMethod(UpdateComMethod::build(com_method))
+    );
+    send_message_to_agency(&message, &to_did)?;
 
     Ok(())
 }
