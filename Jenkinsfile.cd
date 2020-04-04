@@ -125,6 +125,7 @@ def runValdiationRust(dir) {
         try {
             cleanWs()
             checkout scm
+            def testEnv
             if (dir == 'vcx/libvcx') {
                 testEnv = dockerBuild("static-validation-libvcx", "vcx/ci/ubuntu.dockerfile .")
             } else {
@@ -1037,7 +1038,7 @@ def linuxPublishing(file, env_name, build_wrappers) {
                 libindyVersion = getSrcVersion("libindy")
 
                 echo "Publish ${env_name} files: Build docker image"
-                testEnv = buildTestEnv(file, env_name)
+                def testEnv = buildTestEnv(file, env_name)
 
                 libindyDebPublishing(testEnv, libindyVersion, env_name)
                 libindyDevDebPublishing(testEnv, libindyVersion, env_name)
@@ -1116,7 +1117,7 @@ def windowsPublishing() {
                 libindyVersion = getSrcVersion("libindy")
 
                 echo 'Publish Windows files: Build docker image'
-                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                def testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy Windows files'
                 windowsPublishArtifact(testEnv, "libindy", "libindy", "lib", libindyVersion, "LibindyWindowsBuildResult")
@@ -1171,7 +1172,7 @@ def iosPublishing() {
                 version = "$libindyVersion-$env.BUILD_NUMBER"
 
                 echo 'Publish iOS files: Build docker image'
-                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                def testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy iOS Pod for aarch64-apple-ios and armv7-apple-ios'
                 publishIOSAtrifacts(testEnv, "libindy", "LibindyMiniIOSPod", version, "libindy-aarch64-armv7.tar.gz")
@@ -1221,7 +1222,7 @@ def macOsPublishing() {
 
                 echo 'Publish MacOS files: Build docker image'
                 def libindyVersion = getSrcVersion("libindy")
-                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                def testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy MacOS Library'
                 publishMacOsArtifact(testEnv, "libindy", "libindy", "LibindyMacosBuildResult", libindyVersion, "lib")
@@ -1471,7 +1472,7 @@ def publishingRCtoStable() {
                 publishLibindyWindowsFilesRCtoStable(libindyVersion)
 
                 echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
-                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                def testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo "Moving ${env_name} RC artifacts to Stable: libindy"
                 publishLibindyDebRCtoStable(testEnv, libindyVersion, env_name)
@@ -1544,21 +1545,21 @@ def publishingRCtoStable() {
                 publishIndyCliMacOSFilesRCtoStable(libindyVersion)
 
                 echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
-                testEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu18.dockerfile libindy/ci')
+                def ubuntu18Env = dockerBuild('indy-sdk', 'libindy/ci/ubuntu18.dockerfile libindy/ci')
 
                 env_name = Ubuntu18
 
                 echo "Moving ${env_name} RC artifacts to Stable: libindy"
-                publishLibindyDebRCtoStable(testEnv, libindyVersion, env_name)
+                publishLibindyDebRCtoStable(ubuntu18Env, libindyVersion, env_name)
 
                 echo "Moving ${env_name} RC artifacts to Stable: indy-cli"
-                publishLibindyCliDebRCtoStable(testEnv, libindyVersion, env_name)
+                publishLibindyCliDebRCtoStable(ubuntu18Env, libindyVersion, env_name)
 
                 echo "Moving ${env_name} RC artifacts to Stable: libnullpay"
-                publishLibnullpayDebRCtoStable(testEnv, env_name)
+                publishLibnullpayDebRCtoStable(ubuntu18Env, env_name)
 
                 echo "Moving ${env_name} RC artifacts to Stable: libvcx"
-                publishLibvcxDebRCtoStable(testEnv, env_name)
+                publishLibvcxDebRCtoStable(ubuntu18Env, env_name)
 
                 env_name = Centos
 
@@ -1785,7 +1786,7 @@ def androidPublishing() {
 
                 echo 'Publish Android binaries: Building docker image'
 
-                buildEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                def buildEnv = dockerBuild('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 publishAndroid(buildEnv, libindyVersion, 'libindy')
                 publishAndroid(buildEnv, libnullpayVersion, 'libnullpay')
@@ -1915,8 +1916,8 @@ def androidBuildAsTesting() {
 
                 echo 'Building android binaries: Building docker image'
                 dockerBuild('libindy', 'libindy/ci/ubuntu.dockerfile libindy/ci')
-                buildEnv = dockerBuild('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
-                vcxBuildEnv = dockerBuild('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
+                def buildEnv = dockerBuild('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
+                def vcxBuildEnv = dockerBuild('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
                 sh 'chmod -R 777 libindy/'
                 sh 'chmod -R 777 libindy/ci/'
 

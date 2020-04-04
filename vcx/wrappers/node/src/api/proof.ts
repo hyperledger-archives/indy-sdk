@@ -227,7 +227,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
     }
   }
 
-  static getParams (proofData: ISerializedData<IProofData>): IProofConstructorData {
+  private static getParams (proofData: ISerializedData<IProofData>): IProofConstructorData {
     const { data: { requested_attrs, requested_predicates, name } } = proofData
     const attrs = JSON.parse(requested_attrs)
     const preds = JSON.parse(requested_predicates)
@@ -253,23 +253,23 @@ export class Proof extends VCXBaseWithState<IProofData> {
  */
   public static async deserialize (proofData: ISerializedData<IProofData>): Promise<Proof> {
     try {
-      const params: IProofConstructorData = (function () {
+      const params: IProofConstructorData = (() => {
         switch (proofData.version) {
-          case "1.0":
+          case '1.0':
             return Proof.getParams(proofData)
-          case "2.0":
-            return { attrs: [{ name: "" }], name: "" }
-          case "3.0":
+          case '2.0':
+            return { attrs: [{ name: '' }], preds: [], name: '' }
+          case '3.0':
             return Proof.getParams(proofData)
           default:
             throw Error(`Unsupported version provided in serialized proof data: ${JSON.stringify(proofData.version)}`)
         }
       })()
-     return await super._deserialize<Proof, IProofConstructorData>(
-        Proof,
-        proofData,
-        params
-      )
+      return await super._deserialize<Proof, IProofConstructorData>(
+         Proof,
+         proofData,
+         params
+       )
     } catch (err) {
       throw new VCXInternalError(err)
     }
