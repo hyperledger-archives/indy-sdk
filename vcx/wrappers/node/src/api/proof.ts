@@ -208,6 +208,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
    * proof1 = await Proof.create(data)
    * ```
    */
+
   public static async create ({ sourceId, ...createDataRest }: IProofCreateData): Promise<Proof> {
     try {
       const proof = new Proof(sourceId, createDataRest)
@@ -305,26 +306,26 @@ export class Proof extends VCXBaseWithState<IProofData> {
    */
   public async updateStateWithMessage (message: string): Promise<void> {
     try {
-  	const commandHandle = 0
-  	await createFFICallbackPromise<number>(
-  	  (resolve, reject, cb) => {
-  		const rc = rustAPI().vcx_proof_update_state_with_message(commandHandle, this.handle, message, cb)
-  		if (rc) {
-  		  resolve(StateType.None)
-  		}
-  	  },
-  	  (resolve, reject) => ffi.Callback(
-  		'void',
-  		['uint32', 'uint32', 'uint32'],
-  		(handle: number, err: any, state: StateType) => {
-  		  if (err) {
-  			reject(err)
-  		  }
-  		  resolve(state)
-  		})
-  	)
+      const commandHandle = 0
+      await createFFICallbackPromise<number>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_proof_update_state_with_message(commandHandle, this.handle, message, cb)
+          if (rc) {
+            resolve(StateType.None)
+          }
+        },
+      (resolve, reject) => ffi.Callback(
+        'void',
+        ['uint32', 'uint32', 'uint32'],
+        (handle: number, err: any, state: StateType) => {
+          if (err) {
+            reject(err)
+          }
+          resolve(state)
+        })
+      )
     } catch (err) {
-  	throw new VCXInternalError(err)
+      throw new VCXInternalError(err)
     }
   }
 
