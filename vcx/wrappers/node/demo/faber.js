@@ -92,9 +92,10 @@ async function runFaber (options) {
   const data = {
     name: 'DemoCredential123',
     paymentHandle: 0,
-    revocation: false,
     revocationDetails: {
-      tailsFile: 'tails.txt'
+      supportRevocation: true,
+      tailsFile: '/tmp/tails',
+      maxCreds: 5
     },
     schemaId: schemaId,
     sourceId: 'testCredentialDefSourceId123'
@@ -184,6 +185,10 @@ async function runFaber (options) {
     }
   ]
 
+  if (options.revocation) {
+    logger.info('#18.5 Revoking credential')
+    await credentialForAlice.revokeCredential()
+  }
   const proofPredicates = [
     { name: 'age', p_type: '>=', p_value: 20, restrictions: [{ issuer_did: agentProvision.institution_did }] }
   ]
@@ -202,7 +207,12 @@ async function runFaber (options) {
 
   logger.info('#21 Poll agency and wait for alice to provide proof')
   let proofState = await proof.getState()
+  const revokedState = options.revocation ? StateType.None : StateType.Revoked
   while (proofState !== StateType.Accepted) {
+    if (proofState === revokedState) {
+      logger.info('Alice failed to provide proof, credential revoked')
+      process.exit(0)
+    }
     await sleepPromise(2000)
     await proof.updateState()
     proofState = await proof.getState()
@@ -215,7 +225,7 @@ async function runFaber (options) {
   if (proof.proofState === ProofState.Verified) {
     logger.info('Proof is verified')
   } else {
-    logger.info('Could not verify proof')
+    logger.info('Proof verification failed, credential revoked')
   }
   process.exit(0)
 }
@@ -237,6 +247,12 @@ const optionDefinitions = [
     name: 'postgresql',
     type: Boolean,
     description: 'If specified, postresql wallet will be used.',
+    defaultValue: false
+  },
+  {
+    name: 'revocation',
+    type: Boolean,
+    description: 'If specified, the issued credential will be revoked',
     defaultValue: false
   }
 ]

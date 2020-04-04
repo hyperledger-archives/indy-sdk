@@ -93,8 +93,11 @@ async function runAlice (options) {
   }
 
   logger.info('#22 Poll agency for a proof request')
-  const requests = await DisclosedProof.getRequests(connectionToFaber)
-
+  let requests = await DisclosedProof.getRequests(connectionToFaber)
+  while (requests.length === 0) {
+    await sleepPromise(2000)
+    requests = await DisclosedProof.getRequests(connectionToFaber)
+  }
   logger.info('#23 Create a Disclosed proof object from proof request')
   const proof = await DisclosedProof.create({ sourceId: 'proof', request: JSON.stringify(requests[0]) })
 
@@ -107,6 +110,7 @@ async function runAlice (options) {
     credentials.attrs[attr] = {
       credential: credentials.attrs[attr][0]
     }
+    credentials.attrs[attr].tails_file = '/tmp/tails'
   }
 
   logger.info('#25 Generate the proof')
@@ -115,13 +119,14 @@ async function runAlice (options) {
   logger.info('#26 Send the proof to faber')
   await proof.sendProof(connectionToFaber)
 
+  logger.info('#27 Wait for Faber to receive the proof')
   let proofState = await proof.getState()
-  while (proofState !== StateType.Accepted) {
+  while (proofState !== StateType.Accepted && proofState !== StateType.None) {
     await sleepPromise(2000)
     await proof.updateState()
     proofState = await proof.getState()
   }
-  logger.info('Proof is verified.')
+  logger.info('Faber received the proof')
   process.exit(0)
 }
 
