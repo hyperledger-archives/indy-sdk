@@ -161,16 +161,16 @@ async function runFaber (options) {
 
   const proofAttributes = [
     {
-        names: ['name', 'last_name', 'sex'],
-        restrictions: [{ 'issuer_did': agentProvision.institution_did }]
+      names: ['name', 'last_name', 'sex'],
+      restrictions: [{ issuer_did: agentProvision.institution_did }]
     },
     {
-        name: 'date',
-        restrictions: { 'issuer_did': agentProvision.institution_did }
+      name: 'date',
+      restrictions: { issuer_did: agentProvision.institution_did }
     },
     {
-        name: 'degree',
-        restrictions: { 'attr::degree::value': 'maths' }
+      name: 'degree',
+      restrictions: { 'attr::degree::value': 'maths' }
     }
   ]
 

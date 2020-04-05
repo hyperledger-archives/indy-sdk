@@ -192,6 +192,77 @@ export interface IRevocationInterval {
  */
 export class Proof extends VCXBaseWithState<IProofData> {
   /**
+   * Get the state of the proof
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * assert.equal(await proof.getState(), StateType.OfferSent)
+   * ```
+   */
+  get proofState (): ProofState | null {
+    return this._proofState
+  }
+  /**
+   * Get the attributes of the proof
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * assert.equal(await proof.getState(), StateType.OfferSent)
+   * proofData = await proof.getProof(connection)
+   * await proof.updateState()
+   * assert.equal(await proof.requestedAttributes(), data.attrs)
+   * ```
+   */
+  get requestedAttributes () {
+    return this._requestedAttributes
+  }
+
+  get requestedPredicates () {
+    return this._requestedPredicates
+  }
+
+  /**
+   * Get the name of the proof
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * assert.equal(await proof.getState(), StateType.OfferSent)
+   * proofData = await proof.getProof(connection)
+   * await proof.updateState()
+   * assert.equal(await proof.name(), data.name)
+   * ```
+   */
+  get name () {
+    return this._name
+  }
+  /**
    * Builds a generic proof object
    *
    * Example:
@@ -226,13 +297,6 @@ export class Proof extends VCXBaseWithState<IProofData> {
     } catch (err) {
       throw new VCXInternalError(err)
     }
-  }
-
-  private static getParams (proofData: ISerializedData<IProofData>): IProofConstructorData {
-    const { data: { requested_attrs, requested_predicates, name } } = proofData
-    const attrs = JSON.parse(requested_attrs)
-    const preds = JSON.parse(requested_predicates)
-    return { attrs, name, preds }
   }
 
 /**
@@ -274,6 +338,13 @@ export class Proof extends VCXBaseWithState<IProofData> {
     } catch (err) {
       throw new VCXInternalError(err)
     }
+  }
+
+  private static getParams (proofData: ISerializedData<IProofData>): IProofConstructorData {
+    const { data: { requested_attrs, requested_predicates, name } } = proofData
+    const attrs = JSON.parse(requested_attrs)
+    const preds = JSON.parse(requested_predicates)
+    return { attrs, name, preds }
   }
 
   protected _releaseFn = rustAPI().vcx_proof_release
@@ -456,76 +527,5 @@ export class Proof extends VCXBaseWithState<IProofData> {
     } catch (err) {
       throw new VCXInternalError(err)
     }
-  }
-  /**
-   * Get the state of the proof
-   *
-   * Example
-   * ```
-   * data = {
-   *   attrs: [
-   *     { name: 'attr1' },
-   *     { name: 'attr2' }],
-   *   name: 'Proof',
-   *   sourceId: 'testProofSourceId'
-   * }
-   * proof = await Proof.create(data)
-   * await proof.requestProof(connection)
-   * assert.equal(await proof.getState(), StateType.OfferSent)
-   * ```
-   */
-  get proofState (): ProofState | null {
-    return this._proofState
-  }
-  /**
-   * Get the attributes of the proof
-   *
-   * Example
-   * ```
-   * data = {
-   *   attrs: [
-   *     { name: 'attr1' },
-   *     { name: 'attr2' }],
-   *   name: 'Proof',
-   *   sourceId: 'testProofSourceId'
-   * }
-   * proof = await Proof.create(data)
-   * await proof.requestProof(connection)
-   * assert.equal(await proof.getState(), StateType.OfferSent)
-   * proofData = await proof.getProof(connection)
-   * await proof.updateState()
-   * assert.equal(await proof.requestedAttributes(), data.attrs)
-   * ```
-   */
-  get requestedAttributes () {
-    return this._requestedAttributes
-  }
-
-  get requestedPredicates () {
-    return this._requestedPredicates
-  }
-
-  /**
-   * Get the name of the proof
-   *
-   * Example
-   * ```
-   * data = {
-   *   attrs: [
-   *     { name: 'attr1' },
-   *     { name: 'attr2' }],
-   *   name: 'Proof',
-   *   sourceId: 'testProofSourceId'
-   * }
-   * proof = await Proof.create(data)
-   * await proof.requestProof(connection)
-   * assert.equal(await proof.getState(), StateType.OfferSent)
-   * proofData = await proof.getProof(connection)
-   * await proof.updateState()
-   * assert.equal(await proof.name(), data.name)
-   * ```
-   */
-  get name () {
-    return this._name
   }
 }
