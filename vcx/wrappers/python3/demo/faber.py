@@ -31,8 +31,7 @@ provisionConfig = {
     'wallet_key': '123',
     'payment_method': 'null',
     'enterprise_seed': '000000000000000000000000Trustee1',
-    'protocol_type': '2.0',
-    'communication_method': 'aries'
+    'protocol_type': '3.0',
 }
 
 
@@ -47,6 +46,8 @@ async def main():
     config['institution_name'] = 'Faber'
     config['institution_logo_url'] = 'http://robohash.org/234'
     config['genesis_path'] = 'docker.txn'
+    config['payment_method'] = 'null'
+    config['protocol_type'] = '3.0'
 
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
@@ -83,12 +84,24 @@ async def main():
             "Would you like to do? \n "
             "1 - issue credential \n "
             "2 - ask for proof request \n "
+            "3 - send ping \n "
+            "4 - update connection state \n "
             "else finish \n") \
             .lower().strip()
         if answer == '1':
             await issue_credential(connection_to_alice, cred_def_handle)
         elif answer == '2':
             await ask_for_proof(connection_to_alice, config['institution_did'])
+        elif answer == '3':
+            await connection_to_alice.send_ping(None)
+            connection_state = await connection_to_alice.get_state()
+            while connection_state != State.Accepted:
+                sleep(5)
+                await connection_to_alice.update_state()
+                connection_state = await connection_to_alice.get_state()
+                print("State: " + str(connection_state))
+        elif answer == '4':
+            await connection_to_alice.update_state()
         else:
             break
 
