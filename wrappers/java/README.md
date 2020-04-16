@@ -21,11 +21,11 @@ In your maven project add to pom.xml file next content:
     <dependency>
         <groupId>org.hyperledger</groupId>
         <artifactId>indy</artifactId>
-        <version>1.8.1-dev-985</version>
+        <version>1.14.2</version>
     </dependency>
      
 Note that before you can use java wrapper you must install  c-callable SDK. 
-See the section "How-to-install" in [Indy SDK](README.md)
+See the section "Installing the SDK" in the [Indy SDK documentation](../../README.md#installing-the-sdk)
 ### How to build
 
 First, build the native "indy" library at https://github.com/hyperledger/indy-sdk:
@@ -37,7 +37,10 @@ Then copy the resulting `libindy.so` to `./lib/`.
 Then run
 
     mvn clean install
-  
+
+### Example use
+For the main workflow examples check test folder: https://github.com/hyperledger/indy-sdk/tree/master/wrappers/java/src/test/java/org/hyperledger/indy/sdk
+
 #### Logging
 The Java wrapper uses slf4j as a facade for various logging frameworks, such as java.util.logging, logback and log4j.
 
