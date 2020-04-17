@@ -765,30 +765,30 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
             0,
             this.handle,
             cb
-          );
+          )
           if (rc) {
-            reject(rc);
+            reject(rc)
           }
         },
         (resolve, reject) =>
           ffi.Callback(
-            "void",
-            ["uint32", "uint32", "string"],
+            'void',
+            ['uint32', 'uint32', 'string'],
             (xHandle: number, err: number, details: string) => {
               if (err) {
-                reject(err);
-                return;
+                reject(err)
+                return
               }
               if (!details) {
-                reject(`proof ${this.sourceId} returned empty string`);
-                return;
+                reject(`proof ${this.sourceId} returned empty string`)
+                return
               }
-              resolve(details);
+              resolve(details)
             }
           )
-      );
+      )
     } catch (err) {
-      throw new VCXInternalError(err);
+      throw new VCXInternalError(err)
     }
   }
 
