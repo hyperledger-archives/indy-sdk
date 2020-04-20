@@ -76,7 +76,7 @@ export interface IRevocationDetails {
 
 export enum CredentialDefState {
   Built = 0,
-  Published = 1,
+  Published = 1
 }
 
 // tslint:disable max-classes-per-file
@@ -323,8 +323,8 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     try {
       await createFFICallbackPromise<number>(
         (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credentialdef_update_state(0, this.handle, cb)
-            if (rc) {
+          const rc = rustAPI().vcx_credentialdef_update_state(0, this.handle, cb)
+          if (rc) {
               reject(rc)
             }
         },
@@ -356,8 +356,8 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     try {
       const stateRes = await createFFICallbackPromise<CredentialDefState>(
         (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credentialdef_get_state(0, this.handle, cb)
-            if (rc) {
+          const rc = rustAPI().vcx_credentialdef_get_state(0, this.handle, cb)
+          if (rc) {
               reject(rc)
             }
         },
