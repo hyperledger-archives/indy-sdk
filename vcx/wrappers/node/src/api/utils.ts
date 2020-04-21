@@ -155,7 +155,7 @@ export function shutdownVcx (deleteWallet: boolean): number {
 }
 
 export interface IUpdateWebhookUrl {
-    webhookUrl: string,
+  webhookUrl: string,
 }
 
 export async function vcxUpdateWebhookUrl ({ webhookUrl }: IUpdateWebhookUrl): Promise<void> {

@@ -137,7 +137,7 @@ export class IssuerCredentialPaymentManager extends PaymentManager {
 export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   /**
    * Create a Issuer Credential object that provides a credential for an enterprise's user
-    * Assumes a credential definition has been already written to the ledger.
+   * Assumes a credential definition has been already written to the ledger.
    * ```
    * issuerCredential = await IssuerCredential.create({sourceId: "12",
    * credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: "0"})
@@ -169,8 +169,8 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
     }
   }
 
-  static getParams (credentialData: ISerializedData<IIssuerCredentialData>): IIssuerCredentialParams {
-    const { data: { credential_name, price, credential_attributes, cred_def_handle }} = credentialData
+  public static getParams (credentialData: ISerializedData<IIssuerCredentialData>): IIssuerCredentialParams {
+    const { data: { credential_name, price, credential_attributes, cred_def_handle } } = credentialData
     const attr: IIssuerCredentialVCXAttributes = JSON.parse(credential_attributes)
     return {
       attr,
@@ -193,19 +193,19 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
    */
   public static async deserialize (credentialData: ISerializedData<IIssuerCredentialData>): Promise<IssuerCredential> {
     try {
-      const params: IIssuerCredentialParams = (function () {
+      const params: IIssuerCredentialParams = (() => {
         switch (credentialData.version) {
-          case "1.0":
+          case '1.0':
             return IssuerCredential.getParams(credentialData)
-          case "2.0":
-            return { attr: {}, credDefHandle: -1, credentialName: "", price: "0" }
-          case "3.0":
+          case '2.0':
+            return { attr: {}, credDefHandle: -1, credentialName: '', price: '0' }
+          case '3.0':
             return IssuerCredential.getParams(credentialData)
           default:
             throw Error(`Unsupported version provided in serialized credential data: ${JSON.stringify(credentialData.version)}`)
         }
       })()
-     return await super._deserialize<IssuerCredential, IIssuerCredentialParams>(
+      return await super._deserialize<IssuerCredential, IIssuerCredentialParams>(
         IssuerCredential,
         credentialData,
         params

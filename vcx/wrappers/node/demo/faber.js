@@ -65,7 +65,7 @@ async function runFaber (options) {
   const version = `${getRandomInt(1, 101)}.${getRandomInt(1, 101)}.${getRandomInt(1, 101)}`
   const schemaData = {
     data: {
-      attrNames: ['name', 'last_name', 'sex', 'date', 'degree'],
+      attrNames: ['name', 'last_name', 'sex', 'date', 'degree', 'age'],
       name: 'FaberVcx',
       version
     },
@@ -121,7 +121,8 @@ async function runFaber (options) {
     last_name: 'clark',
     sex: 'female',
     date: '05-2018',
-    degree: 'maths'
+    degree: 'maths',
+    age: '25'
   }
 
   logger.info('#12 Create an IssuerCredential object using the schema and credential definition')
@@ -160,23 +161,28 @@ async function runFaber (options) {
 
   const proofAttributes = [
     {
-        names: ['name', 'last_name', 'sex'],
-        restrictions: [{ 'issuer_did': agentProvision.institution_did }]
+      names: ['name', 'last_name', 'sex'],
+      restrictions: [{ issuer_did: agentProvision.institution_did }]
     },
     {
-        name: 'date',
-        restrictions: { 'issuer_did': agentProvision.institution_did }
+      name: 'date',
+      restrictions: { issuer_did: agentProvision.institution_did }
     },
     {
-        name: 'degree',
-        restrictions: { 'attr::degree::value': 'maths' }
+      name: 'degree',
+      restrictions: { 'attr::degree::value': 'maths' }
     }
+  ]
+
+  const proofPredicates = [
+    { name: 'age', p_type: '>=', p_value: 20, restrictions: [{ issuer_did: agentProvision.institution_did }] }
   ]
 
   logger.info('#19 Create a Proof object')
   const proof = await Proof.create({
     sourceId: '213',
     attrs: proofAttributes,
+    preds: proofPredicates,
     name: 'proofForAlice',
     revocationInterval: {}
   })
