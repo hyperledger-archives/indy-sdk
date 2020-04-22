@@ -9,7 +9,7 @@ use error::prelude::*;
 use indy_sys::CommandHandle;
 
 /*
-    The API represents an Verifier side in credential presentation process.
+    APIs in this module are called by a verifier throughout the request-proof-and-verify process.
     Assumes that pairwise connection between Verifier and Prover is already established.
 
     # State
