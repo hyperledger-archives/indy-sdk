@@ -25,6 +25,7 @@ public abstract class LibVcx {
         public String vcx_error_c_message(int error_code);
         public String vcx_version();
         public int vcx_shutdown(boolean delete);
+        public int vcx_update_institution_info(String name, String logo_url);
 
     /**
      * Helper API for testing purposes.
