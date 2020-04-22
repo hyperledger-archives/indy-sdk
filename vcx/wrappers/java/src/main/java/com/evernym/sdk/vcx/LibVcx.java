@@ -404,6 +404,12 @@ public abstract class LibVcx {
         public int vcx_disclosed_proof_update_state(int command_handle, int proof_handle, Callback cb);
 
         /**
+         * Populates status of the proof from the given message.
+         */
+        public int vcx_disclosed_proof_update_state_with_message(int command_handle, int proof_handle, String message, Callback cb);
+
+
+        /**
          * Check for any proof requests from the connection.
          */
         public int vcx_disclosed_proof_get_requests(int command_handle, int connection_handle, Callback cb);
