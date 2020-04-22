@@ -25,7 +25,6 @@ public abstract class LibVcx {
         public String vcx_error_c_message(int error_code);
         public String vcx_version();
         public int vcx_shutdown(boolean delete);
-        public int vcx_reset();
 
     /**
      * Helper API for testing purposes.
@@ -372,11 +371,6 @@ public abstract class LibVcx {
      *
      * Used for sending a disclosed_proof to an identity owner.
      */
-
-        /**
-         * Creates a disclosed_proof object.  Populates a handle to the new disclosed_proof.
-         */
-        public int vcx_disclosed_proof_create_with_request(int command_handle, String source_id, String requested_attrs, String requested_predicates, String name, Callback cb);
 
         /**
          * Create a proof object with proof request

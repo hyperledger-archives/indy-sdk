@@ -17,35 +17,6 @@ public class DisclosedProofApi extends VcxJava.API {
     }
 
     private static final Logger logger = LoggerFactory.getLogger("DisclosedProofApi");
-    private static Callback vcxProofCreateCB = new Callback() {
-        @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, int proofHandle) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], proofHandle = [" + proofHandle + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
-            if (!checkCallback(future, err)) return;
-            future.complete(proofHandle);
-        }
-    };
-
-    public static CompletableFuture<CreateProofMsgIdResult> proofCreate(
-            String sourceId,
-            String requestedAttributes,
-            String requestedPredicates,
-            String name
-    ) throws VcxException {
-        ParamGuard.notNull(sourceId, "sourceId");
-        ParamGuard.notNull(requestedAttributes, "requestedAttributes");
-        ParamGuard.notNull(requestedPredicates, "requestedPredicates");
-        ParamGuard.notNull(name, "name");
-        logger.debug("proofCreate() called with: sourceId = [" + sourceId + "], requestedAttributes = [" + requestedAttributes + "], requestedPredicates = [" + requestedPredicates + "], name = [" + name + "]");
-        CompletableFuture<CreateProofMsgIdResult> future = new CompletableFuture<>();
-        int commandHandle = addFuture(future);
-
-        int result = LibVcx.api.vcx_disclosed_proof_create_with_request(commandHandle, sourceId, requestedAttributes, requestedPredicates, name, vcxProofCreateCB);
-        checkResult(result);
-
-        return future;
-    }
 
     private static Callback vcxProofCreateWithMsgIdCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
