@@ -21,6 +21,11 @@ android {
         }
     }
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
 }
 
 dependencies {
@@ -31,4 +36,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+
+    implementation 'net.java.dev.jna:jna:4.5.2@aar'
+    implementation 'org.slf4j:slf4j-simple:1.7.28'
+    implementation 'com.evernym:vcx:0.8.0'
 }
