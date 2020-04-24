@@ -422,22 +422,33 @@ impl PostgresConfig {
                 "Require" => match ssl_conf {
                     Some(conf) => postgres::TlsMode::Require(conf),
                     None => postgres::TlsMode::None
-                }
+                },
                 _ => postgres::TlsMode::None
             },
             None => postgres::TlsMode::None
         }
     }
+
     fn r2d2_tls(&self) -> TlsMode {
+        let ssl_conf = Some(ssl_config(&self));
         match &self.tls {
             Some(tls) => match tls.as_ref() {
                 "None" => TlsMode::None,
                 // TODO add tls support for connecting to postgres db
+                "Prefer" => match ssl_conf {
+                    Some(conf) => TlsMode::Prefer(Box::new(conf)),
+                    None => TlsMode::None
+                },
+                "Require" => match ssl_conf {
+                    Some(conf) => TlsMode::Require(Box::new(conf)),
+                    None => TlsMode::None
+                },
                 _ => TlsMode::None
             },
             None => TlsMode::None
         }
     }
+
     /// Sets the maximum number of connections managed by the pool.
     fn max_connections(&self) -> u32 {
         match &self.max_connections {
@@ -1896,16 +1907,16 @@ impl WalletStorageType for PostgresStorageType {
             None => return Err(WalletStorageError::ConfigError)
         };
 
-        let ssl_config = ssl_config(&config);
+        let ssl_config = Some(ssl_config(&config));
         match config.wallet_scheme {
             Some(scheme) => match scheme {
                 WalletScheme::DatabasePerWallet => {
                     debug!("Initialising postgresql using DatabasePerWallet strategy.");
-                    set_wallet_strategy(Box::new(DatabasePerWalletStrategy { ssl_config: Some(ssl_config) }));
+                    set_wallet_strategy(Box::new(DatabasePerWalletStrategy { ssl_config: ssl_config }));
                 }
                 WalletScheme::MultiWalletSingleTable => {
                     debug!("Initialising postgresql using MultiWalletSingleTable strategy.");
-                    set_wallet_strategy(Box::new(MultiWalletSingleTableStrategy { ssl_config: Some(ssl_config) }));
+                    set_wallet_strategy(Box::new(MultiWalletSingleTableStrategy { ssl_config: ssl_config }));
                 }
                 WalletScheme::MultiWalletMultiTable => {
                     debug!("Initialising postgresql using MultiWalletMultiTable strategy.");
@@ -1923,13 +1934,13 @@ impl WalletStorageType for PostgresStorageType {
                     }
                     debug!("Initialising postgresql using MultiWalletSingleTableSharedPool strategy.");
                     let pool = create_connection_pool(&config, &credentials)?;
-                    set_wallet_strategy(Box::new(MultiWalletSingleTableStrategySharedPool { ssl_config: Some(ssl_config), pool }));
+                    set_wallet_strategy(Box::new(MultiWalletSingleTableStrategySharedPool { ssl_config: ssl_config, pool }));
                 }
             },
             None => {
                 debug!("Initialising postgresql but strategy was not specified in storage \
                         configuration. Using DatabasePerWallet strategy by default.");
-                set_wallet_strategy(Box::new(DatabasePerWalletStrategy { ssl_config: Some(ssl_config) }));
+                set_wallet_strategy(Box::new(DatabasePerWalletStrategy { ssl_config: ssl_config }));
             }
         };
         let r1 = SELECTED_STRATEGY.read().unwrap();
