@@ -226,4 +226,7 @@ fabric.properties
 
 !/gradle/wrapper/gradle-wrapper.jar
 
+### Native Libries ###
+*.so
+
 # End of https://www.gitignore.io/api/macos,android,androidstudio
