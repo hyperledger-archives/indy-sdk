@@ -414,7 +414,8 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * msg_id = await connection.send_message(
    *     {msg:"are you there?",type:"question","title":"Sending you a question"})
    * ```
-   * @returns {Promise<string}
+   * @returns {Promise<string>} Promise of String representing UID of created message in 1.0 VCX protocol. When using
+   * 2.0 / 3.0 / Aries protocol, return empty string.
    */
   public async sendMessage (msgData: IMessageData): Promise<string> {
     const sendMsgOptions = {
@@ -437,10 +438,6 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
             (xHandle: number, err: number, details: string) => {
               if (err) {
                 reject(err)
-                return
-              }
-              if (!details) {
-                reject(`Connection ${this.sourceId} connect returned empty string`)
                 return
               }
               resolve(details)
