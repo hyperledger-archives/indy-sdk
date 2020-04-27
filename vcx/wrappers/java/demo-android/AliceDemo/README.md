@@ -8,7 +8,7 @@ It requires the Android Studio 3.6 or newer
 #### NDK
 Open the demo project and install the NDK (Side by side) version 20.0.5594570 using Android Studio
 ```
-Tools -> SDK Manager -> SDK Tools -> Check 'Show Package Details' -> Install the NDK (Side by side) version 20.0.5594570
+Tools -> SDK Manager -> SDK Tools -> Check 'Show Package Details' -> Install the NDK (Side by side) version 21.1.6352462
 ```
 
 #### Native Libraries
@@ -17,7 +17,7 @@ You need to create a jniLibs folder (`app/source/main/jniLibs`) on Android Studi
 - [libvcx](https://repo.sovrin.org/android/libvcx/stable/)
 - [libnullpay](https://repo.sovrin.org/android/libnullpay/stable/)
 - [libjnidispatch v4.5.2](https://github.com/java-native-access/jna/tree/4.5.2/lib/native): You can exract `libjnidispatch.so` from `jar` file using, for example `unzip android-x86.jar libjnidispatch.so` command. Alternatively, you may get a file in the local gradle folder after opening the project in the Android Studio (You can get a location of files in the Android Studio > Project tab > expand External Libraries > expand `net.java.dev.jna:jna:4.5.2@aar` > right click on `classes.jar` > Reveal in Finder > they are under `jni` folder)
-- libc++_shared r20: If your platform is MacOS You can get libc++_shared.so file for each ABI in the `~/Library/Android/sdk/ndk/20.0.5594570/sources/cxx-stl/llvm-libc++/libs` folder after instlling NDK in the previous step.
+- libc++_shared r20: If your platform is MacOS You can get libc++_shared.so file for each ABI in the `~/Library/Android/sdk/ndk/21.1.6352462/sources/cxx-stl/llvm-libc++/libs` folder after instlling NDK in the previous step.
 
 ## Steps to run Demo
 
