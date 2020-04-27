@@ -1,5 +1,5 @@
 # Running the Alice Android Demo
-This demo project is for the Alice on Android simulator or actual devices. You can use any Faber demo in different wrappers for testing. Internally, the application serializes and deserializes the vcx connection object between operations. It saves the configuration details in the shared preference, and use this when it is available for initialization of VCX.
+This demo project is for the Alice on Android simulator or actual devices. You can use any Faber demo in different wrappers for testing. Internally, the application serializes and deserializes the vcx connection object between operations. It saves the configuration details in the shared preference, and uses this when it is available for initialization of VCX.
 ## Prerequisites
 
 #### Android Studio
@@ -16,8 +16,8 @@ You need to create a jniLibs folder (`app/source/main/jniLibs`) on Android Studi
 - [libindy](https://repo.sovrin.org/android/libindy/stable/)
 - [libvcx](https://repo.sovrin.org/android/libvcx/stable/)
 - [libnullpay](https://repo.sovrin.org/android/libnullpay/stable/)
-- [libjnidispatch v4.5.2](https://github.com/java-native-access/jna/tree/4.5.2/lib/native): You can exract `libjnidispatch.so` from `jar` file using, for example `unzip android-x86.jar libjnidispatch.so` command. Alternatively, you may get a file in the local gradle folder after opening the project in the Android Studio (You can get a location of files in the Android Studio > Project tab > expand External Libraries > expand `net.java.dev.jna:jna:4.5.2@aar` > right click on `classes.jar` > Reveal in Finder > they are under `jni` folder)
-- libc++_shared r20: If your platform is MacOS You can get libc++_shared.so file for each ABI in the `~/Library/Android/sdk/ndk/21.1.6352462/sources/cxx-stl/llvm-libc++/libs` folder after instlling NDK in the previous step.
+- [libjnidispatch v4.5.2](https://github.com/java-native-access/jna/tree/4.5.2/lib/native): You can extract `libjnidispatch.so` from `jar` file using, for example `unzip android-x86.jar libjnidispatch.so` command. Alternatively, you may get a file in the local gradle folder after opening the project in the Android Studio (You can get a location of files in the Android Studio > Project tab > expand External Libraries > expand `net.java.dev.jna:jna:4.5.2@aar` > right click on `classes.jar` > Reveal in Finder > they are under `jni` folder)
+- libc++_shared r20: If your platform is MacOS You can get libc++_shared.so file for each ABI in the `~/Library/Android/sdk/ndk/21.1.6352462/sources/cxx-stl/llvm-libc++/libs` folder after installing NDK in the previous step.
 
 ## Steps to run Demo
 
