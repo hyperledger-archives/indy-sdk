@@ -6,7 +6,7 @@ This demo project is for the Alice on Android simulator or actual devices. You c
 It requires the Android Studio 3.6 or newer
 
 #### NDK
-Open the demo project and install the NDK (Side by side) version 20.0.5594570 using Android Studio
+Open the demo project and install the NDK (Side by side) version 21.1.6352462 using Android Studio
 ```
 Tools -> SDK Manager -> SDK Tools -> Check 'Show Package Details' -> Install the NDK (Side by side) version 21.1.6352462
 ```
