@@ -5,19 +5,21 @@ This demo project is for the Alice on Android simulator or actual devices. You c
 #### Android Studio
 It requires the Android Studio 3.6 or newer
 
-#### NDK
-Open the demo project and install the NDK (Side by side) version 21.1.6352462 using Android Studio
+#### Create Native Libraries
+Run the script. This will download all native libraries needed for this project, and create the jniLib folder with required ABIs
 ```
-Tools -> SDK Manager -> SDK Tools -> Check 'Show Package Details' -> Install the NDK (Side by side) version 21.1.6352462
-```
+$ ./populate_libraries.sh
+``` 
 
-#### Native Libraries
-You need to create a jniLibs folder (`app/source/main/jniLibs`) on Android Studio and include following native libraries for each ABI. Alternatively, you can download jniLibs folder from [sktston/vcx-skeleton-android](https://github.com/sktston/vcx-skeleton-android/tree/master/app/src/main/jniLibs) (This repo assumes your dev platform is MacOS for `libc++_shared.so` file)
-- [libindy](https://repo.sovrin.org/android/libindy/stable/)
-- [libvcx](https://repo.sovrin.org/android/libvcx/stable/)
-- [libnullpay](https://repo.sovrin.org/android/libnullpay/stable/)
-- [libjnidispatch v4.5.2](https://github.com/java-native-access/jna/tree/4.5.2/lib/native): You can extract `libjnidispatch.so` from `jar` file using, for example `unzip android-x86.jar libjnidispatch.so` command. Alternatively, you may get a file in the local gradle folder after opening the project in the Android Studio (You can get a location of files in the Android Studio > Project tab > expand External Libraries > expand `net.java.dev.jna:jna:4.5.2@aar` > right click on `classes.jar` > Reveal in Finder > they are under `jni` folder)
-- libc++_shared r20: If your platform is MacOS You can get libc++_shared.so file for each ABI in the `~/Library/Android/sdk/ndk/21.1.6352462/sources/cxx-stl/llvm-libc++/libs` folder after installing NDK in the previous step.
+**Note**: You can change the version numbers for `libindy` and `libvcx` in the script `populate_libraries.sh`
+
+## Native Libraries included
+All libraries will be available after running the script, but if you want to get those libraries by yourself, please refer to the below.
+
+- [libindy stable v1.15.0](https://repo.sovrin.org/android/libindy/stable/1.15.0/)
+- [libvcx stable v0.8.0](https://repo.sovrin.org/android/libvcx/stable/0.8.0/)
+- [libjnidispatch v4.5.2](https://github.com/java-native-access/jna/tree/4.5.2/lib/native): You can extract `libjnidispatch.so` from `jar` file using, for example `unzip android-x86.jar libjnidispatch.so` command. Alternatively, you may get a file in the local gradle folder (You can get a location of file in the Android Studio > Project tab > expand External Libraries > expand `net.java.dev.jna:jna:4.5.2@aar` > right click on classes.jar > Reveal in Finder > they are under `jni` folder)
+- [libc++_shared r21b](https://developer.android.com/ndk/downloads): If your platform is macOS, and downloaded the latest NDK, you can get libc++_shared.so file for each ABI in the `~/Library/Android/sdk/ndk/21.1.6352462/sources/cxx-stl/llvm-libc++/libs` folder
 
 ## Steps to run Demo
 
